@@ -7513,6 +7513,8 @@ script 833 ENTER
   HellcoreCoolRatio = (HellcoreCoolRatio * MiscellaneousVars[131]) / 100;
   if (HellcoreCoolRatio < 1) HellcoreCoolRatio = 1;
 
+  if (CheckActorInventory(1001,"IsHaSatanNow") > 0) HellcoreCoolRatio = HellcoreCoolRatio * 16;
+
   HellcoreOverheatLevel -= HellcoreCoolRatio;
  }
  if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
@@ -9570,200 +9572,294 @@ script 852 (int C5)
 }
 
 // "Gravity" style Spell (used for fixed % damage based on CURRENT/REMAINING HP or CURRENT/REMAINING Invulnerability Timer)
-script 853 (int C5)
+script "DiabloistGravity" (int C5, int gravitytype)
 {
  int C1, C2, C3;
+ int basedmgratio;
+ int AffectedStat, MultFactor, THEEffect;
 
  if (GetActorProperty(1001,APROP_Health) < 1) terminate;
 
- if (PowerupRunning[4] == 1) // If the character is Invulnerable, diminish their Invulnerability Timer
+ PrintBold(d:gravitytype);
+ if (gravitytype == 0) // HP only
  {
-  if (GameSkill() == SKILL_VERY_EASY) C5 = 63;  
-  if (GameSkill() == SKILL_EASY) C5 = 125;  
-  if (GameSkill() == SKILL_NORMAL) C5 = 250;  
-  if (GameSkill() == SKILL_HARD) C5 = 375;  
-  if (GameSkill() == SKILL_VERY_HARD) C5 = 437;  
-  if (random(1,16) == 16) C5 = C5 * 2;
-  // SeedTHE Levels
-  // Deggaris = 300 Needed to max out
-  // Illucia = 200 Needed to max out
-  // Flora = 150 Needed to max out
-  if (CharacterClass == 0)
+  if (PowerupRunning[4] == 1) // If the character is Invulnerable, diminish their Invulnerability Timer
   {
-   C3 = 300 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 300;
+   if (GameSkill() == SKILL_VERY_EASY) C5 = 63;  
+   if (GameSkill() == SKILL_EASY) C5 = 125;  
+   if (GameSkill() == SKILL_NORMAL) C5 = 250;  
+   if (GameSkill() == SKILL_HARD) C5 = 375;  
+   if (GameSkill() == SKILL_VERY_HARD) C5 = 437;  
+   if (random(1,16) == 16) C5 = C5 * 2;
+   // SeedTHE Levels
+   // Deggaris = 300 Needed to max out
+   // Illucia = 200 Needed to max out
+   // Flora = 150 Needed to max out
+   if (CharacterClass == 0)
+   {
+    C3 = 300 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 300;
+   }
+   if (CharacterClass == 1)
+   {
+    C3 = 200 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 200;
+   }
+   if (CharacterClass == 2)
+   {
+    C3 = 150 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 150;
+   }
+   C2 = 1000 - C5;
+ 
+   if (C5 < 0) C5 = 0;
+   if (C5 > 0)
+   {
+    C1 = PowerupTimer[4];
+    C1 = C1 * C2 / 1000;
+ 
+    if (C1 < 1) C1 = 1;
+    PowerupTimer[4] = C1;
+    SetActorState(1001,"InvulnFlashGravity");
+   }
   }
-  if (CharacterClass == 1)
+  else // Otherwise affect their HP as per usual
   {
-   C3 = 200 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 200;
-  }
-  if (CharacterClass == 2)
-  {
-   C3 = 150 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 150;
-  }
-  C2 = 1000 - C5;
-
-  if (C5 < 0) C5 = 0;
-  if (C5 > 0)
-  {
-   C1 = PowerupTimer[4];
-   C1 = C1 * C2 / 1000;
-
-   if (C1 < 1) C1 = 1;
-   PowerupTimer[4] = C1;
-   SetActorState(1001,"InvulnFlashGravity");
+   if (GameSkill() == SKILL_VERY_EASY) C5 = 125;  
+   if (GameSkill() == SKILL_EASY) C5 = 250;  
+   if (GameSkill() == SKILL_NORMAL) C5 = 500;  
+   if (GameSkill() == SKILL_HARD) C5 = 750;  
+   if (GameSkill() == SKILL_VERY_HARD) C5 = 875;  
+   // SeedTHE Levels
+   // Deggaris = 300 Needed to max out
+   // Illucia = 200 Needed to max out
+   // Flora = 150 Needed to max out
+   if (CharacterClass == 0)
+   {
+    C3 = 300 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 300;
+   }
+   if (CharacterClass == 1)
+   {
+    C3 = 200 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 200;
+   }
+   if (CharacterClass == 2)
+   {
+    C3 = 150 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 150;
+   }
+   C2 = 1000 - C5;
+ 
+   if (C5 < 0) C5 = 0;
+   if (C5 > 0)
+   {
+    C1 = GetActorProperty(1001,APROP_Health);
+    C1 = C1 * C2 / 1000;
+ 
+    if (C1 < 1) C1 = 1;
+    SetActorProperty(1001,APROP_Health,C1);
+    SetActorState(1001,"HPFlashGravity");
+   }
   }
  }
- else // Otherwise affect their HP as per usual
+ else
+ if (gravitytype == 1) // Mana only
  {
-  if (GameSkill() == SKILL_VERY_EASY) C5 = 125;  
-  if (GameSkill() == SKILL_EASY) C5 = 250;  
-  if (GameSkill() == SKILL_NORMAL) C5 = 500;  
-  if (GameSkill() == SKILL_HARD) C5 = 750;  
-  if (GameSkill() == SKILL_VERY_HARD) C5 = 875;  
-  // SeedTHE Levels
-  // Deggaris = 300 Needed to max out
-  // Illucia = 200 Needed to max out
-  // Flora = 150 Needed to max out
-  if (CharacterClass == 0)
+  if (PowerupRunning[4] == 1) // If the character is Invulnerable, diminish their Invulnerability Timer
   {
-   C3 = 300 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 300;
+   if (GameSkill() == SKILL_VERY_EASY) C5 = 63;  
+   if (GameSkill() == SKILL_EASY) C5 = 125;  
+   if (GameSkill() == SKILL_NORMAL) C5 = 250;  
+   if (GameSkill() == SKILL_HARD) C5 = 375;  
+   if (GameSkill() == SKILL_VERY_HARD) C5 = 437;  
+   if (random(1,16) == 16) C5 = C5 * 2;
+   // SeedTHE Levels
+   // Deggaris = 300 Needed to max out
+   // Illucia = 200 Needed to max out
+   // Flora = 150 Needed to max out
+   if (CharacterClass == 0)
+   {
+    C3 = 300 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 300;
+   }
+   if (CharacterClass == 1)
+   {
+    C3 = 200 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 200;
+   }
+   if (CharacterClass == 2)
+   {
+    C3 = 150 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 150;
+   }
+   C2 = 1000 - C5;
+ 
+   // PrintBold(d:C2);
+ 
+   if (C5 < 0) C5 = 0;
+   if (C5 > 0)
+   {
+    C1 = PowerupTimer[4];
+    C1 = C1 * C2 / 1000;
+ 
+    if (C1 < 1) C1 = 1;
+ 
+    PowerupTimer[4] = C1;
+    SetActorState(1001,"InvulnFlashGravity");
+   }
   }
-  if (CharacterClass == 1)
+  else // Otherwise affect their MP as per usual
   {
-   C3 = 200 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 200;
-  }
-  if (CharacterClass == 2)
-  {
-   C3 = 150 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 150;
-  }
-  C2 = 1000 - C5;
-
-  if (C5 < 0) C5 = 0;
-  if (C5 > 0)
-  {
-   C1 = GetActorProperty(1001,APROP_Health);
-   C1 = C1 * C2 / 1000;
-
-   if (C1 < 1) C1 = 1;
-   SetActorProperty(1001,APROP_Health,C1);
-   SetActorState(1001,"HPFlashGravity");
+   if (GameSkill() == SKILL_VERY_EASY) C5 = 63;  
+   if (GameSkill() == SKILL_EASY) C5 = 125;  
+   if (GameSkill() == SKILL_NORMAL) C5 = 250;  
+   if (GameSkill() == SKILL_HARD) C5 = 375;  
+   if (GameSkill() == SKILL_VERY_HARD) C5 = 437;  
+   if (random(1,16) == 16) C5 = C5 * 2;
+   // SeedTHE Levels
+   // Deggaris = 300 Needed to max out
+   // Illucia = 200 Needed to max out
+   // Flora = 150 Needed to max out
+   if (CharacterClass == 0)
+   {
+    C3 = 300 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 300;
+   }
+   if (CharacterClass == 1)
+   {
+    C3 = 200 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 200;
+   }
+   if (CharacterClass == 2)
+   {
+    C3 = 150 - MiscellaneousVars[36];
+    if (C3 < 0) C3 = 0;
+    C5 = C5 * C3 / 150;
+   }
+   C2 = 1000 - C5;
+ 
+   // PrintBold(d:C2);
+ 
+   if (C5 < 0) C5 = 0;
+   if (C5 > 0)
+   {
+    C1 = CurrentMana;
+    C1 = C1 * C2 / 1000;
+ 
+    if (C1 < 0) C1 = 0;
+ 
+    CurrentMana = C1;
+    SetActorState(1001,"ManaFlashGravity");
+   }
   }
  }
-}
-
-// "Gravity" style Spell (used for fixed % damage based on CURRENT/REMAINING MANA or CURRENT/REMAINING Invulnerability Timer)
-script 854 (int C5)
-{
- int C1, C2, C3;
-
- if (GetActorProperty(1001,APROP_Health) < 1) terminate;
-
- if (PowerupRunning[4] == 1) // If the character is Invulnerable, diminish their Invulnerability Timer
+ else
+ if (gravitytype == 2) // HP & Mana
  {
-  if (GameSkill() == SKILL_VERY_EASY) C5 = 63;  
-  if (GameSkill() == SKILL_EASY) C5 = 125;  
-  if (GameSkill() == SKILL_NORMAL) C5 = 250;  
-  if (GameSkill() == SKILL_HARD) C5 = 375;  
-  if (GameSkill() == SKILL_VERY_HARD) C5 = 437;  
-  if (random(1,16) == 16) C5 = C5 * 2;
-  // SeedTHE Levels
-  // Deggaris = 300 Needed to max out
-  // Illucia = 200 Needed to max out
-  // Flora = 150 Needed to max out
-  if (CharacterClass == 0)
+  if (PowerupRunning[4] == 1) // If the character is Invulnerable, diminish their Invulnerability Timer
   {
-   C3 = 300 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 300;
+   if (GameSkill() == SKILL_VERY_EASY) basedmgratio = 125; // 12.5% Base Damage
+   if (GameSkill() == SKILL_EASY) basedmgratio = 250; // 25.0% Base Damage
+   if (GameSkill() == SKILL_NORMAL) basedmgratio = 500; // 50.0% Base Damage
+   if (GameSkill() == SKILL_HARD) basedmgratio = 750; // 75.0% Base Damage
+   if (GameSkill() == SKILL_VERY_HARD) basedmgratio = 875; // 87.5% Base Damage
+   // SeedTHE Levels
+   // Deggaris = 300 Needed to max out
+   // Illucia = 200 Needed to max out
+   // Flora = 150 Needed to max out
+   if (CharacterClass == 0) THEEffect = 300 - MiscellaneousVars[36];
+   if (CharacterClass == 1) THEEffect = 200 - MiscellaneousVars[36];
+   if (CharacterClass == 2) THEEffect = 150 - MiscellaneousVars[36];
+   if (THEEffect < 0) THEEffect = 0;
+   if (CharacterClass == 0) basedmgratio = basedmgratio * THEEffect / 250;
+   if (CharacterClass == 1) basedmgratio = basedmgratio * THEEffect / 200;
+   if (CharacterClass == 2) basedmgratio = basedmgratio * THEEffect / 150;
+   MultFactor = 1000 - basedmgratio;
+ 
+   if (basedmgratio < 0) basedmgratio = 0;
+   if (basedmgratio > 0)
+   {
+    AffectedStat = PowerupTimer[4] * MultFactor / 1000;
+    if (AffectedStat < 1) AffectedStat = 1;
+ 
+    PowerupTimer[4] = AffectedStat;
+    SetActorState(1001,"InvulnFlashGravity");
+   }
   }
-  if (CharacterClass == 1)
+  else // Otherwise affect their HP & MP as per usual
   {
-   C3 = 200 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 200;
-  }
-  if (CharacterClass == 2)
-  {
-   C3 = 150 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 150;
-  }
-  C2 = 1000;
-  C2 = C2 - C5;
-
-  // PrintBold(d:C2);
-
-  if (C5 < 0) C5 = 0;
-  if (C5 > 0)
-  {
-   C1 = PowerupTimer[4];
-   C1 = C1 * C2 / 1000;
-
-   if (C1 < 1) C1 = 1;
-
-   PowerupTimer[4] = C1;
-   SetActorState(1001,"InvulnFlashGravity");
+   if (GameSkill() == SKILL_VERY_EASY) basedmgratio = 125; // 12.5% Base Damage
+   if (GameSkill() == SKILL_EASY) basedmgratio = 250; // 25.0% Base Damage
+   if (GameSkill() == SKILL_NORMAL) basedmgratio = 500; // 50.0% Base Damage
+   if (GameSkill() == SKILL_HARD) basedmgratio = 750; // 75.0% Base Damage
+   if (GameSkill() == SKILL_VERY_HARD) basedmgratio = 875; // 87.5% Base Damage
+   // SeedTHE Levels
+   // Deggaris = 300 Needed to max out
+   // Illucia = 200 Needed to max out
+   // Flora = 150 Needed to max out
+   if (CharacterClass == 0) THEEffect = 300 - MiscellaneousVars[36];
+   if (CharacterClass == 1) THEEffect = 200 - MiscellaneousVars[36];
+   if (CharacterClass == 2) THEEffect = 150 - MiscellaneousVars[36];
+   if (THEEffect < 0) THEEffect = 0;
+   if (CharacterClass == 0) basedmgratio = basedmgratio * THEEffect / 250;
+   if (CharacterClass == 1) basedmgratio = basedmgratio * THEEffect / 200;
+   if (CharacterClass == 2) basedmgratio = basedmgratio * THEEffect / 150;
+   MultFactor = 1000 - basedmgratio;
+ 
+   if (basedmgratio < 0) basedmgratio = 0;
+   if (basedmgratio > 0)
+   {
+    AffectedStat = GetActorProperty(1001,APROP_Health) * MultFactor / 1000;
+    if (AffectedStat < 1) AffectedStat = 1;
+ 
+    SetActorProperty(1001,APROP_Health,AffectedStat);
+   }
+ 
+   if (GameSkill() == SKILL_VERY_EASY) basedmgratio = 63; // 6.3%
+   if (GameSkill() == SKILL_EASY) basedmgratio = 125; // 12.5%
+   if (GameSkill() == SKILL_NORMAL) basedmgratio = 250; // 25.0%
+   if (GameSkill() == SKILL_HARD) basedmgratio = 375; // 37.5%
+   if (GameSkill() == SKILL_VERY_HARD) basedmgratio = 437; // 43.7%
+   if (random(1,16) == 16) basedmgratio = basedmgratio * 2;
+   // SeedTHE Levels
+   // Deggaris = 300 Needed to max out
+   // Illucia = 200 Needed to max out
+   // Flora = 150 Needed to max out
+   if (CharacterClass == 0) THEEffect = 300 - MiscellaneousVars[36];
+   if (CharacterClass == 1) THEEffect = 200 - MiscellaneousVars[36];
+   if (CharacterClass == 2) THEEffect = 150 - MiscellaneousVars[36];
+   if (THEEffect < 0) THEEffect = 0;
+   if (CharacterClass == 0) basedmgratio = basedmgratio * THEEffect / 250;
+   if (CharacterClass == 1) basedmgratio = basedmgratio * THEEffect / 200;
+   if (CharacterClass == 2) basedmgratio = basedmgratio * THEEffect / 150;
+   MultFactor = 1000 - basedmgratio;
+ 
+   if (basedmgratio < 0) basedmgratio = 0;
+   if (basedmgratio > 0)
+   {
+    AffectedStat = CurrentMana * MultFactor / 1000;
+ 
+    if (AffectedStat < 0) AffectedStat = 0;
+ 
+    CurrentMana = AffectedStat;
+ 
+    SetActorState(1001,"HPManaFlashGravity");
+   }
   }
  }
- else // Otherwise affect their MP as per usual
- {
-  if (GameSkill() == SKILL_VERY_EASY) C5 = 63;  
-  if (GameSkill() == SKILL_EASY) C5 = 125;  
-  if (GameSkill() == SKILL_NORMAL) C5 = 250;  
-  if (GameSkill() == SKILL_HARD) C5 = 375;  
-  if (GameSkill() == SKILL_VERY_HARD) C5 = 437;  
-  if (random(1,16) == 16) C5 = C5 * 2;
-  // SeedTHE Levels
-  // Deggaris = 300 Needed to max out
-  // Illucia = 200 Needed to max out
-  // Flora = 150 Needed to max out
-  if (CharacterClass == 0)
-  {
-   C3 = 300 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 300;
-  }
-  if (CharacterClass == 1)
-  {
-   C3 = 200 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 200;
-  }
-  if (CharacterClass == 2)
-  {
-   C3 = 150 - MiscellaneousVars[36];
-   if (C3 < 0) C3 = 0;
-   C5 = C5 * C3 / 150;
-  }
-  C2 = 1000;
-  C2 = C2 - C5;
 
-  // PrintBold(d:C2);
-
-  if (C5 < 0) C5 = 0;
-  if (C5 > 0)
-  {
-   C1 = CurrentMana;
-   C1 = C1 * C2 / 1000;
-
-   if (C1 < 0) C1 = 0;
-
-   CurrentMana = C1;
-   SetActorState(1001,"ManaFlashGravity");
-  }
- }
 }
 
 // Redone Buff Checker (allows additive buff timers from spells and powerup items) [must use the "DoomSpellACS" actor on a map to make this work!]
@@ -10041,106 +10137,6 @@ script 858 (int C5)
  if (C5 == 1) FadeRange(0,0,192,1.25,0,0,192,0,1.125);
  if (C5 == 2) FadeRange(192,192,192,1.25,192,192,192,0,1.125);
  if (C5 == 3) FadeRange(192,0,192,1.25,192,0,192,0,1.125);
-}
-
-// "Gravity" style Spell (used for fixed % damage based on CURRENT/REMAINING HP & MANA or CURRENT/REMAINING Invulnerability Timer)
-script 859 (void)
-{
- int basedmgratio;
- int AffectedStat, MultFactor, THEEffect;
-
- if (GetActorProperty(1001,APROP_Health) < 1) terminate;
-
- if (PowerupRunning[4] == 1) // If the character is Invulnerable, diminish their Invulnerability Timer
- {
-  if (GameSkill() == SKILL_VERY_EASY) basedmgratio = 125; // 12.5% Base Damage
-  if (GameSkill() == SKILL_EASY) basedmgratio = 250; // 25.0% Base Damage
-  if (GameSkill() == SKILL_NORMAL) basedmgratio = 500; // 50.0% Base Damage
-  if (GameSkill() == SKILL_HARD) basedmgratio = 750; // 75.0% Base Damage
-  if (GameSkill() == SKILL_VERY_HARD) basedmgratio = 875; // 87.5% Base Damage
-  // SeedTHE Levels
-  // Deggaris = 300 Needed to max out
-  // Illucia = 200 Needed to max out
-  // Flora = 150 Needed to max out
-  if (CharacterClass == 0) THEEffect = 300 - MiscellaneousVars[36];
-  if (CharacterClass == 1) THEEffect = 200 - MiscellaneousVars[36];
-  if (CharacterClass == 2) THEEffect = 150 - MiscellaneousVars[36];
-  if (THEEffect < 0) THEEffect = 0;
-  if (CharacterClass == 0) basedmgratio = basedmgratio * THEEffect / 250;
-  if (CharacterClass == 1) basedmgratio = basedmgratio * THEEffect / 200;
-  if (CharacterClass == 2) basedmgratio = basedmgratio * THEEffect / 150;
-  MultFactor = 1000 - basedmgratio;
-
-  if (basedmgratio < 0) basedmgratio = 0;
-  if (basedmgratio > 0)
-  {
-   AffectedStat = PowerupTimer[4] * MultFactor / 1000;
-   if (AffectedStat < 1) AffectedStat = 1;
-
-   PowerupTimer[4] = AffectedStat;
-   SetActorState(1001,"InvulnFlashGravity");
-  }
- }
- else // Otherwise affect their HP & MP as per usual
- {
-  if (GameSkill() == SKILL_VERY_EASY) basedmgratio = 125; // 12.5% Base Damage
-  if (GameSkill() == SKILL_EASY) basedmgratio = 250; // 25.0% Base Damage
-  if (GameSkill() == SKILL_NORMAL) basedmgratio = 500; // 50.0% Base Damage
-  if (GameSkill() == SKILL_HARD) basedmgratio = 750; // 75.0% Base Damage
-  if (GameSkill() == SKILL_VERY_HARD) basedmgratio = 875; // 87.5% Base Damage
-  // SeedTHE Levels
-  // Deggaris = 300 Needed to max out
-  // Illucia = 200 Needed to max out
-  // Flora = 150 Needed to max out
-  if (CharacterClass == 0) THEEffect = 300 - MiscellaneousVars[36];
-  if (CharacterClass == 1) THEEffect = 200 - MiscellaneousVars[36];
-  if (CharacterClass == 2) THEEffect = 150 - MiscellaneousVars[36];
-  if (THEEffect < 0) THEEffect = 0;
-  if (CharacterClass == 0) basedmgratio = basedmgratio * THEEffect / 250;
-  if (CharacterClass == 1) basedmgratio = basedmgratio * THEEffect / 200;
-  if (CharacterClass == 2) basedmgratio = basedmgratio * THEEffect / 150;
-  MultFactor = 1000 - basedmgratio;
-
-  if (basedmgratio < 0) basedmgratio = 0;
-  if (basedmgratio > 0)
-  {
-   AffectedStat = GetActorProperty(1001,APROP_Health) * MultFactor / 1000;
-   if (AffectedStat < 1) AffectedStat = 1;
-
-   SetActorProperty(1001,APROP_Health,AffectedStat);
-  }
-
-  if (GameSkill() == SKILL_VERY_EASY) basedmgratio = 63; // 6.3%
-  if (GameSkill() == SKILL_EASY) basedmgratio = 125; // 12.5%
-  if (GameSkill() == SKILL_NORMAL) basedmgratio = 250; // 25.0%
-  if (GameSkill() == SKILL_HARD) basedmgratio = 375; // 37.5%
-  if (GameSkill() == SKILL_VERY_HARD) basedmgratio = 437; // 43.7%
-  if (random(1,16) == 16) basedmgratio = basedmgratio * 2;
-  // SeedTHE Levels
-  // Deggaris = 300 Needed to max out
-  // Illucia = 200 Needed to max out
-  // Flora = 150 Needed to max out
-  if (CharacterClass == 0) THEEffect = 300 - MiscellaneousVars[36];
-  if (CharacterClass == 1) THEEffect = 200 - MiscellaneousVars[36];
-  if (CharacterClass == 2) THEEffect = 150 - MiscellaneousVars[36];
-  if (THEEffect < 0) THEEffect = 0;
-  if (CharacterClass == 0) basedmgratio = basedmgratio * THEEffect / 250;
-  if (CharacterClass == 1) basedmgratio = basedmgratio * THEEffect / 200;
-  if (CharacterClass == 2) basedmgratio = basedmgratio * THEEffect / 150;
-  MultFactor = 1000 - basedmgratio;
-
-  if (basedmgratio < 0) basedmgratio = 0;
-  if (basedmgratio > 0)
-  {
-   AffectedStat = CurrentMana * MultFactor / 1000;
-
-   if (AffectedStat < 0) AffectedStat = 0;
-
-   CurrentMana = AffectedStat;
-
-   SetActorState(1001,"HPManaFlashGravity");
-  }
- }
 }
 
 
@@ -10424,6 +10420,7 @@ script 868 (int percent, int trydamageuser)
  if (CheckActorInventory(1001,"BalrogRing") > 0) ArmorHellCoreRate -= 17; 			// -8.5% (17)
  if (CheckActorInventory(1001,"DoveRibbon") > 0) ArmorHellCoreRate -= 11; 			// -5.5% (11)
 																					// Total: -66.5% (133)
+
  percent = percent * ArmorHellCoreRate / 200;
 
  C2 = PlayerLevel / 10;
@@ -10433,6 +10430,8 @@ script 868 (int percent, int trydamageuser)
 
  // Check Hellcore Multiplier in Options
  percent = (percent * MiscellaneousVars[130]) / 100;
+
+ if (CheckActorInventory(1001,"IsHaSatanNow") > 0) percent = percent / 16;
 
  if (percent < 1) percent = 1;
 
@@ -10746,7 +10745,7 @@ script 870 (int Armortype)
 }
 
 // HP Gravity Attack via Diabloist's Hand [[against monsters]]
-script 871 (int type)
+script "Hand-GravityAttack" (int type)
 {
  int C1, C2, C3, C4, C5, PrinterOld, PrinterNew;
 
@@ -14190,8 +14189,10 @@ script "GetUltraMagicMissileFuse" (void)
 {
  int Fuse, Extra;
  Fuse = 117;
+
  Extra = MiscellaneousVars[34] / 5; // 5 Sorcery = 1 point for the fuse
  Fuse += Extra;
+
  Extra = MiscellaneousVars[36] / 5; // 5 Therapeusis = 1 point for the fuse
  Fuse += Extra;
  SetResultValue(Fuse);
