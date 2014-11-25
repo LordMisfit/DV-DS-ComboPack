@@ -50,7 +50,6 @@ Script #s and their functions:
 	{-24-}		-	***EVENT*** Changes Music back when exiting the Fishmouth Temple in MAP04 [DVI-DS] or MAP12 [DVII-DS] ***EVENT***
 	{-25-}		-	***EVENT*** Changes Music for the battle with the main Eye of Sauron on MAP04 [DVI-DS] or MAP12 [DVII-DS] ***EVENT***
 	{-803-}	-	Mana Regeneration
-	{-804-}	-	Experience Adding
 	{-805-} 	-	Spell Selection
 	{-806-} 	-	Spell Readying
 	{-807-}	-	Spell Casting
@@ -140,6 +139,7 @@ Script #s and their functions:
 
 NAMED Scripts and their functions:
 
+	{"ExperienceGain"}	-			Experience Adding
 	{"Initializer"}	-				Exp Table Setup (& Initial Startup Process [added for DVI/DVII-DS])
 	{"HUDDisplay"}	-				HUD Display
 	{"ClassicDoom2ArmorCheck"}		Makes Armor Bonuses check for Flora's presense in the game in order to change them over to other items [this version is for when playing classic Doom 1/2]
@@ -2518,7 +2518,7 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
  return RealExpGain;
 }
 
-// {-4-} Experience Adding [TODO: thing sorting needs to be sped up a lot >____>;]
+// Experience Adding [TODO: thing sorting needs to be sped up a lot >____>;]
 
 script "ExperienceGain" ENTER
 {
@@ -15448,50 +15448,50 @@ script 855 ENTER
 
 
 // Enforces Giving or Removing Buffs when certain powerup timers are on/off
-script 856 (int C5, int C6)
+script "GiveBuffsPowerup" (int powertype, int powertimeadd)
 {
- // C5 = Powerup Type
- // C6 = Powerup Timer Additive
+ // powertype = Powerup Type
+ // powertimeadd = Powerup Timer Additive
  int G1, G2, G3, C1, C2, C3, I1, I2, I3;
 
- if (C5 == 0) // Light/Infared
+ if (powertype == 0) // Light/Infared
  {
-  PowerupTimer[0] += C6;
+  PowerupTimer[0] += powertimeadd;
   if (PowerupTimer[0] > 0) SetPlayerProperty(1,1,PROP_INFRARED);
  }
- if (C5 == 1) // Invisibility
+ if (powertype == 1) // Invisibility
  {
-  PowerupTimer[1] += C6;
+  PowerupTimer[1] += powertimeadd;
   if (PowerupTimer[1] > 0) SetPlayerProperty(1,1,PROP_INVISIBILITY);
  }
- if (C5 == 2) // Flight
+ if (powertype == 2) // Flight
  {
-  PowerupTimer[2] += C6;
+  PowerupTimer[2] += powertimeadd;
   if (PowerupTimer[2] > 0) SetPlayerProperty(1,1,PROP_FLY);
  }
- if (C5 == 3) // Stealth
+ if (powertype == 3) // Stealth
  {
-  PowerupTimer[3] += C6;
+  PowerupTimer[3] += powertimeadd;
   if (PowerupTimer[3] > 0) SetPlayerProperty(1,1,PROP_NOTARGET);
  }
- if (C5 == 4) // Invulnerability
+ if (powertype == 4) // Invulnerability
  {
-  PowerupTimer[4] += C6;
+  PowerupTimer[4] += powertimeadd;
   if (PowerupTimer[4] > 0) SetPlayerProperty(1,1,PROP_INVULNERABILITY);
  }
- if (C5 == 5) // Time Freeze
+ if (powertype == 5) // Time Freeze
  {
-  PowerupTimer[5] += C6;
+  PowerupTimer[5] += powertimeadd;
   if (PowerupTimer[5] > 0) GiveActorInventory(1001, "PowerTimeFreezer", 1);
  }
- if (C5 == 6) // Fear Aura
+ if (powertype == 6) // Fear Aura
  {
-  PowerupTimer[6] += C6;
+  PowerupTimer[6] += powertimeadd;
   if (PowerupTimer[6] > 0) GiveActorInventory(1001, "PowerFrightener", 1);
  }
- if (C5 == 7) // Divine Avatar
+ if (powertype == 7) // Divine Avatar
  {
-  PowerupTimer[7] += C6;
+  PowerupTimer[7] += powertimeadd;
   if (PowerupTimer[7] > 0)
   {
    GiveActorInventory(1001, "PowerDoubleDamage", 1);
@@ -15501,23 +15501,31 @@ script 856 (int C5, int C6)
    GiveActorInventory(1001, "PowerHighJump", 1);
   }
  }
- if (C5 == 8) // Spreader Aura Lv. 1
+ if (powertype == 8) // Spreader Aura Lv. 1
  {
-  if (PowerupTimer[9] == 0)
+  if (PowerupTimer[9] == 0) // If lacking the Lv. 2 Aura, add to the Lv. 1
   {
-   PowerupTimer[8] += C6;
+   PowerupTimer[8] += powertimeadd;
    if (PowerupTimer[8] > 0) GiveActorInventory(1001, "SpreaderAura1", 1);
   }
+  else // If possessing Lv. 2 aura, give the player the timer divided by 5 or 6 instead and add to the second level aura.
+  {
+   if (PowerupTimer[8] > 0) TakeActorInventory(1001, "SpreaderAura1", 1);
+   PowerupTimer[8] = 0;
+   powertimeadd = powertimeadd / random(5,6);
+   PowerupTimer[9] += powertimeadd;
+   if (PowerupTimer[9] > 0) GiveActorInventory(1001, "SpreaderAura2", 1);
+  }
  }
- if (C5 == 9) // Spreader Aura Lv. 2
+ if (powertype == 9) // Spreader Aura Lv. 2
  {
-  PowerupTimer[9] += C6;
+  PowerupTimer[9] += powertimeadd;
   if (PowerupTimer[9] > 0) GiveActorInventory(1001, "SpreaderAura2", 1);
   if (PowerupTimer[8] > 0) { TakeActorInventory(1001, "SpreaderAura1", 1); PowerupTimer[8] = 0; }
  }
- if (C5 == 129) // GoE??
+ if (powertype == 129) // GoE??
  {
-  PowerupTimer[129] += C6;
+  PowerupTimer[129] += powertimeadd;
   if (PowerupTimer[129] > 0)
   {
    GiveActorInventory(1001, "GoEDamageBonus", 1);
