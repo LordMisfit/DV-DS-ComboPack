@@ -357,13 +357,14 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [135] is the Current Mode for the Diabloist's Hand [0 = Gravity Glare, 1 = Immolation Glare, 2 = Fireblast Volley, 3 = Ground Snakes]
 // [136] is storage for EXP Check Runs [Menu CVar]
 // [137] is storage for Stamina Regen Rate [Menu CVar]
-// [138] is storage for Stamina Regen Rate [Menu CVar]
-// [139] is storage for Stamina Regen Rate [Menu CVar]
+// [138] is storage for Mealth Regen Rate [Menu CVar]
+// [139] is storage for Mana Regen Rate [Menu CVar]
 // [140] is storage for Starting Sceptre Level [Menu CVar]
 // [142] is storage for Health Degeneration Mode [Menu CVar]
 // [143] is for how far along the degeneration timer is.
 // [144] is the base degeneration interval for the character
-	// [144+] are undefined so far :P
+// [145] is storage for Mana Cost Rate [Menu CVar]
+	// [146+] are undefined so far :P
 
 
 global int 22:DVIIGameFlags[]; // ***ARRAY***
@@ -1488,7 +1489,12 @@ function int SpellCostCheck(int checktype)
  if (GameSkill() == SKILL_VERY_HARD) SpellCostMinimum = OriginalSpellCost * 55 / 100;
 
  if (FinalSpellCost < SpellCostMinimum) FinalSpellCost = SpellCostMinimum;
+
+  // Checks Mana Cost Rate Menu Option
+  FinalSpellCost = FinalSpellCost * MiscellaneousVars[145] / 100;
+
  if (FinalSpellCost < 1) FinalSpellCost = 1;
+ if (FinalSpellCost > MaxMana) FinalSpellCost = MaxMana;
 
  return FinalSpellCost;
 }
@@ -2514,18 +2520,18 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
 
 // {-4-} Experience Adding [TODO: thing sorting needs to be sped up a lot >____>;]
 
-script 804 ENTER
+script "ExperienceGain" ENTER
 {
  int C1, I1, Exp1, Exp2, ExpMultiFactor, RealExpGain, SecretExpMulti;
  int MonIndChe1, MonIndChe2, MonIndChe3, MonIndChe4, MonIndChe5;
  int MonIndChe6, MonIndChe7, MonIndChe8, MonIndChe9, MonIndChe10;
  int MonIndChe11, MonIndChe12, MonIndChe13, MonIndChe14, MonIndChe15;
- int MonIndChe16;
+ int MonIndChe16, MonIndChe17, MonIndChe18, MonIndChe19, MonIndChe20;
 
  MiscellaneousVars[136] = GetCVar("dvds_expcheckruns");
 
  // C1 is the base entry being analyzed by the code for accumalating monsterIDs. It adds up to 16 additional indexes based from C1 + various amounts. The more used the more process power used. 4 is what I used here.
- for (C1 = 0; C1 < 102; C1 += 4) // for (C1 = 0; C1 < 22; C1 += 4)
+ for (C1 = 0; C1 < 102; C1 += MiscellaneousVars[136])
  {
   if (MiscellaneousVars[136] >= 1) MonIndChe1 = ThingCountName(MonsterID[C1+0],0) - ThingCountName(MonsterID[C1+0],1000); // don't count friendlies
   if (MiscellaneousVars[136] >= 2) MonIndChe2 = ThingCountName(MonsterID[C1+1],0) - ThingCountName(MonsterID[C1+1],1000); // don't count friendlies
@@ -2543,6 +2549,10 @@ script 804 ENTER
   if (MiscellaneousVars[136] >= 14) MonIndChe14 = ThingCountName(MonsterID[C1+13],0) - ThingCountName(MonsterID[C1+13],1000); // don't count friendlies
   if (MiscellaneousVars[136] >= 15) MonIndChe15 = ThingCountName(MonsterID[C1+14],0) - ThingCountName(MonsterID[C1+14],1000); // don't count friendlies
   if (MiscellaneousVars[136] >= 16) MonIndChe16 = ThingCountName(MonsterID[C1+15],0) - ThingCountName(MonsterID[C1+15],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 17) MonIndChe17 = ThingCountName(MonsterID[C1+16],0) - ThingCountName(MonsterID[C1+16],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 18) MonIndChe18 = ThingCountName(MonsterID[C1+17],0) - ThingCountName(MonsterID[C1+17],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 19) MonIndChe19 = ThingCountName(MonsterID[C1+18],0) - ThingCountName(MonsterID[C1+18],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 20) MonIndChe20 = ThingCountName(MonsterID[C1+19],0) - ThingCountName(MonsterID[C1+19],1000); // don't count friendlies
 
   // Gets the Experience Multiplication Factor [Part 1]
   ExpMultiFactor = (Random (90, 120));
@@ -2893,6 +2903,46 @@ script 804 ENTER
     MonsterTable[C1+15] = MonIndChe16;
    }
 
+   // Check #17
+   if (MiscellaneousVars[136] >= 17 && MonIndChe17 < MonsterTable[C1+16])
+   {
+    RealExpGain = (MonsterXP[C1+16] * (MonsterTable[C1+16] - MonIndChe17));
+    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
+
+    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
+    MonsterTable[C1+16] = MonIndChe17;
+   }
+
+   // Check #18
+   if (MiscellaneousVars[136] >= 18 && MonIndChe18 < MonsterTable[C1+17])
+   {
+    RealExpGain = (MonsterXP[C1+17] * (MonsterTable[C1+17] - MonIndChe18));
+    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
+
+    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
+    MonsterTable[C1+17] = MonIndChe18;
+   }
+
+   // Check #19
+   if (MiscellaneousVars[136] >= 19 && MonIndChe19 < MonsterTable[C1+18])
+   {
+    RealExpGain = (MonsterXP[C1+18] * (MonsterTable[C1+18] - MonIndChe19));
+    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
+
+    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
+    MonsterTable[C1+18] = MonIndChe19;
+   }
+
+   // Check #20
+   if (MiscellaneousVars[136] >= 20 && MonIndChe20 < MonsterTable[C1+19])
+   {
+    RealExpGain = (MonsterXP[C1+19] * (MonsterTable[C1+19] - MonIndChe20));
+    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
+
+    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
+    MonsterTable[C1+19] = MonIndChe20;
+   }
+
   }
   SetHudSize(0,0,0);
 
@@ -2913,10 +2963,14 @@ script 804 ENTER
   if (MiscellaneousVars[136] >= 14) { if (MonIndChe14 > MonsterTable[C1+13]) MonsterTable[C1+13] = MonIndChe14; }
   if (MiscellaneousVars[136] >= 15) { if (MonIndChe15 > MonsterTable[C1+14]) MonsterTable[C1+14] = MonIndChe15; }
   if (MiscellaneousVars[136] >= 16) { if (MonIndChe16 > MonsterTable[C1+15]) MonsterTable[C1+15] = MonIndChe16; }
+  if (MiscellaneousVars[136] >= 17) { if (MonIndChe17 > MonsterTable[C1+16]) MonsterTable[C1+16] = MonIndChe17; }
+  if (MiscellaneousVars[136] >= 18) { if (MonIndChe18 > MonsterTable[C1+17]) MonsterTable[C1+17] = MonIndChe18; }
+  if (MiscellaneousVars[136] >= 19) { if (MonIndChe19 > MonsterTable[C1+18]) MonsterTable[C1+18] = MonIndChe19; }
+  if (MiscellaneousVars[136] >= 20) { if (MonIndChe20 > MonsterTable[C1+19]) MonsterTable[C1+19] = MonIndChe20; }
 
   // Moved Exp Bonus Script to Script 884 [below]
   // Moved Levelup Script to Script 884 [below]
-  Delay(1);
+  Delay(GetCVar("dvds_expcheckdelay"));
  }
  Restart;
 }
@@ -11345,6 +11399,9 @@ script 833 ENTER
 
  if (GetCVar("dvds_manaregenmultiplier") > -1 && GetCVar("dvds_manaregenmultiplier") < 20) MiscellaneousVars[139] = (GetCVar("dvds_manaregenmultiplier") + 1) * 100;
  if (GetCVar("dvds_manaregenmultiplier") > 19 && GetCVar("dvds_manaregenmultiplier") < 39) MiscellaneousVars[139] = (GetCVar("dvds_manaregenmultiplier") - 19) * 5;
+
+ if (GetCVar("dvds_manacostgmultiplier") > -1 && GetCVar("dvds_manacostgmultiplier") < 20) MiscellaneousVars[145] = (GetCVar("dvds_manacostgmultiplier") + 1) * 100;
+ if (GetCVar("dvds_manacostgmultiplier") > 19 && GetCVar("dvds_manacostgmultiplier") < 39) MiscellaneousVars[145] = (GetCVar("dvds_manacostgmultiplier") - 19) * 5;
 
  // Print(d:MiscellaneousVars[86],s:"\n",d:MiscellaneousVars[87],s:"\n",d:MiscellaneousVars[88],s:"\n",d:MiscellaneousVars[89],s:"\n",d:MiscellaneousVars[90],s:"\n",d:MiscellaneousVars[130],s:"\n",d:MiscellaneousVars[131],s:"\n",d:MiscellaneousVars[137],s:"\n",d:MiscellaneousVars[138],s:"\n",d:MiscellaneousVars[139]);
 
