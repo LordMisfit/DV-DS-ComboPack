@@ -32,6 +32,7 @@ HudMessage Tags:
 	3418		-	EXP Display
 	3419		-	Mana Regeneration Display
 	3420		-	Aeon Points Display
+	3421		-	EXP "OVERKILL!" Display
 	3422		-	Player Damage/Healing Amount [uses interpolation to gauge]
 	3432		-	Level Up/Aeon Points Up Text.
 	3433-3441	-	Buff Timers
@@ -1819,11 +1820,12 @@ script "Initializer" OPEN
    ExpTable[C1] = I1 + ( ( BaseEXPRequirement * (C1 + 1) ) * ( ( (C1 * 3) + 1000) ) / 1000 ) + ( BaseEXPRequirement / 96 );
                  I1 += ( ( BaseEXPRequirement * (C1 + 1) ) * ( ( (C1 * 3) + 1000) ) / 1000 ) + ( BaseEXPRequirement / 96 );
   }
+  //PrintBold(d:C1,s:" - ",d:ExpTable[C1]);
  }
  ExpTable[200] = 2147483646;
  ExpTable[201] = 2147483647;
 
- for (C1 = 0; C1 < 120; C1 += 10)
+ for (C1 = 0; C1 < 120; C1 += 20)
  {
   MonsterTable[C1] = ThingCountName(MonsterID[C1],0);
   MonsterTable[C1+1] = ThingCountName(MonsterID[C1+1],0);
@@ -1835,6 +1837,16 @@ script "Initializer" OPEN
   MonsterTable[C1+7] = ThingCountName(MonsterID[C1+7],0);
   MonsterTable[C1+8] = ThingCountName(MonsterID[C1+8],0);
   MonsterTable[C1+9] = ThingCountName(MonsterID[C1+9],0);
+  MonsterTable[C1+10] = ThingCountName(MonsterID[C1+10],0);
+  MonsterTable[C1+11] = ThingCountName(MonsterID[C1+11],0);
+  MonsterTable[C1+12] = ThingCountName(MonsterID[C1+12],0);
+  MonsterTable[C1+13] = ThingCountName(MonsterID[C1+13],0);
+  MonsterTable[C1+14] = ThingCountName(MonsterID[C1+14],0);
+  MonsterTable[C1+15] = ThingCountName(MonsterID[C1+15],0);
+  MonsterTable[C1+16] = ThingCountName(MonsterID[C1+16],0);
+  MonsterTable[C1+17] = ThingCountName(MonsterID[C1+17],0);
+  MonsterTable[C1+18] = ThingCountName(MonsterID[C1+18],0);
+  MonsterTable[C1+19] = ThingCountName(MonsterID[C1+19],0);
  }
  MiscellaneousVars[1] = 0; // Resets Armor Bitfield Checker to 0
  MiscellaneousVars[2] = 0; // Resets Level Checker to 0
@@ -2611,67 +2623,14 @@ script 803 ENTER
  Restart;
 }
 
-//---------------------------------------------
-// FUNCTION: Get Experience for Each EXP Check
-//---------------------------------------------
-function int GetExperience (int RealExpGain, int ExpMultiFactor)
+//------------------------------
+// FUNCTION: Get ExpMultiFactor
+//------------------------------
+function int GetExpMultiFactor (void)
 {
- RealExpGain = RealExpGain * ExpMultiFactor / 100; // Randomizes some of the experience gained
- RealExpGain = RealExpGain * (48 + MiscellaneousVars[40]) / 48; // Get # of Deftness state
- RealExpGain = RealExpGain * MiscellaneousVars[90] / 100; // EXP Multiplier Option
- if (GameSkill() == SKILL_VERY_EASY) RealExpGain = RealExpGain * 25 / 8; // 312.5%
- else if (GameSkill() == SKILL_EASY) RealExpGain = RealExpGain * 5 / 2; // 250%
- else if (GameSkill() == SKILL_NORMAL) RealExpGain = RealExpGain * 15 / 8; // 187.5%
- else if (GameSkill() == SKILL_HARD) RealExpGain = RealExpGain * 5 / 4; // 125%
- else if (GameSkill() == SKILL_VERY_HARD) RealExpGain = RealExpGain * 7 / 8; // 87.5%
-
- if (CharacterClass == 2) // Only Flora can Equip the Pearly Corset [+30% EXP Bonus (or a 5% chance for a +45% bonus)]
- {
-  if (CheckActorInventory(1001,"PearlyCorset")) { if (random(1,100) < 6) { RealExpGain = RealExpGain * 145 / 100; } else { RealExpGain = RealExpGain * 130 / 100; } }
- }
- if (PowerupRunning[7] == 1) { if (random(1,100) > 67) { RealExpGain = RealExpGain * 4 / 3; } else { RealExpGain = RealExpGain * 7 / 6; } } // Divine Avatar [+16.67% EXP, (33% chance of +33.33% EXP instead]
-
- return RealExpGain;
-}
-
-// Experience Adding [TODO: thing sorting needs to be sped up a lot >____>;]
-
-script "ExperienceGain" ENTER
-{
- int C1, I1, Exp1, Exp2, ExpMultiFactor, RealExpGain, SecretExpMulti;
- int MonIndChe1, MonIndChe2, MonIndChe3, MonIndChe4, MonIndChe5;
- int MonIndChe6, MonIndChe7, MonIndChe8, MonIndChe9, MonIndChe10;
- int MonIndChe11, MonIndChe12, MonIndChe13, MonIndChe14, MonIndChe15;
- int MonIndChe16, MonIndChe17, MonIndChe18, MonIndChe19, MonIndChe20;
-
- MiscellaneousVars[136] = GetCVar("dvds_expcheckruns");
-
- // C1 is the base entry being analyzed by the code for accumalating monsterIDs. It adds up to 16 additional indexes based from C1 + various amounts. The more used the more process power used. 4 is what I used here.
- for (C1 = 0; C1 < 120; C1 += MiscellaneousVars[136])
- {
-  if (MiscellaneousVars[136] >= 1) MonIndChe1 = ThingCountName(MonsterID[C1+0],0) - ThingCountName(MonsterID[C1+0],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 2) MonIndChe2 = ThingCountName(MonsterID[C1+1],0) - ThingCountName(MonsterID[C1+1],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 3) MonIndChe3 = ThingCountName(MonsterID[C1+2],0) - ThingCountName(MonsterID[C1+2],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 4) MonIndChe4 = ThingCountName(MonsterID[C1+3],0) - ThingCountName(MonsterID[C1+3],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 5) MonIndChe5 = ThingCountName(MonsterID[C1+4],0) - ThingCountName(MonsterID[C1+4],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 6) MonIndChe6 = ThingCountName(MonsterID[C1+5],0) - ThingCountName(MonsterID[C1+5],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 7) MonIndChe7 = ThingCountName(MonsterID[C1+6],0) - ThingCountName(MonsterID[C1+6],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 8) MonIndChe8 = ThingCountName(MonsterID[C1+7],0) - ThingCountName(MonsterID[C1+7],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 9) MonIndChe9 = ThingCountName(MonsterID[C1+8],0) - ThingCountName(MonsterID[C1+8],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 10) MonIndChe10 = ThingCountName(MonsterID[C1+9],0) - ThingCountName(MonsterID[C1+9],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 11) MonIndChe11 = ThingCountName(MonsterID[C1+10],0) - ThingCountName(MonsterID[C1+10],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 12) MonIndChe12 = ThingCountName(MonsterID[C1+11],0) - ThingCountName(MonsterID[C1+11],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 13) MonIndChe13 = ThingCountName(MonsterID[C1+12],0) - ThingCountName(MonsterID[C1+12],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 14) MonIndChe14 = ThingCountName(MonsterID[C1+13],0) - ThingCountName(MonsterID[C1+13],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 15) MonIndChe15 = ThingCountName(MonsterID[C1+14],0) - ThingCountName(MonsterID[C1+14],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 16) MonIndChe16 = ThingCountName(MonsterID[C1+15],0) - ThingCountName(MonsterID[C1+15],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 17) MonIndChe17 = ThingCountName(MonsterID[C1+16],0) - ThingCountName(MonsterID[C1+16],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 18) MonIndChe18 = ThingCountName(MonsterID[C1+17],0) - ThingCountName(MonsterID[C1+17],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 19) MonIndChe19 = ThingCountName(MonsterID[C1+18],0) - ThingCountName(MonsterID[C1+18],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 20) MonIndChe20 = ThingCountName(MonsterID[C1+19],0) - ThingCountName(MonsterID[C1+19],1000); // don't count friendlies
-
+  int ExpMultiFactor, Exp1, Exp2;
   // Gets the Experience Multiplication Factor [Part 1]
-  ExpMultiFactor = (Random (90, 120));
+  ExpMultiFactor = Random(90,120);
   if (CharacterClass == 2) // Flora has more options due to her 200 Max Level cap [although slightly more spread out]
   {
    if (PlayerLevel < 40) ExpMultiFactor += PlayerLevel * 17 / 16; // +6.25%
@@ -2834,9 +2793,9 @@ script "ExperienceGain" ENTER
    }
    if (Exp1 == 1100) Exp2 = (Exp1 - 1100) * 26 / 25; // +4% Exp Bonus // DV1M00
    if (Exp1 == 1101) Exp2 = (Exp1 - 1100) * 100 / 100; // Monster Bonus [100%]
-   if (Exp1 == 1102) Exp2 = (Exp1 - 1100) * 110 / 100; // Monster Bonus [110%]
-   if (Exp1 == 1103) Exp2 = (Exp1 - 1100) * 122 / 100; // Monster Bonus [122%]
-   if (Exp1 == 1104) Exp2 = (Exp1 - 1100) * 146 / 100; // Monster Bonus [146%]
+   if (Exp1 == 1102) Exp2 = (Exp1 - 1100) * 120 / 100; // Monster Bonus [120%]
+   if (Exp1 == 1103) Exp2 = (Exp1 - 1100) * 144 / 100; // Monster Bonus [144%]
+   if (Exp1 == 1104) Exp2 = (Exp1 - 1100) * 192 / 100; // Monster Bonus [192%]
 
         if (Exp1 == 31) Exp2 = Exp2 * 5 / 2; // [250%]
    else if (Exp1 == 32) Exp2 = Exp2 * 15 / 4; // [375%]
@@ -2856,22 +2815,22 @@ script "ExperienceGain" ENTER
    if (Exp1 == 1200) Exp2 = (Exp1 - 1200) * 26 / 25; // +4% Exp Bonus // Prolouge - The Mysterious Cave
    // Earth-type Levels
    if (Exp1 == 1201) Exp2 = (Exp1 - 1200) * 100 / 100; // Monster Bonus // MAP01 - Entryway Pass
-   if (Exp1 == 1202) Exp2 = (Exp1 - 1200) * 103 / 100; // Monster Bonus // MAP02 - Mutagen
-   if (Exp1 == 1203) Exp2 = (Exp1 - 1200) * 106 / 100; // Monster Bonus // MAP03 - Crouching Demon, Hidden Archvile
-   if (Exp1 == 1204) Exp2 = (Exp1 - 1200) * 110 / 100; // Monster Bonus // MAP04 - Minas Morgul
-   if (Exp1 == 1205) Exp2 = (Exp1 - 1200) * 113 / 100; // Monster Bonus // MAP05 - Eagle's Nest
-   if (Exp1 == 1206) Exp2 = (Exp1 - 1200) * 117 / 100; // Monster Bonus // MAP05B - The Manliest Level Ever
-   if (Exp1 == 1207) Exp2 = (Exp1 - 1200) * 121 / 100; // Monster Bonus // MAP06 - Stargate
-   if (Exp1 == 1208) Exp2 = (Exp1 - 1200) * 125 / 100; // Monster Bonus // MAP07 - The Desert Temple
+   if (Exp1 == 1202) Exp2 = (Exp1 - 1200) * 106 / 100; // Monster Bonus // MAP02 - Mutagen
+   if (Exp1 == 1203) Exp2 = (Exp1 - 1200) * 112 / 100; // Monster Bonus // MAP03 - Crouching Demon, Hidden Archvile
+   if (Exp1 == 1204) Exp2 = (Exp1 - 1200) * 120 / 100; // Monster Bonus // MAP04 - Minas Morgul
+   if (Exp1 == 1205) Exp2 = (Exp1 - 1200) * 126 / 100; // Monster Bonus // MAP05 - Eagle's Nest
+   if (Exp1 == 1206) Exp2 = (Exp1 - 1200) * 134 / 100; // Monster Bonus // MAP05B - The Manliest Level Ever
+   if (Exp1 == 1207) Exp2 = (Exp1 - 1200) * 142 / 100; // Monster Bonus // MAP06 - Stargate
+   if (Exp1 == 1208) Exp2 = (Exp1 - 1200) * 150 / 100; // Monster Bonus // MAP07 - The Desert Temple
    // Hell Levels
-   if (Exp1 == 1209) Exp2 = (Exp1 - 1200) * 139 / 100; // Monster Bonus // MAP08 - The Unholy Cathedral
-   if (Exp1 == 1210) Exp2 = (Exp1 - 1200) * 155 / 100; // Monster Bonus // MAP09 - You Shall Not Pass!
-   if (Exp1 == 1211) Exp2 = (Exp1 - 1200) * 174 / 100; // Monster Bonus // MAP10 - Hell's Vendetta
-   if (Exp1 == 1212) Exp2 = (Exp1 - 1200) * 196 / 100; // Monster Bonus // MAP10B - attedneV s'lleH
+   if (Exp1 == 1209) Exp2 = (Exp1 - 1200) * 178 / 100; // Monster Bonus // MAP08 - The Unholy Cathedral
+   if (Exp1 == 1210) Exp2 = (Exp1 - 1200) * 210 / 100; // Monster Bonus // MAP09 - You Shall Not Pass!
+   if (Exp1 == 1211) Exp2 = (Exp1 - 1200) * 248 / 100; // Monster Bonus // MAP10 - Hell's Vendetta
+   if (Exp1 == 1212) Exp2 = (Exp1 - 1200) * 292 / 100; // Monster Bonus // MAP10B - attedneV s'lleH
    // Extra Levels
    if (Exp1 == 1213) Exp2 = 0; // NO Exp Bonus since it's Heaven, foo. :P // MAP11 - St. Peter's Gate
-   if (Exp1 == 1214) Exp2 = (Exp1 - 1200) * 120 / 100; // MAP12 - "The Wings of The Maiar" [DVI combined level remake]
-   if (Exp1 == 1215) Exp2 = (Exp1 - 1200) * 196 / 100; // MAP10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
+   if (Exp1 == 1214) Exp2 = (Exp1 - 1200) * 140 / 100; // MAP12 - "The Wings of The Maiar" [DVI combined level remake]
+   if (Exp1 == 1215) Exp2 = (Exp1 - 1200) * 292 / 100; // MAP10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
    // Ending Levels
    if (Exp1 == 1216) Exp2 = 0; // NO Exp Bonus in ending levels // MAP13 - The Return Home
    if (Exp1 == 1217) Exp2 = 0; // NO Exp Bonus in ending levels // ENDMAP - Credits and Cast
@@ -2883,7 +2842,73 @@ script "ExperienceGain" ENTER
   }
 
   ExpMultiFactor += Exp2;
-  // PrintBold(s:"ModType: ",d:ModType,s:"\nExp1: ",d:Exp1,s:"\nExp2: ",d:Exp2,s:"\nExpMultiFactor: ",d:ExpMultiFactor);
+
+  //PrintBold(s:"ModType: ",d:ModType,s:"\nExp1: ",d:Exp1,s:"\nExp2: ",d:Exp2,s:"\nExpMultiFactor: ",d:ExpMultiFactor);
+  return ExpMultiFactor;
+}
+
+//---------------------------------------------
+// FUNCTION: Get Experience for Each EXP Check
+//---------------------------------------------
+function int GetExperience (int RealExpGain, int ExpMultiFactor)
+{
+ RealExpGain = RealExpGain * ExpMultiFactor / 100; // Randomizes some of the experience gained
+ RealExpGain = RealExpGain * (48 + MiscellaneousVars[40]) / 48; // Get # of Deftness state
+ RealExpGain = RealExpGain * MiscellaneousVars[90] / 100; // EXP Multiplier Option
+ if (GameSkill() == SKILL_VERY_EASY) RealExpGain = RealExpGain * 25 / 8; // 312.5%
+ else if (GameSkill() == SKILL_EASY) RealExpGain = RealExpGain * 5 / 2; // 250%
+ else if (GameSkill() == SKILL_NORMAL) RealExpGain = RealExpGain * 15 / 8; // 187.5%
+ else if (GameSkill() == SKILL_HARD) RealExpGain = RealExpGain * 5 / 4; // 125%
+ else if (GameSkill() == SKILL_VERY_HARD) RealExpGain = RealExpGain * 7 / 8; // 87.5%
+
+ if (CharacterClass == 2) // Only Flora can Equip the Pearly Corset [+30% EXP Bonus (or a 5% chance for a +45% bonus)]
+ {
+  if (CheckActorInventory(1001,"PearlyCorset")) { if (random(1,100) < 6) { RealExpGain = RealExpGain * 145 / 100; } else { RealExpGain = RealExpGain * 130 / 100; } }
+ }
+ if (PowerupRunning[7] == 1) { if (random(1,100) > 67) { RealExpGain = RealExpGain * 7 / 6; } else { RealExpGain = RealExpGain * 13 / 12; } } // Divine Avatar [+8.333% EXP, (33% chance of +16.67% EXP instead]
+
+ return RealExpGain;
+}
+
+// Experience Adding [TODO: thing sorting needs to be sped up a lot >____>;]
+
+script "ExperienceGain" (void) //ENTER
+{
+ int C1, I1, Exp1, Exp2, ExpMultiFactor, RealExpGain;
+
+ int MonIndChe1, MonIndChe2, MonIndChe3, MonIndChe4, MonIndChe5;
+ int MonIndChe6, MonIndChe7, MonIndChe8, MonIndChe9, MonIndChe10;
+ int MonIndChe11, MonIndChe12, MonIndChe13, MonIndChe14, MonIndChe15;
+ int MonIndChe16, MonIndChe17, MonIndChe18, MonIndChe19, MonIndChe20;
+
+ MiscellaneousVars[136] = GetCVar("dvds_expcheckruns");
+
+ // C1 is the base entry being analyzed by the code for accumalating monsterIDs. It adds up to 20 additional indexes based from C1 + various amounts. The more used the more process power used. 4 is the default setting.
+ for (C1 = 0; C1 < 120; C1 += MiscellaneousVars[136])
+ {
+  if (MiscellaneousVars[136] >= 1) MonIndChe1 = ThingCountName(MonsterID[C1+0],0) - ThingCountName(MonsterID[C1+0],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 2) MonIndChe2 = ThingCountName(MonsterID[C1+1],0) - ThingCountName(MonsterID[C1+1],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 3) MonIndChe3 = ThingCountName(MonsterID[C1+2],0) - ThingCountName(MonsterID[C1+2],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 4) MonIndChe4 = ThingCountName(MonsterID[C1+3],0) - ThingCountName(MonsterID[C1+3],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 5) MonIndChe5 = ThingCountName(MonsterID[C1+4],0) - ThingCountName(MonsterID[C1+4],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 6) MonIndChe6 = ThingCountName(MonsterID[C1+5],0) - ThingCountName(MonsterID[C1+5],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 7) MonIndChe7 = ThingCountName(MonsterID[C1+6],0) - ThingCountName(MonsterID[C1+6],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 8) MonIndChe8 = ThingCountName(MonsterID[C1+7],0) - ThingCountName(MonsterID[C1+7],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 9) MonIndChe9 = ThingCountName(MonsterID[C1+8],0) - ThingCountName(MonsterID[C1+8],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 10) MonIndChe10 = ThingCountName(MonsterID[C1+9],0) - ThingCountName(MonsterID[C1+9],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 11) MonIndChe11 = ThingCountName(MonsterID[C1+10],0) - ThingCountName(MonsterID[C1+10],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 12) MonIndChe12 = ThingCountName(MonsterID[C1+11],0) - ThingCountName(MonsterID[C1+11],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 13) MonIndChe13 = ThingCountName(MonsterID[C1+12],0) - ThingCountName(MonsterID[C1+12],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 14) MonIndChe14 = ThingCountName(MonsterID[C1+13],0) - ThingCountName(MonsterID[C1+13],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 15) MonIndChe15 = ThingCountName(MonsterID[C1+14],0) - ThingCountName(MonsterID[C1+14],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 16) MonIndChe16 = ThingCountName(MonsterID[C1+15],0) - ThingCountName(MonsterID[C1+15],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 17) MonIndChe17 = ThingCountName(MonsterID[C1+16],0) - ThingCountName(MonsterID[C1+16],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 18) MonIndChe18 = ThingCountName(MonsterID[C1+17],0) - ThingCountName(MonsterID[C1+17],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 19) MonIndChe19 = ThingCountName(MonsterID[C1+18],0) - ThingCountName(MonsterID[C1+18],1000); // don't count friendlies
+  if (MiscellaneousVars[136] >= 20) MonIndChe20 = ThingCountName(MonsterID[C1+19],0) - ThingCountName(MonsterID[C1+19],1000); // don't count friendlies
+
+  // Get the EXPMultiplier
+  ExpMultiFactor = GetExpMultiFactor();
 
   SetHudSize(640,480,0);
   if (PlayerLevel < LevelCap)
@@ -3123,7 +3148,7 @@ script "ExperienceGain" ENTER
 // Seperated Levelup Code
 script 884 ENTER // (void)
 {
- int C1, I1, C2, I2, Z1, Z2, G1, G2, G3, Exp1, Exp2, ExpMultiFactor, RealExpGain, SecretExpMulti, HPBoost, MPBoost, MapCheck, RandomizedStatChance, RandomizedStatChance2;
+ int C1, I1, C2, I2, Z1, Z2, G1, G2, G3, Exp1, Exp2, ExpMultiFactor, RealExpGain, HPBoost, MPBoost, MapCheck, RandomizedStatChance, RandomizedStatChance2;
 
   //*******************
   //** LEVEL UP CODE **
@@ -3139,98 +3164,67 @@ script 884 ENTER // (void)
     //*Aeon Point Increase*
     //*********************
     // MiscellaneousVars[25] = Aeon Points
-    if (PlayerLevel != 0) G1 = PlayerLevel % 20;
-    if (G1 == 0)
+    if (PlayerLevel != 0)
     {
-     if (PlayerLevel > 100)
+     G1 = PlayerLevel % 20;
+     if (G1 == 0) C1 = 0;
+     else if (G1 == 4) C1 = 1;
+     else if (G1 == 8) C1 = 1;
+     else if (G1 == 12) C1 = 1;
+     else if (G1 == 16) C1 = 1;
+     else C1 = 2;
+
+     if (C1 == 0)
      {
-      if (random(1,100) < 16) MiscellaneousVars[25] += 8; else MiscellaneousVars[25] += 5;
-      if (random(1,100) < 26) MiscellaneousVars[25] += random(3,5);
-     }
-     else
-     {
-      if (random(1,100) < 16) MiscellaneousVars[25] += 5; else MiscellaneousVars[25] += 3;
-      if (random(1,100) < 26) MiscellaneousVars[25] += random(1,3);
-     }
-    }
-    else
-    if (G1 == 4)
-    {
-     if (PlayerLevel > 100)
-     {
-      if (random(1,100) < 16) MiscellaneousVars[25] += 3; else MiscellaneousVars[25] += 2;
-      if (random(1,100) < 6) MiscellaneousVars[25] += random(1,2);
-     }
-     else
-     {
-      if (random(1,100) < 16) MiscellaneousVars[25] += 2; else MiscellaneousVars[25] += 1;
-      if (random(1,100) < 6) MiscellaneousVars[25] += random(0,1);
-     }
-    }
-    else
-    if (G1 == 8)
-    {
-     if (PlayerLevel > 100)
-     {
-      if (random(1,100) < 16) MiscellaneousVars[25] += 3; else MiscellaneousVars[25] += 2;
-      if (random(1,100) < 6) MiscellaneousVars[25] += random(1,2);
-     }
-     else
-     {
-      if (random(1,100) < 16) MiscellaneousVars[25] += 2; else MiscellaneousVars[25] += 1;
-      if (random(1,100) < 6) MiscellaneousVars[25] += random(0,1);
-     }
-    }
-    else
-    if (G1 == 12)
-    {
-     if (PlayerLevel > 100)
-     {
-      if (random(1,100) < 16) MiscellaneousVars[25] += 3; else MiscellaneousVars[25] += 2;
-      if (random(1,100) < 6) MiscellaneousVars[25] += random(1,2);
-     }
-     else
-     {
-      if (random(1,100) < 16) MiscellaneousVars[25] += 2; else MiscellaneousVars[25] += 1;
-      if (random(1,100) < 6) MiscellaneousVars[25] += random(0,1);
-     }
-    }
-    else
-    if (G1 == 16)
-    {
-     if (PlayerLevel > 100)
-     {
-      if (random(1,100) < 16) MiscellaneousVars[25] += 3; else MiscellaneousVars[25] += 2;
-      if (random(1,100) < 6) MiscellaneousVars[25] += random(1,2);
-     }
-     else
-     {
-      if (random(1,100) < 16) MiscellaneousVars[25] += 2; else MiscellaneousVars[25] += 1;
-      if (random(1,100) < 6) MiscellaneousVars[25] += random(0,1);
-     }
-    }
-    else
-    {
-     if (PlayerLevel > 100)
-     {
-      if (random(1,3) != 3)
+      if (PlayerLevel > 100)
       {
-       if (random(1,100) < 16) MiscellaneousVars[25] += 3; else MiscellaneousVars[25] += 2;
+       if (random(1,100) < 16) MiscellaneousVars[25] += 8; else MiscellaneousVars[25] += 5;
+       if (random(1,100) < 26) MiscellaneousVars[25] += random(3,5);
+      }
+      else
+      {
+       if (random(1,100) < 16) MiscellaneousVars[25] += 5; else MiscellaneousVars[25] += 3;
+       if (random(1,100) < 26) MiscellaneousVars[25] += random(1,3);
       }
      }
      else
+     if (C1 == 1)
      {
-      if (random(1,3) == 1)
+      if (PlayerLevel > 100)
+      {
+       if (random(1,100) < 16) MiscellaneousVars[25] += 3; else MiscellaneousVars[25] += 2;
+       if (random(1,100) < 6) MiscellaneousVars[25] += random(1,2);
+      }
+      else
       {
        if (random(1,100) < 16) MiscellaneousVars[25] += 2; else MiscellaneousVars[25] += 1;
+       if (random(1,100) < 6) MiscellaneousVars[25] += random(0,1);
+      }
+     }
+     else
+     if (C1 == 2)
+     {
+      if (PlayerLevel > 100)
+      {
+       if (random(1,3) != 3)
+       {
+        if (random(1,100) < 16) MiscellaneousVars[25] += 3; else MiscellaneousVars[25] += 2;
+       }
+      }
+      else
+      {
+       if (random(1,3) == 1)
+       {
+        if (random(1,100) < 16) MiscellaneousVars[25] += 2; else MiscellaneousVars[25] += 1;
+       }
       }
      }
     }
 
-    int LevelAddMaxMana = 0;
     //***************
     //*Mana Increase*
     //***************
+    int LevelAddMaxMana = 0;
     if (GameSkill() == SKILL_VERY_EASY)
     {    
      LevelAddMaxMana = Random(5,10);
@@ -3534,7 +3528,7 @@ script 884 ENTER // (void)
    }
   }
 
-  Delay(1);
+ Delay(1);
  Restart;
 }
 
@@ -22194,4 +22188,87 @@ script "MaxHPDropChance" (void)
  // PrintBold(d:roll,s:"/",d:Chance);
  SetResultValue(0);
  if (roll <= Chance) SetResultValue(1);
+}
+
+// Important Script for Future use [possibly plans to remove the ID-based exp system and just make it into a seperate script
+script "AddEXP" (int baseamount, int flags)
+{
+ int baseexp, finalexpamount, overkillhp, overkillhp2;
+ int Exp1, Exp2, ExpMultiFactor, RealExpGain;
+
+ if (CheckFlag(0,"FRIENDLY") == 1)
+ {
+  if (flags & 1) { }
+  else terminate; // Any "FRIENDLY" flagged monster who runs the script will not get beyond this point UNLESS they have bit 1 enabled.
+ }
+
+ // Check Base Experience to see if it's a fixed amount or if it should be based on spawnhealth/user_MaxHP
+ if (baseamount == -1) // ALWAYS use SpawnHealth and not user_MaxHP [if you always want it based only on their base HP and not their recalculated HP]
+ {
+  baseexp = GetActorProperty(0,APROP_SpawnHealth);
+ }
+ else
+ if (baseamount == 0) // Checks for user_MaxHP first, but will use SpawnHealth if it's not been set
+ {
+  if (GetUserVariable(0,"user_MaxHP") <= 0)
+  {
+   baseexp = GetActorProperty(0,APROP_SpawnHealth);
+  }
+  else
+  {
+   baseexp = GetUserVariable(0,"user_MaxHP");
+  }
+ }
+ else
+ if (baseamount > 0) // Sets the EXP to the defined value as a fixed amount
+ {
+  baseexp = baseamount;
+ }
+
+ finalexpamount = baseexp;
+
+ // Check for Fast Monsters setting
+ if (GetCVar("sv_fastmonsters") == 1) finalexpamount = finalexpamount * 11 / 8; // [+37.5%]
+
+ // Check Proper Flags
+ if (CheckFlag(0,"STEALTH") == 1) finalexpamount = finalexpamount * 2;	// STEALTH = [+100%]
+
+ if (GetUserVariable(0,"user_MaxHP") <= 0) { overkillhp = GetActorProperty(0,APROP_SpawnHealth) * -1; }
+ else { overkillhp = GetUserVariable(0,"user_MaxHP") * -1; }
+
+ if (GetUserVariable(0,"user_MaxHP") <= 0) { overkillhp2 = GetActorProperty(0,APROP_SpawnHealth) * -4; }
+ else { overkillhp2 = GetUserVariable(0,"user_MaxHP") * -4; }
+
+ //PrintBold(d:GetActorProperty(0,APROP_Health),s:" / ",d:overkillhp);
+ if (GetActorProperty(0,APROP_Health) <= overkillhp) { finalexpamount = finalexpamount * 9 / 8; }	// Overkilled [+25%]
+ if (GetActorProperty(0,APROP_Health) <= overkillhp2) { finalexpamount = finalexpamount * 9 / 8; }	// Super-Overkilled [+25%]
+
+ ExpMultiFactor = GetExpMultiFactor(); // FUNCTION CALL
+ finalexpamount = GetExperience(finalexpamount,ExpMultiFactor); // FUNCTION CALL
+
+ if (finalexpamount < 1) finalexpamount = 1;
+ Experience += finalexpamount;
+
+ SetHudSize(640,480,0);
+ if (GetActorProperty(0,APROP_Health) <= overkillhp2)
+ {
+  SetActivator(0,AAPTR_PLAYER1);
+  HudMessage(s:"+",d:finalexpamount,s:" EXP";0,3418,cr_gold,51.0,6.0,1.5);
+  HudMessage(s:"\cjOVERKILL!";0,3421,cr_red,51.0,15.0,1.5);
+ }
+ else
+ {
+  if (GetActorProperty(0,APROP_Health) <= overkillhp)
+  {
+   SetActivator(0,AAPTR_PLAYER1);
+   HudMessage(s:"+",d:finalexpamount,s:" EXP";0,3418,cr_gold,51.0,6.0,1.5);
+   HudMessage(s:"\cgOVERKILL!";0,3421,cr_red,51.0,15.0,1.5);
+  }
+  else
+  {
+   SetActivator(0,AAPTR_PLAYER1);
+   HudMessage(s:"+",d:finalexpamount,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5);
+   HudMessage(s:"";0,3421,cr_red,51.0,11.0,1.5);
+  }
+ }
 }
