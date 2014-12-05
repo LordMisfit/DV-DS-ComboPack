@@ -370,7 +370,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [146] is storage for Level Up Stat Multiplier
 // [147] is storage for Starting HP/Mana Factor
 // [148] is storage for Starting Other Stats' Factor
-	// [149+] are undefined so far :P
+// [149] checks if health is 0 after an initial start [for certain situations done by wads like resurgance >___>;]
+// [150] saves armor bits [Flora]
+	// [151+] are undefined so far :P
 
 
 global int 22:DVIIGameFlags[]; // ***ARRAY***
@@ -11470,6 +11472,16 @@ script 833 ENTER
  int staminaregenbase;
  int staminaregenfinal;
  int buttons;
+ int haveruinousshield;
+
+ if (GetActorProperty(1001,APROP_Health) <= 0) // Sets a special flag to check for a "pistol reset" like in resurgance
+ {
+  if (MiscellaneousVars[149] != 1)
+  {
+   MiscellaneousVars[149] = 1;
+   //PrintBold(s:"393");
+  }
+ }
 
  AeonPointStartLevel = GetCVAR("dvds_aeonstartlvl");
 
@@ -11517,6 +11529,7 @@ script 833 ENTER
 
  if (ClassCheck == 1) // Will run the check only once at the beginning of a new game
  {
+  //PrintBold(d:ClassCheck);
   // Checks inital HP value of the player in order to assess the right class #. If you want to try to define extra characters, give the character's SpawnHealth a value that doesn't match below.
   if(GetActorProperty(1001,APROP_Health) == 103) CharacterClass = 0; // 0 is Deggaris
   else if(GetActorProperty(1001,APROP_Health) == 81) CharacterClass = 1; // 1 is Illucia
@@ -13127,22 +13140,56 @@ script 833 ENTER
   // These 11 items are all part of a bitfield
   // "FloraArmorClass" is mainly for a display purpose on the HUD than it having an actual affect on the damage taken.
   // The "PermenantArmorBits[#]" items in the section below are the actual mechanic that gives her resistances to damage].
-  if (CheckActorInventory(1001,"SafeTeaShoes") > 0) { ArmorBits += 1; FloraArmorClass += 3; } // Item 1
-  if (CheckActorInventory(1001,"PearlyCorset") > 0) { ArmorBits += 2; FloraArmorClass += 7; } // Item 2
-  if (CheckActorInventory(1001,"WaterFlyingDress") > 0) { ArmorBits += 4; FloraArmorClass += 8; } // Item 3
-  if (CheckActorInventory(1001,"EvenstarNecklace") > 0) { ArmorBits += 8; FloraArmorClass += 2; } // Item 4
-  if (CheckActorInventory(1001,"CloakofEvasion") > 0) { ArmorBits += 16; FloraArmorClass += 4; } // Item 5
-  if (CheckActorInventory(1001,"AnubisCufflinks") > 0) { ArmorBits += 32; FloraArmorClass += 5; } // Item 6
-  if (CheckActorInventory(1001,"KissaBra") > 0) { ArmorBits += 64; FloraArmorClass += 6; } // Item 7
-  if (CheckActorInventory(1001,"DivineShield") > 0) { ArmorBits += 128; FloraArmorClass += 16; } // Item 8
-  if (CheckActorInventory(1001,"BalrogRing") > 0) { ArmorBits += 256; FloraArmorClass += 2; } // Item 9
-  if (CheckActorInventory(1001,"DoveRibbon") > 0) { ArmorBits += 512; FloraArmorClass += 9; } // Item 10
-  if (CheckActorInventory(1001,"FalconKnifeEarrings") > 0) { ArmorBits += 1024; FloraArmorClass += 5; } // Item 11
+  if (MiscellaneousVars[149] != 1)
+  {
+   if (CheckActorInventory(1001,"SafeTeaShoes") > 0) { ArmorBits += 1; FloraArmorClass += 3; } // Item 1
+   if (CheckActorInventory(1001,"PearlyCorset") > 0) { ArmorBits += 2; FloraArmorClass += 7; } // Item 2
+   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) { ArmorBits += 4; FloraArmorClass += 8; } // Item 3
+   if (CheckActorInventory(1001,"EvenstarNecklace") > 0) { ArmorBits += 8; FloraArmorClass += 2; } // Item 4
+   if (CheckActorInventory(1001,"CloakofEvasion") > 0) { ArmorBits += 16; FloraArmorClass += 4; } // Item 5
+   if (CheckActorInventory(1001,"AnubisCufflinks") > 0) { ArmorBits += 32; FloraArmorClass += 5; } // Item 6
+   if (CheckActorInventory(1001,"KissaBra") > 0) { ArmorBits += 64; FloraArmorClass += 6; } // Item 7
+   if (CheckActorInventory(1001,"DivineShield") > 0) { ArmorBits += 128; FloraArmorClass += 16; } // Item 8
+   if (CheckActorInventory(1001,"BalrogRing") > 0) { ArmorBits += 256; FloraArmorClass += 2; } // Item 9
+   if (CheckActorInventory(1001,"DoveRibbon") > 0) { ArmorBits += 512; FloraArmorClass += 9; } // Item 10
+   if (CheckActorInventory(1001,"FalconKnifeEarrings") > 0) { ArmorBits += 1024; FloraArmorClass += 5; } // Item 11
+   MiscellaneousVars[150] = ArmorBits;
+   if (CheckActorInventory(1001,"RuinousShield") > 0) MiscellaneousVars[150] += 2048;
+   if (CheckActorInventory(1001,"SauronHelmet") > 0) MiscellaneousVars[150] += 4096;
+   if (CheckActorInventory(1001,"SauronGauntlets") > 0) MiscellaneousVars[150] += 8192;
+   if (CheckActorInventory(1001,"SauronGauntletsIllucia") > 0) MiscellaneousVars[150] += 16384;
+   if (CheckActorInventory(1001,"SauronGauntletsFlora") > 0) MiscellaneousVars[150] += 32768;
+   if (CheckActorInventory(1001,"TheOneRing") > 0) MiscellaneousVars[150] += 65536;
+  }
+  else // If detected from a resurgence-style pistol-restart?
+  {
+   ArmorBits = MiscellaneousVars[150];
+   PrintBold(d:ArmorBits);
+   if (ArmorBits & 1) { GiveActorInventory(1001, "SafeTeaShoes", 1); FloraArmorClass += 3; }
+   if (ArmorBits & 2) { GiveActorInventory(1001, "PearlyCorset", 1); FloraArmorClass += 7; }
+   if (ArmorBits & 4) { GiveActorInventory(1001, "WaterFlyingDress", 1); FloraArmorClass += 8; }
+   if (ArmorBits & 8) { GiveActorInventory(1001, "EvenstarNecklace", 1); FloraArmorClass += 2; }
+   if (ArmorBits & 16) { GiveActorInventory(1001, "CloakofEvasion", 1); FloraArmorClass += 4; }
+   if (ArmorBits & 32) { GiveActorInventory(1001, "AnubisCufflinks", 1); FloraArmorClass += 5; }
+   if (ArmorBits & 64) { GiveActorInventory(1001, "KissaBra", 1); FloraArmorClass += 6; }
+   if (ArmorBits & 128) { GiveActorInventory(1001, "DivineShield", 1); FloraArmorClass += 16; }
+   if (ArmorBits & 256) { GiveActorInventory(1001, "BalrogRing", 1); FloraArmorClass += 2; }
+   if (ArmorBits & 512) { GiveActorInventory(1001, "DoveRibbon", 1); FloraArmorClass += 9; }
+   if (ArmorBits & 1024) { GiveActorInventory(1001, "FalconKnifeEarrings", 1); FloraArmorClass += 5; }
+   if (MiscellaneousVars[150] & 2048) { GiveActorInventory(1001, "RuinousShield", 1); }
+   if (MiscellaneousVars[150] & 4096) { GiveActorInventory(1001, "SauronHelmet", 1); }
+   if (MiscellaneousVars[150] & 8192) { GiveActorInventory(1001, "SauronGauntlets", 1); }
+   if (MiscellaneousVars[150] & 16384) { GiveActorInventory(1001, "SauronGauntletsIllucia", 1); }
+   if (MiscellaneousVars[150] & 32768) { GiveActorInventory(1001, "SauronGauntletsFlora", 1); }
+   if (MiscellaneousVars[150] & 65536) { GiveActorInventory(1001, "TheOneRing", 1); }
+  }
 
   // Ruinous Shield is Cursed, so it acts seperately. (do note the Cursed Shield gives penalties which are only called bonuses in a techincal sense)
   if (CheckActorInventory(1001,"RuinousShield") > 0) { GiveActorInventory(1001,"CursedShieldBonusATK", 1); FloraArmorClass = FloraArmorClass * 100 / 256; } else { TakeActorInventory(1001,"CursedShieldBonusATK", 1); } // Item 12
   if (CheckActorInventory(1001,"RuinousShield") > 0) { GiveActorInventory(1001,"CursedShieldBonusDEF", 1); FloraArmorClass = FloraArmorClass * 100 / 256; } else { TakeActorInventory(1001,"CursedShieldBonusDEF", 1); } // Item 12
 
+ if (GetActorProperty(1001,APROP_Health) > 0)
+ {
   str ArmorBitsItem;
   // REVISED: Changed If statements info a for block for the Armor Bitfield (7/3/12)
   if (ArmorBits != MiscellaneousVars[1]) // [1] is for checking Flora's Armor Bitfield so it doesn't have to run EVERY tic and lag the game too badly.
@@ -13158,6 +13205,11 @@ script 833 ENTER
    }
    MiscellaneousVars[1] = ArmorBits;
   }
+ }
+ else
+ {
+  MiscellaneousVars[1] = 0; // Resets to 0 on Death [because of Resurge.wad style pistol-resets :P]
+ }
 
   // Safe Tea Boots [25% chance of damagefloor/ironfeet guard during normal incursion of damage]
   // Cloak of Evasion [12.5% chance of damagefloor/ironfeet guard during normal incursion of damage]
@@ -13472,6 +13524,31 @@ script 833 ENTER
  }
 
 
+  // DQ-Style Seed System [DROPPED Versions only, naturally added Seeds/etc do not get despawned via this system]
+  // "MiscellaneousVars[29]" is for the Seed limit amount [to be used in more than one script]
+  if (GameSkill() == SKILL_VERY_EASY) MiscellaneousVars[29] = 128;
+  if (GameSkill() == SKILL_EASY) MiscellaneousVars[29] = 120;
+  if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[29] = 112;
+  if (GameSkill() == SKILL_HARD) MiscellaneousVars[29] = 104;
+  if (GameSkill() == SKILL_VERY_HARD) MiscellaneousVars[29] = 96;
+  if (ModType == 0) MiscellaneousVars[29] = MiscellaneousVars[29] * 4; // 4x the usual limits on Classic Doom 1/2
+
+  // "MiscellaneousVars[28]" is for the Seed of Skill limit amount [to be used in more than one script]
+  if (GameSkill() == SKILL_VERY_EASY) MiscellaneousVars[28] = 32;
+  if (GameSkill() == SKILL_EASY) MiscellaneousVars[28] = 30;
+  if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[28] = 28;
+  if (GameSkill() == SKILL_HARD) MiscellaneousVars[28] = 26;
+  if (GameSkill() == SKILL_VERY_HARD) MiscellaneousVars[28] = 24;
+  if (ModType == 0) MiscellaneousVars[29] = MiscellaneousVars[28] * 4; // 4x the usual limits on Classic Doom 1/2
+
+  // "MiscellaneousVars[26]" is for the Fygg limit amount [to be used in more than one script]
+  if (GameSkill() == SKILL_VERY_EASY) MiscellaneousVars[26] = 3;
+  if (GameSkill() == SKILL_EASY) MiscellaneousVars[26] = 3;
+  if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[26] = 2;
+  if (GameSkill() == SKILL_HARD) MiscellaneousVars[26] = 1;
+  if (GameSkill() == SKILL_VERY_HARD) MiscellaneousVars[26] = 1;
+  if (ModType == 0) MiscellaneousVars[29] = MiscellaneousVars[26] * 4; // 4x the usual limits on Classic Doom 1/2
+   
  //********************
  //**Level Up Bonuses**
  //********************
@@ -13481,8 +13558,10 @@ script 833 ENTER
  str LevelDefenseItem;
  str LevelSpeedItem;
 
- if (PlayerLevel != MiscellaneousVars[2]) // [2] is for checking Levels for level specfic boosts (so it doesn't have to run EVERY tic and lag the game too badly)
+ if (GetActorProperty(1001,APROP_Health) > 0)
  {
+  if (PlayerLevel != MiscellaneousVars[2]) // [2] is for checking Levels for level specfic boosts (so it doesn't have to run EVERY tic and lag the game too badly)
+  {
    for (i = 0; i < 201; i++)
    {
     if (CharacterClass == 0)
@@ -13518,33 +13597,8 @@ script 833 ENTER
     }
    }
    MiscellaneousVars[2] = PlayerLevel;
- }
+  }
 
-  // DQ-Style Seed System [DROPPED Versions only, naturally added Seeds/etc do not get despawned via this system]
-  // "MiscellaneousVars[29]" is for the Seed limit amount [to be used in more than one script]
-  if (GameSkill() == SKILL_VERY_EASY) MiscellaneousVars[29] = 128;
-  if (GameSkill() == SKILL_EASY) MiscellaneousVars[29] = 120;
-  if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[29] = 112;
-  if (GameSkill() == SKILL_HARD) MiscellaneousVars[29] = 104;
-  if (GameSkill() == SKILL_VERY_HARD) MiscellaneousVars[29] = 96;
-  if (ModType == 0) MiscellaneousVars[29] = MiscellaneousVars[29] * 4; // 4x the usual limits on Classic Doom 1/2
-
-  // "MiscellaneousVars[28]" is for the Seed of Skill limit amount [to be used in more than one script]
-  if (GameSkill() == SKILL_VERY_EASY) MiscellaneousVars[28] = 32;
-  if (GameSkill() == SKILL_EASY) MiscellaneousVars[28] = 30;
-  if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[28] = 28;
-  if (GameSkill() == SKILL_HARD) MiscellaneousVars[28] = 26;
-  if (GameSkill() == SKILL_VERY_HARD) MiscellaneousVars[28] = 24;
-  if (ModType == 0) MiscellaneousVars[29] = MiscellaneousVars[28] * 4; // 4x the usual limits on Classic Doom 1/2
-
-  // "MiscellaneousVars[26]" is for the Fygg limit amount [to be used in more than one script]
-  if (GameSkill() == SKILL_VERY_EASY) MiscellaneousVars[26] = 3;
-  if (GameSkill() == SKILL_EASY) MiscellaneousVars[26] = 3;
-  if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[26] = 2;
-  if (GameSkill() == SKILL_HARD) MiscellaneousVars[26] = 1;
-  if (GameSkill() == SKILL_VERY_HARD) MiscellaneousVars[26] = 1;
-  if (ModType == 0) MiscellaneousVars[29] = MiscellaneousVars[26] * 4; // 4x the usual limits on Classic Doom 1/2
-   
   // REVISED: Changed If statements info a for block for the AGL Seed Bitfield (7/3/12)
   str AGLSeedItem;
   // "MiscellaneousVars[31]" is for the number of Seeds of Agility carried by your character [Speed]
@@ -13957,8 +14011,33 @@ script 833 ENTER
 
   // Hades Elemental's Eye [?]
   // Hades Overlord's Eye [?]
- // End of Checking Hellcore Weapon Levels
-
+  // End of Checking Hellcore Weapon Levels
+ }
+ else
+ {
+  MiscellaneousVars[2] = 0; // Reset Level Check
+  MiscellaneousVars[41] = 0; // Reset Agility Check
+  MiscellaneousVars[42] = 0;
+  MiscellaneousVars[43] = 0;
+  MiscellaneousVars[44] = 0;
+  MiscellaneousVars[45] = 0;
+  MiscellaneousVars[46] = 0;
+  MiscellaneousVars[113] = 0;
+  MiscellaneousVars[114] = 0;
+  MiscellaneousVars[115] = 0;
+  MiscellaneousVars[116] = 0;
+  MiscellaneousVars[117] = 0;
+  MiscellaneousVars[118] = 0;
+  MiscellaneousVars[119] = 0;
+  MiscellaneousVars[120] = 0;
+  MiscellaneousVars[121] = 0;
+  MiscellaneousVars[122] = 0;
+  MiscellaneousVars[123] = 0;
+  MiscellaneousVars[124] = 0;
+  MiscellaneousVars[125] = 0;
+  MiscellaneousVars[126] = 0;
+  MiscellaneousVars[127] = 0;
+ }
 
  // Calculate Jumping Heights
  // "65" is the main storage value for a character's JumpZ height.
@@ -14570,6 +14649,15 @@ script 833 ENTER
    }
   }
 */
+ }
+
+ if (GetActorProperty(1001,APROP_Health) > 0) 
+ {
+  if (MiscellaneousVars[149] != 0)
+  {
+   MiscellaneousVars[149] = 0; // Unsets a special flag to check for a "pistol reset" like in resurgance
+   //PrintBold(s:"939");
+  }
  }
 
  Delay(1);
