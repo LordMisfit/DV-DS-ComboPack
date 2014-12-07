@@ -21,11 +21,13 @@ HudMessage Tags:
 	2		-	Tunnel Vision Display [death]
 	3		-	Tunnel Vision Display
       ...
-      3101		-	Background Tint for Menus/Armor-Display
+	2001-2010	-	Readied Spells [QuickCast]
+	3101		-	Background Tint for Menus/Armor-Display
 	3202-3303	-	Mana Bar
 	3304-3405	-	Exp Bar
 	3406-3407	-	Spell Name, Spell Description
-	3408-3412	-	Readied Spells (quickuse, Deggaris/Illucia)
+
+
 	3413		-	Level Display
 	3415		-	Mana Points Display
 	3416-3417	-	Stats Display Text
@@ -2341,7 +2343,7 @@ script "HUDDisplay" ENTER
 
   SetHudSize(640,480,0);
   // Spell Bind Displays
-  for (C1 = 0; C1 < 5; C1 ++)
+  for (C1 = 0; C1 < 10; C1 ++)
   {
    if (ReadiedSpells[C1] != 0)
    {
@@ -2358,16 +2360,16 @@ script "HUDDisplay" ENTER
      {
       if (CharacterClass == 2)
       {
-       HudMessage(d:C1+1,s:": ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,3408+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:": ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
       else
       {
-       HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,3408+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
      }
      else
      {
-      HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,3408+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+      HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
      }
     }
     else
@@ -2377,22 +2379,22 @@ script "HUDDisplay" ENTER
      {
       if (CharacterClass == 2)
       {
-       HudMessage(d:C1+1,s:": ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,3408+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:": ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
       else
       {
-       HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,3408+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
      }
      else
      {
-      HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,3408+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+      HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
      }
     }
    }
    else
    {
-    HudMessage(d:C1+1,s:": Empty";0,3408+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+    HudMessage(d:C1+1,s:": Empty";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
    }
   }
 
@@ -3821,15 +3823,21 @@ script 805 (int Dir)
 
 // {-6-} Spell Readying (For Five Slot system)
 
-script 806 (int Type, int Slot)
+script 806 (int Slot, int Type)
 {
  int C1, C2, C3, I1, I2, I3, G1, G2, G3, G4, Z1, Z2;
  
+ int buttons = GetPlayerInput(0, INPUT_BUTTONS);
+
+ if (buttons & BT_SPEED) Type = 0; // Assign Current Spell to Slot Reflecting the pressed key
+ else if (buttons & BT_RELOAD) Type = 1; // Clear Slot Reflecting the pressed key
+ else Type = 2; // Fire Spell if no specfic buttons are held down
+
  if (Type == 0) // assign spell
  {
   if (GetActorProperty(1001,APROP_HEALTH) > 0) // Fix Oversight
   {
-   for (C1 = 0; C1 < 5; C1++)
+   for (C1 = 0; C1 < 10; C1++)
    {
     if (ReadiedSpells[C1] == 0) // Initialize unused slots
     {
@@ -14275,13 +14283,20 @@ script 833 ENTER
  MiscellaneousVars[65] = FixedMul(MiscellaneousVars[65],MiscellaneousVars[69]);
 
  SetActorProperty (1001, APROP_JumpZ, MiscellaneousVars[65]);
- // PrintBold(s:"Level X: ",f:MiscellaneousVars[66],s:"\nSeed X: ",f:MiscellaneousVars[67],s:"\nArmor X: ",f:MiscellaneousVars[68],s:"\nSceptreShield X: ",f:MiscellaneousVars[69],s:"\nTotal Jump: ",f:MiscellaneousVars[65]);
-
  // Convert JumpZ to PlayerJumpHeight
  PlayerJumpHeight = (FixedMul(MiscellaneousVars[65],MiscellaneousVars[65]) / 2);
  PlayerJumpHeight = PlayerJumpHeight >> 16;
  PlayerJumpHeight += 24;
  if (PowerupTimer[7] > 0) PlayerJumpHeight = PlayerJumpHeight * 4;
+
+/*
+ PrintBold(s:"Level X: ",f:MiscellaneousVars[66],
+           s:"\nSeed X: ",f:MiscellaneousVars[67],
+           s:"\nArmor X: ",f:MiscellaneousVars[68],
+           s:"\nSceptreShield X: ",f:MiscellaneousVars[69],
+           s:"\nTotal Jump [fixed]: ",f:MiscellaneousVars[65],
+           s:"\nTotal Jump [solid]: ",d:PlayerJumpHeight);
+*/
 
  //************************************************************************
  //***Determines Maximum Ammo Ammounts Based on Strength Seeds and Level***
@@ -17824,12 +17839,12 @@ script 880 (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
   for (SkillSeedRuns = 0; SkillSeedRuns < MaxSkillSeedRuns; SkillSeedRuns++)
   {
    SkillSeedRND = random(1,6);
-   if (SkillSeedRND == 1 && MiscellaneousVars[31] < 256) MiscellaneousVars[31] += SeedAmount;
-   if (SkillSeedRND == 2 && MiscellaneousVars[32] < 256) MiscellaneousVars[32] += SeedAmount;
-   if (SkillSeedRND == 3 && MiscellaneousVars[33] < 256) MiscellaneousVars[33] += SeedAmount;
-   if (SkillSeedRND == 4 && MiscellaneousVars[34] < 256) MiscellaneousVars[34] += SeedAmount;
-   if (SkillSeedRND == 5 && MiscellaneousVars[35] < 256) MiscellaneousVars[35] += SeedAmount;
-   if (SkillSeedRND == 6 && MiscellaneousVars[36] < 256) MiscellaneousVars[36] += SeedAmount;
+   if (SkillSeedRND == 1 && MiscellaneousVars[31] < 512) MiscellaneousVars[31] += SeedAmount;
+   if (SkillSeedRND == 2 && MiscellaneousVars[32] < 512) MiscellaneousVars[32] += SeedAmount;
+   if (SkillSeedRND == 3 && MiscellaneousVars[33] < 512) MiscellaneousVars[33] += SeedAmount;
+   if (SkillSeedRND == 4 && MiscellaneousVars[34] < 512) MiscellaneousVars[34] += SeedAmount;
+   if (SkillSeedRND == 5 && MiscellaneousVars[35] < 512) MiscellaneousVars[35] += SeedAmount;
+   if (SkillSeedRND == 6 && MiscellaneousVars[36] < 512) MiscellaneousVars[36] += SeedAmount;
   }  
  }
 
@@ -18001,7 +18016,7 @@ script 882 (int SeedType)
 }
 
 // Checks Seed amounts and will randomize dropped seeds.
-script 881 (int type, int OldRand0, int Forced)
+script "SeedDrop" (int type, int OldRand0, int Forced)
 {
  int Rand0, Rand1, Rand2, PX, PY, PZ, FullOnSkill, FullOnSeeds, spawnedaitem, SeedDropChance;
 
@@ -18813,7 +18828,7 @@ script 913 ENTER
      SetFont("ARM3B1");
      HudMessage(s:"A"; HUDMSG_PLAIN, 3103, 0, 174.0, 50.0, 0.03);
      SetFont("SmallFont");
-     HudMessage(s:"Godly Stone Skin Armor"; HUDMSG_PLAIN, 3102, CR_GOLD, 256.0, 31.0, 0.03);
+     HudMessage(s:"Divine Stone Skin Armor"; HUDMSG_PLAIN, 3102, CR_GOLD, 256.0, 31.0, 0.03);
 
      HudMessage(s:"\cd+83.3334% Normal Damage Protection\n",
                 s:"\cd+25% Unbreakable Damage Protection\n",
@@ -18859,7 +18874,7 @@ script 913 ENTER
      SetFont("ARM4B1");
      HudMessage(s:"A"; HUDMSG_PLAIN, 3103, 0, 167.0, 55.0, 0.03);
      SetFont("SmallFont");
-     HudMessage(s:"Godly Diamond Skin Armor"; HUDMSG_PLAIN, 3102, CR_GOLD, 256.0, 31.0, 0.03);
+     HudMessage(s:"Divine Diamond Skin Armor"; HUDMSG_PLAIN, 3102, CR_GOLD, 256.0, 31.0, 0.03);
 
      HudMessage(s:"\cd+95% Normal Damage Protection\n",
                 s:"\cd+75% Unbreakable Damage Protection\n",
@@ -22247,13 +22262,13 @@ script "WeaponAngleLoop" (int type, int cap, int setangle, int addangle)
 // 0 = Sets [value] to a Fixed Number
 // 1 = Adds/Subtracts the Value by [value]
 // [TYPE]
-// 0 = Add Aeon Points
-// 1 = Add Agility Value
-// 2 = Add Defense Value
-// 3 = Add Deftness Value
-// 4 = Add Sorcery Value
-// 5 = Add Strength Value
-// 6 = Add Therapeusis Value
+// 0 = Aeon Points
+// 1 = Agility
+// 2 = Defense
+// 3 = Deftness
+// 4 = Sorcery
+// 5 = Strength
+// 6 = Therapeusis
 // 7 = Hit Points/Health
 // 8 = Magic Points/Mana
 
@@ -22297,12 +22312,12 @@ script "GiveStats" (int type, int setadd, int value)
 
  // Lower End Limits
  if (MiscellaneousVars[25] < 0) MiscellaneousVars[25] = 0;
- if (MiscellaneousVars[31] < 1) MiscellaneousVars[31] = 1;
- if (MiscellaneousVars[32] < 1) MiscellaneousVars[32] = 1;
- if (MiscellaneousVars[33] < 1) MiscellaneousVars[33] = 1;
- if (MiscellaneousVars[34] < 1) MiscellaneousVars[34] = 1;
- if (MiscellaneousVars[35] < 1) MiscellaneousVars[35] = 1;
- if (MiscellaneousVars[36] < 1) MiscellaneousVars[36] = 1;
+ if (MiscellaneousVars[31] < 0) MiscellaneousVars[31] = 0;
+ if (MiscellaneousVars[32] < 0) MiscellaneousVars[32] = 0;
+ if (MiscellaneousVars[33] < 0) MiscellaneousVars[33] = 0;
+ if (MiscellaneousVars[34] < 0) MiscellaneousVars[34] = 0;
+ if (MiscellaneousVars[35] < 0) MiscellaneousVars[35] = 0;
+ if (MiscellaneousVars[36] < 0) MiscellaneousVars[36] = 0;
  if (MaxMana < 1) MaxMana = 1;
  
 
