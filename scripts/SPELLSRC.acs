@@ -142,7 +142,6 @@ Script #s and their functions:
 
 NAMED Scripts and their functions:
 
-	{"ExperienceGain"}	-			Experience Adding
 	{"Initializer"}	-				Exp Table Setup (& Initial Startup Process [added for DVI/DVII-DS])
 	{"HUDDisplay"}	-				HUD Display
 	{"ClassicDoom2ArmorCheck"}		Makes Armor Bonuses check for Flora's presense in the game in order to change them over to other items [this version is for when playing classic Doom 1/2]
@@ -2891,289 +2890,18 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
  return RealExpGain;
 }
 
-// Experience Adding [TODO: thing sorting needs to be sped up a lot >____>;]
-
-script "ExperienceGain" (void) //ENTER
-{
- int C1, I1, Exp1, Exp2, ExpMultiFactor, RealExpGain;
-
- int MonIndChe1, MonIndChe2, MonIndChe3, MonIndChe4, MonIndChe5;
- int MonIndChe6, MonIndChe7, MonIndChe8, MonIndChe9, MonIndChe10;
- int MonIndChe11, MonIndChe12, MonIndChe13, MonIndChe14, MonIndChe15;
- int MonIndChe16, MonIndChe17, MonIndChe18, MonIndChe19, MonIndChe20;
-
- MiscellaneousVars[136] = GetCVar("dvds_expcheckruns");
-
- // C1 is the base entry being analyzed by the code for accumalating monsterIDs. It adds up to 20 additional indexes based from C1 + various amounts. The more used the more process power used. 4 is the default setting.
- for (C1 = 0; C1 < 120; C1 += MiscellaneousVars[136])
- {
-  if (MiscellaneousVars[136] >= 1) MonIndChe1 = ThingCountName(MonsterID[C1+0],0) - ThingCountName(MonsterID[C1+0],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 2) MonIndChe2 = ThingCountName(MonsterID[C1+1],0) - ThingCountName(MonsterID[C1+1],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 3) MonIndChe3 = ThingCountName(MonsterID[C1+2],0) - ThingCountName(MonsterID[C1+2],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 4) MonIndChe4 = ThingCountName(MonsterID[C1+3],0) - ThingCountName(MonsterID[C1+3],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 5) MonIndChe5 = ThingCountName(MonsterID[C1+4],0) - ThingCountName(MonsterID[C1+4],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 6) MonIndChe6 = ThingCountName(MonsterID[C1+5],0) - ThingCountName(MonsterID[C1+5],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 7) MonIndChe7 = ThingCountName(MonsterID[C1+6],0) - ThingCountName(MonsterID[C1+6],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 8) MonIndChe8 = ThingCountName(MonsterID[C1+7],0) - ThingCountName(MonsterID[C1+7],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 9) MonIndChe9 = ThingCountName(MonsterID[C1+8],0) - ThingCountName(MonsterID[C1+8],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 10) MonIndChe10 = ThingCountName(MonsterID[C1+9],0) - ThingCountName(MonsterID[C1+9],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 11) MonIndChe11 = ThingCountName(MonsterID[C1+10],0) - ThingCountName(MonsterID[C1+10],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 12) MonIndChe12 = ThingCountName(MonsterID[C1+11],0) - ThingCountName(MonsterID[C1+11],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 13) MonIndChe13 = ThingCountName(MonsterID[C1+12],0) - ThingCountName(MonsterID[C1+12],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 14) MonIndChe14 = ThingCountName(MonsterID[C1+13],0) - ThingCountName(MonsterID[C1+13],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 15) MonIndChe15 = ThingCountName(MonsterID[C1+14],0) - ThingCountName(MonsterID[C1+14],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 16) MonIndChe16 = ThingCountName(MonsterID[C1+15],0) - ThingCountName(MonsterID[C1+15],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 17) MonIndChe17 = ThingCountName(MonsterID[C1+16],0) - ThingCountName(MonsterID[C1+16],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 18) MonIndChe18 = ThingCountName(MonsterID[C1+17],0) - ThingCountName(MonsterID[C1+17],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 19) MonIndChe19 = ThingCountName(MonsterID[C1+18],0) - ThingCountName(MonsterID[C1+18],1000); // don't count friendlies
-  if (MiscellaneousVars[136] >= 20) MonIndChe20 = ThingCountName(MonsterID[C1+19],0) - ThingCountName(MonsterID[C1+19],1000); // don't count friendlies
-
-  // Get the EXPMultiplier
-  ExpMultiFactor = GetExpMultiFactor();
-
-  SetHudSize(640,480,0);
-  if (PlayerLevel < LevelCap)
-  {
-   // Check #1
-   if (MiscellaneousVars[136] >= 1 && MonIndChe1 < MonsterTable[C1+0])
-   {
-    RealExpGain = (MonsterXP[C1+0] * (MonsterTable[C1+0] - MonIndChe1));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+0] = MonIndChe1;
-   }
-
-   // Check #2
-   if (MiscellaneousVars[136] >= 2 && MonIndChe2 < MonsterTable[C1+1])
-   {
-    RealExpGain = (MonsterXP[C1+1] * (MonsterTable[C1+1] - MonIndChe2));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+1] = MonIndChe2;
-   }
-
-   // Check #3
-   if (MiscellaneousVars[136] >= 3 && MonIndChe3 < MonsterTable[C1+2])
-   {
-    RealExpGain = (MonsterXP[C1+2] * (MonsterTable[C1+2] - MonIndChe3));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+2] = MonIndChe3;
-   }
-
-   // Check #4
-   if (MiscellaneousVars[136] >= 4 && MonIndChe4 < MonsterTable[C1+3])
-   {
-    RealExpGain = (MonsterXP[C1+3] * (MonsterTable[C1+3] - MonIndChe4));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+3] = MonIndChe4;
-   }
-
-   // Check #5
-   if (MiscellaneousVars[136] >= 5 && MonIndChe5 < MonsterTable[C1+4])
-   {
-    RealExpGain = (MonsterXP[C1+4] * (MonsterTable[C1+4] - MonIndChe5));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+4] = MonIndChe5;
-   }
-
-   // Check #6
-   if (MiscellaneousVars[136] >= 6 && MonIndChe6 < MonsterTable[C1+5])
-   {
-    RealExpGain = (MonsterXP[C1+5] * (MonsterTable[C1+5] - MonIndChe6));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+5] = MonIndChe6;
-   }
-
-   // Check #7
-   if (MiscellaneousVars[136] >= 7 && MonIndChe7 < MonsterTable[C1+6])
-   {
-    RealExpGain = (MonsterXP[C1+6] * (MonsterTable[C1+6] - MonIndChe7));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+6] = MonIndChe7;
-   }
-
-   // Check #8
-   if (MiscellaneousVars[136] >= 8 && MonIndChe8 < MonsterTable[C1+7])
-   {
-    RealExpGain = (MonsterXP[C1+7] * (MonsterTable[C1+7] - MonIndChe8));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+7] = MonIndChe8;
-   }
-
-   // Check #9
-   if (MiscellaneousVars[136] >= 9 && MonIndChe9 < MonsterTable[C1+8])
-   {
-    RealExpGain = (MonsterXP[C1+8] * (MonsterTable[C1+8] - MonIndChe9));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+8] = MonIndChe9;
-   }
-
-   // Check #10
-   if (MiscellaneousVars[136] >= 10 && MonIndChe10 < MonsterTable[C1+9])
-   {
-    RealExpGain = (MonsterXP[C1+9] * (MonsterTable[C1+9] - MonIndChe10));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+9] = MonIndChe10;
-   }
-
-   // Check #11
-   if (MiscellaneousVars[136] >= 11 && MonIndChe11 < MonsterTable[C1+10])
-   {
-    RealExpGain = (MonsterXP[C1+10] * (MonsterTable[C1+10] - MonIndChe11));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+10] = MonIndChe11;
-   }
-
-   // Check #12
-   if (MiscellaneousVars[136] >= 12 && MonIndChe12 < MonsterTable[C1+11])
-   {
-    RealExpGain = (MonsterXP[C1+11] * (MonsterTable[C1+11] - MonIndChe12));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+11] = MonIndChe12;
-   }
-
-   // Check #13
-   if (MiscellaneousVars[136] >= 13 && MonIndChe13 < MonsterTable[C1+12])
-   {
-    RealExpGain = (MonsterXP[C1+12] * (MonsterTable[C1+12] - MonIndChe13));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+12] = MonIndChe13;
-   }
-
-   // Check #14
-   if (MiscellaneousVars[136] >= 14 && MonIndChe14 < MonsterTable[C1+13])
-   {
-    RealExpGain = (MonsterXP[C1+13] * (MonsterTable[C1+13] - MonIndChe14));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+13] = MonIndChe14;
-   }
-
-   // Check #15
-   if (MiscellaneousVars[136] >= 15 && MonIndChe15 < MonsterTable[C1+14])
-   {
-    RealExpGain = (MonsterXP[C1+14] * (MonsterTable[C1+14] - MonIndChe15));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+14] = MonIndChe15;
-   }
-
-   // Check #16
-   if (MiscellaneousVars[136] >= 16 && MonIndChe16 < MonsterTable[C1+15])
-   {
-    RealExpGain = (MonsterXP[C1+15] * (MonsterTable[C1+15] - MonIndChe16));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+15] = MonIndChe16;
-   }
-
-   // Check #17
-   if (MiscellaneousVars[136] >= 17 && MonIndChe17 < MonsterTable[C1+16])
-   {
-    RealExpGain = (MonsterXP[C1+16] * (MonsterTable[C1+16] - MonIndChe17));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+16] = MonIndChe17;
-   }
-
-   // Check #18
-   if (MiscellaneousVars[136] >= 18 && MonIndChe18 < MonsterTable[C1+17])
-   {
-    RealExpGain = (MonsterXP[C1+17] * (MonsterTable[C1+17] - MonIndChe18));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+17] = MonIndChe18;
-   }
-
-   // Check #19
-   if (MiscellaneousVars[136] >= 19 && MonIndChe19 < MonsterTable[C1+18])
-   {
-    RealExpGain = (MonsterXP[C1+18] * (MonsterTable[C1+18] - MonIndChe19));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+18] = MonIndChe19;
-   }
-
-   // Check #20
-   if (MiscellaneousVars[136] >= 20 && MonIndChe20 < MonsterTable[C1+19])
-   {
-    RealExpGain = (MonsterXP[C1+19] * (MonsterTable[C1+19] - MonIndChe20));
-    RealExpGain = GetExperience(RealExpGain,ExpMultiFactor);
-
-    if (GetActorProperty(1001,APROP_HEALTH) > 0) { Experience += RealExpGain; HudMessage(s:"+",d:RealExpGain,s:" EXP";0,3418,cr_gold,51.0,11.0,1.5); }
-    MonsterTable[C1+19] = MonIndChe20;
-   }
-
-  }
-  SetHudSize(0,0,0);
-
-
-  if (MiscellaneousVars[136] >= 1) { if (MonIndChe1 > MonsterTable[C1+0]) MonsterTable[C1+0] = MonIndChe1; }
-  if (MiscellaneousVars[136] >= 2) { if (MonIndChe2 > MonsterTable[C1+1]) MonsterTable[C1+1] = MonIndChe2; }
-  if (MiscellaneousVars[136] >= 3) { if (MonIndChe3 > MonsterTable[C1+2]) MonsterTable[C1+2] = MonIndChe3; }
-  if (MiscellaneousVars[136] >= 4) { if (MonIndChe4 > MonsterTable[C1+3]) MonsterTable[C1+3] = MonIndChe4; }
-  if (MiscellaneousVars[136] >= 5) { if (MonIndChe5 > MonsterTable[C1+4]) MonsterTable[C1+4] = MonIndChe5; }
-  if (MiscellaneousVars[136] >= 6) { if (MonIndChe6 > MonsterTable[C1+5]) MonsterTable[C1+5] = MonIndChe6; }
-  if (MiscellaneousVars[136] >= 7) { if (MonIndChe7 > MonsterTable[C1+6]) MonsterTable[C1+6] = MonIndChe7; }
-  if (MiscellaneousVars[136] >= 8) { if (MonIndChe8 > MonsterTable[C1+7]) MonsterTable[C1+7] = MonIndChe8; }
-  if (MiscellaneousVars[136] >= 9) { if (MonIndChe9 > MonsterTable[C1+8]) MonsterTable[C1+8] = MonIndChe9; }
-  if (MiscellaneousVars[136] >= 10) { if (MonIndChe10 > MonsterTable[C1+9]) MonsterTable[C1+9] = MonIndChe10; }
-  if (MiscellaneousVars[136] >= 11) { if (MonIndChe11 > MonsterTable[C1+10]) MonsterTable[C1+10] = MonIndChe11; }
-  if (MiscellaneousVars[136] >= 12) { if (MonIndChe12 > MonsterTable[C1+11]) MonsterTable[C1+11] = MonIndChe12; }
-  if (MiscellaneousVars[136] >= 13) { if (MonIndChe13 > MonsterTable[C1+12]) MonsterTable[C1+12] = MonIndChe13; }
-  if (MiscellaneousVars[136] >= 14) { if (MonIndChe14 > MonsterTable[C1+13]) MonsterTable[C1+13] = MonIndChe14; }
-  if (MiscellaneousVars[136] >= 15) { if (MonIndChe15 > MonsterTable[C1+14]) MonsterTable[C1+14] = MonIndChe15; }
-  if (MiscellaneousVars[136] >= 16) { if (MonIndChe16 > MonsterTable[C1+15]) MonsterTable[C1+15] = MonIndChe16; }
-  if (MiscellaneousVars[136] >= 17) { if (MonIndChe17 > MonsterTable[C1+16]) MonsterTable[C1+16] = MonIndChe17; }
-  if (MiscellaneousVars[136] >= 18) { if (MonIndChe18 > MonsterTable[C1+17]) MonsterTable[C1+17] = MonIndChe18; }
-  if (MiscellaneousVars[136] >= 19) { if (MonIndChe19 > MonsterTable[C1+18]) MonsterTable[C1+18] = MonIndChe19; }
-  if (MiscellaneousVars[136] >= 20) { if (MonIndChe20 > MonsterTable[C1+19]) MonsterTable[C1+19] = MonIndChe20; }
-
-  // Moved Exp Bonus Script to Script 884 [below]
-  // Moved Levelup Script to Script 884 [below]
-  Delay(GetCVar("dvds_expcheckdelay"));
- }
- Restart;
-}
-
 // Seperated Levelup Code
-script 884 ENTER // (void)
+script "LevelUpCode" ENTER // (void)
 {
  int C1, I1, C2, I2, Z1, Z2, G1, G2, G3, Exp1, Exp2, ExpMultiFactor, RealExpGain, HPBoost, MPBoost, MapCheck, RandomizedStatChance, RandomizedStatChance2;
 
+  int leveluptimes = 0;
+  int leveluptimesmax = 200;
   //*******************
   //** LEVEL UP CODE **
   //*******************
+ for (leveluptimes = 0; leveluptimes < leveluptimesmax; leveluptimes++)
+ {
   MiscellaneousVars[48] = ExpTable[PlayerLevel] - Experience;
   if (Experience >= ExpTable[PlayerLevel])
   {   
@@ -3242,126 +2970,7 @@ script 884 ENTER // (void)
      }
     }
 
-    //***************
-    //*Mana Increase*
-    //***************
-    int LevelAddMaxMana = 0;
-    if (GameSkill() == SKILL_VERY_EASY)
-    {    
-     LevelAddMaxMana = Random(5,10);
-     Z1 = PlayerLevel / 6;
-    }
-    else if (GameSkill() == SKILL_EASY)
-    {
-     LevelAddMaxMana = Random(4,8);
-     Z1 = PlayerLevel / 7;
-    }
-    else if (GameSkill() == SKILL_NORMAL)
-    {
-     LevelAddMaxMana = Random(3,6);
-     Z1 = PlayerLevel / 8;
-    }
-    else if (GameSkill() == SKILL_HARD)
-    {
-     LevelAddMaxMana = Random(2,4);
-     Z1 = PlayerLevel / 9;
-    }
-    else if (GameSkill() == SKILL_VERY_HARD)
-    {
-     LevelAddMaxMana = Random(1,2);
-     Z1 = PlayerLevel / 10;
-    }
-    LevelAddMaxMana += Z1;
-    LevelAddMaxMana += random(6,9);
-
-    if (CharacterClass == 0) // Deggaris [MP Gain / Level]
-    {
-     G3 = random(12,14); // 75%-87.5%
-     LevelAddMaxMana = LevelAddMaxMana * G3 / 16;
-    }
-    if (CharacterClass == 1) // Illucia [MP Gain / Level]
-    {
-     G3 = random(18,20); // 112.5%-125%
-     LevelAddMaxMana = LevelAddMaxMana * G3 / 16;
-    }
-    if (CharacterClass == 2) // Flora [MP Gain / Level]
-    {
-     G3 = random(22,28); // 137.5%-175%
-     LevelAddMaxMana = LevelAddMaxMana * G3 / 16;
-    }
-
-    // Overall Modifier
-    LevelAddMaxMana = LevelAddMaxMana * 75 / 100;
-
-    if (LevelAddMaxMana < 1) LevelAddMaxMana = 1;
-
-    LevelAddMaxMana *= MiscellaneousVars[146];
-    MaxMana += LevelAddMaxMana;
-    CurrentMana += LevelAddMaxMana;
-    MaxManaDouble = MaxMana * 2;
-
-    int LevelAddMaxHP = 0;
-    //*************
-    //*HP Increase*
-    //*************
-    Z2 = (Random(1,3));
-    if (GameSkill() == SKILL_VERY_EASY) Z2 += 2;
-    if (GameSkill() == SKILL_EASY) Z2 += 1;
-    if (GameSkill() == SKILL_NORMAL) Z2 += 0;
-    if (GameSkill() == SKILL_HARD) Z2 += -1;
-    if (GameSkill() == SKILL_VERY_HARD) Z2 += -2;
-    if (CharacterClass == 0) Z2 += random(3,4); // + 2-9 HP
-    if (CharacterClass == 1) Z2 += random(2,3); // + 1-8 HP
-    if (CharacterClass == 2) Z2 += random(1,2); // + 0-7 HP
-
-    LevelAddMaxHP += Z2;
-
-    if (GameSkill() == SKILL_VERY_EASY) Z1 = PlayerLevel * 7 / 20; 		// 35%
-    else if (GameSkill() == SKILL_EASY) Z1 = PlayerLevel * 3 / 10; 		// 30%
-    else if (GameSkill() == SKILL_NORMAL) Z1 = PlayerLevel / 4; 		// 25%
-    else if (GameSkill() == SKILL_HARD) Z1 = PlayerLevel / 5; 		// 20%
-    else if (GameSkill() == SKILL_VERY_HARD) Z1 = PlayerLevel * 3 / 20; 	// 15%
-    if (PlayerLevel > 29) Z1 = Z1 * 21 / 20; 		// *105%
-    if (PlayerLevel > 59) Z1 = Z1 * 109 / 100; 		// *109%
-    if (PlayerLevel > 89) Z1 = Z1 * 113 / 100; 		// *113%
-    if (PlayerLevel > 119) Z1 = Z1 * 117 / 100; 	// *117%
-    if (PlayerLevel > 149) Z1 = Z1 * 121 / 100; 	// *121%
-    if (PlayerLevel > 179) Z1 = Z1 * 5 / 4; 		// *125%
-
-    LevelAddMaxHP += Z1;
-    if (CharacterClass == 0) // Deggaris [HP Gain / Level]
-    {
-     // *112.5%-125%
-     G3 = random(18,20);
-     LevelAddMaxHP = LevelAddMaxHP * G3 / 16;
-    }
-    if (CharacterClass == 1) // Illucia [HP Gain / Level]
-    {
-     // *75%-87.5%
-     G3 = random(12,14);
-     LevelAddMaxHP = LevelAddMaxHP * G3 / 16;
-    }
-    if (CharacterClass == 2) // Flora [HP Gain / Level]
-    {
-     // *43.75%-68.75%
-     G3 = random(7,11);
-     LevelAddMaxHP = LevelAddMaxHP * G3 / 16;
-    }
-
-    // Overall Modifier
-    LevelAddMaxHP = LevelAddMaxHP * 75 / 100; // *75%
-
-    // Give The HP to the player
-    if (LevelAddMaxHP < 1) LevelAddMaxHP = 1;
-
-    LevelAddMaxHP *= MiscellaneousVars[146];
-    I2 = GetActorProperty(1001,APROP_HEALTH);
-    GiveInventory("UpgradeStamina", LevelAddMaxHP);
-    SetActorProperty(1001,APROP_HEALTH,(I2+LevelAddMaxHP));
-    MaxHealthTrue += LevelAddMaxHP;
-    MaxHealthDoubleTrue = MaxHealthTrue * 2;
-    SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
-
+    // Increase Stats
     // 16:25 (1-100) [64] + 20:25 (101-200) [80] = [Max of 144 (or -75%)]
     RandomizedStatChance = 192;
     Z1 = 0;
@@ -3479,10 +3088,141 @@ script 884 ENTER // (void)
     if (MiscellaneousVars[35] > 512) MiscellaneousVars[35] = 512;
     if (MiscellaneousVars[36] > 512) MiscellaneousVars[36] = 512;
 
-    if (CharacterClass == 2) ActivatorSound("FloraLeveledUp",127); // Flora
-    else if (CharacterClass == 1) ActivatorSound("IlluciaLeveledUp",127); // Illucia
-    else if (CharacterClass == 0) ActivatorSound("DeggarisLeveledUp",127); // Deggaris
-    else ActivatorSound("misc/spawn",127); 
+
+    //***************
+    //*Mana Increase*
+    //***************
+    int LevelAddMaxMana = 0;
+    if (GameSkill() == SKILL_VERY_EASY)
+    {    
+     LevelAddMaxMana = Random(5,10);
+     Z1 = MaxMana / 96;
+    }
+    else if (GameSkill() == SKILL_EASY)
+    {
+     LevelAddMaxMana = Random(4,8);
+     Z1 = MaxMana / 120;
+    }
+    else if (GameSkill() == SKILL_NORMAL)
+    {
+     LevelAddMaxMana = Random(3,6);
+     Z1 = MaxMana / 144;
+    }
+    else if (GameSkill() == SKILL_HARD)
+    {
+     LevelAddMaxMana = Random(2,4);
+     Z1 = MaxMana / 168;
+    }
+    else if (GameSkill() == SKILL_VERY_HARD)
+    {
+     LevelAddMaxMana = Random(1,2);
+     Z1 = MaxMana / 192;
+    }
+    LevelAddMaxMana += Z1;
+    LevelAddMaxMana += random(6,9); // +7-19 + Level base
+
+    if (CharacterClass == 0) G3 = random(36,42); // Deggaris [MP Gain / Level] [75%-87.5%]
+    if (CharacterClass == 1) G3 = random(54,60); // Illucia [MP Gain / Level] [112.5%-125%]
+    if (CharacterClass == 2) G3 = random(66,84); // Flora [MP Gain / Level] [137.5%-175%]
+
+    G3 += ((MiscellaneousVars[36] + MiscellaneousVars[33]) / 48); // Add [(Therapesius+Deftness / 32)]
+    LevelAddMaxMana = LevelAddMaxMana * G3 / 48;
+
+    // Overall Modifier
+    LevelAddMaxMana = LevelAddMaxMana * 75 / 100;
+
+    if (LevelAddMaxMana < 1) LevelAddMaxMana = 1;
+
+    LevelAddMaxMana *= MiscellaneousVars[146];
+    MaxMana += LevelAddMaxMana;
+    CurrentMana += LevelAddMaxMana;
+    MaxManaDouble = MaxMana * 2;
+
+    int LevelAddMaxHP = 0;
+    int HPRandomizer1;
+    //*************
+    //*HP Increase*
+    //*************
+    if (GameSkill() == SKILL_VERY_EASY)
+    {
+     Z2 = random(1,3);
+     Z2 += MaxHealthTrue / 288;
+    }
+    if (GameSkill() == SKILL_EASY)
+    {
+     Z2 = random(0,2);
+     Z2 += MaxHealthTrue / 360;
+    }
+    if (GameSkill() == SKILL_NORMAL)
+    {
+     Z2 = random(-1,-1);
+     Z2 += MaxHealthTrue / 432;
+    }
+    if (GameSkill() == SKILL_HARD)
+    {
+     Z2 = random(-2,0);
+     Z2 += MaxHealthTrue / 504;
+    }
+    if (GameSkill() == SKILL_VERY_HARD)
+    {
+     Z2 = random(-3,-1);
+     Z2 += MaxHealthTrue / 576;
+    }
+
+    Z2 += Random(1,3);
+    if (CharacterClass == 0) Z2 += random(3,4); // + 2-9+ HP
+    if (CharacterClass == 1) Z2 += random(2,3); // + 1-8+ HP
+    if (CharacterClass == 2) Z2 += random(1,2); // + 0-7+ HP
+
+    if (Z2 < 0) Z2 = 0;
+    LevelAddMaxHP += Z2;
+
+    if (GameSkill() == SKILL_VERY_EASY) Z1 = PlayerLevel * 7 / 20; 			// 35%
+    else if (GameSkill() == SKILL_EASY) Z1 = PlayerLevel * 3 / 10; 			// 30%
+    else if (GameSkill() == SKILL_NORMAL) Z1 = PlayerLevel / 4; 			// 25%
+    else if (GameSkill() == SKILL_HARD) Z1 = PlayerLevel / 5; 				// 20%
+    else if (GameSkill() == SKILL_VERY_HARD) Z1 = PlayerLevel * 3 / 20; 	// 15%
+ 
+    if (PlayerLevel > 24 && PlayerLevel < 50) Z1 = Z1 * 105 / 100; 			// *105%
+    if (PlayerLevel > 49 && PlayerLevel < 75) Z1 = Z1 * 110 / 100; 			// *110%
+    if (PlayerLevel > 74 && PlayerLevel < 100) Z1 = Z1 * 115 / 100; 		// *115%
+    if (PlayerLevel > 99 && PlayerLevel < 125) Z1 = Z1 * 124 / 100; 		// *124%
+    if (PlayerLevel > 124 && PlayerLevel < 150) Z1 = Z1 * 130 / 100; 		// *130%
+    if (PlayerLevel > 149 && PlayerLevel < 175) Z1 = Z1 * 136 / 100; 		// *136%
+    if (PlayerLevel > 174) Z1 = Z1 * 142 / 100; 							// *142%
+
+    LevelAddMaxHP += Z1;
+
+    if (CharacterClass == 0) G3 = random(54,60); // Deggaris [HP Gain / Level] [112.5%-125%]
+    if (CharacterClass == 1) G3 = random(36,42); // Illucia [HP Gain / Level] [75%-87.5%]
+    if (CharacterClass == 2) G3 = random(27,33); // Flora [HP Gain / Level] [43.75%-68.75%]
+
+    G3 += ((MiscellaneousVars[32] + MiscellaneousVars[33]) / 48); // Add [(Defense+Deftness / 32)]
+    LevelAddMaxHP = LevelAddMaxHP * G3 / 48;
+
+    // Overall Modifier
+    LevelAddMaxHP = LevelAddMaxHP * 75 / 100; // *75%+
+
+    // Give The HP to the player
+    if (LevelAddMaxHP < 1) LevelAddMaxHP = 1;
+
+    LevelAddMaxHP *= MiscellaneousVars[146];
+    I2 = GetActorProperty(1001,APROP_HEALTH);
+    GiveInventory("UpgradeStamina", LevelAddMaxHP);
+    SetActorProperty(1001,APROP_HEALTH,(I2+LevelAddMaxHP));
+    MaxHealthTrue += LevelAddMaxHP;
+    MaxHealthDoubleTrue = MaxHealthTrue * 2;
+    SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
+
+
+    // Other Stuff
+    if (leveluptimes == 0)
+    {
+     if (CharacterClass == 2) ActivatorSound("FloraLeveledUp",127); // Flora
+     else if (CharacterClass == 1) ActivatorSound("IlluciaLeveledUp",127); // Illucia
+     else if (CharacterClass == 0) ActivatorSound("DeggarisLeveledUp",127); // Deggaris
+     else ActivatorSound("misc/spawn",127); 
+    }
 
     SetHudSize(640,480,0);  
     if (PlayerLevel < AeonPointStartLevel)
@@ -3548,6 +3288,8 @@ script 884 ENTER // (void)
 
    }
   }
+  else break;
+ }
 
  Delay(1);
  Restart;
