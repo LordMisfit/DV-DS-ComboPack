@@ -22,6 +22,8 @@ HudMessage Tags:
 	3		-	Tunnel Vision Display
       ...
 	2001-2010	-	Readied Spells [QuickCast]
+	2198		-	EXP Combo Total
+	2199		-	EXP Combo Multiplier
 	2200		-	EXP Combo Kill Count
 	2201-2302	-	EXP Combo Bar
 	3101		-	Background Tint for Menus/Armor-Display
@@ -384,7 +386,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [157] EXP Combo Timer
 // [158] EXP Combo Kills
 // [159] Combo Multiplier
-	// [160+] are undefined so far :P
+// [160] Combo EXP Total
+// [161] Exp Combo Timer Multiplier
+	// [162+] are undefined so far :P
 
 
 global int 22:DVIIGameFlags[]; // ***ARRAY***
@@ -1638,7 +1642,7 @@ script "Initializer" OPEN
 
 script "HUDDisplay" ENTER
 {
- int C1, C2, I1, I2, Z1, Z2, G1, G2, G3, G4, HexToInt1, HexToInt2, G5, G8, HealMin, HealMax, HealSorcRatio;
+ int C1, C2, I1, I2, Z1, Z2, G1, G2, G3, G4, HexToInt1, HexToInt2, G5, G8, HealMin, HealMax, HealSorcRatio, G6;
  str S1;
  
  if (VeryFirstRun > 0 && CheckActorInventory(1001,"PlayerDeathFadeOut") < 1 && GetCVAR("dvds_showacshudelements") == 1)
@@ -1661,19 +1665,75 @@ script "HUDDisplay" ENTER
    HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3302,cr_untranslated,1.0+I2,24.0,1.0);
   }
 
+  G6 += 1; if (G6 > 11) G6 = 0; // Resets Palette Flasher
+
   // EXP Combo Timer Bar
   for (C1 = 101; C1 > 1; C1 --)
   {
-   I1 = fixedmul(fixeddiv(MiscellaneousVars[157] << 16,280 << 16),100.0) >> 16;
+   I1 = fixedmul(fixeddiv(MiscellaneousVars[157] << 16,5600 << 16),100.0) >> 16;
    if (C1 - 1 <= I1) SetFont("COMBOHF"); else SetFont("COMBOHE");
    I2 = C1 << 16;
    HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+2200,cr_untranslated,1.0+I2,68.0,1.0);
   }
+
   // EXP Combo Kill Counter
   SetFont("SmallFont");
   if (MiscellaneousVars[158] > 0)
   {
-   HudMessage(d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+   if (G6 > 8)
+   {
+    // \c[LightBlue]
+    if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[LightBlue]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+    if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[LightBlue]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+   }
+   else
+   if (G6 > 5 && G6 < 9)
+   {
+    // \c[Gray]
+    if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[Gray]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+    if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[Gray]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+   }
+   else
+   if (G6 > 2 && G6 < 6)
+   {
+    // \c[Green]
+    if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[Green]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+    if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[Green]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+   }
+   else
+   if (G6 < 3)
+   {
+    // \c[Purple]
+    if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[Purple]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+    if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[Purple]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+   }
+  }
+  // EXP Combo Total
+  if (MiscellaneousVars[158] > 1 && MiscellaneousVars[160] > 0)
+  {
+   if (G6 > 8)
+   {
+    // \c[LightBlue]
+    HudMessage(s:"\c[LightBlue]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
+   }
+   else
+   if (G6 > 5 && G6 < 9)
+   {
+    // \c[Gray]
+    HudMessage(s:"\c[Gray]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
+   }
+   else
+   if (G6 > 2 && G6 < 6)
+   {
+    // \c[Green]
+    HudMessage(s:"\c[Green]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
+   }
+   else
+   if (G6 < 3)
+   {
+    // \c[Purple]
+    HudMessage(s:"\c[Purple]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
+   }
   }
 
   // EXP Combo Multiplier
@@ -1681,9 +1741,31 @@ script "HUDDisplay" ENTER
   MultiLower = (MiscellaneousVars[159] - 1000) % 10;
   MultiUpper = ((MiscellaneousVars[159] - 1000) - MultiLower) / 10;
   SetFont("SmallFont");
-  if (MiscellaneousVars[158] > 0)
+  if (MiscellaneousVars[158] > 1)
   {
-   HudMessage(s:"+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_darkgreen,51.0,80.0,0.04);
+   if (G6 > 8)
+   {
+    // \c[LightBlue]
+    HudMessage(s:"\c[LightBlue]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+   }
+   else
+   if (G6 > 5 && G6 < 9)
+   {
+    // \c[Gray]
+    HudMessage(s:"\c[Gray]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+   }
+   else
+   if (G6 > 2 && G6 < 6)
+   {
+    // \c[Green]
+    HudMessage(s:"\c[Green]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+   }
+   else
+   if (G6 < 3)
+   {
+    // \c[Purple]
+    HudMessage(s:"\c[Purple]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+   }
   }
 
 
@@ -1866,28 +1948,40 @@ script "HUDDisplay" ENTER
    if (G5 > 8)
    {
     HudMessage(
-    s:"\c[LightBlue]AeonPTS: \cf",d:MiscellaneousVars[25];
+    s:"\c[LightBlue]AeonPTS: \cf",d:MiscellaneousVars[25],
+                                            s:"\cn  (\cj",k:"puke 891 0",s:"\cf [down], \cj",
+                                                          k:"puke 891 1",s:"\cf [up], \cj",
+                                                          k:"puke 891 2",s:"\cf [use]\cn)";
     HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,16.0,0.1);
    }
    else
    if (G5 > 5 && G5 < 9)
    {
     HudMessage(
-    s:"\c[Gray]AeonPTS: \cf",d:MiscellaneousVars[25];
+    s:"\c[Gray]AeonPTS: \cf",d:MiscellaneousVars[25],
+                                            s:"\cn  (\cj",k:"puke 891 0",s:"\cf [down], \cj",
+                                                          k:"puke 891 1",s:"\cf [up], \cj",
+                                                          k:"puke 891 2",s:"\cf [use]\cn)";
     HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,16.0,0.1);
    }
    else
    if (G5 > 2 && G5 < 6)
    {
     HudMessage(
-    s:"\c[Green]AeonPTS: \cf",d:MiscellaneousVars[25];
+    s:"\c[Green]AeonPTS: \cf",d:MiscellaneousVars[25],
+                                            s:"\cn  (\cj",k:"puke 891 0",s:"\cf [down], \cj",
+                                                          k:"puke 891 1",s:"\cf [up], \cj",
+                                                          k:"puke 891 2",s:"\cf [use]\cn)";
     HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,16.0,0.1);
    }
    else
    if (G5 < 3)
    {
     HudMessage(
-    s:"\c[Purple]AeonPTS: \cf",d:MiscellaneousVars[25];
+    s:"\c[Purple]AeonPTS: \cf",d:MiscellaneousVars[25],
+                                            s:"\cn  (\cj",k:"puke 891 0",s:"\cf [down], \cj",
+                                                          k:"puke 891 1",s:"\cf [up], \cj",
+                                                          k:"puke 891 2",s:"\cf [use]\cn)";
     HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,16.0,0.1);
    }
   }
@@ -2001,16 +2095,16 @@ script "HUDDisplay" ENTER
      {
       if (CharacterClass == 2)
       {
-       HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
       else
       {
-       HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
      }
      else
      {
-      HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+      HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
      }
     }
     else
@@ -2020,22 +2114,22 @@ script "HUDDisplay" ENTER
      {
       if (CharacterClass == 2)
       {
-       HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
       else
       {
-       HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
      }
      else
      {
-      HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+      HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
      }
     }
    }
    else
    {
-    HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: Empty";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+    HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: Empty";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
    }
   }
 
@@ -10865,6 +10959,9 @@ script 833 ENTER
  if (GetCVar("dvds_startotherstatsfactor") > -1 && GetCVar("dvds_startotherstatsfactor") < 20) MiscellaneousVars[148] = (GetCVar("dvds_startotherstatsfactor") + 1) * 100;
  if (GetCVar("dvds_startotherstatsfactor") > 19 && GetCVar("dvds_startotherstatsfactor") < 39) MiscellaneousVars[148] = (GetCVar("dvds_startotherstatsfactor") - 19) * 5;
 
+ if (GetCVar("dvds_expcombotimermultiplier") > -1 && GetCVar("dvds_expcombotimermultiplier") < 20) MiscellaneousVars[161] = (GetCVar("dvds_expcombotimermultiplier") + 1) * 100;
+ if (GetCVar("dvds_expcombotimermultiplier") > 19 && GetCVar("dvds_expcombotimermultiplier") < 39) MiscellaneousVars[161] = (GetCVar("dvds_expcombotimermultiplier") - 19) * 5;
+
  // Print(d:MiscellaneousVars[86],s:"\n",d:MiscellaneousVars[87],s:"\n",d:MiscellaneousVars[88],s:"\n",d:MiscellaneousVars[89],s:"\n",d:MiscellaneousVars[90],s:"\n",d:MiscellaneousVars[130],s:"\n",d:MiscellaneousVars[131],s:"\n",d:MiscellaneousVars[137],s:"\n",d:MiscellaneousVars[138],s:"\n",d:MiscellaneousVars[139]);
 
  if (ClassCheck == 1) // Will run the check only once at the beginning of a new game
@@ -11298,10 +11395,13 @@ script 833 ENTER
   ClassCheck += 1; // Class Check is done six times for randomization purposes.
  }
 
+ int TimerMulti;
  // Check EXP Kill Combo Timer
  if (MiscellaneousVars[157] > 0)
  {
-  MiscellaneousVars[157] --;
+  TimerMulti = 20 * MiscellaneousVars[161] / 100;
+  MiscellaneousVars[157] -= TimerMulti;
+  //MiscellaneousVars[157] -= 20;
 /*
   PrintBold(s:"Timer: ",d:MiscellaneousVars[157],
             s:"\nKills: ",d:MiscellaneousVars[158],
@@ -11311,6 +11411,7 @@ script 833 ENTER
  if (MiscellaneousVars[157] <= 0)
  {
   MiscellaneousVars[158] = 0; // Set kill counter back to 0
+  MiscellaneousVars[160] = 0; // Set EXP Combo Amount back to 0
  }
 
 
@@ -21897,11 +21998,14 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  }
 
  // Increment the kill combo timer
- if (incrementcombo == 1)
+ if (GetCVar("dvds_expcombosystem") == 1)
  {
-  if (MiscellaneousVars[157] <= 0) MiscellaneousVars[157] = 140; else MiscellaneousVars[157] += 35; // If not set, set to 4 seconds, if already set, add 1 second
-  if (MiscellaneousVars[157] >= 280) MiscellaneousVars[157] = 280; // Combo Timer maxes at 8 seconds.
-  MiscellaneousVars[158] += 1; // Increment Kill Combo Count by 1
+  if (incrementcombo == 1)
+  {
+   if (MiscellaneousVars[157] <= 0) MiscellaneousVars[157] = 2800; else MiscellaneousVars[157] += 700; // If not set, set to 4 seconds, if already set, add 1 second
+   if (MiscellaneousVars[157] >= 5600) MiscellaneousVars[157] = 5600; // Combo Timer maxes at 8 seconds.
+   MiscellaneousVars[158] += 1; // Increment Kill Combo Count by 1
+  }
  }
 
  // Check Base Experience to see if it's a fixed amount or if it should be based on spawnhealth/user_MaxHP
@@ -22034,4 +22138,11 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   }
  }
 
+ if (GetCVar("dvds_expcombosystem") == 1)
+ {
+  if (incrementcombo == 1)
+  {
+   MiscellaneousVars[160] += finalexpamount;
+  }
+ }
 }
