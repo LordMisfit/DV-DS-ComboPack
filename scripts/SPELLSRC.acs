@@ -22,6 +22,8 @@ HudMessage Tags:
 	3		-	Tunnel Vision Display
       ...
 	2001-2010	-	Readied Spells [QuickCast]
+	2200		-	EXP Combo Kill Count
+	2201-2302	-	EXP Combo Bar
 	3101		-	Background Tint for Menus/Armor-Display
 	3202-3303	-	Mana Bar
 	3304-3405	-	Exp Bar
@@ -379,7 +381,10 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [154] stored Rockets [for Deg/Illu for Forced Pistol Restarts]
 // [155] stored Cells [for Deg/Illu for Forced Pistol Restarts]
 // [156] stored Arrows [for Flora for Forced Pistol Restarts]
-	// [157+] are undefined so far :P
+// [157] EXP Combo Timer
+// [158] EXP Combo Kills
+// [159] Combo Multiplier
+	// [160+] are undefined so far :P
 
 
 global int 22:DVIIGameFlags[]; // ***ARRAY***
@@ -1157,7 +1162,7 @@ function void hudmessageonactor(int tid, int range, str sprite, str text)
 function int SpellCostCheck(int checktype)
 {
  int SpellIsSelected, FinalSpellCost, GodlyAvatarPercentCost, SpellCostDeclineLevelsNeeded, LevelSpellCostReductionFactor, LvlSpellCostReducePercent, SecretSplCostReduceBonus, Check1, Check2;
- int OriginalSpellCost;
+ int OriginalSpellCost, StatManaCostReduction;
 
  // G1 = FinalSpellCost
  SpellIsSelected = checktype;
@@ -1373,10 +1378,16 @@ function int SpellCostCheck(int checktype)
  if (GameSkill() == SKILL_HARD) SpellCostMinimum =  OriginalSpellCost * 49 / 100;
  if (GameSkill() == SKILL_VERY_HARD) SpellCostMinimum = OriginalSpellCost * 55 / 100;
 
+ // Clamp Minimum Mana Cost
  if (FinalSpellCost < SpellCostMinimum) FinalSpellCost = SpellCostMinimum;
 
-  // Checks Mana Cost Rate Menu Option
-  FinalSpellCost = FinalSpellCost * MiscellaneousVars[145] / 100;
+ // ((Sorcery + Thrapeusis) / 2) = -0.1% Final Mana Cost [circumvents Clamp]
+ StatManaCostReduction = 100 - ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 20);
+ if (StatManaCostReduction < 50) StatManaCostReduction = 50;
+ FinalSpellCost = FinalSpellCost * StatManaCostReduction / 100;
+
+ // Checks Mana Cost Rate Menu Option [circumvents Clamp]
+ FinalSpellCost = FinalSpellCost * MiscellaneousVars[145] / 100;
 
  if (FinalSpellCost < 1) FinalSpellCost = 1;
  if (FinalSpellCost > MaxMana) FinalSpellCost = MaxMana;
@@ -1649,6 +1660,32 @@ script "HUDDisplay" ENTER
    I2 = C1 << 16;
    HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3302,cr_untranslated,1.0+I2,24.0,1.0);
   }
+
+  // EXP Combo Timer Bar
+  for (C1 = 101; C1 > 1; C1 --)
+  {
+   I1 = fixedmul(fixeddiv(MiscellaneousVars[157] << 16,280 << 16),100.0) >> 16;
+   if (C1 - 1 <= I1) SetFont("COMBOHF"); else SetFont("COMBOHE");
+   I2 = C1 << 16;
+   HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+2200,cr_untranslated,1.0+I2,68.0,1.0);
+  }
+  // EXP Combo Kill Counter
+  SetFont("SmallFont");
+  if (MiscellaneousVars[158] > 0)
+  {
+   HudMessage(d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+  }
+
+  // EXP Combo Multiplier
+  int MultiUpper, MultiLower;
+  MultiLower = (MiscellaneousVars[159] - 1000) % 10;
+  MultiUpper = ((MiscellaneousVars[159] - 1000) - MultiLower) / 10;
+  SetFont("SmallFont");
+  if (MiscellaneousVars[158] > 0)
+  {
+   HudMessage(s:"+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_darkgreen,51.0,80.0,0.04);
+  }
+
 
   // SauronEyeMain [Boss HP Bar]
   G1 = GetActorProperty(1123,APROP_Health);
@@ -1933,10 +1970,22 @@ script "HUDDisplay" ENTER
    HudMessage(s:SpellDesc[SelectedSpell];0,3407,cr_gold,320.0,456.0,1.0);
   }
 
+  str KeyName;
   SetHudSize(640,480,0);
   // Spell Bind Displays
   for (C1 = 0; C1 < 10; C1 ++)
   {
+   if (C1+1 == 1) Keyname = "Puke 806 0";
+   if (C1+1 == 2) Keyname = "Puke 806 1";
+   if (C1+1 == 3) Keyname = "Puke 806 2";
+   if (C1+1 == 4) Keyname = "Puke 806 3";
+   if (C1+1 == 5) Keyname = "Puke 806 4";
+   if (C1+1 == 6) Keyname = "Puke 806 5";
+   if (C1+1 == 7) Keyname = "Puke 806 6";
+   if (C1+1 == 8) Keyname = "Puke 806 7";
+   if (C1+1 == 9) Keyname = "Puke 806 8";
+   if (C1+1 == 10) Keyname = "Puke 806 9";
+
    if (ReadiedSpells[C1] != 0)
    {
     // Function Ran
@@ -1952,16 +2001,16 @@ script "HUDDisplay" ENTER
      {
       if (CharacterClass == 2)
       {
-       HudMessage(d:C1+1,s:": ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
       else
       {
-       HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
      }
      else
      {
-      HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+      HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
      }
     }
     else
@@ -1971,22 +2020,22 @@ script "HUDDisplay" ENTER
      {
       if (CharacterClass == 2)
       {
-       HudMessage(d:C1+1,s:": ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
       else
       {
-       HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
       }
      }
      else
      {
-      HudMessage(d:C1+1,s:": ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+      HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
      }
     }
    }
    else
    {
-    HudMessage(d:C1+1,s:": Empty";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+    HudMessage(d:C1+1,s:" [",k:Keyname,s:"]: Empty";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
    }
   }
 
@@ -11249,6 +11298,22 @@ script 833 ENTER
   ClassCheck += 1; // Class Check is done six times for randomization purposes.
  }
 
+ // Check EXP Kill Combo Timer
+ if (MiscellaneousVars[157] > 0)
+ {
+  MiscellaneousVars[157] --;
+/*
+  PrintBold(s:"Timer: ",d:MiscellaneousVars[157],
+            s:"\nKills: ",d:MiscellaneousVars[158],
+            s:"\nMultiplier: ",d:MiscellaneousVars[159]);
+*/
+ }
+ if (MiscellaneousVars[157] <= 0)
+ {
+  MiscellaneousVars[158] = 0; // Set kill counter back to 0
+ }
+
+
  int ArmorResistance, ArmRes1, ArmRes2, ArmRes3;
  if (ClassCheck > 2) // Attempting to Interpolate Health Values for the player to show damage values.
  {
@@ -17766,12 +17831,16 @@ script "GetChainsawDamage" (int sawtype)
 
  if (sawtype <= 1) // Normal Chainsaw
  {
-  damage = 2 * random(1,10); // 2 - 20
+  damage = ((2 + (MiscellaneousVars[35] / 10)) * random(1,10)); // 2 - 20 + (Strength * 10%)
  }
  if (sawtype >= 2) // Double-Bladed Chainsaw
  {
-  damage = (9 / 2) * random(3,12); // 13.5 - 54
+  damage = (((9 / 2) + (MiscellaneousVars[35] * 9 / 40)) * random(3,12)); // 13.5 - 54 + (Strength * 22.5%)
  }
+
+ // Berserk Check
+ if (CheckInventory("PowerStrength") > 0) damage = damage * 7 / 4; // 175% Damage when Berserked
+
  SetResultValue(damage);
 }
 
@@ -21815,10 +21884,11 @@ script "MaxHPDropChance" (void)
 }
 
 // Important Script for Future use [possibly plans to remove the ID-based exp system and just make it into a seperate script
-script "AddEXP" (int baseamount, int flags)
+script "AddEXP" (int baseamount, int flags, int incrementcombo)
 {
  int baseexp, finalexpamount, overkillhp, overkillhp2;
  int Exp1, Exp2, ExpMultiFactor, RealExpGain;
+ int ComboMultiplier;
 
  if (CheckFlag(0,"FRIENDLY") == 1)
  {
@@ -21826,7 +21896,34 @@ script "AddEXP" (int baseamount, int flags)
   else terminate; // Any "FRIENDLY" flagged monster who runs the script will not get beyond this point UNLESS they have bit 1 enabled.
  }
 
+ // Increment the kill combo timer
+ if (incrementcombo == 1)
+ {
+  if (MiscellaneousVars[157] <= 0) MiscellaneousVars[157] = 140; else MiscellaneousVars[157] += 35; // If not set, set to 4 seconds, if already set, add 1 second
+  if (MiscellaneousVars[157] >= 280) MiscellaneousVars[157] = 280; // Combo Timer maxes at 8 seconds.
+  MiscellaneousVars[158] += 1; // Increment Kill Combo Count by 1
+ }
+
  // Check Base Experience to see if it's a fixed amount or if it should be based on spawnhealth/user_MaxHP
+ if (baseamount == -2) // Base on the menu option
+ {
+  if (GetCVar("dvds_monsterexpbase") == 1)
+  {
+   if (GetUserVariable(0,"user_MaxHP") <= 0)
+   {
+    baseexp = GetActorProperty(0,APROP_SpawnHealth);
+   }
+   else
+   {
+    baseexp = GetUserVariable(0,"user_MaxHP");
+   }
+  }
+  else
+  {
+   baseexp = GetActorProperty(0,APROP_SpawnHealth);
+  }
+ }
+ else
  if (baseamount == -1) // ALWAYS use SpawnHealth and not user_MaxHP [if you always want it based only on their base HP and not their recalculated HP]
  {
   baseexp = GetActorProperty(0,APROP_SpawnHealth);
@@ -21870,6 +21967,47 @@ script "AddEXP" (int baseamount, int flags)
  ExpMultiFactor = GetExpMultiFactor(); // FUNCTION CALL
  finalexpamount = GetExperience(finalexpamount,ExpMultiFactor); // FUNCTION CALL
 
+ // EXP Combo Counter
+ if (MiscellaneousVars[158] >= 1)
+ {
+  if (MiscellaneousVars[158] > 0 && MiscellaneousVars[158] < 11)
+  {
+   MiscellaneousVars[159] = MiscellaneousVars[158];
+  }
+  else
+  if (MiscellaneousVars[158] > 10 && MiscellaneousVars[158] < 21)
+  {
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 9 / 8; // 112.5%
+  }
+  else
+  if (MiscellaneousVars[158] > 20 && MiscellaneousVars[158] < 36)
+  {
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 11 / 8; // 137.5%
+  }
+  else
+  if (MiscellaneousVars[158] > 35 && MiscellaneousVars[158] < 60)
+  {
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 14 / 8; // 175%
+  }
+  else
+  if (MiscellaneousVars[158] > 61 && MiscellaneousVars[158] < 100)
+  {
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 18 / 8; // 225%
+  }
+  else
+  if (MiscellaneousVars[158] > 101 && MiscellaneousVars[158] < 200)
+  {
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 23 / 8; // 287.5%
+  }
+  else
+  if (MiscellaneousVars[158] > 201)
+  {
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 29 / 8; // 412.5%
+  }
+  MiscellaneousVars[159] = MiscellaneousVars[159] + 1000;
+  finalexpamount = (finalexpamount * MiscellaneousVars[159]) / 1000;
+ }
+
  if (finalexpamount < 1) finalexpamount = 1;
  Experience += finalexpamount;
 
@@ -21895,4 +22033,5 @@ script "AddEXP" (int baseamount, int flags)
    HudMessage(s:"";0,3421,cr_red,51.0,11.0,1.5);
   }
  }
+
 }
