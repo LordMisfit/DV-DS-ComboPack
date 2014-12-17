@@ -1738,33 +1738,37 @@ script "HUDDisplay" ENTER
 
   // EXP Combo Multiplier
   int MultiUpper, MultiLower;
-  MultiLower = (MiscellaneousVars[159] - 1000) % 10;
-  MultiUpper = ((MiscellaneousVars[159] - 1000) - MultiLower) / 10;
+  MultiLower = (MiscellaneousVars[159] - 10000) % 100;
+  MultiUpper = ((MiscellaneousVars[159] - 10000) - MultiLower) / 100;
   SetFont("SmallFont");
   if (MiscellaneousVars[158] > 1)
   {
    if (G6 > 8)
    {
     // \c[LightBlue]
-    HudMessage(s:"\c[LightBlue]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[LightBlue]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    else HudMessage(s:"\c[LightBlue]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
    }
    else
    if (G6 > 5 && G6 < 9)
    {
     // \c[Gray]
-    HudMessage(s:"\c[Gray]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[Gray]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    else HudMessage(s:"\c[Gray]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
    }
    else
    if (G6 > 2 && G6 < 6)
    {
     // \c[Green]
-    HudMessage(s:"\c[Green]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[Green]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    else HudMessage(s:"\c[Green]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
    }
    else
    if (G6 < 3)
    {
     // \c[Purple]
-    HudMessage(s:"\c[Purple]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[Purple]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    else HudMessage(s:"\c[Purple]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
    }
   }
 
@@ -2387,33 +2391,17 @@ function int GetExpMultiFactor (void)
   int ExpMultiFactor, Exp1, Exp2;
   // Gets the Experience Multiplication Factor [Part 1]
   ExpMultiFactor = Random(90,120);
-  if (CharacterClass == 2) // Flora has more options due to her 200 Max Level cap [although slightly more spread out]
+  if (PlayerLevel < 40) ExpMultiFactor += PlayerLevel * 17 / 16; // +6.25%
+  else
   {
-   if (PlayerLevel < 40) ExpMultiFactor += PlayerLevel * 17 / 16; // +6.25%
+   if (PlayerLevel < 80) ExpMultiFactor += PlayerLevel * 9 / 8; // +12.5%
    else
    {
-    if (PlayerLevel < 80) ExpMultiFactor += PlayerLevel * 9 / 8; // +12.5%
+    if (PlayerLevel < 120) ExpMultiFactor += PlayerLevel * 5 / 4; // +25%
     else
     {
-     if (PlayerLevel < 120) ExpMultiFactor += PlayerLevel * 5 / 4; // +25%
-     else
-     {
-      if (PlayerLevel < 160) ExpMultiFactor += PlayerLevel * 3 / 2; // +50%
-      else ExpMultiFactor += PlayerLevel * 2; // +100%
-     }
-    }
-   }
-  }
-  else // Deggaris and Illucia
-  {
-   if (PlayerLevel < 30) ExpMultiFactor += PlayerLevel * 17 / 16; // +6.25% 
-   else
-   {
-    if (PlayerLevel < 60) ExpMultiFactor += PlayerLevel * 9 / 8; // +12.5%
-    else
-    {
-     if (PlayerLevel < 90) ExpMultiFactor += PlayerLevel * 5 / 4; // +25%
-     else ExpMultiFactor += PlayerLevel * 3 / 2; // +50%
+     if (PlayerLevel < 160) ExpMultiFactor += PlayerLevel * 3 / 2; // +50%
+     else ExpMultiFactor += PlayerLevel * 2; // +100%
     }
    }
   }
@@ -2599,7 +2587,10 @@ function int GetExpMultiFactor (void)
 
   ExpMultiFactor += Exp2;
 
-  //PrintBold(s:"ModType: ",d:ModType,s:"\nExp1: ",d:Exp1,s:"\nExp2: ",d:Exp2,s:"\nExpMultiFactor: ",d:ExpMultiFactor);
+  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+  {
+   PrintBold(s:"ModType: ",d:ModType,s:"\nExp1: ",d:Exp1,s:"\nExp2: ",d:Exp2,s:"\nExpMultiFactor: ",d:ExpMultiFactor);
+  }
   return ExpMultiFactor;
 }
 
@@ -2608,21 +2599,37 @@ function int GetExpMultiFactor (void)
 //---------------------------------------------
 function int GetExperience (int RealExpGain, int ExpMultiFactor)
 {
+ int OldExp1 = RealExpGain;
  RealExpGain = RealExpGain * ExpMultiFactor / 100; // Randomizes some of the experience gained
+ int OldExp2 = RealExpGain;
  RealExpGain = RealExpGain * (48 + MiscellaneousVars[40]) / 48; // Get # of Deftness state
+ int OldExp3 = RealExpGain;
  RealExpGain = RealExpGain * MiscellaneousVars[90] / 100; // EXP Multiplier Option
+ int OldExp4 = RealExpGain;
  if (GameSkill() == SKILL_VERY_EASY) RealExpGain = RealExpGain * 25 / 8; // 312.5%
  else if (GameSkill() == SKILL_EASY) RealExpGain = RealExpGain * 5 / 2; // 250%
  else if (GameSkill() == SKILL_NORMAL) RealExpGain = RealExpGain * 15 / 8; // 187.5%
  else if (GameSkill() == SKILL_HARD) RealExpGain = RealExpGain * 5 / 4; // 125%
  else if (GameSkill() == SKILL_VERY_HARD) RealExpGain = RealExpGain * 7 / 8; // 87.5%
+ int OldExp5 = RealExpGain;
 
  if (CharacterClass == 2) // Only Flora can Equip the Pearly Corset [+30% EXP Bonus (or a 5% chance for a +45% bonus)]
  {
   if (CheckActorInventory(1001,"PearlyCorset")) { if (random(1,100) < 6) { RealExpGain = RealExpGain * 145 / 100; } else { RealExpGain = RealExpGain * 130 / 100; } }
  }
+ int OldExp6 = RealExpGain;
  if (PowerupRunning[7] == 1) { if (random(1,100) > 67) { RealExpGain = RealExpGain * 7 / 6; } else { RealExpGain = RealExpGain * 13 / 12; } } // Divine Avatar [+8.333% EXP, (33% chance of +16.67% EXP instead]
 
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ {
+  PrintBold(s:"OldEXP1: ",d:OldExp1,
+           s:"\nOldEXP2: ",d:OldExp2,
+           s:"\nOldEXP3: ",d:OldExp3,
+           s:"\nOldEXP4: ",d:OldExp4,
+           s:"\nOldEXP5: ",d:OldExp5,
+           s:"\nOldEXP6: ",d:OldExp6,
+           s:"\nNewEXP: ",d:RealExpGain);
+ }
  return RealExpGain;
 }
 
@@ -10961,6 +10968,9 @@ script 833 ENTER
 
  if (GetCVar("dvds_expcombotimermultiplier") > -1 && GetCVar("dvds_expcombotimermultiplier") < 20) MiscellaneousVars[161] = (GetCVar("dvds_expcombotimermultiplier") + 1) * 100;
  if (GetCVar("dvds_expcombotimermultiplier") > 19 && GetCVar("dvds_expcombotimermultiplier") < 39) MiscellaneousVars[161] = (GetCVar("dvds_expcombotimermultiplier") - 19) * 5;
+
+ if (GetCVar("dvds_expcombobasemultiplier") > -1 && GetCVar("dvds_expcombobasemultiplier") < 20) MiscellaneousVars[162] = (GetCVar("dvds_expcombobasemultiplier") + 1) * 100;
+ if (GetCVar("dvds_expcombobasemultiplier") > 19 && GetCVar("dvds_expcombobasemultiplier") < 39) MiscellaneousVars[162] = (GetCVar("dvds_expcombobasemultiplier") - 19) * 5;
 
  // Print(d:MiscellaneousVars[86],s:"\n",d:MiscellaneousVars[87],s:"\n",d:MiscellaneousVars[88],s:"\n",d:MiscellaneousVars[89],s:"\n",d:MiscellaneousVars[90],s:"\n",d:MiscellaneousVars[130],s:"\n",d:MiscellaneousVars[131],s:"\n",d:MiscellaneousVars[137],s:"\n",d:MiscellaneousVars[138],s:"\n",d:MiscellaneousVars[139]);
 
@@ -22045,12 +22055,20 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  }
 
  finalexpamount = baseexp;
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ {
+  PrintBold(s:"EXP: ",d:finalexpamount);
+ }
 
  // Check for Fast Monsters setting
  if (GetCVar("sv_fastmonsters") == 1) finalexpamount = finalexpamount * 11 / 8; // [+37.5%]
 
  // Check Proper Flags
  if (CheckFlag(0,"STEALTH") == 1) finalexpamount = finalexpamount * 2;	// STEALTH = [+100%]
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ {
+  PrintBold(s:"EXP2: ",d:finalexpamount);
+ }
 
  if (GetUserVariable(0,"user_MaxHP") <= 0) { overkillhp = GetActorProperty(0,APROP_SpawnHealth) * -1; }
  else { overkillhp = GetUserVariable(0,"user_MaxHP") * -1; }
@@ -22058,58 +22076,77 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (GetUserVariable(0,"user_MaxHP") <= 0) { overkillhp2 = GetActorProperty(0,APROP_SpawnHealth) * -4; }
  else { overkillhp2 = GetUserVariable(0,"user_MaxHP") * -4; }
 
- //PrintBold(d:GetActorProperty(0,APROP_Health),s:" / ",d:overkillhp);
  if (GetActorProperty(0,APROP_Health) <= overkillhp) { finalexpamount = finalexpamount * 9 / 8; }	// Overkilled [+25%]
  if (GetActorProperty(0,APROP_Health) <= overkillhp2) { finalexpamount = finalexpamount * 9 / 8; }	// Super-Overkilled [+25%]
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ {
+  PrintBold(s:"EXP3: ",d:finalexpamount);
+ }
 
  ExpMultiFactor = GetExpMultiFactor(); // FUNCTION CALL
  finalexpamount = GetExperience(finalexpamount,ExpMultiFactor); // FUNCTION CALL
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ {
+  PrintBold(s:"EXP4: ",d:finalexpamount);
+ }
 
  // EXP Combo Counter
  if (MiscellaneousVars[158] >= 1)
  {
   if (MiscellaneousVars[158] > 0 && MiscellaneousVars[158] < 11)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158];
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
   }
   else
   if (MiscellaneousVars[158] > 10 && MiscellaneousVars[158] < 21)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 9 / 8; // 112.5%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
+   MiscellaneousVars[159] = MiscellaneousVars[159] * 9 / 8; // 112.5%
   }
   else
   if (MiscellaneousVars[158] > 20 && MiscellaneousVars[158] < 36)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 11 / 8; // 137.5%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
+   MiscellaneousVars[159] = MiscellaneousVars[159] * 11 / 8; // 137.5%
   }
   else
   if (MiscellaneousVars[158] > 35 && MiscellaneousVars[158] < 60)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 14 / 8; // 175%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
+   MiscellaneousVars[159] = MiscellaneousVars[159] * 14 / 8; // 175%
   }
   else
   if (MiscellaneousVars[158] > 61 && MiscellaneousVars[158] < 100)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 18 / 8; // 225%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
+   MiscellaneousVars[159] = MiscellaneousVars[159] * 18 / 8; // 225%
   }
   else
   if (MiscellaneousVars[158] > 101 && MiscellaneousVars[158] < 200)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 23 / 8; // 287.5%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
+   MiscellaneousVars[159] = MiscellaneousVars[159] * 23 / 8; // 287.5%
   }
   else
   if (MiscellaneousVars[158] > 201)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 29 / 8; // 412.5%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
+   MiscellaneousVars[159] = MiscellaneousVars[159] * 29 / 8; // 412.5%
   }
-  MiscellaneousVars[159] = MiscellaneousVars[159] * (GetCVar("dvds_expcombobasemultiplier") + 1);
-  MiscellaneousVars[159] = MiscellaneousVars[159] + 1000;
-  finalexpamount = (finalexpamount * MiscellaneousVars[159]) / 1000;
+  MiscellaneousVars[159] = MiscellaneousVars[159] * MiscellaneousVars[162] / 100;
+  if (MiscellaneousVars[159] < 1) MiscellaneousVars[159] = 1;
+  MiscellaneousVars[159] = MiscellaneousVars[159] + 10000;
+  finalexpamount = (finalexpamount * MiscellaneousVars[159]) / 10000;
  }
 
  if (finalexpamount < 1) finalexpamount = 1;
  Experience += finalexpamount;
 
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ {
+  PrintBold(d:GetActorProperty(0,APROP_Health),s:" / ",d:overkillhp,s:"\n",
+           d:baseexp,s:" / ",d:finalexpamount);
+ }
  SetHudSize(640,480,0);
  if (GetActorProperty(0,APROP_Health) <= overkillhp2)
  {
