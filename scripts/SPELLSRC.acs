@@ -388,7 +388,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [159] Combo Multiplier
 // [160] Combo EXP Total
 // [161] Exp Combo Timer Multiplier
-	// [162+] are undefined so far :P
+// [162] Exp Combo Base Multipler
+// [163] Secondary Spinning Timer
+	// [164+] are undefined so far :P
 
 
 global int 22:DVIIGameFlags[]; // ***ARRAY***
@@ -11405,10 +11407,35 @@ script 833 ENTER
  }
 
  int TimerMulti;
+ int TimerPart1;
  // Check EXP Kill Combo Timer
  if (MiscellaneousVars[157] > 0)
  {
   TimerMulti = 20 * MiscellaneousVars[161] / 100;
+  TimerPart1 = 100;
+  if (CharacterClass == 2)
+  {
+   if (CheckActorInventory(1001,"RuinousShield") > 0) TimerPart1 += 78;
+   else
+   {
+    if (CheckActorInventory(1001,"SafeTeaShoes") > 0) TimerPart1 -= 10; // Item 1
+    if (CheckActorInventory(1001,"CloakofEvasion") > 0) TimerPart1 -= 5; // Item 5
+    if (CheckActorInventory(1001,"DivineShield") > 0) TimerPart1 -= 15; // Item 8
+   }
+  }
+  else
+  {
+   if (CheckActorInventory(1001,"DSGreenArmorClass") > 0) TimerPart1 -= 5;
+   if (CheckActorInventory(1001,"DSBlueArmorClass") > 0) TimerPart1 -= 10;
+   if (CheckActorInventory(1001,"DSStoneArmorClass1") > 0) TimerPart1 -= 15;
+   if (CheckActorInventory(1001,"DSDiamondArmorClass1") > 0) TimerPart1 -= 20;
+   if (CheckActorInventory(1001,"DSStoneArmorClass2") > 0) TimerPart1 -= 25;
+   if (CheckActorInventory(1001,"DSDiamondArmorClass2") > 0) TimerPart1 -= 30;
+  }
+  if (CheckActorInventory(1001,"TheOneRing") > 0) TimerPart1 -= 20;
+  if (TimerPart1 < 50) TimerPart1 = 50;
+  TimerMulti = (TimerMulti * TimerPart1) / 100;
+
   if (PowerupTimer[5] > 0) TimerMulti = TimerMulti / 15;
   if (TimerMulti < 1) TimerMulti = 1;
   MiscellaneousVars[157] -= TimerMulti;
@@ -17811,7 +17838,7 @@ script "CheckSceptreAltFire" (void)
 }
 
 // Returns Sceptre Damage [including w/ berserk/other amplication items]
-script "GetSceptreDamage" (int attacktype, int attacklevel)
+script "GetSceptreDamage" (int attacktype, int attacklevel, int shockwave)
 {
  int damage;
  int strengthcounter;
@@ -17854,11 +17881,169 @@ script "GetSceptreDamage" (int attacktype, int attacklevel)
   if (attacklevel == 3) damage = damage * 15 / 16; // If performing the Spinning Attack [93.25%]
   damage = damage / 4;
  }
- // Berserk Check
- if (CheckInventory("PowerStrength") > 0) damage = damage * 10;
 
- // Print(d:damage);
+ // Berserk Check
+ if (CheckActorInventory(1001,"PowerStrength") > 0) damage = damage * 10;
+
+ if (shockwave == 1) damage = damage / 6;
+
+ //PrintBold(d:damage);
  SetResultValue(damage);
+}
+
+script "GetSceptreLevel" (void)
+{
+ SetResultValue(SceptreActualLevel);
+}
+
+script "GetSceptreRange" (int attacktype)
+{
+ int range;
+ if (attacktype == 0) // Normal Swing
+ {
+  if (SceptreActualLevel <= 0) range = 104;
+  if (SceptreActualLevel == 1) range = 106; // +2
+  if (SceptreActualLevel == 2) range = 108; // +2
+  if (SceptreActualLevel == 3) range = 110; // +2
+  if (SceptreActualLevel == 4) range = 112; // +2
+  if (SceptreActualLevel == 5) range = 116; // +4
+  if (SceptreActualLevel == 6) range = 118; // +2
+  if (SceptreActualLevel == 7) range = 122; // +4
+  if (SceptreActualLevel == 8) range = 128; // +6
+  if (SceptreActualLevel == 9) range = 132; // +2
+  if (SceptreActualLevel == 10) range = 134; // +2
+  if (SceptreActualLevel == 11) range = 136; // +2
+  if (SceptreActualLevel == 12) range = 138; // +2
+  if (SceptreActualLevel == 13) range = 142; // +4
+  if (SceptreActualLevel == 14) range = 144; // +2
+  if (SceptreActualLevel == 15) range = 148; // +4
+  if (SceptreActualLevel >= 16) range = 154; // +6
+ }
+ else
+ if (attacktype == 1) // Aireal Attack
+ {
+ }
+ else
+ if (attacktype == 2) // Spinning Attack
+ {
+  if (SceptreActualLevel <= 0) range = 168;
+  if (SceptreActualLevel == 1) range = 173; // +5
+  if (SceptreActualLevel == 2) range = 178; // +5
+  if (SceptreActualLevel == 3) range = 182; // +4
+  if (SceptreActualLevel == 4) range = 187; // +5
+  if (SceptreActualLevel == 5) range = 196; // +9
+  if (SceptreActualLevel == 6) range = 201; // +5
+  if (SceptreActualLevel == 7) range = 209; // +8
+  if (SceptreActualLevel == 8) range = 222; // +13
+  if (SceptreActualLevel == 9) range = 230; // +8
+  if (SceptreActualLevel == 10) range = 236; // +6
+  if (SceptreActualLevel == 11) range = 241; // +5
+  if (SceptreActualLevel == 12) range = 247; // +6
+  if (SceptreActualLevel == 13) range = 256; // +9
+  if (SceptreActualLevel == 14) range = 262; // +6
+  if (SceptreActualLevel == 15) range = 271; // +9
+  if (SceptreActualLevel >= 16) range = 288; // +17
+ }
+ SetResultValue(Range);
+}
+
+script "SceptreImpactRadius" (void)
+{
+ int radius;
+ if (SceptreActualLevel <= 0) radius = 80;
+ if (SceptreActualLevel == 1) radius = 85;
+ if (SceptreActualLevel == 2) radius = 90;
+ if (SceptreActualLevel == 3) radius = 95;
+ if (SceptreActualLevel == 4) radius = 100;
+ if (SceptreActualLevel == 5) radius = 105;
+ if (SceptreActualLevel == 6) radius = 110;
+ if (SceptreActualLevel == 7) radius = 115;
+ if (SceptreActualLevel == 8) radius = 120;
+ if (SceptreActualLevel == 9) radius = 125;
+ if (SceptreActualLevel == 10) radius = 130;
+ if (SceptreActualLevel == 11) radius = 135;
+ if (SceptreActualLevel == 12) radius = 140;
+ if (SceptreActualLevel == 13) radius = 145;
+ if (SceptreActualLevel == 14) radius = 150;
+ if (SceptreActualLevel == 15) radius = 155;
+ if (SceptreActualLevel >= 16) radius = 160;
+
+ if (CheckActorInventory(1001,"PowerStrength") > 0) radius = radius * 5 / 2;
+ SetResultValue(radius);
+}
+
+// Quake tremor effects
+script "QuakeMeleeIntensity" (void)
+{
+ int intensity;
+ if (SceptreActualLevel <= 0) intensity = 1;
+ if (SceptreActualLevel == 1) intensity = 1;
+ if (SceptreActualLevel == 2) intensity = 1;
+ if (SceptreActualLevel == 3) intensity = 1;
+ if (SceptreActualLevel == 4) intensity = 1;
+ if (SceptreActualLevel == 5) intensity = 1;
+ if (SceptreActualLevel == 6) intensity = 1;
+ if (SceptreActualLevel == 7) intensity = 1;
+ if (SceptreActualLevel == 8) intensity = 2;
+ if (SceptreActualLevel == 9) intensity = 2;
+ if (SceptreActualLevel == 10) intensity = 2;
+ if (SceptreActualLevel == 11) intensity = 2;
+ if (SceptreActualLevel == 12) intensity = 2;
+ if (SceptreActualLevel == 13) intensity = 2;
+ if (SceptreActualLevel == 14) intensity = 2;
+ if (SceptreActualLevel == 15) intensity = 2;
+ if (SceptreActualLevel >= 16) intensity = 3;
+
+ if (CheckActorInventory(1001,"PowerStrength") > 0) intensity += 1;
+ SetResultValue(intensity);
+}
+script "QuakeMeleeDuration" (void)
+{
+ int duration;
+ if (SceptreActualLevel <= 0) duration = 8;
+ if (SceptreActualLevel == 1) duration = 8;
+ if (SceptreActualLevel == 2) duration = 9;
+ if (SceptreActualLevel == 3) duration = 9;
+ if (SceptreActualLevel == 4) duration = 10;
+ if (SceptreActualLevel == 5) duration = 10;
+ if (SceptreActualLevel == 6) duration = 11;
+ if (SceptreActualLevel == 7) duration = 11;
+ if (SceptreActualLevel == 8) duration = 12;
+ if (SceptreActualLevel == 9) duration = 12;
+ if (SceptreActualLevel == 10) duration = 13;
+ if (SceptreActualLevel == 11) duration = 13;
+ if (SceptreActualLevel == 12) duration = 14;
+ if (SceptreActualLevel == 13) duration = 14;
+ if (SceptreActualLevel == 14) duration = 15;
+ if (SceptreActualLevel == 15) duration = 15;
+ if (SceptreActualLevel >= 16) duration = 16;
+
+ if (CheckActorInventory(1001,"PowerStrength") > 0) duration *= 4;
+ SetResultValue(duration);
+}
+script "QuakeMeleeTremrad" (void)
+{
+ int tremrad;
+ if (SceptreActualLevel <= 0) tremrad = 512;
+ if (SceptreActualLevel == 1) tremrad = 544;
+ if (SceptreActualLevel == 2) tremrad = 576;
+ if (SceptreActualLevel == 3) tremrad = 608;
+ if (SceptreActualLevel == 4) tremrad = 640;
+ if (SceptreActualLevel == 5) tremrad = 672;
+ if (SceptreActualLevel == 6) tremrad = 704;
+ if (SceptreActualLevel == 7) tremrad = 736;
+ if (SceptreActualLevel == 8) tremrad = 768;
+ if (SceptreActualLevel == 9) tremrad = 800;
+ if (SceptreActualLevel == 10) tremrad = 832;
+ if (SceptreActualLevel == 11) tremrad = 864;
+ if (SceptreActualLevel == 12) tremrad = 896;
+ if (SceptreActualLevel == 13) tremrad = 928;
+ if (SceptreActualLevel == 14) tremrad = 960;
+ if (SceptreActualLevel == 15) tremrad = 992;
+ if (SceptreActualLevel >= 16) tremrad = 1024;
+
+ if (CheckActorInventory(1001,"PowerStrength") > 0) tremrad *= 8;
+ SetResultValue(tremrad);
 }
 
 // Fist/Punch Damage Checker
@@ -18106,7 +18291,7 @@ script 913 ENTER
                 s:"\cd+(4 + 1%) Balance\n",
                 s:"\cd+0.5% Survival Chance\n",
                 s:"\cg-3.3% Jump Strength\n",
-                s:" \n",
+                s:"\cd-5% EXP Combo Timer Speed\n",
                 s:" \n",
                 s:" \n",
                 s:" \n",
@@ -18152,7 +18337,7 @@ script 913 ENTER
                 s:"\cd+(8 + 2%) Balance\n",
                 s:"\cd+1% Survival Chance\n",
                 s:"\cg-5% Jump Strength\n",
-                s:" \n",
+                s:"\cd-10% EXP Combo Timer Speed\n",
                 s:" \n",
                 s:" \n",
                 s:" \n",
@@ -18198,7 +18383,7 @@ script 913 ENTER
                 s:"\cd+(12 + 4%) Balance\n",
                 s:"\cd+1.6% Survival Chance\n",
                 s:"\cg-6.7% Jump Strength\n",
-                s:" \n",
+                s:"\cd-15% EXP Combo Timer Speed\n",
                 s:" \n",
                 s:" \n",
                 s:" \n",
@@ -18244,7 +18429,7 @@ script 913 ENTER
                 s:"\cd+(16 + 8%) Balance\n",
                 s:"\cd+4.4% Survival Chance\n",
                 s:"\cg-9% Jump Strength\n",
-                s:" \n",
+                s:"\cd-20% EXP Combo Timer Speed\n",
                 s:" \n",
                 s:" \n",
                 s:" \n",
@@ -18290,7 +18475,7 @@ script 913 ENTER
                 s:"\cd+(12 + 12%) Balance\n",
                 s:"\cd+6.6% Survival Chance\n",
                 s:"\cg-8.3% Jump Strength\n",
-                s:" \n",
+                s:"\cd-25% EXP Combo Timer Speed\n",
                 s:" \n",
                 s:" \n",
                 s:" \n",
@@ -18336,7 +18521,7 @@ script 913 ENTER
                 s:"\cd+(16 + 24%) Balance\n",
                 s:"\cd+17.6% Survival Chance\n",
                 s:"\cg-9.5% Jump Strength\n",
-                s:" \n",
+                s:"\cd-30% EXP Combo Timer Speed\n",
                 s:" \n",
                 s:" \n",
                 s:" \n",
@@ -18542,7 +18727,7 @@ script 913 ENTER
                 s:"\cdAllows You to See All Creatures and Items on The Map\n",
                 s:ArmorString5,
                 s:ArmorString4,
-                s:" \n",
+                s:"\cd-20% EXP Combo Timer Speed\n",
                 s:" \n",
                 s:" \n",
                 s:" \n",
@@ -18602,6 +18787,7 @@ script 913 ENTER
                 s:"\cd+10% Jump Strength\n",
                 s:ArmorString1,
                 s:ArmorString2,
+                s:"\cd-10% EXP Combo Timer Speed\n",
                 s:ArmorString4,
                 s:" \n",
                 s:" \n",
@@ -18871,6 +19057,7 @@ script 913 ENTER
                 s:"\cd-1.5% Hellcore Heating Speed\n",
                 s:ArmorString1,
                 s:ArmorString2,
+                s:"\cd-5% EXP Combo Timer Speed\n",
                 s:ArmorString4,
                 s:" \n",
                 s:" \n",
@@ -19158,6 +19345,7 @@ script 913 ENTER
                 s:"Shield Will Also Slowly Uncurse Itself Over Time On It's Own\n",
                 s:ArmorString1,
                 s:ArmorString2,
+                s:"\cg+78% EXP Combo Timer Speed\n",
                 s:ArmorString4,
                 s:" \n",
                 s:" \n",
@@ -19235,6 +19423,7 @@ script 913 ENTER
                 s:"\cdEvasion Chance increased by 11/10ths it's usual value\n",
                 s:"\cq",d:misc2,s:ArmorString1,
                 s:"\cq+",d:misc3,s:ArmorString2,
+                s:"\cd-15% EXP Combo Timer Speed\n",
                 s:ArmorString4,
                 s:" \n",
                 s:" \n",
@@ -21780,6 +21969,28 @@ script "WeaponAngleLoop" (int type, int cap, int setangle, int addangle)
  // Print(d:MiscellaneousVars[20],s:"/",d:cap);
 }
 
+// For the Sceptre's Spin Attack & HellCore Weapons
+script "WeaponAngleLoopSecondary" (int type, int cap, int setangle, int addangle)
+{
+ int result;
+ if (setangle == 0) // check the cap
+ {
+  if (MiscellaneousVars[163] >= cap) { SetResultValue(1); MiscellaneousVars[163] = 0; }
+  else SetResultValue(0);
+ }
+ else // increment
+ {
+  MiscellaneousVars[163] += type;
+  if (setangle > 0) result = MiscellaneousVars[163];
+  if (addangle != 0) result += addangle;
+
+  // Print(d:addangle);
+  SetResultValue(result);
+ }
+
+ //Print(d:MiscellaneousVars[163],s:"/",d:cap);
+}
+
 // DEBUG SCRIPT: Cheat to set stats (pukename "GiveStats" [type] [set/add] [value])
 // [TYPE]
 // 0 = Aeon Points
@@ -22014,11 +22225,15 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   {
    if (MiscellaneousVars[157] <= 0) // If not set, set to 4 seconds, if already set, add 1 second
    {
-    EXPTimerIncrease = 2800;
+    EXPTimerIncrease = 2800; // 140 tics [20 units / tic]
+    EXPTimerIncrease += (MiscellaneousVars[31] * 16); // 1 point of Agility = 0.8 tics [or 16 units] [5 points = 4 tics (or 80 units)]
+    EXPTimerIncrease += (MiscellaneousVars[33] * 4); // 1 point of Deftness = 0.2 tics [or 4 units] [20 points = 4 tics (or 80 units)]
    }
    else
    {
-    EXPTimerIncrease = 700;
+    EXPTimerIncrease = 700; // 35 tics [20 units / tic]
+    EXPTimerIncrease += (MiscellaneousVars[31] * 4); // 1 point of Agility = 0.2 tics [or 4 units] [5 points = 1 tic (or 20 units)]
+    EXPTimerIncrease += (MiscellaneousVars[33] * 1); // 1 point of Deftness = 0.05 tics [or 1 unit] [20 points = 1 tic (or 20 units)]
    }
    if (PowerupTimer[7] > 0) EXPTimerIncrease = EXPTimerIncrease * 5 / 4;
    MiscellaneousVars[157] += EXPTimerIncrease;
