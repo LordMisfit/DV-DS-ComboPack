@@ -184,7 +184,6 @@ NAMED Scripts and their functions:
 
 // Global Vars NOT YET USED AT ALL
 //--------------------------------
-//		global int 10:?;
 //		global int 17:?;
 //		global int 18:?;
 //		global int 32:?;
@@ -218,6 +217,7 @@ global int 5:SelectedSpell;
 global int 6:ReadiedSpells[];
 global int 7:VeryFirstRun;
 global int 9:MaxHealthDoubleTrue;
+global int 10:ExpTable[]; // NECESSARY TO RUN WITH HEXEN OR STRIFE
 global int 11:BaseEXPRequirement;
 
 global int 12:ModType; 
@@ -525,7 +525,6 @@ global int 61:NewHealthValue;
 
 int FirstRun, KillBonusApplied, ItemBonusApplied, SecretBonusApplied;
 
-int ExpTable[201];
 
 str FriendID[47] = {
                     "FZombieman", "FPlasmaGuy", "FRocketLauncherGuy", "FRepeaterZombie", "FKarasawaGuy", // 5
@@ -1706,34 +1705,44 @@ script "HUDDisplay" ENTER
  if (VeryFirstRun > 0 && CheckActorInventory(1001,"PlayerDeathFadeOut") < 1 && GetCVAR("dvds_showacshudelements") == 1)
  { 
   SetHudSize(640,480,0);
+
   // Mana Bar
   for (C1 = 101; C1 > 1; C1 --)
   {
-   I1 = fixedmul(fixeddiv(CurrentMana << 16,MaxMana << 16),100.0) >> 16;
-   if (C1 - 1 <= I1) SetFont("ManaHF"); else SetFont("ManaHE");
-   I2 = C1 << 16;
-   HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3200,cr_untranslated,1.0+I2,32.0,1.0);
+   if (MaxMana != 0)
+   {
+    I1 = fixedmul(fixeddiv(CurrentMana << 16,MaxMana << 16),100.0) >> 16;
+    if (C1 - 1 <= I1) SetFont("ManaHF"); else SetFont("ManaHE");
+    I2 = C1 << 16;
+    HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3200,cr_untranslated,1.0+I2,32.0,1.0);
+   }
   }
+
   // EXP Bar
   for (C1 = 101; C1 > 1; C1 --)
   {
-   I1 = ((Experience - ExpTable[PlayerLevel - 1]) * 100) / (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]);
-   if ((C1 - 1 <= I1) || (PlayerLevel == LevelCap)) SetFont("EXPHF"); else SetFont("ManaHE");
-   I2 = C1 << 16;
-   HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3302,cr_untranslated,1.0+I2,24.0,1.0);
+   if (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1] != 0)
+   {
+    I1 = ((Experience - ExpTable[PlayerLevel - 1]) * 100) / (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]);
+    if ((C1 - 1 <= I1) || (PlayerLevel == LevelCap)) SetFont("EXPHF"); else SetFont("ManaHE");
+    I2 = C1 << 16;
+    HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3302,cr_untranslated,1.0+I2,24.0,1.0);
+   }
   }
 
   G6 += 1; if (G6 > 11) G6 = 0; // Resets Palette Flasher
-
   int MaxEXPCombotimer;
   if (PowerupTimer[7] > 0) MaxEXPCombotimer = 7000; else MaxEXPCombotimer = 5600;
   // EXP Combo Timer Bar
   for (C1 = 101; C1 > 1; C1 --)
   {
-   I1 = fixedmul(fixeddiv(MiscellaneousVars[157] << 16,MaxEXPCombotimer << 16),100.0) >> 16;
-   if (C1 - 1 <= I1) SetFont("COMBOHF"); else SetFont("COMBOHE");
-   I2 = C1 << 16;
-   HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+2200,cr_untranslated,1.0+I2,68.0,1.0);
+   if (MaxEXPCombotimer != 0)
+   {
+    I1 = fixedmul(fixeddiv(MiscellaneousVars[157] << 16,MaxEXPCombotimer << 16),100.0) >> 16;
+    if (C1 - 1 <= I1) SetFont("COMBOHF"); else SetFont("COMBOHE");
+    I2 = C1 << 16;
+    HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+2200,cr_untranslated,1.0+I2,68.0,1.0);
+   }
   }
 
   // EXP Combo Kill Counter
@@ -1854,6 +1863,7 @@ script "HUDDisplay" ENTER
      HudMessage(s:"A";HUDMSG_PLAIN,C1+2302,cr_untranslated,536.0+I2,20.0,0.03); // | HUDMSG_NOTWITHFULLMAP
     }
    }
+
 
    // Tension Time-Left Bar
    if (MiscellaneousVars[181] > 0) //  && MiscellaneousVars[183] < TensionTimerMax
@@ -2777,11 +2787,11 @@ script "LevelUpCode" ENTER // (void)
 {
  int C1, I1, C2, I2, Z1, Z2, G1, G2, G3, Exp1, Exp2, ExpMultiFactor, RealExpGain, HPBoost, MPBoost, MapCheck, RandomizedStatChance, RandomizedStatChance2;
 
-  int leveluptimes = 0;
-  int leveluptimesmax = 200;
-  //*******************
-  //** LEVEL UP CODE **
-  //*******************
+ int leveluptimes = 0;
+ int leveluptimesmax = 200;
+ //*******************
+ //** LEVEL UP CODE **
+ //*******************
  for (leveluptimes = 0; leveluptimes < leveluptimesmax; leveluptimes++)
  {
   MiscellaneousVars[48] = ExpTable[PlayerLevel] - Experience;
@@ -3172,6 +3182,20 @@ script "LevelUpCode" ENTER // (void)
   }
   else break;
  }
+
+/* 
+ PrintBold(s:"PlayerLevel: ",d:PlayerLevel,
+           s:"\nCurrentMana: ",d:CurrentMana,
+           s:"\nMaxMana: ",d:MaxMana,
+           s:"\nExperience: ",d:Experience,
+           s:"\nExpToNext: ",d:ExpTable[PlayerLevel],
+           s:"\nBaseEXPRequirement: ",d:BaseEXPRequirement,
+           s:"\nMiscellaneousVars[157]: ",d:MiscellaneousVars[157],
+           s:"\nMiscellaneousVars[185]: ",d:MiscellaneousVars[185],
+           s:"\nMiscellaneousVars[183]: ",d:MiscellaneousVars[183],
+           s:"\nMiscellaneousVars[186]: ",d:MiscellaneousVars[186],
+           s:"\nMiscellaneousVars[188]: ",d:MiscellaneousVars[188]);
+*/
 
  Delay(1);
  Restart;
@@ -11223,9 +11247,9 @@ script 832 (int C5)
  }
 }
 
-// *******************************************************************************************
-// ** Check Player Stuff [requires a "DoomSpellACS" actor to be present on the map to work] **
-// *******************************************************************************************
+// ************************
+// ** Check Player Stuff **
+// ************************
 script 833 ENTER
 {
  int G1, G2, G3, C1, C2, C3, C4, I1, I2, I3, H1;
