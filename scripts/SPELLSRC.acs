@@ -250,7 +250,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [1] is for checking Flora's Armor Bitfield so it doesn't have to run EVERY tic and lag the game too badly.
 // [2] is for checking Levels for level specfic boosts so it doesn't have to run EVERY tic and lag the game too badly.
 // [3] is for checking Sceptre Levels so it doesn't have to run EVERY tic and lag the game too badly.
-// [4] is for saving health ratio for giving Low or Critical Health Inventory items [for Status Bar Displays and using "Nova" with Flora's Hellcore weapons]
+// [4] is for saving health ratio for giving Low or Critical Health Inventory items [for Status Bar Displays and using Crisis attacks with Flora's Hellcore weapons]
 // [5] is the interpolation timer (how many HP count down/up per tic) [8 is the default for a game like Heretic or Hexen]
 // [6] is the Fygg Drop Identification number (out of [7])
 // [7] is the highest number for the Fygg chance drop
@@ -412,7 +412,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [164] 5x Stamina Limit
 // [165] True Stamina Gain/Cost
 // [166] Dash Timer
-// [167-180] are unused
+// [167] Total Monsters Killed by the Player
+// [168-180] are unused
 // [181] Tension Level
 // [182] Tension Level Compare
 // [183] Tension Timer
@@ -502,6 +503,13 @@ global int 39:MaxManaDouble;
 global int 40:ItemsFound[];
 global int 41:AeonPointStartLevel;
 global int 46:ClassicDoomType;
+// 0 = Doom 2
+// 1 = Doom 1
+// 2 = Heretic
+// 3 = Hexen
+// 4 = Strife[?]
+
+
 global int 50:GameScriptEvents[]; // ***ARRAY*** Array for Controlling in-game scripts and story events
 // [1401] = MAP04, Damage inflicted by Helltoxins in Minas Morgul
 // [1402] = MAP04, Damage timer for Helltoxins in Minas Morgul
@@ -12147,7 +12155,7 @@ script 833 ENTER
   MiscellaneousVars[166]--;
   GiveActorInventory(1001,"PlayerDashing",1);
   GiveActorInventory(1001,"DodgeGhostOn",1);
-  if (GetActorZ(1001) - GetActorFloorZ(1001) <= 0) SpawnForced("DushPuff",GetActorX(1001),GetActorY(1001),GetActorZ(1001)+(8*65536),0,0);
+  if (GetActorZ(1001) - GetActorFloorZ(1001) <= 0) SpawnForced("DashPuff",GetActorX(1001),GetActorY(1001),GetActorZ(1001)+(8*65536),0,0);
  }
  else
  {
@@ -16885,6 +16893,11 @@ script 869 (int type, int OldRand0, int DVIIMode)
  }
 
  // Spawn Occurance Rate
+ if (type == 4) // ALWAYS SPAWNS [no random failure rate]
+ {
+  DVIIRandVal = 1024;
+  Rand0 = 0;
+ }
  if (type == 3) // Doom2-Armor Bonuses
  {
   Rand0 = random(1,3072);
@@ -16930,6 +16943,7 @@ script 869 (int type, int OldRand0, int DVIIMode)
    if (GameSkill() == SKILL_VERY_HARD) Rand0 = random(1,912);
   }
  }
+
  if (Rand0 <= DVIIRandVal)
  {
   Rand1 = 0;
@@ -19964,6 +19978,7 @@ script 913 ENTER
     HudMessage(s:"Sauron's Helmet"; HUDMSG_PLAIN, 1902, CR_DARKGRAY, 256.0, 31.0, 0.03);
 
      HudMessage(s:"\cd-25% Damage Received\n",
+                s:"\cd-16.67% Damage from Bullets/Pellets\n",
                 s:"\cd+12.5% Healing Spell Effect\n",
                 s:ArmorString1,
                 s:"\cg-25% Maximum Mana Regeneration Rate\n",
@@ -19976,7 +19991,6 @@ script 913 ENTER
                 s:"\cdMarginally Increases Evasion Based on Agility & Deftness\n",
                 s:"\cd+7.5% Chance of Not Consuming Ammo\n",
                 s:ArmorString2,
-                s:" \n",
                 s:" \n",
                 s:" \n",
                 s:" \n",
@@ -20177,9 +20191,9 @@ script 913 ENTER
                 s:ArmorString1,
                 s:ArmorString2,
                 s:"\cd-60% Stamina Use when Dashing/Air-Dashing\n",
+                s:"\cd-25% Dash/Air-Dash Cooldown Time\n",
                 s:"\cd-10% EXP Combo Timer Speed\n",
                 s:ArmorString4,
-                s:" \n",
                 s:" \n",
                 s:" \n",
                 s:" \n",
@@ -20377,10 +20391,10 @@ script 913 ENTER
                 s:"\cd+20% Ice-Elemental Resistance\n",
                 s:"\cd+20% Thunder-Elemental Resistance\n",
                 s:"\cd+20% Magic Damage\n",
-                s:"\cd+20% Fire-Elemental Damage\n",
-                s:"\cd+20% Ice-Elemental Damage\n",
-                s:"\cd+20% Thunder-Elemental Damage\n",
-                s:"\cd+20% Holy-Elemental Damage\n",
+                s:"\cd+50% Fire-Elemental Damage\n",
+                s:"\cd+50% Ice-Elemental Damage\n",
+                s:"\cd+50% Thunder-Elemental Damage\n",
+                s:"\cd+50% Holy-Elemental Damage\n",
                 s:"\cd+10% HP Regen Speed\n",
                 s:"\cd-5% HP Degen Speed (only if above 100% Maximum HP)\n",
                 s:"\cd-13.5% Hellcore Heating Speed\n",
@@ -20805,9 +20819,9 @@ script 913 ENTER
                 s:"\cd+12.5% Stamina Regeneration\n",
                 s:"\cd+(10 + 10%) Balance\n",
                 s:"\cd+30% Magic Resistance\n",
-                s:"\cd+20% Fire-Elemental Resistance\n",
-                s:"\cd+20% Ice-Elemental Resistance\n",
-                s:"\cd+20% Thunder-Elemental Resistance\n",
+                s:"\cd+25% Fire-Elemental Resistance\n",
+                s:"\cd+25% Ice-Elemental Resistance\n",
+                s:"\cd+25% Thunder-Elemental Resistance\n",
                 s:"\cd-12.5% Hellcore Heating Speed\n",
                 s:"\cd+0.625% Jump Strength\n",
                 s:"\cdEvasion Chance increased by 11/10ths it's usual value\n",
@@ -23691,6 +23705,12 @@ script "TensionParticleSpawnChance" (void)
  if (MiscellaneousVars[181] == 7) SetResultValue(156); // -20
 }
 
+script "SetKillCount" (int amount)
+{
+ if (amount >= 0) MiscellaneousVars[167] = amount;
+ PrintBold(d:MiscellaneousVars[167]);
+}
+
 // Important Script for Future use [possibly plans to remove the ID-based exp system and just make it into a seperate script
 script "AddEXP" (int baseamount, int flags, int incrementcombo)
 {
@@ -23698,7 +23718,22 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  int Exp1, Exp2, ExpMultiFactor, RealExpGain;
  int ComboMultiplier;
 
+ int MonsterX = GetActorX(0);
+ int MonsterY = GetActorY(0);
+ int MonsterZ = GetActorZ(0);
+
+ int RandomArmorDropChance;
+ int RandomArmorDropMulti;
+
+ if (GameSkill() == SKILL_VERY_EASY) RandomArmorDropMulti = 75;
+ else if (GameSkill() == SKILL_EASY) RandomArmorDropMulti = 90;
+ else if (GameSkill() == SKILL_NORMAL) RandomArmorDropMulti = 100;
+ else if (GameSkill() == SKILL_HARD) RandomArmorDropMulti = 110;
+ else if (GameSkill() == SKILL_VERY_HARD) RandomArmorDropMulti = 125;
+
+
  if (GetCVar("dvds_exppropercredit") == 1 && IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == FALSE) terminate;
+
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
  {
   PrintBold(s:"Passed Player-Credit Check: YES");
@@ -23716,6 +23751,54 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
  {
   PrintBold(s:"Passed FRIENDLY Check: YES");
+ }
+
+ if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE) 
+ {
+  MiscellaneousVars[167] += 1; // Increases Player's actual total kill count by 1
+  //PrintBold(d:MiscellaneousVars[167]);
+ }
+ if (ModType == 0) // Classic Doom 1-2/Heretic/Hexen/Strife mode :P
+ {
+  if (ClassicDoomType == 0 || ClassicDoomType == 1) // Doom 1 or Doom 2
+  {
+   if (CharacterClass == 2) // Flora
+   {
+    if (MiscellaneousVars[167] == 20) // 20 enemies killed, high chance of spawning an armor item for Flora
+    {
+     // 75% chance
+     RandomArmorDropChance = 25 * RandomArmorDropMulti / 100;
+     if (random(1,100) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 200) // 200 enemies killed, fair chance of spawning an armor item for Flora
+    {
+     // 50% chance
+     RandomArmorDropChance = 50 * RandomArmorDropMulti / 100;
+     if (random(1,100) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 800) // 800 enemies killed, low chance of spawning an armor item for Flora
+    {
+     // 25% chance
+     RandomArmorDropChance = 75 * RandomArmorDropMulti / 100;
+     if (random(1,100) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 1400) // 1400 enemies killed, low chance of spawning an armor item for Flora
+    {
+     // 25% chance
+     RandomArmorDropChance = 75 * RandomArmorDropMulti / 100;
+     if (random(1,100) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 2000) // 2000 enemies killed, low chance of spawning an armor item for Flora
+    {
+     // 25% chance
+     RandomArmorDropChance = 75 * RandomArmorDropMulti / 100;
+     if (random(1,100) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+   }
+  }
+  if (ClassicDoomType == 2) { } // Heretic
+  if (ClassicDoomType == 3) { } // Hexen
+  if (ClassicDoomType == 4) { } // Strife[?]
  }
 
  int EXPTimerIncrease;
@@ -23990,6 +24073,7 @@ script "KD Side Dodge" enter
   dashcooldown = 30;
   if (PlayerLevel >= 16) cooldownreduction = 1 + ((PlayerLevel - 16) / 32);
   dashcooldown -= cooldownreduction;
+  if (CheckActorInventory(1001,"SafeTeaShoes") > 0) dashcooldown = dashcooldown * 3 / 4; // Dash-Cooldown time cut by 25%
 
   if (GetActorZ(0) - GetActorFloorZ(0) > 0)
   {
