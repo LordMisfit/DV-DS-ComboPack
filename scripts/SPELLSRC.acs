@@ -140,8 +140,6 @@ Script #s and their functions:
 	{-870-} 	-	Checks and Removes "Copies" of Flora's armor items on maps [when she already has these items]
 	{-871-} 	-	Using a Diabloist's Hands' HP Gravity attack-projectile on an enemy.
 	[-873-] 	-	Checks and Removes Hellcore weapons when Deggaris or Illucia are detected as the current character
-	[-876-] 	-	Checks the mapnumber and gametype for Monster Spawners (main number)
-	[-877-] 	-	Checks the mapnumber and gametype for Monster Spawners (stealth number)
 	[-878-] 	-	Checks the gametype for monster spawns to allow or deny specfic enemy evolutions from appearing
 	[-879-] 	-	Runs the "Grabbed a Seed of Life/Magic" script
 	[-880-] 	-	Runs the "Grabbed a Seed of [Bleh]" script
@@ -176,6 +174,8 @@ NAMED Scripts and their functions:
 	["IncreaseHellcoreLevel"]	-	Increasing the Level of Hellcore Weapons when one is picked up
 	["LifebarDisplayClientSide"]-	Controls Lifebar Displays [CLIENTSIDE only]
 	["LifebarOptionChecker"]	-	Event Linked to call "LifebarDisplayClientSide" Event
+	["GetEvolveChance"] 		-	Checks the mapnumber and gametype for Monster Spawners (evolve chance amount [out of 256])
+	["GetStealthChance"]	 	-	Checks the mapnumber and gametype for Monster Spawners (stealth chance amount [out of 256])
 */
 
 
@@ -413,7 +413,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [165] True Stamina Gain/Cost
 // [166] Dash Timer
 // [167] Total Monsters Killed by the Player
-// [168-180] are unused
+// [168] Whistle Cooldown Timer
+// [169-180] are unused
 // [181] Tension Level
 // [182] Tension Level Compare
 // [183] Tension Timer
@@ -12749,6 +12750,12 @@ script 833 ENTER
   MiscellaneousVars[12] = 0;
  }
 
+ // Whistle Countdown
+ if (GetActorProperty(1001,APROP_Health) > 0)
+ {
+  if (MiscellaneousVars[168] > 0) MiscellaneousVars[168] -= 1;
+ }
+
  int SceptreEXPNeededLevel1, SceptreEXPNeededLevel2, SceptreEXPNeededLevel3, SceptreEXPNeededLevel4, SceptreEXPNeededLevel5, SceptreEXPNeededLevel6, SceptreEXPNeededLevel7, SceptreEXPNeededLevel8, SceptreEXPNeededLevel9, SceptreEXPNeededLevel10, SceptreEXPNeededLevel11, SceptreEXPNeededLevel12, SceptreEXPNeededLevel13, SceptreEXPNeededLevel14, SceptreEXPNeededLevel15, SceptreEXPNeededLevel16;
  // Checks Flora's EXP for using the Sceptre of Empyrea
  if (CharacterClass == 2) // Flora
@@ -17236,9 +17243,31 @@ script "Hand-GravityAttack" (int type)
 script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 {
  int CurrHP, MaxHP, Temp, RangeVar, LevelCheck;
+ int StealthChance;
+
+ if (type < 0) type = 0;
+ if (type > 1) type = 1;
+
  if (type == 0)
  {
+  ACS_NamedExecuteWithResult("RefreshStealthInfo"); // Runs to check Stealth information [in case something like finding the Ring has happened]
+
   if (CheckInventory("MonsterHasBuffs") != 0) terminate;
+  if (GetUserVariable(0, "user_checkmapskill") > 0) terminate;
+
+  StealthChance = ACS_NamedExecuteWithResult("GetStealthChance");
+  if (random(1,256) <= StealthChance)
+  {
+   if (CheckActorInventory(1001,"TheOneRing") > 0) { GiveInventory("IsAStealthMonsterRing", 1); TakeInventory("IsAStealthMonster", 1); }
+                                              else { TakeInventory("IsAStealthMonsterRing", 1); GiveInventory("IsAStealthMonster", 1); }   
+   SetUserVariable(0, "user_isstealth", 1);
+  }
+  else
+  {
+   SetUserVariable(0, "user_isstealth", 0);
+   TakeInventory("IsAStealthMonster", 1);
+   TakeInventory("IsAStealthMonsterRing", 1);
+  }
 
   MaxHP = GetActorProperty(0,APROP_Health);
   if (GameSkill() == SKILL_VERY_EASY)
@@ -17979,20 +18008,10 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    }
   }
 
-/*
-  // Level-Based HP gains
-  int MonsterLevel = PlayerLevel;
-  MonsterLevel = MonsterLevel * random(95,105);
-  if (GameSkill() == SKILL_VERY_EASY) MonsterLevel = MonsterLevel * random(71,79);
-  if (GameSkill() == SKILL_EASY) MonsterLevel = MonsterLevel * random(85,95);
-  if (GameSkill() == SKILL_HARD) MonsterLevel = MonsterLevel * random(104,116);
-  if (GameSkill() == SKILL_VERY_HARD) MonsterLevel = MonsterLevel * random(117,133);
-  MonsterLevel = MonsterLevel / 100;
-*/
 
   // HP Error
   int MaxHPErrorRange = MaxHP / 10;
-  MaxHP = MaxHP + (random(-MaxHPErrorRange,MaxHPErrorRange));
+  MaxHP += random(-MaxHPErrorRange,MaxHPErrorRange);
 
   SetActorProperty(0,APROP_Health,MaxHP);
   SetActorProperty(0,APROP_SpawnHealth,MaxHP);
@@ -18011,7 +18030,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   Temp = Temp + 1;
   if (Temp < 2) Temp = 2;
   SetUserVariable(0,"user_HPBuffRange",Temp);
-  // PrintBold(d:Temp);
+
 
   // Sets the monster's "Low Range" of HP, meaning there is a 25% chance it will execute a "nova" or "shock" attack
   RangeVar = 160;
@@ -18025,7 +18044,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   Temp = Temp + 1;
   if (Temp < 2) Temp = 2;
   SetUserVariable(0,"user_HPLowRange",Temp);
-  // PrintBold(d:Temp);
+
 
   // Sets the monster's "Critical Range" of HP, meaning there is a 100% chance it will execute a "nova" or "shock" attack
   RangeVar = 20;
@@ -18039,21 +18058,27 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   Temp = Temp + 1;
   if (Temp < 2) Temp = 2;
   SetUserVariable(0,"user_HPCritRange",Temp);
-  // PrintBold(d:Temp);
+
 
   // Sets the monster's "Extreme Death" range of HP, determining how much it takes to gib most monsters (or permenantly kill a Death Incarnate)
   Temp = MaxHP * -1; // -100.0%
   if (Temp > 0) Temp = 0;
   SetUserVariable(0,"user_HPXDeathRange",Temp);
-  // PrintBold(d:Temp);
 
+  // Excutes Lifebar-Related Code
   ACS_ExecuteAlways(900,0,0,0,0);
 
   GiveInventory("MonsterHasBuffs", 1);
+  SetUserVariable(0, "user_checkmapskill", GetUserVariable(0, "user_checkmapskill") + 1);
  }
- else // Usually if dying
+ else // Usually if the monster/actor is dying, the script is called using "type 1"
  {
+  if (CheckInventory("MonsterHasBuffs") <= 0) terminate;
+  if (GetUserVariable(0, "user_checkmapskill") < 1) terminate;
+
   TakeInventory("MonsterHasBuffs", 1);
+  SetUserVariable(0, "user_checkmapskill", 0);
+  SetUserVariable(0, "user_isstealth", 0);
  }
 }
 
@@ -18105,7 +18130,7 @@ script 873 (int Weapontype)
 }
 
 // Checks the mapnumber and gametype for Monster Spawners (main number)
-script 876 (void)
+script "GetEvolveChance" (void)
 {
  int SpawnChance, G1, LevelCheck;
 
@@ -18218,7 +18243,7 @@ script 876 (void)
 }
 
 // Checks the mapnumber and gametype for Monster Spawners (stealth number)
-script 877 (void)
+script "GetStealthChance" (void)
 {
  int StealthChance, G1, LevelCheck;
 
@@ -18238,8 +18263,6 @@ script 877 (void)
  else if (GameSkill() == SKILL_HARD) StealthChance = StealthChance * 110 / 100;
  else if (GameSkill() == SKILL_VERY_HARD) StealthChance = StealthChance * 125 / 100;
  else StealthChance = StealthChance * 100 / 100;
-
- if (CheckActorInventory(1001,"TheOneRing") > 0) StealthChance = StealthChance * 63 / 1000; // The Ring will HEAVILY cut down on how many enemies can be in stealth mode.
 
  if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
  {
@@ -18327,8 +18350,26 @@ script 877 (void)
  }
  else StealthChance = StealthChance * 1000 / 1000;
 
- // PrintBold(d:StealthChance,s:" - ",s:GetActorClass(0));
+ //PrintBold(d:StealthChance,s:" - ",s:GetActorClass(0));
  SetResultValue( StealthChance );
+}
+
+// Updates information on Stealth-ified Monsters
+script "RefreshStealthInfo" (void)
+{
+ if (GetUserVariable(0, "user_isstealth") > 0)
+ {
+  if (CheckActorInventory(1001,"TheOneRing") > 0) { GiveInventory("IsAStealthMonsterRing", 1); TakeInventory("IsAStealthMonster", 1); }
+                                             else { TakeInventory("IsAStealthMonsterRing", 1); GiveInventory("IsAStealthMonster", 1); }
+  
+  SetUserVariable(0, "user_isstealth", 1);
+ }
+ else
+ {
+  SetUserVariable(0, "user_isstealth", 0);
+  TakeInventory("IsAStealthMonster", 1);
+  TakeInventory("IsAStealthMonsterRing", 1);
+ }
 }
 
 // Checks the gametype for monster spawns to allow or deny specfic enemy evolutions from appearing
@@ -21062,83 +21103,48 @@ script "CheckBFG2704" (void)
  SetResultValue(GetCVar("dvds_BFG2704"));
 }
 
-str dvds_monsternames[194][2] =
+str dvds_monsternames[154][2] =
 {
   {"DSZombieman", "Zombieman"},
-  {"DSStealthZombieman", "Zombieman?"},
   {"PlasmaGuy", "Plasma Dude"},
-  {"StealthPlasmaGuy", "Plasma Dude?"},
   {"RepeaterZombie", "Repeater Guy"},
-  {"StealthRepeaterZombie", "Repeater Guy?"},
   {"KarasawaGuy", "'Sawa Man"},
-  {"StealthKarasawaGuy", "'Sawa Man?"},
   {"RocketLauncherGuy", "Rocketeer Zombie"},
-  {"StealthRocketLauncherGuy", "Rocketeer Zombie?"},
   {"DSShotgunGuy", "Shotgun Guy"},
-  {"DSStealthShotgunGuy", "Shotgun Guy?"},
   {"SuperShotgunGuy", "SuperShotgun Guy"},
-  {"StealthSuperShotgunGuy", "SuperShotgun Guy?"},
   {"DSChaingunGuy", "Chaingun Guy"},
-  {"DSStealthChaingunGuy", "Chaingun Guy?"},
   {"BFGGuy", "BFG Commando"},
-  {"StealthBFGGuy", "BFG Commando?"},
   {"DSDoomImp", "Imp"},
-  {"DSStealthDoomImp", "Imp?"},
   {"DarkImp", "Dark Imp"},
-  {"StealthDarkImp", "Dark Imp?"},
   {"DSDemon", "Pinky Demon"},
   {"DSSpectre", "Pinky Spectre"},
-  {"DSStealthDemon", "Pinky Demon?"},
   {"BloodDemon", "Blood Pinky"},
   {"BloodSpectre", "Blood Spectre"},
-  {"StealthBloodDemon", "Blood Pinky?"},
   {"DSWolfensteinSS", "SS Nazi"},
   {"DSLostSoul", "Lost Soul"},
   {"DSPainElemental", "Pain Elemental"},
   {"DSCacoDemon", "Cacodemon"},
-  {"DSStealthCacoDemon", "Cacodemon?"},
   {"Cacolantern", "Cacolantern"},
-  {"StealthCacolantern", "Cacolantern?"},
   {"Abaddon", "Abaddon"},
-  {"StealthAbaddon", "Abaddon?"},
   {"DSHellKnight", "Hell Knight"},
-  {"DSStealthHellKnight", "Hell Knight?"},
   {"DSBaronofHell", "Baron of Hell"},
-  {"DSStealthBaron", "Baron of Hell?"}, 
   {"Belphegor", "Belphegor"},
-  {"StealthBelphegor", "Belphegor?"},
   {"BruiserDemon", "Bruiser Demon"},
-  {"StealthBruiserDemon", "Bruiser Demon?"},
   {"ArchonofHell", "Archon of Hell"},
-  {"StealthArchonofHell", "Archon of Hell?"},
   {"PyroDemon", "Pyro Demon"},
-  {"StealthPyroDemon", "Pyro Demon?"},
   {"DSRevenant", "Revenant"},
-  {"DSStealthRevenant", "Revenant?"},
   {"DeathIncarnate", "Death Incarnate"},
-  {"StealthDeathIncarnate", "Death Incarnate?"},
   {"DSFatso", "Mancubus"},
-  {"DSStealthFatso", "Mancubus?"},
   {"Hectebus", "Hectebus"},
-  {"StealthHectebus", "Hectebus?"},
   {"DSArachnotron", "Arachnotron"},
-  {"DSStealthArachnotron", "Arachnotron?"}, 
   {"DSRailArachnotron", "Arachnotron"},
-  {"StealthRailArachnotron", "Arachnotron?"},
   {"FusionArachnotron", "Fusion Arachnotron"},
-  {"StealthFusionArachnotron", "Fusion Arachnotron?"},
   {"DSArchvile", "Arch Vile"},
-  {"DSStealthArchvile", "Arch Vile?"},
   {"Diabloist", "Diabloist"},
-  {"StealthDiabloist", "Diabloist?"},
   {"DSSpiderMastermind", "Spider Mastermind"},
-  {"DSStealthSpiderMastermind", "Spider Mastermind?"},
   {"Demolisher", "Spider-Demolisher"},
-  {"StealthDemolisher", "Spider-Demolisher?"},
   {"DSCyberdemon", "Cyber Demon"},
-  {"DSStealthCyberdemon", "Cyber Demon?"},
   {"Annihilator", "Cyber-Annhilator"},
-  {"StealthAnnihilator", "Cyber-Annhilator?"},
   {"DSScriptedMarine", "UAC Marine Buddy"},
   {"SauronEyeWeak", "Lesser Sauron Eye"},
   {"SauronEyeStrong1", "Greater Sauron Eye"},
@@ -21146,18 +21152,12 @@ str dvds_monsternames[194][2] =
   {"SauronEyeMain", "\cfSauron's Mightiest Eye\c-"},
   {"Sauravatar", "\cfGreater Sauravatar\c-"},
   {"HadesSphere", "Hades Sphere"},
-  {"StealthHadesSphere", "Hades Sphere?"},
   {"HSOverlord", "Hades Sphere"},
-  {"StealthHSOverlord", "Hades Sphere?"},
   {"WeakenedFlyingBalrog", "Flying Balrog"},
   {"FlyingBalrog", "Flying Balrog"},
-  {"StealthFlyingBalrog", "Flying Balrog?"},
   {"HellCleric", "Hell Cleric"},
-  {"StealthHellCleric", "Hell Cleric?"},
   {"HadesElemental", "Hades Elemental"},
-  {"StealthHadesElemental", "Hades Elemental?"},
   {"HadesOverlord", "Hades Overlord"},
-  {"StealthHadesOverlord", "Hades Overlord?"},
 
   {"FZombieman", "Zombieman \cn(Friend)"},
   {"FPlasmaGuy", "Plasma Dude \cn(Friend)"},
@@ -21285,7 +21285,11 @@ str dvds_monsternames[194][2] =
   {"IceGuyNew", "Wendigo"},
 
   {"WraithNew", "Reiver"},
-  {"WraithBuriedNew", "Reiver"}
+  {"WraithBuriedNew", "Reiver"},
+
+// Strife Monsters
+
+  {"AcolyteNew", "Order Acolyte"}
 };
 
 Script "LifebarDisplayClientSide" (void) CLIENTSIDE
@@ -21299,7 +21303,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 
   int class_index;
 
-  for (int i = 0; i < 194; i++)
+  for (int i = 0; i < 154; i++)
   {
    if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
   }
@@ -21338,6 +21342,8 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
     {
      If (CheckActorProperty(0, APROP_Friendly, 0)) SetFont ("MNRHPBAR");
      else If (CheckActorProperty(0, APROP_Friendly, 1)) SetFont ("MNGHPBAR");
+     int stealthcheck = GetUserVariable(0, "user_isstealth");
+     str stealthcheck2 = ""; if (stealthcheck > 0) stealthcheck2 = "?";
 
      SetActivator(Activator);
      SetHudSize (800,600,0);
@@ -21345,7 +21351,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
      SetFont ("SMALLFONT");
      SetHudSize (800,600,0);
      if (GetCVar("dvds_actorlifebarstats") == 1) HudMessage (i:actorcurrhp, s:"/", i:actormaxhp; 0, 3999, CR_WHITE, 400.0, 100.0, 0.05);
-     if (GetCVar("dvds_actorlifebarnames") == 1) HudMessage (s:dvds_monsternames[class_index][1]; 0, 3998, CR_WHITE, 400.0, 115.0, 0.05);
+     if (GetCVar("dvds_actorlifebarnames") == 1) HudMessage (s:dvds_monsternames[class_index][1],s:stealthcheck2; 0, 3998, CR_WHITE, 400.0, 115.0, 0.05);
 
      for (acounter = 0; acounter <= hppercentdisp; acounter++)
      {
@@ -23294,20 +23300,12 @@ script "DoomMonsterDeathEmulation" OPEN
    {
     TotalCount1 = ThingCountName("HellKnight", 0);
     TotalCount1 += ThingCountName("DSHellKnight", 0);
-    TotalCount1 += ThingCountName("StealthHellKnight", 0);
-    TotalCount1 += ThingCountName("DSStealthHellKnight", 0);
     TotalCount1 += ThingCountName("BaronofHell", 0);
-    TotalCount1 += ThingCountName("StealthBaron", 0);
     TotalCount1 += ThingCountName("DSBaronofHell", 0);
-    TotalCount1 += ThingCountName("DSStealthBaron", 0);
     TotalCount1 += ThingCountName("Belphegor", 0);
-    TotalCount1 += ThingCountName("StealthBelphegor", 0);
     TotalCount1 += ThingCountName("BruiserDemon", 0);
-    TotalCount1 += ThingCountName("StealthBruiserDemon", 0);
     TotalCount1 += ThingCountName("ArchonOfHell", 0);
-    TotalCount1 += ThingCountName("StealthArchonOfHell", 0);
     TotalCount1 += ThingCountName("PyroDemon", 0);
-    TotalCount1 += ThingCountName("StealthPyroDemon", 0);
     if (LevelTime > 2 && TotalCount1 <= 0 && Script1Done == 0) 
     { 
      Script1Delay++;
@@ -23324,10 +23322,7 @@ script "DoomMonsterDeathEmulation" OPEN
    {
     TotalCount1 = ThingCountName("Cyberdemon", 0);
     TotalCount1 += ThingCountName("DSCyberdemon", 0);
-    TotalCount1 += ThingCountName("StealthCyberdemon", 0);
-    TotalCount1 += ThingCountName("DSStealthCyberdemon", 0);
     TotalCount1 += ThingCountName("Annihilator", 0);
-    TotalCount1 += ThingCountName("StealthAnnihilator", 0);
     if (LevelTime > 2 && TotalCount1 <= 0 && Script1Done == 0) 
     { 
      Script1Delay++;
@@ -23344,10 +23339,7 @@ script "DoomMonsterDeathEmulation" OPEN
    {
     TotalCount1 = ThingCountName("SpiderMastermind", 0);
     TotalCount1 += ThingCountName("DSSpiderMastermind", 0);
-    TotalCount1 += ThingCountName("StealthSpiderMastermind", 0);
-    TotalCount1 += ThingCountName("DSStealthSpiderMastermind", 0);
     TotalCount1 += ThingCountName("Demolisher", 0);
-    TotalCount1 += ThingCountName("StealthDemolisher", 0);
     if (LevelTime > 2 && TotalCount1 <= 0 && Script1Done == 0) 
     { 
      Script1Delay++;
@@ -23359,10 +23351,7 @@ script "DoomMonsterDeathEmulation" OPEN
    {
     TotalCount1 = ThingCountName("Cyberdemon", 0);
     TotalCount1 += ThingCountName("DSCyberdemon", 0);
-    TotalCount1 += ThingCountName("StealthCyberdemon", 0);
-    TotalCount1 += ThingCountName("DSStealthCyberdemon", 0);
     TotalCount1 += ThingCountName("Annihilator", 0);
-    TotalCount1 += ThingCountName("StealthAnnihilator", 0);
     if (LevelTime > 2 && TotalCount1 <= 0 && Script1Done == 0) 
     { 
      Script1Delay++;
@@ -23379,10 +23368,7 @@ script "DoomMonsterDeathEmulation" OPEN
    {
     TotalCount1 = ThingCountName("SpiderMastermind", 0);
     TotalCount1 += ThingCountName("DSSpiderMastermind", 0);
-    TotalCount1 += ThingCountName("StealthSpiderMastermind", 0);
-    TotalCount1 += ThingCountName("DSStealthSpiderMastermind", 0);
     TotalCount1 += ThingCountName("Demolisher", 0);
-    TotalCount1 += ThingCountName("StealthDemolisher", 0);
     if (LevelTime > 2 && TotalCount1 <= 0 && Script1Done == 0) 
     { 
      Script1Delay++;
@@ -23403,10 +23389,7 @@ script "DoomMonsterDeathEmulation" OPEN
     // Mancubi (tag666)
     TotalCount1 = ThingCountName("Fatso", 0);
     TotalCount1 += ThingCountName("DSFatso", 0);
-    TotalCount1 += ThingCountName("StealthFatso", 0);
-    TotalCount1 += ThingCountName("DSStealthFatso", 0);
     TotalCount1 += ThingCountName("Hectebus", 0);
-    TotalCount1 += ThingCountName("StealthHectebus", 0);
     if (LevelTime > 2 && TotalCount1 <= 0 && Script1Done == 0) 
     { 
      Script1Delay++;
@@ -23416,12 +23399,8 @@ script "DoomMonsterDeathEmulation" OPEN
     // Arachnotrons (tag667)
     TotalCount2 = ThingCountName("Arachnotron", 0);
     TotalCount2 += ThingCountName("DSArachnotron", 0);
-    TotalCount2 += ThingCountName("StealthArachnotron", 0);
-    TotalCount2 += ThingCountName("DSStealthArachnotron", 0);
     TotalCount2 += ThingCountName("FusionArachnotron", 0);
-    TotalCount2 += ThingCountName("StealthFusionArachnotron", 0);
     TotalCount2 += ThingCountName("DSRailArachnotron", 0);
-    TotalCount2 += ThingCountName("StealthRailArachnotron", 0);
     if (LevelTime > 2 && TotalCount2 <= 0 && Script2Done == 0) 
     { 
      Script2Delay++;
@@ -23921,7 +23900,12 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (GetCVar("sv_fastmonsters") == 1) finalexpamount = finalexpamount * 11 / 8; // [+37.5%]
 
  // Check Proper Flags
- if (CheckFlag(0,"STEALTH") == 1) finalexpamount = finalexpamount * 2;	// STEALTH = [+100%]
+ if (GetUserVariable(0, "user_isstealth") > 0)
+ {
+  if (CheckActorInventory(1001,"TheOneRing") > 0) finalexpamount = finalexpamount * 9 / 8;	// DV-DS Style Stealth = [+12.5%]
+  else finalexpamount = finalexpamount * 15 / 8;	// DV-DS Style Stealth = [+87.5%]
+ }
+ if (CheckFlag(0,"STEALTH") == 1) finalexpamount = finalexpamount * 2;	// ZDoom Style STEALTH = [+100%]
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
  {
   PrintBold(s:"EXP2: ",d:finalexpamount);
@@ -23949,52 +23933,71 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 
  int PreComboEXP = finalexpamount;
  // EXP Combo Counter
+ // [158] = number of enemies killed in current combo
+ // [159] = current multiplier amount [xxx.xx% format]
+ // [162] = Exp Combo Base Multipler
  if (MiscellaneousVars[158] > 1)
  {
-  if (MiscellaneousVars[158] > 1 && MiscellaneousVars[158] < 11)
+  if (MiscellaneousVars[158] < 11)
   {
    MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
+   // Each enemy = +0.16% to the bonus multiplier [2-11 enemies killed]
   }
   else
   if (MiscellaneousVars[158] > 10 && MiscellaneousVars[158] < 21)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
-   MiscellaneousVars[159] = MiscellaneousVars[159] * 9 / 8; // 112.5%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 17;
+   // Each enemy = +0.17% to the bonus multiplier [11-20 enemies killed]
   }
   else
   if (MiscellaneousVars[158] > 20 && MiscellaneousVars[158] < 36)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
-   MiscellaneousVars[159] = MiscellaneousVars[159] * 11 / 8; // 137.5%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 20;
+   // Each enemy = +0.20% to the bonus multiplier [21-35 enemies killed]
   }
   else
   if (MiscellaneousVars[158] > 35 && MiscellaneousVars[158] < 61)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
-   MiscellaneousVars[159] = MiscellaneousVars[159] * 14 / 8; // 175%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 24;
+   // Each enemy = +0.24% to the bonus multiplier [36-60 enemies killed]
   }
   else
   if (MiscellaneousVars[158] > 60 && MiscellaneousVars[158] < 101)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
-   MiscellaneousVars[159] = MiscellaneousVars[159] * 18 / 8; // 225%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 28;
+   // Each enemy = +0.28% to the bonus multiplier [61-100 enemies killed]
   }
   else
   if (MiscellaneousVars[158] > 100 && MiscellaneousVars[158] < 201)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
-   MiscellaneousVars[159] = MiscellaneousVars[159] * 23 / 8; // 287.5%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 34;
+   // Each enemy = +0.34% to the bonus multiplier [101-200 enemies killed]
   }
   else
-  if (MiscellaneousVars[158] > 200)
+  if (MiscellaneousVars[158] > 200 && MiscellaneousVars[158] < 501)
   {
-   MiscellaneousVars[159] = MiscellaneousVars[158] * 16;
-   MiscellaneousVars[159] = MiscellaneousVars[159] * 29 / 8; // 412.5%
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 40;
+   // Each enemy = +0.40% to the bonus multiplier [201-500 enemies killed]
+  }
+  else
+  if (MiscellaneousVars[158] > 500)
+  {
+   MiscellaneousVars[159] = MiscellaneousVars[158] * 52;
+   // Each enemy = +0.52% to the bonus multiplier [501+ enemies killed]
   }
   MiscellaneousVars[159] = MiscellaneousVars[159] * MiscellaneousVars[162] / 100;
   if (MiscellaneousVars[159] < 1) MiscellaneousVars[159] = 1;
   MiscellaneousVars[159] = MiscellaneousVars[159] + 10000;
+
+  //if (MiscellaneousVars[159] > 30000) MiscellaneousVars[159] = 30000;
+  //if (finalexpamount > 200000) finalexpamount = 200000;
+
   finalexpamount = (finalexpamount * MiscellaneousVars[159]) / 10000;
+  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+  {
+   PrintBold(s:"Combo %: ",d:MiscellaneousVars[159],
+             s:"\nEXP5: ",d:finalexpamount);
+  }
  }
 
  if (finalexpamount < 1) finalexpamount = 1;
@@ -24034,6 +24037,17 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (GetCVar("dvds_expcombosystem") == 1 && incrementcombo == 1)
  {
   MiscellaneousVars[160] += finalexpamount;
+ }
+}
+
+script "UseWhistle" (void)
+{
+ if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[168] == 0 && MiscellaneousVars[21] >= 200)
+ {
+  SpawnForced("PlayerWhistle",GetActorX(1001),GetActorY(1001),GetActorZ(1001)+(32*65536),0,0);
+  NoiseAlert(1001,1001);
+  MiscellaneousVars[21] -= 200;
+  MiscellaneousVars[168] = 24; // Set's cooldown for whistling
  }
 }
 
