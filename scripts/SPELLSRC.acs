@@ -427,7 +427,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [190] Active-Tension Pulse Timer
 // [191] Tension Countdown Multiplier [CVAR]
 // [192] Tension Cooldown Multiplier [CVAR]
-	// [193+] are undefined so far :P
+// [193] Tension Speed Central Multiplier [CVAR]
+	// [194+] are undefined so far :P
 
 
 global int 22:DVIIGameFlags[]; // ***ARRAY***
@@ -10759,8 +10760,40 @@ script 827 (void)
  }
 }
 
+// General Healing Script For Items [HP]
+script "Health-HealingItem" (int PercentMax, int PercentAmount, int ExactAmount)
+{
+ if (PercentMax < 1) PercentMax = 100;
+ if (PercentMax > 200) PercentMax = 200;
+ int CurrentHP = GetActorProperty(1001,APROP_HEALTH);
+ int HPUpperClamp = (MaxHealthTrue * PercentMax) / 100;
+ int HPActualHealValue = ((MaxHealthTrue * PercentAmount) / 100) + ExactAmount;
+
+ if (HPActualHealValue > 0)
+ {
+  CurrentHP += HPActualHealValue;
+  if (CurrentHP > HPUpperClamp) CurrentHP = HPUpperClamp;
+ }
+}
+
+// Increase Stamina
+script "Stamina-HealingItem" (int PercentMax, int PercentAmount, int ExactAmount)
+{
+ if (PercentMax < 1) PercentMax = 100;
+ if (PercentMax > 200) PercentMax = 200;
+ // MiscellaneousVars[21] = Current Stamina value
+ int StaminaUpperClamp = (MiscellaneousVars[22] * PercentMax) / 10000;
+ int StaminaPercentHeal = ((MiscellaneousVars[22] * PercentAmount) / 10000) + ExactAmount;
+
+ if (StaminaPercentHeal > 0)
+ {
+  MiscellaneousVars[21] += StaminaPercentHeal;
+  if (MiscellaneousVars[21] > StaminaUpperClamp) MiscellaneousVars[21] = StaminaUpperClamp;
+ }
+}
+
 // Stimpacks/Medikits/Berserk Packs (All games)
-script 828 (int HealItemType)
+script 828 (int HealItemType) //
 {
  int I1, I2, Z1, Z2, C1, C2, HealAmount, ExtraHeal, CurrentHP;
  CurrentHP = GetActorProperty(1001,APROP_HEALTH);
@@ -11336,6 +11369,12 @@ script 833 ENTER
 
  if (GetCVar("dvds_tension_cooldownmultiplier") > -1 && GetCVar("dvds_tension_cooldownmultiplier") < 20) MiscellaneousVars[192] = (GetCVar("dvds_tension_cooldownmultiplier") + 1) * 100;
  if (GetCVar("dvds_tension_cooldownmultiplier") > 19 && GetCVar("dvds_tension_cooldownmultiplier") < 39) MiscellaneousVars[192] = (GetCVar("dvds_tension_cooldownmultiplier") - 19) * 5;
+
+ if (GetCVar("dvds_tensionspeed") <= 0 ) MiscellaneousVars[193] = 1;
+ if (GetCVar("dvds_tensionspeed") == 1 ) MiscellaneousVars[193] = 2;
+ if (GetCVar("dvds_tensionspeed") == 2 ) MiscellaneousVars[193] = 4;
+ if (GetCVar("dvds_tensionspeed") == 3 ) MiscellaneousVars[193] = 8;
+ if (GetCVar("dvds_tensionspeed") >= 4 ) MiscellaneousVars[193] = 16;
 
  // Print(d:MiscellaneousVars[86],s:"\n",d:MiscellaneousVars[87],s:"\n",d:MiscellaneousVars[88],s:"\n",d:MiscellaneousVars[89],s:"\n",d:MiscellaneousVars[90],s:"\n",d:MiscellaneousVars[130],s:"\n",d:MiscellaneousVars[131],s:"\n",d:MiscellaneousVars[137],s:"\n",d:MiscellaneousVars[138],s:"\n",d:MiscellaneousVars[139]);
 
@@ -13740,6 +13779,8 @@ script 833 ENTER
   TensionStaminaPerTic = 5000;
  }
  TensionStaminaPerTic = TensionStaminaPerTic / (TensionChargeTimeMax / 19);
+ // Check Tension Speed Option [also affects Stamina]
+ TensionStaminaPerTic = TensionStaminaPerTic * MiscellaneousVars[193] / 4;
 
  if (CheckActorInventory(1001,"PowerStrength") > 0) TensionChargeFailRate -= 125; // -12.5% Fail Rate When Berserked
  if (PowerupTimer[7] > 0) TensionChargeFailRate -= 250; // -25% Fail Rate When In Divine Avatar
@@ -13826,7 +13867,9 @@ script 833 ENTER
       if (CharacterClass == 2) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
       // Check Tension Charge Multiplier Option
       TensionChargeAmount = TensionChargeAmount * MiscellaneousVars[187] / 100;
- 
+      // Check Tension Speed Option [also affects Stamina]
+      TensionChargeAmount = TensionChargeAmount * MiscellaneousVars[193] / 4;
+
       // Up-Clamp to 1 Tic
       if (TensionChargeAmount < 1) TensionChargeAmount = 1;
      }
@@ -18277,12 +18320,12 @@ script "GetStealthChance" (void)
 
  StealthChance = StealthChance + (SceptreActualLevel * 2 / 50) + (PlayerLevel / 75);
 
- if (CharacterClass == 0) StealthChance = StealthChance * 1050 / 1000;
- else if (CharacterClass == 1) StealthChance = StealthChance * 975 / 1000;
- else if (CharacterClass == 2) StealthChance = StealthChance * 900 / 1000;
+ if (CharacterClass == 0) StealthChance = StealthChance * 1125 / 1000;
+ else if (CharacterClass == 1) StealthChance = StealthChance * 1000 / 1000;
+ else if (CharacterClass == 2) StealthChance = StealthChance * 875 / 1000;
  else StealthChance = StealthChance * 1000 / 1000;
 
- if (GameSkill() == SKILL_VERY_EASY) StealthChance = StealthChance * 80 / 100;
+ if (GameSkill() == SKILL_VERY_EASY) StealthChance = StealthChance * 75 / 100;
  else if (GameSkill() == SKILL_EASY) StealthChance = StealthChance * 90 / 100;
  else if (GameSkill() == SKILL_NORMAL) StealthChance = StealthChance * 100 / 100;
  else if (GameSkill() == SKILL_HARD) StealthChance = StealthChance * 110 / 100;
@@ -18291,7 +18334,7 @@ script "GetStealthChance" (void)
 
  if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
  {
-  if (ClassicDoomType == 1)
+  if (ClassicDoomType == 1) // Doom 1 / Heretic
   {
    LevelCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
    LevelCheck += MiscellaneousVars[54];
