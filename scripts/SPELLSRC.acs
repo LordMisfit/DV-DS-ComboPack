@@ -1711,12 +1711,17 @@ script "HUDDisplay" ENTER
 {
  int C1, C2, I1, I2, Z1, Z2, G1, G2, G3, G4, HexToInt1, HexToInt2, G5, G8, HealMin, HealMax, HealSorcRatio, G6;
  str S1;
+ int ypos = 32.0;
  
  if (VeryFirstRun > 0 && CheckActorInventory(1001,"PlayerDeathFadeOut") < 1 && GetCVAR("dvds_showacshudelements") == 1)
  { 
   SetHudSize(640,480,0);
 
+  int EXPGainChecker = 1;
+  if (ModType == 0 && GetCVar("dvds_noexpgains") != 0) EXPGainChecker = 0; // If in Classic mode and the EXP Gain option is turned off, don't show EXP stuff on HUD.
+
   // Mana Bar
+  if (EXPGainChecker == 1) ypos = 32.0; else ypos = 24.0;
   for (C1 = 101; C1 > 1; C1 --)
   {
    if (MaxMana != 0)
@@ -1724,130 +1729,133 @@ script "HUDDisplay" ENTER
     I1 = fixedmul(fixeddiv(CurrentMana << 16,MaxMana << 16),100.0) >> 16;
     if (C1 - 1 <= I1) SetFont("ManaHF"); else SetFont("ManaHE");
     I2 = C1 << 16;
-    HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3200,cr_untranslated,1.0+I2,32.0,1.0);
+    HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3200,cr_untranslated,1.0+I2,ypos,0.036);
    }
   }
 
-  // EXP Bar
-  for (C1 = 101; C1 > 1; C1 --)
+  if (EXPGainChecker == 1)
   {
-   if (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1] != 0)
+   // EXP Bar
+   for (C1 = 101; C1 > 1; C1 --)
    {
-    I1 = ((Experience - ExpTable[PlayerLevel - 1]) * 100) / (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]);
-    if ((C1 - 1 <= I1) || (PlayerLevel == LevelCap)) SetFont("EXPHF"); else SetFont("ManaHE");
-    I2 = C1 << 16;
-    HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3302,cr_untranslated,1.0+I2,24.0,1.0);
+    if (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1] != 0)
+    {
+     I1 = ((Experience - ExpTable[PlayerLevel - 1]) * 100) / (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]);
+     if ((C1 - 1 <= I1) || (PlayerLevel == LevelCap)) SetFont("EXPHF"); else SetFont("ManaHE");
+     I2 = C1 << 16;
+     HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3302,cr_untranslated,1.0+I2,24.0,0.036);
+    }
    }
-  }
 
-  G6 += 1; if (G6 > 11) G6 = 0; // Resets Palette Flasher
-  int MaxEXPCombotimer;
-  if (PowerupTimer[7] > 0) MaxEXPCombotimer = 7000; else MaxEXPCombotimer = 5600;
-  // EXP Combo Timer Bar
-  for (C1 = 101; C1 > 1; C1 --)
-  {
-   if (MaxEXPCombotimer != 0)
+   G6 += 1; if (G6 > 11) G6 = 0; // Resets Palette Flasher
+   int MaxEXPCombotimer;
+   if (PowerupTimer[7] > 0) MaxEXPCombotimer = 7000; else MaxEXPCombotimer = 5600;
+   // EXP Combo Timer Bar
+   for (C1 = 101; C1 > 1; C1 --)
    {
-    I1 = fixedmul(fixeddiv(MiscellaneousVars[157] << 16,MaxEXPCombotimer << 16),100.0) >> 16;
-    if (C1 - 1 <= I1) SetFont("COMBOHF"); else SetFont("COMBOHE");
-    I2 = C1 << 16;
-    HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+2200,cr_untranslated,1.0+I2,68.0,1.0);
+    if (MaxEXPCombotimer != 0)
+    {
+     I1 = fixedmul(fixeddiv(MiscellaneousVars[157] << 16,MaxEXPCombotimer << 16),100.0) >> 16;
+     if (C1 - 1 <= I1) SetFont("COMBOHF"); else SetFont("COMBOHE");
+     I2 = C1 << 16;
+     HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+2200,cr_untranslated,1.0+I2,68.0,0.036);
+    }
    }
-  }
-
-  // EXP Combo Kill Counter
-  SetFont("SmallFont");
-  if (MiscellaneousVars[158] > 0)
-  {
-   if (G6 > 8)
+ 
+   // EXP Combo Kill Counter
+   SetFont("SmallFont");
+   if (MiscellaneousVars[158] > 0)
    {
-    // \c[LightBlue]
-    if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[LightBlue]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
-    if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[LightBlue]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+    if (G6 > 8)
+    {
+     // \c[LightBlue]
+     if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[LightBlue]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+     if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[LightBlue]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+    }
+    else
+    if (G6 > 5 && G6 < 9)
+    {
+     // \c[Gray]
+     if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[Gray]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+     if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[Gray]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+    }
+    else
+    if (G6 > 2 && G6 < 6)
+    {
+     // \c[Green]
+     if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[Green]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+     if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[Green]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+    }
+    else
+    if (G6 < 3)
+    {
+     // \c[Purple]
+     if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[Purple]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+     if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[Purple]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+    }
    }
-   else
-   if (G6 > 5 && G6 < 9)
+   // EXP Combo Total
+   if (MiscellaneousVars[158] > 1 && MiscellaneousVars[160] > 0)
    {
-    // \c[Gray]
-    if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[Gray]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
-    if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[Gray]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
+    if (G6 > 8)
+    {
+     // \c[LightBlue]
+     HudMessage(s:"\c[LightBlue]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
+    }
+    else
+    if (G6 > 5 && G6 < 9)
+    {
+     // \c[Gray]
+     HudMessage(s:"\c[Gray]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
+    }
+    else
+    if (G6 > 2 && G6 < 6)
+    {
+     // \c[Green]
+     HudMessage(s:"\c[Green]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
+    }
+    else
+    if (G6 < 3)
+    {
+     // \c[Purple]
+     HudMessage(s:"\c[Purple]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
+    }
    }
-   else
-   if (G6 > 2 && G6 < 6)
+ 
+   // EXP Combo Multiplier
+   int MultiUpper, MultiLower;
+   MultiLower = (MiscellaneousVars[159] - 10000) % 100;
+   MultiUpper = ((MiscellaneousVars[159] - 10000) - MultiLower) / 100;
+   SetFont("SmallFont");
+   if (MiscellaneousVars[158] > 1)
    {
-    // \c[Green]
-    if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[Green]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
-    if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[Green]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
-   }
-   else
-   if (G6 < 3)
-   {
-    // \c[Purple]
-    if (MiscellaneousVars[158] == 1) HudMessage(s:"\c[Purple]",d:MiscellaneousVars[158],s:" KILL";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
-    if (MiscellaneousVars[158] > 1) HudMessage(s:"\c[Purple]",d:MiscellaneousVars[158],s:" KILLS";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2200,cr_green,51.0,56.0,0.04);
-   }
-  }
-  // EXP Combo Total
-  if (MiscellaneousVars[158] > 1 && MiscellaneousVars[160] > 0)
-  {
-   if (G6 > 8)
-   {
-    // \c[LightBlue]
-    HudMessage(s:"\c[LightBlue]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
-   }
-   else
-   if (G6 > 5 && G6 < 9)
-   {
-    // \c[Gray]
-    HudMessage(s:"\c[Gray]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
-   }
-   else
-   if (G6 > 2 && G6 < 6)
-   {
-    // \c[Green]
-    HudMessage(s:"\c[Green]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
-   }
-   else
-   if (G6 < 3)
-   {
-    // \c[Purple]
-    HudMessage(s:"\c[Purple]+",d:MiscellaneousVars[160],s:" EXP";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2198,cr_green,51.0,80.0,0.04);
-   }
-  }
-
-  // EXP Combo Multiplier
-  int MultiUpper, MultiLower;
-  MultiLower = (MiscellaneousVars[159] - 10000) % 100;
-  MultiUpper = ((MiscellaneousVars[159] - 10000) - MultiLower) / 100;
-  SetFont("SmallFont");
-  if (MiscellaneousVars[158] > 1)
-  {
-   if (G6 > 8)
-   {
-    // \c[LightBlue]
-    if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[LightBlue]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
-    else HudMessage(s:"\c[LightBlue]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
-   }
-   else
-   if (G6 > 5 && G6 < 9)
-   {
-    // \c[Gray]
-    if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[Gray]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
-    else HudMessage(s:"\c[Gray]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
-   }
-   else
-   if (G6 > 2 && G6 < 6)
-   {
-    // \c[Green]
-    if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[Green]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
-    else HudMessage(s:"\c[Green]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
-   }
-   else
-   if (G6 < 3)
-   {
-    // \c[Purple]
-    if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[Purple]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
-    else HudMessage(s:"\c[Purple]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    if (G6 > 8)
+    {
+     // \c[LightBlue]
+     if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[LightBlue]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+     else HudMessage(s:"\c[LightBlue]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    }
+    else
+    if (G6 > 5 && G6 < 9)
+    {
+     // \c[Gray]
+     if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[Gray]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+     else HudMessage(s:"\c[Gray]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    }
+    else
+    if (G6 > 2 && G6 < 6)
+    {
+     // \c[Green]
+     if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[Green]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+     else HudMessage(s:"\c[Green]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    }
+    else
+    if (G6 < 3)
+    {
+     // \c[Purple]
+     if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"\c[Purple]+",d:MultiUpper,s:".0",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+     else HudMessage(s:"\c[Purple]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
+    }
    }
   }
 
@@ -1947,12 +1955,12 @@ script "HUDDisplay" ENTER
    
      if (C1 - 1 <= I1) SetFont("BossHF"); else SetFont("BossHE");
      I2 = C1 << 16;
-     HudMessage(s:"A";0,C1+3502,cr_untranslated,192.0+I2,384.0,1.0);
+     HudMessage(s:"A";0,C1+3502,cr_untranslated,192.0+I2,384.0,0.036);
 
      SetFont("BigFont");
-     HudMessage(s:"SAURON'S EYE";0,3501,cr_red,320.0,400.0,1.0);
+     HudMessage(s:"SAURON'S EYE";0,3501,cr_red,320.0,400.0,0.036);
      SetFont("SmallFont");
-     HudMessage(d:G3,s:" / ",d:G2;0,3500,cr_red,320.0,376.0,1.0);
+     HudMessage(d:G3,s:" / ",d:G2;0,3500,cr_red,320.0,376.0,0.036);
     }
    }
   }
@@ -1971,31 +1979,36 @@ script "HUDDisplay" ENTER
    
      if (C1 - 1 <= I1) SetFont("BossHF"); else SetFont("BossHE");
      I2 = C1 << 16;
-     HudMessage(s:"A";0,C1+3502,cr_untranslated,192.0+I2,384.0,1.0);
+     HudMessage(s:"A";0,C1+3502,cr_untranslated,192.0+I2,384.0,0.036);
 
      SetFont("BigFont");
-     HudMessage(s:"SAURAVATAR";0,3501,cr_darkgrey,320.0,400.0,1.0);
+     HudMessage(s:"SAURAVATAR";0,3501,cr_darkgrey,320.0,400.0,0.036);
      SetFont("SmallFont");
-     HudMessage(d:G3,s:" / ",d:G2;0,3500,cr_darkgrey,320.0,376.0,1.0);
+     HudMessage(d:G3,s:" / ",d:G2;0,3500,cr_darkgrey,320.0,376.0,0.036);
     }
    }
   }
 
   SetHudSize(640,480,0);
-  SetFont("SmallFont");
-  if (PlayerLevel >= LevelCap)
+  if (EXPGainChecker == 1)
   {
-   HudMessage(s:"\cdLevel: ",d:PlayerLevel,s:" / ",d:LevelCap,s:"\c-    \cn(",d:Experience,s:" EXP)";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,3413,cr_white,120.1,24.0,1.0);
-  }
-  else
-  {
-   HudMessage(s:"\cdLevel: ",d:PlayerLevel,s:" / ",d:LevelCap,s:"\c-    \cn(",d:Experience,s:" EXP)    \ca(",d:MiscellaneousVars[48],s:" Needed)";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,3413,cr_white,120.1,24.0,1.0);
+   SetFont("SmallFont");
+   if (PlayerLevel >= LevelCap)
+   {
+    HudMessage(s:"\cdLevel: ",d:PlayerLevel,s:" / ",d:LevelCap,s:"\c-    \cn(",d:Experience,s:" EXP)";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,3413,cr_white,120.1,24.0,0.036);
+   }
+   else
+   {
+    HudMessage(s:"\cdLevel: ",d:PlayerLevel,s:" / ",d:LevelCap,s:"\c-    \cn(",d:Experience,s:" EXP)    \ca(",d:MiscellaneousVars[48],s:" Needed)";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,3413,cr_white,120.1,24.0,0.036);
+   }
   }
 
   SetFont("SmallFont");
-  HudMessage(s:"\c[Purple]Mana: ",d:CurrentMana,s:" / ",d:MaxMana;HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3415,cr_white,120.1,32.0,1.0);
+  if (EXPGainChecker == 1) ypos = 32.0; else ypos = 24.0;
+  HudMessage(s:"\c[Purple]Mana: ",d:CurrentMana,s:" / ",d:MaxMana;HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3415,cr_white,120.1,ypos,0.036);
 
   // Seed Level Displays [#3416 & #3417]
+  if (EXPGainChecker == 1) ypos = 54.0; else ypos = 46.0;
   if (MiscellaneousVars[24] == 0) // No Stat Selected
   {
    HudMessage(
@@ -2003,13 +2016,13 @@ script "HUDDisplay" ENTER
            s:"\n\c[Olive]Defense: \cf",d:MiscellaneousVars[32],
            s:"\n\c[Green]Deftness: \cf",d:MiscellaneousVars[33],
              s:"\n\c[Tan]Balance: \cf",d:PlayerMass;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,ypos,0.036);
    HudMessage(
             s:"\c[Purple]Sorcery: \cf",d:MiscellaneousVars[34],
              s:"\n\c[Red]Strength: \cf",d:MiscellaneousVars[35],
             s:"\n\c[Gray]Therapeusis: \cf",d:MiscellaneousVars[36],
        s:"\n\c[LightBlue]Jumping: \cf",d:PlayerJumpHeight;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,ypos,0.036);
   }
   if (MiscellaneousVars[24] == 1) // Selected Agility
   {
@@ -2018,13 +2031,13 @@ script "HUDDisplay" ENTER
            s:"\n\c[Olive]Defense: \cf",d:MiscellaneousVars[32],
            s:"\n\c[Green]Deftness: \cf",d:MiscellaneousVars[33],
              s:"\n\c[Tan]Balance: \cf",d:PlayerMass;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,ypos,0.036);
    HudMessage(
             s:"\c[Purple]Sorcery: \cf",d:MiscellaneousVars[34],
              s:"\n\c[Red]Strength: \cf",d:MiscellaneousVars[35],
             s:"\n\c[Gray]Therapeusis: \cf",d:MiscellaneousVars[36],
        s:"\n\c[LightBlue]Jumping: \cf",d:PlayerJumpHeight;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,ypos,0.036);
   }
   if (MiscellaneousVars[24] == 2) // Selected Defense
   {
@@ -2033,13 +2046,13 @@ script "HUDDisplay" ENTER
            s:"\n\c[Olive]Defense: \c[blue]",d:MiscellaneousVars[32],
            s:"\n\c[Green]Deftness: \cf",d:MiscellaneousVars[33],
              s:"\n\c[Tan]Balance: \cf",d:PlayerMass;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,ypos,0.036);
    HudMessage(
             s:"\c[Purple]Sorcery: \cf",d:MiscellaneousVars[34],
              s:"\n\c[Red]Strength: \cf",d:MiscellaneousVars[35],
             s:"\n\c[Gray]Therapeusis: \cf",d:MiscellaneousVars[36],
        s:"\n\c[LightBlue]Jumping: \cf",d:PlayerJumpHeight;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,ypos,0.036);
   }
   if (MiscellaneousVars[24] == 3) // Selected Deftness
   {
@@ -2048,13 +2061,13 @@ script "HUDDisplay" ENTER
            s:"\n\c[Olive]Defense: \cf",d:MiscellaneousVars[32],
            s:"\n\c[Green]Deftness: \c[blue]",d:MiscellaneousVars[33],
              s:"\n\c[Tan]Balance: \cf",d:PlayerMass;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,ypos,0.036);
    HudMessage(
             s:"\c[Purple]Sorcery: \cf",d:MiscellaneousVars[34],
              s:"\n\c[Red]Strength: \cf",d:MiscellaneousVars[35],
             s:"\n\c[Gray]Therapeusis: \cf",d:MiscellaneousVars[36],
        s:"\n\c[LightBlue]Jumping: \cf",d:PlayerJumpHeight;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,ypos,0.036);
   }
 
   if (MiscellaneousVars[24] == 4) // Selected Sorcery
@@ -2064,13 +2077,13 @@ script "HUDDisplay" ENTER
            s:"\n\c[Olive]Defense: \cf",d:MiscellaneousVars[32],
            s:"\n\c[Green]Deftness: \cf",d:MiscellaneousVars[33],
              s:"\n\c[Tan]Balance: \cf",d:PlayerMass;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,ypos,0.036);
    HudMessage(
             s:"\c[Purple]Sorcery: \c[blue]",d:MiscellaneousVars[34],
              s:"\n\c[Red]Strength: \cf",d:MiscellaneousVars[35],
             s:"\n\c[Gray]Therapeusis: \cf",d:MiscellaneousVars[36],
        s:"\n\c[LightBlue]Jumping: \cf",d:PlayerJumpHeight;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,ypos,0.036);
   }
   if (MiscellaneousVars[24] == 5) // Selected Strength
   {
@@ -2079,13 +2092,13 @@ script "HUDDisplay" ENTER
            s:"\n\c[Olive]Defense: \cf",d:MiscellaneousVars[32],
            s:"\n\c[Green]Deftness: \cf",d:MiscellaneousVars[33],
              s:"\n\c[Tan]Balance: \cf",d:PlayerMass;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,ypos,0.036);
    HudMessage(
             s:"\c[Purple]Sorcery: \cf",d:MiscellaneousVars[34],
              s:"\n\c[Red]Strength: \c[blue]",d:MiscellaneousVars[35],
             s:"\n\c[Gray]Therapeusis: \cf",d:MiscellaneousVars[36],
        s:"\n\c[LightBlue]Jumping: \cf",d:PlayerJumpHeight;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,ypos,0.036);
   }
   if (MiscellaneousVars[24] == 6) // Selected Therapeusis
   {
@@ -2094,18 +2107,19 @@ script "HUDDisplay" ENTER
            s:"\n\c[Olive]Defense: \cf",d:MiscellaneousVars[32],
            s:"\n\c[Green]Deftness: \cf",d:MiscellaneousVars[33],
              s:"\n\c[Tan]Balance: \cf",d:PlayerMass;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3416,cr_white,120.1,ypos,0.036);
    HudMessage(
             s:"\c[Purple]Sorcery: \cf",d:MiscellaneousVars[34],
              s:"\n\c[Red]Strength: \cf",d:MiscellaneousVars[35],
             s:"\n\c[Gray]Therapeusis: \c[blue]",d:MiscellaneousVars[36],
        s:"\n\c[LightBlue]Jumping: \cf",d:PlayerJumpHeight;
-           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,53.0,1.0);
+           HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3417,cr_white,248.1,ypos,0.036);
   }
   // DP Display [#3420]
   G5 += 1;
   if (G5 > 11) G5 = 0; // Resets Palette Flasher
 
+  ypos = 16.0;
   if (MiscellaneousVars[25] > 0 && PlayerLevel >= AeonPointStartLevel)
   {
    if (G5 > 8)
@@ -2115,7 +2129,7 @@ script "HUDDisplay" ENTER
                                             s:"\cn  (\cj",k:"puke 891 0",s:"\cf [down], \cj",
                                                           k:"puke 891 1",s:"\cf [up], \cj",
                                                           k:"puke 891 2",s:"\cf [use]\cn)";
-    HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,16.0,0.1);
+    HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,ypos,0.036);
    }
    else
    if (G5 > 5 && G5 < 9)
@@ -2125,7 +2139,7 @@ script "HUDDisplay" ENTER
                                             s:"\cn  (\cj",k:"puke 891 0",s:"\cf [down], \cj",
                                                           k:"puke 891 1",s:"\cf [up], \cj",
                                                           k:"puke 891 2",s:"\cf [use]\cn)";
-    HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,16.0,0.1);
+    HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,ypos,0.036);
    }
    else
    if (G5 > 2 && G5 < 6)
@@ -2135,7 +2149,7 @@ script "HUDDisplay" ENTER
                                             s:"\cn  (\cj",k:"puke 891 0",s:"\cf [down], \cj",
                                                           k:"puke 891 1",s:"\cf [up], \cj",
                                                           k:"puke 891 2",s:"\cf [use]\cn)";
-    HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,16.0,0.1);
+    HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,ypos,0.036);
    }
    else
    if (G5 < 3)
@@ -2145,7 +2159,7 @@ script "HUDDisplay" ENTER
                                             s:"\cn  (\cj",k:"puke 891 0",s:"\cf [down], \cj",
                                                           k:"puke 891 1",s:"\cf [up], \cj",
                                                           k:"puke 891 2",s:"\cf [use]\cn)";
-    HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,16.0,0.1);
+    HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP ,3420,cr_white,120.1,ypos,0.036);
    }
   }
 
@@ -2162,16 +2176,16 @@ script "HUDDisplay" ENTER
    {
     if (CharacterClass == 2)
     {
-     HudMessage(s:"\cfSpreader Aura Lv. 1\c-",s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,320.0,432.0,1.0);
+     HudMessage(s:"\cfSpreader Aura Lv. 1\c-",s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,320.0,432.0,0.036);
     }
     else
     {
-     HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,320.0,432.0,1.0);
+     HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,320.0,432.0,0.036);
     }
    }
    else
    {
-    HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,320.0,432.0,1.0);
+    HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,320.0,432.0,0.036);
    }
   }
   else
@@ -2180,16 +2194,16 @@ script "HUDDisplay" ENTER
    {
     if (CharacterClass == 2)
     {
-     HudMessage(s:"\cfSpreader Aura Lv. 1\c-",s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,320.0,432.0,1.0);
+     HudMessage(s:"\cfSpreader Aura Lv. 1\c-",s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,320.0,432.0,0.036);
     }
     else
     {
-     HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,320.0,432.0,1.0);
+     HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,320.0,432.0,0.036);
     }
    }
    else
    {
-    HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,320.0,432.0,1.0);
+    HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,320.0,432.0,0.036);
    }
   }
 
@@ -2197,34 +2211,34 @@ script "HUDDisplay" ENTER
   {
    HealMin = GetHealingValue(0,0); // Minor [Min] 
    HealMax = GetHealingValue(0,1); // Minor [Max] 
-   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthTrue;0,3407,cr_gold,320.0,456.0,1.0);
+   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthTrue;0,3407,cr_gold,320.0,456.0,0.036);
   }
   else if (SelectedSpell == 14) // Healing
   {
    HealMin = GetHealingValue(1,0); // Normal [Min] 
    HealMax = GetHealingValue(1,1); // Normal [Max] 
-   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthTrue;0,3407,cr_gold,320.0,456.0,1.0);
+   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthTrue;0,3407,cr_gold,320.0,456.0,0.036);
   }
   else if (SelectedSpell == 29) // Major Healing
   {
    HealMin = GetHealingValue(2,0); // Major [Min] 
    HealMax = GetHealingValue(2,1); // Major [Max] 
-   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthDoubleTrue;0,3407,cr_gold,320.0,456.0,1.0);
+   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthDoubleTrue;0,3407,cr_gold,320.0,456.0,0.036);
   }
   else if (SelectedSpell == 40) // Diamond Skin / Spreader Aura Lv. 1
   {
    if (CharacterClass == 2) // Flora uses Spreader Aura Lv. 1 [and thus it uses an unique Description]
    {
-    HudMessage(s:"Allows You to Create Two Extra Copies of Most Attacks and Spells.";0,3407,cr_gold,320.0,456.0,1.0);
+    HudMessage(s:"Allows You to Create Two Extra Copies of Most Attacks and Spells.";0,3407,cr_gold,320.0,456.0,0.036);
    }
    else // The other two use the usual Spell Description for Diamond Skin
    {
-    HudMessage(s:SpellDesc[SelectedSpell];0,3407,cr_gold,320.0,456.0,1.0);
+    HudMessage(s:SpellDesc[SelectedSpell];0,3407,cr_gold,320.0,456.0,0.036);
    }
   }
   else
   {
-   HudMessage(s:SpellDesc[SelectedSpell];0,3407,cr_gold,320.0,456.0,1.0);
+   HudMessage(s:SpellDesc[SelectedSpell];0,3407,cr_gold,320.0,456.0,0.036);
   }
 
   str KeyName;
@@ -2258,16 +2272,16 @@ script "HUDDisplay" ENTER
      {
       if (CharacterClass == 2)
       {
-       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
       }
       else
       {
-       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
       }
      }
      else
      {
-      HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+      HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
      }
     }
     else
@@ -2277,22 +2291,22 @@ script "HUDDisplay" ENTER
      {
       if (CharacterClass == 2)
       {
-       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
       }
       else
       {
-       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
       }
      }
      else
      {
-      HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+      HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
      }
     }
    }
    else
    {
-    HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: Empty";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),1.0);
+    HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: Empty";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
    }
   }
 
@@ -3185,7 +3199,7 @@ script "LevelUpCode" ENTER // (void)
       }
      }
     }
-    FadeRange(0,0,255,0.3,0,0,255,0.0,1.0);
+    FadeRange(0,0,255,0.3,0,0,255,0.0,0.036);
     SetHudSize(0,0,0);  
 
    }
@@ -11894,23 +11908,19 @@ script 833 ENTER
    {
     if (HealthDifference != 0)
     {
+     SetHudSize(640,480,0);
+     SetFont("SmallFont");
      if (HealthDifference > 0) // Positive Value
      {
-      SetHudSize(640,480,0);
-      SetFont("SmallFont");
       HudMessageBold(s:"+",d:HealthDifference,s:" HP (+",d:HealthDiffRatio,s:"%)";0,1,cr_green,64.0,427.0,2.5);
      }
      else
      if (HealthDifference < 0) // Negative Value
      {
-      SetHudSize(640,480,0);
-      SetFont("SmallFont");
       HealthDifference *= -1;
       HealthDiffRatio *= -1;
       HudMessageBold(s:"-",d:HealthDifference,s:" HP (-",d:HealthDiffRatio,s:"%)";0,1,cr_red,64.0,427.0,2.5);
      }
-         
-     // PrintBold(d:HealthDifference);
     }
    }
   }
@@ -13027,57 +13037,62 @@ script 833 ENTER
  //*****************************
  //*****************************
 
- // Kills
- MiscellaneousVars[63] = 0;
- for (i = 1; i < 37; i++) { MiscellaneousVars[63] += MonstersKilled[i]; }
- MiscellaneousVars[61] = MiscellaneousVars[63] / 384;
-
- if (MiscellaneousVars[62] < MiscellaneousVars[61])
+ int AeonBonusChecker = 1;
+ if (ModType == 0 && GetCVar("dvds_aeonpointbonus") != 0) AeonBonusChecker = 0; // If in Classic Mode and the Aeon Point bonus option is off, don't check counts
+ if (AeonBonusChecker == 1)
  {
-  MiscellaneousVars[25] += 1;
-  MiscellaneousVars[62] += 1;
+  // Kills
+  MiscellaneousVars[63] = 0;
+  for (i = 1; i < 37; i++) { MiscellaneousVars[63] += MonstersKilled[i]; }
+  MiscellaneousVars[61] = MiscellaneousVars[63] / 384;
 
-  if (PlayerLevel >= AeonPointStartLevel)
+  if (MiscellaneousVars[62] < MiscellaneousVars[61])
   {
-   SetHudSize(0,0,0);
-   HudMessage(s:"You have gained 1 Aeon Point for killing enough monsters!\n\nRemember to allocate your Aeon Points as soon as possible...";
-   HUDMSG_LOG,3432,cr_orange,1.5,0.5,2.75);
+   MiscellaneousVars[25] += 1;
+   MiscellaneousVars[62] += 1;
+ 
+   if (PlayerLevel >= AeonPointStartLevel)
+   {
+    SetHudSize(0,0,0);
+    HudMessage(s:"You have gained 1 Aeon Point for killing enough monsters!\n\nRemember to allocate your Aeon Points as soon as possible...";
+    HUDMSG_LOG,3432,cr_orange,1.5,0.5,2.75);
+   }
   }
- }
 
- // Secrets
- MiscellaneousVars[64] = 0;
- for (i = 1; i < 37; i++) { MiscellaneousVars[64] += SecretsFound[i]; }
- MiscellaneousVars[59] = MiscellaneousVars[64] / 8;
-
- if (MiscellaneousVars[60] < MiscellaneousVars[59])
- {
-  MiscellaneousVars[25] += 1;
-  MiscellaneousVars[60] += 1;
-
-  if (PlayerLevel >= AeonPointStartLevel)
+  // Secrets
+  MiscellaneousVars[64] = 0;
+  for (i = 1; i < 37; i++) { MiscellaneousVars[64] += SecretsFound[i]; }
+  MiscellaneousVars[59] = MiscellaneousVars[64] / 8;
+ 
+  if (MiscellaneousVars[60] < MiscellaneousVars[59])
   {
-   SetHudSize(0,0,0);
-   HudMessage(s:"You have gained 1 Aeon Point for finding enough secrets!\n\nRemember to allocate your Aeon Points as soon as possible...";
-   HUDMSG_LOG,3432,cr_orange,1.5,0.5,2.75);
+   MiscellaneousVars[25] += 1;
+   MiscellaneousVars[60] += 1;
+ 
+   if (PlayerLevel >= AeonPointStartLevel)
+   {
+    SetHudSize(0,0,0);
+    HudMessage(s:"You have gained 1 Aeon Point for finding enough secrets!\n\nRemember to allocate your Aeon Points as soon as possible...";
+    HUDMSG_LOG,3432,cr_orange,1.5,0.5,2.75);
+   }
   }
- }
-
- // Items
- MiscellaneousVars[56] = 0;
- for (i = 1; i < 37; i++) { MiscellaneousVars[56] += ItemsFound[i]; }
- MiscellaneousVars[57] = MiscellaneousVars[56] / 256;
-
- if (MiscellaneousVars[58] < MiscellaneousVars[57])
- {
-  MiscellaneousVars[25] += 1;
-  MiscellaneousVars[58] += 1;
-
-  if (PlayerLevel >= AeonPointStartLevel)
+ 
+  // Items
+  MiscellaneousVars[56] = 0;
+  for (i = 1; i < 37; i++) { MiscellaneousVars[56] += ItemsFound[i]; }
+  MiscellaneousVars[57] = MiscellaneousVars[56] / 256;
+ 
+  if (MiscellaneousVars[58] < MiscellaneousVars[57])
   {
-   SetHudSize(0,0,0);
-   HudMessage(s:"You have gained 1 Aeon Point for finding enough special items!\n\nRemember to allocate your Aeon Points as soon as possible...";
-   HUDMSG_LOG,3432,cr_orange,1.5,0.5,2.75);
+   MiscellaneousVars[25] += 1;
+   MiscellaneousVars[58] += 1;
+ 
+   if (PlayerLevel >= AeonPointStartLevel)
+   {
+    SetHudSize(0,0,0);
+    HudMessage(s:"You have gained 1 Aeon Point for finding enough special items!\n\nRemember to allocate your Aeon Points as soon as possible...";
+    HUDMSG_LOG,3432,cr_orange,1.5,0.5,2.75);
+   }
   }
  }
 
@@ -16683,6 +16698,8 @@ script "AddSceptreEXP" (int Arg1, int Arg2, int DivAmount)
  int C1, C2;
  int EXPBonus1;
 
+ if (ModType == 0 && GetCVar("dvds_noscexpgains") != 0) terminate;
+
  if (DivAmount <= 1) DivAmount = 1;
 
  if (CharacterClass != 2) terminate;
@@ -17337,579 +17354,599 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    TakeInventory("IsAStealthMonsterRing", 1);
   }
 
+  int DifficultyChecker = 1;
+  if (ModType == 0)
+  { 
+   if (GetCVar("dvds_monsternolevel") & 2) DifficultyChecker = 1; else DifficultyChecker = 0;
+  }
+  else DifficultyChecker = 1;
+
   MaxHP = GetActorProperty(0,APROP_Health);
-  if (GameSkill() == SKILL_VERY_EASY)
+  if (DifficultyChecker == 1) // Difficulty-checking enabled
   {
-   GiveInventory("MonsterAttack-VeryEasy", 1);
-   GiveInventory("MonsterDefense-VeryEasy", 1);
-   GiveInventory("MonsterSpeed-VeryEasy", 1);
-   MaxHP = MaxHP * 85 / 100;
-  }
-  else
-  if (GameSkill() == SKILL_EASY)
-  {
-   GiveInventory("MonsterAttack-Easy", 1);
-   GiveInventory("MonsterDefense-Easy", 1);
-   GiveInventory("MonsterSpeed-Easy", 1);
-   MaxHP = MaxHP * 95 / 100;
-  }
-  else
-  if (GameSkill() == SKILL_NORMAL)
-  {
-   GiveInventory("MonsterAttack-Normal", 1);
-   GiveInventory("MonsterDefense-Normal", 1);
-   GiveInventory("MonsterSpeed-Normal", 1);
-   MaxHP = MaxHP * 100 / 100;
-  }
-  else
-  if (GameSkill() == SKILL_HARD)
-  {
-   GiveInventory("MonsterAttack-Hard", 1);
-   GiveInventory("MonsterDefense-Hard", 1);
-   GiveInventory("MonsterSpeed-Hard", 1);
-   MaxHP = MaxHP * 105 / 100;
-  }
-  else
-  if (GameSkill() == SKILL_VERY_HARD)
-  {
-   GiveInventory("MonsterAttack-VeryHard", 1);
-   GiveInventory("MonsterDefense-VeryHard", 1);
-   GiveInventory("MonsterSpeed-VeryHard", 1);
-   MaxHP = MaxHP * 115 / 100;
-  }
-  else
-  if (GameSkill() == 5)
-  {
-   GiveInventory("MonsterAttack-ExtremelyHard", 1);
-   GiveInventory("MonsterDefense-ExtremelyHard", 1);
-   GiveInventory("MonsterSpeed-ExtremelyHard", 1);
-   MaxHP = MaxHP * 130 / 100;
-  }
-
-  if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
-  {
-   if (ClassicDoomType == 1) // Doom 1
+   if (GameSkill() == SKILL_VERY_EASY)
    {
-    LevelCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
-    LevelCheck += MiscellaneousVars[53];
-    if (LevelCheck < 1) LevelCheck = 1;
-    if (LevelCheck > 40) LevelCheck = 40;
-
-    // Episode 1
-    if (LevelCheck == 1) // E1M1
-    {
-     GiveInventory("MonsterAttack-Classic-E1M1", 1);
-     GiveInventory("MonsterDefense-Classic-E1M1", 1);
-     GiveInventory("MonsterSpeed-Classic-E1M1", 1);
-     MaxHP = MaxHP * 1 / 1;
-    }
-    if (LevelCheck == 2) // E1M2
-    {
-     GiveInventory("MonsterAttack-Classic-E1M2", 1);
-     GiveInventory("MonsterDefense-Classic-E1M2", 1);
-     GiveInventory("MonsterSpeed-Classic-E1M2", 1);
-     MaxHP = MaxHP * 102 / 100;
-    }
-    if (LevelCheck == 3) // E1M3
-    {
-     GiveInventory("MonsterAttack-Classic-E1M3", 1);
-     GiveInventory("MonsterDefense-Classic-E1M3", 1);
-     GiveInventory("MonsterSpeed-Classic-E1M3", 1);
-     MaxHP = MaxHP * 1041 / 1000;
-    }
-    if (LevelCheck == 9) // E1M9
-    {
-     GiveInventory("MonsterAttack-Classic-E1M9", 1);
-     GiveInventory("MonsterDefense-Classic-E1M9", 1);
-     GiveInventory("MonsterSpeed-Classic-E1M9", 1);
-     MaxHP = MaxHP * 1063 / 1000;
-    }
-    if (LevelCheck == 10) // E1M10
-    {
-     GiveInventory("MonsterAttack-Classic-E1M10", 1);
-     GiveInventory("MonsterDefense-Classic-E1M10", 1);
-     GiveInventory("MonsterSpeed-Classic-E1M10", 1);
-     MaxHP = MaxHP * 1063 / 1000;
-    }
-    if (LevelCheck == 4) // E1M4
-    {
-     GiveInventory("MonsterAttack-Classic-E1M4", 1);
-     GiveInventory("MonsterDefense-Classic-E1M4", 1);
-     GiveInventory("MonsterSpeed-Classic-E1M4", 1);
-     MaxHP = MaxHP * 1086 / 1000;
-    }
-    if (LevelCheck == 5) // E1M5
-    {
-     GiveInventory("MonsterAttack-Classic-E1M5", 1);
-     GiveInventory("MonsterDefense-Classic-E1M5", 1);
-     GiveInventory("MonsterSpeed-Classic-E1M5", 1);
-     MaxHP = MaxHP * 111 / 100;
-    }
-    if (LevelCheck == 6) // E1M6
-    {
-     GiveInventory("MonsterAttack-Classic-E1M6", 1);
-     GiveInventory("MonsterDefense-Classic-E1M6", 1);
-     GiveInventory("MonsterSpeed-Classic-E1M6", 1);
-     MaxHP = MaxHP * 1135 / 1000;
-    }
-    if (LevelCheck == 7) // E1M7
-    {
-     GiveInventory("MonsterAttack-Classic-E1M7", 1);
-     GiveInventory("MonsterDefense-Classic-E1M7", 1);
-     GiveInventory("MonsterSpeed-Classic-E1M7", 1);
-     MaxHP = MaxHP * 1161 / 1000;
-    }
-    if (LevelCheck == 8) // E1M8
-    {
-     GiveInventory("MonsterAttack-Classic-E1M8", 1);
-     GiveInventory("MonsterDefense-Classic-E1M8", 1);
-     GiveInventory("MonsterSpeed-Classic-E1M8", 1);
-     MaxHP = MaxHP * 1188 / 1000;
-    }
-    // Episode 2
-    if (LevelCheck == 11) // E2M1
-    {
-     GiveInventory("MonsterAttack-Classic-E2M1", 1);
-     GiveInventory("MonsterDefense-Classic-E2M1", 1);
-     GiveInventory("MonsterSpeed-Classic-E2M1", 1);
-     MaxHP = MaxHP * 1224 / 1000;
-    }
-    if (LevelCheck == 12) // E2M2
-    {
-     GiveInventory("MonsterAttack-Classic-E2M2", 1);
-     GiveInventory("MonsterDefense-Classic-E2M2", 1);
-     GiveInventory("MonsterSpeed-Classic-E2M2", 1);
-     MaxHP = MaxHP * 1262 / 1000;
-    }
-    if (LevelCheck == 13) // E2M3
-    {
-     GiveInventory("MonsterAttack-Classic-E2M3", 1);
-     GiveInventory("MonsterDefense-Classic-E2M3", 1);
-     GiveInventory("MonsterSpeed-Classic-E2M3", 1);
-     MaxHP = MaxHP * 1302 / 1000;
-    }
-    if (LevelCheck == 14) // E2M4
-    {
-     GiveInventory("MonsterAttack-Classic-E2M4", 1);
-     GiveInventory("MonsterDefense-Classic-E2M4", 1);
-     GiveInventory("MonsterSpeed-Classic-E2M4", 1);
-     MaxHP = MaxHP * 1344 / 1000;
-    }
-    if (LevelCheck == 15) // E2M5
-    {
-     GiveInventory("MonsterAttack-Classic-E2M5", 1);
-     GiveInventory("MonsterDefense-Classic-E2M5", 1);
-     GiveInventory("MonsterSpeed-Classic-E2M5", 1);
-     MaxHP = MaxHP * 1388 / 1000;
-    }
-    if (LevelCheck == 19) // E2M9
-    {
-     GiveInventory("MonsterAttack-Classic-E2M9", 1);
-     GiveInventory("MonsterDefense-Classic-E2M9", 1);
-     GiveInventory("MonsterSpeed-Classic-E2M9", 1);
-     MaxHP = MaxHP * 1434 / 1000;
-    }
-    if (LevelCheck == 20) // E2M10
-    {
-     GiveInventory("MonsterAttack-Classic-E2M10", 1);
-     GiveInventory("MonsterDefense-Classic-E2M10", 1);
-     GiveInventory("MonsterSpeed-Classic-E2M10", 1);
-     MaxHP = MaxHP * 1434 / 1000;
-    }
-    if (LevelCheck == 16) // E2M6
-    {
-     GiveInventory("MonsterAttack-Classic-E2M6", 1);
-     GiveInventory("MonsterDefense-Classic-E2M6", 1);
-     GiveInventory("MonsterSpeed-Classic-E2M6", 1);
-     MaxHP = MaxHP * 1482 / 1000;
-    }
-    if (LevelCheck == 17) // E2M7
-    {
-     GiveInventory("MonsterAttack-Classic-E2M7", 1);
-     GiveInventory("MonsterDefense-Classic-E2M7", 1);
-     GiveInventory("MonsterSpeed-Classic-E2M7", 1);
-     MaxHP = MaxHP * 1532 / 1000;
-    }
-    if (LevelCheck == 18) // E2M8
-    {
-     GiveInventory("MonsterAttack-Classic-E2M8", 1);
-     GiveInventory("MonsterDefense-Classic-E2M8", 1);
-     GiveInventory("MonsterSpeed-Classic-E2M8", 1);
-     MaxHP = MaxHP * 1584 / 1000;
-    }
-    // Episode 3
-    if (LevelCheck == 21) // E3M1
-    {
-     GiveInventory("MonsterAttack-Classic-E3M1", 1);
-     GiveInventory("MonsterDefense-Classic-E3M1", 1);
-     GiveInventory("MonsterSpeed-Classic-E3M1", 1);
-     MaxHP = MaxHP * 1648 / 1000;
-    }
-    if (LevelCheck == 22) // E3M2
-    {
-     GiveInventory("MonsterAttack-Classic-E3M2", 1);
-     GiveInventory("MonsterDefense-Classic-E3M2", 1);
-     GiveInventory("MonsterSpeed-Classic-E3M2", 1);
-     MaxHP = MaxHP * 1716 / 1000;
-    }
-    if (LevelCheck == 23) // E3M3
-    {
-     GiveInventory("MonsterAttack-Classic-E3M3", 1);
-     GiveInventory("MonsterDefense-Classic-E3M3", 1);
-     GiveInventory("MonsterSpeed-Classic-E3M3", 1);
-     MaxHP = MaxHP * 1789 / 1000;
-    }
-    if (LevelCheck == 24) // E3M4
-    {
-     GiveInventory("MonsterAttack-Classic-E3M4", 1);
-     GiveInventory("MonsterDefense-Classic-E3M4", 1);
-     GiveInventory("MonsterSpeed-Classic-E3M4", 1);
-     MaxHP = MaxHP * 1868 / 1000;
-    }
-    if (LevelCheck == 25) // E3M5
-    {
-     GiveInventory("MonsterAttack-Classic-E3M5", 1);
-     GiveInventory("MonsterDefense-Classic-E3M5", 1);
-     GiveInventory("MonsterSpeed-Classic-E3M5", 1);
-     MaxHP = MaxHP * 1954 / 1000;
-    }
-    if (LevelCheck == 26) // E3M6
-    {
-     GiveInventory("MonsterAttack-Classic-E3M6", 1);
-     GiveInventory("MonsterDefense-Classic-E3M6", 1);
-     GiveInventory("MonsterSpeed-Classic-E3M6", 1);
-     MaxHP = MaxHP * 2048 / 1000;
-    }
-    if (LevelCheck == 29) // E3M9
-    {
-     GiveInventory("MonsterAttack-Classic-E3M9", 1);
-     GiveInventory("MonsterDefense-Classic-E3M9", 1);
-     GiveInventory("MonsterSpeed-Classic-E3M9", 1);
-     MaxHP = MaxHP * 2151 / 1000;
-    }
-    if (LevelCheck == 30) // E3M10
-    {
-     GiveInventory("MonsterAttack-Classic-E3M10", 1);
-     GiveInventory("MonsterDefense-Classic-E3M10", 1);
-     GiveInventory("MonsterSpeed-Classic-E3M10", 1);
-     MaxHP = MaxHP * 2151 / 1000;
-    }
-    if (LevelCheck == 27) // E3M7
-    {
-     GiveInventory("MonsterAttack-Classic-E3M7", 1);
-     GiveInventory("MonsterDefense-Classic-E3M7", 1);
-     GiveInventory("MonsterSpeed-Classic-E3M7", 1);
-     MaxHP = MaxHP * 2264 / 1000;
-    }
-    if (LevelCheck == 28) // E3M8
-    {
-     GiveInventory("MonsterAttack-Classic-E3M8", 1);
-     GiveInventory("MonsterDefense-Classic-E3M8", 1);
-     GiveInventory("MonsterSpeed-Classic-E3M8", 1);
-     MaxHP = MaxHP * 2388 / 1000;
-    }
-    // Episode 4
-    if (LevelCheck == 31) // E4M1
-    {
-     GiveInventory("MonsterAttack-Classic-E4M1", 1);
-     GiveInventory("MonsterDefense-Classic-E4M1", 1);
-     GiveInventory("MonsterSpeed-Classic-E4M1", 1);
-     MaxHP = MaxHP * 2536 / 1000;
-    }
-    if (LevelCheck == 32) // E4M2
-    {
-     GiveInventory("MonsterAttack-Classic-E4M2", 1);
-     GiveInventory("MonsterDefense-Classic-E4M2", 1);
-     GiveInventory("MonsterSpeed-Classic-E4M2", 1);
-     MaxHP = MaxHP * 2696 / 1000;
-    }
-    if (LevelCheck == 39) // E4M9
-    {
-     GiveInventory("MonsterAttack-Classic-E4M9", 1);
-     GiveInventory("MonsterDefense-Classic-E4M9", 1);
-     GiveInventory("MonsterSpeed-Classic-E4M9", 1);
-     MaxHP = MaxHP * 287 / 100;
-    }
-    if (LevelCheck == 40) // E4M10
-    {
-     GiveInventory("MonsterAttack-Classic-E4M10", 1);
-     GiveInventory("MonsterDefense-Classic-E4M10", 1);
-     GiveInventory("MonsterSpeed-Classic-E4M10", 1);
-     MaxHP = MaxHP * 287 / 100;
-    }
-    if (LevelCheck == 33) // E4M3
-    {
-     GiveInventory("MonsterAttack-Classic-E4M3", 1);
-     GiveInventory("MonsterDefense-Classic-E4M3", 1);
-     GiveInventory("MonsterSpeed-Classic-E4M3", 1);
-     MaxHP = MaxHP * 306 / 100;
-    }
-    if (LevelCheck == 34) // E4M4
-    {
-     GiveInventory("MonsterAttack-Classic-E4M4", 1);
-     GiveInventory("MonsterDefense-Classic-E4M4", 1);
-     GiveInventory("MonsterSpeed-Classic-E4M4", 1);
-     MaxHP = MaxHP * 3268 / 1000;
-    }
-    if (LevelCheck == 35) // E4M5
-    {
-     GiveInventory("MonsterAttack-Classic-E4M5", 1);
-     GiveInventory("MonsterDefense-Classic-E4M5", 1);
-     GiveInventory("MonsterSpeed-Classic-E4M5", 1);
-     MaxHP = MaxHP * 3496 / 1000;
-    }
-    if (LevelCheck == 36) // E4M6
-    {
-     GiveInventory("MonsterAttack-Classic-E4M6", 1);
-     GiveInventory("MonsterDefense-Classic-E4M6", 1);
-     GiveInventory("MonsterSpeed-Classic-E4M6", 1);
-     MaxHP = MaxHP * 3746 / 1000;
-    }
-    if (LevelCheck == 37) // E4M7
-    {
-     GiveInventory("MonsterAttack-Classic-E4M7", 1);
-     GiveInventory("MonsterDefense-Classic-E4M7", 1);
-     GiveInventory("MonsterSpeed-Classic-E4M7", 1);
-     MaxHP = MaxHP * 402 / 100;
-    }
-    if (LevelCheck == 38) // E4M8
-    {
-     GiveInventory("MonsterAttack-Classic-E4M8", 1);
-     GiveInventory("MonsterDefense-Classic-E4M8", 1);
-     GiveInventory("MonsterSpeed-Classic-E4M8", 1);
-     MaxHP = MaxHP * 432 / 100;
-    }
+    GiveInventory("MonsterAttack-VeryEasy", 1);
+    GiveInventory("MonsterDefense-VeryEasy", 1);
+    GiveInventory("MonsterSpeed-VeryEasy", 1);
+    MaxHP = MaxHP * 85 / 100;
    }
-   else // Doom 2
+   else
+   if (GameSkill() == SKILL_EASY)
    {
-    LevelCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
-    LevelCheck += MiscellaneousVars[53];
-    if (LevelCheck < 1) LevelCheck = 1;
-    if (LevelCheck > 32) LevelCheck = 32;
+    GiveInventory("MonsterAttack-Easy", 1);
+    GiveInventory("MonsterDefense-Easy", 1);
+    GiveInventory("MonsterSpeed-Easy", 1);
+    MaxHP = MaxHP * 95 / 100;
+   }
+   else
+   if (GameSkill() == SKILL_NORMAL)
+   {
+    GiveInventory("MonsterAttack-Normal", 1);
+    GiveInventory("MonsterDefense-Normal", 1);
+    GiveInventory("MonsterSpeed-Normal", 1);
+    MaxHP = MaxHP * 100 / 100;
+   }
+   else
+   if (GameSkill() == SKILL_HARD)
+   {
+    GiveInventory("MonsterAttack-Hard", 1);
+    GiveInventory("MonsterDefense-Hard", 1);
+    GiveInventory("MonsterSpeed-Hard", 1);
+    MaxHP = MaxHP * 105 / 100;
+   }
+   else
+   if (GameSkill() == SKILL_VERY_HARD)
+   {
+    GiveInventory("MonsterAttack-VeryHard", 1);
+    GiveInventory("MonsterDefense-VeryHard", 1);
+    GiveInventory("MonsterSpeed-VeryHard", 1);
+    MaxHP = MaxHP * 115 / 100;
+   }
+   else
+   if (GameSkill() == 5)
+   {
+    GiveInventory("MonsterAttack-ExtremelyHard", 1);
+    GiveInventory("MonsterDefense-ExtremelyHard", 1);
+    GiveInventory("MonsterSpeed-ExtremelyHard", 1);
+    MaxHP = MaxHP * 130 / 100;
+   }
+  }
 
-    if (LevelCheck == 1) // MAP01
+  int MapChecker = 1;
+  if (ModType == 0)
+  { 
+   if (GetCVar("dvds_monsternolevel") & 1) MapChecker = 1; else MapChecker = 0;
+  }
+  else MapChecker = 1;
+
+  if (MapChecker == 1) // Map-checking enabled
+  {
+   if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
+   {
+    if (ClassicDoomType == 1) // Doom 1
     {
-     GiveInventory("MonsterAttack-Classic-MAP01", 1);
-     GiveInventory("MonsterDefense-Classic-MAP01", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP01", 1);
-     MaxHP = MaxHP * 1 / 1;
+     LevelCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
+     LevelCheck += MiscellaneousVars[53];
+     if (LevelCheck < 1) LevelCheck = 1;
+     if (LevelCheck > 40) LevelCheck = 40;
+ 
+     // Episode 1
+     if (LevelCheck == 1) // E1M1
+     {
+      GiveInventory("MonsterAttack-Classic-E1M1", 1);
+      GiveInventory("MonsterDefense-Classic-E1M1", 1);
+      GiveInventory("MonsterSpeed-Classic-E1M1", 1);
+      MaxHP = MaxHP * 1 / 1;
+     }
+     if (LevelCheck == 2) // E1M2
+     {
+      GiveInventory("MonsterAttack-Classic-E1M2", 1);
+      GiveInventory("MonsterDefense-Classic-E1M2", 1);
+      GiveInventory("MonsterSpeed-Classic-E1M2", 1);
+      MaxHP = MaxHP * 102 / 100;
+     }
+     if (LevelCheck == 3) // E1M3
+     {
+      GiveInventory("MonsterAttack-Classic-E1M3", 1);
+      GiveInventory("MonsterDefense-Classic-E1M3", 1);
+      GiveInventory("MonsterSpeed-Classic-E1M3", 1);
+      MaxHP = MaxHP * 1041 / 1000;
+     }
+     if (LevelCheck == 9) // E1M9
+     {
+      GiveInventory("MonsterAttack-Classic-E1M9", 1);
+      GiveInventory("MonsterDefense-Classic-E1M9", 1);
+      GiveInventory("MonsterSpeed-Classic-E1M9", 1);
+      MaxHP = MaxHP * 1063 / 1000;
+     }
+     if (LevelCheck == 10) // E1M10
+     {
+      GiveInventory("MonsterAttack-Classic-E1M10", 1);
+      GiveInventory("MonsterDefense-Classic-E1M10", 1);
+      GiveInventory("MonsterSpeed-Classic-E1M10", 1);
+      MaxHP = MaxHP * 1063 / 1000;
+     }
+     if (LevelCheck == 4) // E1M4
+     {
+      GiveInventory("MonsterAttack-Classic-E1M4", 1);
+      GiveInventory("MonsterDefense-Classic-E1M4", 1);
+      GiveInventory("MonsterSpeed-Classic-E1M4", 1);
+      MaxHP = MaxHP * 1086 / 1000;
+     }
+     if (LevelCheck == 5) // E1M5
+     {
+      GiveInventory("MonsterAttack-Classic-E1M5", 1);
+      GiveInventory("MonsterDefense-Classic-E1M5", 1);
+      GiveInventory("MonsterSpeed-Classic-E1M5", 1);
+      MaxHP = MaxHP * 111 / 100;
+     }
+     if (LevelCheck == 6) // E1M6
+     {
+      GiveInventory("MonsterAttack-Classic-E1M6", 1);
+      GiveInventory("MonsterDefense-Classic-E1M6", 1);
+      GiveInventory("MonsterSpeed-Classic-E1M6", 1);
+      MaxHP = MaxHP * 1135 / 1000;
+     }
+     if (LevelCheck == 7) // E1M7
+     {
+      GiveInventory("MonsterAttack-Classic-E1M7", 1);
+      GiveInventory("MonsterDefense-Classic-E1M7", 1);
+      GiveInventory("MonsterSpeed-Classic-E1M7", 1);
+      MaxHP = MaxHP * 1161 / 1000;
+     }
+     if (LevelCheck == 8) // E1M8
+     {
+      GiveInventory("MonsterAttack-Classic-E1M8", 1);
+      GiveInventory("MonsterDefense-Classic-E1M8", 1);
+      GiveInventory("MonsterSpeed-Classic-E1M8", 1);
+      MaxHP = MaxHP * 1188 / 1000;
+     }
+     // Episode 2
+     if (LevelCheck == 11) // E2M1
+     {
+      GiveInventory("MonsterAttack-Classic-E2M1", 1);
+      GiveInventory("MonsterDefense-Classic-E2M1", 1);
+      GiveInventory("MonsterSpeed-Classic-E2M1", 1);
+      MaxHP = MaxHP * 1224 / 1000;
+     }
+     if (LevelCheck == 12) // E2M2
+     {
+      GiveInventory("MonsterAttack-Classic-E2M2", 1);
+      GiveInventory("MonsterDefense-Classic-E2M2", 1);
+      GiveInventory("MonsterSpeed-Classic-E2M2", 1);
+      MaxHP = MaxHP * 1262 / 1000;
+     }
+     if (LevelCheck == 13) // E2M3
+     {
+      GiveInventory("MonsterAttack-Classic-E2M3", 1);
+      GiveInventory("MonsterDefense-Classic-E2M3", 1);
+      GiveInventory("MonsterSpeed-Classic-E2M3", 1);
+      MaxHP = MaxHP * 1302 / 1000;
+     }
+     if (LevelCheck == 14) // E2M4
+     {
+      GiveInventory("MonsterAttack-Classic-E2M4", 1);
+      GiveInventory("MonsterDefense-Classic-E2M4", 1);
+      GiveInventory("MonsterSpeed-Classic-E2M4", 1);
+      MaxHP = MaxHP * 1344 / 1000;
+     }
+     if (LevelCheck == 15) // E2M5
+     {
+      GiveInventory("MonsterAttack-Classic-E2M5", 1);
+      GiveInventory("MonsterDefense-Classic-E2M5", 1);
+      GiveInventory("MonsterSpeed-Classic-E2M5", 1);
+      MaxHP = MaxHP * 1388 / 1000;
+     }
+     if (LevelCheck == 19) // E2M9
+     {
+      GiveInventory("MonsterAttack-Classic-E2M9", 1);
+      GiveInventory("MonsterDefense-Classic-E2M9", 1);
+      GiveInventory("MonsterSpeed-Classic-E2M9", 1);
+      MaxHP = MaxHP * 1434 / 1000;
+     }
+     if (LevelCheck == 20) // E2M10
+     {
+      GiveInventory("MonsterAttack-Classic-E2M10", 1);
+      GiveInventory("MonsterDefense-Classic-E2M10", 1);
+      GiveInventory("MonsterSpeed-Classic-E2M10", 1);
+      MaxHP = MaxHP * 1434 / 1000;
+     }
+     if (LevelCheck == 16) // E2M6
+     {
+      GiveInventory("MonsterAttack-Classic-E2M6", 1);
+      GiveInventory("MonsterDefense-Classic-E2M6", 1);
+      GiveInventory("MonsterSpeed-Classic-E2M6", 1);
+      MaxHP = MaxHP * 1482 / 1000;
+     }
+     if (LevelCheck == 17) // E2M7
+     {
+      GiveInventory("MonsterAttack-Classic-E2M7", 1);
+      GiveInventory("MonsterDefense-Classic-E2M7", 1);
+      GiveInventory("MonsterSpeed-Classic-E2M7", 1);
+      MaxHP = MaxHP * 1532 / 1000;
+     }
+     if (LevelCheck == 18) // E2M8
+     {
+      GiveInventory("MonsterAttack-Classic-E2M8", 1);
+      GiveInventory("MonsterDefense-Classic-E2M8", 1);
+      GiveInventory("MonsterSpeed-Classic-E2M8", 1);
+      MaxHP = MaxHP * 1584 / 1000;
+     }
+     // Episode 3
+     if (LevelCheck == 21) // E3M1
+     {
+      GiveInventory("MonsterAttack-Classic-E3M1", 1);
+      GiveInventory("MonsterDefense-Classic-E3M1", 1);
+      GiveInventory("MonsterSpeed-Classic-E3M1", 1);
+      MaxHP = MaxHP * 1648 / 1000;
+     }
+     if (LevelCheck == 22) // E3M2
+     {
+      GiveInventory("MonsterAttack-Classic-E3M2", 1);
+      GiveInventory("MonsterDefense-Classic-E3M2", 1);
+      GiveInventory("MonsterSpeed-Classic-E3M2", 1);
+      MaxHP = MaxHP * 1716 / 1000;
+     }
+     if (LevelCheck == 23) // E3M3
+     {
+      GiveInventory("MonsterAttack-Classic-E3M3", 1);
+      GiveInventory("MonsterDefense-Classic-E3M3", 1);
+      GiveInventory("MonsterSpeed-Classic-E3M3", 1);
+      MaxHP = MaxHP * 1789 / 1000;
+     }
+     if (LevelCheck == 24) // E3M4
+     {
+      GiveInventory("MonsterAttack-Classic-E3M4", 1);
+      GiveInventory("MonsterDefense-Classic-E3M4", 1);
+      GiveInventory("MonsterSpeed-Classic-E3M4", 1);
+      MaxHP = MaxHP * 1868 / 1000;
+     }
+     if (LevelCheck == 25) // E3M5
+     {
+      GiveInventory("MonsterAttack-Classic-E3M5", 1);
+      GiveInventory("MonsterDefense-Classic-E3M5", 1);
+      GiveInventory("MonsterSpeed-Classic-E3M5", 1);
+      MaxHP = MaxHP * 1954 / 1000;
+     }
+     if (LevelCheck == 26) // E3M6
+     {
+      GiveInventory("MonsterAttack-Classic-E3M6", 1);
+      GiveInventory("MonsterDefense-Classic-E3M6", 1);
+      GiveInventory("MonsterSpeed-Classic-E3M6", 1);
+      MaxHP = MaxHP * 2048 / 1000;
+     }
+     if (LevelCheck == 29) // E3M9
+     {
+      GiveInventory("MonsterAttack-Classic-E3M9", 1);
+      GiveInventory("MonsterDefense-Classic-E3M9", 1);
+      GiveInventory("MonsterSpeed-Classic-E3M9", 1);
+      MaxHP = MaxHP * 2151 / 1000;
+     }
+     if (LevelCheck == 30) // E3M10
+     {
+      GiveInventory("MonsterAttack-Classic-E3M10", 1);
+      GiveInventory("MonsterDefense-Classic-E3M10", 1);
+      GiveInventory("MonsterSpeed-Classic-E3M10", 1);
+      MaxHP = MaxHP * 2151 / 1000;
+     }
+     if (LevelCheck == 27) // E3M7
+     {
+      GiveInventory("MonsterAttack-Classic-E3M7", 1);
+      GiveInventory("MonsterDefense-Classic-E3M7", 1);
+      GiveInventory("MonsterSpeed-Classic-E3M7", 1);
+      MaxHP = MaxHP * 2264 / 1000;
+     }
+     if (LevelCheck == 28) // E3M8
+     {
+      GiveInventory("MonsterAttack-Classic-E3M8", 1);
+      GiveInventory("MonsterDefense-Classic-E3M8", 1);
+      GiveInventory("MonsterSpeed-Classic-E3M8", 1);
+      MaxHP = MaxHP * 2388 / 1000;
+     }
+     // Episode 4
+     if (LevelCheck == 31) // E4M1
+     {
+      GiveInventory("MonsterAttack-Classic-E4M1", 1);
+      GiveInventory("MonsterDefense-Classic-E4M1", 1);
+      GiveInventory("MonsterSpeed-Classic-E4M1", 1);
+      MaxHP = MaxHP * 2536 / 1000;
+     }
+     if (LevelCheck == 32) // E4M2
+     {
+      GiveInventory("MonsterAttack-Classic-E4M2", 1);
+      GiveInventory("MonsterDefense-Classic-E4M2", 1);
+      GiveInventory("MonsterSpeed-Classic-E4M2", 1);
+      MaxHP = MaxHP * 2696 / 1000;
+     }
+     if (LevelCheck == 39) // E4M9
+     {
+      GiveInventory("MonsterAttack-Classic-E4M9", 1);
+      GiveInventory("MonsterDefense-Classic-E4M9", 1);
+      GiveInventory("MonsterSpeed-Classic-E4M9", 1);
+      MaxHP = MaxHP * 287 / 100;
+     }
+     if (LevelCheck == 40) // E4M10
+     {
+      GiveInventory("MonsterAttack-Classic-E4M10", 1);
+      GiveInventory("MonsterDefense-Classic-E4M10", 1);
+      GiveInventory("MonsterSpeed-Classic-E4M10", 1);
+      MaxHP = MaxHP * 287 / 100;
+     }
+     if (LevelCheck == 33) // E4M3
+     {
+      GiveInventory("MonsterAttack-Classic-E4M3", 1);
+      GiveInventory("MonsterDefense-Classic-E4M3", 1);
+      GiveInventory("MonsterSpeed-Classic-E4M3", 1);
+      MaxHP = MaxHP * 306 / 100;
+     }
+     if (LevelCheck == 34) // E4M4
+     {
+      GiveInventory("MonsterAttack-Classic-E4M4", 1);
+      GiveInventory("MonsterDefense-Classic-E4M4", 1);
+      GiveInventory("MonsterSpeed-Classic-E4M4", 1);
+      MaxHP = MaxHP * 3268 / 1000;
+     }
+     if (LevelCheck == 35) // E4M5
+     {
+      GiveInventory("MonsterAttack-Classic-E4M5", 1);
+      GiveInventory("MonsterDefense-Classic-E4M5", 1);
+      GiveInventory("MonsterSpeed-Classic-E4M5", 1);
+      MaxHP = MaxHP * 3496 / 1000;
+     }
+     if (LevelCheck == 36) // E4M6
+     {
+      GiveInventory("MonsterAttack-Classic-E4M6", 1);
+      GiveInventory("MonsterDefense-Classic-E4M6", 1);
+      GiveInventory("MonsterSpeed-Classic-E4M6", 1);
+      MaxHP = MaxHP * 3746 / 1000;
+     }
+     if (LevelCheck == 37) // E4M7
+     {
+      GiveInventory("MonsterAttack-Classic-E4M7", 1);
+      GiveInventory("MonsterDefense-Classic-E4M7", 1);
+      GiveInventory("MonsterSpeed-Classic-E4M7", 1);
+      MaxHP = MaxHP * 402 / 100;
+     }
+     if (LevelCheck == 38) // E4M8
+     {
+      GiveInventory("MonsterAttack-Classic-E4M8", 1);
+      GiveInventory("MonsterDefense-Classic-E4M8", 1);
+      GiveInventory("MonsterSpeed-Classic-E4M8", 1);
+      MaxHP = MaxHP * 432 / 100;
+     }
     }
-    if (LevelCheck == 2) // MAP02
+    else // Doom 2
     {
-     GiveInventory("MonsterAttack-Classic-MAP02", 1);
-     GiveInventory("MonsterDefense-Classic-MAP02", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP02", 1);
-     MaxHP = MaxHP * 1025 / 1000;
-    }
-    if (LevelCheck == 3) // MAP03
-    {
-     GiveInventory("MonsterAttack-Classic-MAP03", 1);
-     GiveInventory("MonsterDefense-Classic-MAP03", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP03", 1);
-     MaxHP = MaxHP * 105 / 100;
-    }
-    if (LevelCheck == 4) // MAP04
-    {
-     GiveInventory("MonsterAttack-Classic-MAP04", 1);
-     GiveInventory("MonsterDefense-Classic-MAP04", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP04", 1);
-     MaxHP = MaxHP * 1075 / 1000;
-    }
-    if (LevelCheck == 5) // MAP05
-    {
-     GiveInventory("MonsterAttack-Classic-MAP05", 1);
-     GiveInventory("MonsterDefense-Classic-MAP05", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP05", 1);
-     MaxHP = MaxHP * 11 / 10;
-    }
-    if (LevelCheck == 6) // MAP06
-    {
-     GiveInventory("MonsterAttack-Classic-MAP06", 1);
-     GiveInventory("MonsterDefense-Classic-MAP06", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP06", 1);
-     MaxHP = MaxHP * 11375 / 10000;
-    }
-    if (LevelCheck == 7) // MAP07
-    {
-     GiveInventory("MonsterAttack-Classic-MAP07", 1);
-     GiveInventory("MonsterDefense-Classic-MAP07", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP07", 1);
-     MaxHP = MaxHP * 1175 / 1000;
-    }
-    if (LevelCheck == 8) // MAP08
-    {
-     GiveInventory("MonsterAttack-Classic-MAP08", 1);
-     GiveInventory("MonsterDefense-Classic-MAP08", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP08", 1);
-     MaxHP = MaxHP * 12125 / 10000;
-    }
-    if (LevelCheck == 9) // MAP09
-    {
-     GiveInventory("MonsterAttack-Classic-MAP09", 1);
-     GiveInventory("MonsterDefense-Classic-MAP09", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP09", 1);
-     MaxHP = MaxHP * 125 / 100;
-    }
-    if (LevelCheck == 10) // MAP10
-    {
-     GiveInventory("MonsterAttack-Classic-MAP10", 1);
-     GiveInventory("MonsterDefense-Classic-MAP10", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP10", 1);
-     MaxHP = MaxHP * 12875 / 10000;
-    }
-    if (LevelCheck == 11) // MAP11
-    {
-     GiveInventory("MonsterAttack-Classic-MAP11", 1);
-     GiveInventory("MonsterDefense-Classic-MAP11", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP11", 1);
-     MaxHP = MaxHP * 13375 / 10000;
-    }
-    if (LevelCheck == 12) // MAP12
-    {
-     GiveInventory("MonsterAttack-Classic-MAP12", 1);
-     GiveInventory("MonsterDefense-Classic-MAP12", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP12", 1);
-     MaxHP = MaxHP * 13875 / 10000;
-    }
-    if (LevelCheck == 13) // MAP13
-    {
-     GiveInventory("MonsterAttack-Classic-MAP13", 1);
-     GiveInventory("MonsterDefense-Classic-MAP13", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP13", 1);
-     MaxHP = MaxHP * 14375 / 10000;
-    }
-    if (LevelCheck == 14) // MAP14
-    {
-     GiveInventory("MonsterAttack-Classic-MAP14", 1);
-     GiveInventory("MonsterDefense-Classic-MAP14", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP14", 1);
-     MaxHP = MaxHP * 14875 / 10000;
-    }
-    if (LevelCheck == 15) // MAP15
-    {
-     GiveInventory("MonsterAttack-Classic-MAP15", 1);
-     GiveInventory("MonsterDefense-Classic-MAP15", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP15", 1);
-     MaxHP = MaxHP * 15375 / 10000;
-    }
-    if (LevelCheck == 31) // MAP31 [SECRET LEVEL 1]
-    {
-     GiveInventory("MonsterAttack-Classic-MAP31", 1);
-     GiveInventory("MonsterDefense-Classic-MAP31", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP31", 1);
-     MaxHP = MaxHP * 20375 / 10000;
-    }
-    if (LevelCheck == 32) // MAP32 [SECRET LEVEL 2]
-    {
-     GiveInventory("MonsterAttack-Classic-MAP32", 1);
-     GiveInventory("MonsterDefense-Classic-MAP32", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP32", 1);
-     MaxHP = MaxHP * 30375 / 10000;
-    }
-    if (LevelCheck == 16) // MAP16
-    {
-     GiveInventory("MonsterAttack-Classic-MAP16", 1);
-     GiveInventory("MonsterDefense-Classic-MAP16", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP16", 1);
-     MaxHP = MaxHP * 16 / 10;
-    }
-    if (LevelCheck == 17) // MAP17
-    {
-     GiveInventory("MonsterAttack-Classic-MAP17", 1);
-     GiveInventory("MonsterDefense-Classic-MAP17", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP17", 1);
-     MaxHP = MaxHP * 16625 / 10000;
-    }
-    if (LevelCheck == 18) // MAP18
-    {
-     GiveInventory("MonsterAttack-Classic-MAP18", 1);
-     GiveInventory("MonsterDefense-Classic-MAP18", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP18", 1);
-     MaxHP = MaxHP * 1725 / 1000;
-    }
-    if (LevelCheck == 19) // MAP19
-    {
-     GiveInventory("MonsterAttack-Classic-MAP19", 1);
-     GiveInventory("MonsterDefense-Classic-MAP19", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP19", 1);
-     MaxHP = MaxHP * 17875 / 10000;
-    }
-    if (LevelCheck == 20) // MAP20
-    {
-     GiveInventory("MonsterAttack-Classic-MAP20", 1);
-     GiveInventory("MonsterDefense-Classic-MAP20", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP20", 1);
-     MaxHP = MaxHP * 185 / 100;
-    }
-    if (LevelCheck == 21) // MAP21
-    {
-     GiveInventory("MonsterAttack-Classic-MAP21", 1);
-     GiveInventory("MonsterDefense-Classic-MAP21", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP21", 1);
-     MaxHP = MaxHP * 195 / 100;
-    }
-    if (LevelCheck == 22) // MAP22
-    {
-     GiveInventory("MonsterAttack-Classic-MAP22", 1);
-     GiveInventory("MonsterDefense-Classic-MAP22", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP22", 1);
-     MaxHP = MaxHP * 205 / 100;
-    }
-    if (LevelCheck == 23) // MAP23
-    {
-     GiveInventory("MonsterAttack-Classic-MAP23", 1);
-     GiveInventory("MonsterDefense-Classic-MAP23", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP23", 1);
-     MaxHP = MaxHP * 215 / 100;
-    }
-    if (LevelCheck == 24) // MAP24
-    {
-     GiveInventory("MonsterAttack-Classic-MAP24", 1);
-     GiveInventory("MonsterDefense-Classic-MAP24", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP24", 1);
-     MaxHP = MaxHP * 225 / 100;
-    }
-    if (LevelCheck == 25) // MAP25
-    {
-     GiveInventory("MonsterAttack-Classic-MAP25", 1);
-     GiveInventory("MonsterDefense-Classic-MAP25", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP25", 1);
-     MaxHP = MaxHP * 235 / 100;
-    }
-    if (LevelCheck == 26) // MAP26
-    {
-     GiveInventory("MonsterAttack-Classic-MAP26", 1);
-     GiveInventory("MonsterDefense-Classic-MAP26", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP26", 1);
-     MaxHP = MaxHP * 24875 / 10000;
-    }
-    if (LevelCheck == 27) // MAP27
-    {
-     GiveInventory("MonsterAttack-Classic-MAP27", 1);
-     GiveInventory("MonsterDefense-Classic-MAP27", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP27", 1);
-     MaxHP = MaxHP * 26375 / 10000;
-    }
-    if (LevelCheck == 28) // MAP28
-    {
-     GiveInventory("MonsterAttack-Classic-MAP28", 1);
-     GiveInventory("MonsterDefense-Classic-MAP28", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP28", 1);
-     MaxHP = MaxHP * 28 / 10;
-    }
-    if (LevelCheck == 29) // MAP29
-    {
-     GiveInventory("MonsterAttack-Classic-MAP29", 1);
-     GiveInventory("MonsterDefense-Classic-MAP29", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP29", 1);
-     MaxHP = MaxHP * 2975 / 1000;
-    }
-    if (LevelCheck == 30) // MAP30
-    {
-     GiveInventory("MonsterAttack-Classic-MAP30", 1);
-     GiveInventory("MonsterDefense-Classic-MAP30", 1);
-     GiveInventory("MonsterSpeed-Classic-MAP30", 1);
-     MaxHP = MaxHP * 3375 / 1000;
+     LevelCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
+     LevelCheck += MiscellaneousVars[53];
+     if (LevelCheck < 1) LevelCheck = 1;
+     if (LevelCheck > 32) LevelCheck = 32;
+
+     if (LevelCheck == 1) // MAP01
+     {
+      GiveInventory("MonsterAttack-Classic-MAP01", 1);
+      GiveInventory("MonsterDefense-Classic-MAP01", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP01", 1);
+      MaxHP = MaxHP * 1 / 1;
+     }
+     if (LevelCheck == 2) // MAP02
+     {
+      GiveInventory("MonsterAttack-Classic-MAP02", 1);
+      GiveInventory("MonsterDefense-Classic-MAP02", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP02", 1);
+      MaxHP = MaxHP * 1025 / 1000;
+     }
+     if (LevelCheck == 3) // MAP03
+     {
+      GiveInventory("MonsterAttack-Classic-MAP03", 1);
+      GiveInventory("MonsterDefense-Classic-MAP03", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP03", 1);
+      MaxHP = MaxHP * 105 / 100;
+     }
+     if (LevelCheck == 4) // MAP04
+     {
+      GiveInventory("MonsterAttack-Classic-MAP04", 1);
+      GiveInventory("MonsterDefense-Classic-MAP04", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP04", 1);
+      MaxHP = MaxHP * 1075 / 1000;
+     }
+     if (LevelCheck == 5) // MAP05
+     {
+      GiveInventory("MonsterAttack-Classic-MAP05", 1);
+      GiveInventory("MonsterDefense-Classic-MAP05", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP05", 1);
+      MaxHP = MaxHP * 11 / 10;
+     }
+     if (LevelCheck == 6) // MAP06
+     {
+      GiveInventory("MonsterAttack-Classic-MAP06", 1);
+      GiveInventory("MonsterDefense-Classic-MAP06", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP06", 1);
+      MaxHP = MaxHP * 11375 / 10000;
+     }
+     if (LevelCheck == 7) // MAP07
+     {
+      GiveInventory("MonsterAttack-Classic-MAP07", 1);
+      GiveInventory("MonsterDefense-Classic-MAP07", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP07", 1);
+      MaxHP = MaxHP * 1175 / 1000;
+     }
+     if (LevelCheck == 8) // MAP08
+     {
+      GiveInventory("MonsterAttack-Classic-MAP08", 1);
+      GiveInventory("MonsterDefense-Classic-MAP08", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP08", 1);
+      MaxHP = MaxHP * 12125 / 10000;
+     }
+     if (LevelCheck == 9) // MAP09
+     {
+      GiveInventory("MonsterAttack-Classic-MAP09", 1);
+      GiveInventory("MonsterDefense-Classic-MAP09", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP09", 1);
+      MaxHP = MaxHP * 125 / 100;
+     }
+     if (LevelCheck == 10) // MAP10
+     {
+      GiveInventory("MonsterAttack-Classic-MAP10", 1);
+      GiveInventory("MonsterDefense-Classic-MAP10", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP10", 1);
+      MaxHP = MaxHP * 12875 / 10000;
+     }
+     if (LevelCheck == 11) // MAP11
+     {
+      GiveInventory("MonsterAttack-Classic-MAP11", 1);
+      GiveInventory("MonsterDefense-Classic-MAP11", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP11", 1);
+      MaxHP = MaxHP * 13375 / 10000;
+     }
+     if (LevelCheck == 12) // MAP12
+     {
+      GiveInventory("MonsterAttack-Classic-MAP12", 1);
+      GiveInventory("MonsterDefense-Classic-MAP12", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP12", 1);
+      MaxHP = MaxHP * 13875 / 10000;
+     }
+     if (LevelCheck == 13) // MAP13
+     {
+      GiveInventory("MonsterAttack-Classic-MAP13", 1);
+      GiveInventory("MonsterDefense-Classic-MAP13", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP13", 1);
+      MaxHP = MaxHP * 14375 / 10000;
+     }
+     if (LevelCheck == 14) // MAP14
+     {
+      GiveInventory("MonsterAttack-Classic-MAP14", 1);
+      GiveInventory("MonsterDefense-Classic-MAP14", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP14", 1);
+      MaxHP = MaxHP * 14875 / 10000;
+     }
+     if (LevelCheck == 15) // MAP15
+     {
+      GiveInventory("MonsterAttack-Classic-MAP15", 1);
+      GiveInventory("MonsterDefense-Classic-MAP15", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP15", 1);
+      MaxHP = MaxHP * 15375 / 10000;
+     }
+     if (LevelCheck == 31) // MAP31 [SECRET LEVEL 1]
+     {
+      GiveInventory("MonsterAttack-Classic-MAP31", 1);
+      GiveInventory("MonsterDefense-Classic-MAP31", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP31", 1);
+      MaxHP = MaxHP * 20375 / 10000;
+     }
+     if (LevelCheck == 32) // MAP32 [SECRET LEVEL 2]
+     {
+      GiveInventory("MonsterAttack-Classic-MAP32", 1);
+      GiveInventory("MonsterDefense-Classic-MAP32", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP32", 1);
+      MaxHP = MaxHP * 30375 / 10000;
+     }
+     if (LevelCheck == 16) // MAP16
+     {
+      GiveInventory("MonsterAttack-Classic-MAP16", 1);
+      GiveInventory("MonsterDefense-Classic-MAP16", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP16", 1);
+      MaxHP = MaxHP * 16 / 10;
+     }
+     if (LevelCheck == 17) // MAP17
+     {
+      GiveInventory("MonsterAttack-Classic-MAP17", 1);
+      GiveInventory("MonsterDefense-Classic-MAP17", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP17", 1);
+      MaxHP = MaxHP * 16625 / 10000;
+     }
+     if (LevelCheck == 18) // MAP18
+     {
+      GiveInventory("MonsterAttack-Classic-MAP18", 1);
+      GiveInventory("MonsterDefense-Classic-MAP18", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP18", 1);
+      MaxHP = MaxHP * 1725 / 1000;
+     }
+     if (LevelCheck == 19) // MAP19
+     {
+      GiveInventory("MonsterAttack-Classic-MAP19", 1);
+      GiveInventory("MonsterDefense-Classic-MAP19", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP19", 1);
+      MaxHP = MaxHP * 17875 / 10000;
+     }
+     if (LevelCheck == 20) // MAP20
+     {
+      GiveInventory("MonsterAttack-Classic-MAP20", 1);
+      GiveInventory("MonsterDefense-Classic-MAP20", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP20", 1);
+      MaxHP = MaxHP * 185 / 100;
+     }
+     if (LevelCheck == 21) // MAP21
+     {
+      GiveInventory("MonsterAttack-Classic-MAP21", 1);
+      GiveInventory("MonsterDefense-Classic-MAP21", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP21", 1);
+      MaxHP = MaxHP * 195 / 100;
+     }
+     if (LevelCheck == 22) // MAP22
+     {
+      GiveInventory("MonsterAttack-Classic-MAP22", 1);
+      GiveInventory("MonsterDefense-Classic-MAP22", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP22", 1);
+      MaxHP = MaxHP * 205 / 100;
+     }
+     if (LevelCheck == 23) // MAP23
+     {
+      GiveInventory("MonsterAttack-Classic-MAP23", 1);
+      GiveInventory("MonsterDefense-Classic-MAP23", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP23", 1);
+      MaxHP = MaxHP * 215 / 100;
+     }
+     if (LevelCheck == 24) // MAP24
+     {
+      GiveInventory("MonsterAttack-Classic-MAP24", 1);
+      GiveInventory("MonsterDefense-Classic-MAP24", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP24", 1);
+      MaxHP = MaxHP * 225 / 100;
+     }
+     if (LevelCheck == 25) // MAP25
+     {
+      GiveInventory("MonsterAttack-Classic-MAP25", 1);
+      GiveInventory("MonsterDefense-Classic-MAP25", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP25", 1);
+      MaxHP = MaxHP * 235 / 100;
+     }
+     if (LevelCheck == 26) // MAP26
+     {
+      GiveInventory("MonsterAttack-Classic-MAP26", 1);
+      GiveInventory("MonsterDefense-Classic-MAP26", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP26", 1);
+      MaxHP = MaxHP * 24875 / 10000;
+     }
+     if (LevelCheck == 27) // MAP27
+     {
+      GiveInventory("MonsterAttack-Classic-MAP27", 1);
+      GiveInventory("MonsterDefense-Classic-MAP27", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP27", 1);
+      MaxHP = MaxHP * 26375 / 10000;
+     }
+     if (LevelCheck == 28) // MAP28
+     {
+      GiveInventory("MonsterAttack-Classic-MAP28", 1);
+      GiveInventory("MonsterDefense-Classic-MAP28", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP28", 1);
+      MaxHP = MaxHP * 28 / 10;
+     }
+     if (LevelCheck == 29) // MAP29
+     {
+      GiveInventory("MonsterAttack-Classic-MAP29", 1);
+      GiveInventory("MonsterDefense-Classic-MAP29", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP29", 1);
+      MaxHP = MaxHP * 2975 / 1000;
+     }
+     if (LevelCheck == 30) // MAP30
+     {
+      GiveInventory("MonsterAttack-Classic-MAP30", 1);
+      GiveInventory("MonsterDefense-Classic-MAP30", 1);
+      GiveInventory("MonsterSpeed-Classic-MAP30", 1);
+      MaxHP = MaxHP * 3375 / 1000;
+     }
     }
    }
   }
@@ -18077,10 +18114,21 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   }
 
 
-  // HP Error
-  int MaxHPErrorRange = MaxHP / 10;
-  MaxHP += random(-MaxHPErrorRange,MaxHPErrorRange);
+  int ErrorChecker = 1;
+  if (ModType == 0)
+  { 
+   if (GetCVar("dvds_monsternolevel") & 4) ErrorChecker = 1; else ErrorChecker = 0;
+  }
+  else ErrorChecker = 1;
 
+  if (ErrorChecker == 1)
+  {
+   // HP Error
+   int MaxHPErrorRange = MaxHP / 10;
+   MaxHP += random(-MaxHPErrorRange,MaxHPErrorRange);
+  }
+
+  // Set's Final MaxHP and Current HP values
   SetActorProperty(0,APROP_Health,MaxHP);
   SetActorProperty(0,APROP_SpawnHealth,MaxHP);
 
@@ -23879,12 +23927,12 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  int RandomArmorDropChance;
  int RandomArmorDropMulti;
 
+
  if (GameSkill() == SKILL_VERY_EASY) RandomArmorDropMulti = 75;
  else if (GameSkill() == SKILL_EASY) RandomArmorDropMulti = 90;
  else if (GameSkill() == SKILL_NORMAL) RandomArmorDropMulti = 100;
  else if (GameSkill() == SKILL_HARD) RandomArmorDropMulti = 110;
  else if (GameSkill() == SKILL_VERY_HARD) RandomArmorDropMulti = 125;
-
 
  if (GetCVar("dvds_exppropercredit") == 1 && IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == FALSE) terminate;
 
@@ -23954,6 +24002,8 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   if (ClassicDoomType == 3) { } // Hexen
   if (ClassicDoomType == 4) { } // Strife[?]
  }
+
+ if (ModType == 0 && GetCVar("dvds_noexpgains") != 0) terminate; // If in Classic mode and the EXP Gain option is turned off, stop script here.
 
  int EXPTimerIncrease;
  // Increment the kill combo timer
