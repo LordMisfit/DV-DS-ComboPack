@@ -82,7 +82,6 @@ Functions
 	["CheckBuffTimers"]				-	******MANDATORY****** Redone Buff Checker ******MANDATORY******
 	["GiveBuffsPowerup"]			-	Enforces Giving or Removing Buffs when certain powerup timers are on/off.
 	["DMV"]							-	Prints out or changes the number for the "MiscellaneousVars[#]" vars.
-
 	["Initializer"]					-	Exp Table Setup (& Initial Startup Process [added for DVI/DVII-DS])
 	["ManaRegenerationStuff"]		-	Mana Regeneration
 	["CheckManaLevels"]				-	Mana Recovery Items **new for DV-DS and beyond**
@@ -174,7 +173,8 @@ Functions
 	["QuakeMeleeIntensity"]			-	Determines the strength of the quaking from melee impacts [Sceptre, Fist-Punches, Gauntlet-Punches]
 	["QuakeMeleeDuration"]			-	Determines the duration of quaking from melee impacts [Sceptre, Fist-Punches, Gauntlet-Punches]
 	["QuakeMeleeTremrad"]			-	Determines the tremor-radius of quaking from melee impacts [Sceptre, Fist-Punches, Gauntlet-Punches]
-	["GetPunchDamage"] 				-	Returns Punch Damage (including Gauntlets) [including w/ berserk/other amplication items]
+	["GetPunchDamage"]				-	Returns Punch Damage (including Gauntlets) [including w/ berserk/other amplication items]
+	["GetRagingSpiritDMG"]			-	Returns Damage inflicted by Raging Spirit ghosts.
 	["GetChainsawDamage"]			-	Returns Chainsaw Damage [including w/ berserk/other amplication items]
 	["GetSceptreDamage"]			-	Returns Sceptre Damage [including w/ berserk/other amplication items]
 	["CheckWeaponFlash"]			-	Used for the revised Plasma Rifle to assure proper muzzle-flash animations w/ Spreader Aura
@@ -20113,6 +20113,38 @@ script "GetPunchDamage" (int altfire, int shockwave)
  if (shockwave > 0) damage = damage / 6;
 
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"MeleeDmg: (",s:weapon,s:") ",d:damage);
+ SetResultValue(damage);
+}
+
+// Returns Damage influcted by misc attacks
+script "GetMiscDMG" (int type)
+{
+ int damage;
+ if (type == 1) // Minor Magic Missile [particle]
+ {
+  if (random(1,1000) > 667) damage = 0;
+  else damage = (2 + random(-1,1));
+ }
+
+ SetResultValue(damage);
+}
+
+// Returns Damage inflicted by Raging Spirit ghosts.
+script "GetRagingSpiritDMG" (void)
+{
+ int damage;
+ int extradamage = (MiscellaneousVars[34] + MiscellaneousVars[36]) / 5;
+
+ //damage = ((2 + random(0,2)) * (random(1,8) * random(2,3)) / 5); // 2-4 * 1-8 * 2-3 / 5 = 1-19 damage range
+ damage = (((5 + random(0,2)) * random(4,8)) + extradamage) / 10; // 5-7 * 4-8 + ? / 5 = 4-14
+ if (damage < 1) damage = 1;
+
+ if (CharacterClass == 0) damage = damage * 21 / 10; // Deggaris gives a 2.1x damage boost
+ if (CharacterClass == 2) damage = damage * 32 / 10; // Flora gives a 3.2x damage boost
+
+ if (CheckActorInventory(1001,"EvenstarNecklace") > 0) damage = damage * 3 / 2;
+ if (damage < 1) damage = 1;
+
  SetResultValue(damage);
 }
 
