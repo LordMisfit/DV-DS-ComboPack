@@ -1953,7 +1953,7 @@ actor DSChaingunGuy : ChaingunGuy 26512
   Shock1:
     CPOS F 0 A_SetAngle(12 + angle)
     CPOS F 0 A_CustomBulletAttack (22.5, 0, 1, random(1,5) * 3, "BulletPuff", 0, 1) // A_PosAttack
-    CPOS F 0 A_PlaySound("shotguy/attack")
+    CPOS F 0 bright A_PlaySound("chainguy/attack", CHAN_WEAPON)
     CPOS F 0 A_SetUserVar("user_theta",user_theta+1)
     CPOS F 0 A_JumpIf(user_theta==30,"EndShock1")
     Loop
@@ -1969,7 +1969,7 @@ actor DSChaingunGuy : ChaingunGuy 26512
   Shock2:
     CPOS E 0 A_SetAngle(12 + angle)
     CPOS E 0 A_CustomBulletAttack (22.5, 0, 1, random(1,5) * 3, "BulletPuff", 0, 1) // A_PosAttack
-    CPOS E 0 A_PlaySound("shotguy/attack")
+    CPOS E 0 bright A_PlaySound("chainguy/attack", CHAN_WEAPON)
     CPOS E 0 A_SetUserVar("user_theta",user_theta+1)
     CPOS E 0 A_JumpIf(user_theta==30,"EndShock2")
     Loop
@@ -2042,6 +2042,230 @@ actor DSChaingunGuy : ChaingunGuy 26512
   Raise:
     CPOS NMLKJIH 5 ACS_NamedExecuteAlways("MonsterStatsHP_ATK_DEF_SPD",0,0)
     goto See
+ }
+}
+
+ACTOR Minigunner
+{
+ var int user_theta; var int user_isstealth;
+ var int user_MaxHP; var int user_HPLowRange; var int user_HPCritRange; var int user_HPBuffRange; var int user_HPXDeathRange;
+ var int user_checkmapskill; // For checking if a monster has been given Skill/Map inventory items yet.
+ SeeSound "grunt/sight"
+ PainSound "grunt/pain"
+ DeathSound "grunt/death"
+ ActiveSound "grunt/active"
+ AttackSound "weapons/minigunfire"
+ dropitem DoomSpellMana 16 50
+ DropItem MinigunChecker
+ DropItem MinigunChecker 4 10
+ DropItem MinigunChecker 4 10
+ DropItem Clip
+ DropItem Clip 64
+ DropItem Clip 16
+ DropItem Clip 4
+ DropItem Clip 1
+ dropitem ClipBox 2 50
+ dropitem ClipBox 2 50
+ dropitem HealthBonus 2
+ dropitem HealthBonus 2
+ dropitem HealthBonus 2
+ dropitem HealthBonus 2
+ dropitem HealthBonus 2
+ dropitem ArmorBonus 2
+ dropitem ArmorBonus 2
+ dropitem ArmorBonus 2
+ dropitem ArmorBonus 2
+ dropitem ArmorBonus 2
+ dropitem MaxHealthBonus 1
+ dropitem MaxHealthBonus 1
+ dropitem MaxHealthBonus 1
+ dropitem MaxHealthBonus 1
+ dropitem MaxHealthBonus 1
+ dropitem FloraRandomArmor
+
+ Obituary "%o was shredded by a minigun zombie."
+ Health 105 // 70
+ Speed 8
+
+ DamageFactor "Crush", 16
+ DamageFactor "Fire", 1.333 // Zombies = +33% Fire Damage
+ Painchance "Fire", 226 // Zombies = +33% Pain Chance
+ DamageFactor "Holy", 1.333 // Zombies = +33% Holy Damage
+ Painchance "Holy", 226 // Zombies = +33% Pain Chance
+
+ Painchance 170
+ Painchance "GravityHP", 255
+ Painchance "GravityMP", 255
+ Painchance "GravityHPMP", 255
+ 
+ +FLOORCLIP
+ Mass 100
+ Radius 20
+ Height 56
+ Monster
+
+ States
+ {
+  Spawn:
+    MINZ A 0 A_Look
+    TNT1 A 0 ACS_NamedExecuteAlways("MonsterStatsHP_ATK_DEF_SPD",0,0)
+    MINZ AB 10 A_Look
+    loop
+  See:
+    TNT1 A 0 ACS_NamedExecuteAlways("MonsterStatsHP_ATK_DEF_SPD",0,0)
+    MINZ AABBCCDD 3 A_Chase
+    loop
+
+  Missile:
+    TNT1 A 0 ACS_NamedExecuteAlways("RefreshStealthInfo",0,1) // makes a Stealth Monster become more visible
+    MINZ E 10 A_FaceTarget
+  Missile2:
+    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckCrisisAttackType") == 1, "AltCrisis")
+    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckCrisisAttackType") == 2, "Missile3")
+    MINZ E 0 A_JumpIfHealthLower(user_HPCritRange, "StartShock1")
+    MINZ E 0 A_JumpIfHealthLower(user_HPLowRange, "StartShockCheck1")
+  Missile3:
+    MINZ F 0 bright A_PlaySound("chainguy/attack", CHAN_WEAPON)
+    MINZ F 2 bright A_CustomBulletAttack(30.0, 2.0, 1, random(2,4)*random(6,7), "BulletPuff", 0, CBAF_NORANDOM)
+  Missile4:
+    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckCrisisAttackType") == 1, "AltCrisis2")
+    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckCrisisAttackType") == 2, "Missile5")
+    MINZ E 0 A_JumpIfHealthLower(user_HPCritRange, "StartShock2")
+    MINZ E 0 A_JumpIfHealthLower(user_HPLowRange, "StartShockCheck2")
+  Missile5:
+    MINZ E 0 bright A_PlaySound("chainguy/attack", CHAN_WEAPON)
+    MINZ E 2 bright A_CustomBulletAttack(30.0, 2.0, 1, random(2,4)*random(6,7), "BulletPuff", 0, CBAF_NORANDOM)
+    MINZ F 0 A_CPosRefire
+    goto Missile2
+
+  AltCrisis:
+    TNT1 E 0 A_JumpIfHealthLower(user_HPCritRange, "AltStartShock1")
+    TNT1 E 0 A_JumpIfHealthLower(user_HPLowRange, "AltStartShockCheck1")
+    goto Missile3
+  AltStartShockCheck1:
+    TNT1 E 0 A_Jump(192, "Missile3")
+  AltStartShock1:
+    TNT1 A 0 A_PlaySound("crisisattack2",7)
+    TNT1 A 0 A_PlaySound("crisisattack",6)
+    MINZ F 0 bright A_PlaySound("chainguy/attack", CHAN_WEAPON)
+    MINZ F 2 bright A_CustomBulletAttack(30.0, 2.0, 1, (random(2,4)*random(6,7)*30), "BulletPuff", 0, CBAF_NORANDOM)
+  AltCrisis2:
+    TNT1 E 0 A_JumpIfHealthLower(user_HPCritRange, "AltStartShock2")
+    TNT1 E 0 A_JumpIfHealthLower(user_HPLowRange, "AltStartShockCheck2")
+    goto Missile5
+  AltStartShockCheck2:
+    TNT1 E 0 A_Jump(192, "Missile5")
+  AltStartShock2:
+    TNT1 A 0 A_PlaySound("crisisattack2",7)
+    TNT1 A 0 A_PlaySound("crisisattack",6)
+    MINZ E 0 bright A_PlaySound("chainguy/attack", CHAN_WEAPON)
+    MINZ E 2 bright A_CustomBulletAttack(30.0, 2.0, 1, (random(2,4)*random(6,7)*30), "BulletPuff", 0, CBAF_NORANDOM)
+    MINZ F 0 A_CPosRefire
+    goto Missile2
+
+  StartShockCheck1:
+    MINZ F 0 A_Jump(192, "Missile3")
+  StartShock1:
+    TNT1 A 0 A_PlaySound("crisisattack2",7)
+    TNT1 A 0 A_PlaySound("crisisattack",6)
+    MINZ F 0 A_SetUserVar("user_theta",0)
+  Shock1:
+    MINZ F 0 A_SetAngle(12 + angle)
+    MINZ F 0 A_CustomBulletAttack(30.0, 2.0, 1, random(2,4)*random(6,7), "BulletPuff", 0, CBAF_NORANDOM)
+    MINZ F 0 bright A_PlaySound("chainguy/attack", CHAN_WEAPON)
+    MINZ F 0 A_SetUserVar("user_theta",user_theta+1)
+    MINZ F 0 A_JumpIf(user_theta==30,"EndShock1")
+    Loop
+  EndShock1:
+    MINZ F 2 bright A_FaceTarget
+    Goto Missile4
+  StartShockCheck2:
+    MINZ E 0 A_Jump(192, "Missile5")
+  StartShock2:
+    TNT1 A 0 A_PlaySound("crisisattack2",7)
+    TNT1 A 0 A_PlaySound("crisisattack",6)
+    MINZ E 0 A_SetUserVar("user_theta",0)
+  Shock2:
+    MINZ E 0 A_SetAngle(12 + angle)
+    MINZ E 0 A_CustomBulletAttack(30.0, 2.0, 1, random(2,4)*random(6,7), "BulletPuff", 0, CBAF_NORANDOM)
+    MINZ E 0 bright A_PlaySound("chainguy/attack", CHAN_WEAPON)
+    MINZ E 0 A_SetUserVar("user_theta",user_theta+1)
+    MINZ E 0 A_JumpIf(user_theta==30,"EndShock2")
+    Loop
+  EndShock2:
+    MINZ E 2 bright A_FaceTarget
+    MINZ F 0 A_CPosRefire
+    goto Missile+2
+
+/*
+  Missile:
+    MINZ E 10 A_FaceTarget
+    MINZ FE 2 Bright A_CustomBulletAttack(30.0, 2.0, 1, random(2,4)*random(6,7), "BulletPuff", 0, CBAF_NORANDOM)
+    MINZ E 0 A_CPosRefire
+    Goto Missile+1
+*/
+
+  Pain:
+    MINZ G 3
+    MINZ G 3 A_Pain
+    Goto See
+  Pain.GravityHP:
+    TNT1 A 0 ACS_NamedExecuteAlways("Hand-GravityAttack",0,0,0,0)
+    Goto See
+  Pain.GravityMP:
+    TNT1 A 0 ACS_NamedExecuteAlways("Hand-GravityAttack",0,1,0,0)
+    Goto See
+  Pain.GravityHPMP:
+    TNT1 A 0 ACS_NamedExecuteAlways("Hand-GravityAttack",0,2,0,0)
+    Goto See
+  Pain.Sceptre:
+    TNT1 A 0 A_CheckFlag("FRIENDLY",2,AAPTR_DEFAULT)
+    TNT1 A 0 ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,10) // Increase EXP for Sceptre [1+((HP/300)/10)]
+    TNT1 A 0 
+    Goto Pain
+  Death.Sceptre:
+    TNT1 A 0 A_CheckFlag("FRIENDLY",2,AAPTR_DEFAULT)
+    TNT1 A 0 ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,1) // Increase EXP for Sceptre [1+(HP/300)]
+    TNT1 A 0 A_JumpIfHealthLower(user_HPXDeathRange,"XDeath")
+    Goto Death
+  Pain.Gauntlets:
+    TNT1 A 0 ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,1,0) // Give some life when hurting a monster [1+(HP/500)]
+    Goto Pain
+  Death.Gauntlets:
+    TNT1 A 0 ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,2,0) // Give some life when killing a monster [3+(HP/100)]
+    TNT1 A 0 A_JumpIfHealthLower(user_HPXDeathRange,"XDeath")
+    Goto Death
+  DeathCheck:
+    TNT1 A 0 A_CheckFlag("FRIENDLY",2,AAPTR_DEFAULT)
+    TNT1 A 0 A_SpawnItemEx("TheOneRing",0,0,0,0,0,0,0,0,254)    
+    TNT1 A 0 
+    goto Death+1
+  Death:
+    TNT1 A 0 A_Jump(1, "DeathCheck")
+    TNT1 A 0 ACS_NamedExecuteAlways("AddEXP",0,-2,0,1)
+    MINZ H 6
+    MINZ I 6 A_Scream
+    MINZ J 6 A_Fall
+    MINZ KLM 6
+    MINZ N -1
+    Stop
+  XDeathCheck:
+    TNT1 A 0 A_CheckFlag("FRIENDLY",2,AAPTR_DEFAULT)
+    TNT1 A 0 A_SpawnItemEx("TheOneRing",0,0,0,0,0,0,0,0,254)    
+    TNT1 A 0 
+    goto XDeath+1
+  XDeath:
+    TNT1 A 0 A_Jump(1, "XDeathCheck")
+    TNT1 A 0 ACS_NamedExecuteAlways("AddEXP",0,-2,0,1)
+    MINZ O 4
+    MINZ P 4 A_XScream
+    MINZ Q 4 A_Fall
+    MINZ RSTUV 4
+    MINZ W -1
+    Stop
+  Raise:
+    MINZ NMLKJIH 5 ACS_NamedExecuteAlways("MonsterStatsHP_ATK_DEF_SPD",0,0)
+    Goto See
  }
 }
 
