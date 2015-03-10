@@ -12707,6 +12707,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
  }
 
+ int StaminaInputFactor = 100;
+ int StaminaRegenRate = 0;
+ int StaminaDegenRate = 0;
  //***********************
  //**Health-Regen Checks**
  //***********************
@@ -12722,7 +12725,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   MiscellaneousVars[14] -= C3; 
   C3 = PlayerLevel / 7; // up to -28
   MiscellaneousVars[14] -= C3; 
-  MiscellaneousVars[14] *= 5;
+  MiscellaneousVars[14] *= 20;
 
   buttons = GetPlayerInput(0, INPUT_BUTTONS); 
   if (CharacterClass == 2) // Flora
@@ -12731,20 +12734,32 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
   else C1 = MaxHealthTrue;
 
+  C3 = 20;
+  // Accelerates HP Regen when Tension is Boosted
+  if (MiscellaneousVars[181] >= 1) C3 += 1; // "5" = +1 [+5%]
+  if (MiscellaneousVars[181] >= 2) C3 += 1; // "20" = +2 [+10%]
+  if (MiscellaneousVars[181] >= 3) C3 += 2; // "50" = +4 [+20%]
+  if (MiscellaneousVars[181] >= 4) C3 += 2; // "100" = +6 [+30%]
+  if (MiscellaneousVars[181] >= 5) C3 += 3; // "250" = +9 [+45%]
+  if (MiscellaneousVars[181] >= 6) C3 += 4; // "500" = +13 [+65%]
+  if (MiscellaneousVars[181] >= 7) C3 += 5; // "500" = +18 [+90%]
+
   I3 = GetActorProperty(1001,APROP_HEALTH);
   if (I3 < C1)
   {
-   if (buttons & BT_FORWARD) C3 = 2;
-   else if (buttons & BT_BACK) C3 = 2;
-   else if (buttons & BT_MOVELEFT) C3 = 2;
-   else if (buttons & BT_MOVERIGHT) C3 = 2;
-   else if (buttons & BT_ATTACK) C3 = random(2,3);
-   else if (buttons & BT_ALTATTACK) C3 = random(2,3);
-   else if (buttons & BT_MOVEUP) C3 = 3;
-   else if (buttons & BT_MOVEDOWN) C3 = 3;
-   else if (buttons & BT_JUMP) C3 = 2;
-   else if (buttons & BT_CROUCH) C3 = 9;
-   else C3 = 5;
+   if (buttons & BT_FORWARD) StaminaInputFactor = 40;
+   else if (buttons & BT_BACK) StaminaInputFactor = 40;
+   else if (buttons & BT_MOVELEFT) StaminaInputFactor = 40;
+   else if (buttons & BT_MOVERIGHT) StaminaInputFactor = 40;
+   else if (buttons & BT_ATTACK) StaminaInputFactor = 50;
+   else if (buttons & BT_ALTATTACK) StaminaInputFactor = 50;
+   else if (buttons & BT_MOVEUP) StaminaInputFactor = 60;
+   else if (buttons & BT_MOVEDOWN) StaminaInputFactor = 60;
+   else if (buttons & BT_JUMP) StaminaInputFactor = 40;
+   else if (buttons & BT_CROUCH) StaminaInputFactor = 180;
+   else StaminaInputFactor = 100;
+
+   C3 = (C3 * StaminaInputFactor) / 100;
 
    // Checks Armor Items and other types for regen speed.
    C2 = 100;
@@ -12773,9 +12788,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    // Low Cap to 1 Tics
    if (C3 < 1) C3 = 1;
 
+   StaminaRegenRate = C3;
+
    MiscellaneousVars[13] -= C3;
   }
-  else MiscellaneousVars[13] = MiscellaneousVars[14] + random(-5,5);
+  else MiscellaneousVars[13] = MiscellaneousVars[14] + random(-20,20);
 
   if (MiscellaneousVars[13] < 1)
   {
@@ -12804,7 +12821,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     NewHealthValue = GetActorProperty(1001,APROP_Health);
    }
 
-   MiscellaneousVars[13] = MiscellaneousVars[14] + random(-5,5);
+   MiscellaneousVars[13] = MiscellaneousVars[14] + random(-20,20);
   }
 
  //***********************
@@ -12825,7 +12842,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    MiscellaneousVars[144] += C3; 
    C3 = PlayerLevel / 14; // up to +14
    MiscellaneousVars[144] += C3; 
-   MiscellaneousVars[144] *= 5;
+   MiscellaneousVars[144] *= 20;
 
    buttons = GetPlayerInput(0, INPUT_BUTTONS); 
    if (CharacterClass == 2) // Flora
@@ -12834,20 +12851,32 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    }
    else C1 = MaxHealthTrue;
  
+   C3 = 20;
+   // Decelerates HP Degen when Tension is Boosted
+   if (MiscellaneousVars[181] >= 1) C3 -= 0; // "5" = -0 [-0%]
+   if (MiscellaneousVars[181] >= 2) C3 -= 1; // "20" = -1 [-5%]
+   if (MiscellaneousVars[181] >= 3) C3 -= 1; // "50" = -2 [-10%]
+   if (MiscellaneousVars[181] >= 4) C3 -= 1; // "100" = -3 [-15%]
+   if (MiscellaneousVars[181] >= 5) C3 -= 1; // "250" = -4 [-20%]
+   if (MiscellaneousVars[181] >= 6) C3 -= 2; // "500" = -6 [-30%]
+   if (MiscellaneousVars[181] >= 7) C3 -= 3; // "500" = -9 [-45%]
+
    I3 = GetActorProperty(1001,APROP_HEALTH);
    if (I3 > C1)
    {
-    if (buttons & BT_FORWARD) C3 = 6;
-    else if (buttons & BT_BACK) C3 = 6;
-    else if (buttons & BT_MOVELEFT) C3 = 6;
-    else if (buttons & BT_MOVERIGHT) C3 = 6;
-    else if (buttons & BT_ATTACK) C3 = random(6,7);
-    else if (buttons & BT_ALTATTACK) C3 = random(6,7);
-    else if (buttons & BT_MOVEUP) C3 = 6;
-    else if (buttons & BT_MOVEDOWN) C3 = 6;
-    else if (buttons & BT_JUMP) C3 = 7;
-    else if (buttons & BT_CROUCH) C3 = 2;
-    else C3 = 5;
+    if (buttons & BT_FORWARD) StaminaInputFactor = 120;
+    else if (buttons & BT_BACK) StaminaInputFactor = 120;
+    else if (buttons & BT_MOVELEFT) StaminaInputFactor = 120;
+    else if (buttons & BT_MOVERIGHT) StaminaInputFactor = 120;
+    else if (buttons & BT_ATTACK) StaminaInputFactor = 130;
+    else if (buttons & BT_ALTATTACK) StaminaInputFactor = 130;
+    else if (buttons & BT_MOVEUP) StaminaInputFactor = 120;
+    else if (buttons & BT_MOVEDOWN) StaminaInputFactor = 120;
+    else if (buttons & BT_JUMP) StaminaInputFactor = 140;
+    else if (buttons & BT_CROUCH) StaminaInputFactor = 40;
+    else StaminaInputFactor = 100;
+
+    C3 = (C3 * StaminaInputFactor) / 100;
 
     // Checks Armor Items and other types for Degen speed.
     C2 = 200;
@@ -12870,9 +12899,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     // Low Cap to 1 Tics
     if (C3 < 1) C3 = 1;
  
+    StaminaDegenRate = C3;
+
     MiscellaneousVars[143] -= C3;
    }
-   else MiscellaneousVars[143] = MiscellaneousVars[144] + random(-5,5);
+   else MiscellaneousVars[143] = MiscellaneousVars[144] + random(-20,20);
 
    if (MiscellaneousVars[143] < 1)
    {
@@ -12895,10 +12926,16 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
      NewHealthValue = GetActorProperty(1001,APROP_Health);
     }
 
-    MiscellaneousVars[143] = MiscellaneousVars[144] + random(-5,5);
+    MiscellaneousVars[143] = MiscellaneousVars[144] + random(-20,20);
    }
-//   PrintBold(s:"Regen: [",d:I3,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[13],s:"/",d:MiscellaneousVars[14],s:"]\n",
-//   s:"Degen: [",d:I3,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[143],s:"/",d:MiscellaneousVars[144],s:"]");
+
+   if (GetCVar("dvdsdebug_showhpregenstuff") == 1)
+   {
+    PrintBold(
+              s:"Regen: [",d:I3,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[13],s:"/",d:MiscellaneousVars[14],s:"] & [",d:StaminaRegenRate,s:"]\n",
+              s:"Degen: [",d:I3,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[143],s:"/",d:MiscellaneousVars[144],s:"] & [",d:StaminaDegenRate,s:"]"
+             );
+   }
   }
 
  // Check DoomSpell Bonuses
@@ -14209,7 +14246,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
       if (MiscellaneousVars[181] == 4) Radius_Quake2(1001,5,4,0,512,"world/quake");
       if (MiscellaneousVars[181] == 5) Radius_Quake2(1001,7,4,0,512,"world/quake");
       if (MiscellaneousVars[181] == 6) Radius_Quake2(1001,9,4,0,512,"world/quake");
-      MiscellaneousVars[21] -= TensionStaminaPerTic;
+      if (MiscellaneousVars[181] < 7) MiscellaneousVars[21] -= TensionStaminaPerTic;
  
       // 10 = 1 tic
       TensionChargeAmount = 10;
@@ -14692,6 +14729,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    TensionAuraLight = "TensionAuraLight500"; 
    TensionAuraXScale = 0.7777;
    TensionAuraYScale = 1.1666;
+   TensionAuraAlpha = 0.5;
    TensionAuraAlphaInvis = 0.05;
    if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
    if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
@@ -14706,6 +14744,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    TensionAuraLight = "TensionAuraLight1000";
    TensionAuraXScale = 0.8333;
    TensionAuraYScale = 1.25;
+   TensionAuraAlpha = 0.56;
    TensionAuraAlphaInvis = 0.056;
    if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
    if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
@@ -24463,10 +24502,8 @@ script "TensionAuraCheckVisual" (void)
 // CHEAT/DEBUG: Sets Tension level to the specfied amount
 script "SetTensionLevel" (int level)
 {
- if (level < 0) terminate;
- if (level > 7) terminate;
-
- MiscellaneousVars[184] = 0;
+ if (level < 0) level = 0;
+ if (level > 7) level = 7;
 
       if (level == 1) FadeRange(254,104,253,0.33,254,104,253,0,1.25);
  else if (level == 2) FadeRange(254,104,253,0.44,254,104,253,0,1.375);
@@ -24493,6 +24530,160 @@ script "SetTensionLevel" (int level)
  if (MiscellaneousVars[181] == 6) MiscellaneousVars[183] = 8958;
  if (MiscellaneousVars[181] == 7) MiscellaneousVars[183] = 10750;
 
+ MiscellaneousVars[184] = 0; // Resets Tension Countdown to idle.
+ MiscellaneousVars[186] = 0; // Resets Tension Cooldown to idle.
+
+ // Tension Aura Actor Control
+ // TID 2001 - Aura
+ str TensionAuraLight;
+ int SpawnFixedX;
+ int SpawnFixedY;
+ int SpawnFixedZ;
+ int TensionAuraSpawnHeight;
+ int TensionAuraXScale;
+ int TensionAuraYScale;
+ int TensionAuraAlpha;
+ int TensionAuraAlphaInvis;
+ if (MiscellaneousVars[181] > 0)
+ {
+  SpawnFixedX = GetActorX(1001);
+  SpawnFixedY = GetActorY(1001);
+  SpawnFixedZ = GetActorZ(1001);
+  if (CharacterClass == 0) TensionAuraSpawnHeight = 28 * 65536;
+  if (CharacterClass == 1) TensionAuraSpawnHeight = 26 * 65536;
+  if (CharacterClass == 2) TensionAuraSpawnHeight = 25 * 65536;
+  TensionAuraSpawnHeight += SpawnFixedZ;
+
+  if (MiscellaneousVars[181] == 1)
+  {
+   TensionAuraLight = "TensionAuraLight5"; 
+   TensionAuraXScale = 0.5;
+   TensionAuraYScale = 0.75;
+   TensionAuraAlpha = 0.20;
+   TensionAuraAlphaInvis = 0.02;
+   if (ThingCountName("TensionAuraLight5", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+   if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+  }
+  if (MiscellaneousVars[181] == 2)
+  {
+   TensionAuraLight = "TensionAuraLight20";
+   TensionAuraXScale = 0.5555;
+   TensionAuraYScale = 0.8333;
+   TensionAuraAlpha = 0.26;
+   TensionAuraAlphaInvis = 0.026;
+   if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight20", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+   if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+  }
+  if (MiscellaneousVars[181] == 3) 
+  { 
+   TensionAuraLight = "TensionAuraLight50"; 
+   TensionAuraXScale = 0.6111;
+   TensionAuraYScale = 0.9116;
+   TensionAuraAlpha = 0.32;
+   TensionAuraAlphaInvis = 0.032;
+   if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight50", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+   if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+  }
+  if (MiscellaneousVars[181] == 4)
+  {
+   TensionAuraLight = "TensionAuraLight100"; 
+   TensionAuraXScale = 0.6667;
+   TensionAuraYScale = 1.0;
+   TensionAuraAlpha = 0.38;
+   TensionAuraAlphaInvis = 0.038;
+   if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight100", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+   if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+  }
+  if (MiscellaneousVars[181] == 5) 
+  {
+   TensionAuraLight = "TensionAuraLight250";
+   TensionAuraXScale = 0.7222;
+   TensionAuraYScale = 1.0833;
+   TensionAuraAlpha = 0.44;
+   TensionAuraAlphaInvis = 0.044;
+   if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight250", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+   if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+  }
+  if (MiscellaneousVars[181] == 6) 
+  {
+   TensionAuraLight = "TensionAuraLight500"; 
+   TensionAuraXScale = 0.7777;
+   TensionAuraYScale = 1.1666;
+   TensionAuraAlpha = 0.5;
+   TensionAuraAlphaInvis = 0.05;
+   if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight500", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+   if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+  }
+  if (MiscellaneousVars[181] == 7) 
+  {
+   TensionAuraLight = "TensionAuraLight1000";
+   TensionAuraXScale = 0.8333;
+   TensionAuraYScale = 1.25;
+   TensionAuraAlpha = 0.36;
+   TensionAuraAlphaInvis = 0.056;
+   if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+   if (ThingCountName("TensionAuraLight1000", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+  }
+
+  if (CharacterClass == 0) { TensionAuraXScale = TensionAuraXScale * 112 / 100;  TensionAuraYScale = TensionAuraYScale * 123 / 100; }
+  if (CharacterClass == 1) { TensionAuraXScale = TensionAuraXScale * 104 / 100;  TensionAuraYScale = TensionAuraYScale * 108 / 100; }
+  if (CharacterClass == 2) { TensionAuraXScale = TensionAuraXScale * 100 / 100;  TensionAuraYScale = TensionAuraYScale * 100 / 100; }
+
+  if (ThingCountName("TensionAuraLooper", 1501) < 1) SpawnForced("TensionAuraLooper",SpawnFixedX,SpawnFixedY,SpawnFixedZ,1501,0);
+  if (ThingCountName("TensionAuraLooper", 1501) > 0)
+  {
+   SetActorProperty(1501,APROP_ScaleX,TensionAuraXScale);
+   SetActorProperty(1501,APROP_ScaleY,TensionAuraYScale);
+   if (PowerupTimer[1] > 0) SetActorProperty(1501,APROP_Alpha,TensionAuraAlphaInvis);
+   else SetActorProperty(1501,APROP_Alpha,TensionAuraAlpha);
+  }
+ }
+ else
+ {
+  if (ThingCountName("TensionAuraLooper", 1501) > 0) Thing_Remove(1501);
+  if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+  if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+  if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+  if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+  if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+  if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+  if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+ }
 }
 
 // Check Tension Type for Aura Settings on Aura Actors
