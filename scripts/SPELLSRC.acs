@@ -12466,9 +12466,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  //***************************
  StaminaPercent = MiscellaneousVars[21] * 100 / MiscellaneousVars[22];
 
- //**********************************************************************************************************************
+ //************************************************************************************************************************
  //**From here on, this script will run the remaining code constantly in order to keep tabs on Survivability ratings, etc**
- //**********************************************************************************************************************
+ //************************************************************************************************************************
 
  if (CharacterClass == 0) GiveActorInventory(1001,"DeggarisInPlay", 1); else TakeActorInventory(1001,"DeggarisInPlay", 1); // Deggaris
  if (CharacterClass == 1) GiveActorInventory(1001,"IlluciaInPlay", 1); else TakeActorInventory(1001,"IlluciaInPlay", 1); // Illucia
@@ -12547,6 +12547,31 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   GiveActorInventory(1001,"DodgeGhostOff",1);
   TakeActorInventory(1001,"DodgeMeleeBoost",1);
  }
+
+ // Checks for the Musou-style "Power Trip" mode cheat-option [5x damage dealt, -80% damage taken]
+ if (GetCVar("dvds_musou_powertripmode") == 2)
+ {
+  if (CheckActorInventory(1001,"MusouDMGBoost2") < 1) GiveActorInventory(1001,"MusouDMGBoost2", 1);
+  if (CheckActorInventory(1001,"MusouDMGResist2") < 1) GiveActorInventory(1001,"MusouDMGResist2", 1);
+  if (CheckActorInventory(1001,"MusouDMGBoost1") > 0) TakeActorInventory(1001,"MusouDMGBoost1", 1);
+  if (CheckActorInventory(1001,"MusouDMGResist1") > 0) TakeActorInventory(1001,"MusouDMGResist1", 1);
+ }
+ else
+ if (GetCVar("dvds_musou_powertripmode") == 1)
+ {
+  if (CheckActorInventory(1001,"MusouDMGBoost1") < 1) GiveActorInventory(1001,"MusouDMGBoost1", 1);
+  if (CheckActorInventory(1001,"MusouDMGResist1") < 1) GiveActorInventory(1001,"MusouDMGResist1", 1);
+  if (CheckActorInventory(1001,"MusouDMGBoost2") > 0) TakeActorInventory(1001,"MusouDMGBoost2", 1);
+  if (CheckActorInventory(1001,"MusouDMGResist2") > 0) TakeActorInventory(1001,"MusouDMGResist2", 1);
+ }
+ else
+ {
+  if (CheckActorInventory(1001,"MusouDMGBoost1") > 0) TakeActorInventory(1001,"MusouDMGBoost1", 1);
+  if (CheckActorInventory(1001,"MusouDMGResist1") > 0) TakeActorInventory(1001,"MusouDMGResist1", 1);
+  if (CheckActorInventory(1001,"MusouDMGBoost2") > 0) TakeActorInventory(1001,"MusouDMGBoost2", 1);
+  if (CheckActorInventory(1001,"MusouDMGResist2") > 0) TakeActorInventory(1001,"MusouDMGResist2", 1);
+ }
+ 
 
  // Check the Character's Current Mass
  //-----------------------------------
@@ -13422,6 +13447,26 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (HellcoreOverheatLevel > 24999) GiveActorInventory(1001,"FloraHellcore250PercentOverheated", 1);
  }
 
+ // Melee Weapon Inv Check
+ H1 = 0;
+ SetActivator(1001); // Set to Player's ID to check for weapons from this actor.
+ if (CheckWeapon("Fist") == 1) H1 += 1;
+ if (CheckWeapon("FistInvisible") == 1) H1 += 1;
+ if (CheckWeapon("FistDeggaris") == 1) H1 += 1; 
+ if (CheckWeapon("FistIllucia") == 1) H1 += 1; 
+ if (CheckWeapon("FistFlora") == 1) H1 += 1; 
+ if (CheckWeapon("SauronGauntlets") == 1) H1 += 1; 
+ if (CheckWeapon("SauronGauntletsIllucia") == 1) H1 += 1; 
+ if (CheckWeapon("SauronGauntletsFlora") == 1) H1 += 1; 
+ if (CheckWeapon("SceptreOfEmpyrea") == 1) H1 += 1; 
+ if (CheckWeapon("Chainsaw") == 1) H1 += 1; 
+ if (CheckWeapon("Chainsaw2") == 1) H1 += 1; 
+ if (CheckWeapon("DoubleBladedChainsaw") == 1) H1 += 1; 
+ if (H1 > 0) { GiveActorInventory(1001,"UsingMeleeWeapon", 1); } else { TakeActorInventory(1001,"UsingMeleeWeapon", 1); }
+ SetActivator(0); // Set back to worldly activator at the end of weapon checking.
+
+
+
  //*****************************
  //*****************************
  //** Aeon Point Distribution **
@@ -14198,6 +14243,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (PowerupTimer[129] > 0) TensionChargeFailRate = TensionChargeFailRate / 2; // 0.5x Fail Rate When In GoE
 
  TensionChargeFailRate = TensionChargeFailRate * GetCVar("dvds_tension_failrateratio") / 100;
+ if (GetCVar("dvds_musou_powertripmode") == 1) TensionChargeFailRate = TensionChargeFailRate / 5; // Check "Power Trip" mode Cheat
+ if (GetCVar("dvds_musou_powertripmode") == 2) TensionChargeFailRate = TensionChargeFailRate / 10; // Check "Power Trip" mode Cheat
  if (TensionChargeFailRate <= 0) TensionChargeFailRate = 0;
 
  int TensionChargeAmount;
@@ -14280,6 +14327,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
       TensionChargeAmount = TensionChargeAmount * MiscellaneousVars[187] / 100;
       // Check Tension Speed Option [also affects Stamina]
       TensionChargeAmount = TensionChargeAmount * MiscellaneousVars[193] / 4;
+      // Check "Power Trip" mode Cheat
+      if (GetCVar("dvds_musou_powertripmode") == 1) TensionChargeAmount *= 5;
+      if (GetCVar("dvds_musou_powertripmode") == 2) TensionChargeAmount *= 10;
 
       // Up-Clamp to 1 Tic
       if (TensionChargeAmount < 1) TensionChargeAmount = 1;
@@ -14463,6 +14513,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    {
     tensiontimerdecrease = 20;
     tensiontimerdecrease = tensiontimerdecrease * MiscellaneousVars[191] / 100;
+    if (GetCVar("dvds_musou_powertripmode") == 1) tensiontimerdecrease = tensiontimerdecrease / 5; // 'Power Trip' mode cheat
+    if (GetCVar("dvds_musou_powertripmode") == 2) tensiontimerdecrease = tensiontimerdecrease / 10; // 'Power Trip' mode cheat
     MiscellaneousVars[183] -= tensiontimerdecrease;
    }
    if (MiscellaneousVars[183] <= 0) 
@@ -24681,8 +24733,11 @@ script "BowAntics" (int type)
   else SetResultValue(0);
 }
 
+// Consumes a set amount of Stamina when called [1 = 0.01% stamina consumed, etc] or checks for that much for an A_JumpIf call
 script "UseStaminaAttack" (int amount, int check)
 {
+ if (GetCVar("dvds_musou_powertripmode") == 1) amount = amount / 5;
+ if (GetCVar("dvds_musou_powertripmode") == 2) amount = amount / 10;
  if (check > 0)
  {
   if (MiscellaneousVars[21] >= amount) 
