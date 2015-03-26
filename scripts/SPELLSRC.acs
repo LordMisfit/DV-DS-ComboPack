@@ -474,7 +474,10 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [191] Tension Countdown Multiplier [CVAR]
 // [192] Tension Cooldown Multiplier [CVAR]
 // [193] Tension Speed Central Multiplier [CVAR]
-	// [194+] are undefined so far :P
+// [194] Mercy Invincibility "Flag"
+// [195] Mercy Invincibility Timer
+// [196] Mercy Invincibility 'Modulus/Remainder'
+	// [197+] are undefined so far :P
 
 
 global int 22:DVIIGameFlags[]; // ***ARRAY***
@@ -740,23 +743,23 @@ str SpellDesc[56] =  {
                       "Leave the forces of gravity behind for 10 seconds",				// Minor Flight
                       "Creates a stationary cloud of poison",					// Minor Poison Cloud
                       "Shoots a fireball that does low damage",					// Minor Fireball
-                      "Tear your enemies to shreds with your bare hands",				// Enchanced Strength
+                      "Multiplies most melee damage by 10x",				// Enchanced Strength
                       "Fires a few ice shards", 							// Minor Ice Blast
-                      "Summons a weak monster on your side. 25% chance of spawning two.",	// Summon Weak Monster
-                      "A more powerful version of the magic missile",				// Magic Missile
+                      "Summons a weak allied monster. 25% chance to spawn two.",	// Summon Weak Monster
+                      "A more powerful magic missile",				// Magic Missile
                       "A medium-damage fireball",							// Fireball
-                      "Creates a bomb that will detonate when an enemy gets too close",		// Explosive Glyph
+                      "Creates a magical proximity mine.",		// Explosive Glyph
                       "Heals 4-9 health points up to ",						// Healing
                       "Creates a ring of fireballs",							// Fireball Nova
-                      "Monsters cannot see or hear you for 10 seconds",
+                      "Monsters cannot see/hear you for 10 seconds",
                       "Monsters cannot damage you for 10 seconds",
-                      "Become invisible for slightly longer at 30 seconds",
+                      "Become invisible for 30 seconds",
                       "Summons rain from the ceiling down upon your enemies",
-                      "Summons a bomb that will detonate with a freezing blast",
+                      "Summons an ice-elemental magic proximity mine.",
                       "Darkness will be no problem for 30 seconds",
                       "Bend gravity to your will for 30 seconds",
-                      "A most powerful magic missile shot",						// Major Magic Missile
-                      "Summons a moderately powerful helper. 25% chance of spawning two.",
+                      "A very powerful magic missile shot",						// Major Magic Missile
+                      "Summons a moderately powerful ally. 25% chance to spawn two.",
                       "Emits a ring of ice shards.",
                       "A stationary poison cloud.  This one has a larger radius",
                       "Give your enemies a nasty shock with this spell",
@@ -764,14 +767,14 @@ str SpellDesc[56] =  {
                       "Heals 8-18 health points up to ",
                       "Makes everything bright for a full minute",
                       "Shoots several ice shards",
-                      "This spell gives you the ability to see the entire area",
+                      "Allow you to see the entire map.",
                       "A ring of lightning",
-                      "Enemies will not be able to hear or see you for 30 seconds",
+                      "Enemies won't be able to hear/see you for 30 seconds",
                       "Shrug of all damage for 30 seconds",
                       "Become harder to hit for a full minute",
                       "Defy gravity for a full minute",
                       "Shoots three lightning blasts",
-                      "Summons a powerful monster to your side. 25% chance of spawning two.",
+                      "Summons a powerful allied monster. 25% chance to spawn two.",
                       "Fortify yourself with 888 armor, 90% protection",				// Diamond Skin
                       "Shoot a highly damaging fireball",						// Major Fireball
                       "Fires lots of ice shards",							// Major Ice Blast
@@ -779,15 +782,15 @@ str SpellDesc[56] =  {
                       "This shoots a shocking 5 lightning blasts",					// Major Lightning
                       "You cannot be damaged for a full minute",					// Major Invulnerability
                       "Hide from your enemies' senses for a full minute",				// Major Stealth
-                      "Summon several angry spirits to tear apart your foes.",			// Raging Spirits
-                      "Creates the master demon who will turn slain enemies to your side.",	// Summon Archvile
-                      "The most powerful of all Magic Hissile spells.",				// Ultra Magic Missile
+                      "Summon Holy spirits to tear apart your foes.",			// Raging Spirits
+                      "Summon an Archvile to turn slain foes to your side.",	// Summon Archvile
+                      "The most powerful Magic Missile spell.",				// Ultra Magic Missile
                       "Freeze Time for 15 seconds, rendering all but you frozen.",		// Time Freezer
                       "Makes enemies flee from you in terror for 30 seconds.",			// Terror Aura
                       "Creates a lot of ammo for your weapons.",					// Create Lotso Ammo
                       "Grants you access to your fullest potential in combat!",			// Divine Avatar
-                      "Creates the ultimate Killing demon to destroy your enemies.",		// Summon Cyberdemon
-                      "Allows You to Create Six Extra Copies of Most Attacks and Spells."	// Spreader Aura Lv. 2
+                      "Summon a Cyberdemon to destroy your enemies.",		// Summon Cyberdemon
+                      "Allows You to Create 6 Extra Copies of Most Attacks/Spells."	// Spreader Aura Lv. 2
                      };
 int SpellCosts[56] = {
                         1,		// Minor Magic Missile
@@ -1957,6 +1960,7 @@ script "HUDDisplay" ENTER
 {
  int C1, C2, I1, I2, Z1, Z2, G1, G2, G3, G4, HexToInt1, HexToInt2, G5, G8, HealMin, HealMax, HealSorcRatio, G6;
  str S1;
+ int xpos;
  int ypos = 32.0;
  
  if (VeryFirstRun > 0 && CheckActorInventory(1001,"PlayerDeathFadeOut") < 1 && GetCVAR("dvds_showacshudelements") == 1)
@@ -2411,7 +2415,9 @@ script "HUDDisplay" ENTER
    }
   }
 
-  SetHudSize(640,480,0);
+  SetHudSize(704,528,0); // 640,480 //  SetHudSize(960,720,0);
+  xpos = 352.0; // 50% [centered]
+  ypos = 476.0; // 90% [towards bottom]
   // Function Ran
   G1 = SpellCostCheck(SelectedSpell); // Function testing to come later :P
   // Function Ran
@@ -2424,16 +2430,16 @@ script "HUDDisplay" ENTER
    {
     if (CharacterClass == 2)
     {
-     HudMessage(s:"\cfSpreader Aura Lv. 1\c-",s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,320.0,432.0,0.036);
+     HudMessage(s:"\cfSpreader Aura Lv. 1\c-",s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,xpos,ypos,0.036); // 320,432
     }
     else
     {
-     HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,320.0,432.0,0.036);
+     HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,xpos,ypos,0.036);
     }
    }
    else
    {
-    HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,320.0,432.0,0.036);
+    HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_white,xpos,ypos,0.036);
    }
   }
   else
@@ -2442,55 +2448,60 @@ script "HUDDisplay" ENTER
    {
     if (CharacterClass == 2)
     {
-     HudMessage(s:"\cfSpreader Aura Lv. 1\c-",s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,320.0,432.0,0.036);
+     HudMessage(s:"\cfSpreader Aura Lv. 1\c-",s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,xpos,ypos,0.036);
     }
     else
     {
-     HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,320.0,432.0,0.036);
+     HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,xpos,ypos,0.036);
     }
    }
    else
    {
-    HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,320.0,432.0,0.036);
+    HudMessage(s:SpellTable[SelectedSpell],s:"\n(",d:G1,s:" Mana)   (",d:G4,s:" Uses)";0,3406,cr_red,xpos,ypos,0.036);
    }
   }
 
+  xpos = 352.0; // 50% [centered]
+  ypos = 502.0; // 95% [towards bottom]
   if (SelectedSpell == 1) // Minor Healing
   {
    HealMin = GetHealingValue(0,0); // Minor [Min] 
    HealMax = GetHealingValue(0,1); // Minor [Max] 
-   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthTrue;0,3407,cr_gold,320.0,456.0,0.036);
+   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthTrue;0,3407,cr_gold,xpos,ypos,0.036);
   }
   else if (SelectedSpell == 14) // Healing
   {
    HealMin = GetHealingValue(1,0); // Normal [Min] 
    HealMax = GetHealingValue(1,1); // Normal [Max] 
-   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthTrue;0,3407,cr_gold,320.0,456.0,0.036);
+   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthTrue;0,3407,cr_gold,xpos,ypos,0.036);
   }
   else if (SelectedSpell == 29) // Major Healing
   {
    HealMin = GetHealingValue(2,0); // Major [Min] 
    HealMax = GetHealingValue(2,1); // Major [Max] 
-   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthDoubleTrue;0,3407,cr_gold,320.0,456.0,0.036);
+   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthDoubleTrue;0,3407,cr_gold,xpos,ypos,0.036);
   }
   else if (SelectedSpell == 40) // Diamond Skin / Spreader Aura Lv. 1
   {
    if (CharacterClass == 2) // Flora uses Spreader Aura Lv. 1 [and thus it uses an unique Description]
    {
-    HudMessage(s:"Allows You to Create Two Extra Copies of Most Attacks and Spells.";0,3407,cr_gold,320.0,456.0,0.036);
+    HudMessage(s:"Allows You to Create 2 Extra Copies of Most Attacks/Spells.";0,3407,cr_gold,xpos,ypos,0.036);
    }
    else // The other two use the usual Spell Description for Diamond Skin
    {
-    HudMessage(s:SpellDesc[SelectedSpell];0,3407,cr_gold,320.0,456.0,0.036);
+    HudMessage(s:SpellDesc[SelectedSpell];0,3407,cr_gold,xpos,ypos,0.036);
    }
   }
   else
   {
-   HudMessage(s:SpellDesc[SelectedSpell];0,3407,cr_gold,320.0,456.0,0.036);
+   HudMessage(s:SpellDesc[SelectedSpell];0,3407,cr_gold,xpos,ypos,0.036);
   }
 
   str KeyName;
-  SetHudSize(640,480,0);
+  SetHudSize(704,528,0); // 640,480 //  SetHudSize(960,720,0);
+  xpos = 704.2;
+  ypos = 220.0; // 200.0;
+  int yposint = 11.0; // 10.0;
   // Spell Bind Displays
   for (C1 = 0; C1 < 10; C1 ++)
   {
@@ -2520,16 +2531,16 @@ script "HUDDisplay" ENTER
      {
       if (CharacterClass == 2)
       {
-       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,xpos,ypos+FixedMul(C1 << 16,yposint),0.036);
       }
       else
       {
-       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,xpos,ypos+FixedMul(C1 << 16,yposint),0.036);
       }
      }
      else
      {
-      HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
+      HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_white,xpos,ypos+FixedMul(C1 << 16,yposint),0.036);
      }
     }
     else
@@ -2539,22 +2550,22 @@ script "HUDDisplay" ENTER
      {
       if (CharacterClass == 2)
       {
-       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:"\cfSpreader Aura Lv. 1\c-",s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,xpos,ypos+FixedMul(C1 << 16,yposint),0.036);
       }
       else
       {
-       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
+       HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,xpos,ypos+FixedMul(C1 << 16,yposint),0.036);
       }
      }
      else
      {
-      HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
+      HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: ",s:SpellTable[ReadiedSpells[C1] - 1],s:" (",d:G8,s:") [",d:G4,s:"]";0,2001+C1,cr_red,xpos,ypos+FixedMul(C1 << 16,yposint),0.036);
      }
     }
    }
    else
    {
-    HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: Empty";0,2001+C1,cr_white,640.2,200.0+FixedMul(C1 << 16,10.0),0.036);
+    HudMessage(d:C1+1,s:" [\cf",k:Keyname,s:"\c-]: Empty";0,2001+C1,cr_white,xpos,ypos+FixedMul(C1 << 16,yposint),0.036);
    }
   }
 
@@ -4034,6 +4045,7 @@ script "MagicEffects" (int Type, int Strength)
               s:"\nSpeed: ",d:speed,
               s:"\nVSpeed: ",d:vspeed); 
 */
+ int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 
  if ((PBA >= 0.0) && (PBA <= 64.0))
  {
@@ -4099,7 +4111,9 @@ script "MagicEffects" (int Type, int Strength)
    Case 0:  // Minor Magic Missile
    {
     ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
-    spellname = "MinorMagicMissile";
+    if (buttons & BT_ZOOM) { spellname = "MinorMagicMissileSeek"; }
+    else { spellname = "MinorMagicMissile"; }
+    //PrintBold(s:spellname);
     baseangle = 0; 		// 0 degree angle
     basepitch = 0;		// 0 degree pitch
     spreadangle = 0;	// 0 degree angle
@@ -4799,7 +4813,9 @@ script "MagicEffects" (int Type, int Strength)
    Case 4:  // Magic Missile
    {
     ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
-    spellname = "MagicMissile";
+    if (buttons & BT_ZOOM) { spellname = "MagicMissileSeek"; }
+    else { spellname = "MagicMissile"; }
+    //spellname = "MagicMissile";
     baseangle = 0; 		// 0 degree angle
     basepitch = 0;		// 0 degree pitch
     spreadangle = 0;	// 0 degree angle
@@ -5091,7 +5107,9 @@ script "MagicEffects" (int Type, int Strength)
    Case 9:  // Major Magic Missile
    {
     ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
-    spellname = "MajorMagicMissile";
+    if (buttons & BT_ZOOM) { spellname = "MajorMagicMissileSeek"; }
+    else { spellname = "MajorMagicMissile"; }
+    //spellname = "MajorMagicMissile";
     baseangle = 0; 		// 0 degree angle
     basepitch = 0;		// 0 degree pitch
     spreadangle = 0;	// 0 degree angle
@@ -9341,7 +9359,9 @@ script "MagicEffects" (int Type, int Strength)
    Case 17:  // Ultra Magic Missile
    {
     ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
-    spellname = "UltraMagicMissile";
+    if (buttons & BT_ZOOM) { spellname = "UltraMagicMissileSeek"; }
+    else { spellname = "UltraMagicMissile"; }
+    //spellname = "UltraMagicMissile";
     baseangle = 0; 		// 0 degree angle
     basepitch = 0;		// 0 degree pitch
     spreadangle = 0;	// 0 degree angle
@@ -12139,8 +12159,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  }
 
 
+ //*******************************************************************************
+ //*Attempting to Interpolate Health Values for the player to show damage values.*
+ //*******************************************************************************
  int ArmorResistance, ArmRes1, ArmRes2, ArmRes3;
- if (ClassCheck > 2) // Attempting to Interpolate Health Values for the player to show damage values.
+ if (ClassCheck > 2)
  {
   if (HealthDifferenceTimer > 0)
   {
@@ -12207,11 +12230,54 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  InterPolStrength = MaxHealthTrue / 35; // 8 is the average
  if (InterPolStrength < 4) InterPolStrength = 4;
 
- int SceptreJumpDmgMulti;
- SceptreJumpDmgMulti = GetActorVelZ(1001) / -6553;
- SceptreJumpDmgMulti += 100;
- if (SceptreJumpDmgMulti < 100) SceptreJumpDmgMulti = 100;
- // PrintBold(d:GetActorVelZ(1001),s:"\n",d:SceptreJumpDmgMulti,s:"%");
+ //************************************************************************
+ //*Flicker the Player when they survive a mortal hit (mercy invincibility*
+ //************************************************************************
+
+ // [194] Mercy Invincibility "Flag"
+ // [195] Mercy Invincibility Timer
+ // [196] Mercy Invincibility 'Modulus/Remainder'
+ //LastHealthValue = NewHealthValue;
+ NewHealthValue = GetActorProperty(1001,APROP_Health);
+ //PrintBold(d:LastHealthValue,s:" ",d:NewHealthValue);
+ if (NewHealthValue == 1 && LastHealthValue > 1 && GetCVar("dvds_survivemercyinvin") == 1)
+ {
+  MiscellaneousVars[194] = 1; // Turns on Mercy Invincibility Flag
+  MiscellaneousVars[195] = 1210; // 1.5 seconds [51.5 tics * 20]
+ }
+
+ if (MiscellaneousVars[194] != 0) // Flickering
+ {
+  if (MiscellaneousVars[195] > 0) // Timer Above 0
+  {
+   if (PowerupRunning[4] == 0) SetActorProperty(1001,APROP_INVULNERABLE,1);
+   MiscellaneousVars[196] = MiscellaneousVars[195] % 120;
+   if (MiscellaneousVars[196] >= 0 && MiscellaneousVars[196] <= 59)
+   {
+    SetActorProperty(1001,APROP_RenderStyle,STYLE_Fuzzy);
+   }
+   else
+   if (MiscellaneousVars[196] >= 60 && MiscellaneousVars[196] <= 119)
+   {
+    SetActorProperty(1001,APROP_RenderStyle,STYLE_Add);
+   }
+
+   MiscellaneousVars[195] -= 20;
+  }
+  else // Timer at 0
+  {
+   if (PowerupRunning[4] == 0) SetActorProperty(1001,APROP_INVULNERABLE,0);
+   if (MiscellaneousVars[195] != 0) SetActorProperty(1001,APROP_RenderStyle,STYLE_Normal);
+   MiscellaneousVars[195] = 0;
+  }
+ }
+
+ if (MiscellaneousVars[194] == 0) // Not Flickering
+ {
+  if (PowerupRunning[4] == 0) SetActorProperty(1001,APROP_INVULNERABLE,0);
+  if (MiscellaneousVars[195] != 0) SetActorProperty(1001,APROP_RenderStyle,STYLE_Normal);
+  MiscellaneousVars[195] = 0;
+ }
 
  //******************************************************************
  //*For interpolation of HP [like a Heretic or Hexen style counting]*
@@ -12245,6 +12311,13 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   //PrintBold(s:"\cg",d:GetActorVelZ(1001));
   if (CheckActorInventory(1001,"LandingDMGBonus") > 0) TakeActorInventory(1001,"LandingDMGBonus", 1);
  }
+
+ //
+ int SceptreJumpDmgMulti;
+ SceptreJumpDmgMulti = GetActorVelZ(1001) / -6553;
+ SceptreJumpDmgMulti += 100;
+ if (SceptreJumpDmgMulti < 100) SceptreJumpDmgMulti = 100;
+ // PrintBold(d:GetActorVelZ(1001),s:"\n",d:SceptreJumpDmgMulti,s:"%");
 
  //********************
  //*Regenerate Stamina*
@@ -16812,14 +16885,18 @@ script "CheckBuffTimers" ENTER
  int G1, G2, G3, C1, C2, C3, I1, I2, I3, D1;
  int DoveRegenTimer;
  int DivineRegenTimer;
+ int xpos, xposint, ypos, yposint;
 
  // Light/Infared
- SetHudSize(640,480,0);
+ SetHudSize(704,528,0); // 640,480 //  SetHudSize(960,720,0);
+ xpos = 0.1; // 0% [left side]
+ ypos = 231.0; // 210.0; // 90% [towards bottom]
+ yposint = 11.0;
  if (PowerupTimer[0] > 0)
  {
   PowerupRunning[0] = 1;
   SetPlayerProperty(1,1,PROP_INFRARED);
-  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Light: ",d:(PowerupTimer[0]/35),s:" Secs";0,3433,cr_white,0.1,210.0,0.03);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Light: ",d:(PowerupTimer[0]/35),s:" Secs";0,3433,cr_white,xpos,ypos,0.03);
   PowerupTimer[0] -= 1;
  }
  else
@@ -16828,6 +16905,7 @@ script "CheckBuffTimers" ENTER
   SetPlayerProperty(1,0,PROP_INFRARED);
  }
 
+ ypos = 242.0; // 210.0; // 90% [towards bottom]
  // Invisibility
  if (CheckActorInventory(1001, "InvisAttack1") > 0) TakeActorInventory(1001, "InvisAttack1", 1);
  if (CheckActorInventory(1001, "InvisDefense1") > 0) TakeActorInventory(1001, "InvisDefense1", 1);
@@ -16841,9 +16919,12 @@ script "CheckBuffTimers" ENTER
  {
   PowerupRunning[1] = 1;
   SetPlayerProperty(1,1,PROP_INVISIBILITY);
-  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Invisibility: ",d:(PowerupTimer[1]/35),s:" Secs";0,3434,cr_white,0.1,220.0,0.03);
-  SetActorProperty(1001,APROP_Alpha,0.1);
-  SetActorProperty(1001,APROP_RenderStyle,STYLE_Translucent);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Invisibility: ",d:(PowerupTimer[1]/35),s:" Secs";0,3434,cr_white,xpos,ypos,0.03);
+  if (MiscellaneousVars[194] == 0)
+  {
+   SetActorProperty(1001,APROP_Alpha,0.1);
+   SetActorProperty(1001,APROP_RenderStyle,STYLE_Translucent);
+  }
   if (random(1,100) > 25) // 75% chance of the level 1 version
   {
    if (CheckActorInventory(1001, "InvisAttack1") < 1) GiveActorInventory(1001, "InvisAttack1", 1); // +25% Damage Dealth
@@ -16876,16 +16957,20 @@ script "CheckBuffTimers" ENTER
  {
   PowerupRunning[1] = 0;
   SetPlayerProperty(1,0,PROP_INVISIBILITY);
-  SetActorProperty(1001,APROP_Alpha,1.0);
-  SetActorProperty(1001,APROP_RenderStyle,STYLE_Normal);
+  if (MiscellaneousVars[194] == 0)
+  {
+   SetActorProperty(1001,APROP_Alpha,1.0);
+   SetActorProperty(1001,APROP_RenderStyle,STYLE_Normal);
+  }
  }
 
+ ypos = 253.0; // 210.0; // 90% [towards bottom]
  // Flight
  if (PowerupTimer[2] > 0)
  {
   PowerupRunning[2] = 1;
   SetPlayerProperty(1,1,PROP_FLY);
-  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Flight: ",d:(PowerupTimer[2]/35),s:" Secs";0,3435,cr_white,0.1,230.0,0.03);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Flight: ",d:(PowerupTimer[2]/35),s:" Secs";0,3435,cr_white,xpos,ypos,0.03);
   PowerupTimer[2] -= 1;
  }
  else
@@ -16894,12 +16979,13 @@ script "CheckBuffTimers" ENTER
   SetPlayerProperty(1,0,PROP_FLY);
  }
 
+ ypos = 264.0; // 210.0; // 90% [towards bottom]
  // Stealth
  if (PowerupTimer[3] > 0)
  {
   PowerupRunning[3] = 1;
   SetPlayerProperty(1,1,PROP_NOTARGET);
-  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Stealth: ",d:(PowerupTimer[3]/35),s:" Secs";0,3436,cr_white,0.1,240.0,0.03);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Stealth: ",d:(PowerupTimer[3]/35),s:" Secs";0,3436,cr_white,xpos,ypos,0.03);
   PowerupTimer[3] -= 1;
  }
  else
@@ -16908,12 +16994,13 @@ script "CheckBuffTimers" ENTER
   SetPlayerProperty(1,0,PROP_NOTARGET);
  }
 
+ ypos = 275.0; // 210.0; // 90% [towards bottom]
  // Invulnerability
  if (PowerupTimer[4] > 0)
  {
   PowerupRunning[4] = 1;
   SetPlayerProperty(1,1,PROP_INVULNERABILITY);
-  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Invulnerability: ",d:(PowerupTimer[4]/35),s:" Secs";0,3437,cr_white,0.1,250.0,0.03);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Invulnerability: ",d:(PowerupTimer[4]/35),s:" Secs";0,3437,cr_white,xpos,ypos,0.03);
   PowerupTimer[4] -= 1;
  }
  else
@@ -16922,12 +17009,13 @@ script "CheckBuffTimers" ENTER
   SetPlayerProperty(1,0,PROP_INVULNERABILITY);
  }
 
+ ypos = 286.0; // 210.0; // 90% [towards bottom]
  // Time Stop
  if (PowerupTimer[5] > 0)
  {
   PowerupRunning[5] = 1;
   GiveActorInventory(1001, "PowerTimeFreezer", 1);
-  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Time Freeze: ",d:(PowerupTimer[5]/35),s:" Secs";0,3438,cr_white,0.1,260.0,0.03);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Time Freeze: ",d:(PowerupTimer[5]/35),s:" Secs";0,3438,cr_white,xpos,ypos,0.03);
   PowerupTimer[5] -= 1;
  }
  else
@@ -16937,12 +17025,13 @@ script "CheckBuffTimers" ENTER
   TakeActorInventory(1001, "PowerTimeFreezer", 9999);
  }
 
+ ypos = 297.0; // 210.0; // 90% [towards bottom]
  // Fear Aura Effects
  if (PowerupTimer[6] > 0)
  {
   PowerupRunning[6] = 1;
   GiveActorInventory(1001, "PowerFrightener", 1);
-  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Fear Aura: ",d:(PowerupTimer[6]/35),s:" Secs";0,3439,cr_white,0.1,270.0,0.03);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Fear Aura: ",d:(PowerupTimer[6]/35),s:" Secs";0,3439,cr_white,xpos,ypos,0.03);
   PowerupTimer[6] -= 1;
  }
  else
@@ -16952,6 +17041,7 @@ script "CheckBuffTimers" ENTER
   TakeActorInventory(1001, "PowerFrightener", 9999);
  }
 
+ ypos = 306.0; // 210.0; // 90% [towards bottom]
  // Divine Avatar Effects
  if (PowerupTimer[7] > 0)
  {
@@ -16980,7 +17070,7 @@ script "CheckBuffTimers" ENTER
    }
   }
 
-  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Divine Avatar: ",d:(PowerupTimer[7]/35),s:" Secs";0,3440,cr_white,0.1,280.0,0.03);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Divine Avatar: ",d:(PowerupTimer[7]/35),s:" Secs";0,3440,cr_white,xpos,ypos,0.03);
     
   PowerupTimer[7] -= 1;
  }
@@ -16995,6 +17085,7 @@ script "CheckBuffTimers" ENTER
   TakeActorInventory(1001, "PowerHighJump", 9999);
  }
 
+ ypos = 317.0; // 210.0; // 90% [towards bottom]
  // Speader Aura Lv. 1 Effects
  if (PowerupTimer[9] > 0)
  {
@@ -17008,7 +17099,7 @@ script "CheckBuffTimers" ENTER
   {
    PowerupRunning[8] = 1;
    GiveActorInventory(1001, "SpreaderAura1", 1);
-   if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Spread-Aura Lv. 1: ",d:(PowerupTimer[8]/35),s:" Secs";0,3441,cr_white,0.1,290.0,0.03);
+   if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Spread-Aura Lv. 1: ",d:(PowerupTimer[8]/35),s:" Secs";0,3441,cr_white,xpos,ypos,0.03);
    PowerupTimer[8] -= 1;
   }
   else
@@ -17024,7 +17115,7 @@ script "CheckBuffTimers" ENTER
  {
   PowerupRunning[9] = 1;
   GiveActorInventory(1001, "SpreaderAura2", 1);
-  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Spread-Aura Lv. 2: ",d:(PowerupTimer[9]/35),s:" Secs";0,3441,cr_white,0.1,290.0,0.03);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Spread-Aura Lv. 2: ",d:(PowerupTimer[9]/35),s:" Secs";0,3441,cr_white,xpos,ypos,0.03);
   PowerupTimer[9] -= 1;
  }
  else
