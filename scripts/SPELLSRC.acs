@@ -57,7 +57,7 @@ HudMessage Tags:
 	3422		-	Player Damage/Healing Amount [uses interpolation to gauge]
       ...
 	3432		-	Level Up/Aeon Points Up Text.
-	3433-3441	-	Buff Timers
+	3433-3443	-	Buff Timers
 	3442		-	Spell Category Display [goes with 3406-3407]
       ...
 	3500		-	Boss HP Readous [for bottom of the screen]
@@ -639,7 +639,7 @@ int SpellsLearned[57] =
  55						// +1  (Levels 56+)
 };
 
-int SpellCastTypes[56] = {
+int SpellCastTypes[58] = {
                            0, 1, 2, 0, 3,
                            4,10, 0, 5, 0, 
                            6, 0, 0, 0, 1,
@@ -651,8 +651,8 @@ int SpellCastTypes[56] = {
                           11, 0, 0,10, 0,
                            9, 8, 0, 6, 0,
                           13,14,15,16, 6,
-                          18};
-int SpellCastStrength[56] = {
+                          18,19,20};
+int SpellCastStrength[58] = {
                                 0,   2,  10,   1,  10,
                                10,   0,   2,   0,   3, 
                                 0,   4,   5,   6,   5,
@@ -664,7 +664,7 @@ int SpellCastStrength[56] = {
                                 1,  13,  14,   2,  15,
                                60,  60,  16,   3,  17,
                                15,  30,   0,  30,   4,
-                               30
+                               30,  30,  30
                             };                     
 str SpellCategory[4] = {
                          "\cdOffense Magic\c-",		//[0] (23) 0, 3, 6, 7, 9, 11, 12, 13, 15, 19, 20, 23, 25, 26, 27, 31, 33, 38, 41, 42, 43, 44, 49
@@ -672,7 +672,7 @@ str SpellCategory[4] = {
                          "\cfStatus Magic\c-",		//[2] (20) 2, 4, 5, 8, 16, 17, 18, 21, 22, 30, 32, 34, 35, 36, 37, 45, 46, 50, 51, 53
                          "\ceConjure Magic\c-"		//[3] (7)  10, 24, 39, 47, 48, 52, 54
                        };
-str SpellTable[56] = {                               //[id] (deg?), (ill?), (flo?)
+str SpellTable[58] = {                               //[id] (deg?), (ill?), (flo?)
                       "\cdMinor Magic Missile\c-",	  //[0] O, O, O  [Offense]		[Level 0]
                       "\cnMinor Healing\c-", 	 	  //[1] O, O, O  [Restorative]	[Level 0]
                       "\cfMinor Night-Vision\c-", 	  //[2] O, O, O  [Status]		[Level 1]
@@ -728,13 +728,15 @@ str SpellTable[56] = {                               //[id] (deg?), (ill?), (flo
                       "\ceCreate Lotso' Ammo\c-",	 //[52] O, O, X  [Conjure]
                       "\cfDivine Avatar\c-",		 //[53] O, O, O  [Status]
                       "\ceSummon Cyberdemon\c-",	 //[54] X, O, O  [Conjure]
-                      "\cfSpreader Aura Lv. 2\c-"	 //[55] X, X, O  [Status]
+                      "\cfSpreader Aura Lv. 2\c-",	 //[55] X, X, O  [Status]
+                      "\cfOomph\c-",				 //[56] X, X, O  [Status]
+                      "\cfBuff\c-"					 //[57] X, X, O  [Status]
                      };
-// 15, 20, 23, 29, 30, 33, 34, 36, 37, 41, 42, 44, 45, 46, 48, 49, 50, 54, 55 = Deggaris Cannot use these Spell IDs in final version
-// 6, 26, 43, 49, 51, 55 = Illucia Cannot use these Spell IDs in final version
+// 15, 20, 23, 29, 30, 33, 34, 36, 37, 41, 42, 44, 45, 46, 48, 49, 50, 54, 55, 56, 57 = Deggaris Cannot use these Spell IDs in final version
+// 6, 26, 43, 49, 51, 55, 56, 57 = Illucia Cannot use these Spell IDs in final version
 // 28, 40, 52 = Flora Cannot use these Spell IDs in final version
 
-str SpellDesc[56] =  {
+str SpellDesc[58] =  {
                       "Shoots an aetherbolt that does minimal damage",				// Minor Magic Missile
                       "Heals 2-4 health points up to ",						// Minor Healing
                       "See as if it were daylight for 10 seconds",					// Minor Night Vision
@@ -790,9 +792,11 @@ str SpellDesc[56] =  {
                       "Creates a lot of ammo for your weapons.",					// Create Lotso Ammo
                       "Grants you access to your fullest potential in combat!",			// Divine Avatar
                       "Summon a Cyberdemon to destroy your enemies.",		// Summon Cyberdemon
-                      "Allows You to Create 6 Extra Copies of Most Attacks/Spells."	// Spreader Aura Lv. 2
+                      "Allows You to Create 6 Extra Copies of Most Attacks/Spells.",	// Spreader Aura Lv. 2
+                      "Doubles your damage output for a short time.",	// Oomph
+                      "Cut Damage in Half and slightly increase survive rate."		// Buff
                      };
-int SpellCosts[56] = {
+int SpellCosts[58] = {
                         1,		// Minor Magic Missile
                         5,		// Minor Healing
                         5,		// Minor Night Vision
@@ -848,7 +852,9 @@ int SpellCosts[56] = {
                       300,		// Create Lotso Ammo
                         0, 	// Divine Avatar [value doesn't matter since it auto-calculates based on max MP]
                       500,		// Summon Cyberdemon
-                     1025		// Spreader Aura Lv. 2
+                     1025,		// Spreader Aura Lv. 2
+                       80,		// Oomph
+                       30		// Buff
                      };
 
 //***********************************
@@ -4111,9 +4117,7 @@ script "MagicEffects" (int Type, int Strength)
    Case 0:  // Minor Magic Missile
    {
     ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
-    if (buttons & BT_ZOOM) { spellname = "MinorMagicMissileSeek"; }
-    else { spellname = "MinorMagicMissile"; }
-    //PrintBold(s:spellname);
+    if (buttons & BT_ZOOM) { spellname = "MinorMagicMissileSeek"; } else { spellname = "MinorMagicMissile"; }
     baseangle = 0; 		// 0 degree angle
     basepitch = 0;		// 0 degree pitch
     spreadangle = 0;	// 0 degree angle
@@ -4813,9 +4817,7 @@ script "MagicEffects" (int Type, int Strength)
    Case 4:  // Magic Missile
    {
     ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
-    if (buttons & BT_ZOOM) { spellname = "MagicMissileSeek"; }
-    else { spellname = "MagicMissile"; }
-    //spellname = "MagicMissile";
+    if (buttons & BT_ZOOM) { spellname = "MagicMissileSeek"; } else { spellname = "MagicMissile"; }
     baseangle = 0; 		// 0 degree angle
     basepitch = 0;		// 0 degree pitch
     spreadangle = 0;	// 0 degree angle
@@ -5107,9 +5109,7 @@ script "MagicEffects" (int Type, int Strength)
    Case 9:  // Major Magic Missile
    {
     ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
-    if (buttons & BT_ZOOM) { spellname = "MajorMagicMissileSeek"; }
-    else { spellname = "MajorMagicMissile"; }
-    //spellname = "MajorMagicMissile";
+    if (buttons & BT_ZOOM) { spellname = "MajorMagicMissileSeek"; } else { spellname = "MajorMagicMissile"; }
     baseangle = 0; 		// 0 degree angle
     basepitch = 0;		// 0 degree pitch
     spreadangle = 0;	// 0 degree angle
@@ -9359,9 +9359,7 @@ script "MagicEffects" (int Type, int Strength)
    Case 17:  // Ultra Magic Missile
    {
     ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
-    if (buttons & BT_ZOOM) { spellname = "UltraMagicMissileSeek"; }
-    else { spellname = "UltraMagicMissile"; }
-    //spellname = "UltraMagicMissile";
+    if (buttons & BT_ZOOM) { spellname = "UltraMagicMissileSeek"; } else { spellname = "UltraMagicMissile"; }
     baseangle = 0; 		// 0 degree angle
     basepitch = 0;		// 0 degree pitch
     spreadangle = 0;	// 0 degree angle
@@ -10443,6 +10441,16 @@ script "MagicEffects" (int Type, int Strength)
  {
   ActivatorSound("CastSpreaderAura2",127);
   PowerupTimer[9] += (Strength*35);
+ }
+ if (Type == 19) // Oomph
+ {
+  //ActivatorSound("CastSpreaderAura2",127);
+  PowerupTimer[10] += (Strength*35);
+ }
+ if (Type == 20) // Buff
+ {
+  //ActivatorSound("CastSpreaderAura2",127);
+  PowerupTimer[11] += (Strength*35);
  }
 }
 
@@ -13425,6 +13433,13 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (PowerupRunning[7] > 0)
  {  
   GodlyAvatarBuddhaAdd = (1000 - BuddhaCurrentVal) / 4;
+  BuddhaCurrentVal += GodlyAvatarBuddhaAdd;
+ }
+
+ // Buff = (10.0% of remaining amount uncovered)
+ if (PowerupRunning[11] > 0)
+ {  
+  GodlyAvatarBuddhaAdd = (1000 - BuddhaCurrentVal) / 10;
   BuddhaCurrentVal += GodlyAvatarBuddhaAdd;
  }
 
@@ -16890,7 +16905,7 @@ script "CheckBuffTimers" ENTER
  // Light/Infared
  SetHudSize(704,528,0); // 640,480 //  SetHudSize(960,720,0);
  xpos = 0.1; // 0% [left side]
- ypos = 231.0; // 210.0; // 90% [towards bottom]
+ ypos = 209.0; // 210.0; // 90% [towards bottom]
  yposint = 11.0;
  if (PowerupTimer[0] > 0)
  {
@@ -16905,7 +16920,7 @@ script "CheckBuffTimers" ENTER
   SetPlayerProperty(1,0,PROP_INFRARED);
  }
 
- ypos = 242.0; // 210.0; // 90% [towards bottom]
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  // Invisibility
  if (CheckActorInventory(1001, "InvisAttack1") > 0) TakeActorInventory(1001, "InvisAttack1", 1);
  if (CheckActorInventory(1001, "InvisDefense1") > 0) TakeActorInventory(1001, "InvisDefense1", 1);
@@ -16964,7 +16979,7 @@ script "CheckBuffTimers" ENTER
   }
  }
 
- ypos = 253.0; // 210.0; // 90% [towards bottom]
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  // Flight
  if (PowerupTimer[2] > 0)
  {
@@ -16979,7 +16994,7 @@ script "CheckBuffTimers" ENTER
   SetPlayerProperty(1,0,PROP_FLY);
  }
 
- ypos = 264.0; // 210.0; // 90% [towards bottom]
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  // Stealth
  if (PowerupTimer[3] > 0)
  {
@@ -16994,7 +17009,7 @@ script "CheckBuffTimers" ENTER
   SetPlayerProperty(1,0,PROP_NOTARGET);
  }
 
- ypos = 275.0; // 210.0; // 90% [towards bottom]
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  // Invulnerability
  if (PowerupTimer[4] > 0)
  {
@@ -17009,7 +17024,7 @@ script "CheckBuffTimers" ENTER
   SetPlayerProperty(1,0,PROP_INVULNERABILITY);
  }
 
- ypos = 286.0; // 210.0; // 90% [towards bottom]
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  // Time Stop
  if (PowerupTimer[5] > 0)
  {
@@ -17025,7 +17040,7 @@ script "CheckBuffTimers" ENTER
   TakeActorInventory(1001, "PowerTimeFreezer", 9999);
  }
 
- ypos = 297.0; // 210.0; // 90% [towards bottom]
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  // Fear Aura Effects
  if (PowerupTimer[6] > 0)
  {
@@ -17041,7 +17056,7 @@ script "CheckBuffTimers" ENTER
   TakeActorInventory(1001, "PowerFrightener", 9999);
  }
 
- ypos = 306.0; // 210.0; // 90% [towards bottom]
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  // Divine Avatar Effects
  if (PowerupTimer[7] > 0)
  {
@@ -17085,7 +17100,7 @@ script "CheckBuffTimers" ENTER
   TakeActorInventory(1001, "PowerHighJump", 9999);
  }
 
- ypos = 317.0; // 210.0; // 90% [towards bottom]
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  // Speader Aura Lv. 1 Effects
  if (PowerupTimer[9] > 0)
  {
@@ -17124,6 +17139,40 @@ script "CheckBuffTimers" ENTER
   PowerupTimer[9] = 0;
   TakeActorInventory(1001, "SpreaderAura2", 9999);
  }
+
+ // Oomph Effects
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
+ if (PowerupTimer[10] > 0)
+ {
+  PowerupRunning[10] = 1;
+  GiveActorInventory(1001, "OomphDQSpell", 1);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Oomph: ",d:(PowerupTimer[10]/35),s:" Secs";0,3442,cr_white,xpos,ypos,0.03);
+  PowerupTimer[10] -= 1;
+ }
+ else
+ {
+  PowerupRunning[10] = 0;
+  PowerupTimer[10] = 0;
+  TakeActorInventory(1001, "OomphDQSpell", 9999);
+ }
+
+ // Buff Effects
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
+ if (PowerupTimer[11] > 0)
+ {
+  PowerupRunning[11] = 1;
+  GiveActorInventory(1001, "BuffDQSpell", 1);
+  if (GetActorProperty(1001,APROP_Health) > 0) HudMessageBold(s:"Buff: ",d:(PowerupTimer[11]/35),s:" Secs";0,3443,cr_white,xpos,ypos,0.03);
+  PowerupTimer[11] -= 1;
+ }
+ else
+ {
+  PowerupRunning[11] = 0;
+  PowerupTimer[11] = 0;
+  TakeActorInventory(1001, "BuffDQSpell", 9999);
+ }
+
+
 
  // GoE?? Effects
  if (PowerupTimer[129] > 0)
@@ -17241,6 +17290,16 @@ script "GiveBuffsPowerup" (int powertype, int powertimeadd)
   PowerupTimer[9] += powertimeadd;
   if (PowerupTimer[9] > 0) GiveActorInventory(1001, "SpreaderAura2", 1);
   if (PowerupTimer[8] > 0) { TakeActorInventory(1001, "SpreaderAura1", 1); PowerupTimer[8] = 0; }
+ }
+ if (powertype == 10) // Oomph [double damage from player]
+ {
+  PowerupTimer[10] += powertimeadd;
+  if (PowerupTimer[10] > 0) GiveActorInventory(1001, "OomphDQSpell", 1);
+ }
+ if (powertype == 11) // Buff [-50% damage to player]
+ {
+  PowerupTimer[11] += powertimeadd;
+  if (PowerupTimer[11] > 0) GiveActorInventory(1001, "BluntDQSpell", 1);
  }
  if (powertype == 129) // GoE??
  {
@@ -17931,7 +17990,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   if (GetUserVariable(0, "user_checkmapskill") > 0) terminate;
 
   StealthChance = ACS_NamedExecuteWithResult("GetStealthChance");
-  if (random(1,256) <= StealthChance)
+  if (random(1,256) <= StealthChance && GetActorClass(0) != "PracticeTarget")
   {
    if (CheckActorInventory(1001,"TheOneRing") > 0) 
    {
@@ -17970,7 +18029,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   else DifficultyChecker = 1;
 
   MaxHP = GetActorProperty(0,APROP_Health);
-  if (DifficultyChecker == 1) // Difficulty-checking enabled
+  if (DifficultyChecker == 1 && GetActorClass(0) != "PracticeTarget") // Difficulty-checking enabled
   {
    if (GameSkill() == SKILL_VERY_EASY)
    {
@@ -18028,7 +18087,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   }
   else MapChecker = 1;
 
-  if (MapChecker == 1) // Map-checking enabled
+  if (MapChecker == 1 && GetActorClass(0) != "PracticeTarget") // Map-checking enabled
   {
    if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
    {
@@ -18759,7 +18818,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    }
   }
 
-  if (ModType == 1) // Deus Vult 1
+  if (ModType == 1 && GetActorClass(0) != "PracticeTarget") // Deus Vult 1
   {
    LevelCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
    LevelCheck += MiscellaneousVars[53];
@@ -18799,8 +18858,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
     MaxHP = MaxHP * 141 / 100;
    }
   }
-  else
-  if (ModType == 2) // Deus Vult 2
+
+  if (ModType == 2 && GetActorClass(0) != "PracticeTarget") // Deus Vult 2
   {
    LevelCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
    LevelCheck += MiscellaneousVars[53];
@@ -18931,7 +18990,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   }
   else ErrorChecker = 1;
 
-  if (ErrorChecker == 1)
+  if (ErrorChecker == 1 && GetActorClass(0) != "PracticeTarget")
   {
    // HP Error
    int MaxHPErrorRange = MaxHP / 10;
