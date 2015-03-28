@@ -232,6 +232,7 @@ Functions
 //		global int 17:?;
 //		global int 18:?;
 //		global int 32:?;
+//		global int 39:?;
 //		global int 44:?;
 //		global int 47:?;
 //		global int 48:?;
@@ -550,7 +551,6 @@ global int 35:BaseSurvive; // All Games
 
 global int 37:LevelCap; // Applies to all games, however Flora's the only character legally able to extend her level cap from 100 to 200.
 global int 38:SpellIDLimit; // Defines the total number of spells allowed for quick var references
-global int 39:MaxManaDouble;
 global int 40:ItemsFound[];
 global int 41:AeonPointStartLevel;
 global int 46:ClassicDoomType;
@@ -1908,7 +1908,6 @@ script "Initializer" OPEN
   FinalBossMaxHealth = BaseFinalBossHealth;
   MaxMana += random(10,20) + C2; // 5-25 MP
   CurrentMana = MaxMana;
-  MaxManaDouble = MaxMana * 2;
 
  }
 
@@ -2589,6 +2588,7 @@ script "HUDDisplay" ENTER
 script "ManaRegenerationStuff" ENTER
 {
  int C1, I1, C2, I2, RegenedMana, G2, ManaReDelay, ExtraManaRegen, G4, DoveManaTimer, G5, MaxRegenableMana, EquippedRegenCap, SkillLevelManaDelay, OverallDelay;
+ int MaxManaLimit;
 
  if (FirstRun == 0)
  {
@@ -2764,21 +2764,13 @@ script "ManaRegenerationStuff" ENTER
 
    if (CurrentMana > MaxMana) CurrentMana = MaxMana;
   }
-  if (CharacterClass == 2) // Flora can have up to 200% MP
-  {
-   MaxManaDouble = MaxMana * 2;
-   if (CurrentMana > MaxManaDouble) CurrentMana = MaxManaDouble;
-  }
-  else if (CharacterClass == 1) // Illucia can have up to 166.7% MP
-  {
-   MaxManaDouble = MaxMana * 5 / 3;
-   if (CurrentMana > MaxManaDouble) CurrentMana = MaxManaDouble;
-  }
-  else // Deggaris will only go up to 133.3% MP.
-  { 
-   MaxManaDouble = MaxMana * 4 / 3;
-   if (CurrentMana > MaxManaDouble) CurrentMana = MaxManaDouble;
-  }
+
+  if (CharacterClass == 0) MaxManaLimit = MaxMana * 4 / 3;
+  if (CharacterClass == 1) MaxManaLimit = MaxMana * 5 / 3;
+  if (CharacterClass == 2) MaxManaLimit = MaxMana * 2;
+
+  if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
+
  }
 
  // Gets Values for Accquired Kills & Secrets
@@ -3321,7 +3313,6 @@ script "LevelUpCode" ENTER // (void)
     LevelAddMaxMana *= MiscellaneousVars[146];
     MaxMana += LevelAddMaxMana;
     CurrentMana += LevelAddMaxMana;
-    MaxManaDouble = MaxMana * 2;
 
     int LevelAddMaxHP = 0;
     int HPRandomizer1;
@@ -10490,11 +10481,15 @@ script "CreateTranslationTables" OPEN
 script "CheckManaLevels" ENTER
 {
  int C1, I1, C2, I2, G1, G2, G3, G4;
+ int MaxManaLimit;
+ if (CharacterClass == 0) MaxManaLimit = MaxMana * 4 / 3;
+ if (CharacterClass == 1) MaxManaLimit = MaxMana * 5 / 3;
+ if (CharacterClass == 2) MaxManaLimit = MaxMana * 2;
 
  // Runs to Check for Mana Pickup Items
  if (CurrentMana >= MaxMana)
  {
-  if (CurrentMana >= MaxManaDouble) CurrentMana = MaxManaDouble;
+  if (CurrentMana >= MaxManaLimit) CurrentMana = MaxManaLimit;
   SetAmmoCapacity("DoomSpellMana", 0);
  }
  else
@@ -10525,7 +10520,7 @@ script "CheckManaLevels" ENTER
 
   if (CurrentMana >= MaxMana)
   {
-   if (CurrentMana >= MaxManaDouble) CurrentMana = MaxManaDouble;
+   if (CurrentMana >= MaxManaLimit) CurrentMana = MaxManaLimit;
    SetAmmoCapacity("DoomSpellMana", 0);
   }
  }
@@ -10642,6 +10637,8 @@ script "SauravatarDeath" (void)
 script "GrabSoulsphere" (void)
 {
  int C1, C2, C3, G1, G2, G3, H1, H2, H3, M1, M2, M3;
+ int MaxManaLimit;
+
  G1 = GetActorProperty(1001,APROP_Health); 
  G2 = MaxHealthDoubleTrue;
  if (G1 < G2)
@@ -10659,14 +10656,14 @@ script "GrabSoulsphere" (void)
  if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
 
  // Add 50% MP/Mana to Deggaris/Illucia/Flora, up to 133.3%/166.7%/200% Max MP/Mana.
- if (CharacterClass == 0) MaxManaDouble = MaxMana * 4 / 3;
- if (CharacterClass == 1) MaxManaDouble = MaxMana * 5 / 3;
- if (CharacterClass == 2) MaxManaDouble = MaxMana * 2;
- if (CurrentMana < MaxManaDouble)
+ if (CharacterClass == 0) MaxManaLimit = MaxMana * 4 / 3;
+ if (CharacterClass == 1) MaxManaLimit = MaxMana * 5 / 3;
+ if (CharacterClass == 2) MaxManaLimit = MaxMana * 2;
+ if (CurrentMana < MaxManaLimit)
  {
   M1 = MaxMana / 2;
   CurrentMana += M1;
-  if (CurrentMana > MaxManaDouble) CurrentMana = MaxManaDouble;
+  if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
  }
 
  if (CharacterClass == 2) // Flora's Hellcore Heating will also go down with each SoulSphere grabbed
@@ -12083,7 +12080,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   MaxMana = MaxMana * MiscellaneousVars[147] / 100; // Check Start Mana Factor
   if (MaxMana < 1) MaxMana = 1;
   CurrentMana = MaxMana;
-  MaxManaDouble = MaxMana * 2;
 
   if (CharacterClass == 2) // Deggaris and Illucia have an extra randomization to their HP, while Flora has a slightly more varied randomization which works more to her favor on easier skill levels.
   {
@@ -12736,8 +12732,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
  }
  PlayerMass += Mas1;
+ if (PowerupRunning[4] > 0) PlayerMass *= 128; // 128x Mass when Invulnerable
  if (PowerupRunning[7] > 0) PlayerMass *= 4; // 4x Mass when using Divine Avatar
- if (PowerupRunning[4] > 0) PlayerMass *= 128;
+ if (PowerupRunning[11] > 0) PlayerMass *= 2; // 2x Mass when using Buff
 
 
  int DegenMinimumHP;
@@ -16121,18 +16118,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 script "MegaSphereArmor" (void)
 {
  int I1, I2, Z1, Z2, C1, C2;
- 
+ int MaxManaLimit;
+
  if (CharacterClass == 2) // Flora does not get armor from a Soul Sphere, but instead gets Mana up to 200% of her maximum
  {
-  MaxManaDouble = MaxMana * 2;
-  CurrentMana = MaxManaDouble;
+  CurrentMana = MaxMana * 2;
  }
  else
  {
   // Gives Deggaris and Illucia full MP
-  if (CharacterClass == 1) MaxManaDouble = MaxMana * 5 / 3;
-  if (CharacterClass == 0) MaxManaDouble = MaxMana * 4 / 3;
-  CurrentMana = MaxManaDouble;
+  if (CharacterClass == 1) MaxManaLimit = MaxMana * 5 / 3;
+  if (CharacterClass == 0) MaxManaLimit = MaxMana * 4 / 3;
+  CurrentMana = MaxManaLimit;
 
   // Saves original raw Armor Value
   Z1 = CheckInventory("Armor");
@@ -16255,15 +16252,14 @@ script "MegaSphereArmor" (void)
 script "SetManaAmount" (int C5)
 {
  CurrentMana = C5;
+ int MaxManaLimit;
  if (CurrentMana < 1) CurrentMana = 0;
- if (CharacterClass == 2) // Flora can have 200% Mana/MP
- {
-  if (CurrentMana > MaxManaDouble) CurrentMana = MaxManaDouble;
- }
- else
- {
-  if (CurrentMana > MaxManaDouble) CurrentMana = MaxManaDouble;
- }
+
+ if (CharacterClass == 2) MaxManaLimit = MaxMana * 2;		// Flora = 200%
+ if (CharacterClass == 1) MaxManaLimit = MaxMana * 5 / 3;	// Illucia = 166.6%
+ if (CharacterClass == 0) MaxManaLimit = MaxMana * 4 / 3;	// Deggaris = 133.3%
+
+ if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
 }
 
 // Checks the Player's level to determine how much drawing the Diaris Longbow will slow you down while aiming
@@ -19559,7 +19555,6 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
   if (StatGain1 < 1) StatGain1 = 1;
 
   MaxMana += StatGain1;
-  MaxManaDouble = MaxManaDouble * 2;
   CurrentMana += StatGain1;
  }
 
