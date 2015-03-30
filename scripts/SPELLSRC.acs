@@ -229,6 +229,7 @@ Functions
 
 // Global Vars NOT YET USED AT ALL
 //--------------------------------
+//		global int 9:?;
 //		global int 17:?;
 //		global int 18:?;
 //		global int 32:?;
@@ -262,7 +263,6 @@ global int 4:PlayerLevel;
 global int 5:SelectedSpell;
 global int 6:ReadiedSpells[];
 global int 7:VeryFirstRun;
-global int 9:MaxHealthDoubleTrue;
 global int 10:ExpTable[]; // Note To Self: NECESSARY TO BE "GLOBAL INT" TO RUN WITH HUB-BASED LEVELS LIKE IN HEXEN OR STRIFE, MISFIT YOU DINGUS-FACE.
 global int 11:BaseEXPRequirement;
 
@@ -287,6 +287,8 @@ global int 16:PowerupTimer[];
 // [7] - Divine Avatar
 // [8] - Spreader Aura Lv. 1
 // [9] - Spreader Aura Lv. 2
+// [10] - Oomph [aka Bikill] (2x damage, up to +8% crit rate)
+// [11] - Buff (2x defense, up to +10% survival rate, 2x balance)
 // [129] - ??????
 
 // Hellcore Energy and Heating
@@ -1750,7 +1752,6 @@ script "Initializer" OPEN
   LevelCap = 200; // KEEP AT THE MAXIMUM AMOUNT FOR LEVELS OVERALL [even if not all characters normally can reach said level]
   SpellIDLimit = 55;
   MaxHealthTrue = 100; // Sets to default Max of 100 to start
-  MaxHealthDoubleTrue = MaxHealthTrue * 2;  // Sets to default 2XMax of 200 to start
   MiscellaneousVars[21] = 10000; // Current Stamina Points
   MiscellaneousVars[22] = 10000; // Maximum Stamina Points
 
@@ -1963,8 +1964,9 @@ script "Initializer" OPEN
 
 script "HUDDisplay" ENTER
 {
- int C1, C2, I1, I2, Z1, Z2, G1, G2, G3, G4, HexToInt1, HexToInt2, G5, G8, HealMin, HealMax, HealSorcRatio, G6;
+ int C1, C2, I1, I2, Z1, Z2, G1, G2, G3, G4, G5, G8, HealMin, HealMax, HealSorcRatio, G6;
  str S1;
+ int MaxHealthLimit = MaxHealthTrue * 2;
  int xpos;
  int ypos = 32.0;
  
@@ -2484,7 +2486,7 @@ script "HUDDisplay" ENTER
   {
    HealMin = GetHealingValue(2,0); // Major [Min] 
    HealMax = GetHealingValue(2,1); // Major [Max] 
-   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthDoubleTrue;0,3407,cr_gold,xpos,ypos,0.036);
+   HudMessage(s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthLimit;0,3407,cr_gold,xpos,ypos,0.036);
   }
   else if (SelectedSpell == 40) // Diamond Skin / Spreader Aura Lv. 1
   {
@@ -3387,7 +3389,6 @@ script "LevelUpCode" ENTER // (void)
     GiveInventory("UpgradeStamina", LevelAddMaxHP);
     SetActorProperty(1001,APROP_HEALTH,(I2+LevelAddMaxHP));
     MaxHealthTrue += LevelAddMaxHP;
-    MaxHealthDoubleTrue = MaxHealthTrue * 2;
     SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
 
 
@@ -3756,6 +3757,7 @@ script "SpellSelection" (int Dir)
 script "SpellQuickAssign" (int Slot, int Type)
 {
  int C1, C2, C3, I1, I2, I3, G1, G2, G3, G4, Z1, Z2;
+ int MaxHealthLimit = MaxHealthTrue * 2;
  
  int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 
@@ -3834,7 +3836,7 @@ script "SpellQuickAssign" (int Slot, int Type)
      }
      else if (ReadiedSpells[Slot] == 30) // Major Healing [Deggaris/Illucia Only]
      {
-      if (GetActorProperty(1001,APROP_HEALTH) < MaxHealthDoubleTrue)
+      if (GetActorProperty(1001,APROP_HEALTH) < MaxHealthLimit)
       {
        CurrentMana -= G1;
        ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -3893,6 +3895,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 script "SpellCasting" (void)
 {
  int C1, C2, I1, I2, G1, G2, G3, G4, Z1, Z2;
+ int MaxHealthLimit = MaxHealthTrue * 2;
 
  // Function Ran
  G1 = SpellCostCheck(SelectedSpell); // Function testing to come later :P
@@ -3943,7 +3946,7 @@ script "SpellCasting" (void)
    else if (SelectedSpell == 29) // Major Healing [Deggaris and Illucia Only]
    {
     I2 = GetActorProperty(1001,APROP_HEALTH);
-    if (I2 < MaxHealthDoubleTrue)
+    if (I2 < MaxHealthLimit)
     {
      CurrentMana -= G1;
      ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -4011,6 +4014,7 @@ script "MagicEffects" (int Type, int Strength)
  int speed, vspeed, angle, fireheight;
  int NovaRotations;
  int spreadangle, spreadpitch, baseangle, basepitch;
+ int MaxHealthLimit = MaxHealthTrue * 2;
 
  PX = GetActorX(1001);
  PY = GetActorY(1001);
@@ -9465,7 +9469,7 @@ script "MagicEffects" (int Type, int Strength)
   }
   else // Major Healing Spell [Deggaris and Illucia Only]
   {
-   C1 = MaxHealthDoubleTrue;
+   C1 = MaxHealthLimit;
    C2 = random(GetHealingValue(2,0),GetHealingValue(2,1));
 
    FadeRange(193,193,193,0.8,255,255,255,0.0,1.0);
@@ -10347,14 +10351,14 @@ script "MagicEffects" (int Type, int Strength)
   }
   else if (Strength == 3) // Greater Spiritual Exoskin [Flora Only] [75% Protection, Max AP equal to 200% of Flora's Max HP]
   {
-   C1 = MaxHealthDoubleTrue;
+   C1 = MaxHealthLimit;
    if (CheckInventory("Armor") < C1)
    {
    }
   }
   else if (Strength == 4) // Perfected Spiritual Exoskin [Flora Only] [100% Protection, Max AP equal to 400% of Flora's Max HP]
   {
-   C1 = MaxHealthDoubleTrue;
+   C1 = MaxHealthLimit;
    C1 = C1 * 2;
    if (CheckInventory("Armor") < C1)
    {
@@ -10473,7 +10477,8 @@ script "CreateTranslationTables" OPEN
  CreateTranslation(22, 112:127=196:207); // Blue Armor (Armor Bonus)
 
  CreateTranslation(30, 80:111=112:127); // For Healing on the Damage Indicator
- CreateTranslation(31, 80:111=16:47); // For Damage on the Damage Indicator
+ CreateTranslation(31, 80:111=16:31); // For Damage on the Damage Indicator [normal]
+ CreateTranslation(32, 80:111=32:47); // For Damage on the Damage Indicator [CRITICAL]
 }
 
 // {-10-} Mana Recovery Items
@@ -10638,9 +10643,10 @@ script "GrabSoulsphere" (void)
 {
  int C1, C2, C3, G1, G2, G3, H1, H2, H3, M1, M2, M3;
  int MaxManaLimit;
+ int MaxHealthLimit = MaxHealthTrue * 2;
 
  G1 = GetActorProperty(1001,APROP_Health); 
- G2 = MaxHealthDoubleTrue;
+ G2 = MaxHealthLimit;
  if (G1 < G2)
  {
   C1 = MaxHealthTrue;
@@ -10691,11 +10697,12 @@ script "GrabSoulsphere" (void)
 script "MegaSphereHealth" (void)
 {
  int C1, C2, C3, G1, G2, G3, H1, H2, H3;
+ int MaxHealthLimit = MaxHealthTrue * 2;
  G1 = GetActorProperty(1001,APROP_Health); 
- G2 = MaxHealthDoubleTrue;
+ G2 = MaxHealthLimit;
  if (G1 < G2)
  {
-  C1 = MaxHealthDoubleTrue;
+  C1 = MaxHealthLimit;
   G1 += C1;
   if (G1 >= G2) G1 = G2;
 
@@ -10733,12 +10740,13 @@ script "MegaSphereHealth" (void)
 script "EmulateGiveHealthBonus" (int C5)
 {
  int C1, C2, C3, G1, G2, G3, H1, H2, H3;
+ int MaxHealthLimit = MaxHealthTrue * 2;
 
  If (C5 <= 0) C5 = 1;
 
  G1 = GetActorProperty(1001,APROP_Health); 
 
- G2 = MaxHealthDoubleTrue;
+ G2 = MaxHealthLimit;
  if (G1 < G2)
  {
   C1 = MaxHealthTrue / 100;
@@ -11016,7 +11024,7 @@ script "MaxHPBonusPickup" (void)
  GiveInventory("UpgradeStamina", BonusMaxHP);
  SetActorProperty(1001,APROP_HEALTH,(CurrentHP + BonusMaxHP));
  MaxHealthTrue += BonusMaxHP;
- MaxHealthDoubleTrue = MaxHealthTrue * 2;
+ int MaxHealthLimit = MaxHealthTrue * 2;
  SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
 
  // Max HP Bonus also heals extra HP dependant on the character in use.
@@ -11032,7 +11040,7 @@ script "MaxHPBonusPickup" (void)
  C1 += C2;
  CurrentHP += C1;
 
- if (CurrentHP > MaxHealthDoubleTrue) CurrentHP = MaxHealthDoubleTrue;
+ if (CurrentHP > MaxHealthLimit) CurrentHP = MaxHealthLimit;
  SetActorProperty(1001,APROP_HEALTH,CurrentHP);
 }
 
@@ -11597,6 +11605,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  int buttons;
  int haveruinousshield;
  int SpawnFixedX, SpawnFixedY, SpawnFixedZ, KilledMonsterFactor, Randomizer1;
+ int MaxHealthLimit = MaxHealthTrue * 2;
 
  if (GetActorProperty(1001,APROP_Health) <= 0) // Sets a special flag to check for a "pistol reset" like in resurgance
  {
@@ -12102,7 +12111,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
   MaxHealthTrue = MaxHealthTrue * MiscellaneousVars[147] / 100; // Check Start HP Factor
   if (MaxHealthTrue < 1) MaxHealthTrue = 1;
-  MaxHealthDoubleTrue = MaxHealthTrue * 2;
   SetActorProperty(1001,APROP_Health,MaxHealthTrue);
   SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
   LastHealthValue = MaxHealthTrue;
@@ -12866,7 +12874,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   buttons = GetPlayerInput(0, INPUT_BUTTONS); 
   if (CharacterClass == 2) // Flora
   {
-   if (CheckActorInventory(1001,"DoveRibbon") > 0) C1 = MaxHealthDoubleTrue; else C1 = MaxHealthTrue;
+   if (CheckActorInventory(1001,"DoveRibbon") > 0) C1 = MaxHealthLimit; else C1 = MaxHealthTrue;
   }
   else C1 = MaxHealthTrue;
 
@@ -12944,7 +12952,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    // Makes having the Dove Ribbon allow HP Regen up to 200% maximum
    if (CharacterClass == 2) // Flora
    {
-    if (CheckActorInventory(1001,"DoveRibbon") > 0) C2 = MaxHealthDoubleTrue; else C2 = MaxHealthTrue;
+    if (CheckActorInventory(1001,"DoveRibbon") > 0) C2 = MaxHealthLimit; else C2 = MaxHealthTrue;
    }
    else C2 = MaxHealthTrue;
 
@@ -12983,7 +12991,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    buttons = GetPlayerInput(0, INPUT_BUTTONS); 
    if (CharacterClass == 2) // Flora
    {
-    if (CheckActorInventory(1001,"DoveRibbon") > 0) C1 = MaxHealthDoubleTrue; else C1 = MaxHealthTrue;
+    if (CheckActorInventory(1001,"DoveRibbon") > 0) C1 = MaxHealthLimit; else C1 = MaxHealthTrue;
    }
    else C1 = MaxHealthTrue;
  
@@ -13049,7 +13057,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     // Makes having the Dove Ribbon allow HP Regen up to 200% maximum
     if (CharacterClass == 2) // Flora
     {
-     if (CheckActorInventory(1001,"DoveRibbon") > 0) C2 = MaxHealthDoubleTrue; else C2 = MaxHealthTrue;
+     if (CheckActorInventory(1001,"DoveRibbon") > 0) C2 = MaxHealthLimit; else C2 = MaxHealthTrue;
     }
     else C2 = MaxHealthTrue;
 
@@ -13459,9 +13467,16 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (BuddhaRNGVal <= BuddhaCurrentVal) SetPlayerProperty(1,1,PROP_BUDDHA); // Buddha Mode is basically perfect for emulating Survivability [this also means, you can't use the Buddha cheat directly though]
  else SetPlayerProperty(1,0,PROP_BUDDHA);
 
- // Dealing Critical Hits [intended to only affect physical weapons like melee, guns and the Diaris Bow, Hellcore weapons and magic will not be amplified]
+ // Dealing Critical Hits
  BuddhaCurrentVal = BuddhaCurrentVal / 4; // Base Critical Hit Rate is always 1/4 of your survival rate.
+ // Oomph = (8.33% of remaining amount uncovered)
+ if (PowerupRunning[10] > 0)
+ {
+  GodlyAvatarBuddhaAdd = (1000 - BuddhaCurrentVal) / 12;
+  BuddhaCurrentVal += GodlyAvatarBuddhaAdd;
+ }
  BuddhaRNGVal = random (1,1000); // Based on 0.1% to 100.0% [though the displays only show full %]
+ //PrintBold(d:BuddhaCurrentVal);
  if (BuddhaCurrentVal < 1) BuddhaCurrentVal = 1;
  if (BuddhaRNGVal <= BuddhaCurrentVal) GiveActorInventory(1001,"DealCriticalHit", 1);
  else TakeActorInventory(1001,"DealCriticalHit", 1);
@@ -16897,6 +16912,7 @@ script "CheckBuffTimers" ENTER
  int DoveRegenTimer;
  int DivineRegenTimer;
  int xpos, xposint, ypos, yposint;
+ int MaxHealthLimit = MaxHealthTrue * 2;
 
  // Light/Infared
  SetHudSize(704,528,0); // 640,480 //  SetHudSize(960,720,0);
@@ -17068,15 +17084,15 @@ script "CheckBuffTimers" ENTER
   if (DivineRegenTimer < 1)
   {
    DivineRegenTimer = random(30,35);
-   C3 = MaxHealthDoubleTrue / random(67,100);
+   C3 = MaxHealthLimit / random(67,100);
    if (CharacterClass == 0 && CheckActorInventory(1001, "SauronGauntlets") > 0) C3 = C3 * 17 / 16;
    if (CharacterClass == 1 && CheckActorInventory(1001, "SauronGauntletsIllucia") > 0) C3 = C3 * 17 / 16;
    if (CheckActorInventory(1001, "TheOneRing") > 0) C3 = C3 * 9 / 8;
    I3 = GetActorProperty(1001,APROP_HEALTH);
-   if (I3 > 0 && I3 < MaxHealthDoubleTrue)
+   if (I3 > 0 && I3 < MaxHealthLimit)
    {
     I3 += C3;
-    if (I3 >= MaxHealthDoubleTrue) I3 = MaxHealthDoubleTrue;
+    if (I3 >= MaxHealthLimit) I3 = MaxHealthLimit;
     SetActorProperty(1001,APROP_HEALTH,I3);
    }
   }
@@ -17196,10 +17212,10 @@ script "CheckBuffTimers" ENTER
   {
    C3 = PlayerLevel / 50 + 1;
    I3 = GetActorProperty(1001,APROP_HEALTH);
-   if (I3 > 0 && I3 < MaxHealthDoubleTrue)
+   if (I3 > 0 && I3 < MaxHealthLimit)
    {
     I3 += C3;
-    if (I3 >= MaxHealthDoubleTrue) I3 = MaxHealthDoubleTrue;
+    if (I3 >= MaxHealthLimit) I3 = MaxHealthLimit;
     SetActorProperty(1001,APROP_HEALTH,I3);
    }
   }
@@ -17528,6 +17544,7 @@ script "DeathTunnelVision" ENTER
 script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
 {
  int C1, C2, C3, C4, C5, OldHealth, NewHealth, HealthDiff, DamageFactor, DamageDealt, DamageRatio, ObitTimes;
+ int MaxHealthLimit = MaxHealthTrue * 2;
  //PrintBold(d:percent,s:" - ",d:trydamageuser);
 
  // Any damage from overheating is inflicted BEFORE increasing the heating counter (so going from below 100% to above 100% with a single attack doesn't harm you, only being above 100% at the moment of pulling the trigger will harm you)
@@ -17543,7 +17560,7 @@ script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
    DamageDealt = DamageFactor * MaxHealthTrue / 10000;
    
    if (DamageDealt < 1) DamageDealt = 1;
-   if (DamageDealt > MaxHealthDoubleTrue) DamageDealt = MaxHealthDoubleTrue;
+   if (DamageDealt > MaxHealthLimit) DamageDealt = MaxHealthLimit;
    
    // PrintBold(d:DamageDealt);
    // Deal the Actual Damage
@@ -19522,7 +19539,6 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
   GiveInventory("UpgradeStamina", StatGain1);
   SetActorProperty(1001,APROP_HEALTH,(StatGain2+StatGain1));
   MaxHealthTrue += StatGain1;
-  MaxHealthDoubleTrue = MaxHealthTrue * 2;
   SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
  }
 
@@ -20768,6 +20784,7 @@ function int GetDigit(int Num, int Digit)
 // For Monsters/Non-Players
 script "DamageDisplays" (void)
 {
+ int PlayerCrit;
  while (GetCVar("dvds_dmgindicator") == 1)
  {
   if (CheckInventory("MonsterDisplayDMG") == 0) terminate;
@@ -20775,11 +20792,13 @@ script "DamageDisplays" (void)
   int ActorHeight = GetActorProperty(0,APROP_Height);
   int PreviousHealth = GetActorProperty(0,APROP_Health);
 
-  int DelayRateLag = GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / 160;
-  int TickDelay = GetCVAR("dvds_dmgind_delay");
-  delay((1 + DelayRateLag) * TickDelay); // 1
+  int totaldelay = ((1 + (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / 160) ) * GetCVAR("dvds_dmgind_delay"));
+  delay(totaldelay); // 1
   If (GetActorProperty(0,APROP_Health) != PreviousHealth)
   {
+     // if (CheckActorInventory(1001,"DealCriticalHit") > 0 && IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE && totaldelay == 1) PlayerCrit = 1; else PlayerCrit = 0;
+     if (CheckInventory("TookCriticalHit") > 0) { PlayerCrit = 1; TakeInventory("TookCriticalHit",9999); } else PlayerCrit = 0;
+
      int DmgIndDisplayValue = PreviousHealth - GetActorProperty(0,APROP_Health);
      int DmgIndDisplayType;
 
@@ -20794,6 +20813,7 @@ script "DamageDisplays" (void)
 
      If (DmgIndDisplayValue > 0)
      {
+      //PrintBold(d:PlayerCrit);
       int Digit1 = GetDigit(DmgIndDisplayValue, 0);
       int Digit2 = GetDigit(DmgIndDisplayValue, 1);
       int Digit3 = GetDigit(DmgIndDisplayValue, 2);
@@ -20801,6 +20821,7 @@ script "DamageDisplays" (void)
       int Digit5 = GetDigit(DmgIndDisplayValue, 4);
       int Digit6 = GetDigit(DmgIndDisplayValue, 5);
       int Digit7 = GetDigit(DmgIndDisplayValue, 6);
+      int DigitBG;
 
       int WidthPos = ActorWidth / 2;
       int WidthNeg = ActorWidth * -1 / 2;
@@ -20813,35 +20834,65 @@ script "DamageDisplays" (void)
           z = GetActorZ(0) + GetActorProperty(0, APROP_HEIGHT) + Random(-4.0,4.0);
 
       int NumberID = Random(7000, 8000);
+      str DigitSpawn;
 
-      str DigitSpawn = StrParam(s:"Digit1Num", d:Digit1);
+      if (PlayerCrit > 0) DigitSpawn = StrParam(s:"DigitCritical1Num", d:Digit1); else DigitSpawn = StrParam(s:"Digit1Num", d:Digit1);
       if (DmgIndDisplayValue >= 0) Spawn(DigitSpawn, x, y, z, NumberID, 0);
 
-      DigitSpawn = StrParam(s:"Digit2Num", d:Digit2);
+      if (PlayerCrit > 0) DigitSpawn = StrParam(s:"DigitCritical2Num", d:Digit2); else DigitSpawn = StrParam(s:"Digit2Num", d:Digit2);
       if (DmgIndDisplayValue >= 10) Spawn(DigitSpawn, x, y, z, NumberID, 0);
 
-      DigitSpawn = StrParam(s:"Digit3Num", d:Digit3);
+      if (PlayerCrit > 0) DigitSpawn = StrParam(s:"DigitCritical3Num", d:Digit3); else DigitSpawn = StrParam(s:"Digit3Num", d:Digit3);
       if (DmgIndDisplayValue >= 100) Spawn(DigitSpawn, x, y, z, NumberID, 0);
 
-      DigitSpawn = StrParam(s:"Digit4Num", d:Digit4);
+      if (PlayerCrit > 0) DigitSpawn = StrParam(s:"DigitCritical4Num", d:Digit4); else DigitSpawn = StrParam(s:"Digit4Num", d:Digit4);
       if (DmgIndDisplayValue >= 1000) Spawn(DigitSpawn, x, y, z, NumberID, 0);
 
-      DigitSpawn = StrParam(s:"Digit5Num", d:Digit5);
+      if (PlayerCrit > 0) DigitSpawn = StrParam(s:"DigitCritical5Num", d:Digit5); else DigitSpawn = StrParam(s:"Digit5Num", d:Digit5);
       if (DmgIndDisplayValue >= 10000) Spawn(DigitSpawn, x, y, z, NumberID, 0);
 
-      DigitSpawn = StrParam(s:"Digit6Num", d:Digit6);
+      if (PlayerCrit > 0) DigitSpawn = StrParam(s:"DigitCritical6Num", d:Digit6); else DigitSpawn = StrParam(s:"Digit6Num", d:Digit6);
       if (DmgIndDisplayValue >= 100000) Spawn(DigitSpawn, x, y, z, NumberID, 0);
 
-      DigitSpawn = StrParam(s:"Digit7Num", d:Digit7);
+      if (PlayerCrit > 0) DigitSpawn = StrParam(s:"DigitCritical7Num", d:Digit7); else DigitSpawn = StrParam(s:"Digit7Num", d:Digit7);
       if (DmgIndDisplayValue >= 1000000) Spawn(DigitSpawn, x, y, z, NumberID, 0);
 
-      If (DmgIndDisplayType == 1) Thing_SetTranslation(NumberID, 30); // Healing
-      else Thing_SetTranslation(NumberID, 31);
-      
-      SetActorVelocity(NumberID, random((-1.0),(1.0)), random((-1.0),(1.0)), 0.5, 0, 0);
+      if (DmgIndDisplayType == 1) Thing_SetTranslation(NumberID, 30); // Healing
+      else // Damage
+      {
+       if (PlayerCrit > 0)
+       {
+        PlaySound(1001,"player/criticalhit",CHAN_BODY,1.0,0,ATTN_NORM);
+        Thing_SetTranslation(NumberID, 32);
+       }
+       else
+       {
+        Thing_SetTranslation(NumberID, 31);
+       }
+      }      
+
+      if (PlayerCrit > 0)
+      {
+       if (DmgIndDisplayType == 1) SetActorVelocity(NumberID, random(-1.0,1.0), random(-1.0,1.0), random(0.25,0.5), 0, 0); // Healing cannot be critical'd
+       else SetActorVelocity(NumberID, random(-0.5,0.5), random(-0.5,0.5), random(-0.50,-0.25), 0, 0);
+      }
+      else
+      {
+       SetActorVelocity(NumberID, random(-1.0,1.0), random(-1.0,1.0), random(0.25,0.5), 0, 0);
+      }
      }
   }
+  else
+  {
+   if (CheckInventory("TookCriticalHit") > 0) { TakeInventory("TookCriticalHit",9999); PlayerCrit = 0; }
+  }
  }
+}
+
+// Used by DECORATE to check for the player's crit item
+script "CheckCritRate" (void)
+{
+ if (CheckActorInventory(1001,"DealCriticalHit") > 0) SetResultValue(1); else SetResultValue(0);
 }
 
 // Used for testing SetHudSize customization in-game.
