@@ -226,7 +226,7 @@ Functions
 
 // TODO: Reduce # of Global Vars >________>; [stupid 64 global var limit]
 
-// Global Vars NOT YET USED AT ALL [17/64]
+// Global Vars NOT YET USED AT ALL [22/64]
 //-------------------------------------
 //		global int 7:?;
 //		global int 9:?;
@@ -249,19 +249,31 @@ Functions
 //		global int 53:?;
 //		global int 56:?;
 //		global int 57:?;
+//		global int 58:?;
+//		global int 59:?;
+//		global int 60:?;
+
+//		global int 61:?;
+//		global int 64:?;
 
 // Global Vars Used by SBARINFO/other lumps, or other vars that can't be changed [12/64]
 //-----------------------------------------------------------------------------------
 		global int 8:MaxHealthTrue; // USED BY SBARINFO
+
 		global int 20:HellcorePercentFull; // For HUD Displays -- USED BY SBARINFO
+
 		global int 29:HPInterpolationDisplay; // USED BY SBARINFO
 		global int 30:CurrentMaxArmor; // All Games -- USED BY SBARINFO
+
 		global int 36:SurvivalWhole; // All Games -- USED BY SBARINFO
+
 		global int 42:StaminaPercent; // USED BY SBARINFO
 		global int 43:SavePercent; // USED BY SBARINFO
 		global int 45:EvadeWhole; // All Games -- USED BY SBARINFO
+
 		global int 54:SceptreLevelEXP; // For Determining the level of sceptre capabilities and allows it to grow stronger as it's used (Base level plus 16 more levels). -- USED BY SBARINFO
 		global int 55:SceptreActualLevel; // USED BY SBARINFO
+
 		global int 62:RuinousShieldPercent; // USED BY SBARINFO
 		global int 63:FloraArmorClass; // USED BY SBARINFO
 
@@ -578,18 +590,12 @@ global int 46:ClassicDoomType;
 // 3 = Hexen
 // 4 = Strife[?]
 
-
 global int 50:GameScriptEvents[]; // ***ARRAY*** Array for Controlling in-game scripts and story events
 // [1401] = MAP04, Damage inflicted by Helltoxins in Minas Morgul
 // [1402] = MAP04, Damage timer for Helltoxins in Minas Morgul
 // [1403] = MAP04, Checks for the player having Iron Feet powerup or Flora's Safe Passage spells in effect to determine exposure to Hell-Toxins.
 // [1801] = MAP08, Spawns all AmbientSound Actors in places meant to be high off the ground.
 
-// Vars for Attempting to Interpolate Health on the Previous Tic [for damage/heal displays via ACS]
-global int 58:HealthDifferenceTimer;
-global int 59:HealthDifference;
-global int 60:LastHealthValue;
-global int 61:NewHealthValue;
 
 // 0 = Normal, 1 = Other
 
@@ -11643,6 +11649,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  int haveruinousshield;
  int SpawnFixedX, SpawnFixedY, SpawnFixedZ, KilledMonsterFactor, Randomizer1;
  int MaxHealthLimit = MaxHealthTrue * 2;
+ int HealthDifferenceTimer;
+ int HealthDifference;
+ int LastHealthValue;
+ int NewHealthValue;
 
  if (GetActorProperty(1001,APROP_Health) <= 0) // Sets a special flag to check for a "pistol reset" like in resurgance
  {
@@ -13610,14 +13620,14 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  //*****************************
  //*****************************
 
- int AeonBonusChecker = 1;
- if (ModType == 0 && GetCVar("dvds_aeonpointbonus") != 0) AeonBonusChecker = 0; // If in Classic Mode and the Aeon Point bonus option is off, don't check counts
+ int AeonBonusChecker = GetCVar("dvds_aeonpointbonus");
+ //if (ModType == 0 && GetCVar("dvds_aeonpointbonus") != 0) AeonBonusChecker = 0; // If in Classic Mode and the Aeon Point bonus option is off, don't check counts
  if (AeonBonusChecker == 1)
  {
   // Kills
   MiscellaneousVars[63] = 0;
-  for (i = 1; i < 37; i++) { MiscellaneousVars[63] += MonstersKilled[i]; }
-  MiscellaneousVars[61] = MiscellaneousVars[63] / 384;
+  for (i = 0; i < 51; i++) { MiscellaneousVars[63] += MonstersKilled[i]; }
+  MiscellaneousVars[61] = MiscellaneousVars[63] / GetCVar("dvds_killsforaeonpts");
 
   if (MiscellaneousVars[62] < MiscellaneousVars[61])
   {
@@ -13634,8 +13644,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
   // Secrets
   MiscellaneousVars[64] = 0;
-  for (i = 1; i < 37; i++) { MiscellaneousVars[64] += SecretsFound[i]; }
-  MiscellaneousVars[59] = MiscellaneousVars[64] / 8;
+  for (i = 0; i < 51; i++) { MiscellaneousVars[64] += SecretsFound[i]; }
+  MiscellaneousVars[59] = MiscellaneousVars[64] / GetCVar("dvds_secretsforaeonpts");
  
   if (MiscellaneousVars[60] < MiscellaneousVars[59])
   {
@@ -13652,8 +13662,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  
   // Items
   MiscellaneousVars[56] = 0;
-  for (i = 1; i < 37; i++) { MiscellaneousVars[56] += ItemsFound[i]; }
-  MiscellaneousVars[57] = MiscellaneousVars[56] / 256;
+  for (i = 0; i < 51; i++) { MiscellaneousVars[56] += ItemsFound[i]; }
+  MiscellaneousVars[57] = MiscellaneousVars[56] / GetCVar("dvds_itemsforaeonpts");
  
   if (MiscellaneousVars[58] < MiscellaneousVars[57])
   {
@@ -13668,6 +13678,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    }
   }
  }
+
+/*
+ PrintBold(s:"Kills: ",d:MiscellaneousVars[63],s:" / ",d:GetCVar("dvds_killsforaeonpts"),s:"\n",
+           s:"Secrets: ",d:MiscellaneousVars[64],s:" / ",d:GetCVar("dvds_secretsforaeonpts"),s:"\n",
+           s:"Items: ",d:MiscellaneousVars[56],s:" / ",d:GetCVar("dvds_itemsforaeonpts"));
+*/
 
  if (MiscellaneousVars[25] < 1) MiscellaneousVars[24] = 0;
  if (MiscellaneousVars[31] > 511 && MiscellaneousVars[32] > 511 && MiscellaneousVars[33] > 511 && MiscellaneousVars[34] > 511 && MiscellaneousVars[35] > 511 && MiscellaneousVars[36] > 511) MiscellaneousVars[24] = 0;
