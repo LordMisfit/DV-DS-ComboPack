@@ -518,7 +518,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [208] # of Sorcery Points gained during a level up [for displays]
 // [209] # of Sorcery Points gained during a level up [for displays]
 // [210] # of Therapeusis Points gained during a level up [for displays]
-	// [211+] are undefined so far :P
+// [211] Current Value of Mana Regen Timer
+	// [212+] are undefined so far :P
 
 
 global int 22:DVIIGameFlags[]; // ***ARRAY***
@@ -2646,7 +2647,7 @@ script "HUDDisplay" ENTER
 script "ManaRegenerationStuff" ENTER
 {
  int C1, I1, C2, I2, RegenedMana, G2, ManaReDelay, ExtraManaRegen, G4, DoveManaTimer, G5, MaxRegenableMana, EquippedRegenCap, SkillLevelManaDelay, OverallDelay;
- int MaxManaLimit;
+ int MaxManaLimit, buttons, delaycount;
 
  if (FirstRun == 0)
  {
@@ -2654,184 +2655,213 @@ script "ManaRegenerationStuff" ENTER
   Thing_ChangeTID(0,1001);
  }
 
- // Mana Regen Delay
- if (GameSkill() == SKILL_VERY_EASY) SkillLevelManaDelay = 30;
- if (GameSkill() == SKILL_EASY) SkillLevelManaDelay = 33;
- if (GameSkill() == SKILL_NORMAL) SkillLevelManaDelay = 37;
- if (GameSkill() == SKILL_HARD) SkillLevelManaDelay = 42;
- if (GameSkill() == SKILL_VERY_HARD) SkillLevelManaDelay = 48;
- if (CharacterClass == 0) SkillLevelManaDelay += random(-3,5);
- if (CharacterClass == 1) SkillLevelManaDelay += random(-4,4);
- if (CharacterClass == 2) SkillLevelManaDelay += random(-5,3);
-
- if (CharacterClass == 0) ManaReDelay = PlayerLevel / 30; // Deggaris (up to 3/6)
- else if (CharacterClass == 1) ManaReDelay = PlayerLevel / 25; // Illucia (up to 4/8)
- else if (CharacterClass == 2) ManaReDelay = PlayerLevel / 20; // Flora (up to 5/10) 
- OverallDelay = SkillLevelManaDelay - ManaReDelay;
-
- // A combined total of 30 points of Sorcery/Theraphesuis are needed for a tic-point of faster regen time.
- ManaReDelay = (MiscellaneousVars[34] + MiscellaneousVars[36]) / 30;
- OverallDelay -= ManaReDelay;
-
- if (GameSkill() == SKILL_VERY_EASY) if (OverallDelay < 1) OverallDelay = 1;
- if (GameSkill() == SKILL_EASY) if (OverallDelay < 2) OverallDelay = 2;
- if (GameSkill() == SKILL_NORMAL) if (OverallDelay < 4) OverallDelay = 4;
- if (GameSkill() == SKILL_HARD) if (OverallDelay < 7) OverallDelay = 7;
- if (GameSkill() == SKILL_VERY_HARD) if (OverallDelay < 11) OverallDelay = 11;
-
- if (OverallDelay < 1) OverallDelay = 1;
- Delay(OverallDelay);
-
-
- if (CurrentMana < MaxMana)
+ delaycount = 20;
+ buttons = GetPlayerInput(0, INPUT_BUTTONS); 
+ if (buttons & BT_ZOOM && buttons & BT_SPEED)
  {
-  C2 = GetActorProperty(1001,APROP_HEALTH);
-  if (C2 > 0)
-  {
-   if (GameSkill() == SKILL_VERY_EASY) RegenedMana = 3;
-   if (GameSkill() == SKILL_EASY) RegenedMana = 3;
-   if (GameSkill() == SKILL_NORMAL) RegenedMana = 2;
-   if (GameSkill() == SKILL_HARD) RegenedMana = 2;
-   if (GameSkill() == SKILL_VERY_HARD) RegenedMana = 1;
+  delaycount *= 4;
+ }
 
-   // A combined total of 10 points of Sorcery/Theraphesuis are needed for an extra point of MP regen.
-   RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 10);
-  }
+ if (delaycount < 1) delaycount = 1;
+ MiscellaneousVars[211] -= delaycount;
 
-  if (PowerupRunning[7] == 1) // Divine Avatar
+ RegenedMana = 0;
+ if (MiscellaneousVars[211] < 1)
+ {
+  // Main Regeneration
+  if (CurrentMana < MaxMana)
   {
-   ExtraManaRegen = PlayerLevel / 7;
-   RegenedMana += ExtraManaRegen;
-   if (random(0,100) < 26)
+   C2 = GetActorProperty(1001,APROP_HEALTH);
+   if (C2 > 0)
+   {
+    if (GameSkill() == SKILL_VERY_EASY) RegenedMana = 3;
+    if (GameSkill() == SKILL_EASY) RegenedMana = 3;
+    if (GameSkill() == SKILL_NORMAL) RegenedMana = 2;
+    if (GameSkill() == SKILL_HARD) RegenedMana = 2;
+    if (GameSkill() == SKILL_VERY_HARD) RegenedMana = 1;
+ 
+    // A combined total of 10 points of Sorcery/Theraphesuis are needed for an extra point of MP regen.
+    RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 10);
+   }
+ 
+   if (PowerupRunning[7] == 1) // Divine Avatar
+   {
+    ExtraManaRegen = PlayerLevel / 7;
+    RegenedMana += ExtraManaRegen;
+    if (random(0,100) < 26)
+    {
+     RegenedMana = RegenedMana * 5 / 4;
+    }
+    else
+    {
+     if (random(0,100) < 51)
+     {
+      RegenedMana = RegenedMana * 9 / 8;
+     }
+    }
+   }
+   else
+   {
+    ExtraManaRegen = PlayerLevel / 20;
+    RegenedMana += ExtraManaRegen;
+    if (random(0,100) < 26)
+    {
+     RegenedMana = RegenedMana * 17 / 16;
+    }
+    else
+    {
+     if (random(0,100) < 51)
+     {
+      RegenedMana = RegenedMana * 33 / 32;
+     }
+    }
+   }
+ 
+   // Character-Based regen factors
+   if (CharacterClass == 0) RegenedMana = RegenedMana * random(13,15) / 16; // Deggaris (81.25%-93.75%)
+   if (CharacterClass == 1) RegenedMana = RegenedMana * random(18,20) / 16; // Illucia (112.5%-125%)
+   if (CharacterClass == 2) RegenedMana = RegenedMana * random(23,25) / 16; // Flora (143.75%-156.25%)
+ 
+   // Sauron's Helmet
+   if (CharacterClass == 0 && CheckInventory("SauronHelmet") > 0) RegenedMana = RegenedMana * 11 / 8; // Deggaris w/ Helmet (137.5%)
+   if (CharacterClass == 1 && CheckInventory("SauronHelmet") > 0) RegenedMana = RegenedMana * 10 / 8; // Illucia w/ Helmet (125%)
+   if (CharacterClass == 2 && CheckInventory("SauronHelmet") > 0) RegenedMana = RegenedMana * 9 / 8; // Flora w/ Helmet (112.5%)
+   // Sauron's Gauntlets
+   if (CharacterClass == 0 && CheckInventory("SauronGauntlets") > 0) RegenedMana = RegenedMana * 5 / 4; // Deggaris w/ Gauntlets (125%)
+   if (CharacterClass == 1 && CheckInventory("SauronGauntletsIllucia") > 0) RegenedMana = RegenedMana * 5 / 4; // Illucia w/ Gauntlets (125%)
+   if (CharacterClass == 2 && CheckInventory("SauronGauntletsFlora") > 0) RegenedMana = RegenedMana * 5 / 4; // Flora w/ Gauntlets (125%)
+   // The One Ring
+   if (CharacterClass == 0 && CheckInventory("TheOneRing") > 0) RegenedMana = RegenedMana * 5 / 8; // Deggaris w/ Ring (62.5%)
+   if (CharacterClass == 1 && CheckInventory("TheOneRing") > 0) RegenedMana = RegenedMana * 6 / 8; // Illucia w/ Ring (75%)
+   if (CharacterClass == 2 && CheckInventory("TheOneRing") > 0) RegenedMana = RegenedMana * 7 / 8; // Flora w/ Ring (87.5%)
+ 
+   // Ruinous Shield - quarters MP regeneration
+   if (CharacterClass == 2 && CheckInventory("RuinousShield") > 0) RegenedMana = RegenedMana * 1 / 4; // (25%)
+ 
+   // Checks Mana Regen Rate Menu Option
+   RegenedMana = RegenedMana * MiscellaneousVars[139] / 100;
+ 
+   if (RegenedMana < 1) RegenedMana = 1;
+ 
+   // New Addition = Caps Maximum Mana Regeneration to a certain amount based on Difficulty and armor-type items.
+   MaxRegenableMana = MaxMana * 50 / 100;
+   if (GameSkill() == SKILL_VERY_EASY) MaxRegenableMana = MaxMana * 61 / 100; 	// (61% of Max)
+   if (GameSkill() == SKILL_EASY) MaxRegenableMana = MaxMana * 55 / 100; 		// (55% of Max)
+   if (GameSkill() == SKILL_NORMAL) MaxRegenableMana = MaxMana * 50 / 100; 		// (50% of Max)
+   if (GameSkill() == SKILL_HARD) MaxRegenableMana = MaxMana * 45 / 100; 		// (45% of Max)
+   if (GameSkill() == SKILL_VERY_HARD) MaxRegenableMana = MaxMana * 39 / 100; 	// (39% of Max)
+ 
+   EquippedRegenCap = 100; // in percent
+   // All-Character Specfic Items
+   if (CheckActorInventory(1001,"SauronHelmet") > 0) EquippedRegenCap -= 25;  // (-25% extension if Sauron's Helmet is equipped)
+   if (CheckActorInventory(1001,"SauronGauntlets") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
+   if (CheckActorInventory(1001,"SauronGauntletsIllucia") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
+   if (CheckActorInventory(1001,"SauronGauntletsFlora") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
+   if (CheckActorInventory(1001,"TheOneRing") > 0) EquippedRegenCap += 50;  // (+50% extension if The One Ring is equipped)
+ 
+   // Marine Specfic Items (between -4% and -16%, since only one can be equipped at once
+   if (CheckActorInventory(1001,"DSGreenArmorClass") > 0) EquippedRegenCap -= 4; // (-4% for Green Armor)
+   if (CheckActorInventory(1001,"DSBlueArmorClass") > 0) EquippedRegenCap -= 8; // (-8% for Blue Armor)
+   if (CheckActorInventory(1001,"DSStoneArmorClass1") > 0) EquippedRegenCap -= 10; // (-10% for Stone Armor 1)
+   if (CheckActorInventory(1001,"DSDiamondArmorClass1") > 0) EquippedRegenCap -= 14; // (-14% for Diamond Armor 1)
+   if (CheckActorInventory(1001,"DSStoneArmorClass2") > 0) EquippedRegenCap -= 12; // (-12% for Stone Armor 2)
+   if (CheckActorInventory(1001,"DSDiamondArmorClass2") > 0) EquippedRegenCap -= 16; // (-16% for Diamond Armor 2)
+ 
+   // Flora Specfic Items (up to +150%)
+   if (CheckActorInventory(1001,"EvenstarNecklace") > 0) EquippedRegenCap += 25;  // (+25% extension if Evenstar Necklace is equipped)
+   if (CheckActorInventory(1001,"AnubisCufflinks") > 0) EquippedRegenCap += 62;  // (+62% extension if Anubis Cufflinks are equipped)
+   if (CheckActorInventory(1001,"KissaBra") > 0) EquippedRegenCap += 38; // (+38% extension if Kissa's Armor Brassiere is equipped)
+   if (CheckActorInventory(1001,"BalrogRing") > 0) EquippedRegenCap += 25; // (+25% extension if Balrog's Ring is equipped)
+ 
+   if (EquippedRegenCap < 20) EquippedRegenCap = 20;
+   if (EquippedRegenCap > 640) EquippedRegenCap = 640;
+   MaxRegenableMana = MaxRegenableMana * EquippedRegenCap / 100;
+ 
+   // Caps Mana Regeneration to a certain % of the maximum based on difficulty level
+   if (RegenedMana > MaxRegenableMana) RegenedMana = MaxRegenableMana;
+ 
+   // Dove's Ribbon [Increases MP Regeneration]
+   if (CharacterClass == 2)
+   {
+    if (CheckActorInventory(1001,"DoveRibbon") > 0)
+    {
+     RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (100% Chance of Extra 2-4 Mana)
+     if (random(1,3) == 2) RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (33.3% Chance of extra 2-4 Mana)
+     if (random(1,9) == 5) RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (11.1% Chance of extra 2-4 Mana)
+     if (random(1,27) == 14) RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (3.7037% Chance of extra 2-4 Mana)
+     if (random(1,81) == 41) RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (1.2345% Chance of extra 2-4 Mana)
+     if (random(1,243) == 122) RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (0.0411% Chance of extra 2-4 Mana)
+    }
+   }
+ 
+   // Focus = 25% more mana per interval
+   buttons = GetPlayerInput(0, INPUT_BUTTONS);
+   if (buttons & BT_ZOOM && buttons & BT_SPEED)
    {
     RegenedMana = RegenedMana * 5 / 4;
    }
-   else
+ 
+   // Prevents 0 MP regeneration periods
+   if (RegenedMana < 1) RegenedMana = 1;
+ 
+   // The actual Regeneration Part
+   if (GetActorProperty(1001,APROP_HEALTH) > 0 && CurrentMana < MaxMana)
    {
-    if (random(0,100) < 51)
-    {
-     RegenedMana = RegenedMana * 9 / 8;
-    }
+    CurrentMana += RegenedMana;
+ 
+    SetHudSize(640,480,0);
+    HudMessage(s:"+",d:RegenedMana,s:" Mana";0,3419,cr_blue,51.0,42.0,0.75);
+    SetHudSize(0,0,0);
+ 
+    if (CurrentMana > MaxMana) CurrentMana = MaxMana;
    }
-  }
-  else
-  {
-   ExtraManaRegen = PlayerLevel / 20;
-   RegenedMana += ExtraManaRegen;
-   if (random(0,100) < 26)
-   {
-    RegenedMana = RegenedMana * 17 / 16;
-   }
-   else
-   {
-    if (random(0,100) < 51)
-    {
-     RegenedMana = RegenedMana * 33 / 32;
-    }
-   }
+ 
+   if (CharacterClass == 0) MaxManaLimit = MaxMana * 2;
+   if (CharacterClass == 1) MaxManaLimit = MaxMana * 2;
+   if (CharacterClass == 2) MaxManaLimit = MaxMana * 2;
+ 
+   if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
   }
 
-  // Character-Based regen factors
-  if (CharacterClass == 0) RegenedMana = RegenedMana * random(13,15) / 16; // Deggaris (81.25%-93.75%)
-  if (CharacterClass == 1) RegenedMana = RegenedMana * random(18,20) / 16; // Illucia (112.5%-125%)
-  if (CharacterClass == 2) RegenedMana = RegenedMana * random(23,25) / 16; // Flora (143.75%-156.25%)
 
-  // Sauron's Helmet
-  if (CharacterClass == 0 && CheckInventory("SauronHelmet") > 0) RegenedMana = RegenedMana * 11 / 8; // Deggaris w/ Helmet (137.5%)
-  if (CharacterClass == 1 && CheckInventory("SauronHelmet") > 0) RegenedMana = RegenedMana * 10 / 8; // Illucia w/ Helmet (125%)
-  if (CharacterClass == 2 && CheckInventory("SauronHelmet") > 0) RegenedMana = RegenedMana * 9 / 8; // Flora w/ Helmet (112.5%)
-  // Sauron's Gauntlets
-  if (CharacterClass == 0 && CheckInventory("SauronGauntlets") > 0) RegenedMana = RegenedMana * 5 / 4; // Deggaris w/ Gauntlets (125%)
-  if (CharacterClass == 1 && CheckInventory("SauronGauntletsIllucia") > 0) RegenedMana = RegenedMana * 5 / 4; // Illucia w/ Gauntlets (125%)
-  if (CharacterClass == 2 && CheckInventory("SauronGauntletsFlora") > 0) RegenedMana = RegenedMana * 5 / 4; // Flora w/ Gauntlets (125%)
-  // The One Ring
-  if (CharacterClass == 0 && CheckInventory("TheOneRing") > 0) RegenedMana = RegenedMana * 5 / 8; // Deggaris w/ Ring (62.5%)
-  if (CharacterClass == 1 && CheckInventory("TheOneRing") > 0) RegenedMana = RegenedMana * 6 / 8; // Illucia w/ Ring (75%)
-  if (CharacterClass == 2 && CheckInventory("TheOneRing") > 0) RegenedMana = RegenedMana * 7 / 8; // Flora w/ Ring (87.5%)
+  // Reset Regen Delay
+  if (GameSkill() == SKILL_VERY_EASY) SkillLevelManaDelay = 600;
+  if (GameSkill() == SKILL_EASY) SkillLevelManaDelay = 660;
+  if (GameSkill() == SKILL_NORMAL) SkillLevelManaDelay = 740;
+  if (GameSkill() == SKILL_HARD) SkillLevelManaDelay = 840;
+  if (GameSkill() == SKILL_VERY_HARD) SkillLevelManaDelay = 960;
+  if (CharacterClass == 0) SkillLevelManaDelay += random(-60,100);
+  if (CharacterClass == 1) SkillLevelManaDelay += random(-80,80);
+  if (CharacterClass == 2) SkillLevelManaDelay += random(-100,60);
 
-  // Ruinous Shield - quarters MP regeneration
-  if (CharacterClass == 2 && CheckInventory("RuinousShield") > 0) RegenedMana = RegenedMana * 1 / 4; // (25%)
+  if (CharacterClass == 0) ManaReDelay = PlayerLevel / 30; // Deggaris (up to 3/6)
+  else if (CharacterClass == 1) ManaReDelay = PlayerLevel / 25; // Illucia (up to 4/8)
+  else if (CharacterClass == 2) ManaReDelay = PlayerLevel / 20; // Flora (up to 5/10) 
+  OverallDelay = SkillLevelManaDelay - ManaReDelay;
 
-  // Checks Mana Regen Rate Menu Option
-  RegenedMana = RegenedMana * MiscellaneousVars[139] / 100;
+  // A combined total of 30 points of Sorcery/Theraphesuis are needed for a tic-point of faster regen time.
+  ManaReDelay = (MiscellaneousVars[34] + MiscellaneousVars[36]) / 600;
+  OverallDelay -= ManaReDelay;
 
-  if (RegenedMana < 1) RegenedMana = 1;
-
-  // New Addition = Caps Maximum Mana Regeneration to a certain amount based on Difficulty and armor-type items.
-  MaxRegenableMana = MaxMana * 50 / 100;
-  if (GameSkill() == SKILL_VERY_EASY) MaxRegenableMana = MaxMana * 61 / 100; 	// (61% of Max)
-  if (GameSkill() == SKILL_EASY) MaxRegenableMana = MaxMana * 55 / 100; 		// (55% of Max)
-  if (GameSkill() == SKILL_NORMAL) MaxRegenableMana = MaxMana * 50 / 100; 		// (50% of Max)
-  if (GameSkill() == SKILL_HARD) MaxRegenableMana = MaxMana * 45 / 100; 		// (45% of Max)
-  if (GameSkill() == SKILL_VERY_HARD) MaxRegenableMana = MaxMana * 39 / 100; 	// (39% of Max)
-
-  EquippedRegenCap = 100; // in percent
-  // All-Character Specfic Items
-  if (CheckActorInventory(1001,"SauronHelmet") > 0) EquippedRegenCap -= 25;  // (-25% extension if Sauron's Helmet is equipped)
-  if (CheckActorInventory(1001,"SauronGauntlets") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
-  if (CheckActorInventory(1001,"SauronGauntletsIllucia") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
-  if (CheckActorInventory(1001,"SauronGauntletsFlora") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
-  if (CheckActorInventory(1001,"TheOneRing") > 0) EquippedRegenCap += 50;  // (+50% extension if The One Ring is equipped)
-
-  // Marine Specfic Items (between -4% and -16%, since only one can be equipped at once
-  if (CheckActorInventory(1001,"DSGreenArmorClass") > 0) EquippedRegenCap -= 4; // (-4% for Green Armor)
-  if (CheckActorInventory(1001,"DSBlueArmorClass") > 0) EquippedRegenCap -= 8; // (-8% for Blue Armor)
-  if (CheckActorInventory(1001,"DSStoneArmorClass1") > 0) EquippedRegenCap -= 10; // (-10% for Stone Armor 1)
-  if (CheckActorInventory(1001,"DSDiamondArmorClass1") > 0) EquippedRegenCap -= 14; // (-14% for Diamond Armor 1)
-  if (CheckActorInventory(1001,"DSStoneArmorClass2") > 0) EquippedRegenCap -= 12; // (-12% for Stone Armor 2)
-  if (CheckActorInventory(1001,"DSDiamondArmorClass2") > 0) EquippedRegenCap -= 16; // (-16% for Diamond Armor 2)
-
-  // Flora Specfic Items (up to +150%)
-  if (CheckActorInventory(1001,"EvenstarNecklace") > 0) EquippedRegenCap += 25;  // (+25% extension if Evenstar Necklace is equipped)
-  if (CheckActorInventory(1001,"AnubisCufflinks") > 0) EquippedRegenCap += 62;  // (+62% extension if Anubis Cufflinks are equipped)
-  if (CheckActorInventory(1001,"KissaBra") > 0) EquippedRegenCap += 38; // (+38% extension if Kissa's Armor Brassiere is equipped)
-  if (CheckActorInventory(1001,"BalrogRing") > 0) EquippedRegenCap += 25; // (+25% extension if Balrog's Ring is equipped)
-
-  if (EquippedRegenCap < 20) EquippedRegenCap = 20;
-  if (EquippedRegenCap > 640) EquippedRegenCap = 640;
-  MaxRegenableMana = MaxRegenableMana * EquippedRegenCap / 100;
-
-  // Caps Mana Regeneration to a certain % of the maximum based on difficulty level
-  if (RegenedMana > MaxRegenableMana) RegenedMana = MaxRegenableMana;
-
-  // Dove's Ribbon [Increases MP Regeneration]
-  if (CharacterClass == 2)
-  {
-   if (CheckActorInventory(1001,"DoveRibbon") > 0)
-   {
-    RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (100% Chance of Extra 2-4 Mana)
-    if (random(1,3) == 2) RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (33.3% Chance of extra 2-4 Mana)
-    if (random(1,9) == 5) RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (11.1% Chance of extra 2-4 Mana)
-    if (random(1,27) == 14) RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (3.7037% Chance of extra 2-4 Mana)
-    if (random(1,81) == 41) RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (1.2345% Chance of extra 2-4 Mana)
-    if (random(1,243) == 122) RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (0.0411% Chance of extra 2-4 Mana)
-   }
-  }
-
-  // Prevents 0 MP regeneration periods
-  if (RegenedMana < 1) RegenedMana = 1;
-
-  // The actual Regeneration Part
-  if (GetActorProperty(1001,APROP_HEALTH) > 0 && CurrentMana < MaxMana)
-  {
-   CurrentMana += RegenedMana;
-
-   SetHudSize(640,480,0);
-   HudMessage(s:"+",d:RegenedMana,s:" Mana";0,3419,cr_blue,51.0,42.0,0.75);
-   SetHudSize(0,0,0);
-
-   if (CurrentMana > MaxMana) CurrentMana = MaxMana;
-  }
-
-  if (CharacterClass == 0) MaxManaLimit = MaxMana * 2;
-  if (CharacterClass == 1) MaxManaLimit = MaxMana * 2;
-  if (CharacterClass == 2) MaxManaLimit = MaxMana * 2;
-
-  if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
-
+  if (GameSkill() == SKILL_VERY_EASY) if (OverallDelay < 20) OverallDelay = 20;
+  if (GameSkill() == SKILL_EASY) if (OverallDelay < 40) OverallDelay = 40;
+  if (GameSkill() == SKILL_NORMAL) if (OverallDelay < 80) OverallDelay = 80;
+  if (GameSkill() == SKILL_HARD) if (OverallDelay < 140) OverallDelay = 140;
+  if (GameSkill() == SKILL_VERY_HARD) if (OverallDelay < 220) OverallDelay = 220;
+  MiscellaneousVars[211] = OverallDelay;
  }
 
- // Gets Values for Accquired Kills & Secrets
+ if (GetCVar("dvdsdebug_showmanaregenstuff") > 0)
+ {
+  PrintBold(
+             s:"Timer: ",d:MiscellaneousVars[211],s:"\n",
+             s:"DelayCount: ",d:delaycount,s:"\n",
+             s:"RegenedMana: ",d:RegenedMana,s:"\n"
+            );
+ }           
+
+
+ // Gets Values for Accquired Kills & Secrets [will move this to a different ENTER script later :P]
  if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
  {
   G2 = GetLevelInfo(LEVELINFO_LEVELNUM);
@@ -2868,6 +2898,7 @@ script "ManaRegenerationStuff" ENTER
    //PrintBold(s:"MAP: ",d:G2,s:"\n Alive: ",d:MonstersAlive[G2],s:"\n Dead: ",d:MonstersKilled[G2],s:"\n Secrets: ",d:SecretsFound[G2],s:"\n Items: ",d:ItemsFound[G2]);
   }
  }
+ Delay(1);
  Restart;
 }
 
@@ -3585,8 +3616,7 @@ script "LevelUpCode" ENTER // (void)
         if (PlayerLevel >= MiscellaneousVars[197]) AeonPtUse = "\c[White]Remember to allocate any Aeon Points you've attained!\cf\n\n";
 
     str SpinAttack = "";
-        if (CharacterClass == 2 && PlayerLevel == 8) SpinAttack = "\caThe Sceptre Will Now Have an Alternate\n
-                                                                   \caAttack if Sceptre Level is above 2!\cf";
+        if (CharacterClass == 2 && PlayerLevel == 8) SpinAttack = "\caThe Sceptre Will Now Have an Alternate\n\caAttack if Sceptre Level is above 2!\cf";
 
     HudMessage(
                s:"\cdCongradulations, you've reached Level ",d:PlayerLevel,s:"\n\n",
@@ -12529,6 +12559,20 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (HPInterpolationDisplay < InterPolLowestHealth) HPInterpolationDisplay = InterPolLowestHealth;
  }
 
+ // Check for Magic Focus
+ buttons = GetPlayerInput(0, INPUT_BUTTONS); 
+ if (buttons & BT_ZOOM && buttons & BT_SPEED)
+ {
+  if (GetActorProperty(1001,APROP_Health) > 0) FadeRange(0, 0, 48, 0.87, 0, 0, 0, 0.0, 0.05);
+  if (CheckActorInventory(1001,"FocusingMagic_Defense") < 1) GiveActorInventory(1001,"FocusingMagic_Defense", 1);
+  if (CheckActorInventory(1001,"FocusingMagic_Speed") < 1) GiveActorInventory(1001,"FocusingMagic_Speed", 1);
+ }
+ else
+ {
+  if (CheckActorInventory(1001,"FocusingMagic_Defense") > 0) TakeActorInventory(1001,"FocusingMagic_Defense", 1);
+  if (CheckActorInventory(1001,"FocusingMagic_Speed") > 0) TakeActorInventory(1001,"FocusingMagic_Speed", 1);
+ }
+
  // Check Aireal Damage
  buttons = GetPlayerInput(0, INPUT_BUTTONS);
  if (GetActorVelZ(1001) < -10240 && PowerupTimer[2] < 1 && buttons & BT_JUMP)
@@ -14663,6 +14707,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
       if (CheckActorInventory(1001,"CriticalHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
       // +33.4% Charge Speed for Flora
       if (CharacterClass == 2) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
+      // +50% Charge Speed for Flora when Low on Health
+      if (CharacterClass == 2 && CheckActorInventory(1001,"LowHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1500 / 1000;
+      // +125% Charge Speed for Flora when Critically low on Health
+      if (CharacterClass == 2 && CheckActorInventory(1001,"CriticalHealth") > 0) TensionChargeAmount = TensionChargeAmount * 2250 / 1000;
       // Check Tension Charge Multiplier Option
       TensionChargeAmount = TensionChargeAmount * MiscellaneousVars[187] / 100;
       // Check Tension Speed Option [also affects Stamina]
