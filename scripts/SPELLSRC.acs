@@ -2658,6 +2658,8 @@ script "ManaRegenerationStuff" ENTER
  }
 
  delaycount = 20;
+ if (GetCVar("dvds_musou_powertripmode") == 1) delaycount = delaycount * 5 / 2; // 250%
+ if (GetCVar("dvds_musou_powertripmode") == 2) delaycount = delaycount * 5; // 500%
  // Checks Mana Regen Rate Menu Option
  delaycount = delaycount * MiscellaneousVars[213] / 100;
  if (MiscellaneousVars[212] > 0)
@@ -2798,10 +2800,7 @@ script "ManaRegenerationStuff" ENTER
    }
  
    // Focus = 25% more mana per interval
-   if (MiscellaneousVars[212] > 0)
-   {
-    RegenedMana = RegenedMana * 5 / 4;
-   }
+   if (MiscellaneousVars[212] > 0) RegenedMana = RegenedMana * 5 / 4;
  
    // Prevents 0 MP regeneration periods
    if (RegenedMana < 1) RegenedMana = 1;
@@ -2827,29 +2826,34 @@ script "ManaRegenerationStuff" ENTER
 
 
   // Reset Regen Delay
-  if (GameSkill() == SKILL_VERY_EASY) SkillLevelManaDelay = 600;
-  if (GameSkill() == SKILL_EASY) SkillLevelManaDelay = 660;
-  if (GameSkill() == SKILL_NORMAL) SkillLevelManaDelay = 740;
-  if (GameSkill() == SKILL_HARD) SkillLevelManaDelay = 840;
-  if (GameSkill() == SKILL_VERY_HARD) SkillLevelManaDelay = 960;
-  if (CharacterClass == 0) SkillLevelManaDelay += random(-60,100);
-  if (CharacterClass == 1) SkillLevelManaDelay += random(-80,80);
-  if (CharacterClass == 2) SkillLevelManaDelay += random(-100,60);
+  if (GameSkill() == SKILL_VERY_EASY) SkillLevelManaDelay = 600; // 30 tics
+  if (GameSkill() == SKILL_EASY) SkillLevelManaDelay = 660; // 33 tics
+  if (GameSkill() == SKILL_NORMAL) SkillLevelManaDelay = 740; // 37 tics
+  if (GameSkill() == SKILL_HARD) SkillLevelManaDelay = 840; // 42 tics
+  if (GameSkill() == SKILL_VERY_HARD) SkillLevelManaDelay = 960; // 48 tics
+  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0) PrintBold(d:SkillLevelManaDelay);
+  if (CharacterClass == 0) SkillLevelManaDelay += (20 * random(-3,5)); 
+  if (CharacterClass == 1) SkillLevelManaDelay += (20 * random(-4,4));
+  if (CharacterClass == 2) SkillLevelManaDelay += (20 * random(-5,3));
+  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0) PrintBold(d:SkillLevelManaDelay);
 
   if (CharacterClass == 0) ManaReDelay = PlayerLevel / 30; // Deggaris (up to 3/6)
   else if (CharacterClass == 1) ManaReDelay = PlayerLevel / 25; // Illucia (up to 4/8)
   else if (CharacterClass == 2) ManaReDelay = PlayerLevel / 20; // Flora (up to 5/10) 
   OverallDelay = SkillLevelManaDelay - ManaReDelay;
+  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0) PrintBold(d:OverallDelay);
 
   // A combined total of 30 points of Sorcery/Theraphesuis are needed for a tic-point of faster regen time.
   ManaReDelay = (MiscellaneousVars[34] + MiscellaneousVars[36]) / 600;
   OverallDelay -= ManaReDelay;
+  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0) PrintBold(d:OverallDelay);
 
   if (GameSkill() == SKILL_VERY_EASY) if (OverallDelay < 20) OverallDelay = 20;
   if (GameSkill() == SKILL_EASY) if (OverallDelay < 40) OverallDelay = 40;
   if (GameSkill() == SKILL_NORMAL) if (OverallDelay < 80) OverallDelay = 80;
   if (GameSkill() == SKILL_HARD) if (OverallDelay < 140) OverallDelay = 140;
   if (GameSkill() == SKILL_VERY_HARD) if (OverallDelay < 220) OverallDelay = 220;
+  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0) PrintBold(d:OverallDelay);
   MiscellaneousVars[211] = OverallDelay;
  }
 
@@ -12751,6 +12755,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   // Checks the final value based on how high the Max Stamina Pts Cap has been increased by various items
   staminaregenfinal = staminaregenfinal * MiscellaneousVars[22] / 10000;
 
+  // Check Musou Power Trip Mode
+  if (GetCVar("dvds_musou_powertripmode") == 1) staminaregenfinal = staminaregenfinal * 5 / 2; // 250%
+  if (GetCVar("dvds_musou_powertripmode") == 2) staminaregenfinal = staminaregenfinal * 5; // 500%
+
   // Low Caps Regen to 1 tic minimum
   if (staminaregenfinal < 1) staminaregenfinal = 1;
 
@@ -12817,6 +12825,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
   // Divine Avatar = -50% Degen
   if (PowerupRunning[7] > 0) staminaregenfinal = staminaregenfinal / 2;
+
+  // Check Musou Power Trip Mode
+  if (GetCVar("dvds_musou_powertripmode") == 1) staminaregenfinal = staminaregenfinal * (2 / 5); // 40%
+  if (GetCVar("dvds_musou_powertripmode") == 2) staminaregenfinal = staminaregenfinal / 5; // 20%
 
   // Low Caps Regen to 1 tic minimum
   if (staminaregenfinal > -1) staminaregenfinal = -1;
@@ -13208,6 +13220,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    // Checks Health Regen Rate Menu Option
    C3 = C3 * MiscellaneousVars[138] / 100;
 
+   // Check Musou Power Trip Mode
+   if (GetCVar("dvds_musou_powertripmode") == 1) C3 = C3 * 5 / 2; // 250%
+   if (GetCVar("dvds_musou_powertripmode") == 2) C3 = C3 * 5; // 500%
+
    // Low Cap to 1 Tics
    if (C3 < 1) C3 = 1;
 
@@ -13319,6 +13335,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     // Flora's Degeneration Speed is multiplied by 4 when holding the Ruinous Shield [curse effect]
     if (CharacterClass == 2) if (CheckActorInventory(1001,"RuinousShield") > 0) C3 = C3 * 4;
  
+    // Check Musou Power Trip Mode
+    if (GetCVar("dvds_musou_powertripmode") == 1) C3 = C3 * 2 / 5; // 40%
+    if (GetCVar("dvds_musou_powertripmode") == 2) C3 = C3 / 5; // 20%
+
     // Low Cap to 1 Tics
     if (C3 < 1) C3 = 1;
  
@@ -17578,7 +17598,7 @@ script "GiveBuffsPowerup" (int powertype, int powertimeadd)
  if (powertype == 11) // Buff [-50% damage to player]
  {
   PowerupTimer[11] += powertimeadd;
-  if (PowerupTimer[11] > 0) GiveActorInventory(1001, "BluntDQSpell", 1);
+  if (PowerupTimer[11] > 0) GiveActorInventory(1001, "BuffDQSpell", 1);
  }
  if (powertype == 129) // GoE??
  {
