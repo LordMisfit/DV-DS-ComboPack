@@ -18317,7 +18317,7 @@ script "Hand-GravityAttack" (int type)
 // Determines Attack/Defense/Speed Bonuses for Monsters [depending on difficulty level and maps and game mode]
 script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 {
- int CurrHP, MaxHP, Temp, RangeVar, LevelCheck;
+ int CurrHP, MaxHP, Speed, Temp, RangeVar, LevelCheck;
  int StealthChance;
 
  if (type < 0) type = 0;
@@ -18369,7 +18369,11 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   }
   else DifficultyChecker = 1;
 
+  int SpeedFactor = 0.0;
+  Speed = GetActorProperty(0,APROP_Speed); 
+  SetUserVariable(0, "user_basespeed", GetActorProperty(0,APROP_Speed));
   MaxHP = GetActorProperty(0,APROP_Health);
+  if (GetCVar("dvdsdebug_showenemyspeedstuff") != 0) PrintBold(s:"Start: ",f:speed);
   if (DifficultyChecker == 1 && GetActorClass(0) != "PracticeTarget") // Difficulty-checking enabled
   {
    if (GameSkill() == SKILL_VERY_EASY)
@@ -18378,13 +18382,13 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
     {
      GiveInventory("MonsterAttack-VeryEasy", 1);
      GiveInventory("MonsterDefense-VeryEasy", 1);
-     GiveInventory("MonsterSpeed-VeryEasy", 1);
+     SpeedFactor = -0.083334;
     }
     else
     {
      GiveInventory("MonsterAttack-VeryEasy2", 1);
      GiveInventory("MonsterDefense-VeryEasy2", 1);
-     GiveInventory("MonsterSpeed-VeryEasy2", 1);
+     SpeedFactor = -0.041667;
     }
     MaxHP = MaxHP * 85 / 100;
    }
@@ -18395,13 +18399,13 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
     {
      GiveInventory("MonsterAttack-Easy", 1);
      GiveInventory("MonsterDefense-Easy", 1);
-     GiveInventory("MonsterSpeed-Easy", 1);
+     SpeedFactor = -0.041667;
     }
     else
     {
      GiveInventory("MonsterAttack-Easy2", 1);
      GiveInventory("MonsterDefense-Easy2", 1);
-     GiveInventory("MonsterSpeed-Easy2", 1);
+     SpeedFactor = -0.0208333;
     }
     MaxHP = MaxHP * 95 / 100;
    }
@@ -18412,13 +18416,13 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
     {
      GiveInventory("MonsterAttack-Normal", 1);
      GiveInventory("MonsterDefense-Normal", 1);
-     GiveInventory("MonsterSpeed-Normal", 1);
+     SpeedFactor = 0.0;
     }
     else
     {
      GiveInventory("MonsterAttack-Normal2", 1);
      GiveInventory("MonsterDefense-Normal2", 1);
-     GiveInventory("MonsterSpeed-Normal2", 1);
+     SpeedFactor = 0.0;
     }
     MaxHP = MaxHP * 100 / 100;
    }
@@ -18429,13 +18433,13 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
     {
      GiveInventory("MonsterAttack-Hard", 1);
      GiveInventory("MonsterDefense-Hard", 1);
-     GiveInventory("MonsterSpeed-Hard", 1);
+     SpeedFactor = 0.041667;
     }
     else
     {
      GiveInventory("MonsterAttack-Hard2", 1);
      GiveInventory("MonsterDefense-Hard2", 1);
-     GiveInventory("MonsterSpeed-Hard2", 1);
+     SpeedFactor = 0.0208325;
     }
     MaxHP = MaxHP * 105 / 100;
    }
@@ -18446,13 +18450,13 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
     {
      GiveInventory("MonsterAttack-VeryHard", 1);
      GiveInventory("MonsterDefense-VeryHard", 1);
-     GiveInventory("MonsterSpeed-VeryHard", 1);
+     SpeedFactor = 0.125;
     }
     else
     {
      GiveInventory("MonsterAttack-VeryHard2", 1);
      GiveInventory("MonsterDefense-VeryHard2", 1);
-     GiveInventory("MonsterSpeed-VeryHard2", 1);
+     SpeedFactor = 0.05;
     }
     MaxHP = MaxHP * 115 / 100;
    }
@@ -18463,17 +18467,22 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
     {
      GiveInventory("MonsterAttack-ExtremelyHard", 1);
      GiveInventory("MonsterDefense-ExtremelyHard", 1);
-     GiveInventory("MonsterSpeed-ExtremelyHard", 1);
+     SpeedFactor = 0.25;
     }
     else
     {
      GiveInventory("MonsterAttack-ExtremelyHard2", 1);
      GiveInventory("MonsterDefense-ExtremelyHard2", 1);
-     GiveInventory("MonsterSpeed-ExtremelyHard2", 1);
+     SpeedFactor = 0.125;
     }
     MaxHP = MaxHP * 130 / 100;
    }
   }
+  SpeedFactor = FixedMul(SpeedFactor, 0.5);
+  if (GetCVar("dvdsdebug_showenemyspeedstuff") != 0) PrintBold(s:"SpeedFactor: ",f:(1.0+SpeedFactor));
+  Speed = FixedMul(Speed, (1.0+SpeedFactor));
+  if (GetCVar("dvdsdebug_showenemyspeedstuff") != 0) PrintBold(s:"After Skill: ",f:speed);
+  if (GetCVar("dvds_monsterspeedcalcs") != 0) SetActorProperty(0,APROP_Speed,Speed); 
 
   int MapChecker = 1;
   if (ModType == 0)
@@ -18499,70 +18508,70 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      {
       GiveInventory("MonsterAttack-Classic-E1M1", 1);
       GiveInventory("MonsterDefense-Classic-E1M1", 1);
-      GiveInventory("MonsterSpeed-Classic-E1M1", 1);
+      SpeedFactor = 0.0;
       MaxHP = MaxHP * 1 / 1;
      }
      if (LevelCheck == 2) // E1M2
      {
       GiveInventory("MonsterAttack-Classic-E1M2", 1);
       GiveInventory("MonsterDefense-Classic-E1M2", 1);
-      GiveInventory("MonsterSpeed-Classic-E1M2", 1);
+      SpeedFactor = 0.005;
       MaxHP = MaxHP * 102 / 100;
      }
      if (LevelCheck == 3) // E1M3
      {
       GiveInventory("MonsterAttack-Classic-E1M3", 1);
       GiveInventory("MonsterDefense-Classic-E1M3", 1);
-      GiveInventory("MonsterSpeed-Classic-E1M3", 1);
+      SpeedFactor = 0.01025;
       MaxHP = MaxHP * 1041 / 1000;
      }
      if (LevelCheck == 9) // E1M9
      {
       GiveInventory("MonsterAttack-Classic-E1M9", 1);
       GiveInventory("MonsterDefense-Classic-E1M9", 1);
-      GiveInventory("MonsterSpeed-Classic-E1M9", 1);
+      SpeedFactor = 0.01575;
       MaxHP = MaxHP * 1063 / 1000;
      }
      if (LevelCheck == 10) // E1M10
      {
       GiveInventory("MonsterAttack-Classic-E1M10", 1);
       GiveInventory("MonsterDefense-Classic-E1M10", 1);
-      GiveInventory("MonsterSpeed-Classic-E1M10", 1);
+      SpeedFactor = 0.01575;
       MaxHP = MaxHP * 1063 / 1000;
      }
      if (LevelCheck == 4) // E1M4
      {
       GiveInventory("MonsterAttack-Classic-E1M4", 1);
       GiveInventory("MonsterDefense-Classic-E1M4", 1);
-      GiveInventory("MonsterSpeed-Classic-E1M4", 1);
+      SpeedFactor = 0.0215;
       MaxHP = MaxHP * 1086 / 1000;
      }
      if (LevelCheck == 5) // E1M5
      {
       GiveInventory("MonsterAttack-Classic-E1M5", 1);
       GiveInventory("MonsterDefense-Classic-E1M5", 1);
-      GiveInventory("MonsterSpeed-Classic-E1M5", 1);
+      SpeedFactor = 0.0275;
       MaxHP = MaxHP * 111 / 100;
      }
      if (LevelCheck == 6) // E1M6
      {
       GiveInventory("MonsterAttack-Classic-E1M6", 1);
       GiveInventory("MonsterDefense-Classic-E1M6", 1);
-      GiveInventory("MonsterSpeed-Classic-E1M6", 1);
+      SpeedFactor = 0.03375;
       MaxHP = MaxHP * 1135 / 1000;
      }
      if (LevelCheck == 7) // E1M7
      {
       GiveInventory("MonsterAttack-Classic-E1M7", 1);
       GiveInventory("MonsterDefense-Classic-E1M7", 1);
-      GiveInventory("MonsterSpeed-Classic-E1M7", 1);
+      SpeedFactor = 0.04025;
       MaxHP = MaxHP * 1161 / 1000;
      }
      if (LevelCheck == 8) // E1M8
      {
       GiveInventory("MonsterAttack-Classic-E1M8", 1);
       GiveInventory("MonsterDefense-Classic-E1M8", 1);
-      GiveInventory("MonsterSpeed-Classic-E1M8", 1);
+      SpeedFactor = 0.047;
       MaxHP = MaxHP * 1188 / 1000;
      }
      // Episode 2
@@ -18570,70 +18579,70 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      {
       GiveInventory("MonsterAttack-Classic-E2M1", 1);
       GiveInventory("MonsterDefense-Classic-E2M1", 1);
-      GiveInventory("MonsterSpeed-Classic-E2M1", 1);
+      SpeedFactor = 0.056;
       MaxHP = MaxHP * 1224 / 1000;
      }
      if (LevelCheck == 12) // E2M2
      {
       GiveInventory("MonsterAttack-Classic-E2M2", 1);
       GiveInventory("MonsterDefense-Classic-E2M2", 1);
-      GiveInventory("MonsterSpeed-Classic-E2M2", 1);
+      SpeedFactor = 0.0655;
       MaxHP = MaxHP * 1262 / 1000;
      }
      if (LevelCheck == 13) // E2M3
      {
       GiveInventory("MonsterAttack-Classic-E2M3", 1);
       GiveInventory("MonsterDefense-Classic-E2M3", 1);
-      GiveInventory("MonsterSpeed-Classic-E2M3", 1);
+      SpeedFactor = 0.0755;
       MaxHP = MaxHP * 1302 / 1000;
      }
      if (LevelCheck == 14) // E2M4
      {
       GiveInventory("MonsterAttack-Classic-E2M4", 1);
       GiveInventory("MonsterDefense-Classic-E2M4", 1);
-      GiveInventory("MonsterSpeed-Classic-E2M4", 1);
+      SpeedFactor = 0.086;
       MaxHP = MaxHP * 1344 / 1000;
      }
      if (LevelCheck == 15) // E2M5
      {
       GiveInventory("MonsterAttack-Classic-E2M5", 1);
       GiveInventory("MonsterDefense-Classic-E2M5", 1);
-      GiveInventory("MonsterSpeed-Classic-E2M5", 1);
+      SpeedFactor = 0.097;
       MaxHP = MaxHP * 1388 / 1000;
      }
      if (LevelCheck == 19) // E2M9
      {
       GiveInventory("MonsterAttack-Classic-E2M9", 1);
       GiveInventory("MonsterDefense-Classic-E2M9", 1);
-      GiveInventory("MonsterSpeed-Classic-E2M9", 1);
+      SpeedFactor = 0.1085;
       MaxHP = MaxHP * 1434 / 1000;
      }
      if (LevelCheck == 20) // E2M10
      {
       GiveInventory("MonsterAttack-Classic-E2M10", 1);
       GiveInventory("MonsterDefense-Classic-E2M10", 1);
-      GiveInventory("MonsterSpeed-Classic-E2M10", 1);
+      SpeedFactor = 0.1085;
       MaxHP = MaxHP * 1434 / 1000;
      }
      if (LevelCheck == 16) // E2M6
      {
       GiveInventory("MonsterAttack-Classic-E2M6", 1);
       GiveInventory("MonsterDefense-Classic-E2M6", 1);
-      GiveInventory("MonsterSpeed-Classic-E2M6", 1);
+      SpeedFactor = 0.1205;
       MaxHP = MaxHP * 1482 / 1000;
      }
      if (LevelCheck == 17) // E2M7
      {
       GiveInventory("MonsterAttack-Classic-E2M7", 1);
       GiveInventory("MonsterDefense-Classic-E2M7", 1);
-      GiveInventory("MonsterSpeed-Classic-E2M7", 1);
+      SpeedFactor = 0.133;
       MaxHP = MaxHP * 1532 / 1000;
      }
      if (LevelCheck == 18) // E2M8
      {
       GiveInventory("MonsterAttack-Classic-E2M8", 1);
       GiveInventory("MonsterDefense-Classic-E2M8", 1);
-      GiveInventory("MonsterSpeed-Classic-E2M8", 1);
+      SpeedFactor = 0.146;
       MaxHP = MaxHP * 1584 / 1000;
      }
      // Episode 3
@@ -18641,70 +18650,70 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      {
       GiveInventory("MonsterAttack-Classic-E3M1", 1);
       GiveInventory("MonsterDefense-Classic-E3M1", 1);
-      GiveInventory("MonsterSpeed-Classic-E3M1", 1);
+      SpeedFactor = 0.162;
       MaxHP = MaxHP * 1648 / 1000;
      }
      if (LevelCheck == 22) // E3M2
      {
       GiveInventory("MonsterAttack-Classic-E3M2", 1);
       GiveInventory("MonsterDefense-Classic-E3M2", 1);
-      GiveInventory("MonsterSpeed-Classic-E3M2", 1);
+      SpeedFactor = 0.179;
       MaxHP = MaxHP * 1716 / 1000;
      }
      if (LevelCheck == 23) // E3M3
      {
       GiveInventory("MonsterAttack-Classic-E3M3", 1);
       GiveInventory("MonsterDefense-Classic-E3M3", 1);
-      GiveInventory("MonsterSpeed-Classic-E3M3", 1);
+      SpeedFactor = 0.19725;
       MaxHP = MaxHP * 1789 / 1000;
      }
      if (LevelCheck == 24) // E3M4
      {
       GiveInventory("MonsterAttack-Classic-E3M4", 1);
       GiveInventory("MonsterDefense-Classic-E3M4", 1);
-      GiveInventory("MonsterSpeed-Classic-E3M4", 1);
+      SpeedFactor = 0.217;
       MaxHP = MaxHP * 1868 / 1000;
      }
      if (LevelCheck == 25) // E3M5
      {
       GiveInventory("MonsterAttack-Classic-E3M5", 1);
       GiveInventory("MonsterDefense-Classic-E3M5", 1);
-      GiveInventory("MonsterSpeed-Classic-E3M5", 1);
+      SpeedFactor = 0.2385;
       MaxHP = MaxHP * 1954 / 1000;
      }
      if (LevelCheck == 26) // E3M6
      {
       GiveInventory("MonsterAttack-Classic-E3M6", 1);
       GiveInventory("MonsterDefense-Classic-E3M6", 1);
-      GiveInventory("MonsterSpeed-Classic-E3M6", 1);
+      SpeedFactor = 0.262;
       MaxHP = MaxHP * 2048 / 1000;
      }
      if (LevelCheck == 29) // E3M9
      {
       GiveInventory("MonsterAttack-Classic-E3M9", 1);
       GiveInventory("MonsterDefense-Classic-E3M9", 1);
-      GiveInventory("MonsterSpeed-Classic-E3M9", 1);
+      SpeedFactor = 0.28775;
       MaxHP = MaxHP * 2151 / 1000;
      }
      if (LevelCheck == 30) // E3M10
      {
       GiveInventory("MonsterAttack-Classic-E3M10", 1);
       GiveInventory("MonsterDefense-Classic-E3M10", 1);
-      GiveInventory("MonsterSpeed-Classic-E3M10", 1);
+      SpeedFactor = 0.28775;
       MaxHP = MaxHP * 2151 / 1000;
      }
      if (LevelCheck == 27) // E3M7
      {
       GiveInventory("MonsterAttack-Classic-E3M7", 1);
       GiveInventory("MonsterDefense-Classic-E3M7", 1);
-      GiveInventory("MonsterSpeed-Classic-E3M7", 1);
+      SpeedFactor = 0.316;
       MaxHP = MaxHP * 2264 / 1000;
      }
      if (LevelCheck == 28) // E3M8
      {
       GiveInventory("MonsterAttack-Classic-E3M8", 1);
       GiveInventory("MonsterDefense-Classic-E3M8", 1);
-      GiveInventory("MonsterSpeed-Classic-E3M8", 1);
+      SpeedFactor = 0.347;
       MaxHP = MaxHP * 2388 / 1000;
      }
      // Episode 4
@@ -18712,70 +18721,70 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      {
       GiveInventory("MonsterAttack-Classic-E4M1", 1);
       GiveInventory("MonsterDefense-Classic-E4M1", 1);
-      GiveInventory("MonsterSpeed-Classic-E4M1", 1);
+      SpeedFactor = 0.384;
       MaxHP = MaxHP * 2536 / 1000;
      }
      if (LevelCheck == 32) // E4M2
      {
       GiveInventory("MonsterAttack-Classic-E4M2", 1);
       GiveInventory("MonsterDefense-Classic-E4M2", 1);
-      GiveInventory("MonsterSpeed-Classic-E4M2", 1);
+      SpeedFactor = 0.424;
       MaxHP = MaxHP * 2696 / 1000;
      }
      if (LevelCheck == 39) // E4M9
      {
       GiveInventory("MonsterAttack-Classic-E4M9", 1);
       GiveInventory("MonsterDefense-Classic-E4M9", 1);
-      GiveInventory("MonsterSpeed-Classic-E4M9", 1);
+      SpeedFactor = 0.4675;
       MaxHP = MaxHP * 287 / 100;
      }
      if (LevelCheck == 40) // E4M10
      {
       GiveInventory("MonsterAttack-Classic-E4M10", 1);
       GiveInventory("MonsterDefense-Classic-E4M10", 1);
-      GiveInventory("MonsterSpeed-Classic-E4M10", 1);
+      SpeedFactor = 0.4675;
       MaxHP = MaxHP * 287 / 100;
      }
      if (LevelCheck == 33) // E4M3
      {
       GiveInventory("MonsterAttack-Classic-E4M3", 1);
       GiveInventory("MonsterDefense-Classic-E4M3", 1);
-      GiveInventory("MonsterSpeed-Classic-E4M3", 1);
+      SpeedFactor = 0.515;
       MaxHP = MaxHP * 306 / 100;
      }
      if (LevelCheck == 34) // E4M4
      {
       GiveInventory("MonsterAttack-Classic-E4M4", 1);
       GiveInventory("MonsterDefense-Classic-E4M4", 1);
-      GiveInventory("MonsterSpeed-Classic-E4M4", 1);
+      SpeedFactor = 0.567;
       MaxHP = MaxHP * 3268 / 1000;
      }
      if (LevelCheck == 35) // E4M5
      {
       GiveInventory("MonsterAttack-Classic-E4M5", 1);
       GiveInventory("MonsterDefense-Classic-E4M5", 1);
-      GiveInventory("MonsterSpeed-Classic-E4M5", 1);
+      SpeedFactor = 0.624;
       MaxHP = MaxHP * 3496 / 1000;
      }
      if (LevelCheck == 36) // E4M6
      {
       GiveInventory("MonsterAttack-Classic-E4M6", 1);
       GiveInventory("MonsterDefense-Classic-E4M6", 1);
-      GiveInventory("MonsterSpeed-Classic-E4M6", 1);
+      SpeedFactor = 0.6865;
       MaxHP = MaxHP * 3746 / 1000;
      }
      if (LevelCheck == 37) // E4M7
      {
       GiveInventory("MonsterAttack-Classic-E4M7", 1);
       GiveInventory("MonsterDefense-Classic-E4M7", 1);
-      GiveInventory("MonsterSpeed-Classic-E4M7", 1);
+      SpeedFactor = 0.755;
       MaxHP = MaxHP * 402 / 100;
      }
      if (LevelCheck == 38) // E4M8
      {
       GiveInventory("MonsterAttack-Classic-E4M8", 1);
       GiveInventory("MonsterDefense-Classic-E4M8", 1);
-      GiveInventory("MonsterSpeed-Classic-E4M8", 1);
+      SpeedFactor = 0.83;
       MaxHP = MaxHP * 432 / 100;
      }
 
@@ -18784,70 +18793,70 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      {
       GiveInventory("MonsterAttack-Classic-E5M1", 1);
       GiveInventory("MonsterDefense-Classic-E5M1", 1);
-      GiveInventory("MonsterSpeed-Classic-E5M1", 1);
+      SpeedFactor = 0.92;
       MaxHP = MaxHP * 468 / 100;
      }
      if (LevelCheck == 42) // E5M2
      {
       GiveInventory("MonsterAttack-Classic-E5M2", 1);
       GiveInventory("MonsterDefense-Classic-E5M2", 1);
-      GiveInventory("MonsterSpeed-Classic-E5M2", 1);
+      SpeedFactor = 1.025;
       MaxHP = MaxHP * 51 / 10;
      }
      if (LevelCheck == 43) // E5M3
      {
       GiveInventory("MonsterAttack-Classic-E5M3", 1);
       GiveInventory("MonsterDefense-Classic-E5M3", 1);
-      GiveInventory("MonsterSpeed-Classic-E5M3", 1);
+      SpeedFactor = 1.1525;
       MaxHP = MaxHP * 561 / 100;
      }
      if (LevelCheck == 49) // E5M9
      {
       GiveInventory("MonsterAttack-Classic-E5M9", 1);
       GiveInventory("MonsterDefense-Classic-E5M9", 1);
-      GiveInventory("MonsterSpeed-Classic-E5M9", 1);
+      SpeedFactor = 1.31;
       MaxHP = MaxHP * 624 / 100;
      }
      if (LevelCheck == 50) // E5M10
      {
       GiveInventory("MonsterAttack-Classic-E5M10", 1);
       GiveInventory("MonsterDefense-Classic-E5M10", 1);
-      GiveInventory("MonsterSpeed-Classic-E5M10", 1);
+      SpeedFactor = 1.31;
       MaxHP = MaxHP * 624 / 100;
      }
      if (LevelCheck == 44) // E5M4
      {
       GiveInventory("MonsterAttack-Classic-E5M4", 1);
       GiveInventory("MonsterDefense-Classic-E5M4", 1);
-      GiveInventory("MonsterSpeed-Classic-E5M4", 1);
+      SpeedFactor = 1.505;
       MaxHP = MaxHP * 702 / 100;
      }
      if (LevelCheck == 45) // E5M5
      {
       GiveInventory("MonsterAttack-Classic-E5M5", 1);
       GiveInventory("MonsterDefense-Classic-E5M5", 1);
-      GiveInventory("MonsterSpeed-Classic-E5M5", 1);
+      SpeedFactor = 1.745;
       MaxHP = MaxHP * 798 / 100;
      }
      if (LevelCheck == 46) // E5M6
      {
       GiveInventory("MonsterAttack-Classic-E5M6", 1);
       GiveInventory("MonsterDefense-Classic-E5M6", 1);
-      GiveInventory("MonsterSpeed-Classic-E5M6", 1);
+      SpeedFactor = 2.0375;
       MaxHP = MaxHP * 915 / 100;
      }
      if (LevelCheck == 47) // E5M7
      {
       GiveInventory("MonsterAttack-Classic-E5M7", 1);
       GiveInventory("MonsterDefense-Classic-E5M7", 1);
-      GiveInventory("MonsterSpeed-Classic-E5M7", 1);
+      SpeedFactor = 2.39;
       MaxHP = MaxHP * 1056 / 100;
      }
      if (LevelCheck == 48) // E5M8
      {
       GiveInventory("MonsterAttack-Classic-E5M8", 1);
       GiveInventory("MonsterDefense-Classic-E5M8", 1);
-      GiveInventory("MonsterSpeed-Classic-E5M8", 1);
+      SpeedFactor = 2.8325;
       MaxHP = MaxHP * 1233 / 100;
      }
     }
@@ -18863,350 +18872,350 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      {
       GiveInventory("MonsterAttack-Classic-MAP01", 1);
       GiveInventory("MonsterDefense-Classic-MAP01", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP01", 1);
+      SpeedFactor = 0.0;
       MaxHP = MaxHP * 1 / 1;
      }
      if (LevelCheck == 2) // MAP02
      {
       GiveInventory("MonsterAttack-Classic-MAP02", 1);
       GiveInventory("MonsterDefense-Classic-MAP02", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP02", 1);
+      SpeedFactor = 0.00625;
       MaxHP = MaxHP * 1025 / 1000;
      }
      if (LevelCheck == 3) // MAP03
      {
       GiveInventory("MonsterAttack-Classic-MAP03", 1);
       GiveInventory("MonsterDefense-Classic-MAP03", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP03", 1);
+      SpeedFactor = 0.0125;
       MaxHP = MaxHP * 105 / 100;
      }
      if (LevelCheck == 4) // MAP04
      {
       GiveInventory("MonsterAttack-Classic-MAP04", 1);
       GiveInventory("MonsterDefense-Classic-MAP04", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP04", 1);
+      SpeedFactor = 0.01875;
       MaxHP = MaxHP * 1075 / 1000;
      }
      if (LevelCheck == 5) // MAP05
      {
       GiveInventory("MonsterAttack-Classic-MAP05", 1);
       GiveInventory("MonsterDefense-Classic-MAP05", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP05", 1);
+      SpeedFactor = 0.025;
       MaxHP = MaxHP * 11 / 10;
      }
      if (LevelCheck == 6) // MAP06
      {
       GiveInventory("MonsterAttack-Classic-MAP06", 1);
       GiveInventory("MonsterDefense-Classic-MAP06", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP06", 1);
+      SpeedFactor = 0.034375;
       MaxHP = MaxHP * 11375 / 10000;
      }
      if (LevelCheck == 7) // MAP07
      {
       GiveInventory("MonsterAttack-Classic-MAP07", 1);
       GiveInventory("MonsterDefense-Classic-MAP07", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP07", 1);
+      SpeedFactor = 0.04375;
       MaxHP = MaxHP * 1175 / 1000;
      }
      if (LevelCheck == 8) // MAP08
      {
       GiveInventory("MonsterAttack-Classic-MAP08", 1);
       GiveInventory("MonsterDefense-Classic-MAP08", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP08", 1);
+      SpeedFactor = 0.053125;
       MaxHP = MaxHP * 12125 / 10000;
      }
      if (LevelCheck == 9) // MAP09
      {
       GiveInventory("MonsterAttack-Classic-MAP09", 1);
       GiveInventory("MonsterDefense-Classic-MAP09", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP09", 1);
+      SpeedFactor = 0.0625;
       MaxHP = MaxHP * 125 / 100;
      }
      if (LevelCheck == 10) // MAP10
      {
       GiveInventory("MonsterAttack-Classic-MAP10", 1);
       GiveInventory("MonsterDefense-Classic-MAP10", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP10", 1);
+      SpeedFactor = 0.071875;
       MaxHP = MaxHP * 12875 / 10000;
      }
      if (LevelCheck == 11) // MAP11
      {
       GiveInventory("MonsterAttack-Classic-MAP11", 1);
       GiveInventory("MonsterDefense-Classic-MAP11", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP11", 1);
+      SpeedFactor = 0.084375;
       MaxHP = MaxHP * 13375 / 10000;
      }
      if (LevelCheck == 12) // MAP12
      {
       GiveInventory("MonsterAttack-Classic-MAP12", 1);
       GiveInventory("MonsterDefense-Classic-MAP12", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP12", 1);
+      SpeedFactor = 0.096875;
       MaxHP = MaxHP * 13875 / 10000;
      }
      if (LevelCheck == 13) // MAP13
      {
       GiveInventory("MonsterAttack-Classic-MAP13", 1);
       GiveInventory("MonsterDefense-Classic-MAP13", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP13", 1);
+      SpeedFactor = 0.109375;
       MaxHP = MaxHP * 14375 / 10000;
      }
      if (LevelCheck == 14) // MAP14
      {
       GiveInventory("MonsterAttack-Classic-MAP14", 1);
       GiveInventory("MonsterDefense-Classic-MAP14", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP14", 1);
+      SpeedFactor = 0.121875;
       MaxHP = MaxHP * 14875 / 10000;
      }
      if (LevelCheck == 15) // MAP15
      {
       GiveInventory("MonsterAttack-Classic-MAP15", 1);
       GiveInventory("MonsterDefense-Classic-MAP15", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP15", 1);
+      SpeedFactor = 0.134375;
       MaxHP = MaxHP * 15375 / 10000;
      }
      if (LevelCheck == 31) // MAP31 [SECRET LEVEL 1]
      {
       GiveInventory("MonsterAttack-Classic-MAP31", 1);
       GiveInventory("MonsterDefense-Classic-MAP31", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP31", 1);
+      SpeedFactor = 0.259375;
       MaxHP = MaxHP * 20375 / 10000;
      }
      if (LevelCheck == 32) // MAP32 [SECRET LEVEL 2]
      {
       GiveInventory("MonsterAttack-Classic-MAP32", 1);
       GiveInventory("MonsterDefense-Classic-MAP32", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP32", 1);
+      SpeedFactor = 0.509375;
       MaxHP = MaxHP * 30375 / 10000;
      }
      if (LevelCheck == 16) // MAP16
      {
       GiveInventory("MonsterAttack-Classic-MAP16", 1);
       GiveInventory("MonsterDefense-Classic-MAP16", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP16", 1);
+      SpeedFactor = 0.15;
       MaxHP = MaxHP * 16 / 10;
      }
      if (LevelCheck == 17) // MAP17
      {
       GiveInventory("MonsterAttack-Classic-MAP17", 1);
       GiveInventory("MonsterDefense-Classic-MAP17", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP17", 1);
+      SpeedFactor = 0.165625;
       MaxHP = MaxHP * 16625 / 10000;
      }
      if (LevelCheck == 18) // MAP18
      {
       GiveInventory("MonsterAttack-Classic-MAP18", 1);
       GiveInventory("MonsterDefense-Classic-MAP18", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP18", 1);
+      SpeedFactor = 0.18125;
       MaxHP = MaxHP * 1725 / 1000;
      }
      if (LevelCheck == 19) // MAP19
      {
       GiveInventory("MonsterAttack-Classic-MAP19", 1);
       GiveInventory("MonsterDefense-Classic-MAP19", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP19", 1);
+      SpeedFactor = 0.196875;
       MaxHP = MaxHP * 17875 / 10000;
      }
      if (LevelCheck == 20) // MAP20
      {
       GiveInventory("MonsterAttack-Classic-MAP20", 1);
       GiveInventory("MonsterDefense-Classic-MAP20", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP20", 1);
+      SpeedFactor = 0.2125;
       MaxHP = MaxHP * 185 / 100;
      }
      if (LevelCheck == 21) // MAP21
      {
       GiveInventory("MonsterAttack-Classic-MAP21", 1);
       GiveInventory("MonsterDefense-Classic-MAP21", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP21", 1);
+      SpeedFactor = 0.2375;
       MaxHP = MaxHP * 195 / 100;
      }
      if (LevelCheck == 22) // MAP22
      {
       GiveInventory("MonsterAttack-Classic-MAP22", 1);
       GiveInventory("MonsterDefense-Classic-MAP22", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP22", 1);
+      SpeedFactor = 0.2625;
       MaxHP = MaxHP * 205 / 100;
      }
      if (LevelCheck == 23) // MAP23
      {
       GiveInventory("MonsterAttack-Classic-MAP23", 1);
       GiveInventory("MonsterDefense-Classic-MAP23", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP23", 1);
+      SpeedFactor = 0.2875;
       MaxHP = MaxHP * 215 / 100;
      }
      if (LevelCheck == 24) // MAP24
      {
       GiveInventory("MonsterAttack-Classic-MAP24", 1);
       GiveInventory("MonsterDefense-Classic-MAP24", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP24", 1);
+      SpeedFactor = 0.3125;
       MaxHP = MaxHP * 225 / 100;
      }
      if (LevelCheck == 25) // MAP25
      {
       GiveInventory("MonsterAttack-Classic-MAP25", 1);
       GiveInventory("MonsterDefense-Classic-MAP25", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP25", 1);
+      SpeedFactor = 0.3375;
       MaxHP = MaxHP * 235 / 100;
      }
      if (LevelCheck == 26) // MAP26
      {
       GiveInventory("MonsterAttack-Classic-MAP26", 1);
       GiveInventory("MonsterDefense-Classic-MAP26", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP26", 1);
+      SpeedFactor = 0.371875;
       MaxHP = MaxHP * 24875 / 10000;
      }
      if (LevelCheck == 27) // MAP27
      {
       GiveInventory("MonsterAttack-Classic-MAP27", 1);
       GiveInventory("MonsterDefense-Classic-MAP27", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP27", 1);
+      SpeedFactor = 0.409375;
       MaxHP = MaxHP * 26375 / 10000;
      }
      if (LevelCheck == 28) // MAP28
      {
       GiveInventory("MonsterAttack-Classic-MAP28", 1);
       GiveInventory("MonsterDefense-Classic-MAP28", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP28", 1);
+      SpeedFactor = 0.45;
       MaxHP = MaxHP * 28 / 10;
      }
      if (LevelCheck == 29) // MAP29
      {
       GiveInventory("MonsterAttack-Classic-MAP29", 1);
       GiveInventory("MonsterDefense-Classic-MAP29", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP29", 1);
+      SpeedFactor = 0.49375;
       MaxHP = MaxHP * 2975 / 1000;
      }
      if (LevelCheck == 30) // MAP30
      {
       GiveInventory("MonsterAttack-Classic-MAP30", 1);
       GiveInventory("MonsterDefense-Classic-MAP30", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP30", 1);
+      SpeedFactor = 0.59375;
       MaxHP = MaxHP * 3375 / 1000;
      }
      if (LevelCheck == 33) // MAP33
      {
       GiveInventory("MonsterAttack-Classic-MAP33", 1);
       GiveInventory("MonsterDefense-Classic-MAP33", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP33", 1);
+      SpeedFactor = 0.64375;
       MaxHP = MaxHP * 3575 / 1000;
      }
      if (LevelCheck == 34) // MAP34
      {
       GiveInventory("MonsterAttack-Classic-MAP34", 1);
       GiveInventory("MonsterDefense-Classic-MAP34", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP34", 1);
+      SpeedFactor = 0.7;
       MaxHP = MaxHP * 38 / 10;
      }
      if (LevelCheck == 35) // MAP35
      {
       GiveInventory("MonsterAttack-Classic-MAP35", 1);
       GiveInventory("MonsterDefense-Classic-MAP35", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP35", 1);
+      SpeedFactor = 0.7625;
       MaxHP = MaxHP * 405 / 100;
      }
      if (LevelCheck == 36) // MAP36
      {
       GiveInventory("MonsterAttack-Classic-MAP36", 1);
       GiveInventory("MonsterDefense-Classic-MAP36", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP36", 1);
+      SpeedFactor = 0.83125;
       MaxHP = MaxHP * 4325 / 1000;
      }
      if (LevelCheck == 37) // MAP37
      {
       GiveInventory("MonsterAttack-Classic-MAP37", 1);
       GiveInventory("MonsterDefense-Classic-MAP37", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP37", 1);
+      SpeedFactor = 0.90625;
       MaxHP = MaxHP * 4625 / 1000;
      }
      if (LevelCheck == 38) // MAP38
      {
       GiveInventory("MonsterAttack-Classic-MAP38", 1);
       GiveInventory("MonsterDefense-Classic-MAP38", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP38", 1);
+      SpeedFactor = 0.9875;
       MaxHP = MaxHP * 495 / 100;
      }
      if (LevelCheck == 39) // MAP39
      {
       GiveInventory("MonsterAttack-Classic-MAP39", 1);
       GiveInventory("MonsterDefense-Classic-MAP39", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP39", 1);
+      SpeedFactor = 1.075;
       MaxHP = MaxHP * 53 / 10;
      }
      if (LevelCheck == 40) // MAP40
      {
       GiveInventory("MonsterAttack-Classic-MAP40", 1);
       GiveInventory("MonsterDefense-Classic-MAP40", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP40", 1);
+      SpeedFactor = 1.1875;
       MaxHP = MaxHP * 575 / 100;
      }
      if (LevelCheck == 41) // MAP41
      {
       GiveInventory("MonsterAttack-Classic-MAP41", 1);
       GiveInventory("MonsterDefense-Classic-MAP41", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP41", 1);
+      SpeedFactor = 1.3125;
       MaxHP = MaxHP * 625 / 100;
      }
      if (LevelCheck == 42) // MAP42
      {
       GiveInventory("MonsterAttack-Classic-MAP42", 1);
       GiveInventory("MonsterDefense-Classic-MAP42", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP42", 1);
+      SpeedFactor = 1.45;
       MaxHP = MaxHP * 68 / 10;
      }
      if (LevelCheck == 43) // MAP43
      {
       GiveInventory("MonsterAttack-Classic-MAP43", 1);
       GiveInventory("MonsterDefense-Classic-MAP43", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP43", 1);
+      SpeedFactor = 1.6;
       MaxHP = MaxHP * 74 / 10;
      }
      if (LevelCheck == 44) // MAP44
      {
       GiveInventory("MonsterAttack-Classic-MAP44", 1);
       GiveInventory("MonsterDefense-Classic-MAP44", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP44", 1);
+      SpeedFactor = 1.7625;
       MaxHP = MaxHP * 805 / 100;
      }
      if (LevelCheck == 45) // MAP45
      {
       GiveInventory("MonsterAttack-Classic-MAP45", 1);
       GiveInventory("MonsterDefense-Classic-MAP45", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP45", 1);
+      SpeedFactor = 1.9325;
       MaxHP = MaxHP * 875 / 100;
      }
      if (LevelCheck == 46) // MAP46
      {
       GiveInventory("MonsterAttack-Classic-MAP46", 1);
       GiveInventory("MonsterDefense-Classic-MAP46", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP46", 1);
+      SpeedFactor = 2.125;
       MaxHP = MaxHP * 95 / 10;
      }
      if (LevelCheck == 47) // MAP47
      {
       GiveInventory("MonsterAttack-Classic-MAP47", 1);
       GiveInventory("MonsterDefense-Classic-MAP47", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP47", 1);
+      SpeedFactor = 2.325;
       MaxHP = MaxHP * 103 / 10;
      }
      if (LevelCheck == 48) // MAP48
      {
       GiveInventory("MonsterAttack-Classic-MAP48", 1);
       GiveInventory("MonsterDefense-Classic-MAP48", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP48", 1);
+      SpeedFactor = 2.5375;
       MaxHP = MaxHP * 1115 / 100;
      }
      if (LevelCheck == 49) // MAP49
      {
       GiveInventory("MonsterAttack-Classic-MAP49", 1);
       GiveInventory("MonsterDefense-Classic-MAP49", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP49", 1);
+      SpeedFactor = 2.7625;
       MaxHP = MaxHP * 1205 / 100;
      }
      if (LevelCheck == 50) // MAP50
      {
       GiveInventory("MonsterAttack-Classic-MAP50", 1);
       GiveInventory("MonsterDefense-Classic-MAP50", 1);
-      GiveInventory("MonsterSpeed-Classic-MAP50", 1);
+      SpeedFactor = 3.075;
       MaxHP = MaxHP * 133 / 10;
      }
     }
@@ -19225,7 +19234,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVI-MAP01", 1);
     GiveInventory("MonsterDefense-DVI-MAP01", 1);
-    GiveInventory("MonsterSpeed-DVI-MAP01", 1);
+    SpeedFactor = 0.0;
     MaxHP = MaxHP * 100 / 100;
    }
    else
@@ -19233,7 +19242,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVI-MAP02", 1);
     GiveInventory("MonsterDefense-DVI-MAP02", 1);
-    GiveInventory("MonsterSpeed-DVI-MAP02", 1);
+    SpeedFactor = 0.0625;
     MaxHP = MaxHP * 112 / 100;
    }
    else
@@ -19241,7 +19250,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVI-MAP03", 1);
     GiveInventory("MonsterDefense-DVI-MAP03", 1);
-    GiveInventory("MonsterSpeed-DVI-MAP03", 1);
+    SpeedFactor = 0.1875;
     MaxHP = MaxHP * 125 / 100;
    }
    else
@@ -19249,7 +19258,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVI-MAP04", 1);
     GiveInventory("MonsterDefense-DVI-MAP04", 1);
-    GiveInventory("MonsterSpeed-DVI-MAP04", 1);
+    SpeedFactor = 0.375;
     MaxHP = MaxHP * 141 / 100;
    }
   }
@@ -19267,7 +19276,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP01", 1);
     GiveInventory("MonsterDefense-DVII-MAP01", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP01", 1);
+    SpeedFactor = 0.0;
     MaxHP = MaxHP * 100 / 100;
    }
    else
@@ -19275,7 +19284,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP02", 1);
     GiveInventory("MonsterDefense-DVII-MAP02", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP02", 1);
+    SpeedFactor = 0.0075;
     MaxHP = MaxHP * 106 / 100;
    }
    else
@@ -19283,7 +19292,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP03", 1);
     GiveInventory("MonsterDefense-DVII-MAP03", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP03", 1);
+    SpeedFactor = 0.0225;
     MaxHP = MaxHP * 112 / 100;
    }
    else
@@ -19291,7 +19300,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP04", 1);
     GiveInventory("MonsterDefense-DVII-MAP04", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP04", 1);
+    SpeedFactor = 0.045;
     MaxHP = MaxHP * 119 / 100;
    }
    else
@@ -19299,7 +19308,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP05", 1);
     GiveInventory("MonsterDefense-DVII-MAP05", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP05", 1);
+    SpeedFactor = 0.075;
     MaxHP = MaxHP * 126 / 100;
    }
    else
@@ -19307,7 +19316,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP05S", 1);
     GiveInventory("MonsterDefense-DVII-MAP05S", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP05S", 1);
+    SpeedFactor = 0.1125;
     MaxHP = MaxHP * 134 / 100;
    }
    else
@@ -19315,7 +19324,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP06", 1);
     GiveInventory("MonsterDefense-DVII-MAP06", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP06", 1);
+    SpeedFactor = 0.1575;
     MaxHP = MaxHP * 142 / 100;
    }
    else
@@ -19323,7 +19332,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP07", 1);
     GiveInventory("MonsterDefense-DVII-MAP07", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP07", 1);
+    SpeedFactor = 0.21;
+    Speed = FixedMul(Speed, 1.21);
     MaxHP = MaxHP * 150 / 100;
    }
    else
@@ -19332,7 +19342,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP08", 1);
     GiveInventory("MonsterDefense-DVII-MAP08", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP08", 1);
+    SpeedFactor = 0.285;
     MaxHP = MaxHP * 177 / 100;
    }
    else
@@ -19340,7 +19350,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP09", 1);
     GiveInventory("MonsterDefense-DVII-MAP09", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP09", 1);
+    SpeedFactor = 0.3825;
     MaxHP = MaxHP * 209 / 100;
    }
    else
@@ -19348,7 +19358,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP10", 1);
     GiveInventory("MonsterDefense-DVII-MAP10", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP10", 1);
+    SpeedFactor = 0.5025;
     MaxHP = MaxHP * 248 / 100;
    }
    else
@@ -19356,7 +19366,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP10B", 1);
     GiveInventory("MonsterDefense-DVII-MAP10B", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP10B", 1);
+    SpeedFactor = 0.645;
     MaxHP = MaxHP * 292 / 100;
    }
    else
@@ -19364,7 +19374,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP12", 1);
     GiveInventory("MonsterDefense-DVII-MAP12", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP12", 1);
+    SpeedFactor = 0.39;
     MaxHP = MaxHP * 141 / 100;
    }
    else
@@ -19372,10 +19382,15 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    {
     GiveInventory("MonsterAttack-DVII-MAP10B", 1);
     GiveInventory("MonsterDefense-DVII-MAP10B", 1);
-    GiveInventory("MonsterSpeed-DVII-MAP10B", 1);
+    SpeedFactor = 0.645;
     MaxHP = MaxHP * 292 / 100;
    }
   }
+  SpeedFactor = FixedMul(SpeedFactor, 0.5);
+  if (GetCVar("dvdsdebug_showenemyspeedstuff") != 0) PrintBold(s:"SpeedFactor: ",f:(1.0+SpeedFactor));
+  Speed = FixedMul(Speed, (1.0+SpeedFactor));
+  if (GetCVar("dvdsdebug_showenemyspeedstuff") != 0) PrintBold(s:"After MAP: ",f:speed);
+  if (GetCVar("dvds_monsterspeedcalcs") != 0) SetActorProperty(0,APROP_Speed,Speed); 
 
 
   int ErrorChecker = 1;
@@ -19390,7 +19405,13 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    // HP Error
    int MaxHPErrorRange = MaxHP / 10;
    MaxHP += random(-MaxHPErrorRange,MaxHPErrorRange);
+   int SpeedErrorRange = FixedMul(Speed, 0.1);
+   if (GetCVar("dvdsdebug_showenemyspeedstuff") != 0) PrintBold(s:"Error Range: ",f:SpeedErrorRange);
+   Speed += random(-SpeedErrorRange,SpeedErrorRange);
   }
+  //Set's Final Speed values
+  if (GetCVar("dvdsdebug_showenemyspeedstuff") != 0) PrintBold(s:"Final: ",f:speed);
+  if (GetCVar("dvds_monsterspeedcalcs") != 0) SetActorProperty(0,APROP_Speed,Speed); 
 
   // Set's Final MaxHP and Current HP values
   SetActorProperty(0,APROP_Health,MaxHP);
@@ -19456,6 +19477,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
  {
   if (CheckInventory("MonsterHasBuffs") <= 0) terminate;
   if (GetUserVariable(0, "user_checkmapskill") < 1) terminate;
+  SetActorProperty(0,APROP_Speed,GetUserVariable(0, "user_basespeed"));
 
   TakeInventory("MonsterDisplayDMG", 1);
   TakeInventory("MonsterHasBuffs", 1);
