@@ -625,6 +625,12 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [2018] QuickSpell Slot 8's "Can't Use Spell" Glow Timer
 // [2019] QuickSpell Slot 9's "Can't Use Spell" Glow Timer
 // [2020] QuickSpell Slot (1)0's "Can't Use Spell" Glow Timer
+// [2021] Kill Meter's Glow Timer
+// [2022] Used to indicate if a specfic type of "OVERKILL" has occured [for the new hud]
+// [2023] Used for the "OVERKILL" display timer
+// [2024] Shows total EXP for current kill
+// [2025] Shows EXP gained only from the combo for current kill
+// [2026] EXP Gain Display Timer [new HUD]
 
 global int 22:DVIIGameFlags[]; // ***ARRAY***
 // [0] = Checks for DV2M01 armor item [Safe Tea Shoes]
@@ -2164,7 +2170,11 @@ script "HUDDisplay" ENTER
  int ypos = 32.0;
  int msgdelay;
  int msgalpha;
+ int MultiUpper, MultiLower;
  
+ int EXPGainChecker = 1;
+ if (ModType == 0 && GetCVar("dvds_noexpgains") != 0) EXPGainChecker = 0; // If in Classic mode and the EXP Gain option is turned off, don't show EXP stuff on HUD.
+
  if (MiscellaneousVars[199] > 0 && CheckActorInventory(1001,"PlayerDeathFadeOut") < 1 && GetCVAR("dvds_showacshudelements") == 1)
  { 
 
@@ -2173,9 +2183,6 @@ script "HUDDisplay" ENTER
                                     // *************************
   {
    SetHudSize(640,480,0);
-
-   int EXPGainChecker = 1;
-   if (ModType == 0 && GetCVar("dvds_noexpgains") != 0) EXPGainChecker = 0; // If in Classic mode and the EXP Gain option is turned off, don't show EXP stuff on HUD.
 
    // Mana Bar
    if (EXPGainChecker == 1) ypos = 32.0; else ypos = 24.0;
@@ -2280,7 +2287,6 @@ script "HUDDisplay" ENTER
     }
  
     // EXP Combo Multiplier
-    int MultiUpper, MultiLower;
     MultiLower = (MiscellaneousVars[159] - 10000) % 100;
     MultiUpper = ((MiscellaneousVars[159] - 10000) - MultiLower) / 100;
     SetFont("SmallFont");
@@ -3258,6 +3264,99 @@ script "HUDDisplay" ENTER
 
 
 
+     //*******************************************
+     //** EXP-Gains/Kills/Combos [2001 to 2500?]**
+     //*******************************************
+     if (EXPGainChecker == 1)
+     {
+      if (MiscellaneousVars[157] > 0)
+      {
+       // Combo Meter Frames
+       xpos = 129.0;
+       ypos = 772.0;
+       SetFont("KLBFRAME");
+       HudMessage(s:"A";HUDMSG_ALPHA,2006,cr_untranslated,xpos,ypos,0.036,0.75);
+
+       // Combo Meter Notches
+       xpos = 79.0; // MiscFixedVars[1];
+       ypos = 772.0; // MiscFixedVars[2];
+       msgalpha = 0.75;
+
+       if (PowerupTimer[7] > 0) MaxEXPCombotimer = 7000; else MaxEXPCombotimer = 5600;
+       // Combo Timer Bar
+       for (C1 = 101; C1 > 1; C1 --)
+       {
+        if (MaxEXPCombotimer != 0)
+        {
+         I1 = fixedmul(fixeddiv(MiscellaneousVars[157] << 16,MaxEXPCombotimer << 16),100.0) >> 16;
+         if (C1 - 1 <= I1) SetFont("KLBNOTCH"); else SetFont("KLBNOTEM");
+         I2 = C1 << 16;
+         HudMessage(s:"A";HUDMSG_ALPHA,C1+2010,cr_untranslated,xpos+I2,ypos,0.036,0.75);
+        }
+       }
+       // Combo Meter Glass
+       xpos = 129.0;
+       ypos = 772.0;
+       SetFont("KLBGLASS");
+       HudMessage(s:"A";HUDMSG_ALPHA,2111,cr_untranslated,xpos,ypos,0.036,0.75);
+      }
+
+      // # of Kills
+      if (MiscellaneousVars[158] > 0)
+      {
+       SetFont("DQHUDFONT");
+       xpos = 108.2;
+       ypos = 750.0;
+       HudMessage(d:MiscellaneousVars[158];HUDMSG_ALPHA,2112,cr_green,xpos,ypos,0.036,0.875);
+       SetFont("DQHUDFONTSML");
+       // "Kills" Label
+       xpos = 120.1;
+       ypos = 755.0;
+       if (MiscellaneousVars[158] == 1) HudMessage(s:"KILL";HUDMSG_ALPHA,2113,cr_green,xpos,ypos,0.036,0.875);
+       else HudMessage(s:"KILLS";HUDMSG_ALPHA,2113,cr_green,xpos,ypos,0.036,0.875);
+      }
+
+      // "OVERKILL" text
+      xpos = 312.0; // MiscFixedVars[1];
+      ypos = 712.0; // MiscFixedVars[2];
+      if (MiscellaneousVars[2023] > 0) // Overkill timer
+      {
+       if (MiscellaneousVars[2022] == 1)
+       {
+        SetFont("DQHUDFONTSML");
+        HudMessage(s:"OVERKILL!";HUDMSG_ALPHA,2114,cr_red,xpos,ypos,0.036,0.875);
+       }
+       if (MiscellaneousVars[2022] == 2)
+       {
+        SetFont("DQHUDFONTSML");
+        HudMessage(s:"\c[purple]OVERKILL!!";HUDMSG_ALPHA,2114,cr_red,xpos,ypos,0.036,0.875);
+       }
+       MiscellaneousVars[2023] -= 1;
+      }
+
+      // EXP [from last kill]
+      if (MiscellaneousVars[2026] > 0)
+      {
+       xpos = 222.1;
+       ypos = 741.0;
+       if (MiscellaneousVars[2024]-MiscellaneousVars[2025] > 1) HudMessage(s:"+",d:MiscellaneousVars[2024],s:" EXP (+",d:MiscellaneousVars[2024]-MiscellaneousVars[2025],s:")";HUDMSG_ALPHA,2115,cr_blue,xpos,ypos,0.036,0.875);
+       else HudMessage(s:"+",d:MiscellaneousVars[2024],s:" EXP";HUDMSG_ALPHA,2115,cr_blue,xpos,ypos,0.036,0.875);
+       MiscellaneousVars[2026] -= 1;
+      }
+
+      // EXP Total + Combo Bonus [combo]
+      if (MiscellaneousVars[158] > 1 && MiscellaneousVars[160] > 0)
+      {
+       xpos = 222.1;
+       ypos = 769.0;
+       MultiLower = (MiscellaneousVars[159] - 10000) % 100;
+       MultiUpper = ((MiscellaneousVars[159] - 10000) - MultiLower) / 100;
+
+       SetFont("DQHUDFONTSML");
+       if (MultiLower > -1 && MultiLower < 10) HudMessage(s:"+",d:MiscellaneousVars[160],s:" EXP (+",d:MultiUpper,s:".0",d:MultiLower,s:"%)";HUDMSG_ALPHA,2116,cr_gold,xpos,ypos,0.036,0.875);
+       else HudMessage(s:"+",d:MiscellaneousVars[160],s:" EXP (+",d:MultiUpper,s:".",d:MultiLower,s:"%)";HUDMSG_ALPHA,2116,cr_gold,xpos,ypos,0.036,0.875);
+      }
+     }
 
 
 
@@ -3828,48 +3927,50 @@ script "HUDDisplay" ENTER
      //** LVL Info [4502 to 4565]**
      //****************************
      G3 = PlayerLevel;
-     // LVL Label
-     xpos = 470.0;
-     ypos = 868.0;
-     SetFont("DQHUDFONTSML");
-     HudMessage(s:"LVL";HUDMSG_ALPHA,4502,cr_white,xpos,ypos,0.036,0.875);
-
-     // LVL Amounts
-     xpos = 535.0;
-     ypos = 872.0;
-     SetFont("DQHUDFONTSML");
-     HudMessage(d:G3;HUDMSG_ALPHA,4503,cr_white,xpos,ypos,0.036,0.875);
-
-     // LVL Meter Frame
-     xpos = 535.0;
-     ypos = 870.0; 
-     SetFont("LVBFRAME");
-     HudMessage(s:"A";HUDMSG_ALPHA,4504,cr_untranslated,xpos,ypos,0.036,0.75);
-
-     // LVL Meter Notches
-     xpos = 508.0;
-     ypos = 870.0;
-     msgalpha = 0.75;
-     G3 = PlayerLevel; // Current Player Level
-     G2 = LevelCap; // Max Level for player
-     I1 = G3 * 50 / G2;
-     if (G2 != 0)
+     if (EXPGainChecker == 1)
      {
-      // Normal
-      for (C1 = 51; C1 > 1; C1 --)
-      {    
-       if (C1 - 1 <= I1) SetFont("LVBNOTCH"); else SetFont("LVBNOTEM");
-       I2 = C1 << 16;
-       HudMessage(s:"A";HUDMSG_ALPHA,C1+4510,cr_untranslated,xpos+I2,ypos,0.036,0.75);
+      // LVL Label
+      xpos = 470.0;
+      ypos = 868.0;
+      SetFont("DQHUDFONTSML");
+      HudMessage(s:"LVL";HUDMSG_ALPHA,4502,cr_white,xpos,ypos,0.036,0.875);
+
+      // LVL Amounts
+      xpos = 535.0;
+      ypos = 872.0;
+      SetFont("DQHUDFONTSML");
+      HudMessage(d:G3;HUDMSG_ALPHA,4503,cr_white,xpos,ypos,0.036,0.875);
+
+      // LVL Meter Frame
+      xpos = 535.0;
+      ypos = 870.0; 
+      SetFont("LVBFRAME");
+      HudMessage(s:"A";HUDMSG_ALPHA,4504,cr_untranslated,xpos,ypos,0.036,0.75);
+
+      // LVL Meter Notches
+      xpos = 508.0;
+      ypos = 870.0;
+      msgalpha = 0.75;
+      G3 = PlayerLevel; // Current Player Level
+      G2 = LevelCap; // Max Level for player
+      I1 = G3 * 50 / G2;
+      if (G2 != 0)
+      {
+       // Normal
+       for (C1 = 51; C1 > 1; C1 --)
+       {    
+        if (C1 - 1 <= I1) SetFont("LVBNOTCH"); else SetFont("LVBNOTEM");
+        I2 = C1 << 16;
+        HudMessage(s:"A";HUDMSG_ALPHA,C1+4510,cr_untranslated,xpos+I2,ypos,0.036,0.75);
+       }
       }
+
+      // LVL Meter Glass
+      xpos = 535.0;
+      ypos = 870.0; 
+      SetFont("LVBGLASS");
+      HudMessage(s:"A";HUDMSG_ALPHA,4565,cr_untranslated,xpos,ypos,0.036,0.75);
      }
-
-     // LVL Meter Glass
-     xpos = 535.0;
-     ypos = 870.0; 
-     SetFont("LVBGLASS");
-     HudMessage(s:"A";HUDMSG_ALPHA,4565,cr_untranslated,xpos,ypos,0.036,0.75);
-
 
 
      //****************************
@@ -4016,38 +4117,40 @@ script "HUDDisplay" ENTER
      //****************************
      //** EXP Info [4901 to 5106]**
      //****************************
-     // EXP Label
-     xpos = 204.0; 
-     ypos = 972.0;
-     SetFont("EXBLABEL");
-     HudMessage(s:"A";HUDMSG_ALPHA,4901,cr_white,xpos,ypos,0.036,0.875);
-
-     // EXP Meter Border
-     xpos = 316.0;
-     ypos = 972.0;
-     SetFont("EXBFRAME");
-     HudMessage(s:"A";HUDMSG_ALPHA,4902,cr_untranslated,xpos,ypos,0.036,0.75);
-
-     // EXP Notches
-     xpos = 214.0;
-     ypos = 972.0;
-     for (C1 = 201; C1 > 1; C1 --)
+     if (EXPGainChecker == 1)
      {
-      if (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1] != 0)
+      // EXP Label
+      xpos = 204.0; 
+      ypos = 972.0;
+      SetFont("EXBLABEL");
+      HudMessage(s:"A";HUDMSG_ALPHA,4901,cr_white,xpos,ypos,0.036,0.875);
+
+      // EXP Meter Border
+      xpos = 316.0;
+      ypos = 972.0;
+      SetFont("EXBFRAME");
+      HudMessage(s:"A";HUDMSG_ALPHA,4902,cr_untranslated,xpos,ypos,0.036,0.75);
+ 
+      // EXP Notches
+      xpos = 214.0;
+      ypos = 972.0;
+      for (C1 = 201; C1 > 1; C1 --)
       {
-       I1 = ((Experience - ExpTable[PlayerLevel - 1]) * 200) / (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]);
-       if ((C1 - 1 <= I1) || (PlayerLevel == LevelCap)) SetFont("EXBNOTCH"); else SetFont("EXBNOTEM");
-       I2 = C1 << 16;
-       HudMessage(s:"A";HUDMSG_ALPHA,C1+4903,cr_untranslated,xpos+I2,ypos,0.036,0.75);
+       if (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1] != 0)
+       {
+        I1 = ((Experience - ExpTable[PlayerLevel - 1]) * 200) / (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]);
+        if ((C1 - 1 <= I1) || (PlayerLevel == LevelCap)) SetFont("EXBNOTCH"); else SetFont("EXBNOTEM");
+        I2 = C1 << 16;
+        HudMessage(s:"A";HUDMSG_ALPHA,C1+4903,cr_untranslated,xpos+I2,ypos,0.036,0.75);
+       }
       }
+
+      // EXP Meter Glass
+      xpos = 316.0;
+      ypos = 972.0;
+      SetFont("EXBGLASS");
+      HudMessage(s:"A";HUDMSG_ALPHA,5106,cr_untranslated,xpos,ypos,0.036,0.75);
      }
-
-     // EXP Meter Glass
-     xpos = 316.0;
-     ypos = 972.0;
-     SetFont("EXBGLASS");
-     HudMessage(s:"A";HUDMSG_ALPHA,5106,cr_untranslated,xpos,ypos,0.036,0.75);
-
 
 
 
@@ -15093,17 +15196,20 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     if (HealthDifference != 0)
     {
      SetHudSize(640,480,0);
-     SetFont("SmallFont");
-     if (HealthDifference > 0) // Positive Value
+     if (MiscellaneousVars[2000] == 0)
      {
-      HudMessageBold(s:"+",d:HealthDifference,s:" HP (+",d:HealthDiffRatio,s:"%)";0,1,cr_green,64.0,427.0,2.5);
-     }
-     else
-     if (HealthDifference < 0) // Negative Value
-     {
-      HealthDifference *= -1;
-      HealthDiffRatio *= -1;
-      HudMessageBold(s:"-",d:HealthDifference,s:" HP (-",d:HealthDiffRatio,s:"%)";0,1,cr_red,64.0,427.0,2.5);
+      SetFont("SmallFont");
+      if (HealthDifference > 0) // Positive Value
+      {
+       HudMessageBold(s:"+",d:HealthDifference,s:" HP (+",d:HealthDiffRatio,s:"%)";0,1,cr_green,64.0,427.0,2.5);
+      }
+      else
+      if (HealthDifference < 0) // Negative Value
+      {
+       HealthDifference *= -1;
+       HealthDiffRatio *= -1;
+       HudMessageBold(s:"-",d:HealthDifference,s:" HP (-",d:HealthDiffRatio,s:"%)";0,1,cr_red,64.0,427.0,2.5);
+      }
      }
     }
    }
@@ -29010,8 +29116,18 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (GetUserVariable(0,"user_MaxHP") <= 0) { overkillhp2 = GetActorProperty(0,APROP_SpawnHealth) * -4; }
  else { overkillhp2 = GetUserVariable(0,"user_MaxHP") * -4; }
 
- if (GetActorProperty(0,APROP_Health) <= overkillhp) { finalexpamount = finalexpamount * 9 / 8; }	// Overkilled [+25%]
- if (GetActorProperty(0,APROP_Health) <= overkillhp2) { finalexpamount = finalexpamount * 9 / 8; }	// Super-Overkilled [+25%]
+ if (GetActorProperty(0,APROP_Health) <= overkillhp) // Overkilled [+25%]
+ {
+  finalexpamount = finalexpamount * 9 / 8; 
+  MiscellaneousVars[2022] = 1; 
+  MiscellaneousVars[2023] = 52; 
+ }
+ if (GetActorProperty(0,APROP_Health) <= overkillhp2) // Super-Overkilled [+25%]
+ {
+  finalexpamount = finalexpamount * 9 / 8; 
+  MiscellaneousVars[2022] = 2; 
+  MiscellaneousVars[2023] = 52; 
+ }
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
  {
   PrintBold(s:"EXP3: ",d:finalexpamount);
@@ -29101,29 +29217,42 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   PrintBold(d:GetActorProperty(0,APROP_Health),s:" / ",d:overkillhp,s:"\n",
            d:baseexp,s:" / ",d:finalexpamount);
  }
+
+ MiscellaneousVars[2024] = finalexpamount; // Total EXP for kill [for new HUD]
+ MiscellaneousVars[2025] = PreComboEXP; // Total EXP for kill [for new HUD]
+ MiscellaneousVars[2026] = 52; 
  SetHudSize(640,480,0);
  if (GetActorProperty(0,APROP_Health) <= overkillhp2)
  {
   SetActivator(0,AAPTR_PLAYER1);
-  if (finalexpamount-PreComboEXP > 1) HudMessage(s:"+",d:finalexpamount,s:" EXP \cn[+",d:finalexpamount-PreComboEXP,s:"]\c-";0,3418,cr_gold,59.0,6.0,1.5);
-  else HudMessage(s:"+",d:finalexpamount,s:" EXP";0,3418,cr_gold,51.0,6.0,1.5);
-  HudMessage(s:"\cjOVERKILL!";0,3421,cr_red,51.0,15.0,1.5);
+  if (MiscellaneousVars[2000] == 0) // Show this version of the "OVERKILL!" message in old-style HUD mode only
+  {
+   if (finalexpamount-PreComboEXP > 1) HudMessage(s:"+",d:finalexpamount,s:" EXP \cn[+",d:finalexpamount-PreComboEXP,s:"]\c-";0,3418,cr_gold,59.0,6.0,1.5);
+   else HudMessage(s:"+",d:finalexpamount,s:" EXP";0,3418,cr_gold,51.0,6.0,1.5);
+   HudMessage(s:"\cjOVERKILL!";0,3421,cr_red,51.0,15.0,1.5);
+  }
  }
  else
  {
   if (GetActorProperty(0,APROP_Health) <= overkillhp)
   {
    SetActivator(0,AAPTR_PLAYER1);
-   if (finalexpamount-PreComboEXP > 1) HudMessage(s:"+",d:finalexpamount,s:" EXP \cn[+",d:finalexpamount-PreComboEXP,s:"]\c-";0,3418,cr_gold,59.0,6.0,1.5);
-   else HudMessage(s:"+",d:finalexpamount,s:" EXP";0,3418,cr_gold,51.0,6.0,1.5);
-   HudMessage(s:"\cgOVERKILL!";0,3421,cr_red,51.0,15.0,1.5);
+   if (MiscellaneousVars[2000] == 0) // Show this version of the "OVERKILL!" message in old-style HUD mode only
+   {
+    if (finalexpamount-PreComboEXP > 1) HudMessage(s:"+",d:finalexpamount,s:" EXP \cn[+",d:finalexpamount-PreComboEXP,s:"]\c-";0,3418,cr_gold,59.0,6.0,1.5);
+    else HudMessage(s:"+",d:finalexpamount,s:" EXP";0,3418,cr_gold,51.0,6.0,1.5);
+    HudMessage(s:"\cgOVERKILL!";0,3421,cr_red,51.0,15.0,1.5);
+   }
   }
   else
   {
    SetActivator(0,AAPTR_PLAYER1);
-   if (finalexpamount-PreComboEXP > 1) HudMessage(s:"+",d:finalexpamount,s:" EXP \cn[+",d:finalexpamount-PreComboEXP,s:"]\c-";0,3418,cr_gold,59.0,11.0,1.5);
-   else HudMessage(s:"+",d:finalexpamount,s:" EXP";0,3418,cr_gold,51.0,6.0,1.5);
-   HudMessage(s:"";0,3421,cr_red,51.0,11.0,1.5);
+   if (MiscellaneousVars[2000] == 0) // Show this version of the "OVERKILL!" message in old-style HUD mode only
+   {
+    if (finalexpamount-PreComboEXP > 1) HudMessage(s:"+",d:finalexpamount,s:" EXP \cn[+",d:finalexpamount-PreComboEXP,s:"]\c-";0,3418,cr_gold,59.0,11.0,1.5);
+    else HudMessage(s:"+",d:finalexpamount,s:" EXP";0,3418,cr_gold,51.0,6.0,1.5);
+    HudMessage(s:"";0,3421,cr_red,51.0,11.0,1.5);
+   }
   }
  }
 
