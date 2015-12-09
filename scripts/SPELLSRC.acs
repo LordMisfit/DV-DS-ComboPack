@@ -2163,7 +2163,7 @@ script "Initializer" OPEN
 
 script "HUDDisplay" ENTER
 {
- int C1, C2, I1, I2, Z1, Z2, G1, G2, G3, G4, G5, G8, HealMin, HealMax, HealSorcRatio, G6;
+ int C1, C2, I1, I2, Z1, Z2, G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, HealMin, HealMax, HealSorcRatio;
  str S1;
  int MaxHealthLimit = MaxHealthTrue * 2;
  int xpos;
@@ -2185,46 +2185,68 @@ script "HUDDisplay" ENTER
    SetHudSize(640,480,0);
 
    // Mana Bar
-   if (EXPGainChecker == 1) ypos = 32.0; else ypos = 24.0;
-   for (C1 = 101; C1 > 1; C1 --)
+   if (GetCVar("dvdsoldhud_showmanabar") > 0)
    {
-    if (MaxMana != 0)
+    if (EXPGainChecker == 1) ypos = 32.0; else ypos = 24.0;
+    G10 = GetCVar("dvdsnewhud_hudmeternotchdetail");
+    G9 = 100 / G10;
+    I1 = CurrentMana * G9 / MaxMana;
+    if (I1 > 100) I1 = 100;
+    if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
+    for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
     {
-      I1 = fixedmul(fixeddiv(CurrentMana << 16,MaxMana << 16),100.0) >> 16;
-      if (C1 - 1 <= I1) SetFont("ManaHF"); else SetFont("ManaHE");
-      I2 = C1 << 16;
-      HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3200,cr_untranslated,1.0+I2,ypos,0.036);
+     if (MaxMana != 0)
+     {
+       if (C1 <= I1) SetFont("ManaHF"); else SetFont("ManaHE");
+       I2 = ((C1 << 16) * G10) + 1.0;
+       HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3200,cr_untranslated,1.0+I2,ypos,0.036);
+     }
     }
    }
 
-   if (EXPGainChecker == 1)
+   if (GetCVar("dvdsoldhud_showexpbar") > 0)
    {
-    // EXP Bar
-    for (C1 = 101; C1 > 1; C1 --)
+    if (EXPGainChecker == 1)
     {
-      if (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1] != 0)
-      {
-       I1 = ((Experience - ExpTable[PlayerLevel - 1]) * 100) / (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]);
-       if ((C1 - 1 <= I1) || (PlayerLevel == LevelCap)) SetFont("EXPHF"); else SetFont("ManaHE");
-       I2 = C1 << 16;
-       HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3302,cr_untranslated,1.0+I2,24.0,0.036);
-      }
+     // EXP Bar
+     Z1 = Experience - ExpTable[PlayerLevel - 1];
+     Z2 = ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1];
+     I1 = Z1 * 100 / Z2;     
+     if (I1 > 100) I1 = 100;
+     if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = 100;
+     for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
+     {
+       if (Z2 != 0)
+       {
+        if ((C1 <= I1) || (PlayerLevel == LevelCap)) SetFont("EXPHF"); else SetFont("ManaHE");
+        I2 = (C1 << 16) + 1.0;
+        HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+3302,cr_untranslated,1.0+I2,24.0,0.036);
+       }
+     }
     }
+   }
 
-    G6 += 1; if (G6 > 11) G6 = 0; // Resets Palette Flasher
+   G6 += 1; if (G6 > 11) G6 = 0; // Resets Palette Flasher
+   if (GetCVar("dvdsoldhud_showcombobar") > 0)
+   {
     int MaxEXPCombotimer;
     if (PowerupTimer[7] > 0) MaxEXPCombotimer = 7000; else MaxEXPCombotimer = 5600;
     // EXP Combo Timer Bar
-    for (C1 = 101; C1 > 1; C1 --)
+    Z1 = MiscellaneousVars[157];
+    Z2 = MaxEXPCombotimer;
+    I1 = Z1 * 100 / Z2;     
+    if (I1 > 100) I1 = 100;
+    if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = 100;
+    for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
     {
-      if (MaxEXPCombotimer != 0)
+      if (Z2 != 0)
       {
-       I1 = fixedmul(fixeddiv(MiscellaneousVars[157] << 16,MaxEXPCombotimer << 16),100.0) >> 16;
-       if (C1 - 1 <= I1) SetFont("COMBOHF"); else SetFont("COMBOHE");
-       I2 = C1 << 16;
+       if (C1 <= I1) SetFont("COMBOHF"); else SetFont("COMBOHE");
+       I2 = (C1 << 16) + 1.0;
        HudMessage(s:"A";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,C1+2200,cr_untranslated,1.0+I2,68.0,0.036);
       }
     }
+   }
  
     // EXP Combo Kill Counter
     SetFont("SmallFont");
@@ -2320,57 +2342,71 @@ script "HUDDisplay" ENTER
        else HudMessage(s:"\c[Purple]+",d:MultiUpper,s:".",d:MultiLower,s:"%";HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP,2199,cr_green,51.0,92.0,0.04);
       }
     }
-   }
 
    int MaxTensionChargeTimer;
    int TensionTimerMax = 3600;
    if (GetCVar("dvds_allowtension") > 0)
    {
-    // Tension Charge Timer Bar
-    if (MiscellaneousVars[181] == 0) { MaxTensionChargeTimer = 1400; } // "0"
-    if (MiscellaneousVars[181] == 1) { MaxTensionChargeTimer = 1488; TensionTimerMax = 3600; } // "5"
-    if (MiscellaneousVars[181] == 2) { MaxTensionChargeTimer = 1575; TensionTimerMax = 4320; } // "20" [x1.2]
-    if (MiscellaneousVars[181] == 3) { MaxTensionChargeTimer = 1750; TensionTimerMax = 5184; } // "50" [x1.2]
-    if (MiscellaneousVars[181] == 4) { MaxTensionChargeTimer = 1925; TensionTimerMax = 6221; } // "100" [x1.2]
-    if (MiscellaneousVars[181] == 5) { MaxTensionChargeTimer = 2100; TensionTimerMax = 7465; } // "250" [x1.2]
-    if (MiscellaneousVars[181] == 6) { MaxTensionChargeTimer = 2625; TensionTimerMax = 8958; } // "500" [x1.2]
-    if (MiscellaneousVars[181] == 7) { TensionTimerMax = 10750; } // "1000" [x1.2]
-
-    if (MiscellaneousVars[181] < 7 && MiscellaneousVars[185] > 0 && MiscellaneousVars[184] == 0)
+    if (GetCVar("dvdsoldhud_showtensionbars") > 0)
     {
-      for (C1 = 101; C1 > 1; C1 --)
+     // Tension Charge Timer Bar
+     if (MiscellaneousVars[181] == 0) { MaxTensionChargeTimer = 1400; } // "0"
+     if (MiscellaneousVars[181] == 1) { MaxTensionChargeTimer = 1488; TensionTimerMax = 3600; } // "5"
+     if (MiscellaneousVars[181] == 2) { MaxTensionChargeTimer = 1575; TensionTimerMax = 4320; } // "20" [x1.2]
+     if (MiscellaneousVars[181] == 3) { MaxTensionChargeTimer = 1750; TensionTimerMax = 5184; } // "50" [x1.2]
+     if (MiscellaneousVars[181] == 4) { MaxTensionChargeTimer = 1925; TensionTimerMax = 6221; } // "100" [x1.2]
+     if (MiscellaneousVars[181] == 5) { MaxTensionChargeTimer = 2100; TensionTimerMax = 7465; } // "250" [x1.2]
+     if (MiscellaneousVars[181] == 6) { MaxTensionChargeTimer = 2625; TensionTimerMax = 8958; } // "500" [x1.2]
+     if (MiscellaneousVars[181] == 7) { TensionTimerMax = 10750; } // "1000" [x1.2]
+ 
+     if (MiscellaneousVars[181] < 7 && MiscellaneousVars[185] > 0 && MiscellaneousVars[184] == 0)
+     {
+      Z1 = MiscellaneousVars[185];
+      Z2 = MaxTensionChargeTimer;
+      I1 = Z1 * 100 / Z2;     
+      if (I1 > 100) I1 = 100;
+      if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = 100;
+      for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
       {
-       I1 = fixedmul(fixeddiv(MiscellaneousVars[185] << 16,MaxTensionChargeTimer << 16),100.0) >> 16;
-       if (C1 - 1 <= I1) SetFont("TENCHAF"); else SetFont("ManaHE");
-       I2 = C1 << 16;
+       if (C1 <= I1) SetFont("TENCHAF"); else SetFont("ManaHE");
+       I2 = (C1 << 16) + 1.0;
        HudMessage(s:"A";HUDMSG_PLAIN,C1+2302,cr_untranslated,536.0+I2,20.0,0.03); // | HUDMSG_NOTWITHFULLMAP
       }
-    }
+     }
 
-
-    // Tension Time-Left Bar
-    if (MiscellaneousVars[181] > 0) //   && MiscellaneousVars[183] < TensionTimerMax
-    {
-      for (C1 = 101; C1 > 1; C1 --)
+ 
+     // Tension Time-Left Bar
+     if (MiscellaneousVars[181] > 0) //   && MiscellaneousVars[183] < TensionTimerMax
+     {
+      Z1 = MiscellaneousVars[183];
+      Z2 = TensionTimerMax;
+      I1 = Z1 * 100 / Z2;     
+      if (I1 > 100) I1 = 100;
+      if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = 100;
+      for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
       {
-       I1 = fixedmul(fixeddiv(MiscellaneousVars[183] << 16,TensionTimerMax << 16),100.0) >> 16;
-       if (C1 - 1 <= I1) SetFont("TENTIMF"); else SetFont("ManaHE");
-       I2 = C1 << 16;
+       if (C1 <= I1) SetFont("TENTIMF"); else SetFont("ManaHE");
+       I2 = (C1 << 16) + 1.0;
        HudMessage(s:"A";HUDMSG_PLAIN,C1+2404,cr_untranslated,536.0+I2,28.0,0.03); // | HUDMSG_NOTWITHFULLMAP
       }
-    }
+     }
 
-    // Tension Cooldown Bar
-    // MiscellaneousVars[188] = MiscellaneousVars[186];
-    if (MiscellaneousVars[186] > 0 && MiscellaneousVars[188] > 0 && MiscellaneousVars[184] == 0)
-    {
-      for (C1 = 101; C1 > 1; C1 --)
+     // Tension Cooldown Bar
+     // MiscellaneousVars[188] = MiscellaneousVars[186];
+     if (MiscellaneousVars[186] > 0 && MiscellaneousVars[188] > 0 && MiscellaneousVars[184] == 0)
+     {
+      Z1 = MiscellaneousVars[186];
+      Z2 = MiscellaneousVars[188];
+      I1 = Z1 * 100 / Z2;     
+      if (I1 > 100) I1 = 100;
+      if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = 100;
+      for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
       {
-       I1 = fixedmul(fixeddiv(MiscellaneousVars[186] << 16,MiscellaneousVars[188] << 16),100.0) >> 16;
-       if (C1 - 1 <= I1) SetFont("TENCOOF"); else SetFont("ManaHE");
-       I2 = C1 << 16;
+       if (C1 <= I1) SetFont("TENCOOF"); else SetFont("ManaHE");
+       I2 = (C1 << 16) + 1.0;
        HudMessage(s:"A";HUDMSG_PLAIN,C1+2506,cr_untranslated,536.0+I2,36.0,0.03); // | HUDMSG_NOTWITHFULLMAP
       }
+     }
     }
 
     // Shows Tension Level [icon]
@@ -2383,21 +2419,21 @@ script "HUDDisplay" ENTER
       if (MiscellaneousVars[181] == 5) SetFont("TENMEDE0");
       if (MiscellaneousVars[181] == 6) SetFont("TENMEDF0");
       if (MiscellaneousVars[181] == 7) SetFont("TENMEDG0");
-      HudMessage(s:"A";HUDMSG_PLAIN,2609,cr_untranslated,508.0+I2,28.0,0.03); // | HUDMSG_NOTWITHFULLMAP
+      HudMessage(s:"A";HUDMSG_PLAIN,2609,cr_untranslated,508.0,28.0,0.03); // | HUDMSG_NOTWITHFULLMAP
     }
     else
     {
       if (MiscellaneousVars[185] > 0) // Charging Tension
       {
        SetFont("TENMED00"); // "0" Tension Icon
-       HudMessage(s:"A";HUDMSG_PLAIN,2609,cr_untranslated,508.0+I2,28.0,0.03); // | HUDMSG_NOTWITHFULLMAP
+       HudMessage(s:"A";HUDMSG_PLAIN,2609,cr_untranslated,508.0,28.0,0.03); // | HUDMSG_NOTWITHFULLMAP
       }
       else
       {
        if (MiscellaneousVars[186] > 0) // Not Charging Tension /w Tension Cooldown
        {
          SetFont("TENSMLNO"); // No Tension Icon
-         HudMessage(s:"A";HUDMSG_PLAIN,2609,cr_untranslated,508.0+I2,28.0,0.03); // | HUDMSG_NOTWITHFULLMAP
+         HudMessage(s:"A";HUDMSG_PLAIN,2609,cr_untranslated,508.0,28.0,0.03); // | HUDMSG_NOTWITHFULLMAP
        }
       }
     }
@@ -2959,13 +2995,7 @@ script "HUDDisplay" ENTER
       if (C1 == 7) { xpos = 468.0; ypos = 1023.0; }
       if (C1 == 8) { xpos = 527.0; ypos = 1023.0; }
       if (C1 == 9) { xpos = 586.0; ypos = 1023.0; }
-/*
-      else if (C1 > 0)
-      {
-       xpos += 59.0;
-       ypos += 0.0;
-      }
-*/
+
       if (ReadiedSpells[C1] != 0)
       {
        // Function Ran
@@ -3288,13 +3318,17 @@ script "HUDDisplay" ENTER
 
        if (PowerupTimer[7] > 0) MaxEXPCombotimer = 7000; else MaxEXPCombotimer = 5600;
        // Combo Timer Bar
-       for (C1 = 101; C1 > 1; C1 --)
+       Z1 = MiscellaneousVars[157];
+       Z2 = MaxEXPCombotimer;
+       I1 = Z1 * 100 / Z2;
+       if (I1 > 100) I1 = 100;
+       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 100;
+       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
        {
-        if (MaxEXPCombotimer != 0)
+        if (Z2 != 0)
         {
-         I1 = fixedmul(fixeddiv(MiscellaneousVars[157] << 16,MaxEXPCombotimer << 16),100.0) >> 16;
-         if (C1 - 1 <= I1) SetFont("KLBNOTCH"); else SetFont("KLBNOTEM");
-         I2 = C1 << 16;
+         if (C1 <= I1) SetFont("KLBNOTCH"); else SetFont("KLBNOTEM");
+         I2 = (C1 << 16) + 1.0;
          HudMessage(s:"A";HUDMSG_ALPHA,C1+2010,cr_untranslated,xpos+I2,ypos,0.036,0.75);
         }
        }
@@ -3456,25 +3490,31 @@ script "HUDDisplay" ENTER
      G3 = GetActorProperty(1001,APROP_Health);
      G2 = MaxHealthTrue; // Max Health for player
      I1 = G3 * 200 / G2;
+     if (I1 > 200) I1 = 200;
+     if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
      if (G2 != 0)
      {
       // Normal
-      for (C1 = 201; C1 > 1; C1 --)
+      for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
       {    
-       if (C1 - 1 <= I1) SetFont("HPBFILNR"); else SetFont("HPBFILEM");
-       I2 = C1 << 16;
+       if (C1 <= I1) SetFont("HPBFILNR"); else SetFont("HPBFILEM");
+       I2 = (C1 << 16) + 1.0;
        HudMessage(s:"A";HUDMSG_ALPHA,C1+2800,cr_untranslated,xpos+I2,ypos,0.036,0.75);
       }
       if (GetCVar("dvdsnewhud_showoverlifenotches") == 1)
       {
        // Overlife
-       I1 = (G3 * 200 / G2) - 200;
-       if (I1 > 0)
+       G3 = GetActorProperty(1001,APROP_Health);
+       G2 = MaxHealthTrue; // Max Health for player
+       I1 = (G3 * 200 / G2) - 200; 
+       if (I1 > 200) I1 = 200;
+       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
+       if (G2 != 0 && I1 > 0)
        {
-        for (C1 = 201; C1 > 1; C1 --)
+        for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
         {    
-         if (C1 - 1 <= I1) SetFont("HPBFILOV"); else SetFont("HPBFILEM");
-         I2 = C1 << 16;
+         if (C1 <= I1) SetFont("HPBFILOV"); else SetFont("HPBFILEM");
+         I2 = (C1 << 16) + 1.0;
          HudMessage(s:"A";HUDMSG_ALPHA,C1+2600,cr_untranslated,xpos+I2,ypos,0.036,0.75);
         }
        }
@@ -3572,26 +3612,32 @@ script "HUDDisplay" ENTER
      msgalpha = 0.75;
      G3 = CurrentMana;
      G2 = MaxMana;
+     I1 = G3 * 200 / G2;
+     if (I1 > 200) I1 = 200;
+     if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
      if (G2 != 0)
      {
-      I1 = G3 * 200 / G2;
       // Normal
-      for (C1 = 201; C1 > 1; C1 --)
+      for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
       {    
-       if (C1 - 1 <= I1) SetFont("MPBFILNR"); else SetFont("MPBFILEM");
-       I2 = C1 << 16;
+       if (C1 <= I1) SetFont("MPBFILNR"); else SetFont("MPBFILEM");
+       I2 = (C1 << 16) + 1.0;
        HudMessage(s:"A";HUDMSG_ALPHA,C1+3300,cr_untranslated,xpos+I2,ypos,0.036,0.75);
       }
       if (GetCVar("dvdsnewhud_showoverlifenotches") == 1)
       {
        // Overlife
-       I1 = (G3 * 200 / G2) - 200;
-       if (I1 > 0)
+       G3 = CurrentMana;
+       G2 = MaxMana;
+       I1 = (G3 * 200 / G2) - 200; 
+       if (I1 > 200) I1 = 200;
+       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
+       if (G2 != 0 && I1 > 0)
        {
-        for (C1 = 201; C1 > 1; C1 --)
+        for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
         {    
-         if (C1 - 1 <= I1) SetFont("MPBFILOV"); else SetFont("MPBFILEM");
-         I2 = C1 << 16;
+         if (C1 <= I1) SetFont("MPBFILOV"); else SetFont("MPBFILEM");
+         I2 = (C1 << 16) + 1.0;
          HudMessage(s:"A";HUDMSG_ALPHA,C1+3100,cr_untranslated,xpos+I2,ypos,0.036,0.75);
         }
        }
@@ -3680,28 +3726,35 @@ script "HUDDisplay" ENTER
        xpos = 225.0; // 225
        ypos = 924.0; // 870
        msgalpha = 0.75;
+
        G3 = HellcoreOverheatLevel;
        G2 = 10000;
+       I1 = G3 * 200 / G2;
+       if (I1 > 200) I1 = 200;
+       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
        if (G2 != 0)
        {
-        I1 = G3 * 200 / G2;
         // Normal
-        for (C1 = 201; C1 > 1; C1 --)
+        for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
         {    
-         if (C1 - 1 <= I1) SetFont("HCBFILNR"); else SetFont("HCBFILEM");
-         I2 = C1 << 16;
+         if (C1 <= I1) SetFont("HCBFILNR"); else SetFont("HCBFILEM");
+         I2 = (C1 << 16) + 1.0;
          HudMessage(s:"A";HUDMSG_ALPHA,C1+3800,cr_untranslated,xpos+I2,ypos,0.036,0.75);
         }
         if (GetCVar("dvdsnewhud_showoverlifenotches") == 1)
         {
          // Overheat
+         G3 = HellcoreOverheatLevel;
+         G2 = 10000;
          I1 = ((G3 * 200 / G2) - 200) / 9;
+         if (I1 > 200) I1 = 200;
+         if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
          if (I1 > 0)
          {
-          for (C1 = 201; C1 > 1; C1 --)
+          for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
           {    
            if (C1 - 1 <= I1) SetFont("HCBFILOV"); else SetFont("HCBFILEM");
-           I2 = C1 << 16;
+           I2 = (C1 << 16) + 1.0;
            HudMessage(s:"A";HUDMSG_ALPHA,C1+3600,cr_untranslated,xpos+I2,ypos,0.036,0.75);
           }
          }
@@ -3716,8 +3769,10 @@ script "HUDDisplay" ENTER
      }
      else // Marines = AP
      {
-       G3 = CheckActorInventory(1001,"Armor");
-       G2 = CurrentMaxArmor;
+      G3 = CheckActorInventory(1001,"Armor");
+      G2 = CurrentMaxArmor;
+      if (G3 > 0 && G2 > 0)
+      {
        // AP Label
        xpos = 220.0;
        ypos = 922.0;
@@ -3768,16 +3823,19 @@ script "HUDDisplay" ENTER
        // AP Meter Notches
        xpos = 225.0; // 225
        ypos = 924.0; // 870
+
        G3 = CheckActorInventory(1001,"Armor");
        G2 = CurrentMaxArmor;
+       I1 = G3 * 200 / G2;
+       if (I1 > 200) I1 = 200;
+       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
        if (G2 != 0)
        {
-        I1 = G3 * 200 / G2;
         // Normal
-        for (C1 = 201; C1 > 1; C1 --)
+        for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
         {    
-         if (C1 - 1 <= I1) SetFont("APBFILNR"); else SetFont("APBFILEM");
-         I2 = C1 << 16;
+         if (C1 <= I1) SetFont("APBFILNR"); else SetFont("APBFILEM");
+         I2 = (C1 << 16) + 1.0;
          HudMessage(s:"A";HUDMSG_ALPHA,C1+3600,cr_untranslated,xpos+I2,ypos,0.036,0.75);
         }
        }
@@ -3787,6 +3845,7 @@ script "HUDDisplay" ENTER
        ypos = 924.0;
        SetFont("APBGLASS");
        HudMessage(s:"A";HUDMSG_ALPHA,4001,cr_untranslated,xpos,ypos,0.036,0.75);
+      }
      }
 
 
@@ -3904,28 +3963,35 @@ script "HUDDisplay" ENTER
      xpos = 225.0; // 225
      ypos = 951.0; // 870
      msgalpha = 0.75;
+
      G3 = MiscellaneousVars[21];
      G2 = MiscellaneousVars[22];
+     I1 = G3 * 200 / G2;
+     if (I1 > 200) I1 = 200;
+     if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
      if (G2 != 0)
      {
-      I1 = G3 * 200 / G2;
       // Normal
-      for (C1 = 201; C1 > 1; C1 --)
+      for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
       {    
-       if (C1 - 1 <= I1) SetFont("SMBFILNR"); else SetFont("SMBFILEM");
-       I2 = C1 << 16;
+       if (C1 <= I1) SetFont("SMBFILNR"); else SetFont("SMBFILEM");
+       I2 = (C1 << 16) + 1.0;
        HudMessage(s:"A";HUDMSG_ALPHA,C1+4300,cr_untranslated,xpos+I2,ypos,0.036,0.75);
       }
       if (GetCVar("dvdsnewhud_showoverlifenotches") == 1)
       {
        // Overcharge
+       G3 = MiscellaneousVars[21];
+       G2 = MiscellaneousVars[22];
        I1 = ((G3 * 200 / G2) - 200) / 4;
+       if (I1 > 200) I1 = 200;
+       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
        if (I1 > 0)
        {
-        for (C1 = 201; C1 > 1; C1 --)
+        for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
         {    
-         if (C1 - 1 <= I1) SetFont("SMBFILOV"); else SetFont("SMBFILEM");
-         I2 = C1 << 16;
+         if (C1 <= I1) SetFont("SMBFILOV"); else SetFont("SMBFILEM");
+         I2 = (C1 << 16) + 1.0;
          HudMessage(s:"A";HUDMSG_ALPHA,C1+4100,cr_untranslated,xpos+I2,ypos,0.036,0.75);
         }
        }
@@ -3969,16 +4035,19 @@ script "HUDDisplay" ENTER
        xpos = 508.0;
        ypos = 870.0;
        msgalpha = 0.75;
+
        G3 = PlayerLevel; // Current Player Level
        G2 = LevelCap; // Max Level for player
        I1 = G3 * 50 / G2;
+       if (I1 > 50) I1 = 50;
+       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 50;
        if (G2 != 0)
        {
         // Normal
-        for (C1 = 51; C1 > 1; C1 --)
+        for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 51; C1 > 1; C1 --)
         {    
-         if (C1 - 1 <= I1) SetFont("LVBNOTCH"); else SetFont("LVBNOTEM");
-         I2 = C1 << 16;
+         if (C1 <= I1) SetFont("LVBNOTCH"); else SetFont("LVBNOTEM");
+         I2 = (C1 << 16) + 1.0;
          HudMessage(s:"A";HUDMSG_ALPHA,C1+4510,cr_untranslated,xpos+I2,ypos,0.036,0.75);
         }
        }
@@ -4021,15 +4090,19 @@ script "HUDDisplay" ENTER
       xpos = 508.0;
       ypos = 897.0;
       msgalpha = 0.75;
+
       G3 = SurvivalWhole; // Current Player Level
-      I1 = G3 * 50 / 100;
+      G2 = 100;
+      I1 = G3 * 50 / G2;
+      if (I1 > 50) I1 = 50;
+      if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 50;
       if (G2 != 0)
       {
        // Normal
-       for (C1 = 51; C1 > 1; C1 --)
+       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 51; C1 > 1; C1 --)
        {    
-        if (C1 - 1 <= I1) SetFont("SVBNOTCH"); else SetFont("SVBNOTEM");
-        I2 = C1 << 16;
+        if (C1 <= I1) SetFont("SVBNOTCH"); else SetFont("SVBNOTEM");
+        I2 = (C1 << 16) + 1.0;
         HudMessage(s:"A";HUDMSG_ALPHA,C1+4610,cr_untranslated,xpos+I2,ypos,0.036,0.75);
        }
       }
@@ -4069,20 +4142,24 @@ script "HUDDisplay" ENTER
       xpos = 508.0;
       ypos = 924.0;
       msgalpha = 0.75;
+
       G3 = SavePercent; // Armor Absorbsion Rate
-      I1 = G3 * 50 / 100;
+      G2 = 100;
+      I1 = G3 * 50 / G2;
+      if (I1 > 50) I1 = 50;
+      if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 50;
       if (G2 != 0)
       {
        // Normal
-       for (C1 = 51; C1 > 1; C1 --)
+       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 51; C1 > 1; C1 --)
        {    
-        if (C1 - 1 <= I1)
+        if (C1 <= I1)
         {
          if (CharacterClass == 2) SetFont("ABBNOTF"); 
          else SetFont("ABBNOTM"); 
         }
         else SetFont("ABBNOTEM");
-        I2 = C1 << 16;
+        I2 = (C1 << 16) + 1.0;
         HudMessage(s:"A";HUDMSG_ALPHA,C1+4710,cr_untranslated,xpos+I2,ypos,0.036,0.75);
        }
       }
@@ -4122,15 +4199,20 @@ script "HUDDisplay" ENTER
       xpos = 508.0;
       ypos = 951.0;
       msgalpha = 0.75;
+
+
       G3 = EvadeWhole; // Current Player Level
-      I1 = G3 * 50 / 100;
+      G2 = 100;
+      I1 = G3 * 50 / G2;
+      if (I1 > 50) I1 = 50;
+      if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 50;
       if (G2 != 0)
       {
        // Normal
-       for (C1 = 51; C1 > 1; C1 --)
+       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 51; C1 > 1; C1 --)
        {    
-        if (C1 - 1 <= I1) SetFont("EVBNOTCH"); else SetFont("EVBNOTEM");
-        I2 = C1 << 16;
+        if (C1 <= I1) SetFont("EVBNOTCH"); else SetFont("EVBNOTEM");
+        I2 = (C1 << 16) + 1.0;
         HudMessage(s:"A";HUDMSG_ALPHA,C1+4810,cr_untranslated,xpos+I2,ypos,0.036,0.75);
        }
       }
@@ -4162,13 +4244,17 @@ script "HUDDisplay" ENTER
       // EXP Notches
       xpos = 214.0;
       ypos = 972.0;
-      for (C1 = 201; C1 > 1; C1 --)
+      Z1 = Experience - ExpTable[PlayerLevel - 1];
+      Z2 = ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1];
+      I1 = Z1 * 200 / Z2;
+      if (I1 > 200) I1 = 200;
+      if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
+      for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 201; C1 > 1; C1 --)
       {
-       if (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1] != 0)
+       if (Z2 != 0)
        {
-        I1 = ((Experience - ExpTable[PlayerLevel - 1]) * 200) / (ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]);
-        if ((C1 - 1 <= I1) || (PlayerLevel == LevelCap)) SetFont("EXBNOTCH"); else SetFont("EXBNOTEM");
-        I2 = C1 << 16;
+        if ((C1 <= I1) || (PlayerLevel == LevelCap)) SetFont("EXBNOTCH"); else SetFont("EXBNOTEM");
+        I2 = (C1 << 16) + 1.0;
         HudMessage(s:"A";HUDMSG_ALPHA,C1+4903,cr_untranslated,xpos+I2,ypos,0.036,0.75);
        }
       }
@@ -4263,11 +4349,13 @@ script "HUDDisplay" ENTER
       // Tension-Charge Meter Notches
       if (MiscellaneousVars[181] < 7 && MiscellaneousVars[185] > 0 && MiscellaneousVars[184] == 0)
       {
-       for (C1 = 201; C1 > 1; C1 --)
+       I1 = MiscellaneousVars[185] * 200 / MaxTensionChargeTimer;
+       if (I1 > 200) I1 = 200;
+       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
+       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 201; C1 > 1; C1 --)
        {
-        I1 = MiscellaneousVars[185] * 200 / MaxTensionChargeTimer;
-        if (C1 - 1 <= I1) SetFont("TNBNOTCH"); else SetFont("TNBNOTEM");
-        I2 = C1 << 16;
+        if (C1 <= I1) SetFont("TNBNOTCH"); else SetFont("TNBNOTEM");
+        I2 = (C1 << 16) + 1.0;
         HudMessage(s:"A";HUDMSG_ALPHA,C1+5120,cr_untranslated,xpos,ypos-I2,0.036,0.75);
        }
       }
@@ -4278,11 +4366,13 @@ script "HUDDisplay" ENTER
       // Tension-Timer Notches
       if (MiscellaneousVars[181] > 0) //   && MiscellaneousVars[183] < TensionTimerMax
       {
-       for (C1 = 201; C1 > 1; C1 --)
+       I1 = MiscellaneousVars[183] * 200 / TensionTimerMax;
+       if (I1 > 200) I1 = 200;
+       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
+       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 201; C1 > 1; C1 --)
        {
-        I1 = MiscellaneousVars[183] * 200 / TensionTimerMax;
-        if (C1 - 1 <= I1) SetFont("TNBNOTTI"); else SetFont("TNBNOTEM");
-        I2 = C1 << 16;
+        if (C1 <= I1) SetFont("TNBNOTTI"); else SetFont("TNBNOTEM");
+        I2 = (C1 << 16) + 1.0;
         HudMessage(s:"A";HUDMSG_ALPHA,C1+5323,cr_untranslated,xpos,ypos-I2,0.036,0.75);
        }
       }
@@ -4362,15 +4452,19 @@ script "HUDDisplay" ENTER
       xpos = 46.0;
       ypos = 963.0;
       msgalpha = 0.75;
-      G3 = MiscellaneousVars[186]; // Current Tension Cooldown Timer
-      G2 = MiscellaneousVars[188]; // Max Tension Cooldown
+
+
       if (G2 != 0)
       {
+       G3 = MiscellaneousVars[186]; // Current Tension Cooldown Timer
+       G2 = MiscellaneousVars[188]; // Max Tension Cooldown
        I1 = G3 * 100 / G2;
-       for (C1 = 101; C1 > 1; C1 --)
+       if (I1 > 100) I1 = 100;
+       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 100;
+       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 201; C1 > 1; C1 --)
        {    
-        if (C1 - 1 <= I1) SetFont("TNCDNOTC"); else SetFont("TNCDNOEM");
-        I2 = C1 << 16;
+        if (C1 <= I1) SetFont("TNCDNOTC"); else SetFont("TNCDNOEM");
+        I2 = (C1 << 16) + 1.0;
         HudMessage(s:"A";HUDMSG_ALPHA,C1+5630,cr_untranslated,xpos,ypos-I2,0.036,0.875);
        }
       }
@@ -5279,15 +5373,17 @@ script "HUDDisplay" ENTER
      xpos = 1188.0; // 1188.0
      ypos = 1060.0; // 1060.0
      msgalpha = 0.75;
+ 
      if (maxammo != 0)
      {
       I1 = ammo * 200 / maxammo;
+      if (I1 > 200) I1 = 200;
+      if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
       // Normal
-      for (C1 = 201; C1 > 1; C1 --)
+      for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
       {    
-       if (C1 - 1 <= I1) SetFont("AMMBFILL"); else SetFont("AMMBFIEM");
-       //if (C1 - 1 <= I1) SetFont("SCBFILLN"); else SetFont("SCBFILEM");
-       I2 = C1 << 16;
+       if (C1 <= I1) SetFont("AMMBFILL"); else SetFont("AMMBFIEM");
+       I2 = (C1 << 16) + 1.0;
        HudMessage(s:"A";HUDMSG_ALPHA,C1+6000,cr_untranslated,xpos+I2,ypos,0.036,0.75);
       }
      }
@@ -5319,10 +5415,12 @@ script "HUDDisplay" ENTER
        if (G4 > 0)
        {
         I1 = G1 * 200 / G4;
-        for (C1 = 201; C1 > 1; C1 --)
+        if (I1 > 200) I1 = 200;
+        if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = 200;
+        for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 201; C1 > 1; C1 --)
         {    
-         if (C1 - 1 <= I1) SetFont("SCBFILLN"); else SetFont("SCBFILEM");
-         I2 = C1 << 16;
+         if (C1 <= I1) SetFont("SCBFILLN"); else SetFont("SCBFILEM");
+         I2 = (C1 << 16) + 1.0;
          HudMessage(s:"A";HUDMSG_ALPHA,C1+6000,cr_untranslated,xpos+I2,ypos,0.036,0.75);
         }
        }
@@ -5522,9 +5620,12 @@ script "ManaRegenerationStuff" ENTER
    {
     CurrentMana += RegenedMana;
  
-    SetHudSize(640,480,0);
-    HudMessage(s:"+",d:RegenedMana,s:" Mana";0,3419,cr_blue,51.0,42.0,0.75);
-    SetHudSize(0,0,0);
+    if (MiscellaneousVars[2000] == 0)
+    {
+     SetHudSize(640,480,0);
+     HudMessage(s:"+",d:RegenedMana,s:" Mana";0,3419,cr_blue,51.0,42.0,0.75);
+     SetHudSize(0,0,0);
+    }
  
     if (CurrentMana > MaxMana) CurrentMana = MaxMana;
    }
