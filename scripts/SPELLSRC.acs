@@ -537,9 +537,11 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [172] Used for the "glow/fade" of the "Level Up" and "Stat Up" indicators
 // [173] Shows "HealthDifference" in the new HUD for Player's "Damage/Healing" bursts.
 // [174] Shows "HealthDiffRatio" in the new HUD for Player's "Damage/Healing" bursts.
-// [175] Shows "ArmorDifference" in the new HUD for Player's "Damage/Healing" bursts.
-// [176] Shows "ArmorDiffRatio" in the new HUD for Player's "Damage/Healing" bursts.
-// [177-180] are unused
+// [175] Shows "NewHealthValue" in the new HUD for the Player's "Damage/Healing" bursts. 
+// [176] Shows "ArmorDifference" in the new HUD for Player's "Damage/Healing" bursts.
+// [177] Shows "ArmorDiffRatio" in the new HUD for Player's "Damage/Healing" bursts.
+// [178] Shows "NewArmorValue" in the new HUD for the Player's "Damage/Healing" bursts. 
+// [179-180] are unused
 // [181] Tension Level
 // [182] Tension Level Compare
 // [183] Tension Timer
@@ -2950,6 +2952,101 @@ script "HUDDisplay" ENTER
      SetFont("HUDBGTST");
      HudMessage(s:"A";HUDMSG_ALPHA,2222,cr_untranslated,720.0,808.0,0.036,0.25); // 2222 to overlap, or 7777 or underlap
     }
+    //***********************
+    //**General Positioning**
+    //***********************
+
+    // Healing/Damage Bursts
+
+    int PopUpXPlacement = random(-288,288) * 1.0;
+    int PopUpYPlacement = random(-216,216) * 1.0;
+    int PopupHoldDuration = 0.0;
+    int PopupFadeOutDuration = 0.0;
+    int yposmod = 0.0;
+
+    if (Timer() > 3)
+    {
+     PopupHoldDuration = 0.0;
+     PopupFadeOutDuration = 0.0;
+     xpos = 720.0;
+     ypos = 540.0;
+     msgalpha = 0.834;
+     // HP/Health Damage/Heal
+     if (MiscellaneousVars[173] != 0)
+     {
+       // [173] Shows "HealthDifference" in the new HUD for Player's "Damage/Healing" bursts.
+       // [174] Shows "HealthDiffRatio" in the new HUD for Player's "Damage/Healing" bursts.
+       // [175] Shows "NewHealthValue" in the new HUD for the Player's "Damage/Healing" bursts. 
+       if (MiscellaneousVars[173] > 0) // Positive Value
+       {
+        if (MiscellaneousVars[174] < 5) { PopupHoldDuration = -0.375; PopupFadeOutDuration = -0.25; }
+        if (MiscellaneousVars[174] >= 30)
+        {
+         SetFont("DQHUDFONT"); 
+         yposmod = 9.0; // 9.0
+        }
+        else
+        {
+         SetFont("DQHUDFONTSML");
+         yposmod = 5.0; // 5.0
+        }
+        if (GetCVar("dvdsnewhud_damageburstsratios") == 1)
+        {
+         HudMessage(d:MiscellaneousVars[173],s:" (",d:MiscellaneousVars[174],s:"%)";
+         HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_green,xpos+PopUpXPlacement,ypos+yposmod+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
+        }
+        else
+        {
+         HudMessage(d:MiscellaneousVars[173];
+         HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_green,xpos+PopUpXPlacement,ypos+yposmod+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
+        }
+
+        if (MiscellaneousVars[174] >= 30) SetFont("BBURHPHL"); else SetFont("BURSHPHL");
+        HudMessage(s:"A";HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_untranslated,xpos+PopUpXPlacement,ypos+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
+       }
+       else
+       if (MiscellaneousVars[173] < 0) // Negative Value
+       {
+        MiscellaneousVars[173] *= -1;
+        MiscellaneousVars[174] *= -1;
+        if (MiscellaneousVars[174] < 5) { PopupHoldDuration = -0.375; PopupFadeOutDuration = -0.25; }
+        if (MiscellaneousVars[174] >= 30)
+        {
+         SetFont("DQHUDFONT"); 
+         yposmod = 9.0;
+        }
+        else
+        {
+         SetFont("DQHUDFONTSML");
+         yposmod = 5.0;
+        }
+        if (GetCVar("dvdsnewhud_damageburstsratios") == 1)
+        {
+         HudMessage(d:MiscellaneousVars[173],s:" (",d:MiscellaneousVars[174],s:"%)";
+         HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_orange,xpos+PopUpXPlacement,ypos+yposmod+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
+        }
+        else
+        {
+         HudMessage(d:MiscellaneousVars[173];
+         HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_orange,xpos+PopUpXPlacement,ypos+yposmod+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
+        }
+
+        if (MiscellaneousVars[175] <= 0)
+        {
+         if (MiscellaneousVars[174] >= 30) SetFont("BBURHPCP"); else SetFont("BURSHPCP"); // Death [for now]
+        }
+        else
+        {
+         if (MiscellaneousVars[174] >= 30) SetFont("BBURHPDP"); else SetFont("BURSHPDP"); // Damage w/o Death
+        }
+        HudMessage(s:"A";HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_untranslated,xpos+PopUpXPlacement,ypos+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
+       }
+
+       // [176] Shows "ArmorDifference" in the new HUD for Player's "Damage/Healing" bursts.
+       // [177] Shows "ArmorDiffRatio" in the new HUD for Player's "Damage/Healing" bursts.
+       // [178] Shows "NewArmorValue" in the new HUD for the Player's "Damage/Healing" bursts. 
+     }
+    }
     //*************
     //**Left Side**
     //*************
@@ -3221,7 +3318,7 @@ script "HUDDisplay" ENTER
      //*************************
      // Spell Cost
      xpos = ScreenXOffset + 587.0;
-     ypos = 792.0;
+     ypos = 792.0; // 792.0
      SetFont("DQHUDFONTSTATUS");
      G1 = SpellCostCheck(SelectedSpell);
      HudMessage(d:G1;HUDMSG_ALPHA,7991,cr_lightblue,xpos,ypos,0.036,0.875); // Not Enough Mana
@@ -15696,10 +15793,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     // HP/Health Damage/Heal
     MiscellaneousVars[173] = HealthDifference;
     MiscellaneousVars[174] = HealthDiffRatio;
+    MiscellaneousVars[175] = NewHealthValue;
     if (HealthDifference != 0)
     {
       SetHudSize(640,480,0);
-      //if (MiscellaneousVars[2000] == 0)
+      if (MiscellaneousVars[2000] == 0)
       {
        SetFont("SmallFont");
        if (HealthDifference > 0) // Positive Value
@@ -15720,14 +15818,15 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
         if (NewHealthValue <= 0) HudMessageBold(s:"FATAL!\n",s:"-",d:HealthDifference,s:" HP (-",d:HealthDiffRatio,s:"%)";HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_red,320.0+PopUpXPlacement,240.0+PopUpYPlacement,1.5+PopupHoldDuration,1.0+PopupFadeOutDuration,1.0);
         else HudMessageBold(s:"-",d:HealthDifference,s:" HP (-",d:HealthDiffRatio,s:"%)";HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_red,320.0+PopUpXPlacement,240.0+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
        }
-     }
+      }
     }
 
     PopupHoldDuration = 0.0;
     PopupFadeOutDuration = 0.0;
     // AP/Armor Damage/Heal
-    MiscellaneousVars[175] = ArmorDifference;
-    MiscellaneousVars[176] = ArmorDiffRatio;
+    MiscellaneousVars[176] = ArmorDifference;
+    MiscellaneousVars[177] = ArmorDiffRatio;
+    MiscellaneousVars[178] = NewArmorValue;
     if (CharacterClass != 2 && ArmorDifference != 0)
     {
       SetHudSize(640,480,0);
