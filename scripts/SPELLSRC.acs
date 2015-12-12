@@ -582,7 +582,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [218] # of Paxa Punches [for death-exit checks]
 // [219] # of Lesser Vimstones [for death-exit checks]
 // [220] # of Greater Vimstones [for death-exit checks]
-	// [221] is undefined so far :P
+// [221] # of Mercury Bandanas [for death-exit checks]
 // [222] # of TOTAL Max HP gained during multiple level ups [for displays]
 // [223] # of TOTAL Max MP gained during multiple level ups [for displays]
 // [224] # of TOTAL Aeon Points gained during multiple level ups [for displays]
@@ -14107,6 +14107,11 @@ script "MagicEffects" (int Type, int Strength)
   //ActivatorSound("CastSpreaderAura2",127);
   PowerupTimer[11] += (Strength*35);
  }
+ if (Type == 21) // Accelerate
+ {
+  //ActivatorSound("CastSpreaderAura2",127);
+  PowerupTimer[12] += (Strength*35);
+ }
 }
 
 script "CreateTranslationTables" OPEN
@@ -15361,6 +15366,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  {
   GiveActorInventory(1001,"GreaterVimstone",1);  TakeActorInventory(1001,"GreaterVimstone",1);
   GiveActorInventory(1001,"LesserVimstone",1);  TakeActorInventory(1001,"LesserVimstone",1);
+  GiveActorInventory(1001,"MercuryBandana",1);  TakeActorInventory(1001,"MercuryBandana",1);
   GiveActorInventory(1001,"PaxaPunch",1);  TakeActorInventory(1001,"PaxaPunch",1);
   GiveActorInventory(1001,"YggdrasilDew",1);  TakeActorInventory(1001,"YggdrasilDew",1);
   GiveActorInventory(1001,"SpecialMedicine",1);  TakeActorInventory(1001,"SpecialMedicine",1);
@@ -17478,6 +17484,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   MiscellaneousVars[218] = CheckActorInventory(1001,"PaxaPunch");
   MiscellaneousVars[219] = CheckActorInventory(1001,"LesserVimstone");
   MiscellaneousVars[220] = CheckActorInventory(1001,"GreaterVimstone");
+  MiscellaneousVars[221] = CheckActorInventory(1001,"MercuryBandana");
  }
  else
  {
@@ -17490,6 +17497,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    SetActorInventory(1001,"PaxaPunch",MiscellaneousVars[218]);
    SetActorInventory(1001,"LesserVimstone",MiscellaneousVars[219]);
    SetActorInventory(1001,"GreaterVimstone",MiscellaneousVars[220]);
+   SetActorInventory(1001,"MercuryBandana",MiscellaneousVars[221]);
   }
  }
 
@@ -21025,6 +21033,22 @@ script "CheckBuffTimers" ENTER
   TakeActorInventory(1001, "BuffDQSpell", 9999);
  }
 
+ // Buff Effects
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
+ if (PowerupTimer[12] > 0)
+ {
+  PowerupRunning[12] = 1;
+  GiveActorInventory(1001, "AcceleratleDQSpell", 1);
+  if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Acceleratle: ",d:(PowerupTimer[12]/35),s:" Secs";0,3443,cr_white,xpos,ypos,0.03);
+  PowerupTimer[12] -= 1;
+ }
+ else
+ {
+  PowerupRunning[12] = 0;
+  PowerupTimer[12] = 0;
+  TakeActorInventory(1001, "AcceleratleDQSpell", 9999);
+ }
+
  // RadSphere Effects
  ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  if (PowerupTimer[22] > 0)
@@ -21185,6 +21209,11 @@ script "GiveBuffsPowerup" (int powertype, int powertimeadd)
  {
   PowerupTimer[11] += powertimeadd;
   if (PowerupTimer[11] > 0) GiveActorInventory(1001, "BuffDQSpell", 1);
+ }
+ if (powertype == 12) // Acceleratle [+33% speed for player]
+ {
+  PowerupTimer[12] += powertimeadd;
+  if (PowerupTimer[12] > 0) GiveActorInventory(1001, "AcceleratleDQSpell", 1);
  }
 
  if (powertype == 22) // RadSuit [IronFeet, protection from most damage floors]
@@ -27216,6 +27245,23 @@ script "UseCustomInventoryItem" (int type)
    PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
   }
  } 
+
+ if (type == 8 && CheckActorInventory(1001,"MercuryBandana") > 0) // Mercury Bandana
+ {
+  temp1 = GetActorProperty(1001,APROP_Health);
+  if (temp1 > 0 && PowerupTimer[12] < 6300)
+  {
+   // Acceleratle for a full minute
+   PowerupTimer[12] += (60*35);
+   PlaySound(1001,"use_merc",CHAN_BODY,1.0,0,ATTN_NORM);
+   TakeActorInventory(1001,"MercuryBandana",1);
+  }
+  else
+  {
+   PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+  }
+ } 
+
 }
 
 // Scripts for Footsteps
