@@ -806,7 +806,7 @@ int SpellCastTypes[58] = {
                           18,19,20};
 int SpellCastStrength[58] = {
                                 0,   2,  10,   1,  10,
-                               10,   0,   2,   0,   3, 
+                               10,   0,   2,  15,   3, 
                                 0,   4,   5,   6,   5,
                                 0,  10,  10,  30,   7,
                                 8,  30,  30,   9,   1,
@@ -897,7 +897,7 @@ str SpellDesc[58] =  {
                       "Leave the forces of gravity behind for 10 seconds",				// Minor Flight
                       "Creates a stationary cloud of poison",					// Minor Poison Cloud
                       "Shoots a fireball that does low damage",					// Minor Fireball
-                      "Multiplies most melee damage by 10x",				// Enchanced Strength
+                      "Multipliesmelee damage 10x for 15 seconds",				// Enchanced Strength
                       "Fires a few ice shards", 							// Minor Ice Blast
                       "Summons a weak allied monster. 25% chance to spawn two.",	// Summon Weak Monster
                       "A more powerful magic missile",				// Magic Missile
@@ -957,7 +957,7 @@ int SpellCosts[58] = {
                        10,		// Minor Flight
                        15,		// Minor Poison Cloud
                        10,		// Minor Fireball
-                       30,		// Enhanced Strength
+                       50,		// Enhanced Strength
                        15,		// Minor Ice Blast
                        50,		// Summon Weak Monster
                        20,		// Magic Missile
@@ -13170,7 +13170,9 @@ script "MagicEffects" (int Type, int Strength)
  }
  if (Type == 5) // Berserk
  {
-  SetPlayerProperty(1,1,PROP_STRENGTH);
+  ActivatorSound("CastBerserk",127);
+  PowerupTimer[23] += (Strength*35);
+  if (PowerupTimer[23] > 0) SetPlayerProperty(1,1,PROP_STRENGTH);
  }
  if (Type == 6) // Summon Monster
  {
@@ -21023,6 +21025,38 @@ script "CheckBuffTimers" ENTER
   TakeActorInventory(1001, "BuffDQSpell", 9999);
  }
 
+ // RadSphere Effects
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
+ if (PowerupTimer[22] > 0)
+ {
+  PowerupRunning[22] = 1;
+  GiveActorInventory(1001, "PowerIronFeet", 1);
+  if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"BioShield: ",d:(PowerupTimer[22]/35),s:" Secs";0,3444,cr_white,xpos,ypos,0.03);
+  PowerupTimer[22] -= 1;
+ }
+ else
+ {
+  PowerupRunning[22] = 0;
+  PowerupTimer[22] = 0;
+  TakeActorInventory(1001, "PowerIronFeet", 9999);
+ }
+
+ // RadSphere Effects
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
+ if (PowerupTimer[23] > 0)
+ {
+  PowerupRunning[23] = 1;
+  GiveActorInventory(1001, "PowerStrength", 1);
+  if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Berserk: ",d:(PowerupTimer[23]/35),s:" Secs";0,3444,cr_white,xpos,ypos,0.03);
+  PowerupTimer[23] -= 1;
+ }
+ else
+ {
+  PowerupRunning[23] = 0;
+  PowerupTimer[23] = 0;
+  TakeActorInventory(1001, "PowerStrength", 9999);
+ }
+
 
 
  // GoE?? Effects
@@ -21151,6 +21185,17 @@ script "GiveBuffsPowerup" (int powertype, int powertimeadd)
  {
   PowerupTimer[11] += powertimeadd;
   if (PowerupTimer[11] > 0) GiveActorInventory(1001, "BuffDQSpell", 1);
+ }
+
+ if (powertype == 22) // RadSuit [IronFeet, protection from most damage floors]
+ {
+  PowerupTimer[22] += powertimeadd;
+  if (PowerupTimer[22] > 0) GiveActorInventory(1001, "PowerIronFeet", 1);
+ }
+ if (powertype == 23) // Berserk [10x damage on exertion based melee attacks]
+ {
+  PowerupTimer[23] += powertimeadd;
+  if (PowerupTimer[23] > 0) GiveActorInventory(1001, "PowerStrength", 1);
  }
  if (powertype == 129) // GoE??
  {
