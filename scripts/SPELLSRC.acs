@@ -319,12 +319,11 @@ global int 16:PowerupTimer[];
 // [9] - Spreader Aura Lv. 2
 // [10] - Oomph [aka Bikill] (2x damage, up to +8% crit rate)
 // [11] - Buff (2x defense, up to +10% survival rate, 2x balance)
-
-// [12] - Accelerate (2x Speed, up to +10% evade rate, 1.25x jumping) [not implemented yet]
+// [12] - Accelerate (1.33x Speed, up to +10% evade rate, 1.25x jumping)
 
 // [13] - Blunt (0.5x damage, down to -8% crit rate) [not implemented yet]
 // [14] - Sap (0.5x defense, down to -10% survival rate, 0.75x balance) [not implemented yet]
-// [15] - Decelerate (0.5x Speed, down to -10% evade rate, 0.875x jumping) [not implemented yet]
+// [15] - Decelerate (0.66x Speed, down to -10% evade rate, 0.875x jumping) [not implemented yet]
 
 // [16] - Poison (HP/Health is damaged every so many tics, down to as low as 1 [cannot kill the player]) [not implemented yet]
 // [17] - Corrosion (AP/Armor is damaged every so many tics, down to as low as 0) [not implemented yet]
@@ -2078,6 +2077,8 @@ script "Initializer" OPEN
   // Starting Armor
 
   MiscellaneousVars[197] = GetCVAR("dvds_aeonstartlvl"); // MiscellaneousVars[197] = 32;
+  if (MiscellaneousVars[197] < 0) MiscellaneousVars[197] = 0;
+  if (MiscellaneousVars[197] > 200) MiscellaneousVars[197] = 200;
   MiscellaneousVars[7] = 5120; // Set this for the maximum range of the randomizer for Fygg drops.
   MiscellaneousVars[6] = random(1,MiscellaneousVars[7]);
   MiscellaneousVars[199] = 1; // Very-First-Run
@@ -15329,6 +15330,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (MiscellaneousVars[2000] == 0) GiveActorInventory(1001,"DVDSOldHud",1); else TakeActorInventory(1001,"DVDSOldHud",9999); 
 
  MiscellaneousVars[197] = GetCVAR("dvds_aeonstartlvl");
+ if (MiscellaneousVars[197] < 0) MiscellaneousVars[197] = 0;
+ if (MiscellaneousVars[197] > 200) MiscellaneousVars[197] = 200;
 
  MiscellaneousVars[52] = GetCVar("dvds_leveldifficultyinflationEXP");
  MiscellaneousVars[53] = GetCVar("dvds_leveldifficultyinflationStats");
@@ -18012,6 +18015,14 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (MiscellaneousVars[23] > 7500) MiscellaneousVars[23] = 7500;
  }
 
+ int AccelEvadeAdd;
+ // Acceleratle = +1/10 of remaining % Evasion added (done after caps are normally calculated)
+ if (CheckActorInventory(1001,"AcceleratleDQSpell") > 0)
+ {
+  AccelEvadeAdd = (10000 - MiscellaneousVars[23]) / 10;
+  MiscellaneousVars[23] += AccelEvadeAdd;
+ }
+
  int InvisEvadeAdd;
  // BlurSphere = +1/3 of remaining % Evasion added (done after caps are normally calculated) [in other words, make the Blur Sphere & Invisibility Spells actually USEFUL >__>;]
  if (CheckActorInventory(1001,"PowerInvisibility") > 0)
@@ -19477,6 +19488,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (CheckActorInventory(1001,"SauronGauntletsIllucia") > 0) { MiscellaneousVars[68] = MiscellaneousVars[68] - FixedMul(1.00, 0.05); }	// -5%
  if (CheckActorInventory(1001,"SauronGauntletsFlora") > 0) { MiscellaneousVars[68] = MiscellaneousVars[68] - FixedMul(1.00, 0.05); }	// -5%
  if (CheckActorInventory(1001,"TheOneRing") > 0) { MiscellaneousVars[68] = MiscellaneousVars[68] + FixedMul(1.00, 0.25); }			// +25%
+
+ // Acceleratle Buff = +25% Jumping Height
+ if (CheckActorInventory(1001,"AcceleratleDQSpell") > 0) { MiscellaneousVars[68] = MiscellaneousVars[68] + FixedMul(1.00, 0.25); }			// +25%
 
  // "69" is storage for Sceptre for JumpZ height.
  MiscellaneousVars[69] = FixedMul(1.00, 1.00);
@@ -23201,6 +23215,8 @@ script "GetEvolveChance" (void)
 
  if(GetCVar("dvds_dviirndmonsters") == 0) SpawnChance = 0;
  else SpawnChance = GetCVar("dvds_monsterevolchance");
+ if (SpawnChance < 0) SpawnChance = 0;
+ if (SpawnChance > 512) SpawnChance = 512;
 
  SpawnChance = SpawnChance + (SceptreActualLevel * 2 / 10) + (PlayerLevel / 15);
 
@@ -23346,6 +23362,8 @@ script "GetStealthChance" (void)
 
  if(GetCVar("dvds_dviirndstealthmonsters") == 0) StealthChance = 0;
  else StealthChance = GetCVar("dvds_monsterstealthchance");
+ if (StealthChance < 0) StealthChance = 0;
+ if (StealthChance > 512) StealthChance = 512;
 
  StealthChance = StealthChance + (SceptreActualLevel * 2 / 50) + (PlayerLevel / 75);
 
@@ -25051,6 +25069,10 @@ function int GetDigit(int Num, int Digit)
 script "DamageDisplays" (void)
 {
  int PlayerCrit;
+ int dmgind_delay = GetCVAR("dvds_dmgind_delay");
+ if (dmgind_delay < 1) dmgind_delay = 1;
+ if (dmgind_delay > 35) dmgind_delay = 35;
+
  while (GetCVar("dvds_dmgindicator") == 1)
  {
   if (CheckInventory("MonsterDisplayDMG") == 0) terminate;
@@ -25058,7 +25080,7 @@ script "DamageDisplays" (void)
   int ActorHeight = GetActorProperty(0,APROP_Height);
   int PreviousHealth = GetActorProperty(0,APROP_Health);
 
-  int totaldelay = ((1 + (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / 160) ) * GetCVAR("dvds_dmgind_delay"));
+  int totaldelay = ((1 + (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / 160) ) * dmgind_delay);
   delay(totaldelay); // 1
   If (GetActorProperty(0,APROP_Health) != PreviousHealth)
   {
@@ -27338,7 +27360,7 @@ script "UseCustomInventoryItem" (int type)
   {
    // Acceleratle for a full minute
    PowerupTimer[12] += (60*35);
-   PlaySound(1001,"use_merc",CHAN_BODY,1.0,0,ATTN_NORM);
+   PlaySound(1001,"use_mercurybandana",CHAN_BODY,1.0,0,ATTN_NORM);
    TakeActorInventory(1001,"MercuryBandana",1);
   }
   else
