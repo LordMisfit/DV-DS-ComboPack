@@ -12,8 +12,13 @@ Thing Tags:
 	1001		-	The Main Player
 	1002-1014	-	Temporary ThingIDs
 
-	1123		-	Main Sauron Eye's TID
-	1124		-	Sauravatar's TID
+
+	
+	1123		-	Main Sauron Eye's TID [Boss Lifemeters]
+	1124		-	Sauravatar's TID [Boss Lifemeters]
+
+    1222		-	General Demonic Boss TIDs
+
 	1281		-	TID for Armor Bonuses [for color translations]
 	1537		-	TID for Seed Spawn system
 
@@ -591,7 +596,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [228] # of TOTAL Sorcery Points gained during multiple level ups [for displays]
 // [229] # of TOTAL Strength Points gained during multiple level ups [for displays]
 // [230] # of TOTAL Therapeusis Points gained during multiple level ups [for displays]
-	// [231 to 300] are undefined so far :P
+// [231] Focus Timer
+	// [232 to 300] are undefined so far :P
 // [301] Total Sceptre EXP Required for Level 1
 // [302] Total Sceptre EXP Required for Level 2
 // [303] Total Sceptre EXP Required for Level 3
@@ -2546,8 +2552,8 @@ script "HUDDisplay" ENTER
     if (G1 > 0) { MiscellaneousVars[2027] = 1123; } // Check for a Sauron's Eye [Main] second
     else
     {
-     G1 = GetActorProperty(888,APROP_Health); // use tag 888 for custom "bosses"
-     if (G1 > 0) { MiscellaneousVars[2027] = 888; } // Check for custom bosses third if neither of the above exists
+     G1 = GetActorProperty(1222,APROP_Health); // use tag 1222 for custom "bosses"
+     if (G1 > 0) { MiscellaneousVars[2027] = 1222; } // Check for custom bosses third if neither of the above exists
     }
    }
 
@@ -2570,7 +2576,7 @@ script "HUDDisplay" ENTER
        HudMessage(s:"A";0,C1+3502,cr_untranslated,192.0+I2,384.0,0.036);
 
        SetFont("BigFont");
-       if (MiscellaneousVars[2027] == 888) HudMessage(s:"BOSS";0,3501,cr_red,320.0,400.0,0.036);
+       if (MiscellaneousVars[2027] == 1222) HudMessage(s:"BOSS";0,3501,cr_red,320.0,400.0,0.036);
        if (MiscellaneousVars[2027] == 1123) HudMessage(s:"SAURON'S EYE";0,3501,cr_red,320.0,400.0,0.036);
        if (MiscellaneousVars[2027] == 1124) HudMessage(s:"SAURAVATAR";0,3501,cr_darkgrey,320.0,400.0,0.036);
        SetFont("SmallFont");
@@ -3160,8 +3166,8 @@ script "HUDDisplay" ENTER
       if (G1 > 0) { MiscellaneousVars[2027] = 1123; } // Check for a Sauron's Eye [Main] second
       else
       {
-       G1 = GetActorProperty(888,APROP_Health); // use tag 888 for custom "bosses"
-       if (G1 > 0) { MiscellaneousVars[2027] = 888; } // Check for custom bosses third if neither of the above exists
+       G1 = GetActorProperty(1222,APROP_Health); // use tag 1222 for custom "bosses"
+       if (G1 > 0) { MiscellaneousVars[2027] = 1222; } // Check for custom bosses third if neither of the above exists
       }
      }
 
@@ -6148,7 +6154,17 @@ script "ManaRegenerationStuff" ENTER
  delaycount = delaycount * MiscellaneousVars[213] / 100;
  if (MiscellaneousVars[212] > 0) // Focusing
  {
-  delaycount *= 4;
+  // Slowly increases the speed of regen as focus lasts longer
+  if (MiscellaneousVars[231] >= 140) delaycount += 1; // [4 seconds]
+  if (MiscellaneousVars[231] >= 245) delaycount += 1; // [7 seconds]
+  if (MiscellaneousVars[231] >= 315) delaycount += 1; // [9 seconds]
+  if (MiscellaneousVars[231] >= 350) delaycount += 2; // [10 seconds]
+  if (MiscellaneousVars[231] >= 490) delaycount += 2; // [14 seconds]
+  if (MiscellaneousVars[231] >= 630) delaycount += 3; // [18 seconds]
+  if (MiscellaneousVars[231] >= 910) delaycount += 3; // [26 seconds]
+  if (MiscellaneousVars[231] >= 2100) delaycount = (delaycount * 3) / 2; // [60 seconds]
+  if (random(1,25) == 1) delaycount *= 8; else delaycount *= 4;
+  //Print(d:MiscellaneousVars[231],s:"  ",d:delaycount);
  }
 
  if (delaycount < 1) delaycount = 1;
@@ -6347,6 +6363,8 @@ script "ManaRegenerationStuff" ENTER
  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0)
  {
   PrintBold(
+             s:"Focus?: ",d:MiscellaneousVars[212],s:"\n",
+             s:"FocusTimer: ",d:MiscellaneousVars[231],s:"\n\n",
              s:"Timer: ",d:MiscellaneousVars[211],s:"\n",
              s:"DelayCount: ",d:delaycount,s:"\n",
              s:"RegenedMana: ",d:RegenedMana,s:"\n"
@@ -7459,6 +7477,7 @@ script "SpellSelection" (int Dir)
 // Spell Readying (For Five Slot system)
 script "SpellQuickAssign" (int Slot, int Type)
 {
+ if (MiscellaneousVars[2500] != 0) terminate;
  int C1, C2, C3, I1, I2, I3, G1, G2, G3, G4, Z1, Z2;
  int MaxHealthLimit = MaxHealthTrue * 2;
  
@@ -7597,6 +7616,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 
 script "SpellCasting" (void)
 {
+ if (MiscellaneousVars[2500] != 0) terminate;
  int C1, C2, I1, I2, G1, G2, G3, G4, Z1, Z2;
  int MaxHealthLimit = MaxHealthTrue * 2;
 
@@ -15904,6 +15924,15 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (MiscellaneousVars[2038] <= 0) MiscellaneousVars[229] = 0;
   if (MiscellaneousVars[2039] <= 0) MiscellaneousVars[230] = 0;
 
+ if (MiscellaneousVars[2500] == 1)
+ {
+  SetPlayerProperty(1,1,PROP_TOTALLYFROZEN);
+ }
+ else
+ {
+  SetPlayerProperty(1,0,PROP_TOTALLYFROZEN);
+ }
+
  int TimerMulti;
  int TimerPart1;
  // Check EXP Kill Combo Timer
@@ -16158,16 +16187,20 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
  // Check for Magic Focus
  buttons = GetPlayerInput(0, INPUT_BUTTONS); 
- if (buttons & BT_ZOOM && buttons & BT_SPEED && MiscellaneousVars[21] > 19)
+ if (buttons & BT_ZOOM && buttons & BT_SPEED && MiscellaneousVars[21] > 19 && MiscellaneousVars[2500] == 0)
  {
-  MiscellaneousVars[21] -= (random(4,8) * 5);
+  if (random(1,25) == 1) MiscellaneousVars[21] -= (random(1,2) * 4);
+                    else MiscellaneousVars[21] -= (random(4,8) * 5);
+
   if (MiscellaneousVars[21] < 0) MiscellaneousVars[21] = 0;
 
   MiscellaneousVars[212] = 1; // "Focus" on
+  MiscellaneousVars[231] += 1;
  }
  else
  {
   MiscellaneousVars[212] = 0; // "Focus" off
+  MiscellaneousVars[231] = 0;
  }
 
  if (MiscellaneousVars[212] > 0) // Focusing
@@ -16290,18 +16323,21 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   staminaregenfinal += staminaregenbase;
 
   // Check Input for Bonus/Penalties
-  buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-  if (buttons & BT_FORWARD) C3 = 76;
-  else if (buttons & BT_BACK) C3 = 76;
-  else if (buttons & BT_MOVELEFT) C3 = 76;
-  else if (buttons & BT_MOVERIGHT) C3 = 76;
-  else if (buttons & BT_MOVEUP) C3 = 84;
-  else if (buttons & BT_MOVEDOWN) C3 = 84;
-  else if (buttons & BT_JUMP) C3 = 76;
-  else if (buttons & BT_CROUCH) C3 = 120;
-  else C3 = 100;
-  staminaregenfinal = staminaregenfinal * C3 / 100;
- 
+  if (MiscellaneousVars[2500] == 0)
+  {
+   buttons = GetPlayerInput(0, INPUT_BUTTONS); 
+   if (buttons & BT_FORWARD) C3 = 76;
+   else if (buttons & BT_BACK) C3 = 76;
+   else if (buttons & BT_MOVELEFT) C3 = 76;
+   else if (buttons & BT_MOVERIGHT) C3 = 76;
+   else if (buttons & BT_MOVEUP) C3 = 84;
+   else if (buttons & BT_MOVEDOWN) C3 = 84;
+   else if (buttons & BT_JUMP) C3 = 76;
+   else if (buttons & BT_CROUCH) C3 = 120;
+   else C3 = 100;
+   staminaregenfinal = staminaregenfinal * C3 / 100;
+  }
+
   // Check Armor for Bonus/Penalties
   C3 = 1000;
   // Marine Specfic Armors
@@ -16366,17 +16402,20 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CharacterClass == 2) staminaregenbase = (PlayerLevel / 40); // +2-5
   staminaregenfinal += staminaregenbase;
 
-  buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-  if (buttons & BT_FORWARD) C3 = 112;
-  else if (buttons & BT_BACK) C3 = 112;
-  else if (buttons & BT_MOVELEFT) C3 = 112;
-  else if (buttons & BT_MOVERIGHT) C3 = 112;
-  else if (buttons & BT_MOVEUP) C3 = 108;
-  else if (buttons & BT_MOVEDOWN) C3 = 108;
-  else if (buttons & BT_JUMP) C3 = 112;
-  else if (buttons & BT_CROUCH) C3 = 90;
-  else C3 = 100;
-  staminaregenfinal = staminaregenfinal * C3 / 100;
+  if (MiscellaneousVars[2500] == 0)
+  {
+   buttons = GetPlayerInput(0, INPUT_BUTTONS); 
+   if (buttons & BT_FORWARD) C3 = 112;
+   else if (buttons & BT_BACK) C3 = 112;
+   else if (buttons & BT_MOVELEFT) C3 = 112;
+   else if (buttons & BT_MOVERIGHT) C3 = 112;
+   else if (buttons & BT_MOVEUP) C3 = 108;
+   else if (buttons & BT_MOVEDOWN) C3 = 108;
+   else if (buttons & BT_JUMP) C3 = 112;
+   else if (buttons & BT_CROUCH) C3 = 90;
+   else C3 = 100;
+   staminaregenfinal = staminaregenfinal * C3 / 100;
+  }
 
   // Check Armor for Bonus/Penalties
   C3 = 1000;
@@ -16644,18 +16683,21 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  // Cursed Shield Degeneration Effect [will NOT kill the player though]
  if (CheckActorInventory(1001,"RuinousShield") > 0 && GetActorProperty(1001,APROP_Health) > DegenMinimumHP)
  {
-   buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-   if (buttons & BT_FORWARD) CursedShieldDegenInterval = 6;
-   else if (buttons & BT_BACK) CursedShieldDegenInterval = 6;
-   else if (buttons & BT_MOVELEFT) CursedShieldDegenInterval = 6;
-   else if (buttons & BT_MOVERIGHT) CursedShieldDegenInterval = 6;
-   else if (buttons & BT_ATTACK) CursedShieldDegenInterval = random(6,7);
-   else if (buttons & BT_ALTATTACK) CursedShieldDegenInterval = random(6,7);
-   else if (buttons & BT_MOVEUP) CursedShieldDegenInterval = 7;
-   else if (buttons & BT_MOVEDOWN) CursedShieldDegenInterval = 7;
-   else if (buttons & BT_JUMP) CursedShieldDegenInterval = 6;
-   else if (buttons & BT_CROUCH) CursedShieldDegenInterval = 2;
-   else CursedShieldDegenInterval = 5;
+   CursedShieldDegenInterval = 5;
+   if (MiscellaneousVars[2500] == 0)
+   {
+    buttons = GetPlayerInput(0, INPUT_BUTTONS); 
+    if (buttons & BT_FORWARD) CursedShieldDegenInterval = 6;
+    else if (buttons & BT_BACK) CursedShieldDegenInterval = 6;
+    else if (buttons & BT_MOVELEFT) CursedShieldDegenInterval = 6;
+    else if (buttons & BT_MOVERIGHT) CursedShieldDegenInterval = 6;
+    else if (buttons & BT_ATTACK) CursedShieldDegenInterval = random(6,7);
+    else if (buttons & BT_ALTATTACK) CursedShieldDegenInterval = random(6,7);
+    else if (buttons & BT_MOVEUP) CursedShieldDegenInterval = 7;
+    else if (buttons & BT_MOVEDOWN) CursedShieldDegenInterval = 7;
+    else if (buttons & BT_JUMP) CursedShieldDegenInterval = 6;
+    else if (buttons & BT_CROUCH) CursedShieldDegenInterval = 2;
+   }
 
    if (random(1,16) == 1) CursedShieldDegenInterval *= 2;
 
@@ -18318,7 +18360,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (GetActorProperty(1001,APROP_Health) > 0)
  {
   TensionChargeAmount = 0;
-  if (buttons & BT_USE && buttons & BT_SPEED && MiscellaneousVars[186] <= 0)
+  if (buttons & BT_USE && buttons & BT_SPEED && MiscellaneousVars[186] <= 0 && MiscellaneousVars[2500] == 0)
   {   
    if (GetCVar("dvds_allowtension") > 0)
    {
@@ -18422,16 +18464,22 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    if (MiscellaneousVars[189] > 0) MiscellaneousVars[189] = 0;
    TensionChargeAmount -= 25;
   }
-  if (buttons & BT_FORWARD) C3 = -50;
-  else if (buttons & BT_BACK) C3 = -50;
-  else if (buttons & BT_MOVELEFT) C3 = -50;
-  else if (buttons & BT_MOVERIGHT) C3 = -50;
-  else if (buttons & BT_MOVEUP) C3 = -50;
-  else if (buttons & BT_MOVEDOWN) C3 = -50;
-  else if (buttons & BT_JUMP) C3 = -50;
-  else if (buttons & BT_CROUCH) C3 = -50;
-  else C3 = 0;
-  if (C3 != 0 && MiscellaneousVars[186] < 700)
+
+  // Movement to decrease Tension charge.
+  C3 = 0;
+  if (MiscellaneousVars[2500] == 0)
+  {
+   if (buttons & BT_FORWARD) C3 = -50;
+   else if (buttons & BT_BACK) C3 = -50;
+   else if (buttons & BT_MOVELEFT) C3 = -50;
+   else if (buttons & BT_MOVERIGHT) C3 = -50;
+   else if (buttons & BT_MOVEUP) C3 = -50;
+   else if (buttons & BT_MOVEDOWN) C3 = -50;
+   else if (buttons & BT_JUMP) C3 = -50;
+   else if (buttons & BT_CROUCH) C3 = -50;
+  }
+
+  if (C3 != 0 && MiscellaneousVars[186] < 700 && MiscellaneousVars[2500] == 0)
   {
    if (GetCVar("dvds_allowtension") > 0)
    {
@@ -24342,6 +24390,7 @@ script "IncreaseHellcoreLevel" (int HellcoreWeapon)
 // Check if to perform Sceptre's downswing alternate attack while falling or it's spinning alternate while grounded.
 script "CheckSceptreAltFire" (void)
 {
+ if (MiscellaneousVars[2500] != 0) terminate;
  int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 
  //PrintBold(d:GetActorVelZ(1001));
@@ -29826,6 +29875,7 @@ script "HellcoreFireMode" (int Check, int WeaponID)
 script "BowAntics" (int type)
 {
   int buttons;
+  if (MiscellaneousVars[2500] != 0) terminate;
   buttons = GetPlayerInput(0, INPUT_BUTTONS); 
   if (buttons & BT_ALTATTACK) SetResultValue(1);
   else if (buttons & BT_ATTACK) SetResultValue(2);
@@ -30710,8 +30760,8 @@ script "KD-SideDodge" enter
  int dashgruntsoundvolume = 1.0;
 
 
- while(GetActorProperty(0, APROP_HEALTH) > 0)
- {
+ while(GetActorProperty(0, APROP_HEALTH) > 0 && MiscellaneousVars[2500] == 0)
+ { 
   input = GetPlayerInput(-1, INPUT_BUTTONS);
   oldInput = GetPlayerInput(-1, INPUT_OLDBUTTONS);
 
