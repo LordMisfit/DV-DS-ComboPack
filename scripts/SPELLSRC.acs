@@ -152,6 +152,7 @@ Functions
 	["SauravatarRegenMode"]			-	***EVENT*** Health Regeneration for Main Sauravatar [only runs when it walks around] [DVI-DS & DVII-DS] ***EVENT***
 	["SauravatarDeath"]				-	***EVENT*** Sauravatar's Death [DVI-DS specific version] ***EVENT***
 	["SauronItemSpawnerCheck"]		-	Calculates the occurance rate of Sauron's Gauntlets and Sauron's Helmet Dropping.
+	["BuffTimer"]					-	***DEBUG*** Gives a specfic buff/debuff for x amount of seconds.
 	["PrintArmorValues"]			-	***DEBUG*** Debugging for Printing Armor Amounts on Screen ***DEBUG***
 	["SetManaAmount"]				-	***DEBUG*** Sets Mana to the Current Amount ("puke 835 [amount]" in console) ***DEBUG***
 	["PrintTest"]					-	***DEBUG*** Prints whatever is defined in the script. ***DEBUG***
@@ -240,11 +241,12 @@ Functions
 
 // TODO: Reduce # of Global Vars >________>; [stupid 64 global var limit]
 
-// Global Vars NOT YET USED AT ALL [22/64]
+// Global Vars NOT YET USED AT ALL [23/64]
 //-------------------------------------
 //		global int 7:?;
 //		global int 9:?;
-
+//      global int 13:?;
+//      global int 15:?;
 //		global int 17:?;
 
 //		global int 32:?;
@@ -306,11 +308,9 @@ global int 12:ModType;
 // 1 = Deus Vult
 // 2 = Deus Vult 2
 
-global int 13:FinalBossActivated; // DVI-DS Sauravatar
 global int 14:FinalBossMaxHealth; // DVI-DS Sauravatar
 
 // Powerup Timers [moved to global to allow timers to transition between levels]
-global int 15:PowerupRunning[];
 global int 16:PowerupTimer[];
 // [0] - Light
 // [1] - Invisibility
@@ -332,7 +332,7 @@ global int 16:PowerupTimer[];
 
 // [16] - Poison (HP/Health is damaged every so many tics, down to as low as 1 [cannot kill the player]) [not implemented yet]
 // [17] - Corrosion (AP/Armor is damaged every so many tics, down to as low as 0) [not implemented yet]
-// [18] - Fatigue (Stamina is damaged every so many tics, down to as low as 0%) [not implemented yet]
+// [18] - Fatigue (HP/Mana/Stamina Regeneration and Hellcore Cooldown are drastically reduced in speed) [not implemented yet]
 // [19] - Blind (exactly as on the tin :V) [not implemented yet]
 // [20] - Sleep (can't move, see or perform actions, 1.25x more damage from attacks, however HP/MP/Stamina regeneration rates are 5x) [not implemented yet]
 // [21] - Silence/Mute (spells are locked out) [not implemented yet]
@@ -656,7 +656,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [2500] Menu mode toggle. 0 = Off, 1 = On
 
 
-global int 22:DVIIGameFlags[]; // ***ARRAY***
+global int 22:SpecialGameFlags[]; // ***ARRAY***
+						// [0 to 999] = DVII related story/game flags
 // [0] = Checks for DV2M01 armor item [Safe Tea Shoes]
 // [1] = Checks for DV2M02 armor item [Pearly Corset]
 // [2] = Checks for DV2M03 armor item [Water Flying Dress]
@@ -668,6 +669,9 @@ global int 22:DVIIGameFlags[]; // ***ARRAY***
 // [8] = Checks for DV2M08 armor item [Ruinous Shield/Divine Shield]
 // [9] = Checks for DV2M09 armor item [Balrog Ring]
 // [10] = Checks for DV2M10 armor item [Dove's Ribbon]
+
+						// [1000 to 1999] = DVI related story/game flags
+// [1000] = Checks for Sauravatar's activation [DVI]
 
 global int 23:BaseFinalBossHealth; // DVI-DS Sauravatar 
 global int 24:FinalBossModerateHealth; // DVI-DS Sauravatar 
@@ -1336,10 +1340,10 @@ function int GetHealingValue (int type, int MinOrMax)
  if (CheckInventory("TheOneRing") > 0) value = value * 5 / 2;
 
  // Divine Avatar
- if (PowerupRunning[7] == 1) value *= 4;
+ if (PowerupTimer[7] > 0) value *= 4;
 
  // ???
- if (PowerupRunning[129] == 1) value *= 10;
+ if (PowerupTimer[129] > 0) value *= 10;
 
  // Flora in use
  if (CharacterClass == 2) value = value * 7 / 4;
@@ -1684,6 +1688,51 @@ function int SpellCostCheck(int checktype)
 //******SCRIPTS******
 //*******************
 //*******************
+
+script "BuffTimer" (int type, int buffid, int time)
+{
+ if (type == 0) // List
+ {
+  Print(s:"
+           0 = Night Vision\n
+           1 = Invisibility\n
+           2 = Flight\n
+           3 = Stealth\n
+           4 = Invulnerability\n
+           5 = Time Freeze\n
+           6 = Fear Aura\n
+           7 = Divine Avatar\n
+           8 = Spreader Aura Lv. 1\n
+           9 = Spreader Aura Lv. 2\n
+          10 = Oomph\n
+          11 = Buff\n
+          12 = Acceleratle\n
+          13 = Blunt\n
+          14 = Sap\n
+          15 = Deceleratle\n
+          16 = Poison\n
+          17 = Corrosion\n
+          18 = Fatigue\n
+          19 = Blind\n
+          20 = Sleep\n
+          21 = Silence\n
+          22 = BioShield\n
+          23 = Berserk\n
+          \n
+          129 = ??????\n
+        ");
+ }
+ if (type == 1) // Set timer
+ {
+  PowerupTimer[buffid] = time * 35;
+ }
+ if (type == 2) // Add/Subtract timer
+ {
+  PowerupTimer[buffid] += (time * 35);
+ }
+ if (PowerupTimer[buffid] < 0) PowerupTimer[buffid] = 0;
+ if (PowerupTimer[buffid] > 999999) PowerupTimer[buffid] = 999999;
+}
 
 script "StatCheck" (void)
 {
@@ -3340,7 +3389,7 @@ script "HUDDisplay" ENTER
      if (CharacterClass == 0) { SetFont("PORTDEG1"); xpos = ScreenXOffset + 128.0; ypos = 864.0; }
      if (CharacterClass == 1) { SetFont("PORTILL1"); xpos = ScreenXOffset + 128.0; ypos = 862.0; }
      if (CharacterClass == 2) { SetFont("PORTFLO1"); xpos = ScreenXOffset + 132.0; ypos = 860.0; }
-     if (CharacterClass == 2 && PowerupRunning[7] == 1) { SetFont("PORTFLO2"); xpos = ScreenXOffset + 175.0; ypos = 859.0; }
+     if (CharacterClass == 2 && PowerupTimer[7] > 0) { SetFont("PORTFLO2"); xpos = ScreenXOffset + 175.0; ypos = 859.0; }
      HudMessage(s:"A";HUDMSG_ALPHA,7797,cr_untranslated,xpos,ypos,0.036,0.75);
 
      //*****************************
@@ -3929,7 +3978,7 @@ script "HUDDisplay" ENTER
 
       G10 = GetCVar("dvdsnewhud_hudmeternotchdetail");
       G9 = 200 / G10;
-      G3 = GetActorProperty(1001,APROP_Health);
+      G3 = GetActorProperty(1001,APROP_Health); // HPInterpolationDisplay
       G2 = MaxHealthTrue; // Max Health for player
       I1 = G3 * G9 / G2;
       if (I1 > G9) I1 = G9;
@@ -5443,7 +5492,7 @@ script "HUDDisplay" ENTER
      Z1 = 999; // Testing number for displays
 
       // Divine Avatar
-     if (PowerupRunning[7] == 1)
+     if (PowerupTimer[7] > 0)
      {
       Z1 = PowerupTimer[7] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 213.0;
@@ -5459,12 +5508,12 @@ script "HUDDisplay" ENTER
 
       // Oomph / Blunt
      Z2 = 0;
-     if (PowerupRunning[10] == 1) Z2 += 1; // Oomph
-     if (PowerupRunning[13] == 1) Z2 += 1; // Blunt
+     if (PowerupTimer[10] > 0) Z2 += 1; // Oomph
+     if (PowerupTimer[13] > 0) Z2 += 1; // Blunt
      if (Z2 > 0)
      {
-      if (PowerupRunning[10] == 1) Z1 = PowerupTimer[10] / 35; // Oomph
-      if (PowerupRunning[13] == 1) Z1 = PowerupTimer[13] / 35; // Blunt
+      if (PowerupTimer[10] > 0) Z1 = PowerupTimer[10] / 35; // Oomph
+      if (PowerupTimer[13] > 0) Z1 = PowerupTimer[13] / 35; // Blunt
       if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 246.0;
       ypos = 846.0;
@@ -5472,19 +5521,19 @@ script "HUDDisplay" ENTER
       HudMessage(d:Z1;HUDMSG_ALPHA,5770,cr_white,xpos,ypos,0.036,0.875);
       xpos = ScreenXOffset + 246.0;
       ypos = 839.0;
-      if (PowerupRunning[10] == 1) SetFont("STBFOMPH"); // Oomph
-      if (PowerupRunning[13] == 1) SetFont("STDBBLNT"); // Blunt
+      if (PowerupTimer[10] > 0) SetFont("STBFOMPH"); // Oomph
+      if (PowerupTimer[13] > 0) SetFont("STDBBLNT"); // Blunt
       HudMessage(s:"A";HUDMSG_ALPHA,5771,cr_untranslated,xpos,ypos,0.036,0.75);
      }
 
       // Buff / Sap
      Z2 = 0;
-     if (PowerupRunning[11] == 1) Z2 += 1; // Buff
-     if (PowerupRunning[14] == 1) Z2 += 1; // Sap
+     if (PowerupTimer[11] > 0) Z2 += 1; // Buff
+     if (PowerupTimer[14] > 0) Z2 += 1; // Sap
      if (Z2 > 0)
      {
-      if (PowerupRunning[11] == 1) Z1 = PowerupTimer[11] / 35; // Buff
-      if (PowerupRunning[14] == 1) Z1 = PowerupTimer[14] / 35; // Sap
+      if (PowerupTimer[11] > 0) Z1 = PowerupTimer[11] / 35; // Buff
+      if (PowerupTimer[14] > 0) Z1 = PowerupTimer[14] / 35; // Sap
       if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 279.0;
       ypos = 846.0;
@@ -5492,19 +5541,19 @@ script "HUDDisplay" ENTER
       HudMessage(d:Z1;HUDMSG_ALPHA,5772,cr_white,xpos,ypos,0.036,0.875);
       xpos = ScreenXOffset + 279.0;
       ypos = 839.0; // 839.0
-      if (PowerupRunning[11] == 1) SetFont("STBFBUFF"); // Buff
-      if (PowerupRunning[14] == 1) SetFont("STDBSAP"); // Sap
+      if (PowerupTimer[11] > 0) SetFont("STBFBUFF"); // Buff
+      if (PowerupTimer[14] > 0) SetFont("STDBSAP"); // Sap
       HudMessage(s:"A";HUDMSG_ALPHA,5773,cr_untranslated,xpos,ypos,0.036,0.75);
      }
 
       // Accelerate / Decelerate
      Z2 = 0;
-     if (PowerupRunning[12] == 1) Z2 += 1; // Accelerate
-     if (PowerupRunning[15] == 1) Z2 += 1; // Decelerate
+     if (PowerupTimer[12] > 0) Z2 += 1; // Accelerate
+     if (PowerupTimer[15] > 0) Z2 += 1; // Decelerate
      if (Z2 > 0)
      {
-      if (PowerupRunning[12] == 1) Z1 = PowerupTimer[12] / 35; // Accelerate
-      if (PowerupRunning[15] == 1) Z1 = PowerupTimer[15] / 35; // Decelerate
+      if (PowerupTimer[12] > 0) Z1 = PowerupTimer[12] / 35; // Accelerate
+      if (PowerupTimer[15] > 0) Z1 = PowerupTimer[15] / 35; // Decelerate
       if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 312.0;
       ypos = 846.0;
@@ -5512,13 +5561,13 @@ script "HUDDisplay" ENTER
       HudMessage(d:Z1;HUDMSG_ALPHA,5774,cr_white,xpos,ypos,0.036,0.875);
       xpos = ScreenXOffset + 312.0;
       ypos = 839.0; // 839.0
-      if (PowerupRunning[12] == 1) SetFont("STBFACEL"); // Accelerate
-      if (PowerupRunning[15] == 1) SetFont("STDBDECL"); // Decelerate
+      if (PowerupTimer[12] > 0) SetFont("STBFACEL"); // Accelerate
+      if (PowerupTimer[15] > 0) SetFont("STDBDECL"); // Decelerate
       HudMessage(s:"A";HUDMSG_ALPHA,5775,cr_untranslated,xpos,ypos,0.036,0.75);
      }
 
       // Poison
-     if (PowerupRunning[16] == 1)
+     if (PowerupTimer[16] > 0)
      {
       Z1 = PowerupTimer[16] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 345.0;
@@ -5532,7 +5581,7 @@ script "HUDDisplay" ENTER
      }
 
       // Corrosion
-     if (PowerupRunning[17] == 1)
+     if (PowerupTimer[17] > 0)
      {
       Z1 = PowerupTimer[17] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 378.0;
@@ -5546,7 +5595,7 @@ script "HUDDisplay" ENTER
      }
 
       // Fatigue
-     if (PowerupRunning[18] == 1)
+     if (PowerupTimer[18] > 0)
      {
       Z1 = PowerupTimer[18] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 411.0;
@@ -5560,7 +5609,7 @@ script "HUDDisplay" ENTER
      }
 
       // Blind
-     if (PowerupRunning[19] == 1)
+     if (PowerupTimer[19] > 0)
      {
       Z1 = PowerupTimer[19] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 444.0;
@@ -5574,7 +5623,7 @@ script "HUDDisplay" ENTER
      }
  
       // Sleep
-     if (PowerupRunning[20] == 1)
+     if (PowerupTimer[20] > 0)
      {
       Z1 = PowerupTimer[20] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 477.0;
@@ -5588,7 +5637,7 @@ script "HUDDisplay" ENTER
      }
 
       // Silence
-     if (PowerupRunning[21] == 1)
+     if (PowerupTimer[21] > 0)
      {
       Z1 = PowerupTimer[21] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 510.0;
@@ -5605,7 +5654,7 @@ script "HUDDisplay" ENTER
      // Lower Row
 
      // Flight
-     if (PowerupRunning[2] == 1)
+     if (PowerupTimer[2] > 0)
      {
       Z1 = PowerupTimer[2] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 213.0;
@@ -5619,7 +5668,7 @@ script "HUDDisplay" ENTER
      }
 
      // Partial Invisibility
-     if (PowerupRunning[1] == 1)
+     if (PowerupTimer[1] > 0)
      {
       Z1 = PowerupTimer[1] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 246.0;
@@ -5633,7 +5682,7 @@ script "HUDDisplay" ENTER
      }
 
      // Stealth / Complete Invisibility
-     if (PowerupRunning[3] == 1)
+     if (PowerupTimer[3] > 0)
      {
       Z1 = PowerupTimer[3] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 279.0;
@@ -5647,7 +5696,7 @@ script "HUDDisplay" ENTER
      }
 
      // Night Vision
-     if (PowerupRunning[0] == 1)
+     if (PowerupTimer[0] > 0)
      {
       Z1 = PowerupTimer[0] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 312.0;
@@ -5661,7 +5710,7 @@ script "HUDDisplay" ENTER
      }
 
      // BioShield / RadSuit / IronFeet
-     if (PowerupRunning[22] == 1)
+     if (PowerupTimer[22] > 0)
      {
       Z1 = PowerupTimer[22] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 345.0;
@@ -5675,7 +5724,7 @@ script "HUDDisplay" ENTER
      }
 
      // Invulnerability
-     if (PowerupRunning[4] == 1)
+     if (PowerupTimer[4] > 0)
      {
       Z1 = PowerupTimer[4] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 378.0;
@@ -5689,7 +5738,7 @@ script "HUDDisplay" ENTER
      }
 
      // Berserk
-     if (PowerupRunning[23] == 1)
+     if (PowerupTimer[23] > 0)
      {
       Z1 = PowerupTimer[23] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 411.0;
@@ -5704,12 +5753,12 @@ script "HUDDisplay" ENTER
 
      // Spreader Aura [Both level 1 and 2]
      Z2 = 0;
-     if (PowerupRunning[8] == 1) Z2 += 1; // Spread Aura Lv. 1
-     if (PowerupRunning[9] == 1) Z2 += 1; // Spread Aura Lv. 2
+     if (PowerupTimer[8] > 0) Z2 += 1; // Spread Aura Lv. 1
+     if (PowerupTimer[9] > 0) Z2 += 1; // Spread Aura Lv. 2
      if (Z2 > 0)
      {
-      if (PowerupRunning[8] == 1) Z1 = PowerupTimer[8] / 35; // Spread Aura Lv. 1
-      if (PowerupRunning[9] == 1) Z1 = PowerupTimer[9] / 35; // Spread Aura Lv. 2
+      if (PowerupTimer[8] > 0) Z1 = PowerupTimer[8] / 35; // Spread Aura Lv. 1
+      if (PowerupTimer[9] > 0) Z1 = PowerupTimer[9] / 35; // Spread Aura Lv. 2
       if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 444.0;
       ypos = 813.0;
@@ -5717,13 +5766,13 @@ script "HUDDisplay" ENTER
       HudMessage(d:Z1;HUDMSG_ALPHA,5802,cr_white,xpos,ypos,0.036,0.875);
       xpos = ScreenXOffset + 444.0;
       ypos = 806.0;
-      if (PowerupRunning[8] == 1) SetFont("STBFSPR1"); // Spread Aura Lv. 1
-      if (PowerupRunning[9] == 1) SetFont("STBFSPR2"); // Spread Aura Lv. 2
+      if (PowerupTimer[8] > 0) SetFont("STBFSPR1"); // Spread Aura Lv. 1
+      if (PowerupTimer[9] > 0) SetFont("STBFSPR2"); // Spread Aura Lv. 2
       HudMessage(s:"A";HUDMSG_ALPHA,5803,cr_untranslated,xpos,ypos,0.036,0.75);
      }
 
      // Fear Aura
-     if (PowerupRunning[6] == 1)
+     if (PowerupTimer[6] > 0)
      {
       Z1 = PowerupTimer[6] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 477.0;
@@ -5737,7 +5786,7 @@ script "HUDDisplay" ENTER
      }
 
      // Time Freezer
-     if (PowerupRunning[5] == 1)
+     if (PowerupTimer[5] > 0)
      {
       Z1 = PowerupTimer[5] / 35; if (Z1 > 999) Z1 = 999;
       xpos = ScreenXOffset + 510.0;
@@ -6194,6 +6243,9 @@ script "ManaRegenerationStuff" ENTER
  delaycount = 20;
  if (GetCVar("dvds_musou_powertripmode") == 1) delaycount = delaycount * 5 / 2; // 250%
  if (GetCVar("dvds_musou_powertripmode") == 2) delaycount = delaycount * 5; // 500%
+
+ if (PowerupTimer[18] > 0) delaycount /= 5; // Fatigue = 0.2x regen speed
+ if (PowerupTimer[20] > 0) delaycount *= 5; // Sleep = 5x regen speed
  // Checks Mana Regen Rate Menu Option
  delaycount = delaycount * MiscellaneousVars[213] / 100;
  if (MiscellaneousVars[212] > 0) // Focusing
@@ -6248,7 +6300,7 @@ script "ManaRegenerationStuff" ENTER
     RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 10);
    }
  
-   if (PowerupRunning[7] == 1) // Divine Avatar
+   if (PowerupTimer[7] > 0) // Divine Avatar
    {
     ExtraManaRegen = PlayerLevel / 7;
     RegenedMana += ExtraManaRegen;
@@ -6444,7 +6496,7 @@ script "ManaRegenerationStuff" ENTER
  }
  if (ModType == 1) // Deus Vult 1 only
  {
-  if (FinalBossActivated != 1)
+  if (SpecialGameFlags[1000] != 1)
   {
    G2 = GetLevelInfo(LEVELINFO_LEVELNUM);
    if (G2 >= 1100 && G2 <= 1199)
@@ -6712,7 +6764,7 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
   if (CheckActorInventory(1001,"PearlyCorset")) { if (random(1,100) < 6) { RealExpGain = RealExpGain * 145 / 100; } else { RealExpGain = RealExpGain * 130 / 100; } }
  }
  int OldExp6 = RealExpGain;
- if (PowerupRunning[7] == 1) { if (random(1,100) > 67) { RealExpGain = RealExpGain * 7 / 6; } else { RealExpGain = RealExpGain * 13 / 12; } } // Divine Avatar [+8.333% EXP, (33% chance of +16.67% EXP instead]
+ if (PowerupTimer[7] > 0) { if (random(1,100) > 67) { RealExpGain = RealExpGain * 7 / 6; } else { RealExpGain = RealExpGain * 13 / 12; } } // Divine Avatar [+8.333% EXP, (33% chance of +16.67% EXP instead]
 
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
  {
@@ -7537,7 +7589,9 @@ script "SpellSelection" (int Dir)
 // Spell Readying (For Five Slot system)
 script "SpellQuickAssign" (int Slot, int Type)
 {
- if (MiscellaneousVars[2500] != 0) terminate;
+ if (MiscellaneousVars[2500] != 0) terminate; // cannot change spells in the menu
+ if (PowerupTimer[20] > 0) terminate; // cannot change spells while put to sleep :V
+
  int C1, C2, C3, I1, I2, I3, G1, G2, G3, G4, Z1, Z2;
  int MaxHealthLimit = MaxHealthTrue * 2;
  
@@ -7599,7 +7653,7 @@ script "SpellQuickAssign" (int Slot, int Type)
      }
      else if (ReadiedSpells[Slot] == 29) // Stone Skin [Deggaris/Illucia Only]
      {
-      if (PowerupRunning[7] == 1)
+      if (PowerupTimer[7] > 0)
       {
        if (CheckInventory("Armor") < 1332)
        {
@@ -7642,7 +7696,7 @@ script "SpellQuickAssign" (int Slot, int Type)
       }
       else // Deggaris & Illucia use "Diamond Skin" in this slot.
       {
-       if (PowerupRunning[7] == 1)
+       if (PowerupTimer[7] > 0)
        {
         if (CheckInventory("Armor") < 3552)
         {
@@ -7677,6 +7731,9 @@ script "SpellQuickAssign" (int Slot, int Type)
 script "SpellCasting" (void)
 {
  if (MiscellaneousVars[2500] != 0) terminate;
+ if (PowerupTimer[20] > 0) terminate; // cannot cast spells while put to sleep :V
+ if (PowerupTimer[21] > 0) terminate; // cannot cast spells while silenced/muted :V
+
  int C1, C2, I1, I2, G1, G2, G3, G4, Z1, Z2;
  int MaxHealthLimit = MaxHealthTrue * 2;
 
@@ -7709,7 +7766,7 @@ script "SpellCasting" (void)
    }
    else if (SelectedSpell == 28)
    {
-    if (PowerupRunning[7] == 1)
+    if (PowerupTimer[7] > 0)
     {
      if (CheckInventory("Armor") < 1332)
      {
@@ -7752,7 +7809,7 @@ script "SpellCasting" (void)
     }
     else // Deggaris & Illucia use "Diamond Skin" in this slot.
     {
-     if (PowerupRunning[7] == 1)
+     if (PowerupTimer[7] > 0)
      {
       if (CheckInventory("Armor") < 3552)
       {
@@ -14102,7 +14159,7 @@ script "MagicEffects" (int Type, int Strength)
  {
   if (Strength == 0) // Stone Skin [Deggaris/Illucia Only]
   {
-   if (PowerupRunning[7] == 1)
+   if (PowerupTimer[7] > 0)
    {
     if (CheckInventory("Armor") < 1332)
     {
@@ -14119,7 +14176,7 @@ script "MagicEffects" (int Type, int Strength)
   }
   else if (Strength == 1) // Diamond Skin [Deggaris/Illucia Only]
   {
-   if (PowerupRunning[7] == 1)
+   if (PowerupTimer[7] > 0)
    {
     if (CheckInventory("Armor") < 3552)
     {
@@ -14370,7 +14427,7 @@ script "DVI-AwakenSauravatar" (void)
   AmbientSound("SauronSight",127);
   Thing_Activate(999);
   Thing_ChangeTID(999,1124);
-  FinalBossActivated = 1;
+  SpecialGameFlags[1000] = 1;
  }
 }
 
@@ -14762,19 +14819,19 @@ script "SauravatarRegenMode" (int C5)
 // Changes Music for the battle with the main Eye of Sauron on MAP04 [DVI-DS] or MAP12 [DVII-DS]
 script "DV1M04-Music1" (void)
 {
- if (FinalBossActivated == 0) SetMusic("DDRAGON3", 13); 
+ if (SpecialGameFlags[1000] == 0) SetMusic("DDRAGON3", 13); 
 }
 
 // Changes Music back when exiting the Fishmouth Temple in MAP04 [DVI-DS] or MAP12 [DVII-DS]
 script 24 (void)
 {
- if (FinalBossActivated == 0) SetMusic("*", 0); 
+ if (SpecialGameFlags[1000] == 0) SetMusic("*", 0); 
 }
 
 // Changes Music for Entering the Fishmouth Temple in MAP04 [DVI-DS] or MAP12 [DVII-DS]
 script 25 (void)
 {
- if (FinalBossActivated == 0) SetMusic("DDRAGON3", 15); 
+ if (SpecialGameFlags[1000] == 0) SetMusic("DDRAGON3", 15); 
 }
 
 // Max Health Bonus Script
@@ -15416,6 +15473,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  int ArmorDifference;
  int LastArmorValue;
  int NewArmorValue;
+ int FreezePlayer;
 
  if (GetActorProperty(1001,APROP_Health) <= 0) // Sets a special flag to check for a "pistol reset" like in resurgance
  {
@@ -15984,7 +16042,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (MiscellaneousVars[2038] <= 0) MiscellaneousVars[229] = 0;
   if (MiscellaneousVars[2039] <= 0) MiscellaneousVars[230] = 0;
 
- if (MiscellaneousVars[2500] == 1)
+ FreezePlayer = 0;
+ if (MiscellaneousVars[2500] == 1) FreezePlayer += 1; // Freezes the player's actions if in the menu...
+ if (PowerupTimer[20] > 0) FreezePlayer += 1; // ...or put to sleep.
+ if (FreezePlayer > 0)
  {
   SetPlayerProperty(1,1,PROP_TOTALLYFROZEN);
  }
@@ -16196,7 +16257,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  {
   if (MiscellaneousVars[195] > 0) // Timer Above 0
   {
-   if (PowerupRunning[4] == 0) SetActorProperty(1001,APROP_INVULNERABLE,1);
+   if (PowerupTimer[4] == 0) 
+   {
+    SetActorProperty(1001,APROP_INVULNERABLE,1);
+    GiveActorInventory(1001,"IsInvulnerable",1);
+   }
    MiscellaneousVars[196] = MiscellaneousVars[195] % 120;
    if (MiscellaneousVars[196] >= 0 && MiscellaneousVars[196] <= 59)
    {
@@ -16212,7 +16277,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
   else // Timer at 0
   {
-   if (PowerupRunning[4] == 0) SetActorProperty(1001,APROP_INVULNERABLE,0);
+   if (PowerupTimer[4] == 0) 
+   {
+    SetActorProperty(1001,APROP_INVULNERABLE,0);
+    TakeActorInventory(1001,"IsInvulnerable",9999);
+   }
    if (MiscellaneousVars[195] != 0) SetActorProperty(1001,APROP_RenderStyle,STYLE_Normal);
    MiscellaneousVars[195] = 0;
   }
@@ -16220,7 +16289,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
  if (MiscellaneousVars[194] == 0) // Not Flickering
  {
-  if (PowerupRunning[4] == 0) SetActorProperty(1001,APROP_INVULNERABLE,0);
+  if (PowerupTimer[4] == 0) 
+  {
+   SetActorProperty(1001,APROP_INVULNERABLE,0);
+   TakeActorInventory(1001,"IsInvulnerable",9999);
+  }
   if (MiscellaneousVars[195] != 0) SetActorProperty(1001,APROP_RenderStyle,STYLE_Normal);
   MiscellaneousVars[195] = 0;
  }
@@ -16245,9 +16318,26 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (HPInterpolationDisplay < InterPolLowestHealth) HPInterpolationDisplay = InterPolLowestHealth;
  }
 
+ // Blacken Screen if Blinded
+ if (PowerupTimer[19] > 0) 
+ {
+  FadeRange(0, 0, 0, 0.95, 0, 0, 0, 0.0, 0.1);
+ }
+
+ // Blacken Screen if Asleep
+ if (PowerupTimer[20] > 0) 
+ {
+  FadeRange(0, 0, 0, 0.95, 0, 0, 0, 0.0, 0.1);
+ }
+
  // Check for Magic Focus
  buttons = GetPlayerInput(0, INPUT_BUTTONS); 
- if (buttons & BT_ZOOM && buttons & BT_SPEED && MiscellaneousVars[21] > 19 && MiscellaneousVars[2500] == 0)
+ FreezePlayer = 0;
+ if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+ if (PowerupTimer[18] > 0 && random(1,5) > 2) FreezePlayer += 1;
+ if (PowerupTimer[20] > 0) FreezePlayer += 1;
+ if (PowerupTimer[21] > 0 && random(1,5) > 2) FreezePlayer += 1;
+ if (buttons & BT_ZOOM && buttons & BT_SPEED && MiscellaneousVars[21] > 19 && FreezePlayer == 0)
  {
   if (random(1,25) == 1) MiscellaneousVars[21] -= (random(1,2) * 4);
                     else MiscellaneousVars[21] -= (random(4,8) * 5);
@@ -16383,7 +16473,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   staminaregenfinal += staminaregenbase;
 
   // Check Input for Bonus/Penalties
-  if (MiscellaneousVars[2500] == 0)
+  FreezePlayer = 0;
+  if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+  if (PowerupTimer[20] > 0) FreezePlayer += 1;
+  if (FreezePlayer == 0)
   {
    buttons = GetPlayerInput(0, INPUT_BUTTONS); 
    if (buttons & BT_FORWARD) C3 = 76;
@@ -16430,8 +16523,14 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CharacterClass == 2) C3 = (MiscellaneousVars[31] / 16) + 100; // Flora's Secondary Stat is Agility. :P
   staminaregenfinal = staminaregenfinal * C3 / 100;
 
-  // Divine Avatar = +75% Regen
-  if (PowerupRunning[7] > 0) staminaregenfinal = staminaregenfinal * 2;
+  // Divine Avatar = +100% Regen
+  if (PowerupTimer[7] > 0) staminaregenfinal = staminaregenfinal * 2;
+
+  // Fatigue = -80% Regen
+  if (PowerupTimer[18] > 0) staminaregenfinal = staminaregenfinal / 5;
+
+  // Sleeping = +400% Regen
+  if (PowerupTimer[20] > 0) staminaregenfinal = staminaregenfinal * 5;
 
   // Checks Stamina Regen Rate Menu Option
   staminaregenfinal = staminaregenfinal * MiscellaneousVars[137] / 100;
@@ -16462,7 +16561,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CharacterClass == 2) staminaregenbase = (PlayerLevel / 40); // +2-5
   staminaregenfinal += staminaregenbase;
 
-  if (MiscellaneousVars[2500] == 0)
+  FreezePlayer = 0;
+  if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+  if (PowerupTimer[20] > 0) FreezePlayer += 1;
+  if (FreezePlayer == 0)
   {
    buttons = GetPlayerInput(0, INPUT_BUTTONS); 
    if (buttons & BT_FORWARD) C3 = 112;
@@ -16511,7 +16613,13 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   staminaregenfinal = staminaregenfinal * C3 / 100;
 
   // Divine Avatar = -50% Degen
-  if (PowerupRunning[7] > 0) staminaregenfinal = staminaregenfinal / 2;
+  if (PowerupTimer[7] > 0) staminaregenfinal = staminaregenfinal / 2;
+
+  // Fatigue = +400% Degen
+  if (PowerupTimer[18] > 0) staminaregenfinal = staminaregenfinal * 5;
+
+  // Sleep = -80% Degen
+  if (PowerupTimer[20] > 0) staminaregenfinal /= 5;
 
   // Check Musou Power Trip Mode
   if (GetCVar("dvds_musou_powertripmode") == 1) staminaregenfinal = staminaregenfinal * (2 / 5); // 40%
@@ -16718,9 +16826,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
  }
  MiscellaneousVars[201] += Mas1;
- if (PowerupRunning[4] > 0) MiscellaneousVars[201] *= 128; // 128x Mass when Invulnerable
- if (PowerupRunning[7] > 0) MiscellaneousVars[201] *= 4; // 4x Mass when using Divine Avatar
- if (PowerupRunning[11] > 0) MiscellaneousVars[201] *= 2; // 2x Mass when using Buff
+ if (PowerupTimer[4] > 0) MiscellaneousVars[201] *= 128; // 128x Mass when Invulnerable
+ if (PowerupTimer[7] > 0) MiscellaneousVars[201] *= 4; // 4x Mass when using Divine Avatar
+ if (PowerupTimer[11] > 0) MiscellaneousVars[201] *= 2; // 2x Mass when using Buff
 
 
  int DegenMinimumHP;
@@ -16744,7 +16852,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (CheckActorInventory(1001,"RuinousShield") > 0 && GetActorProperty(1001,APROP_Health) > DegenMinimumHP)
  {
    CursedShieldDegenInterval = 5;
-   if (MiscellaneousVars[2500] == 0)
+   FreezePlayer = 0;
+   if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+   if (PowerupTimer[20] > 0) FreezePlayer += 1;
+   if (FreezePlayer == 0)
    {
     buttons = GetPlayerInput(0, INPUT_BUTTONS); 
     if (buttons & BT_FORWARD) CursedShieldDegenInterval = 6;
@@ -16899,7 +17010,13 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    C3 = C3 * C2 / 100;
 
    // Divine Avatar = 150% Total Regeneration Speed
-   if (PowerupRunning[7] > 0) C3 = C3 * 3 / 2;
+   if (PowerupTimer[7] > 0) C3 = C3 * 3 / 2;
+
+   // Fatigue = 0.2x regen speed
+   if (PowerupTimer[18] > 0) C3 = C3 / 5;
+
+   // Sleep = x5 regen speed
+   if (PowerupTimer[20] > 0) C3 *= 5;
 
    // Flora's Regeneration Speed is reduced by 3/4s [75%] when holding the Ruinous Shield [curse effect]
    if (CharacterClass == 2) if (CheckActorInventory(1001,"RuinousShield") > 0) C3 = C3 * 1 / 4;
@@ -17020,7 +17137,13 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     C3 = C3 * C2 / 200;
 
     // Divine Avatar = 62.5% Total Degeneration Speed
-    if (PowerupRunning[7] > 0) C3 = C3 * 5 / 8;
+    if (PowerupTimer[7] > 0) C3 = C3 * 5 / 8;
+
+    // Fatigue = 5x degen speed
+    if (PowerupTimer[18] > 0) C3 = C3 * 5;
+
+    // Sleep = 0.2x degen speed
+    if (PowerupTimer[20] > 0) C3 /= 5;
 
     // Flora's Degeneration Speed is multiplied by 4 when holding the Ruinous Shield [curse effect]
     if (CharacterClass == 2) if (CheckActorInventory(1001,"RuinousShield") > 0) C3 = C3 * 4;
@@ -17426,14 +17549,14 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CheckActorInventory(1001,"DoveRibbon") > 0) BuddhaCurrentVal += 150; // Dove Ribbon = 15.0% [Flora Only]
  }
  // Divine Avatar = (25.0% of remaining amount uncovered)
- if (PowerupRunning[7] > 0)
+ if (PowerupTimer[7] > 0)
  {  
   GodlyAvatarBuddhaAdd = (1000 - BuddhaCurrentVal) / 4;
   BuddhaCurrentVal += GodlyAvatarBuddhaAdd;
  }
 
  // Buff = (10.0% of remaining amount uncovered)
- if (PowerupRunning[11] > 0)
+ if (PowerupTimer[11] > 0)
  {  
   GodlyAvatarBuddhaAdd = (1000 - BuddhaCurrentVal) / 10;
   BuddhaCurrentVal += GodlyAvatarBuddhaAdd;
@@ -17461,7 +17584,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  // Dealing Critical Hits
  BuddhaCurrentVal = BuddhaCurrentVal / 4; // Base Critical Hit Rate is always 1/4 of your survival rate.
  // Oomph = (8.33% of remaining amount uncovered)
- if (PowerupRunning[10] > 0)
+ if (PowerupTimer[10] > 0)
  {
   GodlyAvatarBuddhaAdd = (1000 - BuddhaCurrentVal) / 12;
   BuddhaCurrentVal += GodlyAvatarBuddhaAdd;
@@ -17482,8 +17605,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (HellcoreOverheatLevel > 0 && GetActorProperty(1001,APROP_HEALTH) > 0)
  {
   HellcoreCoolRatio = 4; // 25 tics = 100 units [or 1% cooldown], so 1 tic = 4 units (or 0.04% cooldown)
-  if (CheckActorInventory(1001,"DoveRibbon") > 0) HellcoreCoolRatio *= 3; // Dove Ribbon quickly cools down Hellcore meter.
-  if (PowerupTimer[7] > 0) HellcoreCoolRatio = HellcoreCoolRatio * 3 / 2; // Divine Avatar speeds up cooldown by 50%
+
+  // Dove Ribbon quickly cools down Hellcore meter.
+  if (CheckActorInventory(1001,"DoveRibbon") > 0) HellcoreCoolRatio *= 3;
+
+  // Divine Avatar speeds up cooldown by 50%
+  if (PowerupTimer[7] > 0) HellcoreCoolRatio = HellcoreCoolRatio * 3 / 2;
+
+  // Fatigue = 0.2x cooldown speed
+  if (PowerupTimer[18] > 0) HellcoreCoolRatio /= 5;
+
+  // Sleep VERY quickly cools down Hellcore meter.
+  if (PowerupTimer[20] > 0) HellcoreCoolRatio *= 5; 
 
   // Check Hellcore Cooldown Multiplier in Options
   HellcoreCoolRatio = (HellcoreCoolRatio * MiscellaneousVars[131]) / 100;
@@ -18056,12 +18189,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  MiscellaneousVars[23] = MiscellaneousVars[31] * AglEvadeCheck;
  MiscellaneousVars[23] += MiscellaneousVars[33] * DftEvadeCheck;
  MiscellaneousVars[23] /= 2;
- if (PowerupRunning[7] == 1) MiscellaneousVars[23] = MiscellaneousVars[23] * 7 / 4; // Divine Avatar Check = 1.75x of the Agility/Deftness Stats
+ if (PowerupTimer[7] > 0) MiscellaneousVars[23] = MiscellaneousVars[23] * 7 / 4; // Divine Avatar Check = 1.75x of the Agility/Deftness Stats
 
  // Checks Evasion Based on Level
  int LevelCheck;
  LevelCheck = PlayerLevel * 5;
- if (PowerupRunning[7] == 1) LevelCheck = LevelCheck * 7 / 5;
+ if (PowerupTimer[7] > 0) LevelCheck = LevelCheck * 7 / 5;
  MiscellaneousVars[23] += LevelCheck;
 
  if (CharacterClass == 2)
@@ -18420,7 +18553,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (GetActorProperty(1001,APROP_Health) > 0)
  {
   TensionChargeAmount = 0;
-  if (buttons & BT_USE && buttons & BT_SPEED && MiscellaneousVars[186] <= 0 && MiscellaneousVars[2500] == 0)
+  FreezePlayer = 0;
+  if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+  if (PowerupTimer[18] > 0 && random(1,20) == 1) FreezePlayer += 1;
+  if (PowerupTimer[20] > 0) FreezePlayer += 1;
+  if (buttons & BT_USE && buttons & BT_SPEED && MiscellaneousVars[186] <= 0 && FreezePlayer == 0)
   {   
    if (GetCVar("dvds_allowtension") > 0)
    {
@@ -18476,6 +18613,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
       // 10 = 1 tic
       TensionChargeAmount = 10;
  
+      // -37.5% Charge Speed When Fatigued
+      if (PowerupTimer[18] > 0) TensionChargeAmount = TensionChargeAmount * 5 / 8;
       // -25% Charge Speed When Berserked
       if (CheckActorInventory(1001,"PowerStrength") > 0) TensionChargeAmount = TensionChargeAmount * 3 / 4;
       // -12.5% Charge Speed When in Divine Avatar
@@ -18527,7 +18666,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
   // Movement to decrease Tension charge.
   C3 = 0;
-  if (MiscellaneousVars[2500] == 0)
+  FreezePlayer = 0;
+  if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+  if (PowerupTimer[20] > 0) FreezePlayer += 1;
+  if (FreezePlayer == 0)
   {
    if (buttons & BT_FORWARD) C3 = -50;
    else if (buttons & BT_BACK) C3 = -50;
@@ -18539,7 +18681,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    else if (buttons & BT_CROUCH) C3 = -50;
   }
 
-  if (C3 != 0 && MiscellaneousVars[186] < 700 && MiscellaneousVars[2500] == 0)
+  FreezePlayer = 0;
+  if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+  if (PowerupTimer[20] > 0) FreezePlayer += 1;
+  if (C3 != 0 && MiscellaneousVars[186] < 700 && FreezePlayer == 0)
   {
    if (GetCVar("dvds_allowtension") > 0)
    {
@@ -19744,40 +19889,40 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) != 0) KilledMonsterFactor = GetLevelInfo(LEVELINFO_KILLED_MONSTERS) * 1000 / GetLevelInfo(LEVELINFO_TOTAL_MONSTERS);
 
   // Checks for all secrets found in order to spawn Safe Tea Shoes in MAP01
-  if (DVIIGameFlags[0] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1201 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
+  if (SpecialGameFlags[0] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1201 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = 1744 * 65536; SpawnFixedY = -724 * 65536; SpawnFixedZ = 16 * 65536;
    if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("SafeTeaShoes",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
-   DVIIGameFlags[0] = 1;
+   SpecialGameFlags[0] = 1;
   }
 
   // Checks for all secrets found in order to spawn Pearly Corset in MAP02
-  if (DVIIGameFlags[1] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1202 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
+  if (SpecialGameFlags[1] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1202 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = 1440 * 65536; SpawnFixedY = 160 * 65536; SpawnFixedZ = 112 * 65536;
    if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("PearlyCorset",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
-   DVIIGameFlags[1] = 1;
+   SpecialGameFlags[1] = 1;
   }
 
   // Checks for all secrets found in order to spawn Water Flying Dress in MAP03
-  if (DVIIGameFlags[2] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1203 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS)) 
+  if (SpecialGameFlags[2] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1203 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS)) 
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = -6592 * 65536; SpawnFixedY = 4416 * 65536; SpawnFixedZ = 24 * 65536;
    if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("WaterFlyingDress",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
-   DVIIGameFlags[2] = 1;
+   SpecialGameFlags[2] = 1;
   }
 
   // Checks for all secrets found in order to spawn Evenstar Necklace in MAP04
-  if (DVIIGameFlags[3] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1204 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
+  if (SpecialGameFlags[3] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1204 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
@@ -19788,55 +19933,55 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    if (Randomizer1 == 4) { SpawnFixedX = -2944 * 65536; SpawnFixedY = 4064 * 65536; SpawnFixedZ = 16 * 65536; } // -2944,4064,0 coords
    if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("EvenstarNecklace",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
-   DVIIGameFlags[3] = 1;
+   SpecialGameFlags[3] = 1;
   }
 
   // Checks for all secrets found in order to spawn Cloak of Evasion in MAP05
-  if (DVIIGameFlags[4] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1205 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
+  if (SpecialGameFlags[4] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1205 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = 1216 * 65536; SpawnFixedY = -464 * 65536; SpawnFixedZ = 1416 * 65536; // 1216,-464,1400 coords
    if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("CloakOfEvasion",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
-   DVIIGameFlags[4] = 1;
+   SpecialGameFlags[4] = 1;
   }
 
   // Checks for all secrets found in order to spawn Falcon Knife Earrings in MAP05S
-  if (DVIIGameFlags[5] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1206 && KilledMonsterFactor >= 950)
+  if (SpecialGameFlags[5] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1206 && KilledMonsterFactor >= 950)
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = -4160 * 65536; SpawnFixedY = -2396 * 65536; SpawnFixedZ = 16 * 65536; // -4160,-2396,0 coords
    if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("FalconKnifeEarrings",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
-   DVIIGameFlags[5] = 1;
+   SpecialGameFlags[5] = 1;
   }
 
   // Checks for all secrets found in order to spawn Anubis Cufflinks in MAP06
-  if (DVIIGameFlags[6] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1207 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
+  if (SpecialGameFlags[6] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1207 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = -128 * 65536; SpawnFixedY = -1312 * 65536; SpawnFixedZ = -48 * 65536; // -128,-1312,-64 coords
    if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("AnubisCufflinks",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
-   DVIIGameFlags[6] = 1;
+   SpecialGameFlags[6] = 1;
   }
 
   // Checks for all secrets found in order to spawn Kissa's Armored Brassiare in MAP07
-  if (DVIIGameFlags[7] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1208 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
+  if (SpecialGameFlags[7] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1208 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = -544 * 65536; SpawnFixedY = -224 * 65536; SpawnFixedZ = 272 * 65536; // -544,-224,256 coords
    if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("KissaBra",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
-   DVIIGameFlags[7] = 1;
+   SpecialGameFlags[7] = 1;
   }
 
   // Checks for all secrets found in order to spawn Ruinous/Divine Shield in MAP08
-  if (DVIIGameFlags[8] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1209 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
+  if (SpecialGameFlags[8] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1209 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
@@ -19847,29 +19992,29 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     if (random(1,256) < 5) { SpawnForced("DivineShield",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0); }
     else { SpawnForced("RuinousShield",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0); }
    }
-   DVIIGameFlags[8] = 1;
+   SpecialGameFlags[8] = 1;
   }
 
   // Checks for all secrets found in order to spawn Balrog's Ring in MAP09
-  if (DVIIGameFlags[9] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1210 && ThingCountName("FlyingBalrog",0) < 1 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
+  if (SpecialGameFlags[9] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1210 && ThingCountName("FlyingBalrog",0) < 1 && GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = 512 * 65536; SpawnFixedY = 2240 * 65536; SpawnFixedZ = 16 * 65536; // 512,2240,0 coords
    if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("BalrogRing",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
-   DVIIGameFlags[9] = 1;
+   SpecialGameFlags[9] = 1;
   }
 
   // Checks for all secrets found in order to spawn Dove's Ribbon in MAP10
-  if (DVIIGameFlags[10] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1211 && KilledMonsterFactor >= 750)
+  if (SpecialGameFlags[10] == 0 && GetLevelInfo(LEVELINFO_LEVELNUM) == 1211 && KilledMonsterFactor >= 750)
   {
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = 8048 * 65536; SpawnFixedY = 2272 * 65536; SpawnFixedZ = 256 * 65536; // 8048,2272,240 coords
    if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("DoveRibbon",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
-   DVIIGameFlags[10] = 1;
+   SpecialGameFlags[10] = 1;
   }
 
  }
@@ -20665,7 +20810,7 @@ script "DiabloistGravity" (int C5, int gravitytype)
  //PrintBold(d:gravitytype);
  if (gravitytype == 0) // HP only
  {
-  if (PowerupRunning[4] == 1) // If the character is Invulnerable, diminish their Invulnerability Timer
+  if (PowerupTimer[4] > 0) // If the character is Invulnerable, diminish their Invulnerability Timer
   {
    if (GameSkill() == SKILL_VERY_EASY) C5 = 63;  
    if (GameSkill() == SKILL_EASY) C5 = 125;  
@@ -20754,7 +20899,7 @@ script "DiabloistGravity" (int C5, int gravitytype)
  else
  if (gravitytype == 1) // Mana only
  {
-  if (PowerupRunning[4] == 1) // If the character is Invulnerable, diminish their Invulnerability Timer
+  if (PowerupTimer[4] > 0) // If the character is Invulnerable, diminish their Invulnerability Timer
   {
    if (GameSkill() == SKILL_VERY_EASY) C5 = 63;  
    if (GameSkill() == SKILL_EASY) C5 = 125;  
@@ -20850,7 +20995,7 @@ script "DiabloistGravity" (int C5, int gravitytype)
  else
  if (gravitytype == 2) // HP & Mana
  {
-  if (PowerupRunning[4] == 1) // If the character is Invulnerable, diminish their Invulnerability Timer
+  if (PowerupTimer[4] > 0) // If the character is Invulnerable, diminish their Invulnerability Timer
   {
    if (GameSkill() == SKILL_VERY_EASY) basedmgratio = 125; // 12.5% Base Damage
    if (GameSkill() == SKILL_EASY) basedmgratio = 250; // 25.0% Base Damage
@@ -20960,14 +21105,12 @@ script "CheckBuffTimers" ENTER
  yposint = 11.0;
  if (PowerupTimer[0] > 0)
  {
-  PowerupRunning[0] = 1;
   GiveActorInventory(1001,"NightVisionSpell",1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Light: ",d:(PowerupTimer[0]/35),s:" Secs";0,3433,cr_white,xpos,ypos,0.03);
   PowerupTimer[0] -= 1;
  }
  else
  {
-  PowerupRunning[0] = 0;
   TakeActorInventory(1001,"NightVisionSpell",9999);
  }
 
@@ -20983,7 +21126,6 @@ script "CheckBuffTimers" ENTER
  if (CheckActorInventory(1001, "InvisDefense4") > 0) TakeActorInventory(1001, "InvisDefense4", 1);
  if (PowerupTimer[1] > 0)
  {
-  PowerupRunning[1] = 1;
   GiveActorInventory(1001,"InvisiblitySpell",1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Invisibility: ",d:(PowerupTimer[1]/35),s:" Secs";0,3434,cr_white,xpos,ypos,0.03);
   if (MiscellaneousVars[194] == 0)
@@ -21021,7 +21163,6 @@ script "CheckBuffTimers" ENTER
  }
  else
  {
-  PowerupRunning[1] = 0;
   TakeActorInventory(1001,"InvisiblitySpell",9999);
   if (MiscellaneousVars[194] == 0)
   {
@@ -21034,14 +21175,12 @@ script "CheckBuffTimers" ENTER
  // Flight
  if (PowerupTimer[2] > 0)
  {
-  PowerupRunning[2] = 1;
   GiveActorInventory(1001,"FlightSpell",1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Flight: ",d:(PowerupTimer[2]/35),s:" Secs";0,3435,cr_white,xpos,ypos,0.03);
   PowerupTimer[2] -= 1;
  }
  else
  {
-  PowerupRunning[2] = 0;
   TakeActorInventory(1001,"FlightSpell",9999);
  }
 
@@ -21049,14 +21188,12 @@ script "CheckBuffTimers" ENTER
  // Stealth
  if (PowerupTimer[3] > 0)
  {
-  PowerupRunning[3] = 1;
   SetPlayerProperty(1,1,PROP_NOTARGET);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Stealth: ",d:(PowerupTimer[3]/35),s:" Secs";0,3436,cr_white,xpos,ypos,0.03);
   PowerupTimer[3] -= 1;
  }
  else
  {
-  PowerupRunning[3] = 0;
   SetPlayerProperty(1,0,PROP_NOTARGET);
  }
 
@@ -21064,7 +21201,6 @@ script "CheckBuffTimers" ENTER
  // Invulnerability
  if (PowerupTimer[4] > 0)
  {
-  PowerupRunning[4] = 1;
   SetPlayerProperty(1,1,PROP_INVULNERABILITY);
   GiveActorInventory(1001,"IsInvulnerable",1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Invulnerability: ",d:(PowerupTimer[4]/35),s:" Secs";0,3437,cr_white,xpos,ypos,0.03);
@@ -21072,7 +21208,6 @@ script "CheckBuffTimers" ENTER
  }
  else
  {
-  PowerupRunning[4] = 0;
   TakeActorInventory(1001,"IsInvulnerable",9999);
   SetPlayerProperty(1,0,PROP_INVULNERABILITY);
  }
@@ -21081,15 +21216,12 @@ script "CheckBuffTimers" ENTER
  // Time Stop
  if (PowerupTimer[5] > 0)
  {
-  PowerupRunning[5] = 1;
   GiveActorInventory(1001, "PowerTimeFreezer", 1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Time Freeze: ",d:(PowerupTimer[5]/35),s:" Secs";0,3438,cr_white,xpos,ypos,0.03);
   PowerupTimer[5] -= 1;
  }
  else
  {
-  PowerupRunning[5] = 0;
-  PowerupTimer[5] = 0;
   TakeActorInventory(1001, "PowerTimeFreezer", 9999);
  }
 
@@ -21097,15 +21229,12 @@ script "CheckBuffTimers" ENTER
  // Fear Aura Effects
  if (PowerupTimer[6] > 0)
  {
-  PowerupRunning[6] = 1;
   GiveActorInventory(1001, "PowerFrightener", 1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Fear Aura: ",d:(PowerupTimer[6]/35),s:" Secs";0,3439,cr_white,xpos,ypos,0.03);
   PowerupTimer[6] -= 1;
  }
  else
  {
-  PowerupRunning[6] = 0;
-  PowerupTimer[6] = 0;
   TakeActorInventory(1001, "PowerFrightener", 9999);
  }
 
@@ -21113,7 +21242,6 @@ script "CheckBuffTimers" ENTER
  // Divine Avatar Effects
  if (PowerupTimer[7] > 0)
  {
-  PowerupRunning[7] = 1;
 
   GiveActorInventory(1001, "PowerDoubleDamage", 1);
   GiveActorInventory(1001, "PowerDoubleFiringSpeed", 1);
@@ -21144,8 +21272,6 @@ script "CheckBuffTimers" ENTER
  }
  else
  {
-  PowerupRunning[7] = 0;
-  PowerupTimer[7] = 0;
   TakeActorInventory(1001, "PowerDoubleDamage", 9999);
   TakeActorInventory(1001, "PowerDoubleFiringSpeed", 9999);
   TakeActorInventory(1001, "PowerHalfDamage", 9999);
@@ -21157,7 +21283,6 @@ script "CheckBuffTimers" ENTER
  // Speader Aura Lv. 1 Effects
  if (PowerupTimer[9] > 0)
  {
-  PowerupRunning[8] = 0;
   PowerupTimer[8] = 0;
   TakeActorInventory(1001, "SpreaderAura1", 9999);
  }
@@ -21165,15 +21290,12 @@ script "CheckBuffTimers" ENTER
  {
   if (PowerupTimer[8] > 0)
   {
-   PowerupRunning[8] = 1;
    GiveActorInventory(1001, "SpreaderAura1", 1);
    if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Spread-Aura Lv. 1: ",d:(PowerupTimer[8]/35),s:" Secs";0,3441,cr_white,xpos,ypos,0.03);
    PowerupTimer[8] -= 1;
   }
   else
   {
-   PowerupRunning[8] = 0;
-   PowerupTimer[8] = 0;
    TakeActorInventory(1001, "SpreaderAura1", 9999);
   }
  }
@@ -21181,15 +21303,12 @@ script "CheckBuffTimers" ENTER
  // Speader Aura Lv. 2 Effects
  if (PowerupTimer[9] > 0)
  {
-  PowerupRunning[9] = 1;
   GiveActorInventory(1001, "SpreaderAura2", 1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Spread-Aura Lv. 2: ",d:(PowerupTimer[9]/35),s:" Secs";0,3441,cr_white,xpos,ypos,0.03);
   PowerupTimer[9] -= 1;
  }
  else
  {
-  PowerupRunning[9] = 0;
-  PowerupTimer[9] = 0;
   TakeActorInventory(1001, "SpreaderAura2", 9999);
  }
 
@@ -21197,15 +21316,12 @@ script "CheckBuffTimers" ENTER
  ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  if (PowerupTimer[10] > 0)
  {
-  PowerupRunning[10] = 1;
   GiveActorInventory(1001, "OomphDQSpell", 1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Oomph: ",d:(PowerupTimer[10]/35),s:" Secs";0,3442,cr_white,xpos,ypos,0.03);
   PowerupTimer[10] -= 1;
  }
  else
  {
-  PowerupRunning[10] = 0;
-  PowerupTimer[10] = 0;
   TakeActorInventory(1001, "OomphDQSpell", 9999);
  }
 
@@ -21213,15 +21329,12 @@ script "CheckBuffTimers" ENTER
  ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  if (PowerupTimer[11] > 0)
  {
-  PowerupRunning[11] = 1;
   GiveActorInventory(1001, "BuffDQSpell", 1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Buff: ",d:(PowerupTimer[11]/35),s:" Secs";0,3443,cr_white,xpos,ypos,0.03);
   PowerupTimer[11] -= 1;
  }
  else
  {
-  PowerupRunning[11] = 0;
-  PowerupTimer[11] = 0;
   TakeActorInventory(1001, "BuffDQSpell", 9999);
  }
 
@@ -21229,15 +21342,12 @@ script "CheckBuffTimers" ENTER
  ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  if (PowerupTimer[12] > 0)
  {
-  PowerupRunning[12] = 1;
   GiveActorInventory(1001, "AcceleratleDQSpell", 1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Acceleratle: ",d:(PowerupTimer[12]/35),s:" Secs";0,3443,cr_white,xpos,ypos,0.03);
   PowerupTimer[12] -= 1;
  }
  else
  {
-  PowerupRunning[12] = 0;
-  PowerupTimer[12] = 0;
   TakeActorInventory(1001, "AcceleratleDQSpell", 9999);
  }
 
@@ -21245,40 +21355,70 @@ script "CheckBuffTimers" ENTER
  ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  if (PowerupTimer[22] > 0)
  {
-  PowerupRunning[22] = 1;
   GiveActorInventory(1001, "PowerIronFeet", 1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"BioShield: ",d:(PowerupTimer[22]/35),s:" Secs";0,3444,cr_white,xpos,ypos,0.03);
   PowerupTimer[22] -= 1;
  }
  else
  {
-  PowerupRunning[22] = 0;
-  PowerupTimer[22] = 0;
   TakeActorInventory(1001, "PowerIronFeet", 9999);
  }
 
- // RadSphere Effects
+ // Berserk Effects
  ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  if (PowerupTimer[23] > 0)
  {
-  PowerupRunning[23] = 1;
   GiveActorInventory(1001, "PowerStrength", 1);
-  if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Berserk: ",d:(PowerupTimer[23]/35),s:" Secs";0,3444,cr_white,xpos,ypos,0.03);
+  if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Berserk: ",d:(PowerupTimer[23]/35),s:" Secs";0,3445,cr_white,xpos,ypos,0.03);
   PowerupTimer[23] -= 1;
  }
  else
  {
-  PowerupRunning[23] = 0;
-  PowerupTimer[23] = 0;
   TakeActorInventory(1001, "PowerStrength", 9999);
  }
 
+
+ // Fatigue Effects
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
+ if (PowerupTimer[18] > 0)
+ {
+  if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Fatigue: ",d:(PowerupTimer[18]/35),s:" Secs";0,3446,cr_white,xpos,ypos,0.03);
+  PowerupTimer[18] -= 1;
+ }
+ else
+ {
+  //TakeActorInventory(1001, "SleepDMGPenalty", 9999);
+ }
+
+ // Blind Effects
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
+ if (PowerupTimer[19] > 0)
+ {
+  if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Blind: ",d:(PowerupTimer[19]/35),s:" Secs";0,3447,cr_white,xpos,ypos,0.03);
+  PowerupTimer[19] -= 1;
+ }
+ else
+ {
+  //TakeActorInventory(1001, "SleepDMGPenalty", 9999);
+ }
+
+ // Sleep Effects
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
+ if (PowerupTimer[20] > 0)
+ {
+  GiveActorInventory(1001, "SleepDMGPenalty", 1);
+  if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Sleep: ",d:(PowerupTimer[20]/35),s:" Secs";0,3448,cr_white,xpos,ypos,0.03);
+  PowerupTimer[20] -= 1;
+ }
+ else
+ {
+  TakeActorInventory(1001, "SleepDMGPenalty", 9999);
+ }
 
 
  // GoE?? Effects
  if (PowerupTimer[129] > 0)
  {
-  PowerupRunning[129] = 1;
   GiveActorInventory(1001, "GoEDamageBonus", 1);
   GiveActorInventory(1001, "GoEDefenseBonus", 1);
   // (GoE is intended as a "permenant buff" once activated. To disable this and make it time elasped, uncomment the line below)
@@ -21286,8 +21426,6 @@ script "CheckBuffTimers" ENTER
  }
  else
  {
-  PowerupRunning[129] = 0;
-  PowerupTimer[129] = 0;
   TakeActorInventory(1001, "GoEDamageBonus", 9999);
   TakeActorInventory(1001, "GoEDefenseBonus", 9999);
  }
@@ -21505,7 +21643,7 @@ script "AddSceptreEXP" (int Arg1, int Arg2, int DivAmount)
     else EXPBonus1 += 300; // Else +30% EXP Bonus
    }
    // Divine Avatar {+25% EXP Bonus]
-   if (PowerupRunning[7] == 1)
+   if (PowerupTimer[7] > 0)
    {
     if (random(1,100) <= 20) EXPBonus1 += 500; // 20% Chance of +50% EXP Bonus
     else EXPBonus1 += 250; // 20% Else +25% EXP Bonus
@@ -21569,7 +21707,7 @@ script "AddSceptreEXP" (int Arg1, int Arg2, int DivAmount)
     if (random(1,100) <= 5) EXPBonus1 += 450; // 5% Chance of +45% EXP Bonus
     else EXPBonus1 += 300; // Else +30% EXP Bonus
    }
-   if (PowerupRunning[7] == 1) // Divine Avatar
+   if (PowerupTimer[7] > 0) // Divine Avatar
    {
     if (random(1,100) <= 20) EXPBonus1 += 500; // 20% Chance of +50% EXP Bonus
     else EXPBonus1 += 250; // Else +25% EXP Bonus
@@ -23621,7 +23759,7 @@ script "RefreshStealthInfo" (int type)
   {
    if (CheckActorInventory(1001,"TheOneRing") > 0) 
    {
-    if (PowerUpTimer[0] > 0)
+    if (PowerupTimer[0] > 0)
     {
      GiveInventory("IsAStealthMonsterRingNV", 1);
      TakeInventory("IsAStealthMonster5000NV", 1); 
@@ -23640,7 +23778,7 @@ script "RefreshStealthInfo" (int type)
    }
    else
    {
-    if (PowerUpTimer[0] > 0)
+    if (PowerupTimer[0] > 0)
     {
      TakeInventory("IsAStealthMonsterRingNV", 1); 
      if (GetCVar("dvds_dviistealthlevel") == 0) GiveInventory("IsAStealthMonster5000NV", 1); 
@@ -23701,7 +23839,7 @@ script "RefreshStealthInfo" (int type)
   {
    if (CheckActorInventory(1001,"TheOneRing") > 0) 
    {
-    if (PowerUpTimer[0] > 0)
+    if (PowerupTimer[0] > 0)
     {
      GiveInventory("IsAStealthMonsterRingAttackingNV", 1);
      TakeInventory("IsAStealthMonster5000AttackingNV", 1); 
@@ -23720,7 +23858,7 @@ script "RefreshStealthInfo" (int type)
    }
    else
    {
-    if (PowerUpTimer[0] > 0)
+    if (PowerupTimer[0] > 0)
     {
      TakeInventory("IsAStealthMonsterRingAttackingNV", 1); 
      if (GetCVar("dvds_dviistealthlevel") == 0) GiveInventory("IsAStealthMonster5000AttackingNV", 1); 
@@ -24451,6 +24589,7 @@ script "IncreaseHellcoreLevel" (int HellcoreWeapon)
 script "CheckSceptreAltFire" (void)
 {
  if (MiscellaneousVars[2500] != 0) terminate;
+ if (PowerupTimer[20] > 0) terminate;
  int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 
  //PrintBold(d:GetActorVelZ(1001));
@@ -29936,6 +30075,7 @@ script "BowAntics" (int type)
 {
   int buttons;
   if (MiscellaneousVars[2500] != 0) terminate;
+  if (PowerupTimer[20] > 0) terminate;
   buttons = GetPlayerInput(0, INPUT_BUTTONS); 
   if (buttons & BT_ALTATTACK) SetResultValue(1);
   else if (buttons & BT_ATTACK) SetResultValue(2);
@@ -30646,7 +30786,10 @@ script "CheckDVIIMonstersOption" (void)
 // Activate's the player's whistle ability, which will awaken as many monsters as possible in a certain area
 script "UseWhistle" (void)
 {
- if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[168] == 0 && MiscellaneousVars[21] >= 200)
+ int FreezePlayer = 0;
+ if (PowerupTimer[20] > 0) FreezePlayer += 1;
+ if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+ if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[168] == 0 && MiscellaneousVars[21] >= 200 && FreezePlayer == 0)
  {
   SpawnForced("PlayerWhistle",GetActorX(1001),GetActorY(1001),GetActorZ(1001)+(32*65536),0,0);
   NoiseAlert(1001,1001);
@@ -30819,8 +30962,8 @@ script "KD-SideDodge" enter
  int dashsoundvolume = 0.67;	// Same type of var/define as SD_SOUNDVOLUME, but made to be editable
  int dashgruntsoundvolume = 1.0;
 
-
- while(GetActorProperty(0, APROP_HEALTH) > 0 && MiscellaneousVars[2500] == 0)
+ int FreezePlayer = 0;
+ while(GetActorProperty(0, APROP_HEALTH) > 0)
  { 
   input = GetPlayerInput(-1, INPUT_BUTTONS);
   oldInput = GetPlayerInput(-1, INPUT_OLDBUTTONS);
@@ -30875,13 +31018,19 @@ script "KD-SideDodge" enter
       if (CharacterClass == 2) dashGruntSound = "FloraDash";
      }
 
-     MiscellaneousVars[21] -= dashstamina;
-     if (MiscellaneousVars[21] < 0) MiscellaneousVars[21] = 0;
-     SetActorVelocity(0, velX, velY, velZ, true, false);
-     PlaySound(0, dashSound, CHAN_BODY, dashsoundvolume);
-     if (random(1,100) <= GetCVar("dvds_dashgruntchance")) PlaySound(0, dashGruntSound, CHAN_VOICE, dashgruntsoundvolume);
-     MiscellaneousVars[166] = 18;
-     Delay(dashcooldown);
+     FreezePlayer = 0;
+     if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+     if (PowerupTimer[20] > 0) FreezePlayer += 1;
+     if (FreezePlayer == 0)
+     {
+      MiscellaneousVars[21] -= dashstamina;
+      if (MiscellaneousVars[21] < 0) MiscellaneousVars[21] = 0;
+      SetActorVelocity(0, velX, velY, velZ, true, false);
+      PlaySound(0, dashSound, CHAN_BODY, dashsoundvolume);
+      if (random(1,100) <= GetCVar("dvds_dashgruntchance")) PlaySound(0, dashGruntSound, CHAN_VOICE, dashgruntsoundvolume);
+      MiscellaneousVars[166] = 18;
+      Delay(dashcooldown);
+     }
 
      while(GetActorVelZ(0) < 0.0)
      {
