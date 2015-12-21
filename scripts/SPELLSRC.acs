@@ -17605,14 +17605,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
  // Dealing Critical Hits
  MiscellaneousVars[232] = MiscellaneousVars[232] / 4; // Base Critical Hit Rate is always 1/4 of your survival rate.
+ //PrintBold(d:MiscellaneousVars[232]);
+ MiscellaneousVars[232] += (MiscellaneousVars[33] * 3); // 1 pt of Deftness is +0.3% crit rate
+ //PrintBold(d:MiscellaneousVars[232]);
+
  // Oomph = (8.33% of remaining amount uncovered)
  if (PowerupTimer[10] > 0)
  {
   GodlyAvatarBuddhaAdd = (1000 - MiscellaneousVars[232]) / 12;
   MiscellaneousVars[232] += GodlyAvatarBuddhaAdd;
  }
- BuddhaRNGVal = random (1,1000); // Based on 0.1% to 100.0% [though the displays only show full %]
  //PrintBold(d:MiscellaneousVars[232]);
+ BuddhaRNGVal = random (1,1000); // Based on 0.1% to 100.0% [though the displays only show full %]
  if (MiscellaneousVars[232] < 1) MiscellaneousVars[232] = 1;
  if (BuddhaRNGVal <= MiscellaneousVars[232]) GiveActorInventory(1001,"DealCriticalHit", 1);
  else TakeActorInventory(1001,"DealCriticalHit", 1);
@@ -25432,11 +25436,11 @@ function int GetDigit(int Num, int Digit)
 // For Monsters/Non-Players
 script "DamageDisplays" (void)
 {
+ int xpos, ypos, zpos;
  int PlayerCrit;
  int dmgind_delay = GetCVAR("dvds_dmgind_delay");
  if (dmgind_delay < 1) dmgind_delay = 1;
  if (dmgind_delay > 35) dmgind_delay = 35;
-
  while (GetCVar("dvds_dmgindicator") == 1)
  {
   if (CheckInventory("MonsterDisplayDMG") == 0) terminate;
@@ -25448,8 +25452,10 @@ script "DamageDisplays" (void)
   delay(totaldelay); // 1
   If (GetActorProperty(0,APROP_Health) != PreviousHealth)
   {
-     // if (CheckActorInventory(1001,"DealCriticalHit") > 0 && IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE && totaldelay == 1) PlayerCrit = 1; else PlayerCrit = 0;
-     if (CheckInventory("TookCriticalHit") > 0) { PlayerCrit = 1; TakeInventory("TookCriticalHit",9999); } else PlayerCrit = 0;
+     //if (CheckActorInventory(1001,"DealCriticalHit") > 0 && IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE && totaldelay == 1) PlayerCrit = 1; else PlayerCrit = 0;
+     if (CheckActorInventory(1001,"DealCriticalHit") > 0 && IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE) PlayerCrit = 1; else PlayerCrit = 0;
+     //if (CheckInventory("TookCriticalHit") > 0) { PlayerCrit = 1; TakeInventory("TookCriticalHit",9999); } else PlayerCrit = 0;
+     //PlayerCrit = 1;
 
      int DmgIndDisplayValue = PreviousHealth - GetActorProperty(0,APROP_Health);
      int DmgIndDisplayType;
@@ -25465,7 +25471,7 @@ script "DamageDisplays" (void)
 
      If (DmgIndDisplayValue > 0)
      {
-      //PrintBold(d:PlayerCrit);
+      //if (PlayerCrit > 0) PrintBold(d:PlayerCrit);
       int Digit1 = GetDigit(DmgIndDisplayValue, 0);
       int Digit2 = GetDigit(DmgIndDisplayValue, 1);
       int Digit3 = GetDigit(DmgIndDisplayValue, 2);
@@ -25487,6 +25493,43 @@ script "DamageDisplays" (void)
 
       int NumberID = Random(7000, 8000);
       str DigitSpawn;
+
+      //DmgIndDisplayType = 1;
+      if (DmgIndDisplayType == 1) 
+      {
+       if (DmgIndDisplayValue >= 0) DigitSpawn = StrParam(s:"HealBurst1");
+       if (DmgIndDisplayValue >= 10) DigitSpawn = StrParam(s:"HealBurst2");
+       if (DmgIndDisplayValue >= 100) DigitSpawn = StrParam(s:"HealBurst3");
+       if (DmgIndDisplayValue >= 1000) DigitSpawn = StrParam(s:"HealBurst4");
+       if (DmgIndDisplayValue >= 10000) DigitSpawn = StrParam(s:"HealBurst5");
+       if (DmgIndDisplayValue >= 100000) DigitSpawn = StrParam(s:"HealBurst6");
+       if (DmgIndDisplayValue >= 1000000) DigitSpawn = StrParam(s:"HealBurst7");
+      }
+      else
+      {
+       if (PlayerCrit > 0)
+       {
+        if (DmgIndDisplayValue >= 0) DigitSpawn = StrParam(s:"DamageBurstCritical1");
+        if (DmgIndDisplayValue >= 10) DigitSpawn = StrParam(s:"DamageBurstCritical2");
+        if (DmgIndDisplayValue >= 100) DigitSpawn = StrParam(s:"DamageBurstCritical3");
+        if (DmgIndDisplayValue >= 1000) DigitSpawn = StrParam(s:"DamageBurstCritical4");
+        if (DmgIndDisplayValue >= 10000) DigitSpawn = StrParam(s:"DamageBurstCritical5");
+        if (DmgIndDisplayValue >= 100000) DigitSpawn = StrParam(s:"DamageBurstCritical6");
+        if (DmgIndDisplayValue >= 1000000) DigitSpawn = StrParam(s:"DamageBurstCritical7");
+       }
+       else
+       {
+        if (DmgIndDisplayValue >= 0) DigitSpawn = StrParam(s:"DamageBurst1");
+        if (DmgIndDisplayValue >= 10) DigitSpawn = StrParam(s:"DamageBurst2");
+        if (DmgIndDisplayValue >= 100) DigitSpawn = StrParam(s:"DamageBurst3");
+        if (DmgIndDisplayValue >= 1000) DigitSpawn = StrParam(s:"DamageBurst4");
+        if (DmgIndDisplayValue >= 10000) DigitSpawn = StrParam(s:"DamageBurst5");
+        if (DmgIndDisplayValue >= 100000) DigitSpawn = StrParam(s:"DamageBurst6");
+        if (DmgIndDisplayValue >= 1000000) DigitSpawn = StrParam(s:"DamageBurst7");
+       }
+      }
+      Spawn(DigitSpawn, x, y, z, NumberID, 0);
+
 
       if (PlayerCrit > 0) DigitSpawn = StrParam(s:"DigitCritical1Num", d:Digit1); else DigitSpawn = StrParam(s:"Digit1Num", d:Digit1);
       if (DmgIndDisplayValue >= 0) Spawn(DigitSpawn, x, y, z, NumberID, 0);
@@ -29706,7 +29749,7 @@ SCRIPT "FootSteps_PlayerDeath" DEATH
 //***Named Scripts***
 //*******************
 
-// Emulates the various special scripts in Doom 1/2 mode [E1M8 (Barons), E2M8 (Cyberdemons), E3M8 (SpiderMasterminds), MAP07 (Mancubi/Arachnotrons), etc]
+// Emulates the various special scripts in Doom 1/2 mode [E1M8 (Barons), E2M8 (Cyberdemons), E3M8 (SpiderMasterminds), E4M6 (Cyberdemons again), MAP07 (Mancubi/Arachnotrons), etc]
 script "DoomMonsterDeathEmulation" OPEN
 {
  int LevelTime, TotalCount1, TotalCount2, TotalCount3, Script1Done, Script1Delay, Script2Done, Script2Delay, Script3Done, Script3Delay, CheckAllScripts;
