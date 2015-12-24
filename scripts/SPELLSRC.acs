@@ -30,6 +30,7 @@ HudMessage Tags:
 	2		-	Tunnel Vision Display [death]
 	3		-	Tunnel Vision Display [badly injured and/or dead]
     ...
+	197		-	Level Display for Lifebars
 	198		-	Name of Creature for Lifebars
 	199		-	HP/MaxHP display for Lifebars
 	201		-	Actor Lifebar [Frame]
@@ -22887,9 +22888,32 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   {
      LevelCheck = PlayerLevel;
      LevelErrorRange = FixedMul(LevelCheck, 0.1667);
+     if (LevelErrorRange < 1) LevelErrorRange = random(0,3);
      LevelCheck += random(-LevelErrorRange,LevelErrorRange);
+     if (random(1,1000) <= 167)
+     {
+      if (random(1,1000) <= 167)
+      {
+       if (random(1,1000) <= 167)
+       {
+        LevelCheck += random(64,96);
+       }
+       else
+       {
+        LevelCheck += random(16,24);
+       }
+      }
+      else
+      {
+       LevelCheck += random(4,6);
+      }
+     }
+     if (random(1,64) == 1) LevelCheck *= 4;
+
      if (LevelCheck < 0) LevelCheck = 0;
-     if (LevelCheck > 200) LevelCheck = 200;
+     if (LevelCheck > 2000) LevelCheck = 2000;
+     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"MonsterLevel: ",d:(LevelCheck));
+     SetUserVariable(0,"user_monsterlevel",LevelCheck);
 
      AttackFactor = 0.0;
      if (LevelCheck > 0) AttackFactor += (LevelBaseMulti * (LevelCheck));
@@ -23045,6 +23069,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 
   TakeInventory("MonsterDisplayDMG", 1);
   TakeInventory("MonsterHasBuffs", 1);
+  SetUserVariable(0, "user_monsterlevel",0);
   SetUserVariable(0, "user_checkmapskill", 0);
   SetUserVariable(0, "user_isstealth", 0);
  }
@@ -27110,6 +27135,8 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
   Delay(1);
 
   int class_index;
+  int xpos = 0.0;
+  int ypos = 0.0;
 
   for (int i = 0; i < 178; i++)
   {
@@ -27152,6 +27179,8 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
      else If (CheckActorProperty(0, APROP_Friendly, 1)) SetFont ("MNGHPBAR");
      int stealthcheck = GetUserVariable(0, "user_isstealth");
      str stealthcheck2 = ""; if (stealthcheck > 0) stealthcheck2 = "?";
+     int levelcheck = GetUserVariable(0, "user_monsterlevel");
+     int leveldifference = levelcheck - PlayerLevel;
 
      SetActivator(Activator);
      SetHudSize (800,600,0);
@@ -27160,7 +27189,16 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
      SetHudSize (800,600,0);
      if (GetCVar("dvds_actorlifebarstats") == 1) HudMessage (i:actorcurrhp, s:"/", i:actormaxhp; 0, 199, CR_WHITE, 400.0, 100.0, 0.05);
      if (GetCVar("dvds_actorlifebarnames") == 1) HudMessage (s:dvds_monsternames[class_index][1],s:stealthcheck2; 0, 198, CR_WHITE, 400.0, 115.0, 0.05);
+     SetFont ("BIGFONT");
+     xpos = 274.2; //400.0;
+     ypos = 100.0; //115.0;
+     if (leveldifference <= 0) HudMessage (d:levelcheck; 0, 197, CR_LIGHTBLUE, xpos, ypos, 0.05);
+     if (leveldifference >= 0 && leveldifference <= 20) HudMessage (d:levelcheck; 0, 197, CR_GOLD, xpos, ypos, 0.05);
+     if (leveldifference >= 21 && leveldifference <= 50) HudMessage (d:levelcheck; 0, 197, CR_ORANGE, xpos, ypos, 0.05);
+     if (leveldifference >= 51 && leveldifference <= 100) HudMessage (d:levelcheck; 0, 197, CR_RED, xpos, ypos, 0.05);
+     if (leveldifference >= 101) HudMessage (d:levelcheck; 0, 197, CR_DARKRED, xpos, ypos, 0.05);
 
+     SetFont ("SMALLFONT");
      for (acounter = 0; acounter <= hppercentdisp; acounter++)
      {
       bcounter = bcounter + 2.0;
@@ -30218,9 +30256,27 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
     }
     if (MiscellaneousVars[167] == 2000) // 2000 enemies killed, low chance of spawning an armor item for Flora
     {
-     // 25% chance
-     RandomArmorDropChance = 75 * RandomArmorDropMulti / 100;
-     if (random(1,100) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+     // 12.5% chance
+     RandomArmorDropChance = 875 * RandomArmorDropMulti / 1000;
+     if (random(1,1000) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 2800) // 2800 enemies killed, low chance of spawning an armor item for Flora
+    {
+     // 12.5% chance
+     RandomArmorDropChance = 875 * RandomArmorDropMulti / 1000;
+     if (random(1,1000) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 3600) // 3600 enemies killed, low chance of spawning an armor item for Flora
+    {
+     // 6.25% chance
+     RandomArmorDropChance = 9375 * RandomArmorDropMulti / 10000;
+     if (random(1,10000) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 4600) // 4600 enemies killed, low chance of spawning an armor item for Flora
+    {
+     // 6.25% chance
+     RandomArmorDropChance = 9375 * RandomArmorDropMulti / 10000;
+     if (random(1,10000) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
     }
    }
   }
@@ -30354,6 +30410,18 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
  {
   PrintBold(s:"EXP4: ",d:finalexpamount);
+ }
+
+ int levelcheck = GetUserVariable(0, "user_monsterlevel") * 375; // Lvl 100 = +37.5% EXP
+ levelcheck += 100000;
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ {
+  PrintBold(s:"levelcheck: ",d:levelcheck);
+ }
+ finalexpamount = finalexpamount * levelcheck / 100000;
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ {
+  PrintBold(s:"EXP5: ",d:finalexpamount);
  }
 
  int PreComboEXP = finalexpamount;
