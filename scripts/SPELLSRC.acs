@@ -6361,6 +6361,15 @@ script "ManaRegenerationStuff" ENTER
  }
 
  delaycount = 20;
+ // Accelerates MP Regen when Tension is Boosted
+ if (MiscellaneousVars[181] >= 1) delaycount += 1; // "5" = +1 [+5%]
+ if (MiscellaneousVars[181] >= 2) delaycount += 1; // "20" = +2 [+10%]
+ if (MiscellaneousVars[181] >= 3) delaycount += 2; // "50" = +4 [+20%]
+ if (MiscellaneousVars[181] >= 4) delaycount += 2; // "100" = +6 [+30%]
+ if (MiscellaneousVars[181] >= 5) delaycount += 3; // "250" = +9 [+45%]
+ if (MiscellaneousVars[181] >= 6) delaycount += 4; // "500" = +13 [+65%]
+ if (MiscellaneousVars[181] >= 7) delaycount += 5; // "1000" = +18 [+90%]
+ // PowerTrip Mode
  if (GetCVar("dvds_musou_powertripmode") == 1) delaycount = delaycount * 5 / 2; // 250%
  if (GetCVar("dvds_musou_powertripmode") == 2) delaycount = delaycount * 5; // 500%
 
@@ -17381,15 +17390,19 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
   else C1 = MaxHealthTrue;
 
-  C3 = 20;
+  int delaycount;
+  delaycount = 20;
   // Accelerates HP Regen when Tension is Boosted
-  if (MiscellaneousVars[181] >= 1) C3 += 1; // "5" = +1 [+5%]
-  if (MiscellaneousVars[181] >= 2) C3 += 1; // "20" = +2 [+10%]
-  if (MiscellaneousVars[181] >= 3) C3 += 2; // "50" = +4 [+20%]
-  if (MiscellaneousVars[181] >= 4) C3 += 2; // "100" = +6 [+30%]
-  if (MiscellaneousVars[181] >= 5) C3 += 3; // "250" = +9 [+45%]
-  if (MiscellaneousVars[181] >= 6) C3 += 4; // "500" = +13 [+65%]
-  if (MiscellaneousVars[181] >= 7) C3 += 5; // "500" = +18 [+90%]
+  if (MiscellaneousVars[181] >= 1) delaycount += 1; // "5" = +1 [+5%]
+  if (MiscellaneousVars[181] >= 2) delaycount += 1; // "20" = +2 [+10%]
+  if (MiscellaneousVars[181] >= 3) delaycount += 2; // "50" = +4 [+20%]
+  if (MiscellaneousVars[181] >= 4) delaycount += 2; // "100" = +6 [+30%]
+  if (MiscellaneousVars[181] >= 5) delaycount += 3; // "250" = +9 [+45%]
+  if (MiscellaneousVars[181] >= 6) delaycount += 4; // "500" = +13 [+65%]
+  if (MiscellaneousVars[181] >= 7) delaycount += 5; // "500" = +18 [+90%]
+  // Check Musou Power Trip Mode
+  if (GetCVar("dvds_musou_powertripmode") == 1) delaycount = delaycount * 5 / 2; // 250%
+  if (GetCVar("dvds_musou_powertripmode") == 2) delaycount = delaycount * 5; // 500%
 
   I3 = GetActorProperty(1001,APROP_HEALTH);
   if (I3 < C1)
@@ -17406,7 +17419,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    else if (buttons & BT_CROUCH) StaminaInputFactor = 180;
    else StaminaInputFactor = 100;
 
-   C3 = (C3 * StaminaInputFactor) / 100;
+   delaycount = (delaycount * StaminaInputFactor) / 100;
 
    // Checks Armor Items and other types for regen speed.
    C2 = 100;
@@ -17418,49 +17431,43 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     if (CheckActorInventory(1001,"BalrogRing") > 0) C2 += 25;
     // total of 70 = 170% speed with all four items
    }
-   C3 = C3 * C2 / 100;
+   delaycount = delaycount * C2 / 100;
 
    // Divine Avatar = 150% Total Regeneration Speed
-   if (PowerupTimer[7] > 0) C3 = C3 * 3 / 2;
+   if (PowerupTimer[7] > 0) delaycount = delaycount * 3 / 2;
 
    // Fatigue = 0.2x regen speed
-   if (PowerupTimer[18] > 0) C3 = C3 / 5;
+   if (PowerupTimer[18] > 0) delaycount = delaycount / 5;
 
    // Sleep = x5 regen speed
-   if (PowerupTimer[20] > 0) C3 *= 5;
+   if (PowerupTimer[20] > 0) delaycount *= 5;
 
    // Flora's Regeneration Speed is reduced by 3/4s [75%] when holding the Ruinous Shield [curse effect]
-   if (CharacterClass == 2) if (CheckActorInventory(1001,"RuinousShield") > 0) C3 = C3 * 1 / 4;
-
-   // Use Stamina Ratio to Determine Final Regeneration Speed
-   C3 = C3 * MiscellaneousVars[21] / MiscellaneousVars[22];
+   if (CharacterClass == 2) if (CheckActorInventory(1001,"RuinousShield") > 0) delaycount = delaycount * 1 / 4;
 
    // Checks Health Regen Rate Menu Option
-   C3 = C3 * MiscellaneousVars[138] / 100;
-
-   // Check Musou Power Trip Mode
-   if (GetCVar("dvds_musou_powertripmode") == 1) C3 = C3 * 5 / 2; // 250%
-   if (GetCVar("dvds_musou_powertripmode") == 2) C3 = C3 * 5; // 500%
+   delaycount = delaycount * MiscellaneousVars[138] / 100;
 
    // Low Cap to 1 Tics
-   if (C3 < 1) C3 = 1;
+   if (delaycount < 1) delaycount = 1;
 
-   StaminaRegenRate = C3;
+   StaminaRegenRate = delaycount;
 
-   MiscellaneousVars[13] -= C3;
+   MiscellaneousVars[13] -= delaycount;
   }
   else MiscellaneousVars[13] = MiscellaneousVars[14] + random(-20,20);
 
+  int HPRegenAmount;
   if (MiscellaneousVars[13] < 1)
   {
    // Base of 1 HP regen
-   C3 = 1;
+   HPRegenAmount = 1;
 
    // Every 50 Levels = +1 HP Regen
-   C3 += (PlayerLevel / 50);
+   HPRegenAmount += (PlayerLevel / 50);
 
    // Every 15 Pts of Strength = +1 HP Regen
-   C3 += (MiscellaneousVars[35] / 15);
+   HPRegenAmount += (MiscellaneousVars[35] / 15);
 
    // Makes having the Dove Ribbon allow HP Regen up to 200% maximum
    if (CharacterClass == 2) // Flora
@@ -17471,7 +17478,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
    if (I3 > 0 && I3 < C2)
    {
-    I3 += C3;
+    I3 += HPRegenAmount;
     if (I3 > C2) I3 = C2;
     SetActorProperty(1001,APROP_HEALTH,I3);
     MiscellaneousVars[241] = GetActorProperty(1001,APROP_Health);
@@ -17508,15 +17515,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    }
    else C1 = MaxHealthTrue;
  
-   C3 = 20;
+   delaycount = 20;
    // Decelerates HP Degen when Tension is Boosted
-   if (MiscellaneousVars[181] >= 1) C3 -= 0; // "5" = -0 [-0%]
-   if (MiscellaneousVars[181] >= 2) C3 -= 1; // "20" = -1 [-5%]
-   if (MiscellaneousVars[181] >= 3) C3 -= 1; // "50" = -2 [-10%]
-   if (MiscellaneousVars[181] >= 4) C3 -= 1; // "100" = -3 [-15%]
-   if (MiscellaneousVars[181] >= 5) C3 -= 1; // "250" = -4 [-20%]
-   if (MiscellaneousVars[181] >= 6) C3 -= 2; // "500" = -6 [-30%]
-   if (MiscellaneousVars[181] >= 7) C3 -= 3; // "500" = -9 [-45%]
+   if (MiscellaneousVars[181] >= 1) delaycount -= 0; // "5" = -0 [-0%]
+   if (MiscellaneousVars[181] >= 2) delaycount -= 1; // "20" = -1 [-5%]
+   if (MiscellaneousVars[181] >= 3) delaycount -= 1; // "50" = -2 [-10%]
+   if (MiscellaneousVars[181] >= 4) delaycount -= 1; // "100" = -3 [-15%]
+   if (MiscellaneousVars[181] >= 5) delaycount -= 1; // "250" = -4 [-20%]
+   if (MiscellaneousVars[181] >= 6) delaycount -= 2; // "500" = -6 [-30%]
+   if (MiscellaneousVars[181] >= 7) delaycount -= 3; // "500" = -9 [-45%]
+   // Check Musou Power Trip Mode
+   if (GetCVar("dvds_musou_powertripmode") == 1) delaycount = delaycount * 2 / 5; // 40%
+   if (GetCVar("dvds_musou_powertripmode") == 2) delaycount = delaycount / 5; // 20%
 
    I3 = GetActorProperty(1001,APROP_HEALTH);
    if (I3 > C1)
@@ -17533,7 +17543,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     else if (buttons & BT_CROUCH) StaminaInputFactor = 40;
     else StaminaInputFactor = 100;
 
-    C3 = (C3 * StaminaInputFactor) / 100;
+    delaycount = (delaycount * StaminaInputFactor) / 100;
 
     // Checks Armor Items and other types for Degen speed.
     C2 = 200;
@@ -17545,37 +17555,34 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
      if (CheckActorInventory(1001,"BalrogRing") > 0) C2 -= 25;
      // total of -34 = 66% speed with all four items
     }
-    C3 = C3 * C2 / 200;
+    delaycount = delaycount * C2 / 200;
 
     // Divine Avatar = 62.5% Total Degeneration Speed
-    if (PowerupTimer[7] > 0) C3 = C3 * 5 / 8;
+    if (PowerupTimer[7] > 0) delaycount = delaycount * 5 / 8;
 
     // Fatigue = 5x degen speed
-    if (PowerupTimer[18] > 0) C3 = C3 * 5;
+    if (PowerupTimer[18] > 0) delaycount = delaycount * 5;
 
     // Sleep = 0.2x degen speed
-    if (PowerupTimer[20] > 0) C3 /= 5;
+    if (PowerupTimer[20] > 0) delaycount /= 5;
 
     // Flora's Degeneration Speed is multiplied by 4 when holding the Ruinous Shield [curse effect]
-    if (CharacterClass == 2) if (CheckActorInventory(1001,"RuinousShield") > 0) C3 = C3 * 4;
+    if (CharacterClass == 2) if (CheckActorInventory(1001,"RuinousShield") > 0) delaycount = delaycount * 4;
  
-    // Check Musou Power Trip Mode
-    if (GetCVar("dvds_musou_powertripmode") == 1) C3 = C3 * 2 / 5; // 40%
-    if (GetCVar("dvds_musou_powertripmode") == 2) C3 = C3 / 5; // 20%
-
     // Low Cap to 1 Tics
-    if (C3 < 1) C3 = 1;
+    if (delaycount < 1) delaycount = 1;
  
-    StaminaDegenRate = C3;
+    StaminaDegenRate = delaycount;
 
-    MiscellaneousVars[143] -= C3;
+    MiscellaneousVars[143] -= delaycount;
    }
    else MiscellaneousVars[143] = MiscellaneousVars[144] + random(-20,20);
 
+   int HPDegenAmount;
    if (MiscellaneousVars[143] < 1)
    {
     // Base of 1 HP degen
-    C3 = 1;
+    HPDegenAmount = 1;
 
     // Makes having the Dove Ribbon allow HP Regen up to 200% maximum
     if (CharacterClass == 2) // Flora
@@ -17586,7 +17593,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
     if (I3 > C2)
     {
-     I3 -= C3;
+     I3 -= HPDegenAmount;
      if (I3 < C2) I3 = C2;
      SetActorProperty(1001,APROP_HEALTH,I3);
      MiscellaneousVars[241] = GetActorProperty(1001,APROP_Health);
