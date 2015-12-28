@@ -669,6 +669,25 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [2040 to 2499] are undefined so far :P
 // [2500] Menu mode toggle. 0 = Off, 1 = On
 
+// [10001] "LifeUp" Perk Level
+// [10002] "LifeUp EX" Perk Level
+// [10003] "MagiUp" Perk Level
+// [10004] "MagiUp EX" Perk Level
+// [10005] "StamUp" Perk Level
+// [10006] "StamUp EX" Perk Level
+// [10007] "DodgeMore" Perk Level
+// [10008] "DodgeMore EX" Perk Level
+// [10009] "JumpMore" Perk Level
+// [10010] "JumpMore EX" Perk Level
+// [10011] "PsycheFast" Perk Level
+// [10012] "PsycheFast EX" Perk Level
+// [10013] "RegenHPFast" Perk Level
+// [10014] "RegenHPFast EX" Perk Level
+// [10015] "RegenMPFast" Perk Level
+// [10016] "RegenMPFast EX" Perk Level
+// [10017] "RegenStamFast" Perk Level
+// [10018] "RegenStamFast EX" Perk Level
+
 
 global int 22:SpecialGameFlags[]; // ***ARRAY***
 						// [0 to 999] = DVII related story/game flags
@@ -6918,7 +6937,7 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
 script "LevelUpCode" ENTER // (void)
 {
  int C1, I1, C2, I2, Z1, Z2, G1, G2, G3, Exp1, Exp2, ExpMultiFactor, RealExpGain, HPBoost, MPBoost, MapCheck, RandomizedStatChance, RandomizedStatChance2;
-
+ int PerkFactor;
  int leveluptimes = 0;
  int leveluptimesmax = 200;
  //*******************
@@ -6942,7 +6961,7 @@ script "LevelUpCode" ENTER // (void)
     MiscellaneousVars[209] = MiscellaneousVars[35]; // total Strength Points gained
     MiscellaneousVars[210] = MiscellaneousVars[36]; // total Therapeusis Points gained
 
-   //*********************
+    //*********************
     //*Aeon Point Increase*
     //*********************
     // MiscellaneousVars[25] = Aeon Points
@@ -6960,7 +6979,8 @@ script "LevelUpCode" ENTER // (void)
      {
       if (PlayerLevel > 100)
       {
-       if (random(1,100) <= 65) MiscellaneousVars[25] += 2;
+       if (random(1,100) <= 65) MiscellaneousVars[25] += 1;
+       if (random(1,100) <= 65) MiscellaneousVars[25] += 1;
        if (random(1,100) <= 25) MiscellaneousVars[25] += 8; else MiscellaneousVars[25] += 5;
        if (random(1,100) <= 20) MiscellaneousVars[25] += random(3,5);
       }
@@ -6976,7 +6996,8 @@ script "LevelUpCode" ENTER // (void)
      {
       if (PlayerLevel > 100)
       {
-       if (random(1,100) <= 65) MiscellaneousVars[25] += 2;
+       if (random(1,100) <= 65) MiscellaneousVars[25] += 1;
+       if (random(1,100) <= 65) MiscellaneousVars[25] += 1;
        if (random(1,100) <= 15) MiscellaneousVars[25] += 3; else MiscellaneousVars[25] += 2;
        if (random(1,100) <= 10) MiscellaneousVars[25] += random(1,2);
       }
@@ -6992,7 +7013,8 @@ script "LevelUpCode" ENTER // (void)
      {
       if (PlayerLevel > 100)
       {
-       if (random(1,100) <= 65) MiscellaneousVars[25] += 2;
+       if (random(1,100) <= 65) MiscellaneousVars[25] += 1;
+       if (random(1,100) <= 65) MiscellaneousVars[25] += 1;
        if (random(1,10) <= 6) // 60% chance of +2/3 Aeon Points per level
        {
         if (random(1,100) <= 15) MiscellaneousVars[25] += 3; else MiscellaneousVars[25] += 2;
@@ -7007,6 +7029,28 @@ script "LevelUpCode" ENTER // (void)
        }
       }
      }
+    }
+    // Extra AeonPts for "Perk Mode"
+    if (GetCVar("dvdsperks_active") == 1)
+    {
+     MiscellaneousVars[25] += 2;
+     if (PlayerLevel >= 15) MiscellaneousVars[25] += 1;
+     if (PlayerLevel >= 30) MiscellaneousVars[25] += 1;
+     if (PlayerLevel >= 45) MiscellaneousVars[25] += 1;
+     if (PlayerLevel >= 60) MiscellaneousVars[25] += 1;
+     // 6
+     if (PlayerLevel >= 75) MiscellaneousVars[25] += 1;
+     if (PlayerLevel >= 90) MiscellaneousVars[25] += 1;
+     if (PlayerLevel >= 105) MiscellaneousVars[25] += 1;
+     if (PlayerLevel >= 120) MiscellaneousVars[25] += 1;
+     // 10
+     if (PlayerLevel >= 135) MiscellaneousVars[25] += 1;
+     if (PlayerLevel >= 150) MiscellaneousVars[25] += 1;
+     if (PlayerLevel >= 165) MiscellaneousVars[25] += 1;
+     if (PlayerLevel >= 180) MiscellaneousVars[25] += 1;
+     // 14
+     if (PlayerLevel >= 195) MiscellaneousVars[25] += 2;
+     // 16
     }
 
     // Increase Stats
@@ -7248,14 +7292,25 @@ script "LevelUpCode" ENTER // (void)
      LevelAddMaxMana = Random(1,2);
      Z1 = MaxMana / 192;
     }
+
+    PerkFactor = ((MiscellaneousVars[10003] * 500) + (MiscellaneousVars[10004] * 1250)) + 10000;
+    Z1 = Z1 * PerkFactor / 10000; // "MagiUp" and "MagiUp EX" perks.
+
+    PerkFactor = ((MiscellaneousVars[10003] / 2) + (MiscellaneousVars[10004]));
+    if (Z1 < PerkFactor) Z1 = PerkFactor;
     LevelAddMaxMana += Z1;
-    LevelAddMaxMana += random(6,9); // +7-19 + Level base
+
+    Z1 = random(6,9); // +7-19 + Level base
+    PerkFactor = ((MiscellaneousVars[10003] * 500) + (MiscellaneousVars[10004] * 1250)) + 10000;
+    Z1 = Z1 * PerkFactor / 10000; // "MagiUp" and "MagiUp EX" perks.
+
+    LevelAddMaxMana += Z1;
 
     if (CharacterClass == 0) G3 = random(36,42); // Deggaris [MP Gain / Level] [75%-87.5%]
     if (CharacterClass == 1) G3 = random(54,60); // Illucia [MP Gain / Level] [112.5%-125%]
     if (CharacterClass == 2) G3 = random(66,84); // Flora [MP Gain / Level] [137.5%-175%]
 
-    G3 += ((MiscellaneousVars[36] + MiscellaneousVars[33]) / 48); // Add [(Therapesius+Deftness / 32)]
+    G3 += ((MiscellaneousVars[36] + MiscellaneousVars[33]) / 48); // Add [(Therapesius+Deftness / 48)]
     LevelAddMaxMana = LevelAddMaxMana * G3 / 48;
 
     // Overall Modifier
@@ -7266,59 +7321,69 @@ script "LevelUpCode" ENTER // (void)
     LevelAddMaxMana *= MiscellaneousVars[146];
     MaxMana += LevelAddMaxMana;
     CurrentMana += LevelAddMaxMana;
+    MiscellaneousVars[243] = CurrentMana;
+    MiscellaneousVars[238] = CurrentMana;
 
-    int LevelAddMaxHP = 0;
-    int HPRandomizer1;
+
     //*************
     //*HP Increase*
     //*************
+    int LevelAddMaxHP = 0;
+    int HPRandomizer1;
     if (GameSkill() == SKILL_VERY_EASY)
     {
-     Z2 = random(1,3);
+     Z2 = random(2,4);
      Z2 += MaxHealthTrue / 288;
     }
     if (GameSkill() == SKILL_EASY)
     {
-     Z2 = random(0,2);
+     Z2 = random(1,3);
      Z2 += MaxHealthTrue / 360;
     }
     if (GameSkill() == SKILL_NORMAL)
     {
-     Z2 = random(-1,-1);
+     Z2 = random(0,2);
      Z2 += MaxHealthTrue / 432;
     }
     if (GameSkill() == SKILL_HARD)
     {
-     Z2 = random(-2,0);
+     Z2 = random(-1,1);
      Z2 += MaxHealthTrue / 504;
     }
     if (GameSkill() == SKILL_VERY_HARD)
     {
-     Z2 = random(-3,-1);
+     Z2 = random(-2,0);
      Z2 += MaxHealthTrue / 576;
     }
 
     Z2 += Random(1,3);
-    if (CharacterClass == 0) Z2 += random(3,4); // + 2-9+ HP
-    if (CharacterClass == 1) Z2 += random(2,3); // + 1-8+ HP
-    if (CharacterClass == 2) Z2 += random(1,2); // + 0-7+ HP
+    if (CharacterClass == 0) Z2 += random(3,5); // + 6-12+ HP
+    if (CharacterClass == 1) Z2 += random(2,3); // + 5-10+ HP
+    if (CharacterClass == 2) Z2 += random(1,2); // + 4-9+ HP
 
-    if (Z2 < 0) Z2 = 0;
+    PerkFactor = ((MiscellaneousVars[10001] * 500) + (MiscellaneousVars[10002] * 1250)) + 10000;
+    Z2 = Z2 * PerkFactor / 10000; // "LifeUp" and "LifeUp EX" perks.
+
+    PerkFactor = ((MiscellaneousVars[10001] / 2) + (MiscellaneousVars[10002]));
+    if (Z2 < PerkFactor) Z2 = PerkFactor;
     LevelAddMaxHP += Z2;
 
-    if (GameSkill() == SKILL_VERY_EASY) Z1 = PlayerLevel * 7 / 20; 			// 35%
-    else if (GameSkill() == SKILL_EASY) Z1 = PlayerLevel * 3 / 10; 			// 30%
-    else if (GameSkill() == SKILL_NORMAL) Z1 = PlayerLevel / 4; 			// 25%
-    else if (GameSkill() == SKILL_HARD) Z1 = PlayerLevel / 5; 				// 20%
-    else if (GameSkill() == SKILL_VERY_HARD) Z1 = PlayerLevel * 3 / 20; 	// 15%
+    if (GameSkill() == SKILL_VERY_EASY) 		Z1 = PlayerLevel * 35 / 100;	// 35%
+    else if (GameSkill() == SKILL_EASY) 		Z1 = PlayerLevel * 30 / 100;	// 30%
+    else if (GameSkill() == SKILL_NORMAL) 		Z1 = PlayerLevel * 25 / 100;	// 25%
+    else if (GameSkill() == SKILL_HARD) 		Z1 = PlayerLevel * 20 / 100;	// 20%
+    else if (GameSkill() == SKILL_VERY_HARD) 	Z1 = PlayerLevel * 15 / 100;	// 15%
  
-    if (PlayerLevel > 24 && PlayerLevel < 50) Z1 = Z1 * 105 / 100; 			// *105%
-    if (PlayerLevel > 49 && PlayerLevel < 75) Z1 = Z1 * 110 / 100; 			// *110%
-    if (PlayerLevel > 74 && PlayerLevel < 100) Z1 = Z1 * 115 / 100; 		// *115%
-    if (PlayerLevel > 99 && PlayerLevel < 125) Z1 = Z1 * 124 / 100; 		// *124%
-    if (PlayerLevel > 124 && PlayerLevel < 150) Z1 = Z1 * 130 / 100; 		// *130%
-    if (PlayerLevel > 149 && PlayerLevel < 175) Z1 = Z1 * 136 / 100; 		// *136%
-    if (PlayerLevel > 174) Z1 = Z1 * 142 / 100; 							// *142%
+    if (PlayerLevel > 24 && PlayerLevel < 50) 		Z1 = Z1 * 105 / 100; 		// *105%
+    if (PlayerLevel > 49 && PlayerLevel < 75) 		Z1 = Z1 * 110 / 100; 		// *110%
+    if (PlayerLevel > 74 && PlayerLevel < 100) 		Z1 = Z1 * 115 / 100; 		// *115%
+    if (PlayerLevel > 99 && PlayerLevel < 125) 		Z1 = Z1 * 121 / 100; 		// *121%
+    if (PlayerLevel > 124 && PlayerLevel < 150) 	Z1 = Z1 * 127 / 100; 		// *127%
+    if (PlayerLevel > 149 && PlayerLevel < 175) 	Z1 = Z1 * 133 / 100; 		// *133%
+    if (PlayerLevel > 174) 							Z1 = Z1 * 140 / 100; 		// *140%
+
+    PerkFactor = ((MiscellaneousVars[10001] * 500) + (MiscellaneousVars[10002] * 1250)) + 10000;
+    Z1 = Z1 * PerkFactor / 10000; // "LifeUp" and "LifeUp EX" perks.
 
     LevelAddMaxHP += Z1;
 
@@ -7326,7 +7391,7 @@ script "LevelUpCode" ENTER // (void)
     if (CharacterClass == 1) G3 = random(36,42); // Illucia [HP Gain / Level] [75%-87.5%]
     if (CharacterClass == 2) G3 = random(27,33); // Flora [HP Gain / Level] [43.75%-68.75%]
 
-    G3 += ((MiscellaneousVars[32] + MiscellaneousVars[33]) / 48); // Add [(Defense+Deftness / 32)]
+    G3 += ((MiscellaneousVars[32] + MiscellaneousVars[33]) / 48); // Add [(Defense+Deftness / 48)]
     LevelAddMaxHP = LevelAddMaxHP * G3 / 48;
 
     // Overall Modifier
@@ -7341,6 +7406,8 @@ script "LevelUpCode" ENTER // (void)
     SetActorProperty(1001,APROP_HEALTH,(I2+LevelAddMaxHP));
     MaxHealthTrue += LevelAddMaxHP;
     SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
+    MiscellaneousVars[241] = GetActorProperty(1001,APROP_Health);
+    MiscellaneousVars[175] = GetActorProperty(1001,APROP_Health);
 
 /*
     PrintBold(
@@ -15140,7 +15207,7 @@ script 25 (void)
 // Max Health Bonus Script
 script "MaxHPBonusPickup" (void)
 {
- int I1, I2, Z1, Z2, HPError, C1, C2, BonusMaxHP, CurrentHP; 
+ int I1, I2, Z1, Z2, HPError, C1, C2, BonusMaxHP, CurrentHP, PerkFactor; 
  int ArmorHPBonus = 0;
  int MapNoBonus = 0;
 
@@ -15149,6 +15216,9 @@ script "MaxHPBonusPickup" (void)
  if (CharacterClass == 0) BonusMaxHP = MaxHealthTrue / 400;
  if (CharacterClass == 1) BonusMaxHP = MaxHealthTrue / 420;
  if (CharacterClass == 2) BonusMaxHP = MaxHealthTrue / 440;
+
+ PerkFactor = ((MiscellaneousVars[10001] * 500) + (MiscellaneousVars[10002] * 1250)) + 10000;
+ BonusMaxHP = BonusMaxHP * PerkFactor / 10000; // "LifeUp" and "LifeUp EX" perks.
 
  if (CharacterClass == 0) HPError = MaxHealthTrue / 1200; // Deggaris has one more HP to his Error for the least amount of HP each [1200]
  if (CharacterClass == 1) HPError = MaxHealthTrue / 1260; // Illucia has one more HP to her Error for the middle amount of HP each [1260]
@@ -15167,6 +15237,9 @@ script "MaxHPBonusPickup" (void)
  if (CharacterClass == 2 && CheckActorInventory(1001,"BalrogRing")) ArmorHPBonus += 15; // +25%
  ArmorHPBonus += 100;
  BonusMaxHP = BonusMaxHP * ArmorHPBonus / 100; // Flora is the only one who can use the Pearly Corset / Kissa Bra / Balrog Ring
+
+ PerkFactor = ((MiscellaneousVars[10001] * 500) + (MiscellaneousVars[10002] * 1250)) + 10000;
+ BonusMaxHP = BonusMaxHP * PerkFactor / 10000; // "LifeUp" and "LifeUp EX" perks.
 
  // Overall Modifier
  MapNoBonus = GetLevelInfo(LEVELINFO_LEVELNUM) * 9 / 20; // 45%
@@ -23872,7 +23945,7 @@ script "Monster-CheckModType" (void)
 // Runs the "Grabbed a Seed of Life/Magic" script
 script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
 {
- int SkillSeedRuns, SkillSeedRND, OldHP, NewHP, OldMP, NewMP, StatGain1, StatGain2, ArmorHPBonus;
+ int SkillSeedRuns, SkillSeedRND, OldHP, NewHP, OldMP, NewMP, StatGain1, StatGain2, ArmorHPBonus, PerkFactor;
 
  if (ModType == 0 && GetCVar("dvds_canseedsappear") == 0) terminate;
 
@@ -23917,6 +23990,10 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
   ArmorHPBonus += 100;
   StatGain1 = StatGain1 * ArmorHPBonus / 100; // Flora is the only one who can use the Pearly Corset
 
+  PerkFactor = ((MiscellaneousVars[10001] * 500) + (MiscellaneousVars[10002] * 1250)) + 10000;
+  StatGain1 = StatGain1 * PerkFactor / 10000; // "LifeUp" and "LifeUp EX" perks.
+
+
   if (StatGain1 < 1) StatGain1 = 1;
   MiscellaneousVars[222] += StatGain1;
   MiscellaneousVars[2031] = 105; 
@@ -23954,6 +24031,9 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
   StatGain1 = StatGain1 * SeedAmount;
   StatGain1 = StatGain1 * MiscellaneousVars[87];
 
+  PerkFactor = ((MiscellaneousVars[10003] * 500) + (MiscellaneousVars[10004] * 1250)) + 10000;
+  StatGain1 = StatGain1 * PerkFactor / 10000; // "MagiUp" and "MagiUp EX" perks.
+
   if (StatGain1 < 1) StatGain1 = 1;
   MiscellaneousVars[223] += StatGain1;
   MiscellaneousVars[2032] = 105; 
@@ -23988,7 +24068,7 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
 // Runs the "Grabbed a Seed of [Bleh]" script
 script "GrabSeedOther" (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
 {
- int SkillSeedRuns, MaxSkillSeedRuns, SkillSeedRND, OldAGL, NewAGL, OldDEF, NewDEF, OldDFT, NewDFT, OldSOR, NewSOR, OldSTR, NewSTR, OldTHE, NewTHE;
+ int SkillSeedRuns, MaxSkillSeedRuns, SkillSeedRND, OldAGL, NewAGL, OldDEF, NewDEF, OldDFT, NewDFT, OldSOR, NewSOR, OldSTR, NewSTR, OldTHE, NewTHE, OldAeonPts, NewAeonPts;
 
  if (ModType == 0 && GetCVar("dvds_canseedsappear") == 0) terminate;
 
@@ -24003,6 +24083,7 @@ script "GrabSeedOther" (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
  if (SeedType < 0) SeedAmount = 0;
  if (SeedType > 7) SeedAmount = 0;
 
+ OldAeonPts = MiscellaneousVars[25];
  OldAGL = MiscellaneousVars[31];
  OldDEF = MiscellaneousVars[32];
  OldDFT = MiscellaneousVars[33];
@@ -24010,21 +24091,11 @@ script "GrabSeedOther" (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
  OldSTR = MiscellaneousVars[35];
  OldTHE = MiscellaneousVars[36];
 
- if (SeedType == 0) // Seed of Skill [special seed, 4+ non HP/MP stats boosted randomly (can even be one boosted four times)]
+ if (SeedType == 0) // Seed of Skill [special seed, 4+ AeonPts ]
  {
-  MaxSkillSeedRuns = MiscellaneousVars[87] * 4;
-
-  SkillSeedRuns = 0;
-  for (SkillSeedRuns = 0; SkillSeedRuns < MaxSkillSeedRuns; SkillSeedRuns++)
-  {
-   SkillSeedRND = random(1,6);
-   if (SkillSeedRND == 1 && MiscellaneousVars[31] < 512) MiscellaneousVars[31] += SeedAmount;
-   if (SkillSeedRND == 2 && MiscellaneousVars[32] < 512) MiscellaneousVars[32] += SeedAmount;
-   if (SkillSeedRND == 3 && MiscellaneousVars[33] < 512) MiscellaneousVars[33] += SeedAmount;
-   if (SkillSeedRND == 4 && MiscellaneousVars[34] < 512) MiscellaneousVars[34] += SeedAmount;
-   if (SkillSeedRND == 5 && MiscellaneousVars[35] < 512) MiscellaneousVars[35] += SeedAmount;
-   if (SkillSeedRND == 6 && MiscellaneousVars[36] < 512) MiscellaneousVars[36] += SeedAmount;
-  }  
+  SeedAmount = 4;
+  SeedAmount = SeedAmount * MiscellaneousVars[87];
+  MiscellaneousVars[25] += SeedAmount;
  }
 
  if (SeedType == 1) // Seed of Agility [Speed/Movement]
@@ -24081,6 +24152,7 @@ script "GrabSeedOther" (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
  if (MiscellaneousVars[34] > 512) MiscellaneousVars[34] = 512;
  if (MiscellaneousVars[35] > 512) MiscellaneousVars[35] = 512;
  if (MiscellaneousVars[36] > 512) MiscellaneousVars[36] = 512;
+ NewAeonPts = MiscellaneousVars[25];
  NewAGL = MiscellaneousVars[31];
  NewDEF = MiscellaneousVars[32];
  NewDFT = MiscellaneousVars[33];
@@ -24088,6 +24160,11 @@ script "GrabSeedOther" (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
  NewSTR = MiscellaneousVars[35];
  NewTHE = MiscellaneousVars[36];
 
+ if (NewAeonPts-OldAeonPts > 0)
+ {
+  MiscellaneousVars[224] += NewAeonPts - OldAeonPts; 
+  MiscellaneousVars[2033] = 105; 
+ }
  if (NewAGL-OldAGL > 0)
  {
   MiscellaneousVars[225] += NewAGL - OldAGL; 
@@ -24124,12 +24201,7 @@ script "GrabSeedOther" (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
   PrintBold
   (
    s:"You've Ate a Seed of Skill!\n\n",
-   s:"Agility: ",d:OldAGL,s:" --> ",d:NewAGL,
-   s:"\nDefense: ",d:OldDEF,s:" --> ",d:NewDEF,
-   s:"\nDeftness: ",d:OldDFT,s:" --> ",d:NewDFT,
-   s:"\nSorcery: ",d:OldSOR,s:" --> ",d:NewSOR,
-   s:"\nStrength: ",d:OldSTR,s:" --> ",d:NewSTR,
-   s:"\nTherapeusis: ",d:OldTHE,s:" --> ",d:NewTHE
+   s:"AeonPts: ",d:OldAeonPts,s:" --> ",d:NewAeonPts
   );
  }
 
