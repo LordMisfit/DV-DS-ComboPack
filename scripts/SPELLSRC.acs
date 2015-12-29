@@ -669,6 +669,11 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [2040 to 2499] are undefined so far :P
 // [2500] Menu mode toggle. 0 = Off, 1 = On
 
+// [9901] Checks "LifeUp" Level times [for initial increases when the perk's level changes]
+// [9902] Checks "LifeUp EX" Level times [for initial increases when the perk's level changes]
+// [9903] Checks "MagiUp" Level times [for initial increases when the perk's level changes]
+// [9904] Checks "MagiUp EX" Level times [for initial increases when the perk's level changes]
+
 // [10001] "LifeUp" Perk Level
 // [10002] "LifeUp EX" Perk Level
 // [10003] "MagiUp" Perk Level
@@ -7434,7 +7439,7 @@ script "LevelUpCode" ENTER // (void)
 
     LevelAddMaxHP *= MiscellaneousVars[146];
     I2 = GetActorProperty(1001,APROP_HEALTH);
-    GiveInventory("UpgradeStamina", LevelAddMaxHP);
+    //GiveInventory("UpgradeStamina", LevelAddMaxHP);
     SetActorProperty(1001,APROP_HEALTH,(I2+LevelAddMaxHP));
     MaxHealthTrue += LevelAddMaxHP;
     SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
@@ -15288,7 +15293,7 @@ script "MaxHPBonusPickup" (void)
  MiscellaneousVars[2031] = 105; 
 
  CurrentHP = GetActorProperty(1001,APROP_HEALTH);
- GiveInventory("UpgradeStamina", BonusMaxHP);
+ //GiveInventory("UpgradeStamina", BonusMaxHP);
  SetActorProperty(1001,APROP_HEALTH,(CurrentHP + BonusMaxHP));
  MaxHealthTrue += BonusMaxHP;
  int MaxHealthLimit = MaxHealthTrue * 2;
@@ -16454,6 +16459,86 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  {
   SetPlayerProperty(1,0,PROP_TOTALLYFROZEN);
  }
+
+ int TempMaxHealth = MaxHealthTrue;
+ int TempMaxMana = MaxMana;
+ int TempPerkFactor = 0;
+ int TempCombinedLevels = 0;
+ int TempStartValue;
+ int TempEndValue;
+
+ TempCombinedLevels = MiscellaneousVars[10001] + MiscellaneousVars[10002];
+ if (MiscellaneousVars[9901] != TempCombinedLevels)
+ {
+  if (MiscellaneousVars[9901] != 0)
+  {
+   MiscellaneousVars[9903] = MiscellaneousVars[9902];
+   TempStartValue = MaxHealthTrue;
+   TempEndValue = MaxHealthTrue;
+   TempEndValue = TempEndValue * ((1000000 / MiscellaneousVars[9902])) / 1000;
+   TempEndValue += random(0,1);
+   //PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9902],s:") / ",d:TempEndValue);
+  }
+  else
+  {
+   MiscellaneousVars[9903] = 1000;
+   TempStartValue = MaxHealthTrue;
+   TempEndValue = MaxHealthTrue;
+  }
+  MiscellaneousVars[9902] = (MiscellaneousVars[10001] * 50) + (MiscellaneousVars[10002] * 125) + 1000;
+
+  TempStartValue = TempEndValue;
+  TempEndValue = TempEndValue * MiscellaneousVars[9902] / 1000;
+  TempEndValue += random(0,1);
+  //PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9902],s:") / ",d:TempEndValue);
+
+  MaxHealthTrue = TempEndValue;
+  SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
+
+  MiscellaneousVars[9901] = TempCombinedLevels;
+ }
+
+ TempCombinedLevels = MiscellaneousVars[10003] + MiscellaneousVars[10004];
+ if (MiscellaneousVars[9904] != TempCombinedLevels)
+ {
+  if (MiscellaneousVars[9904] != 0)
+  {
+   MiscellaneousVars[9906] = MiscellaneousVars[9905];
+   TempStartValue = MaxMana;
+   TempEndValue = MaxMana;
+   TempEndValue = TempEndValue * ((1000000 / MiscellaneousVars[9905])) / 1000;
+   TempEndValue += random(0,1);
+   //PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9905],s:") / ",d:TempEndValue);
+  }
+  else
+  {
+   MiscellaneousVars[9905] = 1000;
+   TempStartValue = MaxMana;
+   TempEndValue = MaxMana;
+  }
+  MiscellaneousVars[9905] = (MiscellaneousVars[10003] * 50) + (MiscellaneousVars[10004] * 125) + 1000;
+
+  TempStartValue = TempEndValue;
+  TempEndValue = TempEndValue * MiscellaneousVars[9905] / 1000;
+  TempEndValue += random(0,1);
+  //PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9905],s:") / ",d:TempEndValue);
+
+  MaxMana = TempEndValue;
+
+  MiscellaneousVars[9904] = TempCombinedLevels;
+ }
+
+
+ int TempBitField = 1.0;
+ if (MiscellaneousVars[10001] >= 1) TempBitField -= 0.025;
+ if (MiscellaneousVars[10001] >= 2) TempBitField -= 0.025;
+ if (MiscellaneousVars[10001] >= 3) TempBitField -= 0.025;
+ if (MiscellaneousVars[10001] >= 4) TempBitField -= 0.025;
+ if (MiscellaneousVars[10001] >= 5) TempBitField -= 0.025;
+ if (MiscellaneousVars[10002] >= 1) TempBitField -= 0.0625;
+ if (MiscellaneousVars[10002] >= 2) TempBitField -= 0.0625;
+ //PrintBold(f:TempBitField);
+ SetActorProperty(1001,APROP_DAMAGEFACTOR,TempBitField);
 
  int TimerMulti;
  int TimerPart1;
@@ -24069,7 +24154,7 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
   MiscellaneousVars[2031] = 105; 
 
   StatGain2 = GetActorProperty(1001,APROP_HEALTH);
-  GiveInventory("UpgradeStamina", StatGain1);
+  //GiveInventory("UpgradeStamina", StatGain1);
   SetActorProperty(1001,APROP_HEALTH,(StatGain2+StatGain1));
   MaxHealthTrue += StatGain1;
   SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
