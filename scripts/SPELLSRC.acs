@@ -669,10 +669,16 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [2040 to 2499] are undefined so far :P
 // [2500] Menu mode toggle. 0 = Off, 1 = On
 
-// [9901] Checks "LifeUp" Level times [for initial increases when the perk's level changes]
-// [9902] Checks "LifeUp EX" Level times [for initial increases when the perk's level changes]
-// [9903] Checks "MagiUp" Level times [for initial increases when the perk's level changes]
-// [9904] Checks "MagiUp EX" Level times [for initial increases when the perk's level changes]
+// [9801] is for checking LifeUp BitFields
+// [9802] is for checking MagiUp BitFields
+// [9803] is for checking StamUp BitFields
+
+// [9901] LifeUp Perk ComboLevel Check
+// [9902] LifeUp Perk PerkFactor
+// [9903] LifeUp Perk Base PerkFactor
+// [9904] MagiUp Perk ComboLevel Check
+// [9905] MagiUp Perk PerkFactor
+// [9906] MagiUp Perk Base PerkFactor
 
 // [10001] "LifeUp" Perk Level
 // [10002] "LifeUp EX" Perk Level
@@ -16468,7 +16474,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  int TempEndValue;
 
  TempCombinedLevels = MiscellaneousVars[10001] + MiscellaneousVars[10002];
- if (MiscellaneousVars[9901] != TempCombinedLevels)
+ // [9901] = LifeUp Perk ComboLevel Check
+ // [9902] = LifeUp Perk PerkFactor
+ // [9903] = LifeUp Perk Base PerkFactor
+if (MiscellaneousVars[9901] != TempCombinedLevels)
  {
   if (MiscellaneousVars[9901] != 0)
   {
@@ -16499,6 +16508,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  }
 
  TempCombinedLevels = MiscellaneousVars[10003] + MiscellaneousVars[10004];
+ // [9904] = MagiUp Perk ComboLevel Check
+ // [9905] = MagiUp Perk PerkFactor
+ // [9906] = MagiUp Perk Base PerkFactor
  if (MiscellaneousVars[9904] != TempCombinedLevels)
  {
   if (MiscellaneousVars[9904] != 0)
@@ -16512,7 +16524,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
   else
   {
-   MiscellaneousVars[9905] = 1000;
+   MiscellaneousVars[9906] = 1000;
    TempStartValue = MaxMana;
    TempEndValue = MaxMana;
   }
@@ -16529,6 +16541,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  }
 
 
+/*
  int TempBitField = 1.0;
  if (MiscellaneousVars[10001] >= 1) TempBitField -= 0.025;
  if (MiscellaneousVars[10001] >= 2) TempBitField -= 0.025;
@@ -16539,6 +16552,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (MiscellaneousVars[10002] >= 2) TempBitField -= 0.0625;
  //PrintBold(f:TempBitField);
  SetActorProperty(1001,APROP_DAMAGEFACTOR,TempBitField);
+*/
 
  int TimerMulti;
  int TimerPart1;
@@ -18647,6 +18661,103 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    }
   }
  }
+
+ int PerkBitfield = 0;
+ // Perk BitField Checks
+  if (GetActorProperty(1001,APROP_Health) > 0)
+  {
+   PerkBitfield = 0;
+   if (MiscellaneousVars[10001] >= 1) PerkBitfield += 1;
+   if (MiscellaneousVars[10001] >= 2) PerkBitfield += 2;
+   if (MiscellaneousVars[10001] >= 3) PerkBitfield += 4;
+   if (MiscellaneousVars[10001] >= 4) PerkBitfield += 8;
+   if (MiscellaneousVars[10001] >= 5) PerkBitfield += 16;
+   if (MiscellaneousVars[10002] >= 1) PerkBitfield += 32;
+   if (MiscellaneousVars[10002] >= 2) PerkBitfield += 64;
+
+   str LifeUpPerkItem;
+   if (PerkBitfield != MiscellaneousVars[9801]) // [9801] is for checking LifeUp BitFields
+   {
+    for (i = 0; i < 128; i++)
+    {
+     LifeUpPerkItem = StrParam(s:"LifeUpDEFBits", d:i);
+ 
+     if (PerkBitfield == i)
+     GiveActorInventory(1001, LifeUpPerkItem, 1);
+      else
+     TakeActorInventory(1001, LifeUpPerkItem, 1);
+    }
+    MiscellaneousVars[9801] = PerkBitfield;
+   }
+  }
+  else
+  {
+   MiscellaneousVars[9801] = 0; // Resets to 0 on Death [because of Resurge.wad style pistol-resets :P]
+  }
+ 
+  if (GetActorProperty(1001,APROP_Health) > 0)
+  {
+   PerkBitfield = 0;
+   if (MiscellaneousVars[10003] >= 1) PerkBitfield += 1;
+   if (MiscellaneousVars[10003] >= 2) PerkBitfield += 2;
+   if (MiscellaneousVars[10003] >= 3) PerkBitfield += 4;
+   if (MiscellaneousVars[10003] >= 4) PerkBitfield += 8;
+   if (MiscellaneousVars[10003] >= 5) PerkBitfield += 16;
+   if (MiscellaneousVars[10004] >= 1) PerkBitfield += 32;
+   if (MiscellaneousVars[10004] >= 2) PerkBitfield += 64;
+
+   str MagiUpPerkItem;
+   if (PerkBitfield != MiscellaneousVars[9802]) // [9802] is for checking MagiUp BitFields
+   {
+    for (i = 0; i < 128; i++)
+    {
+     MagiUpPerkItem = StrParam(s:"MagiUpATKBits", d:i);
+ 
+     if (PerkBitfield == i)
+     GiveActorInventory(1001, MagiUpPerkItem, 1);
+      else
+     TakeActorInventory(1001, MagiUpPerkItem, 1);
+    }
+    MiscellaneousVars[9802] = PerkBitfield;
+   }
+  }
+  else
+  {
+   MiscellaneousVars[9802] = 0; // Resets to 0 on Death [because of Resurge.wad style pistol-resets :P]
+  }
+ 
+  if (GetActorProperty(1001,APROP_Health) > 0)
+  {
+   PerkBitfield = 0;
+   if (MiscellaneousVars[10005] >= 1) PerkBitfield += 1;
+   if (MiscellaneousVars[10005] >= 2) PerkBitfield += 2;
+   if (MiscellaneousVars[10005] >= 3) PerkBitfield += 4;
+   if (MiscellaneousVars[10005] >= 4) PerkBitfield += 8;
+   if (MiscellaneousVars[10005] >= 5) PerkBitfield += 16;
+   if (MiscellaneousVars[10006] >= 1) PerkBitfield += 32;
+   if (MiscellaneousVars[10006] >= 2) PerkBitfield += 64;
+
+   str StamUpPerkItem;
+   if (PerkBitfield != MiscellaneousVars[9803]) // [9803] is for checking StamUp BitFields
+   {
+    for (i = 0; i < 128; i++)
+    {
+     StamUpPerkItem = StrParam(s:"StamUpATKBits", d:i);
+ 
+     if (PerkBitfield == i)
+     GiveActorInventory(1001, StamUpPerkItem, 1);
+      else
+     TakeActorInventory(1001, StamUpPerkItem, 1);
+    }
+    MiscellaneousVars[9803] = PerkBitfield;
+   }
+  }
+  else
+  {
+   MiscellaneousVars[9803] = 0; // Resets to 0 on Death [because of Resurge.wad style pistol-resets :P]
+  }
+ 
+
  //***************************************************************************
  //***************************************************************************
  //************* Armor Stuff for DVII-DS's armor items :P ********************
