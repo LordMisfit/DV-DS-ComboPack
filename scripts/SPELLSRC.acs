@@ -672,6 +672,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [9801] is for checking LifeUp BitFields
 // [9802] is for checking MagiUp BitFields
 // [9803] is for checking StamUp BitFields
+// [9804] is for checking NOTHRUST checks
 
 // [9901] LifeUp Perk ComboLevel Check
 // [9902] LifeUp Perk PerkFactor
@@ -722,10 +723,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [10040] "Mortal Hit Survivability Mana Recovery EX" Perk Level
 // [10041] "Mortal Hit Survivability Blast Wave" Perk Level
 // [10042] "Mortal Hit Survivability Blast Wave EX" Perk Level
-// [10043] "Mortal Hit Survivability Mana Recovery" Perk Level
-// [10044] "Mortal Hit Survivability Mana Recovery EX" Perk Level
-// [10045] "Mortal Hit Survivability 'Death Rage'" Perk Level
-// [10046] "Mortal Hit Survivability 'Death Rage' EX" Perk Level
+// [10043] "Mortal Hit Survivability 'Death Rage'" Perk Level
+// [10044] "Mortal Hit Survivability 'Death Rage' EX" Perk Level
 
 global int 22:SpecialGameFlags[]; // ***ARRAY***
 						// [0 to 999] = DVII related story/game flags
@@ -16825,7 +16824,18 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   MiscellaneousVars[194] = 1; // Turns on Mercy Invincibility Flag
   MiscellaneousVars[195] = 1210; // 1.5 seconds [51.5 tics * 20]
 
-  // Check "Mortal Hit Survivability Blast Wave [EX]" Perk
+  // Check "Mortal Hit Survivability Psyche Up" Perk
+  if (CharacterClass == 2) PerkFactor = 7500; else PerkFactor = 4000;
+  if (random(1,10000) <= PerkFactor)
+  {
+   if (MiscellaneousVars[10037] == 1 && MiscellaneousVars[181] <= 1) ACS_NamedExecuteAlways("SetTensionLevel",0,1,0);
+   if (MiscellaneousVars[10037] == 2 && MiscellaneousVars[181] <= 2) ACS_NamedExecuteAlways("SetTensionLevel",0,2,0);
+   if (MiscellaneousVars[10037] == 3 && MiscellaneousVars[181] <= 3) ACS_NamedExecuteAlways("SetTensionLevel",0,3,0);
+   if (MiscellaneousVars[10037] == 4 && MiscellaneousVars[181] <= 4) ACS_NamedExecuteAlways("SetTensionLevel",0,4,0);
+   if (MiscellaneousVars[10037] == 5 && MiscellaneousVars[181] <= 5) ACS_NamedExecuteAlways("SetTensionLevel",0,5,0);
+   if (MiscellaneousVars[10037] == 6 && MiscellaneousVars[181] <= 6) ACS_NamedExecuteAlways("SetTensionLevel",0,6,0);
+   if (MiscellaneousVars[10037] == 7 && MiscellaneousVars[181] <= 7) ACS_NamedExecuteAlways("SetTensionLevel",0,7,0);
+  }
 
   // Check "Mortal Hit Survivability Mana Recovery [EX]" Perk
   if (MiscellaneousVars[10039] > 0)
@@ -16846,20 +16856,15 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
    }
   }
 
-  // Check "Mortal Hit Survivability Psyche Up" Perk
-  if (CharacterClass == 2) PerkFactor = 7500; else PerkFactor = 4000;
-  if (random(1,10000) <= PerkFactor)
+  // Check "Mortal Hit Survivability Blast Wave [EX]" Perk
+  if (MiscellaneousVars[10041] > 0)
   {
-   if (MiscellaneousVars[10037] == 1 && MiscellaneousVars[181] <= 1) ACS_NamedExecuteAlways("SetTensionLevel",0,1,0);
-   if (MiscellaneousVars[10037] == 2 && MiscellaneousVars[181] <= 2) ACS_NamedExecuteAlways("SetTensionLevel",0,2,0);
-   if (MiscellaneousVars[10037] == 3 && MiscellaneousVars[181] <= 3) ACS_NamedExecuteAlways("SetTensionLevel",0,3,0);
-   if (MiscellaneousVars[10037] == 4 && MiscellaneousVars[181] <= 4) ACS_NamedExecuteAlways("SetTensionLevel",0,4,0);
-   if (MiscellaneousVars[10037] == 5 && MiscellaneousVars[181] <= 5) ACS_NamedExecuteAlways("SetTensionLevel",0,5,0);
-   if (MiscellaneousVars[10037] == 6 && MiscellaneousVars[181] <= 6) ACS_NamedExecuteAlways("SetTensionLevel",0,6,0);
-   if (MiscellaneousVars[10037] == 7 && MiscellaneousVars[181] <= 7) ACS_NamedExecuteAlways("SetTensionLevel",0,7,0);
   }
 
   // Check "Mortal Hit Survivability 'Death Rage'" Perk
+  if (MiscellaneousVars[10043] > 0)
+  {
+  }
 
 
  }
@@ -25538,6 +25543,46 @@ script "GetPunchDamage" (int altfire, int shockwave)
  SetResultValue(damage);
 }
 
+script "GetHitScanXSpread" (int type)
+{
+ int spread = 0.0;
+ int spreadfactor = 1.0;
+ if (type == 1) // Pistol [Single]
+ {
+  spread = 6.0;
+  spreadfactor = 1.0 - ((MiscellaneousVars[10019] * 0.1) + (MiscellaneousVars[10020] * 0.15));
+  spread = FixedMul(spread,spreadfactor);
+ }
+ if (type == 2) // Pistol [Dual]
+ {
+  spread = 5.6;
+  spreadfactor = 1.0 - ((MiscellaneousVars[10019] * 0.1) + (MiscellaneousVars[10020] * 0.15));
+  spread = FixedMul(spread,spreadfactor);
+ }
+ PrintBold(f:spread,s:" / ",f:spreadfactor);
+ SetResultValue(spread);
+}
+
+script "GetHitScanYSpread" (int type)
+{
+ int spread = 0.0;
+ int spreadfactor = 1.0;
+ if (type == 1) // Pistol [Single]
+ {
+  spread = 0.0;
+  spreadfactor = 1.0 - ((MiscellaneousVars[10019] * 0.1) + (MiscellaneousVars[10020] * 0.15));
+  spread = FixedMul(spread,spreadfactor);
+ }
+ if (type == 2) // Pistol [Dual]
+ {
+  spread = 0.4;
+  spreadfactor = 1.0 - ((MiscellaneousVars[10019] * 0.1) + (MiscellaneousVars[10020] * 0.15));
+  spread = FixedMul(spread,spreadfactor);
+ }
+ PrintBold(f:spread,s:" / ",f:spreadfactor);
+ SetResultValue(spread);
+}
+
 // Returns Damage inflicted by Doom-style hitscan weapons [players]
 script "GetHitScanDMG" (int type)
 {
@@ -25545,114 +25590,191 @@ script "GetHitScanDMG" (int type)
  // MiscellaneousVars[35] = Strength
  int damage, extradmg1, extradmg2, finaldmg;
  int rand1, rand2;
+ int perkfactor = 10000;
  if (type == 1) // Pistol [Single]
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10019] * random(100,200)) + (MiscellaneousVars[10020] * random(500,1000)));
   damage = random(1,4) * random(5,7); // 5 to 28
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 3) / 4; // 75% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 7) / 40; // 17.5% of Strength
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 2) // Pistol [Dual]
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10019] * random(100,200)) + (MiscellaneousVars[10020] * random(500,1000)));
   damage = random(2,4) * random(6,7); // 12 to 28
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 7) / 8; // 87.5% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 1) / 5; // 20% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 3) // Shotgun
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10021] * random(100,200)) + (MiscellaneousVars[10022] * random(500,1000)));
   damage = random(2,3) * 5; // 10 to 15
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 1); // 100% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 7) / 80; // 8.75% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 4) // Super Shotgun
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10021] * random(100,200)) + (MiscellaneousVars[10022] * random(500,1000)));
   damage = random(2,3) * random(5,6); // 10 to 18
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 5) / 4; // 125% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 1) / 8; // 12.5% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 5) // Chaingun
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10019] * random(100,200)) + (MiscellaneousVars[10020] * random(500,1000)));
   damage = random(1,4) * random(5,7); // 5 to 28
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 7) / 8; // 87.5% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 1) / 5; // 20% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 6) // Minigun
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10019] * random(100,200)) + (MiscellaneousVars[10020] * random(500,1000)));
   damage = random(2,4) * random(6,7); // 12 to 28
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 1); // 100% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 1) / 4; // 25% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 7) // Repeater
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10023] * random(100,200)) + (MiscellaneousVars[10024] * random(500,1000)));
   damage = random(1,3) * 6; // 6 to 18
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 3) / 2; // 150% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 3) / 8; // 37.5% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 8) // Rocket [main hit]
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10025] * random(700,1400)) + (MiscellaneousVars[10026] * random(1100,2200)));
   damage = random(1,8) * 20; // 20 to 160
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 5) / 2; // 250% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 9) / 8; // 112.5% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 9) // Rocket [explosion]
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10025] * random(700,1400)) + (MiscellaneousVars[10026] * random(1100,2200)));
   damage = 128;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 5) / 2; // 250% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 9) / 8; // 112.5% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 10) // Repeater [explosion]
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10023] * random(100,200)) + (MiscellaneousVars[10024] * random(500,1000)));
   damage = 7; // 7
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 1) / 5; // 20% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 1) / 14; // 7.14% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 11) // Plasma
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10023] * random(100,200)) + (MiscellaneousVars[10024] * random(500,1000)));
   damage = random(1,8) * 5; // 5 to 40
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 15) / 16; // 93.34% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 9) / 20; // 45% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 12) // Plasma1 [BFG2704]
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10023] * random(100,200)) + (MiscellaneousVars[10024] * random(500,1000)));
   damage = random(1,8) * 4; // 4 to 32
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 1); // 100% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 11) / 20; // 55% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 13) // Plasma2 [BFG2704]
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10023] * random(100,200)) + (MiscellaneousVars[10024] * random(500,1000)));
   damage = random(1,8) * 4; // 4 to 32
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 11) / 10; // 110% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 1) / 2; // 50% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 14) // BFG [Main]
  {
   damage = random(1,8) * 100; // 100 to 800
+  if (MiscellaneousVars[10023] == 1) damage = random(4,17) * 50; // 100 to 800
+  if (MiscellaneousVars[10023] == 2) damage = random(8,18) * 50; // 100 to 800
   extradmg1 = (MiscellaneousVars[31] * 11); // 1100% of Agility
+  if (MiscellaneousVars[10023] == 1) extradmg1 = (MiscellaneousVars[31] * 12); // 1100% of Agility
+  if (MiscellaneousVars[10023] == 2) extradmg1 = (MiscellaneousVars[31] * 13); // 1100% of Agility
   extradmg2 = (MiscellaneousVars[35] * 5); // 500% of Strength 
+  if (MiscellaneousVars[10023] == 1) extradmg2 = ((MiscellaneousVars[35] * 11) / 2); // 550% of Strength 
+  if (MiscellaneousVars[10023] == 2) extradmg2 = (MiscellaneousVars[35] * 6); // 600% of Strength 
  }
  if (type == 15) // BFG [Tracer]
  {
   damage = random(1,8) + 15; // 16 to 23
+  if (MiscellaneousVars[10023] == 1) damage = random(2,9) + 17; // 18 to 25
+  if (MiscellaneousVars[10023] == 2) damage = random(3,10) + 19; // 22 to 29
   extradmg1 = (MiscellaneousVars[31] * 11) / 5; // 220% of Agility
+  if (MiscellaneousVars[10023] == 1) extradmg1 = (MiscellaneousVars[31] * 12) / 5; // 240% of Agility
+  if (MiscellaneousVars[10023] == 2) extradmg1 = (MiscellaneousVars[31] * 14) / 5; // 280% of Agility
   extradmg2 = (MiscellaneousVars[35] * 1); // 100% of Strength 
+  if (MiscellaneousVars[10023] == 1) extradmg2 = ((MiscellaneousVars[35] * 13) / 8); // 162.5% of Strength 
+  if (MiscellaneousVars[10023] == 2) extradmg2 = ((MiscellaneousVars[35] * 9) / 4); // 225% of Strength 
  }
  if (type == 16) // KSawBolt
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10027] * 2500) + (MiscellaneousVars[10028] * 3750));
   damage = random(1,8) * 12; // 12 to 96
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 11) / 5; // 220% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 1); // 100% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 17) // KSawBolt
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10027] * 2500) + (MiscellaneousVars[10028] * 3750));
   damage = random(1,8) * 12; // 12 to 96
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 11) / 5; // 220% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 1); // 100% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
 
  if (type == 18) // DiarisHolyArrow
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
   damage = 384 + random(-48,192); // 336 to 576 damage
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 5); // 500% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 1) / 5; // 20% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
 
   damage /= 4;
   extradmg1 /= 4;
@@ -25660,11 +25782,16 @@ script "GetHitScanDMG" (int type)
  }
  if (type == 19) // DiarisHolyArrow2XDmg
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
   damage = 384 + random(-48,192); // 336 to 576 damage
+  damage *= 2;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 22 / 4); // 550% of Agility
   extradmg1 *= 2;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 1) / 4; // 25% of Strength 
   extradmg2 *= 2;
+  extradmg2 = extradmg2 * perkfactor / 10000;
 
   damage /= 4;
   extradmg1 /= 4;
@@ -25672,11 +25799,16 @@ script "GetHitScanDMG" (int type)
  }
  if (type == 20) // DiarisHolyArrow3XDmg
  {
+  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
   damage = 384 + random(-48,192); // 336 to 576 damage
+  damage *= 3;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 6); // 600% of Agility
   extradmg1 *= 3;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[35] * 3) / 10; // 30% of Strength 
   extradmg2 *= 3;
+  extradmg2 = extradmg2 * perkfactor / 10000;
 
   damage /= 4;
   extradmg1 /= 4;
@@ -25694,6 +25826,7 @@ script "GetHitScanDMG" (int type)
             s:"\nExtra1: ",d:extradmg1,
             s:"\nExtra2: ",d:extradmg2,
             s:"\nRandom: ",d:rand1,s:" - ",d:rand2,
+            s:"\nPerkFactor: ",d:perkfactor,
             s:"\nTotal: ",d:finaldmg);
  }
  SetResultValue(finaldmg);
