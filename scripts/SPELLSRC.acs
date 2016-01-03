@@ -1413,11 +1413,11 @@ function int GetHealingValue (int type, int MinOrMax)
  
  // Stat Alternations
  value = value * (10 + (PlayerLevel / 25)) / 10;
- if (CheckInventory("SauronHelmet") > 0) value = value * 9 / 8;
- if (CharacterClass == 0 && CheckInventory("SauronGauntlets") > 0) value = value * 9 / 8; // Deggaris w/ Gauntlets
- if (CharacterClass == 1 && CheckInventory("SauronGauntletsIllucia") > 0) value = value * 9 / 8; // Illucia w/ Gauntlets
- if (CharacterClass == 2 && CheckInventory("SauronGauntletsFlora") > 0) value = value * 9 / 8; // Flora w/ Gauntlets
- if (CheckInventory("TheOneRing") > 0) value = value * 5 / 2;
+ if (CheckActorInventory(1001,"SauronHelmet") > 0) value = value * 9 / 8;
+ if (CharacterClass == 0 && CheckActorInventory(1001,"SauronGauntlets") > 0) value = value * 9 / 8; // Deggaris w/ Gauntlets
+ if (CharacterClass == 1 && CheckActorInventory(1001,"SauronGauntletsIllucia") > 0) value = value * 9 / 8; // Illucia w/ Gauntlets
+ if (CharacterClass == 2 && CheckActorInventory(1001,"SauronGauntletsFlora") > 0) value = value * 9 / 8; // Flora w/ Gauntlets
+ if (CheckActorInventory(1001,"TheOneRing") > 0) value = value * 5 / 2;
 
  // Divine Avatar
  if (PowerupTimer[7] > 0) value *= 4;
@@ -1566,6 +1566,7 @@ function int SpellCostCheck(int checktype)
   FinalSpellCost = SpellCosts[SpellIsSelected];
   OriginalSpellCost = SpellCosts[SpellIsSelected];
  }
+ if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [Original Base]");
 
  // More Coming
  // Determines the number of levels one has to reach at minimum to start seeing spell cost reductions on the specfic spells below.
@@ -1648,11 +1649,13 @@ function int SpellCostCheck(int checktype)
   LvlSpellCostReducePercent = 100;
   LvlSpellCostReducePercent -= LevelSpellCostReductionFactor;
   FinalSpellCost = FinalSpellCost * LvlSpellCostReducePercent / 100;
+  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [LevelCostReduce]");
 
   if (SpellIsSelected == 50) // Time Freezer Costs at least 25% of Mana Supply by Default (Deggaris and Illucia Only)
   {
    LevelSpellCostReductionFactor = MaxMana / 4;
    FinalSpellCost += LevelSpellCostReductionFactor;
+  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [TimeFreezerCheck]");
   }
 
   // Z1 = SecretSplCostReduceBonus
@@ -1712,13 +1715,15 @@ function int SpellCostCheck(int checktype)
    if (SecretSplCostReduceBonus < 63) SecretSplCostReduceBonus = 63; // Deggaris/Illucia
   }
   FinalSpellCost = FinalSpellCost * SecretSplCostReduceBonus / 100;
+  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [CostReduceBonus]");
  
 
  // Check for having The Ring in you inventory
- if (CheckInventory("TheOneRing") > 0)
+ if (CheckActorInventory(1001,"TheOneRing") > 0)
  {  
   if (CharacterClass == 2) FinalSpellCost = FinalSpellCost * 13 / 16; // 81.25% MP Cost (Flora is the only one who doesn't have her MP Costs increased by the One Ring)
   else FinalSpellCost = FinalSpellCost * 5 / 4; // 125% MP Cost (Deggaris and Illucia)
+  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [Ring]");
  } 
  
  int SpellCostMinimum;
@@ -1736,9 +1741,11 @@ function int SpellCostCheck(int checktype)
 
   // Ruinous Shield = +34% MP Consumption
   if (CheckActorInventory(1001,"RuinousShield") > 0) FinalSpellCost = FinalSpellCost * 134 / 100;
+  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [FloraArmors]");
  }
 
  if (FinalSpellCost > MaxMana) FinalSpellCost = MaxMana;
+ if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [MaxManaClamp]");
 
  if (GameSkill() == SKILL_VERY_EASY) SpellCostMinimum = OriginalSpellCost * 33 / 100;
  if (GameSkill() == SKILL_EASY) SpellCostMinimum =  OriginalSpellCost * 38 / 100;
@@ -1748,17 +1755,21 @@ function int SpellCostCheck(int checktype)
 
  // Clamp Minimum Mana Cost
  if (FinalSpellCost < SpellCostMinimum) FinalSpellCost = SpellCostMinimum;
+ if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [CostMinimumClamp]");
 
- // ((Sorcery + Thrapeusis) / 2) = -0.1% Final Mana Cost [circumvents Clamp]
+ // ((Sorcery + Therapeusis) / 2) = -0.1% Final Mana Cost [circumvents Clamp]
  StatManaCostReduction = 100 - ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 20);
  if (StatManaCostReduction < 50) StatManaCostReduction = 50;
  FinalSpellCost = FinalSpellCost * StatManaCostReduction / 100;
+ if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [SorcTherChecks]");
 
  // Checks Mana Cost Rate Menu Option [circumvents Clamp]
  FinalSpellCost = FinalSpellCost * MiscellaneousVars[145] / 100;
+ if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [CostRateOption]");
 
  if (FinalSpellCost < 1) FinalSpellCost = 1;
  if (FinalSpellCost > MaxMana) FinalSpellCost = MaxMana;
+ if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [FinalClamps]");
 
  return FinalSpellCost;
 }
@@ -6541,20 +6552,20 @@ script "ManaRegenerationStuff" ENTER
    if (CharacterClass == 2) RegenedMana = RegenedMana * random(23,25) / 16; // Flora (143.75%-156.25%)
  
    // Sauron's Helmet
-   if (CharacterClass == 0 && CheckInventory("SauronHelmet") > 0) RegenedMana = RegenedMana * 11 / 8; // Deggaris w/ Helmet (137.5%)
-   if (CharacterClass == 1 && CheckInventory("SauronHelmet") > 0) RegenedMana = RegenedMana * 10 / 8; // Illucia w/ Helmet (125%)
-   if (CharacterClass == 2 && CheckInventory("SauronHelmet") > 0) RegenedMana = RegenedMana * 9 / 8; // Flora w/ Helmet (112.5%)
+   if (CharacterClass == 0 && CheckActorInventory(1001,"SauronHelmet") > 0) RegenedMana = RegenedMana * 11 / 8; // Deggaris w/ Helmet (137.5%)
+   if (CharacterClass == 1 && CheckActorInventory(1001,"SauronHelmet") > 0) RegenedMana = RegenedMana * 10 / 8; // Illucia w/ Helmet (125%)
+   if (CharacterClass == 2 && CheckActorInventory(1001,"SauronHelmet") > 0) RegenedMana = RegenedMana * 9 / 8; // Flora w/ Helmet (112.5%)
    // Sauron's Gauntlets
-   if (CharacterClass == 0 && CheckInventory("SauronGauntlets") > 0) RegenedMana = RegenedMana * 5 / 4; // Deggaris w/ Gauntlets (125%)
-   if (CharacterClass == 1 && CheckInventory("SauronGauntletsIllucia") > 0) RegenedMana = RegenedMana * 5 / 4; // Illucia w/ Gauntlets (125%)
-   if (CharacterClass == 2 && CheckInventory("SauronGauntletsFlora") > 0) RegenedMana = RegenedMana * 5 / 4; // Flora w/ Gauntlets (125%)
+   if (CharacterClass == 0 && CheckActorInventory(1001,"SauronGauntlets") > 0) RegenedMana = RegenedMana * 5 / 4; // Deggaris w/ Gauntlets (125%)
+   if (CharacterClass == 1 && CheckActorInventory(1001,"SauronGauntletsIllucia") > 0) RegenedMana = RegenedMana * 5 / 4; // Illucia w/ Gauntlets (125%)
+   if (CharacterClass == 2 && CheckActorInventory(1001,"SauronGauntletsFlora") > 0) RegenedMana = RegenedMana * 5 / 4; // Flora w/ Gauntlets (125%)
    // The One Ring
-   if (CharacterClass == 0 && CheckInventory("TheOneRing") > 0) RegenedMana = RegenedMana * 5 / 8; // Deggaris w/ Ring (62.5%)
-   if (CharacterClass == 1 && CheckInventory("TheOneRing") > 0) RegenedMana = RegenedMana * 6 / 8; // Illucia w/ Ring (75%)
-   if (CharacterClass == 2 && CheckInventory("TheOneRing") > 0) RegenedMana = RegenedMana * 7 / 8; // Flora w/ Ring (87.5%)
+   if (CharacterClass == 0 && CheckActorInventory(1001,"TheOneRing") > 0) RegenedMana = RegenedMana * 5 / 8; // Deggaris w/ Ring (62.5%)
+   if (CharacterClass == 1 && CheckActorInventory(1001,"TheOneRing") > 0) RegenedMana = RegenedMana * 6 / 8; // Illucia w/ Ring (75%)
+   if (CharacterClass == 2 && CheckActorInventory(1001,"TheOneRing") > 0) RegenedMana = RegenedMana * 7 / 8; // Flora w/ Ring (87.5%)
  
    // Ruinous Shield - quarters MP regeneration
-   if (CharacterClass == 2 && CheckInventory("RuinousShield") > 0) RegenedMana = RegenedMana * 1 / 4; // (25%)
+   if (CharacterClass == 2 && CheckActorInventory(1001,"RuinousShield") > 0) RegenedMana = RegenedMana * 1 / 4; // (25%)
  
    // Checks Mana Regen Rate Menu Option
    RegenedMana = RegenedMana * MiscellaneousVars[139] / 100;
@@ -7145,7 +7156,7 @@ script "LevelUpCode" ENTER // (void)
     G2 += Z1; // Adds [level 1-100] range value
     G2 += G3; // Adds [level 101-200] range value
     RandomizedStatChance -= G2;
-    if (CheckInventory("TheOneRing") > 0) RandomizedStatChance = RandomizedStatChance * 3 / 4;
+    if (CheckActorInventory(1001,"TheOneRing") > 0) RandomizedStatChance = RandomizedStatChance * 3 / 4;
     if (RandomizedStatChance < 1) RandomizedStatChance = 1;
 
     RandomizedStatChance2 = 24;
@@ -13659,27 +13670,27 @@ script "MagicEffects" (int Type, int Strength)
   StamHealMax = StamHealMax * (10 + (PlayerLevel / 25)) / 10;
 
   // Check Sauron Equipment
-  if (CheckInventory("SauronHelmet") > 0)
+  if (CheckActorInventory(1001,"SauronHelmet") > 0)
   {
    StamHealMin = StamHealMin * 9 / 8; // 1.125x
    StamHealMax = StamHealMax * 9 / 8; // 1.125x
   }
-  if (CharacterClass == 0 && CheckInventory("SauronGauntlets") > 0)
+  if (CharacterClass == 0 && CheckActorInventory(1001,"SauronGauntlets") > 0)
   {
    StamHealMin = StamHealMin * 9 / 8; // 1.125x
    StamHealMax = StamHealMax * 9 / 8; // 1.125x
   }
-  if (CharacterClass == 1 && CheckInventory("SauronGauntletsIllucia") > 0)
+  if (CharacterClass == 1 && CheckActorInventory(1001,"SauronGauntletsIllucia") > 0)
   {
    StamHealMin = StamHealMin * 9 / 8; // 1.125x
    StamHealMax = StamHealMax * 9 / 8; // 1.125x
   }
-  if (CharacterClass == 2 && CheckInventory("SauronGauntletsFlora") > 0)
+  if (CharacterClass == 2 && CheckActorInventory(1001,"SauronGauntletsFlora") > 0)
   {
    StamHealMin = StamHealMin * 9 / 8; // 1.125x
    StamHealMax = StamHealMax * 9 / 8; // 1.125x
   }
-  if (CheckInventory("TheOneRing") > 0)
+  if (CheckActorInventory(1001,"TheOneRing") > 0)
   {
    StamHealMin = StamHealMin * 5 / 2; // 2.5x
    StamHealMax = StamHealMax * 5 / 2; // 2.5x
@@ -14794,14 +14805,14 @@ script "CheckManaLevels" ENTER
   SetAmmoCapacity("DoomSpellMana", 99999);
   G3 = CheckInventory("DoomSpellMana");
   TakeInventory("DoomSpellMana", G3);
-  if (CheckInventory("SauronHelmet") > 0)
+  if (CheckActorInventory(1001,"SauronHelmet") > 0)
   {  
    G3 = G3 * 9 / 8;
   }
-  if (CharacterClass == 0 && CheckInventory("SauronGauntlets") > 0) G3 = G3 * 5 / 4;
-  if (CharacterClass == 1 && CheckInventory("SauronGauntletsIllucia") > 0) G3 = G3 * 5 / 4;
-  if (CharacterClass == 2 && CheckInventory("SauronGauntletsFlora") > 0) G3 = G3 * 5 / 4;
-  if (CheckInventory("TheOneRing") > 0)
+  if (CharacterClass == 0 && CheckActorInventory(1001,"SauronGauntlets") > 0) G3 = G3 * 5 / 4;
+  if (CharacterClass == 1 && CheckActorInventory(1001,"SauronGauntletsIllucia") > 0) G3 = G3 * 5 / 4;
+  if (CharacterClass == 2 && CheckActorInventory(1001,"SauronGauntletsFlora") > 0) G3 = G3 * 5 / 4;
+  if (CheckActorInventory(1001,"TheOneRing") > 0)
   {  
    if (CharacterClass == 2) G3 = G3 * 5 / 4; else G3 = G3 / 2;
   }
@@ -18341,12 +18352,15 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
  if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[232] += MiscellaneousVars[32] / 4;
  if (GameSkill() > SKILL_NORMAL) MiscellaneousVars[232] += MiscellaneousVars[32] / 5;
 
+ if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [Base]");
+
  // Abhorrent's Equipment Set
  if (CheckActorInventory(1001,"SauronHelmet") > 0) MiscellaneousVars[232] += 175; // Helmet = 17.5%
  if (CheckActorInventory(1001,"SauronGauntlets") > 0) MiscellaneousVars[232] += 50; // Gauntlets (Deggaris) = 5.0%
  if (CheckActorInventory(1001,"SauronGauntletsIllucia") > 0) MiscellaneousVars[232] += 60; // Gauntlets (Illucia) = 6.0%
  if (CheckActorInventory(1001,"SauronGauntletsFlora") > 0) MiscellaneousVars[232] += 40; // Gauntlets (Flora) = 4.0%
  if (CheckActorInventory(1001,"TheOneRing") > 0) MiscellaneousVars[232] += 333; // The One Ring = 33.3%
+ if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [SauronEquipCheck]");
 
  if (CharacterClass != 2) // Deggaris and Illucia take advantage of Doom-equse Armor, however Flora cannot.
  {
@@ -18356,6 +18370,7 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
   if (CheckActorInventory(1001,"DSDiamondArmorClass1") > 0) MiscellaneousVars[232] += 44; // Diamond Skin [1] = 4.4% [Deggaris and Illucia Only]
   if (CheckActorInventory(1001,"DSStoneArmorClass2") > 0) MiscellaneousVars[232] += 66; // Stone Skin [2] = 6.6% [Deggaris and Illucia Only]
   if (CheckActorInventory(1001,"DSDiamondArmorClass2") > 0) MiscellaneousVars[232] += 176; // Diamond Skin [2] = 17.6% [Deggaris and Illucia Only]
+  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [MarineArmorCheck]");
  }
  if (CharacterClass == 2) // Items only Flora can make use of
  {
@@ -18364,19 +18379,27 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
   if (CheckActorInventory(1001,"DSSpiritualExoskin2") > 0) MiscellaneousVars[232] += 288; // Perfected Spiritual Exoskin = 28.8% [Flora Only]
   if (CheckActorInventory(1001,"AnubisCufflinks") > 0) MiscellaneousVars[232] += 100; // Anubis Cufflinks = 10.0% [Flora Only]
   if (CheckActorInventory(1001,"DoveRibbon") > 0) MiscellaneousVars[232] += 150; // Dove Ribbon = 15.0% [Flora Only]
+  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [FloraArmorCheck]");
  }
  // Divine Avatar = (25.0% of remaining amount uncovered)
  if (PowerupTimer[7] > 0)
  {  
   GodlyAvatarBuddhaAdd = (1000 - MiscellaneousVars[232]) / 4;
   MiscellaneousVars[232] += GodlyAvatarBuddhaAdd;
+  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [DivineAvatarCheck]");
  }
+
+ // [STRIFE-Compatibility] Stamina Upgrades
+ PerkFactor = (MiscellaneousVars[317] * 11);
+ MiscellaneousVars[232] += PerkFactor; // [STRIFE-Compatibility] Stamina Upgrades
+ if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [STRIFEStamCheck]");
 
  // Buff = (10.0% of remaining amount uncovered)
  if (PowerupTimer[11] > 0)
  {  
   GodlyAvatarBuddhaAdd = (1000 - MiscellaneousVars[232]) / 10;
   MiscellaneousVars[232] += GodlyAvatarBuddhaAdd;
+  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [BuffCheck]");
  }
 
  // Kissa's Armored Brassiere = 25.0%
@@ -18389,27 +18412,53 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
  {
   if (MiscellaneousVars[232] > 875) MiscellaneousVars[232] = 875;
  }
+ if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [KissaBraCheck]");
 
- if (CheckActorInventory(1001,"RuinousShield") > 0) MiscellaneousVars[232] = MiscellaneousVars[232] / 10; // Ruinous Shield divides Survival Rate by 10
+ if (CheckActorInventory(1001,"RuinousShield") > 0)
+ {
+  MiscellaneousVars[232] = MiscellaneousVars[232] / 10; // Ruinous Shield divides Survival Rate by 10
+  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [CursedShieldCheck]");
+ }
 
  // For the Status Bar (Only shows an int value, not a floating point amount)
  SurvivalWhole = MiscellaneousVars[232] / 10;
 
  if (BuddhaRNGVal <= MiscellaneousVars[232]) SetPlayerProperty(1,1,PROP_BUDDHA); // Buddha Mode is basically perfect for emulating Survivability [this also means, you can't use the Buddha cheat directly though]
  else SetPlayerProperty(1,0,PROP_BUDDHA);
-
+ if (GetCVar("dvdsdebug_showsurvivalstuff") > 0)
+ {
+  if (BuddhaRNGVal <= MiscellaneousVars[232])
+  {
+   PrintBold(s:"\c[green]Survival Rate Roll - ",d:BuddhaRNGVal,s:"\n",
+             s:"\c[green]Survival Rate Chance % - ",d:MiscellaneousVars[232]);
+  }
+  else
+  {
+   PrintBold(s:"\c[red]Survival Rate Roll - ",d:BuddhaRNGVal,s:"\n",
+             s:"\c[red]Survival Rate Chance % - ",d:MiscellaneousVars[232]);
+  }
+ }
 
  // Dealing Critical Hits
- MiscellaneousVars[235] = MiscellaneousVars[232] / 4; // Base Critical Hit Rate is always 1/4 of your survival rate.
+ MiscellaneousVars[235] = (PlayerLevel / 2) + MiscellaneousVars[0];
+ if (GameSkill() < SKILL_NORMAL) MiscellaneousVars[235] += MiscellaneousVars[32] / 3;
+ if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[235] += MiscellaneousVars[32] / 4;
+ if (GameSkill() > SKILL_NORMAL) MiscellaneousVars[235] += MiscellaneousVars[32] / 5;
+
+ MiscellaneousVars[235] /= 4;
+ if (GetCVar("dvdsdebug_showcriticalhitstuff") > 0) PrintBold(s:"Crit Rate %: ",d:MiscellaneousVars[235],s:" [Base]");
+
  //PrintBold(d:MiscellaneousVars[232]);
  MiscellaneousVars[235] += (MiscellaneousVars[33] * 3); // 1 pt of Deftness is +0.3% crit rate
  //PrintBold(d:MiscellaneousVars[232]);
+ if (GetCVar("dvdsdebug_showcriticalhitstuff") > 0) PrintBold(s:"Crit Rate %: ",d:MiscellaneousVars[235],s:" [DeftCheck]");
 
  // Oomph = (8.33% of remaining amount uncovered)
  if (PowerupTimer[10] > 0)
  {
   GodlyAvatarBuddhaAdd = (1000 - MiscellaneousVars[235]) / 12;
   MiscellaneousVars[235] += GodlyAvatarBuddhaAdd;
+  if (GetCVar("dvdsdebug_showcriticalhitstuff") > 0) PrintBold(s:"Crit Rate %: ",d:MiscellaneousVars[235],s:" [OomphCheck]");
  }
 
  // Acceleratle (16.67% of remaining amount uncovered)
@@ -18417,13 +18466,20 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
  {
   GodlyAvatarBuddhaAdd = (1000 - MiscellaneousVars[235]) / 6;
   MiscellaneousVars[235] += GodlyAvatarBuddhaAdd;
+  if (GetCVar("dvdsdebug_showcriticalhitstuff") > 0) PrintBold(s:"Crit Rate %: ",d:MiscellaneousVars[235],s:" [AccelCheck]");
  }
  // Deceleratle (-8.33% of remaining amount uncovered)
  if (PowerupTimer[15] > 0)
  {
   GodlyAvatarBuddhaAdd = (1000 - MiscellaneousVars[235]) / 12;
   MiscellaneousVars[235] -= GodlyAvatarBuddhaAdd;
+  if (GetCVar("dvdsdebug_showcriticalhitstuff") > 0) PrintBold(s:"Crit Rate %: ",d:MiscellaneousVars[235],s:" [DecelCheck]");
  }
+
+ // [STRIFE-Compatibility] Stamina Upgrades
+ PerkFactor = (MiscellaneousVars[317] * 11);
+ MiscellaneousVars[235] += PerkFactor; // [STRIFE-Compatibility] Stamina Upgrades
+ if (GetCVar("dvdsdebug_showcriticalhitstuff") > 0) PrintBold(s:"Crit Rate %: ",d:MiscellaneousVars[235],s:" [STRIFEStamCheck]");
 
  //PrintBold(d:MiscellaneousVars[235]);
  BuddhaRNGVal = random (1,1000); // Based on 0.1% to 100.0% [though the displays only show full %]
@@ -19136,17 +19192,30 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
  MiscellaneousVars[23] = MiscellaneousVars[31] * AglEvadeCheck;
  MiscellaneousVars[23] += MiscellaneousVars[33] * DftEvadeCheck;
  MiscellaneousVars[23] /= 2;
- if (PowerupTimer[7] > 0) MiscellaneousVars[23] = MiscellaneousVars[23] * 7 / 4; // Divine Avatar Check = 1.75x of the Agility/Deftness Stats
+ if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [Base]");
+
+ if (PowerupTimer[7] > 0) 
+ {
+  MiscellaneousVars[23] = MiscellaneousVars[23] * 7 / 4;
+  if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [DivineAvatarCheck]");
+ }
 
  // DodgeMore perks
  PerkFactor = ((MiscellaneousVars[10007] * 250) + (MiscellaneousVars[10008] * 625));
  MiscellaneousVars[23] += PerkFactor; // "DodgeMore" and "DodgeMore EX" perks.
+ if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [DodgeMoreCheck]");
+
+ // [STRIFE-Compatibility] Stamina Upgrades
+ PerkFactor = (MiscellaneousVars[317] * 111);
+ MiscellaneousVars[23] += PerkFactor; // [STRIFE-Compatibility] Stamina Upgrades
+ if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [STRIFEStamCheck]");
 
  // Checks Evasion Based on Level
  int LevelCheck;
  LevelCheck = PlayerLevel * 5;
  if (PowerupTimer[7] > 0) LevelCheck = LevelCheck * 7 / 5;
  MiscellaneousVars[23] += LevelCheck;
+ if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [LevelCheck]");
 
  if (CharacterClass == 2)
  {
@@ -19179,6 +19248,7 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
 
   // Flora has Dove Ribbon? [+1.75% Chance to totally "Evade" damage even from a direct hit.]
   if (CheckActorInventory(1001,"DoveRibbon") > 0) MiscellaneousVars[23] += 175;
+  if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [FloraArmorCheck]");
  }
 
  // Someone has Sauron's Helmet [-1.56% Chance]
@@ -19192,19 +19262,37 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
  // Someone has The One Ring [+6.25% Chance]
  if (CheckActorInventory(1001,"TheOneRing") > 0) MiscellaneousVars[23] += 625;
 
+ if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [SauronArmorCheck]");
+
  // Haste Buff [150% Evade]
- if (CheckActorInventory(1001,"HasteBuff") > 0) MiscellaneousVars[23] = MiscellaneousVars[23] * 3 / 2;
+ if (CheckActorInventory(1001,"HasteBuff") > 0)
+ {
+  MiscellaneousVars[23] = MiscellaneousVars[23] * 3 / 2;
+  if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [HasteCheck]");
+ }
 
  // Slow Ailment [66.7% Evade]
- if (CheckActorInventory(1001,"SlowAilment") > 0) MiscellaneousVars[23] = MiscellaneousVars[23] * 2 / 3;
+ if (CheckActorInventory(1001,"SlowAilment") > 0)
+ {
+  MiscellaneousVars[23] = MiscellaneousVars[23] * 2 / 3;
+  if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [SlowCheck]");
+ }
 
  if (CharacterClass == 2)
  {
   // Ruinous Shield [Evade reduced by 3/4s]
-  if (CheckActorInventory(1001,"RuinousShield") > 0) MiscellaneousVars[23] = MiscellaneousVars[23] / 4;
+  if (CheckActorInventory(1001,"RuinousShield") > 0)
+  {
+   MiscellaneousVars[23] = MiscellaneousVars[23] / 4;
+   if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [CursedShieldCheck]");
+  }
 
   // Divine Shield [Evade Increased by 1/4ths]
-  if (CheckActorInventory(1001,"DivineShield") > 0) MiscellaneousVars[23] = MiscellaneousVars[23] * 5 / 4;
+  if (CheckActorInventory(1001,"DivineShield") > 0)
+  {
+   MiscellaneousVars[23] = MiscellaneousVars[23] * 5 / 4;
+   if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [DivineShieldCheck]");
+  }
  }
 
  // Caps Evasion Chances out at 75% [unless you have the Dove's Ribbon, which it caps at 92.5%]
@@ -19218,13 +19306,23 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
   if (MiscellaneousVars[23] < 0) MiscellaneousVars[23] = 0;
   if (MiscellaneousVars[23] > 7500) MiscellaneousVars[23] = 7500;
  }
+ if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [DoveRibbonCheck]");
 
  int AccelEvadeAdd;
  // Acceleratle = +1/10 of remaining % Evasion added (done after caps are normally calculated)
- if (CheckActorInventory(1001,"AcceleratleDQSpell") > 0)
+ if (PowerupTimer[12] > 0)
  {
   AccelEvadeAdd = (10000 - MiscellaneousVars[23]) / 10;
   MiscellaneousVars[23] += AccelEvadeAdd;
+  if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [AccelCheck]");
+ }
+
+ // Deceleratle = -1/10 of remaining % Current Evasion removed (done after caps are normally calculated)
+ if (PowerupTimer[15] > 0)
+ {
+  AccelEvadeAdd = MiscellaneousVars[23] / 10;
+  MiscellaneousVars[23] -= AccelEvadeAdd;
+  if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [DecelCheck]");
  }
 
  int InvisEvadeAdd;
@@ -19233,19 +19331,34 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
  {
   InvisEvadeAdd = (10000 - MiscellaneousVars[23]) / 3;
   MiscellaneousVars[23] += InvisEvadeAdd;
+  if (GetCVar("dvdsdebug_showevadestuff") > 0) PrintBold(s:"Evasion Rate %: ",d:MiscellaneousVars[23],s:" [InvisCheck]");
  }
 
  // For the Status Bar (Only shows an int value, not a floating point amount)
  EvadeWhole = MiscellaneousVars[23] / 100;
 
  // Run Final RNG Check on Evasion
- if (random(1,10000) <= MiscellaneousVars[23])
+ BuddhaRNGVal = random(1,10000);
+ if (BuddhaRNGVal <= MiscellaneousVars[23])
  {
   if (CheckActorInventory(1001,"EvadeAnAttack") < 1) GiveActorInventory(1001,"EvadeAnAttack", 1); // "Dodge/Null" the damage.
  }
  else
  {
   if (CheckActorInventory(1001,"EvadeAnAttack") > 0) TakeActorInventory(1001,"EvadeAnAttack", 1); // Damage will occur as normal   
+ }
+ if (GetCVar("dvdsdebug_showevadestuff") > 0)
+ {
+  if (BuddhaRNGVal <= MiscellaneousVars[23])
+  {
+   PrintBold(s:"\c[green]Evasion Rate Roll - ",d:BuddhaRNGVal,s:"\n",
+             s:"\c[green]Evasion Rate Chance % - ",d:MiscellaneousVars[23]);
+  }
+  else
+  {
+   PrintBold(s:"\c[red]Evasion Rate Roll - ",d:BuddhaRNGVal,s:"\n",
+             s:"\c[red]Evasion Rate Chance % - ",d:MiscellaneousVars[23]);
+  }
  }
 
  //*****************************
@@ -26573,7 +26686,7 @@ script "ShowArmorStats" ENTER
   // Checks the Armor Info of Sauron's Helmet. [all characters]
   if (MiscellaneousVars[55] == 2)
   {   
-   if (CheckInventory("SauronHelmet") > 0)
+   if (CheckActorInventory(1001,"SauronHelmet") > 0)
    {
     if (CharacterClass == 0) ArmorString1 = "\cd+12.5% Mana Regeneration Rate\n";
     if (CharacterClass == 1) ArmorString1 = "\cd+25% Mana Regeneration Rate\n";
@@ -26645,7 +26758,7 @@ script "ShowArmorStats" ENTER
   // Checks the Armor Info of Sauron's Gauntlets. [all characters]
   if (MiscellaneousVars[55] == 3)
   {   
-   if (CheckInventory("SauronGauntletsItem") > 0)
+   if (CheckActorInventory(1001,"SauronGauntletsItem") > 0)
    {
     if (CharacterClass == 0) ArmorString1 = "\cd+(5 + 5%) Balance\n";
     if (CharacterClass == 1) ArmorString1 = "\cd+(6 + 6%) Balance\n";
@@ -26721,7 +26834,7 @@ script "ShowArmorStats" ENTER
   // Checks the Armor Info of The One Ring [all characters]
   if (MiscellaneousVars[55] == 4)
   {   
-   if (CheckInventory("TheOneRing") > 0)
+   if (CheckActorInventory(1001,"TheOneRing") > 0)
    {
     if (CharacterClass == 0) ArmorString1 = "\cg+25% Mana Cost\n";
     if (CharacterClass == 1) ArmorString1 = "\cg+25% Mana Cost\n";
@@ -26737,7 +26850,7 @@ script "ShowArmorStats" ENTER
 
     if (CharacterClass == 2)
     {
-     if (CheckInventory("AnubisCufflinks") > 0) ArmorString4 = "\cqIncrease Fear Effect Chance from '\cnAnubis Cufflinks\cq' to 33.3%\n";
+     if (CheckActorInventory(1001,"AnubisCufflinks") > 0) ArmorString4 = "\cqIncrease Fear Effect Chance from '\cnAnubis Cufflinks\cq' to 33.3%\n";
                                            else ArmorString4 = "\ck(?)\n";
     }
     else
@@ -26812,12 +26925,12 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("SafeTeaShoes") > 0)
+    if (CheckActorInventory(1001,"SafeTeaShoes") > 0)
     {
-     if (CheckInventory("DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
                                         else ArmorString1 = "\ck(?)\n";
 
-     if (CheckInventory("DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
 
      if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
@@ -26890,12 +27003,12 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("PearlyCorset") > 0)
+    if (CheckActorInventory(1001,"PearlyCorset") > 0)
     {
-     if (CheckInventory("DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
                                         else ArmorString1 = "\ck(?)\n";
 
-     if (CheckInventory("DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
      if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
@@ -26968,12 +27081,12 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("WaterFlyingDress") > 0)
+    if (CheckActorInventory(1001,"WaterFlyingDress") > 0)
     {
-     if (CheckInventory("DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
                                         else ArmorString1 = "\ck(?)\n";
 
-     if (CheckInventory("DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
      if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
@@ -27047,12 +27160,12 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("EvenstarNecklace") > 0)
+    if (CheckActorInventory(1001,"EvenstarNecklace") > 0)
     {
-     if (CheckInventory("DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
                                         else ArmorString1 = "\ck(?)\n";
 
-     if (CheckInventory("DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
      if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
@@ -27125,12 +27238,12 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("CloakOfEvasion") > 0)
+    if (CheckActorInventory(1001,"CloakOfEvasion") > 0)
     {
-     if (CheckInventory("DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
                                         else ArmorString1 = "\ck(?)\n";
 
-     if (CheckInventory("DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
      if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
@@ -27203,15 +27316,15 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("FalconKnifeEarrings") > 0)
+    if (CheckActorInventory(1001,"FalconKnifeEarrings") > 0)
     {
-     if (CheckInventory("DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
                                         else ArmorString1 = "\ck(?)\n";
 
-     if (CheckInventory("DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
 
-     if (CheckInventory("SauronGauntletsItem") > 0) ArmorString3 = "\cd+33.3% Damage Done By Punches and Gauntlet Punches\n";
+     if (CheckActorInventory(1001,"SauronGauntletsItem") > 0) ArmorString3 = "\cd+33.3% Damage Done By Punches and Gauntlet Punches\n";
                                                else ArmorString3 = "\cd+33.3% Damage Done By Punches\n";
      
      if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\ck(?)\n";
@@ -27284,18 +27397,18 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("AnubisCufflinks") > 0)
+    if (CheckActorInventory(1001,"AnubisCufflinks") > 0)
     {
-     if (CheckInventory("DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
                                         else ArmorString1 = "\ck(?)\n";
 
-     if (CheckInventory("DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
-     if (CheckInventory("SauronGauntletsItem") > 0) ArmorString3 = "\cd+75% Damage Done By Punches and Gauntlet Punches\n";
+     if (CheckActorInventory(1001,"SauronGauntletsItem") > 0) ArmorString3 = "\cd+75% Damage Done By Punches and Gauntlet Punches\n";
                                                else ArmorString3 = "\cd+75% Damage Done By Punches\n";
      
-     if (CheckInventory("TheOneRing") > 0) ArmorString4 = "\cd+33.3% Chance to Induce Fear On Enemies and Make Them Hesitate\n";
+     if (CheckActorInventory(1001,"TheOneRing") > 0) ArmorString4 = "\cd+33.3% Chance to Induce Fear On Enemies and Make Them Hesitate\n";
                                       else ArmorString4 = "\cd+20% Chance to Induce Fear On Enemies and Make Them Hesitate\n";
      
      if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString5 = "\ck(?)\n";
@@ -27368,12 +27481,12 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("KissaBra") > 0)
+    if (CheckActorInventory(1001,"KissaBra") > 0)
     {
-     if (CheckInventory("DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
                                         else ArmorString1 = "\ck(?)\n";
 
-     if (CheckInventory("DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
      if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
@@ -27447,7 +27560,7 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("RuinousShield") > 0)
+    if (CheckActorInventory(1001,"RuinousShield") > 0)
     {
      if (GameSkill() == SKILL_VERY_EASY) ArmorString1 = "\cg-0.6% to -3.1% HP Degeneration Every Second Down to 12.5% of Maximum\n";
      if (GameSkill() == SKILL_EASY) ArmorString1 = "\cg-0.6% to -3.1% HP Degeneration Every Second Down to 11.11~% of Maximum\n";
@@ -27531,19 +27644,19 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("DivineShield") > 0)
+    if (CheckActorInventory(1001,"DivineShield") > 0)
     {
      misc1 = 0;
-     if (CheckInventory("SafeTeaShoes") > 0) misc1 += 1;
-     if (CheckInventory("PearlyCorset") > 0) misc1 += 1;
-     if (CheckInventory("WaterFlyingDress") > 0) misc1 += 1;
-     if (CheckInventory("EvenstarNecklace") > 0) misc1 += 1;
-     if (CheckInventory("CloakOfEvasion") > 0) misc1 += 1;
-     if (CheckInventory("FalconKnifeEarrings") > 0) misc1 += 1;
-     if (CheckInventory("AnubisCufflinks") > 0) misc1 += 1;
-     if (CheckInventory("KissaBra") > 0) misc1 += 1;
-     if (CheckInventory("BalrogRing") > 0) misc1 += 1;
-     if (CheckInventory("DoveRibbon") > 0) misc1 += 1;
+     if (CheckActorInventory(1001,"SafeTeaShoes") > 0) misc1 += 1;
+     if (CheckActorInventory(1001,"PearlyCorset") > 0) misc1 += 1;
+     if (CheckActorInventory(1001,"WaterFlyingDress") > 0) misc1 += 1;
+     if (CheckActorInventory(1001,"EvenstarNecklace") > 0) misc1 += 1;
+     if (CheckActorInventory(1001,"CloakOfEvasion") > 0) misc1 += 1;
+     if (CheckActorInventory(1001,"FalconKnifeEarrings") > 0) misc1 += 1;
+     if (CheckActorInventory(1001,"AnubisCufflinks") > 0) misc1 += 1;
+     if (CheckActorInventory(1001,"KissaBra") > 0) misc1 += 1;
+     if (CheckActorInventory(1001,"BalrogRing") > 0) misc1 += 1;
+     if (CheckActorInventory(1001,"DoveRibbon") > 0) misc1 += 1;
 
      misc2 = 15 + (misc1 * 2);
      misc3 = 7 + (misc1 * 7);
@@ -27621,12 +27734,12 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("BalrogRing") > 0)
+    if (CheckActorInventory(1001,"BalrogRing") > 0)
     {
-     if (CheckInventory("DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
                                         else ArmorString1 = "\ck(?)\n";
 
-     if (CheckInventory("DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
      if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
@@ -27699,12 +27812,12 @@ script "ShowArmorStats" ENTER
    if (CharacterClass != 2) MiscellaneousVars[55] += 1;
    else
    {
-    if (CheckInventory("DoveRibbon") > 0)
+    if (CheckActorInventory(1001,"DoveRibbon") > 0)
     {
-     if (CheckInventory("DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString1 = "\cq+7% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
                                         else ArmorString1 = "\ck(?)\n";
 
-     if (CheckInventory("DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
+     if (CheckActorInventory(1001,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
      if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "";
