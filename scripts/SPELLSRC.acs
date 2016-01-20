@@ -611,7 +611,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [241] Shows "LastHealthValue" in the new HUD for the Player's "Damage/Healing" bursts.  
 // [242] Shows "LastArmorValue" in the new HUD for the Player's "Damage/Healing" bursts.  
 // [243] Shows "LastManaValue" in the new HUD for the Player's "Damage/Healing" bursts.  
-	// [244 to 300] are undefined so far :P
+// [244] Checks for if the player can use the Sceptre's Spin Attack
+	// [245 to 300] are undefined so far :P
 // [301] Total Sceptre EXP Required for Level 1
 // [302] Total Sceptre EXP Required for Level 2
 // [303] Total Sceptre EXP Required for Level 3
@@ -2990,7 +2991,7 @@ script "HUDDisplay" ENTER
     HudMessage(s:SpellDesc[SelectedSpell];0,3407,cr_gold,xpos,ypos,0.036);
    }
 
-   str KeyName;
+   str Keyname;
    SetHudSize(704,528,0); // 640,480 //   SetHudSize(960,720,0);
    xpos = 704.2;
    ypos = 220.0; // 200.0;
@@ -6155,6 +6156,9 @@ script "HUDDisplay" ENTER
 
      // Ammo / SceptreLevel Label
      int HellcoreLevel;
+     Keyname = "+attack";
+     str Keyname2 = "+moveleft";
+     str Keyname3 = "+moveright";
      xpos = ScreenXOffset + 1149.0;
      ypos = 1060.0;
      If(StrIcmp(weapon, "SceptreOfEmpyrea") == 0)
@@ -6163,6 +6167,21 @@ script "HUDDisplay" ENTER
       {
        SetFont("DQHUDFONTSML");
        HudMessage(s:"LVL \cg",d:SceptreActualLevel;HUDMSG_ALPHA,5901,cr_white,xpos,ypos,0.036,0.875);
+      }
+/*
+       // Spin Attack Indicator Actions
+       xpos = ScreenXOffset + MiscFixedVars[1];
+       ypos = MiscFixedVars[2];
+       SetFont("DQHUDFONTSML");
+       HudMessage(k:Keyname2,s:" &",k:Keyname3,s:" &\n",k:Keyname;HUDMSG_ALPHA,5899,cr_untranslated,xpos,ypos,0.036,0.75);
+*/
+      if (MiscellaneousVars[244] > 0)
+      {
+       // Spin Attack Indicator Icon
+       xpos = ScreenXOffset + 1150.0;
+       ypos = 992.0;
+       SetFont("SCEPTSPN");
+       HudMessage(s:"A";HUDMSG_ALPHA,5900,cr_untranslated,xpos,ypos,0.036,0.75);
       }
      }
      else
@@ -15981,10 +16000,22 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (MiscellaneousVars[197] < 0) MiscellaneousVars[197] = 0;
  if (MiscellaneousVars[197] > 200) MiscellaneousVars[197] = 200;
 
- MiscellaneousVars[52] = GetCVar("dvds_mapdifficultyinflationEXP");
- MiscellaneousVars[53] = GetCVar("dvds_mapdifficultyinflationStats");
- MiscellaneousVars[54] = GetCVar("dvds_mapdifficultyinflationSpawnStealth");
  MiscellaneousVars[169] = GetCVar("dvds_mapdifficultyinflationOVERALL");
+ if (MiscellaneousVars[169] < -50) MiscellaneousVars[169] = -50;
+ if (MiscellaneousVars[169] > 50) MiscellaneousVars[169] = 50;
+
+ MiscellaneousVars[52] = GetCVar("dvds_mapdifficultyinflationEXP");
+ if (MiscellaneousVars[52] < -50) MiscellaneousVars[52] = -50;
+ if (MiscellaneousVars[52] > 50) MiscellaneousVars[52] = 50;
+
+ MiscellaneousVars[53] = GetCVar("dvds_mapdifficultyinflationStats");
+ if (MiscellaneousVars[53] < -50) MiscellaneousVars[53] = -50;
+ if (MiscellaneousVars[53] > 50) MiscellaneousVars[53] = 50;
+
+ MiscellaneousVars[54] = GetCVar("dvds_mapdifficultyinflationSpawnStealth");
+ if (MiscellaneousVars[54] < -50) MiscellaneousVars[54] = -50;
+ if (MiscellaneousVars[54] > 50) MiscellaneousVars[54] = 50;
+
  MiscellaneousVars[86] = GetCVar("dvds_aeonpointmultiplier") + 1;
  MiscellaneousVars[87] = GetCVar("dvds_seedmultiplier") + 1;
  MiscellaneousVars[146] = GetCVar("dvds_lvlstatmultiplier") + 1;
@@ -16427,6 +16458,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    TakeActorInventory(1001,"DSDiamondArmorClass2", 9999);
 
    MiscellaneousVars[140] = GetCVar("dvds_sceptrestartlvl");
+   if (MiscellaneousVars[140] < 0) MiscellaneousVars[140] = 0;
+   if (MiscellaneousVars[140] > 16) MiscellaneousVars[140] = 16;
    while (MiscellaneousVars[140] > 0)
    {
     SceptreEXPRatio += MiscellaneousVars[140];
@@ -16546,6 +16579,16 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  else
  {
   SetPlayerProperty(1,0,PROP_TOTALLYFROZEN);
+ }
+
+ // Check for Sceptre Abilities
+ if (CharacterClass == 2 && PlayerLevel >= 8 && SceptreActualLevel >= 2)
+ {
+  MiscellaneousVars[244] = 1;
+ }
+ else
+ {
+  MiscellaneousVars[244] = 0;
  }
 
  int TempMaxHealth = MaxHealthTrue;
@@ -18094,6 +18137,8 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
   if (CharacterClass != 2)
   {
    LevelCap = GetCVar("dvds_marines_maxlevel"); // Necessary to prevent the game from giving bogus EXP requirements at level 100-199
+   if (LevelCap < 0) LevelCap = 0;
+   if (LevelCap > 200) LevelCap = 200;
   }
   else
   {
@@ -18119,6 +18164,8 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
    else
    {
     LevelCap = GetCVar("dvds_flora_maxlevel");
+    if (LevelCap < 0) LevelCap = 0;
+    if (LevelCap > 200) LevelCap = 200;
    }
   }
  }
@@ -19653,7 +19700,11 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
  if (PowerupTimer[7] > 0) TensionChargeFailRate -= 250; // -25% Fail Rate When In Divine Avatar
  if (PowerupTimer[129] > 0) TensionChargeFailRate = TensionChargeFailRate / 2; // 0.5x Fail Rate When In GoE
 
- TensionChargeFailRate = TensionChargeFailRate * GetCVar("dvds_tension_failrateratio") / 100;
+ int TensionChargeFailRatio = GetCVar("dvds_tension_failrateratio");
+ if (TensionChargeFailRatio < 0) TensionChargeFailRatio = 0;
+ if (TensionChargeFailRatio > 200) TensionChargeFailRatio = 200;
+
+ TensionChargeFailRate = TensionChargeFailRate * TensionChargeFailRatio / 100;
  if (GetCVar("dvds_musou_powertripmode") == 1) TensionChargeFailRate = TensionChargeFailRate / 5; // Check "Power Trip" mode Cheat
  if (GetCVar("dvds_musou_powertripmode") == 2) TensionChargeFailRate = TensionChargeFailRate / 10; // Check "Power Trip" mode Cheat
  if (TensionChargeFailRate <= 0) TensionChargeFailRate = 0;
@@ -23536,24 +23587,32 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    }
 
    SpeedFactor = FixedMul(SpeedFactor, GetCVar("dvds_monsterspeedratio_skill"));
+   if (SpeedFactor > 0.01) SpeedFactor = 0.01;
+   if (SpeedFactor > 2.00) SpeedFactor = 2.00;
    Speed = FixedMul(Speed, (1.0+SpeedFactor));
    SetActorProperty(0,APROP_Speed,Speed); 
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"SpeedFactor: ",f:(1.0+SpeedFactor));
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"After Skill: ",f:speed);
 
    AttackFactor = FixedMul(AttackFactor, GetCVar("dvds_monsterattackratio_skill"));
+   if (AttackFactor > 0.01) AttackFactor = 0.01;
+   if (AttackFactor > 2.00) AttackFactor = 2.00;
    Attack = FixedMul(Attack, (1.0+AttackFactor));
    SetActorProperty(0,APROP_DamageMultiplier,Attack); 
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"AttackFactor: ",f:(1.0+AttackFactor));
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"Attack After Skill: ",f:Attack);
 
    DefenseFactor = FixedMul(DefenseFactor, GetCVar("dvds_monsterdefenseratio_skill"));
+   if (DefenseFactor > 0.01) DefenseFactor = 0.01;
+   if (DefenseFactor > 2.00) DefenseFactor = 2.00;
    Defense = FixedMul(Defense, (1.0+DefenseFactor));
    SetActorProperty(0,APROP_DamageFactor,Defense); 
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"DefenseFactor: ",f:(1.0+DefenseFactor));
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"Defense After Skill: ",f:Defense);
 
    MaxHPFactor = FixedMul(MaxHPFactor, GetCVar("dvds_monstermaxhpratio_skill"));
+   if (MaxHPFactor > 0.01) MaxHPFactor = 0.01;
+   if (MaxHPFactor > 2.00) MaxHPFactor = 2.00;
    MaxHP = FixedMul(MaxHP, (1.0+MaxHPFactor));
    if (MaxHP < 1) MaxHP = 1;
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"MaxHPFactor: ",f:(1.0+MaxHPFactor));
@@ -23785,24 +23844,32 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    } 
 
    SpeedFactor = FixedMul(SpeedFactor, GetCVar("dvds_monsterspeedratio_maps"));
+   if (SpeedFactor > 0.01) SpeedFactor = 0.01;
+   if (SpeedFactor > 2.00) SpeedFactor = 2.00;
    Speed = FixedMul(Speed, (1.0+SpeedFactor));
    SetActorProperty(0,APROP_Speed,Speed); 
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"SpeedFactor: ",f:(1.0+SpeedFactor));
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"After MAP: ",f:Speed);
 
    AttackFactor = FixedMul(AttackFactor, GetCVar("dvds_monsterattackratio_maps"));
+   if (AttackFactor > 0.01) AttackFactor = 0.01;
+   if (AttackFactor > 2.00) AttackFactor = 2.00;
    Attack = FixedMul(Attack, (1.0+AttackFactor));
    SetActorProperty(0,APROP_DamageMultiplier,Attack); 
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"AttackFactor: ",f:(1.0+AttackFactor));
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"Attack After MAP: ",f:Attack);
 
    DefenseFactor = FixedMul(DefenseFactor, GetCVar("dvds_monsterdefenseratio_maps"));
+   if (DefenseFactor > 0.01) DefenseFactor = 0.01;
+   if (DefenseFactor > 2.00) DefenseFactor = 2.00;
    Defense = FixedMul(Defense, (1.0+DefenseFactor));
    SetActorProperty(0,APROP_DamageFactor,Defense); 
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"DefenseFactor: ",f:(1.0+DefenseFactor));
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"Defense After MAP: ",f:Defense);
 
    MaxHPFactor = FixedMul(MaxHPFactor, GetCVar("dvds_monstermaxhpratio_maps"));
+   if (MaxHPFactor > 0.01) MaxHPFactor = 0.01;
+   if (MaxHPFactor > 2.00) MaxHPFactor = 2.00;
    MaxHP = FixedMul(MaxHP, (1.0+MaxHPFactor));
    if (MaxHP < 1) MaxHP = 1;
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"MaxHPFactor: ",f:(1.0+MaxHPFactor));
@@ -23823,6 +23890,10 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   LevelBaseMulti = FixedMul(LevelBaseMulti, GetCVar("dvds_monsterlevelstatfactor"));
 
   int LevelChecker = 1;
+  int LevelDifficultyInflation = GetCVar("dvds_leveldifficultyinflation");
+  if (LevelDifficultyInflation < -2000) LevelDifficultyInflation = -2000;
+  if (LevelDifficultyInflation > 2000) LevelDifficultyInflation = 2000;
+
   if (ModType == 0)
   { 
    if (GetCVar("dvds_monsterstatcalc_levels") > 0) LevelChecker = 1; else LevelChecker = 0;
@@ -23832,7 +23903,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   if (LevelChecker == 1 && GetActorClass(0) != "PracticeTarget")
   {
      LevelCheck = PlayerLevel;
-     LevelCheck += GetCVar("dvds_leveldifficultyinflation");
+     LevelCheck += LevelDifficultyInflation;
 
      LevelErrorRange = FixedMul(LevelCheck, 0.1667);
      if (LevelErrorRange < 1) LevelErrorRange = random(0,3);
@@ -23890,6 +23961,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"MaxHPFactor: ",f:(MaxHPFactor));
 
     SpeedFactor = FixedMul(SpeedFactor, GetCVar("dvds_monsterspeedratio_levels"));
+    if (SpeedFactor > 0.01) SpeedFactor = 0.01;
+    if (SpeedFactor > 2.00) SpeedFactor = 2.00;
     Speed = FixedMul(Speed, (1.0+SpeedFactor));
     SetActorProperty(0,APROP_Speed,Speed); 
     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"SpeedFactor: ",f:(1.0+SpeedFactor));
@@ -23897,18 +23970,24 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 
 
     AttackFactor = FixedMul(AttackFactor, GetCVar("dvds_monsterattackratio_levels"));
+    if (AttackFactor > 0.01) AttackFactor = 0.01;
+    if (AttackFactor > 2.00) AttackFactor = 2.00;
     Attack = FixedMul(Attack, (1.0+AttackFactor));
     SetActorProperty(0,APROP_DamageMultiplier,Attack); 
     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"AttackFactor: ",f:(1.0+AttackFactor));
     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"Attack After Levels: ",f:Attack);
 
     DefenseFactor = FixedMul(DefenseFactor, GetCVar("dvds_monsterdefenseratio_levels"));
+    if (DefenseFactor > 0.01) DefenseFactor = 0.01;
+    if (DefenseFactor > 2.00) DefenseFactor = 2.00;
     Defense = FixedMul(Defense, (1.0+DefenseFactor));
     SetActorProperty(0,APROP_DamageFactor,Defense); 
     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"DefenseFactor: ",f:(1.0+DefenseFactor));
     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"Defense After Levels: ",f:Defense);
 
     MaxHPFactor = FixedMul(MaxHPFactor, GetCVar("dvds_monstermaxhpratio_levels"));
+    if (MaxHPFactor > 0.01) MaxHPFactor = 0.01;
+    if (MaxHPFactor > 2.00) MaxHPFactor = 2.00;
     MaxHP = FixedMul(MaxHP, (1.0+MaxHPFactor));
     if (MaxHP < 1) MaxHP = 1;
     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"MaxHPFactor: ",f:(1.0+MaxHPFactor));
@@ -23930,21 +24009,29 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   {
    // HP Error
    int MaxHPErrorRange = FixedMul(MaxHP, GetCVar("dvds_monstermaxhpvarience")); //MaxHP / 10;
+   if (MaxHPErrorRange > 0.01) MaxHPErrorRange = 0.01;
+   if (MaxHPErrorRange > 1.00) MaxHPErrorRange = 1.00;
    MaxHP += random(-MaxHPErrorRange,MaxHPErrorRange);
    if (MaxHP < 1) MaxHP = 1;
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"MaxHP Error Range: ",d:MaxHPErrorRange);
 
    int SpeedErrorRange = FixedMul(Speed, GetCVar("dvds_monsterspeedvarience"));
+   if (SpeedErrorRange > 0.01) SpeedErrorRange = 0.01;
+   if (SpeedErrorRange > 1.00) SpeedErrorRange = 1.00;
    Speed += random(-SpeedErrorRange,SpeedErrorRange);
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"Speed Error Range: ",f:SpeedErrorRange);
    SetActorProperty(0,APROP_Speed,Speed); //Set's Final Speed values
 
    int AttackErrorRange = FixedMul(Attack, GetCVar("dvds_monsterattackvarience"));
+   if (AttackErrorRange > 0.01) AttackErrorRange = 0.01;
+   if (AttackErrorRange > 1.00) AttackErrorRange = 1.00;
    Attack += random(-AttackErrorRange,AttackErrorRange);
    SetActorProperty(0,APROP_DamageMultiplier,Attack); 
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"Attack Error Range: ",f:AttackErrorRange);
 
    int DefenseErrorRange = FixedMul(Defense, GetCVar("dvds_monsterdefensevarience"));
+   if (DefenseErrorRange > 0.01) DefenseErrorRange = 0.01;
+   if (DefenseErrorRange > 1.00) DefenseErrorRange = 1.00;
    Defense += random(-DefenseErrorRange,DefenseErrorRange);
    SetActorProperty(0,APROP_DamageFactor,Defense); 
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"Defense Error Range: ",f:DefenseErrorRange);
@@ -25250,7 +25337,7 @@ script "CheckSceptreAltFire" (void)
   }
   else
   {
-   if (buttons & BT_MOVELEFT && buttons & BT_MOVERIGHT && PlayerLevel >= 8 && SceptreActualLevel >= 2)
+   if (buttons & BT_MOVELEFT && buttons & BT_MOVERIGHT && MiscellaneousVars[244] > 0)
    {
     SetResultValue(2);
    }
@@ -25262,7 +25349,7 @@ script "CheckSceptreAltFire" (void)
  }
  else
  {
-  if (buttons & BT_MOVELEFT && buttons & BT_MOVERIGHT && PlayerLevel >= 8 && SceptreActualLevel >= 2)
+  if (buttons & BT_MOVELEFT && buttons & BT_MOVERIGHT && MiscellaneousVars[244] > 0)
   {
    SetResultValue(2);
   }
