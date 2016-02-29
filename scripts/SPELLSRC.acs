@@ -3642,8 +3642,8 @@ script "HUDDisplay" ENTER
      //**************************
      if (MiscellaneousVars[171] > 0) // Level up timer
      {
-       xpos = ScreenXOffset + 130.0; // 130.0
-       ypos = 793.0; // 793.0
+       xpos = ScreenXOffset + 240.0; // 240.0
+       ypos = 640.0; // 640.0
        msgalpha = 0.975;
        MiscellaneousVars[172] += 1;
        if (MiscellaneousVars[172] == 1) msgalpha = 0.975;
@@ -3681,7 +3681,7 @@ script "HUDDisplay" ENTER
        if (MiscellaneousVars[172] == 33) msgalpha = 0.945;
        if (MiscellaneousVars[172] == 34) msgalpha = 0.96;
        if (MiscellaneousVars[172] == 35) { msgalpha = 0.975; MiscellaneousVars[172] = 1; }
-       SetFont("LVLUPIND");
+       SetFont("LEVELUP");
        HudMessage(s:"A";HUDMSG_ALPHA,7796,cr_untranslated,xpos,ypos,0.036,msgalpha);
      }
      else { msgalpha = 0.75; MiscellaneousVars[172] = 0; }
@@ -14949,9 +14949,25 @@ script "CreateTranslationTables" OPEN
  CreateTranslation(31, 80:111=16:31); // For Damage on the Damage Indicator [normal]
  CreateTranslation(32, 80:111=32:47); // For Damage on the Damage Indicator [CRITICAL]
 
+ // Doom/Doom2 [heal/damage]
  CreateTranslation(33, 80:111=112:127); // For Healing on the Damage Indicator [NEW DQH NUMBERS]
  CreateTranslation(34, 80:111=208:223); // For Damage on the Damage Indicator [normal] [NEW DQH NUMBERS]
  CreateTranslation(35, 80:111=216:223); // For Damage on the Damage Indicator [CRITICAL] [NEW DQH NUMBERS]
+
+ // Heretic [heal/damage]
+ CreateTranslation(36, 0:31=209:221); // For Healing on the Damage Indicator [NEW DQH NUMBERS]
+ CreateTranslation(37, 0:31=137:144); // For Damage on the Damage Indicator [normal] [NEW DQH NUMBERS]
+ CreateTranslation(38, 0:31=137:140); // For Damage on the Damage Indicator [CRITICAL] [NEW DQH NUMBERS]
+
+ // Hexen [heal/damage]
+ CreateTranslation(39, 33:50=112:127); // For Healing on the Damage Indicator [NEW DQH NUMBERS]
+ CreateTranslation(40, 33:50=203:210); // For Damage on the Damage Indicator [normal] [NEW DQH NUMBERS]
+ CreateTranslation(41, 33:50=203:206); // For Damage on the Damage Indicator [CRITICAL] [NEW DQH NUMBERS]
+
+ // Strife [heal/damage]
+ CreateTranslation(42, 1:31=112:127); // For Healing on the Damage Indicator [NEW DQH NUMBERS]
+ CreateTranslation(43, 1:31=224:231); // For Damage on the Damage Indicator [normal] [NEW DQH NUMBERS]
+ CreateTranslation(44, 1:31=228:231); // For Damage on the Damage Indicator [CRITICAL] [NEW DQH NUMBERS]
 
  
 }
@@ -26534,6 +26550,9 @@ function int GetDigit(int Num, int Digit)
 // For Monsters/Non-Players
 script "DamageDisplays" (void)
 {
+ int healpalused;
+ int dmgpalused;
+ int critdmgpalused;
  int xpos, ypos, zpos;
  int PlayerCrit;
  int dmgind_delay = GetCVAR("dvds_dmgind_delay");
@@ -26650,17 +26669,26 @@ script "DamageDisplays" (void)
       if (PlayerCrit > 0) DigitSpawn = StrParam(s:"DigitCritical7Num", d:Digit7); else DigitSpawn = StrParam(s:"Digit7Num", d:Digit7);
       if (DmgIndDisplayValue >= 1000000) Spawn(DigitSpawn, x, y, z, NumberID, 0);
 
-      if (DmgIndDisplayType == 1) Thing_SetTranslation(NumberID, 33); // Healing [30/33]
+      healpalused = 33; dmgpalused = 34; critdmgpalused = 35;
+      if (ModType == 0)
+	  {
+	   if (ClassicDoomType == 0) { healpalused = 33; dmgpalused = 34; critdmgpalused = 35; } // Doom 2
+   	   if (ClassicDoomType == 1) { healpalused = 33; dmgpalused = 34; critdmgpalused = 35; } // Doom 1
+	   if (ClassicDoomType == 2) { healpalused = 36; dmgpalused = 37; critdmgpalused = 38; } // Heretic
+   	   if (ClassicDoomType == 3) { healpalused = 39; dmgpalused = 40; critdmgpalused = 41; } // Hexen
+ 	   if (ClassicDoomType == 4) { healpalused = 42; dmgpalused = 43; critdmgpalused = 44; } // Strife
+	  }
+      if (DmgIndDisplayType == 1) Thing_SetTranslation(NumberID, healpalused); // Healing [30/33]
       else // Damage
       {
        if (PlayerCrit > 0)
        {
         PlaySound(1001,"player/criticalhit",CHAN_BODY,1.0,0,ATTN_NORM);
-        Thing_SetTranslation(NumberID, 35); // CritDamage [32/35]
+        Thing_SetTranslation(NumberID, critdmgpalused); // CritDamage [32/35]
        }
        else
        {
-        Thing_SetTranslation(NumberID, 34); // NormalDamage [31/34]
+        Thing_SetTranslation(NumberID, dmgpalused); // NormalDamage [31/34]
        }
       }      
 
