@@ -246,7 +246,7 @@ Functions
 
 // Global Vars NOT YET USED AT ALL [27/64]
 //-------------------------------------
-//		global int 7:?;
+
 //		global int 9:?;
 //      global int 13:?;
 //		global int 14:?;
@@ -309,6 +309,10 @@ global int 3:MaxMana;
 global int 4:PlayerLevel;
 global int 5:SelectedSpell;
 global int 6:ReadiedSpells[];
+
+global int 7:DVDSSpecialArrayValue[];
+// [0] = Unconsciousness Toggle
+
 global int 10:ExpTable[]; // Note To Self: NECESSARY TO BE "GLOBAL INT" TO RUN WITH HUB-BASED LEVELS LIKE IN HEXEN OR STRIFE, MISFIT YOU DINGUS-FACE.
 global int 11:BaseEXPRequirement;
 
@@ -1907,6 +1911,35 @@ script "MFV" (int index, int type, int value)
    PrintBold(s:"Index: ",d:index,
              s:"\nOldValue: ",f:oldvalue,
              s:"\nNewValue: ",f:newvalue);
+  }
+ }
+}
+
+// Prints out or edits a fixed number for "DVDSSpecialArrayValue[#]" vars.
+script "DVSV" (int index, int type, int value)
+{
+ int oldvalue;
+ int newvalue;
+
+ if (index >= 0)
+ {
+  oldvalue = DVDSSpecialArrayValue[index];
+  newvalue = DVDSSpecialArrayValue[index];
+  if (type == 0)
+  {
+   PrintBold(s:"Index: ",d:index,
+             s:"\nValue: ",d:newvalue);
+  }
+  else
+  {
+   PrintBold(s:"Index: ",d:index,
+             s:"\nOldValue: ",d:oldvalue,
+             s:"\nNewValue: ",d:newvalue);
+  }
+  if (type == 1) 
+  { 
+   DVDSSpecialArrayValue[index] = value; // sets the value
+   SetUserArray(1001,"user_PlayerDVDSSpecial",index,value);
   }
  }
 }
@@ -6651,8 +6684,11 @@ script "ManaRegenerationStuff" ENTER
  }
 
  if (delaycount < 1) delaycount = 1;
- MiscellaneousVars[211] -= delaycount;
-
+ if (DVDSSpecialArrayValue[0] == 0) // If "Conscious"
+ {
+  MiscellaneousVars[211] -= delaycount;
+ }
+  
  RegenedMana = 0;
  if (MiscellaneousVars[211] < 1)
  {
@@ -16781,6 +16817,28 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
  }
 
+ // ** Checks "user_PlayerDVDSSpecial[]" array on the player actors [used for various things, including disjointed MAP-specfic ACS scripts (TCOTD, etc)]
+ int DVDSSpecialArrayCheck = 0;
+ while (DVDSSpecialArrayCheck < 256)
+ {
+  DVDSSpecialArrayValue[DVDSSpecialArrayCheck] = GetUserArray(1001,"user_PlayerDVDSSpecial",DVDSSpecialArrayCheck);
+  DVDSSpecialArrayCheck++;
+ }
+ // DVDSSpecialArrayValue[1] = Sets MP/Mana to 0
+ if (DVDSSpecialArrayValue[1] > 0)
+ {
+  CurrentMana = 0;
+  DVDSSpecialArrayValue[1] = 0;
+  SetUserArray(1001,"user_PlayerDVDSSpecial",1,0);
+ }
+ // DVDSSpecialArrayValue[2] = Sets Stamina to 0
+ if (DVDSSpecialArrayValue[2] > 0)
+ {
+  MiscellaneousVars[21] = 0;
+  DVDSSpecialArrayValue[2] = 0;
+  SetUserArray(1001,"user_PlayerDVDSSpecial",2,0);
+ }
+
  // Check for Sceptre Abilities
  if (CharacterClass == 2 && PlayerLevel >= 8 && SceptreActualLevel >= 2)
  {
@@ -17625,8 +17683,11 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
   if (staminaregenfinal < 1) staminaregenfinal = 1;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [LowCap]: ",d:staminaregenfinal);
 
-  MiscellaneousVars[21] += staminaregenfinal;
-  if (MiscellaneousVars[21] > MiscellaneousVars[22]) MiscellaneousVars[21] = MiscellaneousVars[22];
+  if (DVDSSpecialArrayValue[0] == 0) // If "Conscious"
+  {
+   MiscellaneousVars[21] += staminaregenfinal;
+   if (MiscellaneousVars[21] > MiscellaneousVars[22]) MiscellaneousVars[21] = MiscellaneousVars[22];
+  }
  }
  else
  {
@@ -17742,8 +17803,11 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
   if (staminaregenfinal > -1) staminaregenfinal = -1;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [LowCap]: ",d:staminaregenfinal);
 
-  MiscellaneousVars[21] += staminaregenfinal;
-  if (MiscellaneousVars[21] < MiscellaneousVars[22]) MiscellaneousVars[21] = MiscellaneousVars[22];
+  if (DVDSSpecialArrayValue[0] == 0) // If "Conscious"
+  {
+   MiscellaneousVars[21] += staminaregenfinal;
+   if (MiscellaneousVars[21] < MiscellaneousVars[22]) MiscellaneousVars[21] = MiscellaneousVars[22];
+  }
  }
 
  //***************************
@@ -18154,9 +18218,11 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
    // Low Cap to 1 Tics
    if (delaycount < 1) delaycount = 1;
 
-   StaminaRegenRate = delaycount;
-
-   MiscellaneousVars[13] -= delaycount;
+   if (DVDSSpecialArrayValue[0] == 0) // If "Conscious"
+   {
+    StaminaRegenRate = delaycount;
+    MiscellaneousVars[13] -= delaycount;
+   }
   }
   else MiscellaneousVars[13] = MiscellaneousVars[14] + random(-20,20);
 
@@ -18282,9 +18348,11 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
     // Low Cap to 1 Tics
     if (delaycount < 1) delaycount = 1;
  
-    StaminaDegenRate = delaycount;
-
-    MiscellaneousVars[143] -= delaycount;
+    if (DVDSSpecialArrayValue[0] == 0) // If "Conscious"
+    {
+ 	 StaminaDegenRate = delaycount;
+     MiscellaneousVars[143] -= delaycount;
+	}
    }
    else MiscellaneousVars[143] = MiscellaneousVars[144] + random(-20,20);
 
