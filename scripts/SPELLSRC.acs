@@ -157,7 +157,7 @@ Functions
 	["SauronItemSpawnerCheck"]		-	Calculates the occurance rate of Sauron's Gauntlets and Sauron's Helmet Dropping.
 	["BuffTimer"]					-	***DEBUG*** Gives a specfic buff/debuff for x amount of seconds.
 	["PrintArmorValues"]			-	***DEBUG*** Debugging for Printing Armor Amounts on Screen ***DEBUG***
-	["SetManaAmount"]				-	***DEBUG*** Sets Mana to the Current Amount ("puke 835 [amount]" in console) ***DEBUG***
+	["SetManaAmount"]				-	***DEBUG*** Sets Mana to the Current Amount (in console) ***DEBUG***
 	["PrintTest"]					-	***DEBUG*** Prints whatever is defined in the script. ***DEBUG***
 	["DamagePrintout"]				-	***DEBUG*** Prints out damage on screen for a projectile attached to this script ***DEBUG***
 	["SetLevelCap"]					-	***DEBUG*** Set Levelcap Manually ***DEBUG***
@@ -556,7 +556,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [176] Shows "ArmorDifference" in the new HUD for Player's "Damage/Healing" bursts.
 // [177] Shows "ArmorDiffRatio" in the new HUD for Player's "Damage/Healing" bursts.
 // [178] Shows "NewArmorValue" in the new HUD for the Player's "Damage/Healing" bursts. 
-// [179-180] are unused
+ // [179-180] are unused
 // [181] Tension Level
 // [182] Tension Level Compare
 // [183] Tension Timer
@@ -622,7 +622,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [245] Timer for allowing the player to make a Tension Charging Kiai
 // [246] Tension Background Aura Timer
 // [247] Levelup Speech Timer
-	// [248 to 300] are undefined so far :P
+// [248] Blind Timer
+// [249] Sleep Timer
+	// [250 to 300] are undefined so far :P
 // [301] Total Sceptre EXP Required for Level 1
 // [302] Total Sceptre EXP Required for Level 2
 // [303] Total Sceptre EXP Required for Level 3
@@ -8314,9 +8316,17 @@ script "SpellQuickAssign" (int Slot, int Type)
 
 script "SpellCasting" (void)
 {
- if (MiscellaneousVars[2500] != 0) terminate;
- if (PowerupTimer[20] > 0) terminate; // cannot cast spells while put to sleep :V
- if (PowerupTimer[21] > 0) terminate; // cannot cast spells while silenced/muted :V
+ if (MiscellaneousVars[2500] != 0) terminate; 
+ if (PowerupTimer[20] > 0) // cannot cast spells while put to sleep :V
+ {
+  PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+  terminate; 
+ }
+ if (PowerupTimer[21] > 0) // cannot cast spells while silenced/muted :V
+ {
+  PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+  terminate; 
+ }
 
  int C1, C2, I1, I2, G1, G2, G3, G4, Z1, Z2;
  int MaxHealthLimit = MaxHealthTrue * 2;
@@ -17464,13 +17474,13 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
  // Blacken Screen if Blinded
  if (PowerupTimer[19] > 0) 
  {
-  FadeRange(0, 0, 0, 0.95, 0, 0, 0, 0.0, 0.1);
+  FadeRange(0, 0, 0, 0.9875, 0, 0, 0, 0.0, 0.1);
  }
 
  // Blacken Screen if Asleep
  if (PowerupTimer[20] > 0) 
  {
-  FadeRange(0, 0, 0, 0.95, 0, 0, 0, 0.0, 0.1);
+  FadeRange(0, 0, 0, 0.9875, 0, 0, 0, 0.0, 0.1);
  }
 
  // Check for Magic Focus
@@ -22716,7 +22726,7 @@ script "CheckBuffTimers" ENTER
   }
   if (random(1,100) > 25) // 75% chance of the level 1 version
   {
-   if (CheckActorInventory(1001, "InvisAttack1") < 1) GiveActorInventory(1001, "InvisAttack1", 1); // +25% Damage Dealth
+   if (CheckActorInventory(1001, "InvisAttack1") < 1) GiveActorInventory(1001, "InvisAttack1", 1); // +25% Damage Dealt
    if (CheckActorInventory(1001, "InvisDefense1") < 1) GiveActorInventory(1001, "InvisDefense1", 1); // -20% Damage Taken
   }
   else
@@ -22958,12 +22968,21 @@ script "CheckBuffTimers" ENTER
  ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
  if (PowerupTimer[19] > 0)
  {
+  GiveActorInventory(1001, "BlindDMGPenalty", 1);
+  if (random(1,16) == 1) GiveActorInventory(1001, "SuperBlindDMGPenalty", 1); else TakeActorInventory(1001, "SuperBlindDMGPenalty", 9999);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Blind: ",d:(PowerupTimer[19]/35),s:" Secs";0,3447,cr_white,xpos,ypos,0.03);
+  MiscellaneousVars[248] += 1;
+  if (MiscellaneousVars[248] == 1)
+  {
+   if (CharacterClass == 2) PlaySound(1001,"FloraGotBlinded",CHAN_VOICE,1.0,0,ATTN_NORM);
+  }
   PowerupTimer[19] -= 1;
  }
  else
  {
-  //TakeActorInventory(1001, "SleepDMGPenalty", 9999);
+  TakeActorInventory(1001, "BlindDMGPenalty", 9999);
+  TakeActorInventory(1001, "SuperBlindDMGPenalty", 9999);
+  MiscellaneousVars[248] = 0;
  }
 
  // Sleep Effects
@@ -22972,11 +22991,29 @@ script "CheckBuffTimers" ENTER
  {
   GiveActorInventory(1001, "SleepDMGPenalty", 1);
   if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Sleep: ",d:(PowerupTimer[20]/35),s:" Secs";0,3448,cr_white,xpos,ypos,0.03);
+  MiscellaneousVars[249] += 1;
+  if (MiscellaneousVars[249] == 1)
+  {
+   PlaySound(1001,"DraQue/fallasleep",CHAN_5,1.0,0,ATTN_NORM);   
+   if (CharacterClass == 2) PlaySound(1001,"FloraFallAsleep",CHAN_VOICE,1.0,0,ATTN_NORM);
+  }
   PowerupTimer[20] -= 1;
  }
  else
  {
   TakeActorInventory(1001, "SleepDMGPenalty", 9999);
+  MiscellaneousVars[249] = 0;
+ }
+
+ // Silence Effects
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
+ if (PowerupTimer[21] > 0)
+ {
+  if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Silence: ",d:(PowerupTimer[21]/35),s:" Secs";0,3448,cr_white,xpos,ypos,0.03);
+  PowerupTimer[21] -= 1;
+ }
+ else
+ {
  }
 
 
