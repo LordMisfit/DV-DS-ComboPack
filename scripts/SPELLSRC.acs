@@ -23872,7 +23872,7 @@ script "Hand-GravityAttack" (int type)
 // Determines Attack/Defense/Speed Bonuses for Monsters [depending on difficulty level and maps and game mode]
 script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 {
- int CurrHP, MaxHP, Speed, Attack, Defense, Temp, RangeVar, LevelCheck, MapCheck;
+ int CurrHP, MaxHP, Speed, Attack, Defense, Balance, Temp, RangeVar, LevelCheck, MapCheck;
  int StealthChance;
 
  if (type < 0) type = 0;
@@ -23930,13 +23930,16 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   int SpeedFactor = 0.0;
   int AttackFactor = 0.0;
   int DefenseFactor = 0.0;
-  int MaxHPFactor = 0;
+  int MaxHPFactor = 0.0;
+  int BalanceFactor = 0.0;
   Speed = GetActorProperty(0,APROP_Speed);
   Attack = GetActorProperty(0,APROP_DamageMultiplier); 
   Defense = GetActorProperty(0,APROP_DamageFactor); 
+  Balance = GetActorProperty(0,APROP_Mass); 
   SetUserVariable(0, "user_basespeed", GetActorProperty(0,APROP_Speed));
   SetUserVariable(0, "user_baseattack", GetActorProperty(0,APROP_DamageMultiplier));
   SetUserVariable(0, "user_basedefense", GetActorProperty(0,APROP_DamageFactor));
+  SetUserVariable(0, "user_basemass", GetActorProperty(0,APROP_Mass));
   if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\co------------------------------
                                                               \n\co------------------------------
                                                               \n\co------------------------------
@@ -23959,6 +23962,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = 0.5000;
      SpeedFactor = -0.083334;
      MaxHPFactor = -0.15;
+     BalanceFactor = -0.3333;
     }
     else
     {
@@ -23966,6 +23970,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = 0.2000;
      SpeedFactor = -0.041667;
      MaxHPFactor = -0.075;
+     BalanceFactor = -0.1667;
     }
    }
    else
@@ -23977,6 +23982,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = 0.2000;
      SpeedFactor = -0.041667;
      MaxHPFactor = -0.05;
+     BalanceFactor = -0.1667;
     }
     else
     {
@@ -23984,6 +23990,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = 0.090909;
      SpeedFactor = -0.0208333;
      MaxHPFactor = -0.025;
+     BalanceFactor = -0.08333;
     }
    }
    else
@@ -23995,6 +24002,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = 0.0;
      SpeedFactor = 0.0;
      MaxHPFactor = 0.0;
+     BalanceFactor = 0.0;
     }
     else
     {
@@ -24002,6 +24010,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = 0.0;
      SpeedFactor = 0.0;
      MaxHPFactor = 0.0;
+     BalanceFactor = 0.0;
     }
    }
    else
@@ -24013,6 +24022,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = -0.142857;
      SpeedFactor = 0.041667;
      MaxHPFactor = 0.05;
+     BalanceFactor = 0.1667;
     }
     else
     {
@@ -24020,6 +24030,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = -0.076924;
      SpeedFactor = 0.0208325;
      MaxHPFactor = 0.0375;
+     BalanceFactor = 0.08333;
     }
    }
    else
@@ -24031,6 +24042,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = -0.333334;
      SpeedFactor = 0.125;
      MaxHPFactor = 0.15;
+     BalanceFactor = 0.5;
     }
     else
     {
@@ -24038,6 +24050,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = -0.1667;
      SpeedFactor = 0.05;
      MaxHPFactor = 0.10;
+     BalanceFactor = 0.2;
     }
    }
    else
@@ -24049,6 +24062,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = -0.5;
      SpeedFactor = 0.25;
      MaxHPFactor = 0.30;
+     BalanceFactor = 1.0;
     }
     else
     {
@@ -24056,6 +24070,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = -0.3333;
      SpeedFactor = 0.125;
      MaxHPFactor = 0.225;
+     BalanceFactor = 0.5;
     }
    }
 
@@ -24064,7 +24079,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 	  PrintBold(s:"\cgAttackFactor [Skill]: ",f:(AttackFactor),s:"\n\n",
 	            s:"\cdDefenseFactor [Skill]: ",f:(DefenseFactor),s:"\n\n",
 				s:"\chSpeedFactor [Skill]: ",f:(SpeedFactor),s:"\n\n",
-				s:"\caMaxHPFactor [Skill]: ",f:(MaxHPFactor));
+				s:"\caMaxHPFactor [Skill]: ",f:(MaxHPFactor),s:"\n\n",
+				s:"\cpBalanceFactor [Skill]: ",f:(BalanceFactor));
    }
 
    SpeedFactor = FixedMul(SpeedFactor, GetCVar("dvds_monsterspeedratio_skill"));
@@ -24091,6 +24107,12 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    MaxHP = FixedMul(MaxHP, (1.0+MaxHPFactor));
    if (MaxHP < 1) MaxHP = 1;
 
+   BalanceFactor = FixedMul(BalanceFactor, GetCVar("dvds_monsterbalanceratio_skill"));
+   if (BalanceFactor < -2.00) BalanceFactor = -2.00;
+   if (BalanceFactor > 2.00) BalanceFactor = 2.00;
+   Balance = FixedMul(Balance, (1.0+BalanceFactor));
+   SetActorProperty(0,APROP_Mass,Balance); 
+
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0)
    {   
     PrintBold(s:"\chSpeedFactor [Skill]: ",f:(1.0+SpeedFactor),s:"\n",
@@ -24103,7 +24125,10 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 			  s:"\cdDefense After Skill: ",f:Defense,s:"\n\n",
 			  
 			  s:"\caMaxHPFactor [Skill]: ",f:(1.0+MaxHPFactor),s:"\n",
-			  s:"\caMaxHP After Skill: ",d:MaxHP);
+			  s:"\caMaxHP After Skill: ",d:MaxHP,s:"\n\n",
+			  
+			  s:"\cpBalanceFactor [Skill]: ",f:(1.0+BalanceFactor),s:"\n",
+			  s:"\cpBalance After Skill: ",d:Balance);
    }
   }    
 
@@ -24145,6 +24170,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 
      MaxHPFactor = AttackFactor;
 
+     BalanceFactor = AttackFactor;
+
     }
     else // Doom 2 / Hexen / Strife [MAPxx system]
     {
@@ -24173,6 +24200,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 
      MaxHPFactor = AttackFactor;
 
+     BalanceFactor = AttackFactor;
+
     }
    }
 
@@ -24196,6 +24225,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
     SpeedFactor = FixedDiv(AttackFactor,4.0);
 
     MaxHPFactor = FixedDiv(AttackFactor,2.0);
+
+    BalanceFactor = FixedDiv(AttackFactor,2.0);
    }
    if (ModType == 2 && GetActorClass(0) != "PracticeTarget") // Deus Vult 2
    {
@@ -24208,107 +24239,120 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
     // Earth-type Levels
     if (MapCheck == 1201) // MAP01 - Entryway Pass
     {
-     AttackFactor = 0.0; //GiveInventory("MonsterAttack-DVII-MAP01", 1);
-     DefenseFactor = 0.0; //GiveInventory("MonsterDefense-DVII-MAP01", 1);
+     AttackFactor = 0.0;
+     DefenseFactor = 0.0;
      SpeedFactor = 0.0;
      MaxHPFactor = 0.0;
+     BalanceFactor = 0.0;
     }
     else
     if (MapCheck == 1202) // MAP02 - Mutagen
     {
-     AttackFactor = 0.03; //GiveInventory("MonsterAttack-DVII-MAP02", 1);
-     DefenseFactor = -0.029126; //GiveInventory("MonsterDefense-DVII-MAP02", 1);
+     AttackFactor = 0.03;
+     DefenseFactor = -0.029126;
      SpeedFactor = 0.0075;
      MaxHPFactor = 0.06;
+     BalanceFactor = 0.03;
     }
     else
     if (MapCheck == 1203) // MAP03 - Crouching Demon, Hidden Archvile
     {
-     AttackFactor = 0.09; //GiveInventory("MonsterAttack-DVII-MAP03", 1);
-     DefenseFactor = -0.082569; //GiveInventory("MonsterDefense-DVII-MAP03", 1);
+     AttackFactor = 0.09;
+     DefenseFactor = -0.082569;
      SpeedFactor = 0.0225;
      MaxHPFactor = 0.12;
+     BalanceFactor = 0.09;
     }
     else
     if (MapCheck == 1204) // MAP04 - Minas Morgul
     {
-     AttackFactor = 0.18; //GiveInventory("MonsterAttack-DVII-MAP04", 1);
-     DefenseFactor = -0.152542; //GiveInventory("MonsterDefense-DVII-MAP04", 1);
+     AttackFactor = 0.18;
+     DefenseFactor = -0.152542;
      SpeedFactor = 0.045;
      MaxHPFactor = 0.19;
+     BalanceFactor = 0.18;
     }
     else
     if (MapCheck == 1205) // MAP05 - Eagle's Nest
     {
-     AttackFactor = 0.30; //GiveInventory("MonsterAttack-DVII-MAP05", 1);
-     DefenseFactor = -0.230769; //GiveInventory("MonsterDefense-DVII-MAP05", 1);
+     AttackFactor = 0.30;
+     DefenseFactor = -0.230769;
      SpeedFactor = 0.075;
      MaxHPFactor = 0.26;
+     BalanceFactor = 0.30;
     }
     else
     if (MapCheck == 1206) // MAP05S - The Manliest Level Ever
     {
-     AttackFactor = 0.45; //GiveInventory("MonsterAttack-DVII-MAP05S", 1);
-     DefenseFactor = -0.310345; //GiveInventory("MonsterDefense-DVII-MAP05S", 1);
+     AttackFactor = 0.45;
+     DefenseFactor = -0.310345;
      SpeedFactor = 0.1125;
      MaxHPFactor = 0.34;
+     BalanceFactor = 0.45;
     }
     else
     if (MapCheck == 1207) // MAP06 - Stargate
     {
-     AttackFactor = 0.63; //GiveInventory("MonsterAttack-DVII-MAP06", 1);
-     DefenseFactor = -0.386503; //GiveInventory("MonsterDefense-DVII-MAP06", 1);
+     AttackFactor = 0.63;
+     DefenseFactor = -0.386503;
      SpeedFactor = 0.1575;
      MaxHPFactor = 0.42;
+     BalanceFactor = 0.63;
     }
     else
     if (MapCheck == 1208) // MAP07 - The Desert Temple
     {
-     AttackFactor = 0.84; //GiveInventory("MonsterAttack-DVII-MAP07", 1);
-     DefenseFactor = -0.456522; //GiveInventory("MonsterDefense-DVII-MAP07", 1);
+     AttackFactor = 0.84;
+     DefenseFactor = -0.456522;
      SpeedFactor = 0.21;
      MaxHPFactor = 0.50;
+     BalanceFactor = 0.84;
     }
     else
     // Hell Levels
     if (MapCheck == 1209) // MAP08 - The Unholy Cathedral
     {
-     AttackFactor = 1.14; //GiveInventory("MonsterAttack-DVII-MAP08", 1);
-     DefenseFactor = -0.53271; //GiveInventory("MonsterDefense-DVII-MAP08", 1);
+     AttackFactor = 1.14;
+     DefenseFactor = -0.53271;
      SpeedFactor = 0.285;
      MaxHPFactor = 0.77;
+     BalanceFactor = 1.14;
     }
     else
     if (MapCheck == 1210) // DV2M09 - You Shall Not Pass!
     {
-     AttackFactor = 1.53; //("MonsterAttack-DVII-MAP09", 1);
-     DefenseFactor = -0.604743; //GiveInventory("MonsterDefense-DVII-MAP09", 1);
+     AttackFactor = 1.53;
+     DefenseFactor = -0.604743;
      SpeedFactor = 0.3825;
      MaxHPFactor = 1.09;
+     BalanceFactor = 1.53;
     }
     else
     if (MapCheck == 1211) // DV2M10 - Hell's Vendetta
     {
-     AttackFactor = 2.01; //GiveInventory("MonsterAttack-DVII-MAP10", 1);
-     DefenseFactor = -0.667774; //GiveInventory("MonsterDefense-DVII-MAP10", 1);
+     AttackFactor = 2.01;
+     DefenseFactor = -0.667774;
      SpeedFactor = 0.5025;
      MaxHPFactor = 1.48;
+     BalanceFactor = 2.01;
     }
     else
     if (MapCheck == 1212) // DV2M10B - attedneV s'lleH
     {
-     AttackFactor = 2.58; //GiveInventory("MonsterAttack-DVII-MAP10B", 1);
-     DefenseFactor = -0.72067; //GiveInventory("MonsterDefense-DVII-MAP10B", 1);
+     AttackFactor = 2.58;
+     DefenseFactor = -0.72067;
      SpeedFactor = 0.645;
      MaxHPFactor = 1.92;
+     BalanceFactor = 2.58;
     }
     else
     if (MapCheck == 1214) // DV2M12 - "The Wings of The Maiar" [DVI combined level remake]
     {
-     AttackFactor = 1.56; //GiveInventory("MonsterAttack-DVII-MAP12", 1);
-     DefenseFactor = -0.609375; //GiveInventory("MonsterDefense-DVII-MAP12", 1);
+     AttackFactor = 1.56;
+     DefenseFactor = -0.609375;
      SpeedFactor = 0.39;
      MaxHPFactor = 1.41;
+     BalanceFactor = 1.56;
     }
     else
     if (MapCheck == 1215) // DV2M10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
@@ -24317,6 +24361,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
      DefenseFactor = -0.72067; //GiveInventory("MonsterDefense-DVII-MAP10B", 1);
      SpeedFactor = 0.645;
      MaxHPFactor = 1.92;
+     BalanceFactor = 2.58;
     }
    } 
 
@@ -24325,7 +24370,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 	  PrintBold(s:"\chSpeedFactor [MAP]: ",f:(SpeedFactor),s:"\n\n",
 	            s:"\cgAttackFactor [MAP]: ",f:(AttackFactor),s:"\n\n",
 	            s:"\cdDefenseFactor [MAP]: ",f:(DefenseFactor),s:"\n\n",
-				s:"\caMaxHPFactor [MAP]: ",f:(MaxHPFactor));
+				s:"\caMaxHPFactor [MAP]: ",f:(MaxHPFactor),s:"\n\n",
+				s:"\cpBalanceFactor [MAP]: ",f:(BalanceFactor));
    }
 
    SpeedFactor = FixedMul(SpeedFactor, GetCVar("dvds_monsterspeedratio_maps"));
@@ -24352,6 +24398,12 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    MaxHP = FixedMul(MaxHP, (1.0+MaxHPFactor));
    if (MaxHP < 1) MaxHP = 1;
 
+   BalanceFactor = FixedMul(BalanceFactor, GetCVar("dvds_monsterbalanceratio_skill"));
+   if (BalanceFactor < -2.00) BalanceFactor = -2.00;
+   if (BalanceFactor > 2.00) BalanceFactor = 2.00;
+   Balance = FixedMul(Balance, (1.0+BalanceFactor));
+   SetActorProperty(0,APROP_Mass,Balance); 
+
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0)
    {
 	 PrintBold(
@@ -24365,7 +24417,10 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 			   s:"\cdDefense After MAP: ",f:Defense,s:"\n\n",
 
 			   s:"\caMaxHPFactor [MAP]: ",f:(1.0+MaxHPFactor),s:"\n",
-			   s:"\caMaxHP After MAP: ",d:MaxHP
+			   s:"\caMaxHP After MAP: ",d:MaxHP,s:"\n\n",
+
+			   s:"\cpBalanceFactor [MAP]: ",f:(1.0+BalanceFactor),s:"\n",
+			   s:"\cpBalance After MAP: ",d:Balance
 			   );
    }
  }
@@ -24451,12 +24506,15 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 
      MaxHPFactor = AttackFactor;
 
+     BalanceFactor = AttackFactor;
+
      if (GetCVar("dvdsdebug_showstatcalcstuff") != 0)
      {
 	  PrintBold(s:"\cgAttackFactor [MonLevel]: ",f:(AttackFactor),s:"\n\n",
 	            s:"\cdDefenseFactor [MonLevel]: ",f:(DefenseFactor),s:"\n\n",
 				s:"\chSpeedFactor [MonLevel]: ",f:(SpeedFactor),s:"\n\n",
-				s:"\caMaxHPFactor [MonLevel]: ",f:(MaxHPFactor));
+				s:"\caMaxHPFactor [MonLevel]: ",f:(MaxHPFactor),s:"\n\n",
+				s:"\cpBalanceFactor [MonLevel]: ",f:(BalanceFactor));
 	 }
 
     SpeedFactor = FixedMul(SpeedFactor, GetCVar("dvds_monsterspeedratio_levels"));
@@ -24483,6 +24541,12 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
     MaxHP = FixedMul(MaxHP, (1.0+MaxHPFactor));
     if (MaxHP < 1) MaxHP = 1;
 
+    BalanceFactor = FixedMul(BalanceFactor, GetCVar("dvds_monsterbalanceratio_skill"));
+    if (BalanceFactor < -2.00) BalanceFactor = -2.00;
+    if (BalanceFactor > 2.00) BalanceFactor = 2.00;
+    Balance = FixedMul(Balance, (1.0+BalanceFactor));
+    SetActorProperty(0,APROP_Mass,Balance); 
+
     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0)
     {
      PrintBold(s:"\chSpeedFactor: ",f:(1.0+SpeedFactor),s:"\n",
@@ -24492,7 +24556,9 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 			   s:"\cdDefenseFactor: ",f:(1.0+DefenseFactor),s:"\n",
 			   s:"\cdDefense After Levels: ",f:Defense,s:"\n\n",
 			   s:"\caMaxHPFactor: ",f:(1.0+MaxHPFactor),s:"\n",
-			   s:"\caMaxHP After Levels: ",d:MaxHP);
+			   s:"\caMaxHP After Levels: ",d:MaxHP,s:"\n\n",
+			   s:"\cpBalanceFactor: ",f:(1.0+BalanceFactor),s:"\n",
+			   s:"\cpBalance After Levels: ",d:Balance);
 	}
   }
 
@@ -24526,12 +24592,17 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    Defense += random(-DefenseErrorRange,DefenseErrorRange);
    SetActorProperty(0,APROP_DamageFactor,Defense); 
 
+   int BalanceErrorRange = FixedMul(Balance, GetCVar("dvds_monsterbalancevarience"));
+   Balance += random(-BalanceErrorRange,BalanceErrorRange);
+   SetActorProperty(0,APROP_Mass,Balance); 
+
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0)
    {
     PrintBold(s:"\caMaxHP Error Range: ",d:MaxHPErrorRange,s:"\n\n",
 	          s:"\chSpeed Error Range: ",f:SpeedErrorRange,s:"\n\n",
 			  s:"\cgAttack Error Range: ",f:AttackErrorRange,s:"\n\n",
-			  s:"\cdDefense Error Range: ",f:DefenseErrorRange);
+			  s:"\cdDefense Error Range: ",f:DefenseErrorRange,s:"\n\n",
+			  s:"\cpBalance Error Range: ",f:BalanceErrorRange);
    }
   }
 
@@ -24585,7 +24656,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    PrintBold(s:"\chFinal Speed: ",f:Speed,s:"\n\n",
              s:"\cgFinal Attack: ",f:Attack,s:"\n\n",
 			 s:"\cdFinal Defense: ",f:Defense,s:"\n\n",
-			 s:"\caFinal Max HP: ",d:MaxHP);
+			 s:"\caFinal Max HP: ",d:MaxHP,s:"\n\n",
+             s:"\cpFinal Balance: ",d:Balance);
   }
 
   if (GetActorClass(0) != "Sauravatar") { SetInventory("CurrentMaxHealth", MaxHP); SetUserVariable(0,"user_MaxHP",MaxHP); }
@@ -24651,6 +24723,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   SetActorProperty(0,APROP_DamageMultiplier,GetUserVariable(0, "user_baseattack"));
   SetActorProperty(0,APROP_DamageFactor,GetUserVariable(0, "user_basedefense"));
   SetActorProperty(0,APROP_Speed,GetUserVariable(0, "user_basespeed"));
+  SetActorProperty(0,APROP_Mass,GetUserVariable(0, "user_basemass"));
 
   TakeInventory("MonsterDisplayDMG", 1);
   TakeInventory("MonsterHasBuffs", 1);
@@ -29209,6 +29282,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 	 int Speed = GetActorProperty(0,APROP_Speed); //Set's Final Speed values
      int Attack = GetActorProperty(0,APROP_DamageMultiplier); 
      int Defense = GetActorProperty(0,APROP_DamageFactor); 
+     int Balance = GetActorProperty(0,APROP_Mass); 
 
 	 ypos = MiscFixedVars[1] + 0.0;
 	 SetActivator(Activator);
@@ -29219,8 +29293,9 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
      if (GetCVar("dvds_actorlifebarhp") == 1) HudMessage (i:actorcurrhp, s:"/", i:actormaxhp; 0, 199, CR_WHITE, 400.0, 100.0, 0.05);
      if (GetCVar("dvds_actorlifebarnames") == 1) HudMessage (s:dvds_monsternames[class_index][1],s:stealthcheck2; 0, 198, CR_WHITE, 400.0, 115.0, 0.05);
      if (GetCVar("dvds_actorlifebarstats") == 1) HudMessage (s:"\c[LightBlue]Speed: ",f:Speed,s:"\n",
+	                                                             s:"\c[Olive]Balance: ",d:Balance,s:"\n",
 	                                                             s:"\c[Brick]Damage Dealt: ",f:Attack,s:"x\n",
-															     s:"\c[Cream]Damage Taken: ",f:Defense,s:"x"; 0, 196, CR_WHITE, 400.0, 75.0, 0.05);
+															     s:"\c[Cream]Damage Taken: ",f:Defense,s:"x"; 0, 196, CR_WHITE, 400.0, 70.0, 0.05);
      SetFont ("BIGFONT");
      xpos = 274.2; //400.0;
      ypos = 100.0; //115.0;
