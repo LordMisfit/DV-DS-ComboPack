@@ -8696,15 +8696,48 @@ Script 8 (void)
 
 script "MagicEffects" (int Type, int Strength)
 {
- int PX, PY, PZ, PA, PBA, PVA, FWX, FWY, I1, C1, I2, C2, I3, C3, I4, C4; 
+ int PX, PY, PZ, PFZ, PA, PBA, PVA, FWX, FWY, I1, C1, I2, C2, I3, C3, I4, C4; 
  int speed, vspeed, angle, fireheight;
  int NovaRotations;
  int spreadangle, spreadpitch, baseangle, basepitch;
  int MaxHealthLimit = MaxHealthTrue * 2;
 
+ // TERRAIN FLOOR CHECKS [Check the "floor" definitions in Terrain.txt if you want to add more]
+ int inwater = 0;
+ int waterfootclip = 10.0;
+ if (CheckActorFloorTexture(1001, "FLTWAWA1")) inwater++;
+ if (CheckActorFloorTexture(1001, "FLTFLWW1")) inwater++;
+ if (CheckActorFloorTexture(1001, "X_005")) inwater++;
+
+ int insludge = 0;
+ int sludgefootclip = 10.0;
+ if (CheckActorFloorTexture(1001, "FLTSLUD1")) insludge++;
+
+ int inlava = 0;
+ int lavafootclip = 10.0;
+ if (CheckActorFloorTexture(1001, "FLTLAVA1")) inlava++;
+ if (CheckActorFloorTexture(1001, "FLATHUH1")) inlava++;
+ if (CheckActorFloorTexture(1001, "X_001")) inlava++;
+
+ int instrifeliquid = 0;
+ int strifeliquidfootclip = 12.0;
+ if (CheckActorFloorTexture(1001, "F_WATR03")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_WATR02")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_WATR01")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_VWATR3")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_VWATR2")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_VWATR1")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_HWATR3")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_HWATR2")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_HWATR1")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_PWATR3")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_PWATR2")) instrifeliquid++;
+ if (CheckActorFloorTexture(1001, "F_PWATR1")) instrifeliquid++;
+ 
  PX = GetActorX(1001);
  PY = GetActorY(1001);
  PZ = GetActorZ(1001);
+ PFZ = GetActorFloorZ(1001);
  PVA = -sin(GetActorPitch(1001)) * 64 >> 16;
  PBA = FixedMul(GetActorAngle(1001),255.0);
  fireheight = GetActorViewHeight(1001) * 780 / 1000;
@@ -8713,6 +8746,9 @@ script "MagicEffects" (int Type, int Strength)
  PA = FixedMul(GetActorAngle(1001),360.0);
  PVA = PVA * 3;
 
+ int onfloor = 0;
+ if (PZ <= PFZ) onfloor++;
+ 
  angle = GetActorAngle(1001) >> 8;
  speed = cos(GetActorPitch(1001)) * 64 >> 16;
  vspeed = -sin(GetActorPitch(1001)) * 64 >> 16;
@@ -8720,18 +8756,25 @@ script "MagicEffects" (int Type, int Strength)
 
  // PrintBold(s:"Angle: ",d:angle,s:" Speed: ",d:speed,s:" VSpeed: ",d:vspeed); 
  // Print(d:PVA); 
-/*
-    PrintBold(s:"PX: ",d:PX,
-              s:"\nPY: ",d:PY,
-              s:"\nPZ: ",d:PZ,
-              s:"\nFireHeight: ",d:fireHeight,
+ if (GetCVar("dvdsdebug_showplayercoords") > 0)
+ {
+    PrintBold(s:"PlayerX: ",d:PX,
+              s:"\nPlayerY: ",d:PY,
+              s:"\nPlayerZ: ",d:PZ,
+              s:"\nPlayerFloorZ: ",d:PFZ,
+              s:"\nPlayerFireHeight: ",d:fireHeight,
               s:"\nPA: ",d:PA,
               s:"\nPBA: ",d:PBA,
               s:"\nPVA: ",d:PVA,
               s:"\nAngle: ",d:angle,
               s:"\nSpeed: ",d:speed,
-              s:"\nVSpeed: ",d:vspeed); 
-*/
+              s:"\nVSpeed: ",d:vspeed,
+              s:"\nOnFloor: ",d:onfloor,
+              s:"\nInWater: ",d:inwater, 
+              s:"\nInSludge: ",d:insludge, 
+              s:"\nInLava: ",d:inlava, 
+              s:"\nInStrifeLiquid: ",d:instrifeliquid); 
+ }
  int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 
  if ((PBA >= 0.0) && (PBA <= 64.0))
@@ -8778,7 +8821,18 @@ script "MagicEffects" (int Type, int Strength)
  str spellname3;
  str spellname4;
 
-/*
+ /*
+ if (onfloor > 0)
+ {
+  if (inwater > 0) project_Offset += waterfootclip;
+  if (insludge > 0) project_Offset += sludgefootclip;
+  if (inlava > 0) project_Offset += lavafootclip;
+  if (instrifeliquid > 0) project_Offset += strifeliquidfootclip;
+ }
+ */
+ 
+ if (GetCVar("dvdsdebug_showspellpos") > 0)
+ {
     PrintBold(s:"X: ",d:project_X,
               s:"\nY: ",d:project_Y,
               s:"\nZ: ",d:project_Z,
@@ -8789,8 +8843,8 @@ script "MagicEffects" (int Type, int Strength)
               s:"\nYSpeed: ",d:project_YSpeed,
               s:"\nZSpeed: ",d:project_ZSpeed,
               s:"\nOffset: ",d:project_Offset); 
-*/
-
+ }
+			  
  if (Type == 0) // Straight Ahead Fireball Shooter
  {
   Switch(Strength)
@@ -20042,7 +20096,7 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
  if (VelY > 250000) IsMoving++;
  if (VelZ < -125000) IsMoving++;
  if (VelZ > 125000) IsMoving++; 
- int OnTheMoveAdd;
+ int OnTheMoveAdd = 0;
  if (MiscellaneousVars[10044] > 0 && IsMoving > 0) // "On The Move" Perk
  {
   if (MiscellaneousVars[10044] == 1)
@@ -26969,19 +27023,19 @@ script "GetPSNCloudVortexSTR" (int CloudSize)
  if (CloudSize == 0) // Minor
  {
   VortexStrength = 256;
-  Extra = (MiscellaneousVars[34] * 8) + (MiscellaneousVars[36] * 4);
+  Extra = (MiscellaneousVars[34] * 4) + (MiscellaneousVars[36] * 2);
  }
 
  if (CloudSize == 1) // Normal
  {
   VortexStrength = 512; // 200%
-  Extra = (MiscellaneousVars[34] * 16) + (MiscellaneousVars[36] * 8);
+  Extra = (MiscellaneousVars[34] * 8) + (MiscellaneousVars[36] * 4);
  }
 
  if (CloudSize == 2) // Major
  {
   VortexStrength = 1024; // 400%
-  Extra = (MiscellaneousVars[34] * 32) + (MiscellaneousVars[36] * 16);
+  Extra = (MiscellaneousVars[34] * 16) + (MiscellaneousVars[36] * 8);
  }
 
  VortexStrength += Extra;
@@ -29634,7 +29688,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
   {
    SetActivator(Activator);
 
-   If (actormaxhp > 0)
+   If (actormaxhp != 0)
    {
     hppercentdisp = (actorcurrhp * 100 / actormaxhp);
     if (hppercentdisp < 0) hppercentdisp = 0;
@@ -33497,8 +33551,12 @@ script "GetPoisonCloudDMG" (int level)
 
       if (CharacterClass == 0) damage = damage * 32 / 10;
  else if (CharacterClass == 1) damage = damage * 21 / 10;
+ else if (CharacterClass == 2) damage = damage * 10 / 10;
 
- extradamage = damage * (MiscellaneousVars[34] / 2) / 75;
+      if (CharacterClass == 0) extradamage = damage * (MiscellaneousVars[34] / 2) / 60;
+ else if (CharacterClass == 1) extradamage = damage * (MiscellaneousVars[34] / 2) / 68;
+ else if (CharacterClass == 2) extradamage = damage * (MiscellaneousVars[34] / 2) / 76;
+
  damage += extradamage;
 
  if (damage < 1) damage = 1;
