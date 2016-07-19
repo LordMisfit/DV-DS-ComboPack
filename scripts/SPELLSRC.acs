@@ -25477,9 +25477,11 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
 
   GiveInventory("MonsterHasBuffs", 1);
   SetUserVariable(0, "user_checkmapskill", GetUserVariable(0, "user_checkmapskill") + 1);
+  if (CheckFlag(0,"FRIENDLY") == 1) Thing_ChangeTID(0,1000);
  }
  else // Usually if the monster/actor is dying, the script is called using "type 1"
  {
+  if (CheckFlag(0,"FRIENDLY") == 1) Thing_ChangeTID(1000,0);
   if (CheckInventory("MonsterHasBuffs") <= 0) terminate;
   if (GetUserVariable(0, "user_checkmapskill") < 1) terminate;
   SetActorProperty(0,APROP_DamageMultiplier,GetUserVariable(0, "user_baseattack"));
@@ -33513,7 +33515,8 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  int baseexp, finalexpamount, overkillhp, overkillhp2;
  int Exp1, Exp2, ExpMultiFactor, RealExpGain;
  int ComboMultiplier;
-
+ int KillExpMultiplier;
+ 
  int MonsterX = GetActorX(0);
  int MonsterY = GetActorY(0);
  int MonsterZ = GetActorZ(0);
@@ -33528,31 +33531,32 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  else if (GameSkill() == SKILL_HARD) RandomArmorDropMulti = 110;
  else if (GameSkill() == SKILL_VERY_HARD) RandomArmorDropMulti = 125;
 
+ KillExpMultiplier = 20; // 20 = 100% [1 = 5%]
  if (GetCVar("dvds_exppropercredit") == 1)
  {
   if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == FALSE)
   {
-   terminate;
+   // TODO: Detect if a friendly monster/summon is the killer of the monster to give EXP credit to the player
+   if (IsPointerEqual(AAPTR_TARGET, AAPTR_TARGET, 1000, 1000) == TRUE)
+   {
+    KillExpMultiplier = random(13,18); // [65 to 90%]
+   }
+   else
+   {
+    terminate;
+   }
   }
  }
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
- {
-  PrintBold(s:"Passed Player/Friendly-Monster Credit Check: YES");
- }
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Passed Player/Friendly-Monster Credit Check: YES");
+
  if (GetActorProperty(1001,APROP_Health) <= 0) terminate;
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
- {
-  PrintBold(s:"Passed Player-Alive Check: YES");
- }
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Passed Player-Alive Check: YES");
+
  if (CheckFlag(0,"FRIENDLY") == 1)
  {
-  if (flags & 1) { }
-  else terminate; // Any "FRIENDLY" flagged monster who runs the script will not get beyond this point UNLESS they have bit 1 enabled.
+  if (flags & 1) { } else terminate; // Any "FRIENDLY" flagged monster who runs the script will not get beyond this point UNLESS they have bit 1 enabled.
  }
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
- {
-  PrintBold(s:"Passed FRIENDLY Check: YES");
- }
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Passed FRIENDLY Check: YES");
 
  int HellCoreRuinousDropChance = 5;
  if (CheckActorInventory(1001,"RuinousShield") > 0) HellCoreRuinousDropChance = 12;
@@ -33575,7 +33579,9 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (CheckActorClass(0,"FlyingBalrog") == 1) 	DropItem(0,"BalrogFistCI",1,HellCoreRuinousDropChance);
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(d:HellCoreRuinousDropChance);
 
-
+ int uncursethreshold;
+ int uncursethreshold2;
+ int uncursepts;
  // Ruinous Shield Checks
  if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE) 
  {
@@ -33583,19 +33589,24 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   {
    if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(d:MiscellaneousVars[202]);
    // Increase Ruinous Shield Counter by 1 or 2 pts [this allows the player to uncurse the shield slowly by killing enemies.
-   if (random(1,100) <= 98)
+   if (CheckActorInventory(1001,"DoveRibbon") > 0) uncursethreshold = 983; else uncursethreshold = 937;
+   if (CheckActorInventory(1001,"DoveRibbon") > 0) uncursethreshold2 = 750; else uncursethreshold2 = 625;
+   if (PowerupTimer[7] > 0) uncursethreshold = uncursethreshold * 9 / 10; uncursethreshold2 = uncursethreshold2 * 9 / 10;
+   if (random(1,1000) <= uncursethreshold)
    {
-    if (random(1,100) <= 75) MiscellaneousVars[202] += 1; else MiscellaneousVars[202] += 2;
+    if (random(1,1000) <= uncursethreshold2) uncursepts = 1; else uncursepts = 2;
    }
    else
    {
-    if (random(1,100) <= 75) MiscellaneousVars[202] += 4; else MiscellaneousVars[202] += 8;
+    if (random(1,1000) <= uncursethreshold2) uncursepts = 4; else uncursepts = 8;
    }
-   if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(d:MiscellaneousVars[202]);
+   if (CheckActorInventory(1001,"DoveRibbon") > 0) uncursepts *= random(2,3);
+   MiscellaneousVars[202] += uncursepts;
+   if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Uncurse Pts: ",d:MiscellaneousVars[202],s:" [+",d:uncursepts,s:"]");
   }
 
   MiscellaneousVars[167] += 1; // Increases Player's actual total kill count by 1
-  //PrintBold(d:MiscellaneousVars[167]);
+  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Kills: ",d:MiscellaneousVars[167]);
  }
 
  if (ModType == 0) // Classic Doom 1-2/Heretic/Hexen/Strife mode :P
@@ -33650,6 +33661,36 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
      RandomArmorDropChance = 9375 * RandomArmorDropMulti / 10000;
      if (random(1,10000) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
     }
+    if (MiscellaneousVars[167] == 5600) // 5600 enemies killed, low chance of spawning an armor item for Flora
+    {
+     // 6.25% chance
+     RandomArmorDropChance = 9375 * RandomArmorDropMulti / 10000;
+     if (random(1,10000) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 6600) // 6600 enemies killed, low chance of spawning an armor item for Flora
+    {
+     // 6.25% chance
+     RandomArmorDropChance = 9375 * RandomArmorDropMulti / 10000;
+     if (random(1,10000) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 7600) // 7600 enemies killed, low chance of spawning an armor item for Flora
+    {
+     // 6.25% chance
+     RandomArmorDropChance = 9375 * RandomArmorDropMulti / 10000;
+     if (random(1,10000) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 8800) // 8800 enemies killed, fair chance of spawning an armor item for Flora
+    {
+     // 36.25% chance
+     RandomArmorDropChance = 6375 * RandomArmorDropMulti / 10000;
+     if (random(1,10000) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
+    if (MiscellaneousVars[167] == 10000) // 10000 enemies killed, huge chance of spawning an armor item for Flora
+    {
+     // 92.5% chance
+     RandomArmorDropChance = 750 * RandomArmorDropMulti / 10000;
+     if (random(1,10000) > RandomArmorDropChance) SpawnForced("FloraRandomArmorAlwaysDrop",GetActorX(0),GetActorY(0),GetActorZ(0)+(8*65536),0,0);
+    }
    }
  }
  int randomdropsallowed = 1;
@@ -33659,7 +33700,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 
  if (randomdropsallowed > 0)
  {
-  if (random(1,65536) == 1) DropItem(0,"TheOneRing",1,256);
+  if (random(1,131072) == 1) DropItem(0,"TheOneRing",1,256);
   if (random(1,16384) == 1) DropItem(0,"ElfinElixir",1,256);
   if (random(1,8192) == 1) DropItem(0,"RandomMagicSpawner",1,256);
   if (random(1,8192) == 1) DropItem(0,"RandomHerbSpawner",1,256);
@@ -33675,7 +33716,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   if (random(1,1024) == 1) DropItem(0,"MagicWater",1,256);
   if (random(1,1024) == 1) DropItem(0,"RandomPowerupSpawner",1,256);
   if (random(1,512) == 1) DropItem(0,"RandomHerbSpawner",1,256);
-  if (ModType == 0)
+  if (ModType == 0) // Classic Mode
   {
    if (ClassicDoomType == 0 || ClassicDoomType == 1) // Doom 2 or Doom 1
    {
@@ -33707,10 +33748,23 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
     if (random(1,128) == 1) DropItem(0,"MedPatch",1,256);
    }
   }
+  else // DVI/DVII mode
+  {
+   if (random(1,16384) == 1) DropItem(0,"Berserk2",1,256);
+   if (random(1,8192) == 1) DropItem(0,"Berserk2",1,256);
+   if (random(1,4096) == 1) DropItem(0,"MiniBerserk",1,256);
+   if (random(1,2048) == 1) DropItem(0,"MiniBerserk",1,256);
+   if (random(1,1024) == 1) DropItem(0,"Medikit2",1,256);
+   if (random(1,512) == 1) DropItem(0,"Medikit2",1,256);
+   if (random(1,256) == 1) DropItem(0,"Stimpack2",1,256);
+   if (random(1,128) == 1) DropItem(0,"Stimpack2",1,256);
+  }
  }
  
  if (ModType == 0 && GetCVar("dvds_noexpgains") != 0) terminate; // If in Classic mode and the EXP Gain option is turned off, stop script here.
-
+ //**********************
+ //* START OF EXP GAINS *
+ //**********************
  int EXPTimerIncrease;
  // Increment the kill combo timer
  if (GetCVar("dvds_expcombosystem") == 1)
@@ -33719,7 +33773,6 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   {
    if (MiscellaneousVars[157] <= 0) // If not set, set to 4 seconds, if already set, add 1 second
    {
-
     EXPTimerIncrease = 2800; // 140 tics [20 units / tic]
     EXPTimerIncrease += (MiscellaneousVars[31] * 16); // 1 point of Agility = 0.8 tics [or 16 units] [5 points = 4 tics (or 80 units)]
     EXPTimerIncrease += (MiscellaneousVars[33] * 4); // 1 point of Deftness = 0.2 tics [or 4 units] [20 points = 4 tics (or 80 units)]
@@ -33787,12 +33840,12 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  }
 
  finalexpamount = baseexp;
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
- {
-  PrintBold(s:"EXP1: ",d:finalexpamount);
- }
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"EXP1: ",d:finalexpamount,s:" [Base EXP]");
 
- // Check for Fast Monsters setting
+ finalexpamount = finalexpamount * KillExpMultiplier / 20;
+ if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"EXP2: ",d:finalexpamount,s:" Multiplier: ",d:KillExpMultiplier,s:" / 20");
+
+  // Check for Fast Monsters setting
  if (GetCVar("sv_fastmonsters") == 1) finalexpamount = finalexpamount * 11 / 8; // [+37.5%]
 
  // Check Proper Flags
@@ -33804,7 +33857,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (CheckFlag(0,"STEALTH") == 1) finalexpamount = finalexpamount * 2;	// ZDoom Style STEALTH = [+100%]
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
  {
-  PrintBold(s:"EXP2: ",d:finalexpamount);
+  PrintBold(s:"EXP3: ",d:finalexpamount);
  }
 
  if (GetUserVariable(0,"user_MaxHP") <= 0) { overkillhp = GetActorProperty(0,APROP_SpawnHealth) * -1; }
@@ -33827,14 +33880,14 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  }
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
  {
-  PrintBold(s:"EXP3: ",d:finalexpamount);
+  PrintBold(s:"EXP4: ",d:finalexpamount);
  }
 
  ExpMultiFactor = GetExpMultiFactor(); // FUNCTION CALL
  finalexpamount = GetExperience(finalexpamount,ExpMultiFactor); // FUNCTION CALL
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
  {
-  PrintBold(s:"EXP4: ",d:finalexpamount);
+  PrintBold(s:"EXP5: ",d:finalexpamount);
  }
 
  int levelcheck = GetUserVariable(0, "user_monsterlevel") * 7; // Lvl 100 = +70% EXP (Lvl 200 = +140% EXP)
@@ -33848,7 +33901,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  finalexpamount = finalexpamount * levelcheck / 1000;
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
  {
-  PrintBold(s:"EXP5: ",d:finalexpamount);
+  PrintBold(s:"EXP6: ",d:finalexpamount);
  }
 
  int PreComboEXP = finalexpamount;
@@ -33916,7 +33969,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
   {
    PrintBold(s:"Combo %: ",d:MiscellaneousVars[159],
-             s:"\nEXP5: ",d:finalexpamount);
+             s:"\nEXP7: ",d:finalexpamount);
   }
  }
 
