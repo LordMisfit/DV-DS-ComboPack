@@ -654,6 +654,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [296] is storage for the ultimate MaceAmmo maximum.
 // [297] Phoenix Rod "FlameCount"
 	// [297 to 300] are undefined so far :P
+// [300] Bitcheck Reset Timer
 // [301] Total Sceptre EXP Required for Level 1
 // [302] Total Sceptre EXP Required for Level 2
 // [303] Total Sceptre EXP Required for Level 3
@@ -20272,6 +20273,54 @@ if (MiscellaneousVars[9907] != TempCombinedLevels)
   }
  }
 
+ // Stamina/Accuracy Upgrade Checks
+ // MiscellaneousVars[300] Bitcheck Reset Timer
+ // MiscellaneousVars[317] = current tic [Stamina Upgrades]
+ // MiscellaneousVars[319] = previous tic [Stamina Upgrades]
+  int StaminaBitField = 0;
+  int AccuracyBitField = 0;
+  if (GetActorProperty(1001,APROP_Health) > 0 && ClassicDoomType == 4 && ModType == 0) // Must also be in Strife mode
+  {
+   str StaminaUpgradeItem;
+   if (MiscellaneousVars[317] != MiscellaneousVars[319]) // [9801] is for checking LifeUp BitFields
+   {
+    for (i = 0; i < 11; i++)
+    {
+     StaminaUpgradeItem = StrParam(s:"StaminaUpgrade", d:i);
+
+     if (MiscellaneousVars[317] == i)
+     GiveActorInventory(1001, StaminaUpgradeItem, 1);
+      else
+     TakeActorInventory(1001, StaminaUpgradeItem, 1);	 
+	}
+    MiscellaneousVars[319] = MiscellaneousVars[317];
+   }
+
+   // MiscellaneousVars[318] = current tic [Accuracy Upgrades]
+   // MiscellaneousVars[320] = previous tic [Accuracy Upgrades]
+   str AccuracyUpgradeItem;
+   if (MiscellaneousVars[318] != MiscellaneousVars[320]) // [9801] is for checking LifeUp BitFields
+   {
+    for (i = 0; i < 11; i++)
+    {
+     AccuracyUpgradeItem = StrParam(s:"AccuracyUpgrade", d:i);
+	 
+     if (MiscellaneousVars[318] == i)
+     GiveActorInventory(1001, AccuracyUpgradeItem, 1);
+      else
+     TakeActorInventory(1001, AccuracyUpgradeItem, 1);	 
+	}
+    MiscellaneousVars[320] = MiscellaneousVars[318];
+   }
+  }
+  MiscellaneousVars[300]++;
+  if (MiscellaneousVars[300] >= 35)
+  { 
+   MiscellaneousVars[300] = 0; // Reset Timer
+   MiscellaneousVars[319] = 0; // Reset Stamina Checker
+   MiscellaneousVars[320] = 0; // Reset Accuracy Checker
+  }
+
  int PerkBitfield = 0;
  // Perk BitField Checks
   if (GetActorProperty(1001,APROP_Health) > 0)
@@ -35233,14 +35282,22 @@ script "FloraPainScreams" (void)
 // STRIFE Compatibility [Stamina Upgrades]
 script "StrifeStaminaUpgrade" (int increaseamount)
 {
+ int OldStamina = MiscellaneousVars[317] * 10;
+
  MiscellaneousVars[317] += 1;
  if (MiscellaneousVars[317] < 0) MiscellaneousVars[317] = 0;
  if (MiscellaneousVars[317] > 10) MiscellaneousVars[317] = 10;
+
+ int NewStamina = MiscellaneousVars[317] * 10;
+
+ PrintBold(s:"Stamina Level increased from ",d:OldStamina,s:" to ",d:NewStamina,s:"!");
 }
 
 // STRIFE Compatibility [Accuracy Upgrades]
 script "StrifeAccuracyUpgrade" (int increaseamount)
 {
+ int OldAccuracy = GetActorProperty(1001,APROP_Accuracy);
+ int NewAccuracy = OldAccuracy+10;
  MiscellaneousVars[318] += 1;
  if (MiscellaneousVars[318] < 0) MiscellaneousVars[318] = 0;
  if (MiscellaneousVars[318] > 11) MiscellaneousVars[318] = 11;
@@ -35255,6 +35312,11 @@ script "StrifeAccuracyUpgrade" (int increaseamount)
  if (MiscellaneousVars[318] == 8) MiscellaneousVars[25] += 25;
  if (MiscellaneousVars[318] == 9) MiscellaneousVars[25] += 27;
  if (MiscellaneousVars[318] == 10) MiscellaneousVars[25] += 29;
+
+ SetActorProperty(1001,APROP_Accuracy,NewAccuracy);
+ if (GetActorProperty(1001,APROP_Accuracy) > 100) SetActorProperty(1001,APROP_Accuracy,100);
+ 
+ PrintBold(s:"Accuracy Level increased from ",d:OldAccuracy,s:" to ",d:NewAccuracy,s:"!");
 }
 
 script "FlameCount" (int type, int value)
