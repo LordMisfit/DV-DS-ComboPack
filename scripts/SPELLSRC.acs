@@ -24,6 +24,7 @@ Thing Tags:
 	1502			Main Player's Tension Aura Light
 	
     2001		-	Spawned Spell Projectiles start with this TID
+	4443		-   Final TID for Healing Projectiles
 	4444		-	Spawned Spell Projectiles ultimately end up with this TID
 
 HudMessage Tags:
@@ -9337,7 +9338,7 @@ script "MagicEffects" (int Type, int Strength)
     SetActorVelocity(2001, project_XSpeedSpread, project_YSpeedSpread, project_ZSpeedSpread, 0, 0);
     SetActorAngle(2001, project_Angle);
     SetActorPosition(2001, project_X, project_Y, project_RealZ, 0);
-    Thing_ChangeTID(2001,4444);
+    Thing_ChangeTID(2001,4443);
 
     Break;
    }
@@ -9356,7 +9357,7 @@ script "MagicEffects" (int Type, int Strength)
     SetActorVelocity(2001, project_XSpeedSpread, project_YSpeedSpread, project_ZSpeedSpread, 0, 0);
     SetActorAngle(2001, project_Angle);
     SetActorPosition(2001, project_X, project_Y, project_RealZ, 0);
-    Thing_ChangeTID(2001,4444);
+    Thing_ChangeTID(2001,4443);
 
     Break;
    }
@@ -9375,7 +9376,7 @@ script "MagicEffects" (int Type, int Strength)
     SetActorVelocity(2001, project_XSpeedSpread, project_YSpeedSpread, project_ZSpeedSpread, 0, 0);
     SetActorAngle(2001, project_Angle);
     SetActorPosition(2001, project_X, project_Y, project_RealZ, 0);
-    Thing_ChangeTID(2001,4444);
+    Thing_ChangeTID(2001,4443);
 
     Break;
    }
@@ -35586,4 +35587,46 @@ script "DebugStrifeFlags" (void)
 		   s:"                     Flag 30 [Unused]: ",d:flag30,s:"\n",
 		   s:"                     Flag 31 [Unused]: ",d:flag31
 		  );
+}
+
+Script "AttackTarget" (void) NET
+{
+ int FreezePlayer = 0;
+ int WhistleStamUse = 200;
+ if (CheckActorInventory(1001,"FalconKnifeEarrings") > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
+
+ if (PowerupTimer[20] > 0) FreezePlayer += 1;
+ if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+
+ int oldTID, target;
+ if(SetActivator(0,AAPTR_PLAYER_GETTARGET)) // Get the target of the activator. If it fails because there is none nothing will happen.
+ { 
+  if (GetActorProperty(1001,APROP_Health) > 0 && MiscellaneousVars[168] == 0 && MiscellaneousVars[21] >= WhistleStamUse && FreezePlayer == 0)
+  {
+   oldTID = ActivatorTID(); // Save the TID of the target.
+   if (CheckFlag(oldTID, "FRIENDLY") == FALSE) // Don't set target to another ally. :V
+   {
+    target = UniqueTID(); // Get a new unique TID for the target actor.
+    Thing_ChangeTID(0, target); // Set that TID to the actor.
+    SetActivator(1000); // Set the activator to the actor with the given TID.
+    SetPointer(AAPTR_TARGET, target); // Give a new target to it.
+    Thing_ChangeTID(target,oldTID); // Restore the previous TID, because it might be used already by other scripts.
+    SpawnForced("PlayerWhistle",GetActorX(1001),GetActorY(1001),GetActorZ(1001)+(32*65536),0,0);
+    MiscellaneousVars[21] -= WhistleStamUse;
+    MiscellaneousVars[168] = 24; // Set's cooldown for whistling
+   }
+   else
+   {
+    PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+   }
+  }
+  else
+  {
+   PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+  }
+ }
+ else
+ {
+  PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+ }
 }
