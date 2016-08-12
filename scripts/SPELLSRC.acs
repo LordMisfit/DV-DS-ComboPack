@@ -654,7 +654,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [295] is storage for the ultimate SkullRodAmmo maximum.
 // [296] is storage for the ultimate MaceAmmo maximum.
 // [297] Phoenix Rod "FlameCount"
-	// [297 to 300] are undefined so far :P
+// [298] Initial Max HP [for Strife mode to help calculate extra Sigil damage]
+	// [299] is undefined so far :P
 // [300] Bitcheck Reset Timer
 // [301] Total Sceptre EXP Required for Level 1
 // [302] Total Sceptre EXP Required for Level 2
@@ -17791,10 +17792,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   SetActorProperty(1001,APROP_Health,MaxHealthTrue);
   SetActorProperty(1001,APROP_SPAWNHEALTH,MaxHealthTrue);
   MiscellaneousVars[241] = MaxHealthTrue;
+  MiscellaneousVars[298] = MaxHealthTrue;
  }
  if (ClassCheck == 5) // Will run the check only once at the beginning of a new game
  {
   MiscellaneousVars[241] = GetActorProperty(1001,APROP_Health);
+  MiscellaneousVars[298] = MaxHealthTrue;
  }
  if (ClassCheck < 6)
  {
@@ -27813,6 +27816,7 @@ script "GetSigilDamage" (int attacktype, int radiustype)
  // MiscellaneousVars[34] = Sorcery
  // MiscellaneousVars[35] = Strength
  // MiscellaneousVars[36] = Therapeusis
+ // MiscellaneousVars[298] = Initial Max HP [at the start of the game] [for Strife mode to help calculate extra Sigil damage]
  int damage, extradmg1, extradmg2, extradmg3, extradmg4, extradmg5, extradmg6, finaldmg;
  int rand1, rand2;
  int perkfactor = 10000;
@@ -27925,6 +27929,13 @@ script "GetSigilDamage" (int attacktype, int radiustype)
    if (MiscellaneousVars[318] == 9) finaldmg = finaldmg * 161 / 80; // +101.25% damage
    if (MiscellaneousVars[318] == 10) finaldmg = finaldmg * 175 / 80; // +118.75% damage
 
+   int prefinaldmg = finaldmg;
+   int hpextradmg = 125;
+   int hpextradmgfactor = ((MaxHealthTrue - MiscellaneousVars[298]) * 100);
+   int hpextradmg2 = (hpextradmgfactor / MiscellaneousVars[298]) * (25 / 100);
+   int hpextradmg3 = (hpextradmg + hpextradmg2);
+   finaldmg = (finaldmg * hpextradmg3) / 100;
+
    if (GetCVar("dvdsdebug_showhitscaninformation") == 1)
    {
     PrintBold(s:"Base: ",d:damage,
@@ -27934,9 +27945,16 @@ script "GetSigilDamage" (int attacktype, int radiustype)
               s:"\nExtra4: ",d:extradmg4,
               s:"\nExtra5: ",d:extradmg5,
               s:"\nExtra6: ",d:extradmg6,
+              s:"\nOriginal Max HP: ",d:MiscellaneousVars[298],
+              s:"\nCurrent Max HP: ",d:MaxHealthTrue,
+              s:"\nhpextradmg: ",d:hpextradmg,
+              s:"\nhpextradmgfactor: ",d:hpextradmgfactor,
+              s:"\nhpextradmg2: ",d:hpextradmg2,
+              s:"\nhpextradmg3: ",d:hpextradmg3,
               s:"\nRandom: ",d:rand1,s:" - ",d:rand2,
               s:"\nPerkFactor: ",d:perkfactor,
-              s:"\nTotal: ",d:finaldmg);
+              s:"\nTotal [Pre Max HP Check]: ",d:prefinaldmg,
+              s:"\nTotal [Post Max HP Check]: ",d:finaldmg);
    }
   }
   else // If something that's NOT the player shoots it...
@@ -34766,12 +34784,89 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  int KillExpMultiplier;
  int KilledByPlayer = 1;
 
+ int MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
+ //PrintBold(s:"MapNumber: ",d:MapCheck);
  int MonsterX = GetActorX(0);
  int MonsterY = GetActorY(0);
  int MonsterZ = GetActorZ(0);
 
  int RandomArmorDropChance;
  int RandomArmorDropMulti;
+
+ if (ClassicDoomType == 4) // Strife
+ {
+    // Enemies in the Degnin Mines or levels in the factory HUB can sometimes drop Degnin Ore depending on the area
+    if (MapCheck == 14) // Degnin Mines
+	{
+     if (random(1,768) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,384) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,192) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,96) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,72) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,48) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,24) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,12) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP14]");
+	}
+	if (MapCheck == 20) // Factory: Receiving
+	{
+     if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP20]");
+	}
+	if (MapCheck == 21) // Factory: Manufacturing
+	{
+     if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP21]");
+	}
+	if (MapCheck == 22) // Factory: Forge
+	{
+     if (random(1,192) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,160) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,128) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,96) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,32) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,16) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP22]");
+	}
+	if (MapCheck == 24) // Factory: Conversion Chapel
+	{
+     if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP24]");
+	}
+	if (MapCheck == 26) // Proving Grounds
+	{
+     if (random(1,7168) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,1536) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,384) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,96) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP26]");
+	}
+	if (MapCheck == 27) // The Lab [Loremaster boss]
+	{
+     if (random(1,8192) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,2048) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,512) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,128) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP27]");
+	}
+	if (CheckActorInventory(1001,"QuestItem29") > 0) // Destroying the Transmitter allows any other enemy in the game to have a chance to drop Degnin Ore [any level]
+	{
+     if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
+     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [Post-Transmitter]");
+	}
+ }
 
 
  if (GameSkill() == SKILL_VERY_EASY) RandomArmorDropMulti = 75;
@@ -35765,7 +35860,7 @@ Script "NNSigilDamageUser" (int damage)
    damage = MaxHealthTrue * damage / 100;
    IF (GetActorProperty(1001,APROP_Invulnerable) == 0)
    {
-    PrintBold(d:damage);
+    //PrintBold(d:damage);
     SetActorProperty(1001,APROP_HEALTH,currenthealth-damage);  //Thing_Damage2(0, damage, "NNSigilUse");
    }
 }
