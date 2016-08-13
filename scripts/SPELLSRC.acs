@@ -655,7 +655,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [296] is storage for the ultimate MaceAmmo maximum.
 // [297] Phoenix Rod "FlameCount"
 // [298] Initial Max HP [for Strife mode to help calculate extra Sigil damage]
-	// [299] is undefined so far :P
+// [299] Checks Ascendant Entity Kill Count
 // [300] Bitcheck Reset Timer
 // [301] Total Sceptre EXP Required for Level 1
 // [302] Total Sceptre EXP Required for Level 2
@@ -24665,6 +24665,7 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
    if (CheckActorClass(0, "AlienSpectre5New")) DivAmount *= 16; // 24
    if (CheckActorClass(0, "EntityBossNew")) DivAmount *= 24; // 32
    if (CheckActorClass(0, "EntitySecondNew")) DivAmount *= 24; // 32
+   if (CheckActorClass(0, "EntityAscended")) DivAmount *= 24; // 32
    if (CheckActorClass(0, "ThamuzNew")) DivAmount *= 24; // 32
    if (CheckActorClass(0, "TchernobogNew")) DivAmount *= 24; // 32
    if (CheckActorClass(0, "Sauravatar")) DivAmount *= 96; // 128
@@ -25997,11 +25998,12 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
  	  if (CheckActorClass(0, "DSparilUnmountedNew")) LevelCheck += random(15,30);
 	  if (CheckActorClass(0, "Zakachi")) LevelCheck += random(15,30);
 	  if (CheckActorClass(0, "KoraxNew")) LevelCheck += random(15,30);
-	  if (CheckActorClass(0, "EntitySecondNew")) LevelCheck += random(15,30);
  	  if (CheckActorClass(0, "ThamuzNew")) LevelCheck += random(15,30);
  	  if (CheckActorClass(0, "TchernobogNew")) LevelCheck += random(15,30);
  	  if (CheckActorClass(0, "EntityBossNew")) LevelCheck += random(25,50);
+	  if (CheckActorClass(0, "EntitySecondNew")) LevelCheck += random(25,50);
  	  if (CheckActorClass(0, "Sauravatar")) LevelCheck += random(25,50);
+ 	  if (CheckActorClass(0, "EntityAscended")) LevelCheck += random(50,75);
 	 }
 	 
      if (random(1,10) <= 1)
@@ -26293,6 +26295,12 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    MaxHP *= 24;
    if (MaxHP < 1) MaxHP = 1;
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\caMaxHP (Mini Entity): ",d:MaxHP);
+  }
+  if (CheckActorClass(0, "EntityAscended"))
+  {
+   MaxHP *= 24;
+   if (MaxHP < 1) MaxHP = 1;
+   if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\caMaxHP (ASCENDED Entity): ",d:MaxHP);
   }
   
   if (Attack < 0.005) Attack = 0.005;
@@ -27932,7 +27940,7 @@ script "GetSigilDamage" (int attacktype, int radiustype)
    int prefinaldmg = finaldmg;
    int hpextradmg = 125;
    int hpextradmgfactor = ((MaxHealthTrue - MiscellaneousVars[298]) * 100);
-   int hpextradmg2 = (hpextradmgfactor / MiscellaneousVars[298]) * (25 / 100);
+   int hpextradmg2 = (hpextradmgfactor / MiscellaneousVars[298]) / 4;
    int hpextradmg3 = (hpextradmg + hpextradmg2);
    finaldmg = (finaldmg * hpextradmg3) / 100;
 
@@ -30971,7 +30979,7 @@ script "CheckBFG2704" (void)
  SetResultValue(GetCVar("dvds_BFG2704"));
 }
 
-str dvds_monsternames[317][2] =
+str dvds_monsternames[318][2] =
 {
 // DOOM 1/2
   // Monsters
@@ -31307,6 +31315,7 @@ str dvds_monsternames[317][2] =
   {"AlienSpectre5New", "\cfThe Loremaster's Spectre\c-"},
   {"EntityBossNew", "\cfThe Entity: The One God\c-"},
   {"EntitySecondNew", "\cfMiniature Entity\c-"},
+  {"EntityAscended", "\cfThe Entity: The One God: Ascendant\c-"},
   
 // Touhou Doom Characters/Monsters
 
@@ -31381,7 +31390,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
   int xpos = 0.0;
   int ypos = 0.0;
 
-  for (int i = 0; i < 317; i++)
+  for (int i = 0; i < 318; i++)
   {
    if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
   }
@@ -34003,6 +34012,11 @@ SCRIPT "FootSteps_PlayerDeath" DEATH
 //***Named Scripts***
 //*******************
 
+script "EntityAscendantDies" (void)
+{
+ MiscellaneousVars[299]++;
+}
+
 // Emulates the various special scripts in Doom 1/2 mode [E1M8 (Barons), E2M8 (Cyberdemons), E3M8 (SpiderMasterminds), E4M6 (Cyberdemons again), MAP07 (Mancubi/Arachnotrons), etc]
 script "DoomMonsterDeathEmulation" OPEN
 {
@@ -34013,6 +34027,14 @@ script "DoomMonsterDeathEmulation" OPEN
  {
   if (ClassicDoomType == 4) // Strife
   {
+   if (GetLevelInfo(LEVELINFO_LEVELNUM) == 29) // Entity's Lair
+   {
+    if (LevelTime > 2 && MiscellaneousVars[299] >= 3 && Script1Done == 0) 
+    { 
+     Script1Delay++;
+     if (Script1Delay > 34) { Exit_Normal(0); Script1Done++; }
+    }
+   }
   }
   else if (ClassicDoomType == 3) // Hexen
   {
