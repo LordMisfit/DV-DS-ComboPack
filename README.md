@@ -1,4 +1,4 @@
-DV-DS-ComboPack [Deus Vult Doomspell Edition Combination Package]
+DV-DS-ComboPack [Deus Vult Doomspell Edition Combination Package] 
 
 - Includes modified [harder] mapsets for Deus Vult I and Deus Vult II (multiplayer-only monsters are now single-player used) and with a few new in-level scripts, and even a few 'bosses' [things worse than Cyberdemons I mean].
 - Can also be ran with Classic Doom 1 & Doom 2 [including TNT, Plutonia, and many megawads designed for both, but not all will work perfectly, and some might not work at all, use with certain megawads at your own discretion].
