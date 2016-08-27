@@ -34,7 +34,7 @@ actor BFGBallPlayer : BFGBall
     Loop
   Death:
     BFE1 AB 8 Bright
-    BFE1 C 8 Bright A_BFGSpray("BFGExtra",40,ACS_NamedExecuteWithResult("GetHitScanDMG",15))
+    BFE1 C 8 Bright A_BFGSpray("BFGExtra",ACS_NamedExecuteWithResult("GetBFGTracers"),ACS_NamedExecuteWithResult("GetHitScanDMG",15))
     BFE1 DEF 8 Bright
     Stop
   }
@@ -3984,7 +3984,7 @@ Actor KaraSawa2 : Weapon 27035
   Tag "'Karasawa' High-Density Plasma Cannon"
   Weapon.AmmoType "Cell"
   Weapon.AmmoGive 32
-  Weapon.AmmoUse 8
+  Weapon.AmmoUse 4 // changed due to attunement perk
   Weapon.KickBack 0
   states
   {
@@ -4004,30 +4004,61 @@ Actor KaraSawa2 : Weapon 27035
     KSAW ABCB 4 A_WeaponReady
     loop
   Fire:
+    TNT1 A 0 A_JumpIfInventory("RandomInfiniteAmmo", 0, "FireSuccess")
+    TNT1 A 0 A_JumpIfInventory("SawaAttunement2", 0, "CheckAttunement2")
+    TNT1 A 0 A_JumpIfInventory("SawaAttunement1", 0, "CheckAttunement1")
+	goto CheckAttunement0
+  CheckAttunement2:
+    TNT1 A 0 A_JumpIfInventory("Cell", 4, "FireSuccess")
+	goto DeSelect
+  CheckAttunement1:
+    TNT1 A 0 A_JumpIfInventory("Cell", 6, "FireSuccess")
+	goto DeSelect
+  CheckAttunement0:
+    TNT1 A 0 A_JumpIfInventory("Cell", 8, "FireSuccess")
+	goto DeSelect
+  FireSuccess:
     TNT1 A 0 ACS_NamedExecuteAlways("StartTensionCountDown")
     KSAW A 0 A_PlayWeaponSound("Weapons/KarasawaFire")
     TNT1 A 0 A_JumpIfInventory("SpreaderAura2", 0, "FireSpread7")
     TNT1 A 0 A_JumpIfInventory("SpreaderAura1", 0, "FireSpread3")
     goto FireNormal
   FireNormal:
-    KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer", 0, 1, 0, 0, 0, 0)
+    KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer", 0, 0, 0, 0, 0, 0)
     goto FireEnd
   FireSpread3:
     KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",15, 0, 0, 0, 0, 0)
-    KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",0, 1, 0, 0, 0, 0)
+    KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",0, 0, 0, 0, 0, 0)
     KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",-15, 0, 0, 0, 0, 0)
     goto FireEnd
   FireSpread7:
     KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",15, 0, 0, 0, 0, 0)
     KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",7.5, 0, 0, 0, 0, 7.5)
     KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",7.5, 0, 0, 0, 0, -7.5)
-    KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",0, 1, 0, 0, 0, 0)
+    KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",0, 0, 0, 0, 0, 0)
     KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",-7.5, 0, 0, 0, 0, -7.5)
     KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",-7.5, 0, 0, 0, 0, 7.5)
     KSAW D 0 Bright A_FireCustomMissile("KsawBoltPlayer",-15, 0, 0, 0, 0, 0)
     goto FireEnd
   FireEnd:
     KSAW D 1
+	{
+	 if (CountInv("RandomInfiniteAmmo",AAPTR_PLAYER1) > 0) { }
+	 else
+	 if (CountInv("SawaAttunement2",AAPTR_PLAYER1) > 0)
+	 {
+	  A_TakeInventory("Cell",4,TIF_NOTAKEINFINITE,AAPTR_PLAYER1);
+	 }
+	 else
+	 if (CountInv("SawaAttunement1",AAPTR_PLAYER1) > 0)
+	 {
+	  A_TakeInventory("Cell",6,TIF_NOTAKEINFINITE,AAPTR_PLAYER1);
+	 }
+	 else
+	 {
+	  A_TakeInventory("Cell",8,TIF_NOTAKEINFINITE,AAPTR_PLAYER1);
+	 }
+	}
     KSAW E 1
     KSAW FGH 2 Bright A_Light2
     KSAW I 0 A_PlaySoundEx("Weapons/KarasawaCharge", "SoundSlot7", 0)
@@ -4191,6 +4222,32 @@ Actor KsawBolt
 Actor KsawBoltPlayer : KsawBolt
 {
   Damage (ACS_NamedExecuteWithResult("GetHitScanDMG",16))
+  States
+  {
+   Spawn:
+     KWBB A 0 Bright NoDelay
+	 {
+	  if (CountInv("SawaAttunement1",AAPTR_PLAYER1) > 0)
+	  {
+	   //A_PrintBold("Sawa Attunement 1");
+ 	   A_ScaleVelocity(0.875);
+ 	   //A_SetSpeed(30);
+	  }
+	  else
+	  if (CountInv("SawaAttunement2",AAPTR_PLAYER1) > 0)
+	  {
+	   //A_PrintBold("Sawa Attunement 2");
+ 	   A_ScaleVelocity(0.75);
+ 	   //A_SetSpeed(20);
+	  }
+	  A_PlaySound("KsawBoltFly");
+	 }
+     KWBB ABCD 1 Bright A_SpawnItemEx("BoltBlur", 0, 0, 0, 1, 0, 0, 180, 128)
+     goto Spawn+1
+   Death:
+     KWBD ABCDEF 2 Bright
+     Stop
+  }
 }
 
 Actor KsawBoltCrisisParticle
@@ -4293,8 +4350,8 @@ Actor BFG90002 : BFG9000
 { 
  Weapon.AmmoType1 "Cell"
  Weapon.AmmoType2 "Cell"
- Weapon.AmmoUse1 40
- Weapon.AmmoUse2 1
+ Weapon.AmmoUse1 24 // 40
+ Weapon.AmmoUse2 24
  Inventory.PickupMessage "Picked up a \cvBFG9000\c-!"
  States
  {
@@ -4307,6 +4364,20 @@ Actor BFG90002 : BFG9000
     BFGG A 1 A_Raise
     Loop
   Fire:
+    TNT1 A 0 A_JumpIfInventory("RandomInfiniteAmmo", 0, "FireSuccess")
+    TNT1 A 0 A_JumpIfInventory("BFGAttunement2", 0, "CheckAttunement2")
+    TNT1 A 0 A_JumpIfInventory("BFGAttunement1", 0, "CheckAttunement1")
+	goto CheckAttunement0
+  CheckAttunement2:
+    TNT1 A 0 A_JumpIfInventory("Cell", 24, "FireSuccess")
+	goto DeSelect
+  CheckAttunement1:
+    TNT1 A 0 A_JumpIfInventory("Cell", 32, "FireSuccess")
+	goto DeSelect
+  CheckAttunement0:
+    TNT1 A 0 A_JumpIfInventory("Cell", 40, "FireSuccess")
+	goto DeSelect
+  FireSuccess:
     BFGG A 20 A_BFGSound
     BFGG B 10 A_GunFlash("Flash")
     TNT1 A 0 ACS_NamedExecuteAlways("StartTensionCountDown")
@@ -4314,24 +4385,41 @@ Actor BFG90002 : BFG9000
     TNT1 A 0 A_JumpIfInventory("SpreaderAura1", 0, "FireSpread3")
     goto FireNormal
   FireNormal:
-    BFGG B 0 A_FireCustomMissile("BFGBallPlayer", 0, 1, 0, 0, 0, 0)
+    BFGG B 0 A_FireCustomMissile("BFGBallPlayer", 0, 0, 0, 0, 0, 0)
     goto FireEnd
   FireSpread3:
     BFGG B 0 A_FireCustomMissile("BFGBallPlayer",15, 0, 0, 0, 0, 0)
-    BFGG B 0 A_FireCustomMissile("BFGBallPlayer", 0, 1, 0, 0, 0, 0)
+    BFGG B 0 A_FireCustomMissile("BFGBallPlayer", 0, 0, 0, 0, 0, 0)
     BFGG B 0 A_FireCustomMissile("BFGBallPlayer",-15, 0, 0, 0, 0, 0)
     goto FireEnd
   FireSpread7:
     BFGG B 0 A_FireCustomMissile("BFGBallPlayer",15, 0, 0, 0, 0, 0)
     BFGG B 0 A_FireCustomMissile("BFGBallPlayer",7.5, 0, 0, 0, 0, 7.5)
     BFGG B 0 A_FireCustomMissile("BFGBallPlayer",7.5, 0, 0, 0, 0, -7.5)
-    BFGG B 0 A_FireCustomMissile("BFGBallPlayer", 0, 1, 0, 0, 0, 0)
+    BFGG B 0 A_FireCustomMissile("BFGBallPlayer", 0, 0, 0, 0, 0, 0)
     BFGG B 0 A_FireCustomMissile("BFGBallPlayer",-7.5, 0, 0, 0, 0, -7.5)
     BFGG B 0 A_FireCustomMissile("BFGBallPlayer",-7.5, 0, 0, 0, 0, 7.5)
     BFGG B 0 A_FireCustomMissile("BFGBallPlayer",-15, 0, 0, 0, 0, 0)
     goto FireEnd
   FireEnd:
     BFGG B 10
+	{
+	 if (CountInv("RandomInfiniteAmmo",AAPTR_PLAYER1) > 0) { }
+	 else
+	 if (CountInv("BFGAttunement2",AAPTR_PLAYER1) > 0)
+	 {
+	  A_TakeInventory("Cell",24,TIF_NOTAKEINFINITE,AAPTR_PLAYER1);
+	 }
+	 else
+	 if (CountInv("BFGAttunement1",AAPTR_PLAYER1) > 0)
+	 {
+	  A_TakeInventory("Cell",32,TIF_NOTAKEINFINITE,AAPTR_PLAYER1);
+	 }
+	 else
+	 {
+	  A_TakeInventory("Cell",40,TIF_NOTAKEINFINITE,AAPTR_PLAYER1);
+	 }
+	}
     BFGG B 20 A_ReFire
     Goto Ready
   Flash:
@@ -4343,38 +4431,75 @@ Actor BFG90002 : BFG9000
     BFGF B 17 Bright A_Light2
     Goto LightDone
   AltFire:
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckBFG2704") == 0,"Ready")
-    TNT1 A 0 
-    TNT1 A 0 A_JumpIfInventory("Cell",40,"AltFireSuccess")
-    goto Deselect
+    TNT1 A 0 A_JumpIfInventory("RandomInfiniteAmmo", 0, "AltFireSuccess")
+    TNT1 A 0 A_JumpIfInventory("BFGAttunement2", 0, "AltCheckAttunement2")
+    TNT1 A 0 A_JumpIfInventory("BFGAttunement1", 0, "AltCheckAttunement1")
+	goto AltCheckAttunement0
+  AltCheckAttunement2:
+    TNT1 A 0 A_JumpIfInventory("Cell", 24, "AltFireSuccess")
+	goto DeSelect
+  AltCheckAttunement1:
+    TNT1 A 0 A_JumpIfInventory("Cell", 32, "AltFireSuccess")
+	goto DeSelect
+  AltCheckAttunement0:
+    TNT1 A 0 A_JumpIfInventory("Cell", 40, "AltFireSuccess")
+	goto DeSelect
   AltFireSuccess:
+    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckBFG2704") == 0,"Ready")
     BFGG A 14 A_BFGSound
     BFGG B 7 A_GunFlash("AltFlash")
+    TNT1 A 0 
+	{
+	 if (CountInv("RandomInfiniteAmmo",AAPTR_PLAYER1) > 0) 
+	 { 
+	  if (CountInv("BFGAttunement2",AAPTR_PLAYER1) > 0) { A_GiveInventory("BFG2704Array",24,AAPTR_PLAYER1); }
+	  else if (CountInv("BFGAttunement2",AAPTR_PLAYER1) > 0) { A_GiveInventory("BFG2704Array",22,AAPTR_PLAYER1); }
+	  else { A_GiveInventory("BFG2704Array",20,AAPTR_PLAYER1); }
+	 }
+	 else
+	 if (CountInv("BFGAttunement2",AAPTR_PLAYER1) > 0)
+	 {
+	  A_GiveInventory("BFG2704Array",24,AAPTR_PLAYER1);
+	  A_TakeInventory("Cell",24,TIF_NOTAKEINFINITE,AAPTR_PLAYER1);
+	 }
+	 else
+	 if (CountInv("BFGAttunement1",AAPTR_PLAYER1) > 0)
+	 {
+	  A_GiveInventory("BFG2704Array",22,AAPTR_PLAYER1);
+	  A_TakeInventory("Cell",32,TIF_NOTAKEINFINITE,AAPTR_PLAYER1);
+	 }
+	 else
+	 {
+	  A_GiveInventory("BFG2704Array",20,AAPTR_PLAYER1);
+	  A_TakeInventory("Cell",40,TIF_NOTAKEINFINITE,AAPTR_PLAYER1);
+	 }
+	}
     TNT1 A 0 ACS_NamedExecuteAlways("StartTensionCountDown")
     TNT1 A 0 A_JumpIfInventory("SpreaderAura2", 0, "AltFireSpread7")
     TNT1 A 0 A_JumpIfInventory("SpreaderAura1", 0, "AltFireSpread3")
     goto AltFireNormal
   AltFireNormal:
+    BFGG B 0 A_TakeInventory("BFG2704Array",1,0,AAPTR_PLAYER1)
     BFGG B 0 A_FireCustomMissile("PlasmaBall1Player",random(-10,10),0,0,0,0,random(-10,10))
-    BFGG B 1 A_TakeInventory("Cell",1)
+    BFGG B 1
     BFGG B 0 A_FireCustomMissile("PlasmaBall2Player",random(-10,10),0,0,0,0,random(-10,10))
-    BFGG B 1 A_TakeInventory("Cell",1)
-    BFGG B 0 ACS_NamedExecuteWithResult("WeaponAngleLoop",1,0,1)
-    BFGG B 0 A_JumpIf(ACS_NamedExecuteWithResult("WeaponAngleLoop",0,20) == 1,"AltFireEnd")
-    loop
+    BFGG B 1
+    BFGG B 0 A_JumpIfInventory("BFG2704Array", 1, "AltFireNormal")
+    goto AltFireEnd
   AltFireSpread3:
+    BFGG B 0 A_TakeInventory("BFG2704Array",1,0,AAPTR_PLAYER1)
     BFGG B 0 A_FireCustomMissile("PlasmaBall1Player",random(-10,10)+15,0,0,0,0,random(-10,10))
     BFGG B 0 A_FireCustomMissile("PlasmaBall1Player",random(-10,10),0,0,0,0,random(-10,10))
     BFGG B 0 A_FireCustomMissile("PlasmaBall1Player",random(-10,10)-15,0,0,0,0,random(-10,10))
-    BFGG B 1 A_TakeInventory("Cell",1)
+    BFGG B 1
     BFGG B 0 A_FireCustomMissile("PlasmaBall2Player",random(-10,10)+15,0,0,0,0,random(-10,10))
     BFGG B 0 A_FireCustomMissile("PlasmaBall2Player",random(-10,10),0,0,0,0,random(-10,10))
     BFGG B 0 A_FireCustomMissile("PlasmaBall2Player",random(-10,10)-15,0,0,0,0,random(-10,10))
-    BFGG B 1 A_TakeInventory("Cell",1)
-    BFGG B 0 ACS_NamedExecuteWithResult("WeaponAngleLoop",1,0,1)
-    BFGG B 0 A_JumpIf(ACS_NamedExecuteWithResult("WeaponAngleLoop",0,20) == 1,"AltFireEnd")
-    loop
+    BFGG B 1
+    BFGG B 0 A_JumpIfInventory("BFG2704Array", 1, "AltFireSpread3")
+    goto AltFireEnd
   AltFireSpread7:
+    BFGG B 0 A_TakeInventory("BFG2704Array",1,0,AAPTR_PLAYER1)
     BFGG B 0 A_FireCustomMissile("PlasmaBall1Player",random(-10,10)+15,0,0,0,0,random(-10,10))
     BFGG B 0 A_FireCustomMissile("PlasmaBall1Player",random(-10,10)+7.5,0,0,0,0,random(-10,10)+7.5)
     BFGG B 0 A_FireCustomMissile("PlasmaBall1Player",random(-10,10)+7.5,0,0,0,0,random(-10,10)-7.5)
@@ -4382,7 +4507,7 @@ Actor BFG90002 : BFG9000
     BFGG B 0 A_FireCustomMissile("PlasmaBall1Player",random(-10,10)-7.5,0,0,0,0,random(-10,10)-7.5)
     BFGG B 0 A_FireCustomMissile("PlasmaBall1Player",random(-10,10)-7.5,0,0,0,0,random(-10,10)+7.5)
     BFGG B 0 A_FireCustomMissile("PlasmaBall1Player",random(-10,10)-15,0,0,0,0,random(-10,10))
-    BFGG B 1 A_TakeInventory("Cell",1)
+    BFGG B 1
     BFGG B 0 A_FireCustomMissile("PlasmaBall2Player",random(-10,10)+15,0,0,0,0,random(-10,10))
     BFGG B 0 A_FireCustomMissile("PlasmaBall2Player",random(-10,10)+7.5,0,0,0,0,random(-10,10)+7.5)
     BFGG B 0 A_FireCustomMissile("PlasmaBall2Player",random(-10,10)+7.5,0,0,0,0,random(-10,10)-7.5)
@@ -4390,10 +4515,9 @@ Actor BFG90002 : BFG9000
     BFGG B 0 A_FireCustomMissile("PlasmaBall2Player",random(-10,10)-7.5,0,0,0,0,random(-10,10)-7.5)
     BFGG B 0 A_FireCustomMissile("PlasmaBall2Player",random(-10,10)-7.5,0,0,0,0,random(-10,10)+7.5)
     BFGG B 0 A_FireCustomMissile("PlasmaBall2Player",random(-10,10)-15,0,0,0,0,random(-10,10))
-    BFGG B 1 A_TakeInventory("Cell",1)
-    BFGG B 0 ACS_NamedExecuteWithResult("WeaponAngleLoop",1,0,1)
-    BFGG B 0 A_JumpIf(ACS_NamedExecuteWithResult("WeaponAngleLoop",0,20) == 1,"AltFireEnd")
-    loop
+    BFGG B 1
+    BFGG B 0 A_JumpIfInventory("BFG2704Array", 1, "AltFireSpread7")
+    goto AltFireEnd
   AltFireEnd:
     BFGG B 0 A_Light0
     BFGG B 20 A_ReFire
