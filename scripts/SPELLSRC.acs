@@ -16915,15 +16915,23 @@ script "MaxHPBonusPickup" (void)
 // Check if Health is above or below normal max [for customized "normal" health item checks] (All games)
 script "CheckHealthLevels" (void)
 {
- if (GetActorProperty(1001,APROP_HEALTH) < MaxHealthTrue)
+ int currenthealth = GetActorProperty(1001,APROP_HEALTH);
+ int perkhealthlimit = MaxHealthTrue;
+ if (CharacterClass == 0 | CharacterClass == 1)
+ {
+  if (MiscellaneousVars[10049] == 1) perkhealthlimit = perkhealthlimit * 11 / 10;
+  if (MiscellaneousVars[10049] == 2) perkhealthlimit = perkhealthlimit * 12 / 10;
+  if (MiscellaneousVars[10049] == 3) perkhealthlimit = perkhealthlimit * 13 / 10;
+  if (MiscellaneousVars[10049] == 4) perkhealthlimit = perkhealthlimit * 14 / 10;
+  if (MiscellaneousVars[10049] == 5) perkhealthlimit = perkhealthlimit * 15 / 10;
+ }
+ if (currenthealth < perkhealthlimit)
  {
   SetThingSpecial(0,0,0,0,0,1,0); 
-  // Print(s:"1");
  }
  else
  {
   SetThingSpecial(0,0,0,0,0,0,0);
-  // Print(s:"0");
  }
 }
 
@@ -16965,53 +16973,103 @@ script "Stamina-HealingItem" (int PercentMax, int PercentAmount, int ExactAmount
 script "PickupMedicalItem" (int HealItemType) //
 {
  int I1, I2, Z1, Z2, C1, C2, HealAmount, ExtraHeal, CurrentHP;
+ int tempstaminalimit;
+ int perktemp1, perktemp2, perktemp3;
  CurrentHP = GetActorProperty(1001,APROP_HEALTH);
 
- if (HealItemType == 0) // Stimpack / Crystal Vial [Health]
+ if (HealItemType == 0 | HealItemType == 1) // Stimpack / Crystal Vial (1) and Medikit / Quartz Flask / Mini Berserk Pack (2) [Health]
  {
-  HealAmount = MaxHealthTrue * 10 / 100;
-  if (MiscellaneousVars[21] < MiscellaneousVars[22])
+  if (HealItemType == 0) HealAmount = MaxHealthTrue * 10 / 100; // [Stimpack/Vial]
+  if (HealItemType == 1) HealAmount = MaxHealthTrue * 25 / 100; // [Medikit/Flask]
+  perktemp2 = HealAmount;
+  if (CharacterClass == 0 | CharacterClass == 1)
   {
-   MiscellaneousVars[165] = MiscellaneousVars[22] / 20; // 5.0%
-   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) MiscellaneousVars[165] = MiscellaneousVars[165] * 5 / 3;
-   MiscellaneousVars[21] += MiscellaneousVars[165]; 
-   if (MiscellaneousVars[21] > MiscellaneousVars[22]) MiscellaneousVars[21] = MiscellaneousVars[22];
+   if (MiscellaneousVars[10049] == 1) perktemp2 = perktemp2 * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perktemp2 = perktemp2 * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perktemp2 = perktemp2 * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perktemp2 = perktemp2 * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perktemp2 = perktemp2 * 15 / 10;
+  }
+
+  tempstaminalimit = MiscellaneousVars[22];
+  if (CharacterClass == 0 | CharacterClass == 1)
+  {
+   if (MiscellaneousVars[10049] == 1) tempstaminalimit = tempstaminalimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) tempstaminalimit = tempstaminalimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) tempstaminalimit = tempstaminalimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) tempstaminalimit = tempstaminalimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) tempstaminalimit = tempstaminalimit * 15 / 10;
+  }
+  if (MiscellaneousVars[21] < tempstaminalimit)
+  {
+   if (HealItemType == 0) MiscellaneousVars[165] = MiscellaneousVars[22] / 20; // 5.0% [Stimpack/Vial]
+   if (HealItemType == 1) MiscellaneousVars[165] = MiscellaneousVars[22] / 8; // 12.5% [Medikit/Flask]
+   perktemp1 = MiscellaneousVars[165];
+   if (CheckActorInventory(1001,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+   if (CharacterClass == 0 | CharacterClass == 1)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp1 = perktemp1 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp1 = perktemp1 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp1 = perktemp1 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp1 = perktemp1 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp1 = perktemp1 * 15 / 10;
+   }
+   MiscellaneousVars[21] += perktemp1;
+
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Stamina Limit: ",d:tempstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+                                                          s:"\nStamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
+   if (MiscellaneousVars[21] > tempstaminalimit) MiscellaneousVars[21] = tempstaminalimit;
   }
  }
- if (HealItemType == 1) // Medikit / Quartz Flask / Mini Berserk Pack [Health]
- {
-  HealAmount = MaxHealthTrue * 25 / 100;
-  if (MiscellaneousVars[21] < MiscellaneousVars[22])
-  {
-   MiscellaneousVars[165] = MiscellaneousVars[22] / 8; // 12.5%
-   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) MiscellaneousVars[165] = MiscellaneousVars[165] * 5 / 3;
-   MiscellaneousVars[21] += MiscellaneousVars[165]; 
-   if (MiscellaneousVars[21] > MiscellaneousVars[22]) MiscellaneousVars[21] = MiscellaneousVars[22];
-  }
- }
+
  if (HealItemType == 2) // Berserk Pack / Mystic Urn [Health]
  {
   HealAmount = MaxHealthTrue;
+  perktemp2 = HealAmount;
+  if (CharacterClass == 0 | CharacterClass == 1)
+  {
+   if (MiscellaneousVars[10049] == 1) perktemp2 = perktemp2 * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perktemp2 = perktemp2 * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perktemp2 = perktemp2 * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perktemp2 = perktemp2 * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perktemp2 = perktemp2 * 15 / 10;
+  }
  }
- if (HealItemType == 3) // Full Berserk Pack [Stamina]
+ if (HealItemType == 3 | HealItemType == 4) // Full Berserk Pack (3) and Mini Berserk Pack (4) [Stamina]
  {
-  MiscellaneousVars[165] = MiscellaneousVars[22] * 2; // 200%
-  if (CheckActorInventory(1001,"WaterFlyingDress") > 0) MiscellaneousVars[165] = MiscellaneousVars[165] * 5 / 3;
-  if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
-  if (MiscellaneousVars[21] >= MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164]; 
- }
- if (HealItemType == 4) // Mini Berserk Pack [Stamina]
- {
-  MiscellaneousVars[165] = MiscellaneousVars[22] / 2; // 50%
-  if (CheckActorInventory(1001,"WaterFlyingDress") > 0) MiscellaneousVars[165] = MiscellaneousVars[165] * 5 / 3;
-  if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
+  if (HealItemType == 3) MiscellaneousVars[165] = MiscellaneousVars[22] * 2; // 200% [Full Berserk Pack]
+  if (HealItemType == 4) MiscellaneousVars[165] = MiscellaneousVars[22] / 2; // 50% [Mini Berserk Pack]
+  perktemp1 = MiscellaneousVars[165];
+  if (CheckActorInventory(1001,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+  if (CharacterClass == 0 | CharacterClass == 1)
+  {
+   if (MiscellaneousVars[10049] == 1) perktemp1 = perktemp1 * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perktemp1 = perktemp1 * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perktemp1 = perktemp1 * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perktemp1 = perktemp1 * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perktemp1 = perktemp1 * 15 / 10;
+  }
+  if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Stamina Limit: [",d:MiscellaneousVars[164],s:"]",
+                                                         s:"\nStamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[22],s:"]");
+  if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += perktemp1;
   if (MiscellaneousVars[21] >= MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164]; 
  }
 
- if (CurrentHP <= MaxHealthTrue)
+ int temphealthlimit = MaxHealthTrue;
+ if (CharacterClass == 0 | CharacterClass == 1)
  {
-  CurrentHP += HealAmount;
-  if (CurrentHP > MaxHealthTrue) CurrentHP = MaxHealthTrue;
+  if (MiscellaneousVars[10049] == 1) temphealthlimit = temphealthlimit * 11 / 10;
+  if (MiscellaneousVars[10049] == 2) temphealthlimit = temphealthlimit * 12 / 10;
+  if (MiscellaneousVars[10049] == 3) temphealthlimit = temphealthlimit * 13 / 10;
+  if (MiscellaneousVars[10049] == 4) temphealthlimit = temphealthlimit * 14 / 10;
+  if (MiscellaneousVars[10049] == 5) temphealthlimit = temphealthlimit * 15 / 10;
+ }
+ if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Healing Limit: ",d:temphealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+                                                        s:"\nHealth Restored: ",d:perktemp2,s:" VS [",d:HealAmount,s:"]");
+ if (CurrentHP <= temphealthlimit)
+ {
+  CurrentHP += perktemp2;
+  if (CurrentHP > temphealthlimit) CurrentHP = temphealthlimit;
   SetActorProperty(1001,APROP_HEALTH,CurrentHP);
  }
 }
@@ -35405,6 +35463,8 @@ script "UseCustomInventoryItem" (int type)
 {
  int temp1, temp2, temp3, check1, check2, check3;
  int healmax;
+ int perktemp1, perktemp2, perktemp3;
+ int perkhealthlimit, perkstaminalimit, perkmanalimit;
 
  if (type == -7 && CheckActorInventory(1001,"ArtiInvisibilityNew") > 0) // Icon of the Defender
  {
@@ -35606,21 +35666,63 @@ script "UseCustomInventoryItem" (int type)
  {
   // Heal Health [~25-35 HP]
   temp1 = GetActorProperty(1001,APROP_Health);
-  if (temp1 < MaxHealthTrue)
+  perkhealthlimit = MaxHealthTrue;
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkhealthlimit = perkhealthlimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkhealthlimit = perkhealthlimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkhealthlimit = perkhealthlimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkhealthlimit = perkhealthlimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkhealthlimit = perkhealthlimit * 15 / 10;
+  }
+  if (temp1 < perkhealthlimit)
   {
    check1 += 1;
-   temp1 += random(25,35);
-   if (temp1 > MaxHealthTrue) temp1 = MaxHealthTrue;
+   temp2 = random(25,35);
+   perktemp1 = temp2;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp1 = perktemp1 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp1 = perktemp1 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp1 = perktemp1 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp1 = perktemp1 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp1 = perktemp1 * 15 / 10;
+   }
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+                                                          s:"\nHealth Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+   temp1 += perktemp1;
+   if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
    SetActorProperty(1001,APROP_Health,temp1);
   }
   // Heal Stamina [~5.0% - ~7.0%]
-  if (MiscellaneousVars[21] < MiscellaneousVars[22])
+  perkstaminalimit = MiscellaneousVars[22];
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkstaminalimit = perkstaminalimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkstaminalimit = perkstaminalimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkstaminalimit = perkstaminalimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkstaminalimit = perkstaminalimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkstaminalimit = perkstaminalimit * 15 / 10;
+  }
+  if (MiscellaneousVars[21] < perkstaminalimit)
   {
    check1 += 1;
    temp2 = (MiscellaneousVars[22] * random(50,70)) / 1000;
-   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) temp2 = temp2 * 5 / 3;
-   MiscellaneousVars[21] += temp2;
-   if (MiscellaneousVars[21] > MiscellaneousVars[22]) MiscellaneousVars[21] = MiscellaneousVars[22];
+   perktemp2 = temp2;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp2 = perktemp2 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp2 = perktemp2 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp2 = perktemp2 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp2 = perktemp2 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp2 = perktemp2 * 15 / 10;
+   }
+   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) perktemp2 = perktemp2 * 5 / 3;
+   MiscellaneousVars[21] += perktemp2;
+
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+                                                          s:"\nStamina Restored: ",d:perktemp2,s:" VS [",d:temp2,s:"]");
+   if (MiscellaneousVars[21] > perkstaminalimit) MiscellaneousVars[21] = perkstaminalimit;
   }
   if (check1 > 0)
   {
@@ -35639,22 +35741,64 @@ script "UseCustomInventoryItem" (int type)
  {
   // Heal Health [~55-65 HP]
   temp1 = GetActorProperty(1001,APROP_Health);
-  if (temp1 < MaxHealthTrue)
+  perkhealthlimit = MaxHealthTrue;
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkhealthlimit = perkhealthlimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkhealthlimit = perkhealthlimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkhealthlimit = perkhealthlimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkhealthlimit = perkhealthlimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkhealthlimit = perkhealthlimit * 15 / 10;
+  }
+  if (temp1 < perkhealthlimit)
   {
    check1 += 1;
-   temp1 += random(55,65);
-   if (temp1 > MaxHealthTrue) temp1 = MaxHealthTrue;
+   temp2 = random(55,65);
+   perktemp1 = temp2;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp1 = perktemp1 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp1 = perktemp1 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp1 = perktemp1 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp1 = perktemp1 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp1 = perktemp1 * 15 / 10;
+   }
+   temp1 += perktemp1;
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+                                                          s:"\nHealth Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+   if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
    SetActorProperty(1001,APROP_Health,temp1);
   }
 
   // Heal Stamina [~11.0% - ~13.0%]
-  if (MiscellaneousVars[21] < MiscellaneousVars[22])
+  perkstaminalimit = MiscellaneousVars[22];
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkstaminalimit = perkstaminalimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkstaminalimit = perkstaminalimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkstaminalimit = perkstaminalimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkstaminalimit = perkstaminalimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkstaminalimit = perkstaminalimit * 15 / 10;
+  }
+  if (MiscellaneousVars[21] < perkstaminalimit)
   {
    check1 += 1;
    temp2 = (MiscellaneousVars[22] * random(110,130)) / 1000;
-   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) temp2 = temp2 * 5 / 3;
-   MiscellaneousVars[21] += temp2;
-   if (MiscellaneousVars[21] > MiscellaneousVars[22]) MiscellaneousVars[21] = MiscellaneousVars[22];
+   perktemp2 = temp2;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp2 = perktemp2 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp2 = perktemp2 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp2 = perktemp2 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp2 = perktemp2 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp2 = perktemp2 * 15 / 10;
+   }
+   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) perktemp2 = perktemp2 * 5 / 3;
+   MiscellaneousVars[21] += perktemp2;
+
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+                                                          s:"\nStamina Restored: ",d:perktemp2,s:" VS [",d:temp2,s:"]");
+   if (MiscellaneousVars[21] > perkstaminalimit) MiscellaneousVars[21] = perkstaminalimit;
   }
   if (check1 > 0)
   {
@@ -35672,23 +35816,65 @@ script "UseCustomInventoryItem" (int type)
  if (type == 3 && CheckActorInventory(1001,"SpecialMedicine") > 0) // Special Medicin(al Herb)
  {
   temp1 = GetActorProperty(1001,APROP_Health);
-  if (temp1 < MaxHealthTrue)
+  perkhealthlimit = MaxHealthTrue;
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkhealthlimit = perkhealthlimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkhealthlimit = perkhealthlimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkhealthlimit = perkhealthlimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkhealthlimit = perkhealthlimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkhealthlimit = perkhealthlimit * 15 / 10;
+  }
+  if (temp1 < perkhealthlimit)
   {
    // Heal Health [~85-105 HP]
    check1 += 1;
-   temp1 += random(85,105);
-   if (temp1 > MaxHealthTrue) temp1 = MaxHealthTrue;
+   temp2 = random(85,105);
+   perktemp1 = temp2;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp1 = perktemp1 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp1 = perktemp1 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp1 = perktemp1 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp1 = perktemp1 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp1 = perktemp1 * 15 / 10;
+   }
+   temp1 += perktemp1;
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+                                                          s:"\nHealth Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+   if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
    SetActorProperty(1001,APROP_Health,temp1);
   }
 
   // Heal Stamina [~17.0% - ~21.0%]
-  if (MiscellaneousVars[21] < MiscellaneousVars[22])
+  perkstaminalimit = MiscellaneousVars[22];
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkstaminalimit = perkstaminalimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkstaminalimit = perkstaminalimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkstaminalimit = perkstaminalimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkstaminalimit = perkstaminalimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkstaminalimit = perkstaminalimit * 15 / 10;
+  }
+  if (MiscellaneousVars[21] < perkstaminalimit)
   {
    check1 += 1;
    temp2 = (MiscellaneousVars[22] * random(170,210)) / 1000;
-   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) temp2 = temp2 * 5 / 3;
-   MiscellaneousVars[21] += temp2;
-   if (MiscellaneousVars[21] > MiscellaneousVars[22]) MiscellaneousVars[21] = MiscellaneousVars[22];
+   perktemp2 = temp2;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp2 = perktemp2 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp2 = perktemp2 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp2 = perktemp2 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp2 = perktemp2 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp2 = perktemp2 * 15 / 10;
+   }
+   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) perktemp2 = perktemp2 * 5 / 3;
+   MiscellaneousVars[21] += perktemp2;
+
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+                                                          s:"\nStamina Restored: ",d:perktemp2,s:" VS [",d:temp2,s:"]");
+   if (MiscellaneousVars[21] > perkstaminalimit) MiscellaneousVars[21] = perkstaminalimit;
   }
   if (check1 > 0)
   {
@@ -35705,30 +35891,96 @@ script "UseCustomInventoryItem" (int type)
  if (type == 4 && CheckActorInventory(1001,"YggdrasilDew") > 0) // Yggdrasil Dew
  {
   temp1 = GetActorProperty(1001,APROP_Health);
-  if (temp1 < MaxHealthTrue)
+  perkhealthlimit = MaxHealthTrue;
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkhealthlimit = perkhealthlimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkhealthlimit = perkhealthlimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkhealthlimit = perkhealthlimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkhealthlimit = perkhealthlimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkhealthlimit = perkhealthlimit * 15 / 10;
+  }
+  if (temp1 < perkhealthlimit)
   {
    // Heal Health [70.0% - 80.0%]
    check1 += 1;
-   temp1 += ((MaxHealthTrue * random(700,800)) / 1000);
-   if (temp1 > MaxHealthTrue) temp1 = MaxHealthTrue;
+   temp2 = ((MaxHealthTrue * random(700,800)) / 1000);
+   perktemp1 = temp2;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp1 = perktemp1 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp1 = perktemp1 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp1 = perktemp1 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp1 = perktemp1 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp1 = perktemp1 * 15 / 10;
+   }
+   temp1 += perktemp1;
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+                                                          s:"\nHealth Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+   if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
    SetActorProperty(1001,APROP_Health,temp1);
   }
+
   // Heal Mana [17.5% - 20.0%]
-  if (CurrentMana < MaxMana)
+  perkmanalimit = MaxMana;
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkmanalimit = perkmanalimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkmanalimit = perkmanalimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkmanalimit = perkmanalimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkmanalimit = perkmanalimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkmanalimit = perkmanalimit * 15 / 10;
+  }
+  if (CurrentMana < perkmanalimit)
   {
    check1 += 1;
-   temp3 = (MaxMana * random(175,200)) / 1000;
+   temp2 = (MaxMana * random(175,200)) / 1000;
+   perktemp3 = temp2;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp3 = perktemp3 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp3 = perktemp3 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp3 = perktemp3 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp3 = perktemp3 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp3 = perktemp3 * 15 / 10;
+   }
+   temp3 = perktemp3;
    CurrentMana += temp3;
-   if (CurrentMana > MaxMana) CurrentMana = MaxMana;
+
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
+                                                          s:"\nMana Restored: ",d:perktemp3,s:" VS [",d:temp2,s:"]");
+   if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
   }
+
   // Heal Stamina [70.0% - 80.0%]
-  if (MiscellaneousVars[21] < MiscellaneousVars[22])
+  perkstaminalimit = MiscellaneousVars[22];
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkstaminalimit = perkstaminalimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkstaminalimit = perkstaminalimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkstaminalimit = perkstaminalimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkstaminalimit = perkstaminalimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkstaminalimit = perkstaminalimit * 15 / 10;
+  }
+  if (MiscellaneousVars[21] < perkstaminalimit)
   {
    check1 += 1;
    temp2 = (MiscellaneousVars[22] * random(700,800)) / 1000;
-   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) temp2 = temp2 * 5 / 3;
-   MiscellaneousVars[21] += temp2;
-   if (MiscellaneousVars[21] > MiscellaneousVars[22]) MiscellaneousVars[21] = MiscellaneousVars[22];
+   perktemp2 = temp2;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp2 = perktemp2 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp2 = perktemp2 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp2 = perktemp2 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp2 = perktemp2 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp2 = perktemp2 * 15 / 10;
+   }
+   if (CheckActorInventory(1001,"WaterFlyingDress") > 0) perktemp2 = perktemp2 * 5 / 3;
+   MiscellaneousVars[21] += perktemp2;
+
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+                                                          s:"\nStamina Restored: ",d:perktemp2,s:" VS [",d:temp2,s:"]");
+   if (MiscellaneousVars[21] > perkstaminalimit) MiscellaneousVars[21] = perkstaminalimit;
   }
   if (check1 > 0)
   {
@@ -35804,13 +36056,33 @@ script "UseCustomInventoryItem" (int type)
   }
  } 
 
- if (type == 9 && CheckActorInventory(1001,"MagicWater") > 0) // Mercury Bandana
+ if (type == 9 && CheckActorInventory(1001,"MagicWater") > 0) // Magic Water
  {
-  if (CurrentMana < MaxMana)
+  perkmanalimit = MaxMana;
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkmanalimit = perkmanalimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkmanalimit = perkmanalimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkmanalimit = perkmanalimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkmanalimit = perkmanalimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkmanalimit = perkmanalimit * 15 / 10;
+  }
+  if (CurrentMana < perkmanalimit)
   {
    temp1 = (random(30,35) + ((MaxMana * 5) / 100));
-   CurrentMana += temp1;
-   if (CurrentMana > MaxMana) CurrentMana = MaxMana;
+   perktemp1 = temp1;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp1 = perktemp1 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp1 = perktemp1 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp1 = perktemp1 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp1 = perktemp1 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp1 = perktemp1 * 15 / 10;
+   }
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
+                                                          s:"\nMana Restored: ",d:perktemp1,s:" VS [",d:temp1,s:"]");
+   CurrentMana += perktemp1;
+   if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
    PlaySound(1001,"misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
    PlaySound(1001,"healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
    FadeRange(12,255,12,0.14,16,255,16,0.01,0.33);
@@ -35822,13 +36094,33 @@ script "UseCustomInventoryItem" (int type)
   }
  }
 
- if (type == 10 && CheckActorInventory(1001,"SageElixir") > 0) // Mercury Bandana
+ if (type == 10 && CheckActorInventory(1001,"SageElixir") > 0) // Sage Elixir
  {
-  if (CurrentMana < MaxMana)
+  perkmanalimit = MaxMana;
+  if (CharacterClass == 2)
+  {
+   if (MiscellaneousVars[10049] == 1) perkmanalimit = perkmanalimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkmanalimit = perkmanalimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkmanalimit = perkmanalimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkmanalimit = perkmanalimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkmanalimit = perkmanalimit * 15 / 10;
+  }
+  if (CurrentMana < perkmanalimit)
   {
    temp1 = (random(90,105) + ((MaxMana * 15) / 100));
-   CurrentMana += temp1;
-   if (CurrentMana > MaxMana) CurrentMana = MaxMana;
+   perktemp1 = temp1;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp1 = perktemp1 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp1 = perktemp1 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp1 = perktemp1 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp1 = perktemp1 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp1 = perktemp1 * 15 / 10;
+   }
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
+                                                          s:"\nMana Restored: ",d:perktemp1,s:" VS [",d:temp1,s:"]");
+   CurrentMana += perktemp1;
+   if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
    PlaySound(1001,"misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
    PlaySound(1001,"healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
    FadeRange(12,255,12,0.28,16,255,16,0.01,0.44);
@@ -35840,13 +36132,34 @@ script "UseCustomInventoryItem" (int type)
   }
  }
 
- if (type == 11 && CheckActorInventory(1001,"ElfinElixir") > 0) // Mercury Bandana
+ if (type == 11 && CheckActorInventory(1001,"ElfinElixir") > 0) // Elfin Elixir
  {
   temp1 = (MaxMana * 9) / 8;
-  if (CurrentMana < temp1)
+  perkmanalimit = temp1;
+  if (CharacterClass == 2)
   {
-   CurrentMana += MaxMana;
-   if (CurrentMana > temp1) CurrentMana = temp1;
+   if (MiscellaneousVars[10049] == 1) perkmanalimit = perkmanalimit * 11 / 10;
+   if (MiscellaneousVars[10049] == 2) perkmanalimit = perkmanalimit * 12 / 10;
+   if (MiscellaneousVars[10049] == 3) perkmanalimit = perkmanalimit * 13 / 10;
+   if (MiscellaneousVars[10049] == 4) perkmanalimit = perkmanalimit * 14 / 10;
+   if (MiscellaneousVars[10049] == 5) perkmanalimit = perkmanalimit * 15 / 10;
+  }
+  if (CurrentMana < perkmanalimit)
+  {
+   temp1 = MaxMana;
+   perktemp1 = temp1;
+   if (CharacterClass == 2)
+   {
+    if (MiscellaneousVars[10049] == 1) perktemp1 = perktemp1 * 11 / 10;
+    if (MiscellaneousVars[10049] == 2) perktemp1 = perktemp1 * 12 / 10;
+    if (MiscellaneousVars[10049] == 3) perktemp1 = perktemp1 * 13 / 10;
+    if (MiscellaneousVars[10049] == 4) perktemp1 = perktemp1 * 14 / 10;
+    if (MiscellaneousVars[10049] == 5) perktemp1 = perktemp1 * 15 / 10;
+   }
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
+                                                          s:"\nMana Restored: ",d:perktemp1,s:" VS [",d:temp1,s:"]");
+   CurrentMana += perktemp1;
+   if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
    PlaySound(1001,"misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
    PlaySound(1001,"healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
    FadeRange(12,255,12,0.43,16,255,16,0.01,0.55);
