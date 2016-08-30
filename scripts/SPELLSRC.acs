@@ -841,8 +841,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [10050] "Powerup Powerhouse" Perk Level
 // [10051] "Berserker Fit" Perk Level
 // [10052] "Berserker Fit EX" Perk Level
-// [10053] "Wand Mastery" Perk Level
-// [10054] "Wand Mastery EX" Perk Level
+// [10053] "Wand/Staff Mastery" Perk Level
+// [10054] "Wand/Staff Mastery EX" Perk Level
 // [11001] "Higher Learning" Grand Mastery Perk Level
 
 global int 22:MenuSystemVars[]; // Goto "MENUKEY" for array list.
@@ -7650,7 +7650,8 @@ script "ManaRegenerationStuff" ENTER
   Thing_ChangeTID(0,1001);
  }
 
- delaycount = 20;
+ // Base Delay Count
+ delaycount = 20; // 20 = 1 tic
 
  // Stamina Upgrades [Strife]
  StamUpgradeDelay = (MiscellaneousVars[317] * 2) / 3;
@@ -7722,7 +7723,7 @@ script "ManaRegenerationStuff" ENTER
 
  if (delaycount < 1) delaycount = 1;
  if (MenuSystemVars[0] != 0) delaycount = 0; // In-Game Menus are On
- if (DVDSSpecialArrayValue[0] == 0) MiscellaneousVars[211] -= delaycount; // If "Conscious"
+ if (DVDSSpecialArrayValue[0] == 0 && CurrentMana < MaxMana) MiscellaneousVars[211] -= delaycount; // If "Conscious" and Mana is below Max
   
  RegenedMana = 0;
  if (MiscellaneousVars[211] < 1)
@@ -7938,6 +7939,8 @@ script "ManaRegenerationStuff" ENTER
              s:"HumTimer: ",d:FocusHumTimer,s:"\n\n",
              s:"Timer: ",d:MiscellaneousVars[211],s:"\n",
              s:"DelayCount: ",d:delaycount,s:"\n",
+             s:"PerkFactor: ",d:perkfactor,s:"\n\n",
+             s:"Current/Max Mana: ",d:CurrentMana,s:" / ",d:MaxMana,s:"\n",
              s:"RegenedMana: ",d:RegenedMana,s:"\n"
             );
  }           
@@ -18180,7 +18183,7 @@ script "INGAMEMENUS_MECHANICS" ENTER
 	    else if (MiscellaneousVars[temp6] == 3 && MiscellaneousVars[25] >= temp4) { MiscellaneousVars[temp6] = 4; MiscellaneousVars[25] -= temp4; }
  	    else if (MiscellaneousVars[temp6] == 4 && MiscellaneousVars[25] >= temp5) { MiscellaneousVars[temp6] = 5; MiscellaneousVars[25] -= temp5; }
  	   }
-	   if (MenuSystemVars[1] == 2) // Wand Mastery [5]
+	   if (MenuSystemVars[1] == 2) // Wand/Staff Mastery [5]
 	   {
 	    temp6 = 10053; // MiscellaneousVars[] input
 	    temp1 = 3;	// Level 1 Cost
@@ -18714,8 +18717,8 @@ script "INGAMEMENUS_MECHANICS" ENTER
 // [10050] "Powerup Powerhouse" Perk Level
 // [10051] "Berserker Fit" Perk Level
 // [10052] "Berserker Fit EX" Perk Level
-// [10053] "Wand Mastery" Perk Level
-// [10054] "Wand Mastery EX" Perk Level
+// [10053] "Wand/Staff Mastery" Perk Level
+// [10054] "Wand/Staff Mastery EX" Perk Level
 // [11001] "Higher Learning" Grand Mastery Perk Level
 
 // Visual Stuff
@@ -19878,7 +19881,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 
 	  // Selection #2
 	  ytemp2 += -0.075;
-      perkname = "WAND MASTERY";
+      perkname = "WAND/STAFF MASTERY";
 	  temp4 = 10053; // MiscellaneousVars[]
 	  temp1 = MiscellaneousVars[temp4] * 10.0;
 	  temp3 = 0; // Cost for next level.
@@ -19890,13 +19893,13 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 	  if (MiscellaneousVars[temp4] == 4) temp3 = 19;
 	  if (MenuSystemVars[1] == 2)
 	  {
-	   HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - DAMAGE WITH WANDS INCREASED BY \cd",f:temp1,s:"%\c-",
+	   HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - DAMAGE WITH MAGICAL WANDS/STAVES INCREASED BY \cd",f:temp1,s:"%\c-",
 				  s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
 				  HUDMSG_ALPHA,  1996, CR_GOLD,  xtemp2, ytemp2, 0.03, 1.0);
 	  }
 	  else
 	  {
-	   HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - DAMAGE WITH WANDS INCREASED BY \cd",f:temp1,s:"%\c-",
+	   HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - DAMAGE WITH MAGICAL WANDS/STAVES INCREASED BY \cd",f:temp1,s:"%\c-",
 				  s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
 				  HUDMSG_ALPHA,  1996, CR_WHITE,  xtemp2, ytemp2, 0.03, 1.0);
 	  }
@@ -31818,7 +31821,7 @@ script "GetSigilDamage" (int attacktype, int radiustype)
  {
   if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE) // AAPTR_TARGET - the being who fires the shot
   {
-   if (GetCVar("dvdsdebug_showhitscaninformation") == 1) PrintBold(s:"Player Sigil Shot");
+   if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"Player Sigil Shot");
    rand1 = (extradmg1 + extradmg2 + extradmg3 + extradmg4 + extradmg5 + extradmg6) * 7 / 10;
    rand2 = (extradmg1 + extradmg2 + extradmg3 + extradmg4 + extradmg5 + extradmg6) * 13 / 10;
    finaldmg = damage + random(rand1,rand2);
@@ -31852,7 +31855,7 @@ script "GetSigilDamage" (int attacktype, int radiustype)
    int hpextradmg3 = (hpextradmg + hpextradmg2);
    finaldmg = (finaldmg * hpextradmg3) / 100;
 
-   if (GetCVar("dvdsdebug_showhitscaninformation") == 1)
+   if (GetCVar("dvdsdebug_showplayeratkinformation") == 1)
    {
     PrintBold(s:"Base: ",d:damage,
               s:"\nExtra1: ",d:extradmg1,
@@ -31875,7 +31878,7 @@ script "GetSigilDamage" (int attacktype, int radiustype)
   }
   else // If something that's NOT the player shoots it...
   {
-   if (GetCVar("dvdsdebug_showhitscaninformation") == 1) PrintBold(s:"Non-Player/Spectre/Entity Sigil Shot");
+   if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"Non-Player/Spectre/Entity Sigil Shot");
    prefinaldmg = damage;
    finaldmg = damage;
    if (attacktype != 0) finaldmg = finaldmg * random(1,4); // +STRIFEDAMAGE calculation
@@ -31883,7 +31886,7 @@ script "GetSigilDamage" (int attacktype, int radiustype)
    if (CheckActorClass(0, "EntityBossNew")) finaldmg = finaldmg * 6 / 4;
    if (CheckActorClass(0, "EntitySecondNew")) finaldmg = finaldmg * 6 / 4;
    if (CheckActorClass(0, "EntityAscended")) finaldmg = finaldmg * 9 / 4;
-   if (GetCVar("dvdsdebug_showhitscaninformation") == 1)
+   if (GetCVar("dvdsdebug_showplayeratkinformation") == 1)
    {
     PrintBold(s:"Base: ",d:damage,
               s:"\nPreTotal: ",d:prefinaldmg,
@@ -31893,7 +31896,7 @@ script "GetSigilDamage" (int attacktype, int radiustype)
  }
  else // Radius is NOT randomized
  {
-  if (GetCVar("dvdsdebug_showhitscaninformation") == 1)
+  if (GetCVar("dvdsdebug_showplayeratkinformation") == 1)
   {
    PrintBold(s:"Base: ",d:damage,
              s:"\nExtra1: ",d:extradmg1,
@@ -32768,12 +32771,12 @@ script "GetBFGTracers" (void)
  if (MiscellaneousVars[10029] >= 2) tracers += 4;
  if (MiscellaneousVars[10030] >= 1) tracers += 6;
  if (MiscellaneousVars[10030] >= 2) tracers += 6;
- if (GetCVar("dvdsdebug_showhitscaninformation") == 1) PrintBold(s:"BFG Tracers: ",d:tracers);
+ if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"BFG Tracers: ",d:tracers);
  SetResultValue(tracers);
 }
 
-// Returns Damage inflicted by Doom-style hitscan weapons [players]
-script "GetHitScanDMG" (int type, int puff)
+// Returns Damage inflicted by certain player attacks
+script "GetPlayerATKDMG" (int type, int puff)
 {
  // MiscellaneousVars[31] = Agility
  // MiscellaneousVars[32] = Defense
@@ -32785,9 +32788,10 @@ script "GetHitScanDMG" (int type, int puff)
  int rand1, rand2;
  int flagchecktype = 0;
  int perkfactor = 10000;
+ perkfactor = 10000;
  if (type == 1) // Pistol [Single]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10019] * random(100,200)) + (MiscellaneousVars[10020] * random(500,1000)));
+  perkfactor += ((MiscellaneousVars[10019] * 200) + (MiscellaneousVars[10020] * 1000));
   damage = random(1,4) * random(5,7); // 5 to 28
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 3) / 4; // 75% of Agility
@@ -32797,7 +32801,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 2) // Pistol [Dual]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10019] * random(100,200)) + (MiscellaneousVars[10020] * random(500,1000)));
+  perkfactor += ((MiscellaneousVars[10019] * 200) + (MiscellaneousVars[10020] * 1000));
   damage = random(2,4) * random(6,7); // 12 to 28
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 7) / 8; // 87.5% of Agility
@@ -32807,7 +32811,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 3) // Shotgun
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10021] * random(100,200)) + (MiscellaneousVars[10022] * random(500,1000)));
+  perkfactor += ((MiscellaneousVars[10021] * 200) + (MiscellaneousVars[10022] * 1000));
   damage = random(2,3) * 5; // 10 to 15
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 1); // 100% of Agility
@@ -32817,7 +32821,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 4) // Super Shotgun
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10021] * random(100,200)) + (MiscellaneousVars[10022] * random(500,1000)));
+  perkfactor += ((MiscellaneousVars[10021] * 200) + (MiscellaneousVars[10022] * 1000));
   damage = random(2,3) * random(5,6); // 10 to 18
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 5) / 4; // 125% of Agility
@@ -32827,7 +32831,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 5) // Chaingun
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10019] * random(100,200)) + (MiscellaneousVars[10020] * random(500,1000)));
+  perkfactor += ((MiscellaneousVars[10019] * 200) + (MiscellaneousVars[10020] * 1000));
   damage = random(1,4) * random(5,7); // 5 to 28
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 7) / 8; // 87.5% of Agility
@@ -32837,7 +32841,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 6) // Minigun
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10019] * random(100,200)) + (MiscellaneousVars[10020] * random(500,1000)));
+  perkfactor += ((MiscellaneousVars[10019] * 200) + (MiscellaneousVars[10020] * 1000));
   damage = random(2,4) * random(6,7); // 12 to 28
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 1); // 100% of Agility
@@ -32847,7 +32851,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 7) // Repeater
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10023] * random(100,200)) + (MiscellaneousVars[10024] * random(500,1000)));
+  perkfactor += ((MiscellaneousVars[10023] * 200) + (MiscellaneousVars[10024] * 1000));
   damage = random(1,3) * 6; // 6 to 18
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 3) / 2; // 150% of Agility
@@ -32857,7 +32861,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 8) // Rocket [main hit]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10025] * random(700,1400)) + (MiscellaneousVars[10026] * random(1100,2200)));
+  perkfactor += ((MiscellaneousVars[10025] * random(700,1400)) + (MiscellaneousVars[10026] * random(1100,2200)));
   damage = random(1,8) * 20; // 20 to 160
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 5) / 2; // 250% of Agility
@@ -32867,7 +32871,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 9) // Rocket [explosion]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10025] * random(700,1400)) + (MiscellaneousVars[10026] * random(1100,2200)));
+  perkfactor += ((MiscellaneousVars[10025] * random(700,1400)) + (MiscellaneousVars[10026] * random(1100,2200)));
   damage = 128;
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 5) / 2; // 250% of Agility
@@ -32877,7 +32881,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 10) // Repeater [explosion]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10023] * random(100,200)) + (MiscellaneousVars[10024] * random(500,1000)));
+  perkfactor += ((MiscellaneousVars[10023] * 200) + (MiscellaneousVars[10024] * 1000));
   damage = 7; // 7
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 1) / 5; // 20% of Agility
@@ -32887,7 +32891,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 11) // Plasma
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10023] * random(100,200)) + (MiscellaneousVars[10024] * random(500,1000)));
+  perkfactor += ((MiscellaneousVars[10023] * 200) + (MiscellaneousVars[10024] * 1000));
   damage = random(1,8) * 5; // 5 to 40
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 15) / 16; // 93.34% of Agility
@@ -32897,9 +32901,8 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 12) // Plasma1 [BFG2704]
  {
-  perkfactor = 10000;
-  perkfactor += ((MiscellaneousVars[10023] * random(100,200)) + (MiscellaneousVars[10024] * random(500,1000)));
-  perkfactor += ((MiscellaneousVars[10029] * random(125,250)) + (MiscellaneousVars[10030] * random(625,1250)));
+  perkfactor += ((MiscellaneousVars[10023] * 200) + (MiscellaneousVars[10024] * 1000));
+  perkfactor += ((MiscellaneousVars[10029] * 250) + (MiscellaneousVars[10030] * 1250));
   damage = random(1,8) * 4; // 4 to 32
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 1); // 100% of Agility
@@ -32909,9 +32912,8 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 13) // Plasma2 [BFG2704]
  {
-  perkfactor = 10000;
-  perkfactor += ((MiscellaneousVars[10023] * random(100,200)) + (MiscellaneousVars[10024] * random(500,1000)));
-  perkfactor += ((MiscellaneousVars[10029] * random(125,250)) + (MiscellaneousVars[10030] * random(625,1250)));
+  perkfactor += ((MiscellaneousVars[10023] * 200) + (MiscellaneousVars[10024] * 1000));
+  perkfactor += ((MiscellaneousVars[10029] * 250) + (MiscellaneousVars[10030] * 1250));
   damage = random(1,8) * 4; // 4 to 32
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 11) / 10; // 110% of Agility
@@ -32966,7 +32968,7 @@ script "GetHitScanDMG" (int type, int puff)
 
  if (type == 18) // DiarisHolyArrow [native]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10031] * random(900,1500)) + (MiscellaneousVars[10032] * random(3600,6000)));
   damage = 384 + random(-48,192); // 336 to 576 damage
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 5); // 500% of Agility
@@ -32980,7 +32982,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 19) // DiarisHolyArrow2XDmg [native]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10031] * random(900,1500)) + (MiscellaneousVars[10032] * random(3600,6000)));
   damage = 384 + random(-48,192); // 336 to 576 damage
   damage *= 2;
   damage = damage * perkfactor / 10000;
@@ -32997,7 +32999,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 20) // DiarisHolyArrow3XDmg [native]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10031] * random(900,1500)) + (MiscellaneousVars[10032] * random(3600,6000)));
   damage = 384 + random(-48,192); // 336 to 576 damage
   damage *= 3;
   damage = damage * perkfactor / 10000;
@@ -33014,7 +33016,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 21) // CrossbowFX1New [HERETIC]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10031] * 600) + (MiscellaneousVars[10032] * 2400));
   damage = 45 + random(-22,22); // 23 to 67 damage
   damage = damage * perkfactor / 10000;
   extradmg1 = ((MiscellaneousVars[31] * 5) / 2); // 250% of Agility
@@ -33024,7 +33026,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 22) // CrossbowFX2New [HERETIC]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10031] * 600) + (MiscellaneousVars[10032] * 2400));
   damage = 27 + random(-13,13); // 14 to 40 damage
   damage = damage * perkfactor / 10000;
   extradmg1 = ((MiscellaneousVars[31] * 3) / 2); // 150% of Agility
@@ -33034,7 +33036,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 23) // CrossbowFX3New [HERETIC]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10031] * 600) + (MiscellaneousVars[10032] * 2400));
   damage = 9 + random(-4,4); // 5 to 13 damage
   damage = damage * perkfactor / 10000;
   extradmg1 = ((MiscellaneousVars[31] * 1) / 2); // 50% of Agility
@@ -33044,17 +33046,17 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 24) // RipperNew [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  // perkfactor += 0;
   damage = 1 * random(1,8);
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = ((MiscellaneousVars[34] / 16) * random(1,8)); // 6.7% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = ((MiscellaneousVars[36] / 64) * random(1,8)); // 1.67% of Therapeusis
-  // extradmg2 = extradmg2 * perkfactor / 10000;
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 25) // ElectricBoltNew [STRIFE]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10031] * 600) + (MiscellaneousVars[10032] * 2400));
   damage = 25 + random(-12,12); // 10 to 40 damage
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 4) / 1; // 400% of Agility
@@ -33064,7 +33066,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 26) // PoisonBoltNew [STRIFE]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10031] * 600) + (MiscellaneousVars[10032] * 2400));
   damage = 25 + random(-12,12); // 10 to 40 damage
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[31] * 4) / 1; // 400% of Agility
@@ -33074,26 +33076,26 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 27) // BlasterPuffNew [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 18 + random(-9,9); // 4 to 32 damage
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 4); // 25% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[36] / 16); // 6.25% of Therapeusis
-  // extradmg2 = extradmg2 * perkfactor / 10000;
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 28) // BlasterFX1New [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 9 + random(-4,4); // 2 to 16 damage
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 8); // 12.5% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[36] / 32); // 3.125% of Therapeusis
  }
  if (type == 29) // GoldWandPuff1New [HERETIC]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10053] * random(500,1000)) + (MiscellaneousVars[10054] * random(2000,4000)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 8 + random(3,6);
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 4); // 25% of Sorcery
@@ -33103,7 +33105,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 30) // GoldWandPuff2New [HERETIC]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10053] * random(500,1000)) + (MiscellaneousVars[10054] * random(2000,4000)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 5 + random(-3,3); // 1 to 8
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 6); // 16.67% of Sorcery
@@ -33113,97 +33115,97 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 31) // HornRodFX1New [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 14 + random(-7,8); // 7 to 22
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 6); // 16.67% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[36] / 24); // 4.1667% of Therapeusis
  }
  if (type == 32) // HornRodFX2New [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 45 + random(-22,22); // 10 to 80
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 3); // 33.3% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[36] / 7); // 14.1414% of Therapeusis
  }
  if (type == 33) // PhoenixFX1New [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 45 + random(-22,22); // 10 to 80
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = ((MiscellaneousVars[34] * 2) / 3); // 66.7% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = ((MiscellaneousVars[36] * 2) / 7); // 28.571% of Therapeusis
  }
  if (type == 34) // PhoenixFX2New [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 9 + random(-4,4); // 2 to 16 damage
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 15); // 6.7% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[36] / 35); // 2.8571% of Therapeusis
  }
  if (type == 35) // MaceFX1New [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 9 + random(-4,4); // 2 to 16 damage
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 15); // 6.7% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[36] / 36); // 2.7778% of Therapeusis
  }
  if (type == 36) // MaceFX2New [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 27 + random(-13,13); // 6 to 48
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 5); // 20% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[36] / 12); // 8.333% of Therapeusis
  }
  if (type == 37) // MaceFX3New [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 18 + random(-9,9); // 4 to 32
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 10); // 10% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[36] / 24); // 4.1666% of Therapeusis
  }
  if (type == 38) // MaceFX4New [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 96 + random(-48,-48); // 18 to 144
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = ((MiscellaneousVars[34] * 6) / 7); // 83.333% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = ((MiscellaneousVars[36] * 2) / 7); // 28.5714% of Therapeusis
  }
  if (type == 39) // Sorcerer2FX1New [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 45 + random(-22,22); // 10 to 80
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = ((MiscellaneousVars[34] * 3) / 2); // 150% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = ((MiscellaneousVars[36] * 4) / 7); // 57.142% of Therapeusis
  }
  if (type == 40) // Sorcerer2FX3 [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 45 + random(-22,22); // 10 to 80
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = ((MiscellaneousVars[34] * 3) / 4); // 75% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = ((MiscellaneousVars[36] * 2) / 7); // 28.5714% of Therapeusis
  }
  if (type == 41) // GoldWandFX1New [HERETIC]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10053] * random(500,1000)) + (MiscellaneousVars[10054] * random(2000,4000)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 9 + random(-4,4); // 2 to 16 damage
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 3); // 33.3% of Sorcery
@@ -33213,7 +33215,7 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 42) // GoldWandFX2New [HERETIC]
  {
-  perkfactor = 10000 + ((MiscellaneousVars[10053] * random(500,1000)) + (MiscellaneousVars[10054] * random(2000,4000)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 5 + random(-3,3); // 1 to 8 damage
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 6); // 16.67% of Sorcery
@@ -33223,24 +33225,24 @@ script "GetHitScanDMG" (int type, int puff)
  }
  if (type == 43) // RainPillarNew [HERETIC]
  {
-  // perkfactor = 10000 + ((MiscellaneousVars[10031] * random(300,600)) + (MiscellaneousVars[10032] * random(1200,2400)));
+  perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 23 + random(-11,11); // 12 to 34 damage
-  // damage = damage * perkfactor / 10000;
+  damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] / 6); // 16.67% of Sorcery
-  // extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = (MiscellaneousVars[36] / 15); // 6.67% of Therapeusis
-  // extradmg2 = extradmg2 * perkfactor / 10000;
+  extradmg2 = extradmg2 * perkfactor / 10000;
  }
 
  if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE || puff == 1) // AAPTR_TARGET - the being who fires the shot
  {
-  if (GetCVar("dvdsdebug_showhitscaninformation") == 1) PrintBold(s:"Player Shot");
+  if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"Player Shot");
   rand1 = (extradmg1 + extradmg2 + extradmg3 + extradmg4 + extradmg5 + extradmg6) * 4 / 5;
   rand2 = (extradmg1 + extradmg2 + extradmg3 + extradmg4 + extradmg5 + extradmg6) * 6 / 5;
   finaldmg = damage + random(rand1,rand2);
   
   str actorname = GetActorClass(0);
-  if (GetCVar("dvdsdebug_showhitscaninformation") == 1)
+  if (GetCVar("dvdsdebug_showplayeratkinformation") == 1)
   {
    PrintBold(s:"Actor Class: ",s:actorname,
              s:"\n",
@@ -33258,10 +33260,10 @@ script "GetHitScanDMG" (int type, int puff)
  }
  else // Not the player
  {
-  if (GetCVar("dvdsdebug_showhitscaninformation") == 1) PrintBold(s:"Non-Player Shot");
+  if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"Non-Player Shot");
   finaldmg = damage;
   
-  if (GetCVar("dvdsdebug_showhitscaninformation") == 1)
+  if (GetCVar("dvdsdebug_showplayeratkinformation") == 1)
   {
    PrintBold(s:"Actor Class: ",s:actorname,
              s:"\n",
@@ -33274,7 +33276,7 @@ script "GetHitScanDMG" (int type, int puff)
  {
   int preboostdmg = finaldmg;
   finaldmg = finaldmg * 11 / 10;
-  if (GetCVar("dvdsdebug_showhitscaninformation") == 1)
+  if (GetCVar("dvdsdebug_showplayeratkinformation") == 1)
   {
   PrintBold(s:"PreBoost: ",d:preboostdmg,
             s:"\nTotal: ",d:finaldmg);
