@@ -7799,6 +7799,12 @@ script "ManaRegenerationStuff" ENTER
    if (CharacterClass == 1 && CheckActorInventory(1001,"TheOneRing") > 0) RegenedMana = RegenedMana * 6 / 8; // Illucia w/ Ring (75%)
    if (CharacterClass == 2 && CheckActorInventory(1001,"TheOneRing") > 0) RegenedMana = RegenedMana * 7 / 8; // Flora w/ Ring (87.5%)
  
+   if (PowerupTimer[12] > 0) RegenedMana = RegenedMana * 6 / 5; // Acceleratle = +20% Regen
+   if (PowerupTimer[15] > 0) RegenedMana = RegenedMana * 4 / 5; // Deceleratle = -20% Regen
+
+   // Poison = +8.334% Regen
+   if (PowerupTimer[16] > 0 && PowerupTimer[4] == 0) RegenedMana = RegenedMana * 13 / 12;
+
    // Ruinous Shield - sixths MP regeneration
    if (CharacterClass == 2 && CheckActorInventory(1001,"RuinousShield") > 0) RegenedMana = RegenedMana * 1 / 6; // (16.6%)
  
@@ -22331,6 +22337,10 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   if (PowerupTimer[15] > 0) staminaregenfinal = staminaregenfinal * 4 / 5; // Deceleratle
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Accel/Decel]: ",d:staminaregenfinal);
 
+  // Poison = -25% Regen
+  if (PowerupTimer[16] > 0 && PowerupTimer[4] == 0) staminaregenfinal = staminaregenfinal * 3 / 4;
+  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Poison]: ",d:staminaregenfinal);
+
   // Fatigue = -80% Regen
   if (PowerupTimer[18] > 0) staminaregenfinal /= 5;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Fatigue]: ",d:staminaregenfinal);
@@ -22465,6 +22475,10 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   if (PowerupTimer[12] > 0) staminaregenfinal = staminaregenfinal * 6 / 5; // Acceleratle
   if (PowerupTimer[15] > 0) staminaregenfinal = staminaregenfinal * 4 / 5; // Deceleratle
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Accel/Decel]: ",d:staminaregenfinal);
+
+  // Poison = +20% Degen
+  if (PowerupTimer[16] > 0 && PowerupTimer[4] == 0) staminaregenfinal = staminaregenfinal * 6 / 5;
+  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Poison]: ",d:staminaregenfinal);
 
   // Fatigue = +400% Degen
   if (PowerupTimer[18] > 0) staminaregenfinal = staminaregenfinal * 5;
@@ -26774,9 +26788,11 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   // Check Characters & Armor
   if (CharacterClass == 2)
   {
-   C3 = 100;
-   if (CheckActorInventory(1001,"DoveRibbon") > 0) C3 -= 33;
-   PoisonIncrement = PoisonIncrement * C3 / 100;
+   C3 = 1000;
+   if (CheckActorInventory(1001,"PearlyCorset") > 0) C3 -= 83;
+   if (CheckActorInventory(1001,"DoveRibbon") > 0) C3 -= 334;
+   if (CheckActorInventory(1001,"DivineShield") > 0) C3 -= 83;
+   PoisonIncrement = PoisonIncrement * C3 / 1000;
   }
   else
   if (CharacterClass == 0 || CharacterClass == 1)
@@ -38912,6 +38928,18 @@ script "WeaponAngleLoopSecondary" (int type, int cap, int setangle, int addangle
 // [SETADD]
 // 0 = Sets [value] to a Fixed Number
 // 1 = Adds/Subtracts the Value by [value]
+
+script "ChangeMana" (int setadd, int value)
+{
+ if (setadd == 0) // Sets the stat to a fixed value
+ {
+  CurrentMana = value;
+ }
+ else // Adds/Subtracts the stat
+ {
+  CurrentMana += value;
+ }
+}
 
 script "GiveStats" (int type, int setadd, int value)
 {
