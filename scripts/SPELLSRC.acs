@@ -19910,9 +19910,9 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 	  ytemp2 += -0.075;
       perkname = "SOUL MASTERY";
 	  temp4 = 10033; // MiscellaneousVars[]
-	  temp1 = MiscellaneousVars[temp4] * 6.0;
-	  temp2 = MiscellaneousVars[temp4] * 4.5;
-	  temp21 = MiscellaneousVars[temp4] * 2.5;
+	  temp1 = MiscellaneousVars[temp4] * 10.0;
+	  temp2 = MiscellaneousVars[temp4] * 6.25;
+	  temp21 = MiscellaneousVars[temp4] * 3.75;
 	  temp3 = 0; // Cost for next level.
       temp11 = 5; // Max Levels
 	  if (MiscellaneousVars[temp4] == 0) temp3 = 3;
@@ -21345,26 +21345,30 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
  }
 
- // ** Checks "user_PlayerDVDSSpecial[]" array on the player actors [used for various things, including disjointed MAP-specfic ACS scripts (TCOTD:A, etc)]
+ // ** Checks "user_PlayerDVDSSpecial[]" array on the player actors [used for various things, including disjointed MAP-specfic ACS scripts (TCOTD:A, Unloved, etc)]
  int DVDSSpecialArrayCheck = 0;
  while (DVDSSpecialArrayCheck < 256)
  {
   DVDSSpecialArrayValue[DVDSSpecialArrayCheck] = GetUserArray(1001,"user_PlayerDVDSSpecial",DVDSSpecialArrayCheck);
   DVDSSpecialArrayCheck++;
  }
- // DVDSSpecialArrayValue[1] = Sets MP/Mana to 0
+ // DVDSSpecialArrayValue[1] = Sets MP/Mana to 0 then unsets itself
  if (DVDSSpecialArrayValue[1] > 0)
  {
   CurrentMana = 0;
   DVDSSpecialArrayValue[1] = 0;
   SetUserArray(1001,"user_PlayerDVDSSpecial",1,0);
  }
- // DVDSSpecialArrayValue[2] = Sets Stamina to 0
+ // DVDSSpecialArrayValue[2] = Sets Stamina to 0 then unsets itself
  if (DVDSSpecialArrayValue[2] > 0)
  {
   MiscellaneousVars[21] = 0;
   DVDSSpecialArrayValue[2] = 0;
   SetUserArray(1001,"user_PlayerDVDSSpecial",2,0);
+ }
+ // DVDSSpecialArrayValue[3] = Unloved Specfic - Makes Hellcore Weapons drop 4x more often, etc :o
+ if (DVDSSpecialArrayValue[3] > 0) 
+ {
  }
 
  // Check for Sceptre Abilities
@@ -23832,6 +23836,7 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   if (HellcoreCoolRatio < 1) HellcoreCoolRatio = 1;
 
   if (CheckActorInventory(1001,"IsHaSatanNow") > 0) HellcoreCoolRatio = HellcoreCoolRatio * 16;
+  if (DVDSSpecialArrayValue[3] > 0) HellcoreCoolRatio = HellcoreCoolRatio * 2;
 
   HellcoreOverheatLevel -= HellcoreCoolRatio;
  }
@@ -28804,6 +28809,13 @@ script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
    else
    {
     DamageFactor = DamageFactor * 2 / 5;
+    if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"Hellcore Damage % Ratio : ",d:DamageFactor,s:" [base]");
+   }
+
+   // Playing Unloved halves heat ratio
+   if (DVDSSpecialArrayValue[3] > 0) 
+   {
+    DamageFactor = DamageFactor / 2;
     if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"Hellcore Damage % Ratio : ",d:DamageFactor,s:" [base]");
    }
 
@@ -39675,7 +39687,8 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Passed FRIENDLY Check: YES");
 
  int HellCoreRuinousDropChance = 5;
- if (CheckActorInventory(1001,"RuinousShield") > 0) HellCoreRuinousDropChance = 15;
+ if (CheckActorInventory(1001,"RuinousShield") > 0) HellCoreRuinousDropChance *= 3; // Ruinous Shield triples drop rate
+ if (DVDSSpecialArrayValue[3] > 0) HellCoreRuinousDropChance *= 4; // Playing Unloved sets this to drop 4x as often
  if (CharacterClass != 2) HellCoreRuinousDropChance = 0;
  // Monster Unique Drop Rates [Hellcore weapons]
  if (CheckActorClass(0,"DSDoomImp") == 1) 		DropItem(0,"ImpClawCI",1,HellCoreRuinousDropChance);
