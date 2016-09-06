@@ -7385,16 +7385,19 @@ script "HUDDisplay" ENTER
        // [98] is the Current Level of the Cacodemon's Eye
        // [99] is the Current Level of the Cacolantern's Eye
        // [100] is the Current Level of the Abaddon's Eye
+
        // [101] is the Current Level of the Hell Knight's Fist
        // [102] is the Current Level of the Baron of Hell's Fist
        // [103] is the Current Level of the Belphegor's Fist
        // [104] is the Current Level of the Bruiser Demon's Fist
        // [105] is the Current Level of the Archon of Hell's Fist
        // [106] is the Current Level of the Pyro Demon's Fist
+
        // [107] is the Current Level of the Death Incarnate's Skull
        // [108] is the Current Level of the Archvile's Hand
        // [109] is the Current Level of the Diabloist's Hand
        // [110] is the Current Level of the Flying Balrog's Fist
+
        // [111] is the Current Level of the Hades Elemental's Eye [?]
        // [112] is the Current Level of the Hades Overlord's Eye [?]
        Z2 = 0;
@@ -30252,7 +30255,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   // Unloved
   if (CheckActorClass(0, "AvatarNew"))
   {
-   // MaxHP *= 16;
+   MaxHP *= 16;
    if (MaxHP < 1) MaxHP = 1;
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\caMaxHP (Avatar): ",d:MaxHP);
   }
@@ -32197,6 +32200,43 @@ script "GetPunchStaminaUse" (int attacktype)
  SetResultValue(stamuse); 
 }
 
+script "GetKickStaminaUse" (int attacktype)
+{
+ int stamuse;
+ int PerkFactor;
+ int temp1, temp2;
+ if (attacktype == 0) // Kick [normal]
+ {
+  if (CharacterClass == 0) stamuse = 666;
+  if (CharacterClass == 1) stamuse = 500;
+  if (CharacterClass == 2) stamuse = 450;
+ }
+ else
+ if (attacktype == 1) // Roundhouse Kick [normal]
+ {
+  if (CharacterClass == 0) stamuse = 1665;
+  if (CharacterClass == 1) stamuse = 1250;
+  if (CharacterClass == 2) stamuse = 1125;
+ }
+ if (MiscellaneousVars[10035] > 0)
+ {
+  temp1 = 0;
+  if (MiscellaneousVars[10035] == 1) temp1 = 1;
+  if (MiscellaneousVars[10035] == 2) temp1 = 2;
+  if (MiscellaneousVars[10035] == 3) temp1 = 3;
+  if (MiscellaneousVars[10035] == 4) temp1 = 5;
+  if (MiscellaneousVars[10035] >= 5) temp1 = 7;
+  temp2 = 0;
+  if (MiscellaneousVars[10036] == 1) temp2 = 2;
+  if (MiscellaneousVars[10036] == 2) temp2 = 5;
+  PerkFactor = 20 - (temp1 + temp2);
+  stamuse = stamuse * PerkFactor / 20;
+ }
+ if (PowerupTimer[10] > 0) stamuse = stamuse * 19 / 20; // Oomph
+ if (PowerupTimer[23] > 0) stamuse = stamuse * 7 / 8; // Berserk
+ SetResultValue(stamuse); 
+}
+
 script "GetSceptreStaminaUse" (int attacktype)
 {
  int stamuse;
@@ -32412,6 +32452,14 @@ script "MeleeImpactRadius" (int attacktype)
  {
   radius = 64 + (MiscellaneousVars[35] / 2);
  }
+ else
+ if (attacktype == 7) // Thrust Kick
+ {
+ }
+ else
+ if (attacktype == 8) // Spinning/Roundhouse Kick
+ {
+ }
  if (CharacterClass == 0) radius = radius * 3 / 2;
  if (CharacterClass == 1) radius = radius * 5 / 4;
 
@@ -32492,6 +32540,14 @@ script "QuakeMeleeIntensity" (int attacktype)
  if (attacktype == 6) // Punch [w/ Gauntlets] (alt-fire)
  {
   intensity = 1 + (MiscellaneousVars[35] / 8);
+ }
+ else
+ if (attacktype == 7) // Thrust Kick
+ {
+ }
+ else
+ if (attacktype == 8) // Spinning/Roundhouse Kick
+ {
  }
  if (CharacterClass == 0) intensity = intensity * 3 / 2;
  if (CharacterClass == 1) intensity = intensity * 5 / 4;
@@ -32575,6 +32631,14 @@ script "QuakeMeleeDuration" (int attacktype)
   duration = 8;
   duration = duration + (MiscellaneousVars[35] / 10);
  }
+ else
+ if (attacktype == 7) // Thrust Kick
+ {
+ }
+ else
+ if (attacktype == 8) // Spinning/Roundhouse Kick
+ {
+ }
  if (CharacterClass == 0) duration = duration * 3 / 2;
  if (CharacterClass == 1) duration = duration * 5 / 4;
 
@@ -32657,6 +32721,14 @@ script "QuakeMeleeTremrad" (int attacktype)
  {
   tremrad = 1024;
   tremrad = tremrad + (MiscellaneousVars[35] * 4);
+ }
+ else
+ if (attacktype == 7) // Thrust Kick
+ {
+ }
+ else
+ if (attacktype == 8) // Spinning/Roundhouse Kick
+ {
  }
  if (CharacterClass == 0) tremrad = tremrad * 3 / 2;
  if (CharacterClass == 1) tremrad = tremrad * 5 / 4;
@@ -32907,6 +32979,97 @@ script "GetPunchDamage" (int altfire, int shockwave)
 
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 0) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage,s:" [Punch]");
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 1) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage,s:" [Uppercut]");
+ SetResultValue(damage);
+}
+
+// Kick Damage Checker
+script "GetKickDamage" (int altfire, int shockwave)
+{
+ int damage;
+ int strengthcounter;
+
+ SetActivator(1001);
+ str weapon = GetWeapon();
+ SetActivator(0);
+
+ if (CharacterClass == 0) damage = random(45,60); // 2.5x
+ if (CharacterClass == 1) damage = random(25,40); // 2.5x
+ if (CharacterClass == 2) damage = random(26,51); // 4.25x
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) { PrintBold(s:"BaseDmg: ",d:damage); } //PrintBold(d:damage);
+
+ // [STRIFE] Stamina Upgrades
+ damage = (damage * (4 + (MiscellaneousVars[317] * 3)) / 4);
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) { PrintBold(s:"StaminaDmg: ",d:damage,s:" StamUpgrades: ",d:MiscellaneousVars[317]); } //PrintBold(d:damage);
+
+ // Strength Stat Check [7 pts = roughly double the character's base kick damage]
+ for (strengthcounter = 0; strengthcounter < MiscellaneousVars[35]; strengthcounter++)
+ {
+  if (CharacterClass == 0) damage += random(2,8); // 2.5x
+  if (CharacterClass == 1) damage += random(2,5); // 2.5x
+  if (CharacterClass == 2) damage += random(3,9); // 4.25x
+ }
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) { PrintBold(s:"StrDmg: ",d:damage); } //PrintBold(d:damage);
+
+ // Berserk Check
+ if (CheckActorInventory(1001,"PowerStrength") > 0) damage = damage * 10;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) { PrintBold(s:"BerserkDmg: ",d:damage); } //PrintBold(d:damage);
+
+ // Flora Armor Checks
+ if (CharacterClass == 2) 
+ {
+  if (CheckActorInventory(1001,"FalconKnifeEarrings") > 0) Damage = Damage * 4 / 3; // +33.3~% Kick Damage
+  if (CheckActorInventory(1001,"SafeTeaShoes") > 0) Damage = Damage * 7 / 4; // +75% Kick Damage
+  if (GetCVar("dvdsdebug_showmeleeinformation") > 0) { PrintBold(s:"FloArmorDmg: ",d:damage); } //PrintBold(d:damage);
+ }
+
+ int PerkFactor;
+ int temp1, temp2;
+
+ if (shockwave > 0)
+ {
+  if (altfire == 0) damage = damage / 6;
+  if (altfire == 1) damage = damage / 5;
+
+  if (MiscellaneousVars[10035] > 0)
+  {
+   temp1 = 0;
+   if (MiscellaneousVars[10035] == 1) temp1 = 3;
+   if (MiscellaneousVars[10035] == 2) temp1 = 6;
+   if (MiscellaneousVars[10035] == 3) temp1 = 9;
+   if (MiscellaneousVars[10035] == 4) temp1 = 15;
+   if (MiscellaneousVars[10035] >= 5) temp1 = 21;
+   temp2 = 0;
+   if (MiscellaneousVars[10036] == 1) temp2 = 6;
+   if (MiscellaneousVars[10036] == 2) temp2 = 15;
+   PerkFactor = 20 + (temp1 + temp2);
+   damage = damage * PerkFactor / 20;
+   if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"MeleeDmg: (",s:weapon,s:") ",d:damage,s:" [Martial Arts Mastery Perk (Shockwave)]");
+  }
+ }
+ else
+ {
+  if (MiscellaneousVars[10035] > 0)
+  {
+   temp1 = 0;
+   if (MiscellaneousVars[10035] == 1) temp1 = 1;
+   if (MiscellaneousVars[10035] == 2) temp1 = 2;
+   if (MiscellaneousVars[10035] == 3) temp1 = 3;
+   if (MiscellaneousVars[10035] == 4) temp1 = 5;
+   if (MiscellaneousVars[10035] >= 5) temp1 = 7;
+   temp2 = 0;
+   if (MiscellaneousVars[10036] == 1) temp2 = 2;
+   if (MiscellaneousVars[10036] == 2) temp2 = 5;
+   PerkFactor = 40 + (temp1 + temp2);
+   damage = damage * PerkFactor / 40;
+   if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"MeleeDmg: (",s:weapon,s:") ",d:damage,s:" [Martial Arts Mastery Perk (Non-Shockwave)]");
+  }
+ }
+
+ if (altfire == 0) damage = damage;
+ if (altfire == 1) damage = damage / 4;
+
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 0) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage,s:" [Kick]");
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 1) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage,s:" [Roundhouse Kick]");
  SetResultValue(damage);
 }
 
@@ -34488,19 +34651,19 @@ script "ShowArmorStats" ENTER
                 s:"\cd+1 Balance\n",
                 s:"\cd+1.25% Magic Resistance\n",
 
+                s:"\cd+75% Damage Done By Kicks\n",
                 s:"\cd+25% Chance to Not Incur Slime/etc Damage\n",
                 s:"\cd-0.5% Hellcore Heating Speed\n",
                 s:"\cd+3.75% Chance to Completely Evade an Attack\n",
                 s:"\cd+10% Jump Strength\n",
-                s:ArmorString1,
 
+                s:ArmorString1,
                 s:ArmorString2,
                 s:"\cd-60% Stamina Use when Dashing/Air-Dashing\n",
                 s:"\cd-25% Dash/Air-Dash Cooldown Time\n",
                 s:"\cd-10% EXP Combo Timer Speed\n",
-                s:ArmorString4,
 
-                s:" \n",
+                s:ArmorString4,
                 s:" \n",
                 s:" \n",
                 s:" \n",
