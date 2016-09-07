@@ -8415,6 +8415,7 @@ script "LevelUpCode" ENTER // (void)
 	}	
     if (DVDSSpecialArrayValue[3] > 0) tempaeonpointincrease += random(1,2); // If playing "Unloved"
     if (DVDSSpecialArrayValue[4] > 0) tempaeonpointincrease += random(1,3); // If playing "TCOTD:A"
+    tempaeonpointincrease *= MiscellaneousVars[86];
 	MiscellaneousVars[25] += tempaeonpointincrease;
 
     // Increase Stats
@@ -9171,12 +9172,7 @@ script "SpellSelection" (int Dir)
 script "SpellQuickAssign" (int Slot, int Type)
 {
  if (MiscellaneousVars[2500] != 0) terminate; // cannot change spells in the menu
- if (PowerupTimer[20] > 0) // cannot cast spells while put to sleep :V
- {
-  PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
-  terminate; 
- }
- if (PowerupTimer[21] > 0) // cannot cast spells while silenced/muted :V
+ if (PowerupTimer[20] > 0 || PowerupTimer[21] > 0) // cannot cast spells while put to sleep/silenced/muted :V
  {
   PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
   terminate; 
@@ -9371,12 +9367,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 script "SpellCasting" (void)
 {
  if (MiscellaneousVars[2500] != 0) terminate; 
- if (PowerupTimer[20] > 0) // cannot cast spells while put to sleep :V
- {
-  PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
-  terminate; 
- }
- if (PowerupTimer[21] > 0) // cannot cast spells while silenced/muted :V
+ if (PowerupTimer[20] > 0 || PowerupTimer[21] > 0) // cannot cast spells while put to sleep :V
  {
   PlaySound(1001,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
   terminate; 
@@ -23938,7 +23929,7 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  //*****************************
 
  int AeonBonusChecker = GetCVar("dvds_aeonpointbonus");
- //if (ModType == 0 && GetCVar("dvds_aeonpointbonus") != 0) AeonBonusChecker = 0; // If in Classic Mode and the Aeon Point bonus option is off, don't check counts
+ int tempaeonpts;
  if (AeonBonusChecker == 1)
  {
   // Kills
@@ -23948,7 +23939,10 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
 
   if (MiscellaneousVars[62] < MiscellaneousVars[61])
   {
-   MiscellaneousVars[25] += 1; MiscellaneousVars[224] += 1; MiscellaneousVars[2033] = 105;
+   tempaeonpts = 1;
+   tempaeonpts *= MiscellaneousVars[86];
+
+   MiscellaneousVars[25] += tempaeonpts; MiscellaneousVars[224] += tempaeonpts; MiscellaneousVars[2033] = 105;
    MiscellaneousVars[62] += 1;
  
    if (PlayerLevel >= MiscellaneousVars[197])
@@ -23966,7 +23960,10 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  
   if (MiscellaneousVars[60] < MiscellaneousVars[59])
   {
-   MiscellaneousVars[25] += 1; MiscellaneousVars[224] += 1; MiscellaneousVars[2033] = 105;
+   tempaeonpts = 1;
+   tempaeonpts *= MiscellaneousVars[86];
+
+   MiscellaneousVars[25] += tempaeonpts; MiscellaneousVars[224] += tempaeonpts; MiscellaneousVars[2033] = 105;
    MiscellaneousVars[60] += 1;
  
    if (PlayerLevel >= MiscellaneousVars[197])
@@ -23984,7 +23981,10 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  
   if (MiscellaneousVars[58] < MiscellaneousVars[57])
   {
-   MiscellaneousVars[25] += 1; MiscellaneousVars[224] += 1; MiscellaneousVars[2033] = 105;
+   tempaeonpts = 1;
+   tempaeonpts *= MiscellaneousVars[86];
+
+   MiscellaneousVars[25] += tempaeonpts; MiscellaneousVars[224] += tempaeonpts; MiscellaneousVars[2033] = 105;
    MiscellaneousVars[58] += 1;
  
    if (PlayerLevel >= MiscellaneousVars[197])
@@ -31280,7 +31280,8 @@ script "GrabSeedOther" (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
  if (SeedType == 0) // Seed of Skill [special seed, 4+ AeonPts ]
  {
   SeedAmount = 4;
-  SeedAmount = SeedAmount * MiscellaneousVars[87];
+  SeedAmount *= MiscellaneousVars[87];
+  SeedAmount *= MiscellaneousVars[86];
   MiscellaneousVars[25] += SeedAmount;
  }
 
@@ -31677,7 +31678,6 @@ script "AeonPointKey" (int type)
   if (buttons & BT_ZOOM) AeonPtChecker *= 5;
   if (buttons & BT_RELOAD) AeonPtChecker *= 2;
   AeonIncrease *= AeonPtChecker;
-  AeonIncrease *= MiscellaneousVars[86];
  
   if (MiscellaneousVars[25] >= AeonPtChecker && PlayerLevel >= MiscellaneousVars[197])
   {
@@ -32455,10 +32455,12 @@ script "MeleeImpactRadius" (int attacktype)
  else
  if (attacktype == 7) // Thrust Kick
  {
+  radius = 24 + (MiscellaneousVars[35] / 4);
  }
  else
  if (attacktype == 8) // Spinning/Roundhouse Kick
  {
+  radius = 36 + (MiscellaneousVars[35] / 3);
  }
  if (CharacterClass == 0) radius = radius * 3 / 2;
  if (CharacterClass == 1) radius = radius * 5 / 4;
@@ -32544,10 +32546,12 @@ script "QuakeMeleeIntensity" (int attacktype)
  else
  if (attacktype == 7) // Thrust Kick
  {
+  intensity = 0 + (MiscellaneousVars[35] / 16);
  }
  else
  if (attacktype == 8) // Spinning/Roundhouse Kick
  {
+  intensity = 0 + (MiscellaneousVars[35] / 12);
  }
  if (CharacterClass == 0) intensity = intensity * 3 / 2;
  if (CharacterClass == 1) intensity = intensity * 5 / 4;
@@ -32634,10 +32638,14 @@ script "QuakeMeleeDuration" (int attacktype)
  else
  if (attacktype == 7) // Thrust Kick
  {
+  duration = 4;
+  duration = duration + (MiscellaneousVars[35] / 20);
  }
  else
  if (attacktype == 8) // Spinning/Roundhouse Kick
  {
+  duration = 6;
+  duration = duration + (MiscellaneousVars[35] / 14);
  }
  if (CharacterClass == 0) duration = duration * 3 / 2;
  if (CharacterClass == 1) duration = duration * 5 / 4;
@@ -32725,10 +32733,14 @@ script "QuakeMeleeTremrad" (int attacktype)
  else
  if (attacktype == 7) // Thrust Kick
  {
+  tremrad = 384;
+  tremrad = tremrad + ((MiscellaneousVars[35] * 7) / 4);
  }
  else
  if (attacktype == 8) // Spinning/Roundhouse Kick
  {
+  tremrad = 480;
+  tremrad = tremrad + ((MiscellaneousVars[35] * 13) / 4);
  }
  if (CharacterClass == 0) tremrad = tremrad * 3 / 2;
  if (CharacterClass == 1) tremrad = tremrad * 5 / 4;
@@ -40838,21 +40850,25 @@ script "StrifeAccuracyUpgrade" (void)
 {
  int OldAccuracy = GetActorProperty(1001,APROP_Accuracy);
  int NewAccuracy = OldAccuracy+10;
+ int tempaeonpts;
  MiscellaneousVars[318] += 1;
  if (MiscellaneousVars[318] < 0) MiscellaneousVars[318] = 0;
  if (MiscellaneousVars[318] > 11) MiscellaneousVars[318] = 11;
 
- if (MiscellaneousVars[318] == 1) MiscellaneousVars[25] += 11;
- if (MiscellaneousVars[318] == 2) MiscellaneousVars[25] += 13;
- if (MiscellaneousVars[318] == 3) MiscellaneousVars[25] += 15;
- if (MiscellaneousVars[318] == 4) MiscellaneousVars[25] += 17;
- if (MiscellaneousVars[318] == 5) MiscellaneousVars[25] += 19;
- if (MiscellaneousVars[318] == 6) MiscellaneousVars[25] += 21;
- if (MiscellaneousVars[318] == 7) MiscellaneousVars[25] += 23;
- if (MiscellaneousVars[318] == 8) MiscellaneousVars[25] += 25;
- if (MiscellaneousVars[318] == 9) MiscellaneousVars[25] += 27;
- if (MiscellaneousVars[318] == 10) MiscellaneousVars[25] += 29;
+ if (MiscellaneousVars[318] == 1) tempaeonpts += 11;
+ if (MiscellaneousVars[318] == 2) tempaeonpts += 13;
+ if (MiscellaneousVars[318] == 3) tempaeonpts += 15;
+ if (MiscellaneousVars[318] == 4) tempaeonpts += 17;
+ if (MiscellaneousVars[318] == 5) tempaeonpts += 19;
+ if (MiscellaneousVars[318] == 6) tempaeonpts += 21;
+ if (MiscellaneousVars[318] == 7) tempaeonpts += 23;
+ if (MiscellaneousVars[318] == 8) tempaeonpts += 25;
+ if (MiscellaneousVars[318] == 9) tempaeonpts += 27;
+ if (MiscellaneousVars[318] == 10) tempaeonpts += 29;
 
+ tempaeonpts *= MiscellaneousVars[86];
+ MiscellaneousVars[25] += tempaeonpts;
+ 
  SetActorProperty(1001,APROP_Accuracy,NewAccuracy);
  if (GetActorProperty(1001,APROP_Accuracy) > 100) { SetActorProperty(1001,APROP_Accuracy,100); NewAccuracy = 100; }
  
@@ -40872,20 +40888,24 @@ script "StrifeComboUpgrade" (void)
 
  int OldAccuracy = GetActorProperty(1001,APROP_Accuracy);
  int NewAccuracy = OldAccuracy+10;
+ int tempaeonpts;
  MiscellaneousVars[318] += 1;
  if (MiscellaneousVars[318] < 0) MiscellaneousVars[318] = 0;
  if (MiscellaneousVars[318] > 11) MiscellaneousVars[318] = 11;
 
- if (MiscellaneousVars[318] == 1) MiscellaneousVars[25] += 11;
- if (MiscellaneousVars[318] == 2) MiscellaneousVars[25] += 13;
- if (MiscellaneousVars[318] == 3) MiscellaneousVars[25] += 15;
- if (MiscellaneousVars[318] == 4) MiscellaneousVars[25] += 17;
- if (MiscellaneousVars[318] == 5) MiscellaneousVars[25] += 19;
- if (MiscellaneousVars[318] == 6) MiscellaneousVars[25] += 21;
- if (MiscellaneousVars[318] == 7) MiscellaneousVars[25] += 23;
- if (MiscellaneousVars[318] == 8) MiscellaneousVars[25] += 25;
- if (MiscellaneousVars[318] == 9) MiscellaneousVars[25] += 27;
- if (MiscellaneousVars[318] == 10) MiscellaneousVars[25] += 29;
+ if (MiscellaneousVars[318] == 1) tempaeonpts += 11;
+ if (MiscellaneousVars[318] == 2) tempaeonpts += 13;
+ if (MiscellaneousVars[318] == 3) tempaeonpts += 15;
+ if (MiscellaneousVars[318] == 4) tempaeonpts += 17;
+ if (MiscellaneousVars[318] == 5) tempaeonpts += 19;
+ if (MiscellaneousVars[318] == 6) tempaeonpts += 21;
+ if (MiscellaneousVars[318] == 7) tempaeonpts += 23;
+ if (MiscellaneousVars[318] == 8) tempaeonpts += 25;
+ if (MiscellaneousVars[318] == 9) tempaeonpts += 27;
+ if (MiscellaneousVars[318] == 10) tempaeonpts += 29;
+
+ tempaeonpts *= MiscellaneousVars[86];
+ MiscellaneousVars[25] += tempaeonpts;
 
  SetActorProperty(1001,APROP_Accuracy,NewAccuracy);
  if (GetActorProperty(1001,APROP_Accuracy) > 100) { SetActorProperty(1001,APROP_Accuracy,100); NewAccuracy = 100; }
