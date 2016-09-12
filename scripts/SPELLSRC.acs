@@ -3266,7 +3266,10 @@ script "HUDDisplay" ENTER
 
  int HUDMsgDelayBase = GetCVar("dvdsallhuds_refreshdelay");
  if (HUDMsgDelayBase < 1) HUDMsgDelayBase = 1;
- if (HUDMsgDelayBase > 140) HUDMsgDelayBase = 140;
+ if (HUDMsgDelayBase > 420) HUDMsgDelayBase = 420;
+ if (GetCVar("dvds_gfxeffectlevel") == 0) HUDMsgDelayBase *= 1;
+ else if (GetCVar("dvds_gfxeffectlevel") == 1) HUDMsgDelayBase *= 3;
+ else if (GetCVar("dvds_gfxeffectlevel") == 2) HUDMsgDelayBase *= 9;
  int HUDMsgDelayFixed = HUDMsgDelayBase * 1.0;
  HUDMsgDelayFixed /= 35;
 /*
@@ -20563,7 +20566,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 	 perkdescript2 = "\n        \cd+15%\c- EXP GAINED.";
 	 if (CharacterClass == 2) perkdescript2 = "\n        \cd+10%\c- EXP GAINED.";
 	 perkdescript3 = "\n        \cd+10%\c- COMBO TIMER GAINED PER KILL.";
-	 perkdescript4 = "\n        \cd+25%\c- AEONS ACCQUIRED ON LEVEL UP.";
+	 perkdescript4 = "\n        \cd+25%\c- AEON POINTS ACCQUIRED ON LEVEL UP.";
 	 if (MenuSystemVars[1] == 1)
 	 {
 	   HudMessage(s:perkname,
@@ -27757,6 +27760,8 @@ script "CursedShieldPain" (int UncursePts)
  if (CheckActorInventory(1001,"PearlyCorset") > 0) UncursePts += UncursePts;
  if (CheckActorInventory(1001,"DoveRibbon") > 0) UncursePts += UncursePts;
 
+ // MiscellaneousVars[241]
+
  if (CharacterClass == 2)
  {
   if (CheckActorInventory(1001,"RuinousShield") > 0)
@@ -33293,6 +33298,18 @@ script "GetHitScanXSpread" (int type)
   spreadfactor = 1.0 - ((MiscellaneousVars[10023] * 0.1) + (MiscellaneousVars[10024] * 0.15));
   spread = FixedMul(spread,spreadfactor);
  }
+ if (type == 6) // Strife's Electric Arrows
+ {
+  spread = 5.625;
+  spreadfactor = 1.0 - ((MiscellaneousVars[318] * 0.1));
+  spread = FixedMul(spread,spreadfactor);
+ }
+ if (type == 7) // Strife's Poison Arrows
+ {
+  spread = 5.625;
+  spreadfactor = 1.0 - ((MiscellaneousVars[318] * 0.1));
+  spread = FixedMul(spread,spreadfactor);
+ }
  if (GetCVar("dvdsdebug_accuracyspreadisplay") > 0) PrintBold(f:spread,s:" / ",f:spreadfactor);
  spread = spread>>16;
  SetResultValue(spread);
@@ -33337,15 +33354,53 @@ script "GetHitScanYSpread" (int type)
  SetResultValue(spread);
 }
 
+script "GetBFGTracerAngle" (void)
+{
+ int result = 90;
+ if (MiscellaneousVars[10029] >= 1) result += 22;
+ if (MiscellaneousVars[10029] >= 2) result += 23;
+ if (MiscellaneousVars[10030] >= 1) result += 33;
+ if (MiscellaneousVars[10030] >= 2) result += 34;
+ if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"BFG Tracer Angle: ",d:result);
+ SetResultValue(result);
+}
+
+script "GetBFGTracerVAngle" (void)
+{
+ int result = 32;
+ if (MiscellaneousVars[10029] >= 1) result += 8;
+ if (MiscellaneousVars[10029] >= 2) result += 8;
+ if (MiscellaneousVars[10030] >= 1) result += 12;
+ if (MiscellaneousVars[10030] >= 2) result += 12;
+ if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"BFG Tracer Vertical Angle: ",d:result);
+ SetResultValue(result);
+}
+
+script "GetBFGTracerRange" (void)
+{
+ int result = 1024;
+ if (MiscellaneousVars[10029] >= 1) result += 256;
+ if (MiscellaneousVars[10029] >= 2) result += 256;
+ if (MiscellaneousVars[10030] >= 1) result += 384;
+ if (MiscellaneousVars[10030] >= 2) result += 384;
+ if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"BFG Tracer Range: ",d:result);
+ SetResultValue(result);
+}
+
 script "GetBFGTracers" (void)
 {
- int tracers = 40;
- if (MiscellaneousVars[10029] >= 1) tracers += 4;
- if (MiscellaneousVars[10029] >= 2) tracers += 4;
- if (MiscellaneousVars[10030] >= 1) tracers += 6;
- if (MiscellaneousVars[10030] >= 2) tracers += 6;
- if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"BFG Tracers: ",d:tracers);
- SetResultValue(tracers);
+ int result = 40;
+ if (MiscellaneousVars[10029] >= 1) result += 4;
+ if (MiscellaneousVars[10029] >= 2) result += 4;
+ if (MiscellaneousVars[10030] >= 1) result += 6;
+ if (MiscellaneousVars[10030] >= 2) result += 6;
+ if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"BFG Tracers: ",d:result);
+ SetResultValue(result);
+}
+
+script "GetGFXEffectLevel" (void)
+{
+ SetResultValue(GetCVar("dvds_gfxeffectlevel"));
 }
 
 // Returns Damage inflicted by certain player attacks
@@ -35239,11 +35294,11 @@ script "ShowArmorStats" ENTER
 
                 s:"\cd+6.25% Magic-Focus Strength\n",
                 s:ArmorString3,
+                s:"\cd+33.3% Damage Done By Kicks\n",
                 s:ArmorString1,
                 s:ArmorString2,
-                s:ArmorString5,
 
-                s:" \n",
+                s:ArmorString5,
                 s:" \n",
                 s:" \n",
                 s:" \n",
