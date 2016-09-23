@@ -29218,24 +29218,44 @@ script "DrawBow" (int isbowdrawn)
 {
  int i = 0;
  int bowlevel;
+ int bowlevelbase;
+ int lvlforbowdraw;
  int strforbowdraw;
  int aglforbowdraw;
+ int perklvlforbowdraw;
  str BowLevelItem;
 
- bowlevel = PlayerLevel / 25;
- strforbowdraw = MiscellaneousVars[35] / 16;
- aglforbowdraw = MiscellaneousVars[31] / 10;
+ bowlevelbase = random(15,19);
+ lvlforbowdraw = PlayerLevel / 8; // Max of +25%
+ strforbowdraw = MiscellaneousVars[35] / 16; // Max of +32%
+ aglforbowdraw = MiscellaneousVars[31] / 10; // Max of +51%
+ perklvlforbowdraw = MiscellaneousVars[10031] * 10; // Max of +50%
+ bowlevel = bowlevelbase;
+ bowlevel += lvlforbowdraw;
  bowlevel += strforbowdraw;
  bowlevel += aglforbowdraw;
+ bowlevel += perklvlforbowdraw;
  if (CheckActorInventory(1001,"EvenstarNecklace") > 0) bowlevel = bowlevel * 4 / 3;
 
  if (bowlevel < 0) bowlevel = 0; // Min of 0
- if (bowlevel > 50) bowlevel = 50; // Max of 50
+ if (bowlevel > 100) bowlevel = 100; // Max of 50
+
+
  if (isbowdrawn == 1)
  {
+  if (GetCVar("dvdsdebug_showplayeratkinformation") == 1)
+  {
+   PrintBold(s:"Bow Movement Speed [Base]: ",d:bowlevelbase,s:"%",s:"\n",
+             s:"Movement Speed+ [LVL]: ",d:lvlforbowdraw,s:"%",s:"\n",
+             s:"Movement Speed+ [STR]: ",d:strforbowdraw,s:"%",s:"\n",
+             s:"Movement Speed+ [AGL]: ",d:aglforbowdraw,s:"%",s:"\n",
+             s:"Movement Speed+ [PERK]: ",d:perklvlforbowdraw,s:"%",s:"\n",
+			 s:"Bow Movement Speed [Final]: ",d:bowlevel,s:"%"
+            );
+  }
   if (bowlevel != MiscellaneousVars[8]) // [8] is for bow profiency
   {
-   for (i = 0; i < 51; i++)
+   for (i = 0; i < 101; i++)
    {
     BowLevelItem = StrParam(s:"BowDrawnSlowdown", d:i);
 
@@ -29250,7 +29270,7 @@ script "DrawBow" (int isbowdrawn)
  else
  {
   MiscellaneousVars[8] = -1;
-  for (i = 0; i < 51; i++)
+  for (i = 0; i < 101; i++)
   {
    BowLevelItem = StrParam(s:"BowDrawnSlowdown", d:i);
 
@@ -37511,6 +37531,11 @@ script "CheckWeaponFlash" (int modulous, int increment)
   SetResultValue(result);
  }
  //PrintBold(d:MiscellaneousVars[51],s:" / ",d:modulous,s:"    [",d:increment,s:"]");
+}
+
+script "CheckPlayerHealth" (void)
+{
+ SetResultValue(GetActorProperty(1001,APROP_Health));
 }
 
 script "LifebarOptionChecker" ENTER
