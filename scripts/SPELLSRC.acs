@@ -2026,16 +2026,48 @@ script "BuffTimer" (int type, int buffid, int time)
           129 = ??????\n
         ");
  }
- if (type == 1) // Set timer
+ if (type == 1) // Set timer [ignore all conditions like Buddha/God-Mode]
  {
   PowerupTimer[buffid] = time * 35;
  }
- if (type == 2) // Add/Subtract timer
+ if (type == 2) // Add/Subtract timer [ignore all conditions like Buddha/God-Mode]
  {
   PowerupTimer[buffid] += (time * 35);
  }
+ if (type == 3) // Set timer [in tics] [ignore all conditions like Buddha/God-Mode]
+ {
+  PowerupTimer[buffid] = time;
+ }
+ if (type == 4) // Add/Subtract timer in tics] [ignore all conditions like Buddha/God-Mode]
+ {
+  PowerupTimer[buffid] += time;
+ }
+
+ int ignorecommand = 0;
+ if (MiscellaneousVars[195] > 0) ignorecommand++; // If in mercy invincibility, no effect
+ if (CheckActorInventory(1001,"InvulnerabilitySpell") > 0) ignorecommand++; // if invulnerable, no effect
+ if (GetActorProperty(1001,APROP_INVULNERABLE) > 0) ignorecommand++; // if invulnerable, no effect
+ if (ignorecommand == 0)
+ { 
+  if (type == 5) // Set timer [do NOT ignore conditions like Buddha/God-Mode]
+  {
+   PowerupTimer[buffid] = time * 35;
+  }
+  if (type == 6) // Add/Subtract timer [do NOT ignore conditions like Buddha/God-Mode]
+  {
+   PowerupTimer[buffid] += (time * 35);
+  }
+  if (type == 7) // Set timer [in tics] [do NOT ignore conditions like Buddha/God-Mode]
+  {
+   PowerupTimer[buffid] = time;
+  }
+  if (type == 8) // Add/Subtract timer in tics] [do NOT ignore conditions like Buddha/God-Mode]
+  {
+   PowerupTimer[buffid] += time;
+  }
+ }
  if (PowerupTimer[buffid] < 0) PowerupTimer[buffid] = 0;
- if (PowerupTimer[buffid] > 999999) PowerupTimer[buffid] = 999999;
+ if (PowerupTimer[buffid] > 99999999) PowerupTimer[buffid] = 99999999;
 }
 
 script "StatCheck" (void)
@@ -31378,7 +31410,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   MaxHP = GetActorProperty(0,APROP_Health);
   if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) 
   {
-   PrintBold(s:"\chStart Speed: ",f:speed,s:"\n\n",
+   PrintBold(s:"\chStart Speed: ",f:Speed,s:"\n\n",
+             s:"\cpStart Balance: ",d:Balance,s:"\n\n",
              s:"\caStart Max HP: ",d:MaxHP);
   } 
 
@@ -31546,6 +31579,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
    if (Attack > 20.00) Attack = 20.00;
    if (Defense < 0.005) Defense = 0.005;
    if (Defense > 20.00) Defense = 20.00;
+   if (Balance < 1) Balance = 1;
+   if (Balance > 2500000) Balance = 2500000;
    if (MaxHP < 1) MaxHP = 1;
    if (MaxHP > 2147483647) MaxHP = 2147483647;
 
@@ -42940,11 +42975,16 @@ Script "NNSigilDamageUser" (int damage)
    int currenthealth = GetActorProperty(1001,APROP_HEALTH);
    // damage = % of damage taken instead of a direct value [DV-DS specfic]
    damage = MaxHealthTrue * damage / 100;
-   IF (GetActorProperty(1001,APROP_Invulnerable) == 0)
+
+   int ignorecommand = 0;
+   if (MiscellaneousVars[195] > 0) ignorecommand++; // If in mercy invincibility, no effect
+   if (CheckActorInventory(1001,"InvulnerabilitySpell") > 0) ignorecommand++; // if invulnerable, no effect
+   if (GetActorProperty(1001,APROP_INVULNERABLE) > 0) ignorecommand++; // if invulnerable, no effect
+   if (ignorecommand == 0)
    {
     //PrintBold(d:damage);
     SetActorProperty(1001,APROP_HEALTH,currenthealth-damage);  
-	//Thing_Damage2(0, damage, "NNSigilUse");
+	// Thing_Damage2(0, damage, "NNSigilUse");
    }
 }
 
