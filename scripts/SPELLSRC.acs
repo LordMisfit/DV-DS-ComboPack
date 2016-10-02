@@ -743,7 +743,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [1008] [Debugger, for easily setting coordinates with HUD testing]
 // [1009] [Debugger, for easily setting coordinates with HUD testing]
 // [1010] [Debugger, for easily setting coordinates with HUD testing]
-	// [1011 to 1999] are undefined so far :P
+	// [1011 to 1998] are undefined so far :P
+// [1999] Save Old HUD Toggle [for times where the HUD needs to be turned off fully]
 // [2000] HUD mod toggle >.>
 // [2001] HUD X Size
 // [2002] HUD Y Size
@@ -22392,9 +22393,16 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CheckActorInventory(1001,"Dedz") < 1) GiveActorInventory(1001,"Dedz", 1);
  }
 
+ if (ClassCheck == 0) // Will run the check only once at the beginning of a new game
+ {
+  MiscellaneousVars[1999] = -1;
+ }
  // Check for HUD type settings
- MiscellaneousVars[2000] = GetCVAR("dvds_newhud"); // 0 = Old HUD, 1 = DQH-ish Style
- if (MiscellaneousVars[2000] == 0) GiveActorInventory(1001,"DVDSOldHud",1); else TakeActorInventory(1001,"DVDSOldHud",9999); 
+ if (MiscellaneousVars[1999] == -1)
+ {
+  MiscellaneousVars[2000] = GetCVAR("dvds_newhud"); // 0 = Old HUD, 1 = DQH-ish Style
+  if (MiscellaneousVars[2000] == 0) GiveActorInventory(1001,"DVDSOldHud",1); else TakeActorInventory(1001,"DVDSOldHud",9999); 
+ }
 
  MiscellaneousVars[197] = GetCVAR("dvds_aeonstartlvl");
  if (MiscellaneousVars[197] < 0) MiscellaneousVars[197] = 0;
@@ -23004,6 +23012,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   MiscellaneousVars[241] = MaxHealthTrue;
   MiscellaneousVars[298] = MaxHealthTrue;
  }
+ if (ClassCheck == 3)
+ {
+ }
+ if (ClassCheck == 4)
+ {
+ }
  if (ClassCheck == 5) // Will run the check only once at the beginning of a new game
  {
   MiscellaneousVars[241] = GetActorProperty(1001,APROP_Health);
@@ -23217,15 +23231,59 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  // DVDSSpecialArrayValue[3] = Unloved Specfic - Makes Hellcore Weapons drop 4x more often, etc :o
  if (DVDSSpecialArrayValue[3] > 0) 
  {
+
+  DVDSSpecialArrayValue[3] = 0;
+  SetUserArray(1001,"user_PlayerDVDSSpecial",3,0);
  }
  // DVDSSpecialArrayValue[4] = TCOTD:A Specfic
  if (DVDSSpecialArrayValue[4] > 0) 
  {
+
+  DVDSSpecialArrayValue[4] = 0;
+  SetUserArray(1001,"user_PlayerDVDSSpecial",4,0);
  }
  // DVDSSpecialArrayValue[5] = Circus2 Specfic
  if (DVDSSpecialArrayValue[5] > 0) 
  {
+
+  DVDSSpecialArrayValue[5] = 0;
+  SetUserArray(1001,"user_PlayerDVDSSpecial",5,0);
  }
+ // DVDSSpecialArrayValue[6] = Make HUD invisible [for TITLEMAP usage]
+ if (DVDSSpecialArrayValue[6] > 0) 
+ {
+  if (MiscellaneousVars[1999] == -1)
+  {
+   MiscellaneousVars[1999] = MiscellaneousVars[2000];
+   if (MiscellaneousVars[2000] == 0) GiveActorInventory(1001,"DVDSOldHud",1); else TakeActorInventory(1001,"DVDSOldHud",9999); 
+   MiscellaneousVars[2000] = -1;
+  }
+
+  DVDSSpecialArrayValue[6] = 0;
+  SetUserArray(1001,"user_PlayerDVDSSpecial",6,0);
+ }
+ // DVDSSpecialArrayValue[7] = Make HUD visible again
+ if (DVDSSpecialArrayValue[7] > 0) 
+ {
+  if (MiscellaneousVars[1999] != -1)
+  {
+   MiscellaneousVars[2000] = MiscellaneousVars[1999];
+   if (MiscellaneousVars[2000] == 0) GiveActorInventory(1001,"DVDSOldHud",1); else TakeActorInventory(1001,"DVDSOldHud",9999); 
+   MiscellaneousVars[1999] = -1;
+  }
+
+  DVDSSpecialArrayValue[7] = 0;
+  SetUserArray(1001,"user_PlayerDVDSSpecial",7,0);
+ }
+ // DVDSSpecialArrayValue[8] = Remove all weapons [TITLEMAP]
+ if (DVDSSpecialArrayValue[8] > 0) 
+ {
+  ClearActorInventory(1001);
+  TakeActorInventory(1001,"SceptreOfEmpyrea",9999);
+  DVDSSpecialArrayValue[8] = 0;
+  SetUserArray(1001,"user_PlayerDVDSSpecial",8,0);
+ }
+
 
  // Check for Sceptre Abilities
  if (CharacterClass == 2 && PlayerLevel >= 8 && SceptreActualLevel >= 2)
@@ -35764,7 +35822,7 @@ script "GetPlayerATKDMG" (int type, int puff)
   extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = ((MiscellaneousVars[36] * 2) / 7); // 28.5714% of Therapeusis
  }
- if (type == 39) // Sorcerer2FX1New [HERETIC]
+ if (type == 39) // Sorcerer2FX1Player [HERETIC]
  {
   perkfactor += ((MiscellaneousVars[10053] * 1000) + (MiscellaneousVars[10054] * 4000));
   damage = 45 + random(-22,22); // 10 to 80
@@ -37815,7 +37873,7 @@ script "CheckBFG2704" (void)
  SetResultValue(GetCVar("dvds_BFG2704"));
 }
 
-str dvds_monsternames[338][2] =
+str dvds_monsternames[347][2] =
 {
 // DOOM 1/2
   // Monsters
@@ -38211,6 +38269,16 @@ str dvds_monsternames[338][2] =
   {"ThamuzNew", "\cfThamuz, The Dark God\c-"},
   {"TchernobogNew", "\cfTchernobog, The One That Binds\c-"},
 
+  // KDIZD Monsters
+  {"KDIZDChaingunner", "Chaingun Guy"},
+  {"DemonCube", "Demon Cube"},
+  {"HellsFury", "Hell's Fury"},
+  {"HellWarrior", "Hell Warrior"},
+  {"MaulerDemon", "Mauler Pinky"},
+  {"RapidFireTrooper", "Rapid Assault Zombieman"},
+  {"RifleZombie", "Rifle Zombie"},
+  {"StoneImp", "Stone Imp"},
+  {"Magmantis", "\cfMagmantis, Guardian of Demios\c-"},
 
 // Unloved Monsters  
 
@@ -38248,7 +38316,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
   int xpos = 0.0;
   int ypos = 0.0;
 
-  for (int i = 0; i < 338; i++)
+  for (int i = 0; i < 347; i++)
   {
    if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
   }
