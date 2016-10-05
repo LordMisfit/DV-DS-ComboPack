@@ -17,7 +17,6 @@ Thing Tags:
 
     1222		-	General Demonic Boss TIDs
 
-	1281		-	TID for Armor Bonuses [for color translations]
 	1537		-	TID for Seed Spawn system
 
 	1501			Main Player's Tension Aura
@@ -26,8 +25,11 @@ Thing Tags:
     2001		-	Spawned Spell Projectiles start with this TID
 	4443		-   Final TID for Healing Projectiles
 	4444		-	Spawned Spell Projectiles ultimately end up with this TID
+*/
+	int Player1TID = 1001;
 
-HudMessage Tags:
+/*	
+HudMessage ID Tags:
 		1		-	HP Gained/Lost [for damage counts]
 		2		-	YOU DIED text
 		3		-	Tunnel Vision Display [death]
@@ -164,7 +166,6 @@ Functions
 	["CalculateSpellBaseAngles"]	-	Works for auto-determining spreads for Glyph-type spells and Raging Spirits [for now]
 	["IncreaseHellcoreHeat"]		-	Hellcore Overheating/Damage Script [ran with shooting Hellcore-class weapons]
 	["SeedLimitChecker"] 			-	Checks to Remove Seeds on the Map if too many have been picked up already.
-	["ArmorBonusCheckCharacter"]	-	Makes Armor Bonuses check for Flora's presense in the game in order to change them over to other items.
 	["HellcoreWeaponCheckCharacter"]-	Checks and Removes Hellcore weapons when Deggaris or Illucia are detected as the current character
 	["GauntletsCheckCharacter"]		-	Checks to see if you already possess Sauron's Gauntlets so they cannot appear more than once.
 	["GauntletFlashEffect"]			-	Creates the Screen Flash Effect when Hitting Someone with Sauron's Gauntlets
@@ -1999,6 +2000,54 @@ function int SpellCostCheck(int checktype)
 //******SCRIPTS******
 //*******************
 //*******************
+
+script "CheckTID" (int TID)
+{
+ int Amount;
+ int Amount2;
+ int Amount3;
+ int Amount4;
+ int Total;
+ if (TID == 1001) // Player's Main TID
+ {
+  Amount = ThingCount(T_NONE, TID);
+  Amount2 = ThingCountName("DeggarisMontegger", TID);
+  Amount3 = ThingCountName("IlluciaHenderShot", TID);
+  Amount4 = ThingCountName("FloraBriscoletti", TID);
+  Total = Amount - (Amount2 + Amount3 + Amount4);
+  if (Total == 0)
+  {
+   PrintBold(
+             s:"\c[Green]",
+			 d:TID,s:" [Total]: ",d:Total,s:"\n\n",
+
+			 d:TID,s:" [general]: ",d:Amount,s:"\n\n",
+
+             d:TID,s:" [Deggaris]: ",d:Amount2,s:"\n",
+             d:TID,s:" [Illucia]: ",d:Amount3,s:"\n",
+             d:TID,s:" [Flora]: ",d:Amount4,s:"\n"
+            );
+  }
+  else
+  {
+   PrintBold(
+             s:"\c[DarkRed]",
+			 d:TID,s:" [Total]: ",d:Total,s:"\n\n",
+
+			 d:TID,s:" [general]: ",d:Amount,s:"\n\n",
+
+             d:TID,s:" [Deggaris]: ",d:Amount2,s:"\n",
+             d:TID,s:" [Illucia]: ",d:Amount3,s:"\n",
+             d:TID,s:" [Flora]: ",d:Amount4,s:"\n"
+            );
+  }
+ }
+ else
+ {
+  Amount = ThingCount(T_NONE, TID);
+  PrintBold(d:TID,s:": ",d:Amount);
+ }
+}
 
 script "BuffTimer" (int type, int buffid, int time)
 {
@@ -17269,7 +17318,7 @@ script "EmulateGiveArmorBonus" (int C5)
 {
  int I1, I2, Z1, Z2, C1, C2;
 
- if (CharacterClass != 2) // Stops Flora from getting armor benefits and sets the item's Args[3] to 1 to make the item fail to pickup
+ if (CharacterClass != 2) // Stops Flora from getting armor benefits and sets the item's result to 1 to make the item fail to pickup
  {
   If (C5 <= 0) C5 = 1;
 
@@ -25415,7 +25464,7 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
    if (GetCVar("dvds_deathmusic") == 6 && MiscellaneousVars[12] == 284) SetMusic("",0);
   }
 
-  // "YOU DIED!" msg :V
+  // "YOU DIED!" msg [HudMessage id 2] :V
   if (MiscellaneousVars[12] >= 4)
   {
    MiscellaneousVars[179] += 1;
@@ -25432,7 +25481,7 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   }
   else
   {
-  HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
+   HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
    MiscellaneousVars[179] = 0;
   }
 
@@ -29486,17 +29535,13 @@ script "ArmorBonusEyeGlow" (void)
 {
  if (CharacterClass != 2)
  {
-  if (CurrentArmorClass == 0) { SetThingSpecial(0,0,0,0,0,1,0); Thing_SetTranslation(1281,18); } // If you have no Armor Class
-  if (CurrentArmorClass == 1) { SetThingSpecial(0,0,0,0,0,1,0); Thing_SetTranslation(1281,18); } // If you have Green Armor Class
-  if (CurrentArmorClass == 2) { SetThingSpecial(0,0,0,0,0,2,0); Thing_SetTranslation(1281,22); } // If you have Blue Armor Class
-  if (CurrentArmorClass == 3) { SetThingSpecial(0,0,0,0,0,3,0); Thing_SetTranslation(1281,20); } // If you have Stone Armor [1] Class
-  if (CurrentArmorClass == 4) { SetThingSpecial(0,0,0,0,0,4,0); Thing_SetTranslation(1281,21); } // If you have Diamond Armor [1] Class
-  if (CurrentArmorClass == 5) { SetThingSpecial(0,0,0,0,0,3,0); Thing_SetTranslation(1281,20); } // If you have Stone Armor [2] Class
-  if (CurrentArmorClass == 6) { SetThingSpecial(0,0,0,0,0,6,0); Thing_SetTranslation(1281,21); } // If you have Diamond Armor [2] Class
- }
- else
- {
-  SetThingSpecial(0,0,0,0,0,0,2); // Sets Args[4] to 2 so the item can know to transform into another set of items if Flora is detected as the current character.
+  if (CurrentArmorClass == 0) Thing_SetTranslation(0,18); // If you have no Armor Class
+  if (CurrentArmorClass == 1) Thing_SetTranslation(0,18); // If you have Green Armor Class
+  if (CurrentArmorClass == 2) Thing_SetTranslation(0,22); // If you have Blue Armor Class
+  if (CurrentArmorClass == 3) Thing_SetTranslation(0,20); // If you have Stone Armor [1] Class
+  if (CurrentArmorClass == 4) Thing_SetTranslation(0,21); // If you have Diamond Armor [1] Class
+  if (CurrentArmorClass == 5) Thing_SetTranslation(0,20); // If you have Stone Armor [2] Class
+  if (CurrentArmorClass == 6) Thing_SetTranslation(0,21); // If you have Diamond Armor [2] Class
  }
 }
 
@@ -29657,18 +29702,6 @@ script "CursedShieldPain" (int UncursePts)
    MiscellaneousVars[202] += UncursePts;
    // PrintBold(s:"+",d:UncursePts,s:" (",d:MiscellaneousVars[202],s:")");
   }
- }
-}
-// Checks for DivineShield in inventory for the Ruinous Shield PICKUP.
-script "DivineShieldChecker" (void)
-{
- if (CheckActorInventory(1001,"DivineShield") > 0)
- {
-  SetThingSpecial(0,0,0,0,0,0,1); // Sets Args[4] to 1 so the item can know to make the shield vanish
- }
- else
- {
-  SetThingSpecial(0,0,0,0,0,0,0); // Sets Args[4] to 0 so the item can know to NOT make the shield vanish
  }
 }
 
@@ -30672,14 +30705,6 @@ script "CheckChainsaw" (void)
  else SetResultValue(0);
 }
 
-// Makes Armor Bonuses check for Flora's presense in the game in order to change them over to other items
-script "ArmorBonusCheckCharacter" (void)
-{
- if (CharacterClass == 0) SetThingSpecial(0,0,0,0,0,0,0);
- if (CharacterClass == 1) SetThingSpecial(0,0,0,0,0,0,1);
- if (CharacterClass == 2) SetThingSpecial(0,0,0,0,0,0,2); // Sets Args[4] to 2 so the item can know to transform into another set of items if Flora is detected as the current character.
-}
-
 // Keeps Diabloist Locked on players as targets.
 script "DiabloistGravityLock" (void)
 {
@@ -30865,7 +30890,7 @@ script "SauronItemSpawnerCheck" (void)
  }
 }
 
-// script: Red Tunnel Vision/Heartbeat Effect when badly injured
+// script: Red Tunnel Vision/Heartbeat Effect when badly injured [HudMessage id 4]
 script "TunnelVisionControl" ENTER
 {
  int LowHealth, CriticalHealth;
@@ -30892,7 +30917,7 @@ script "TunnelVisionControl" ENTER
   }
 }
 
-// script
+// script [HudMessage ids 3 & 4]
 script "DeathTunnelVision" ENTER
 {
   if (GetActorProperty(0, APROP_HEALTH) <= 0)
