@@ -645,6 +645,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [256] stored PhoenixRodAmmo [for Flora for Forced Pistol Restarts]
 // [257] stored MaceAmmo [for Flora for Forced Pistol Restarts]
 	// [258 to 273] are undefined so far :P
+// [271] Saves player's XVel when using the menus
+// [272] Saves player's YVel when using the menus
+// [273] Saves player's ZVel when using the menus
 // [274] hold the "jump" var
 // [275] hold the "crouch" var
 // [276] hold the "jiggle left" var
@@ -17777,6 +17780,11 @@ script "MENUKEY" (void)
 {
  if (MenuSystemVars[0] == 0)
  {
+  MiscellaneousVars[271] = GetActorVelX(1001);
+  MiscellaneousVars[272] = GetActorVelY(1001);
+  MiscellaneousVars[273] = GetActorVelZ(1001);
+  SetActorVelocity(1001, 0, 0, 0, 0, 0);
+
   MenuSystemVars[0] = 1; // Turns On
   MiscellaneousVars[2500] = 1;
  }
@@ -17797,7 +17805,19 @@ script "MENUKEY" (void)
   MenuSystemVars[10004] = 0; // Left Timer Off
   MenuSystemVars[10005] = 0; // Right Timer Off
   MenuSystemVars[10006] = 0; // Back Timer Off
+
+  SetActorVelocity(1001, MiscellaneousVars[271], MiscellaneousVars[272], MiscellaneousVars[273], 0, 0);
+  MiscellaneousVars[271] = 0;
+  MiscellaneousVars[272] = 0;
+  MiscellaneousVars[273] = 0;
  }
+}
+
+function void GetPerkSound (void)
+{
+ SetActivator(1001); 
+ ActivatorSound("DraQue/gainperk",127); 
+ SetActivator(0);
 }
 
 // Mechanical Stuff
@@ -17874,11 +17894,11 @@ script "INGAMEMENUS_MECHANICS" ENTER
 	   temp3 = 5 * MiscellaneousVars[280] / 100; // Level 3 Cost
 	   temp4 = 8 * MiscellaneousVars[280] / 100; // Level 4 Cost
 	   temp5 = 12 * MiscellaneousVars[280] / 100; // Level 5 Cost
-	        if (MiscellaneousVars[temp6] == 0 && MiscellaneousVars[25] >= temp1) { MiscellaneousVars[temp6] = 1; MiscellaneousVars[25] -= temp1; }
-	   else if (MiscellaneousVars[temp6] == 1 && MiscellaneousVars[25] >= temp2) { MiscellaneousVars[temp6] = 2; MiscellaneousVars[25] -= temp2; }
-	   else if (MiscellaneousVars[temp6] == 2 && MiscellaneousVars[25] >= temp3) { MiscellaneousVars[temp6] = 3; MiscellaneousVars[25] -= temp3; }
-	   else if (MiscellaneousVars[temp6] == 3 && MiscellaneousVars[25] >= temp4) { MiscellaneousVars[temp6] = 4; MiscellaneousVars[25] -= temp4; }
-	   else if (MiscellaneousVars[temp6] == 4 && MiscellaneousVars[25] >= temp5) { MiscellaneousVars[temp6] = 5; MiscellaneousVars[25] -= temp5; }
+	        if (MiscellaneousVars[temp6] == 0 && MiscellaneousVars[25] >= temp1) { MiscellaneousVars[temp6] = 1; MiscellaneousVars[25] -= temp1; GetPerkSound(); }
+	   else if (MiscellaneousVars[temp6] == 1 && MiscellaneousVars[25] >= temp2) { MiscellaneousVars[temp6] = 2; MiscellaneousVars[25] -= temp2; GetPerkSound(); }
+	   else if (MiscellaneousVars[temp6] == 2 && MiscellaneousVars[25] >= temp3) { MiscellaneousVars[temp6] = 3; MiscellaneousVars[25] -= temp3; GetPerkSound(); }
+	   else if (MiscellaneousVars[temp6] == 3 && MiscellaneousVars[25] >= temp4) { MiscellaneousVars[temp6] = 4; MiscellaneousVars[25] -= temp4; GetPerkSound(); }
+	   else if (MiscellaneousVars[temp6] == 4 && MiscellaneousVars[25] >= temp5) { MiscellaneousVars[temp6] = 5; MiscellaneousVars[25] -= temp5; GetPerkSound(); }
 	  }
 	  if (MenuSystemVars[1] == 2) // MagiUp [5]
 	  {
@@ -22635,6 +22655,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    MiscellaneousVars[2502] = 1;
   }
  }
+ if (MenuSystemVars[0] == 1) // If the in-game menus are on, half velocity
+ {
+  SetActorVelocity(1001, 0, 0, 0, 0, 0);
+ }
 
  int jiggledecrease = random(4,6);
  if (CheckActorInventory(1001,"EvenstarNecklace") > 0) jiggledecrease += random(2,3);
@@ -24267,11 +24291,11 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  // Check Dash Timer
  if (MiscellaneousVars[166] > 0) 
  { 
-  MiscellaneousVars[166]--;
   GiveActorInventory(1001,"PlayerDashing",1);
   GiveActorInventory(1001,"DodgeGhostOn",1);
   GiveActorInventory(1001,"DodgeMeleeBoost",1);
-  if (GetActorZ(1001) - GetActorFloorZ(1001) <= 0) SpawnForced("DashPuff",GetActorX(1001),GetActorY(1001),GetActorZ(1001)+(8*65536),0,0);
+  if (MenuSystemVars[0] == 0) MiscellaneousVars[166]--;
+  if (MenuSystemVars[0] == 0) { if (GetActorZ(1001) - GetActorFloorZ(1001) <= 0) SpawnForced("DashPuff",GetActorX(1001),GetActorY(1001),GetActorZ(1001)+(8*65536),0,0); }
  }
  else
  {
