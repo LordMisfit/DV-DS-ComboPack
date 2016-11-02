@@ -16649,54 +16649,59 @@ script "CreateTranslationTables" OPEN
  
 }
 
-// {-10-} Mana Recovery Items
-
-script "CheckManaLevels" ENTER
+// Mana Recovery Items
+script "CheckManaLevels" (int overmana)
 {
  int C1, I1, C2, I2, G1, G2, G3, G4;
  int MaxManaLimit = MaxMana * 2;
 
- // Runs to Check for Mana Pickup Items
- if (CurrentMana >= MaxMana)
+ int result = 0;
+ if (overmana == 0 && CurrentMana < MaxMana) result = 1;
+ if (overmana == 1 && CurrentMana < MaxManaLimit) result = 1;
+ SetResultValue(result);
+}
+
+// ManaCube Pickup script
+script "PickupManaCube" (int type, int overmana)
+{
+ int I1, I2, Z1, Z2, C1, C2;
+ int GiveManaAmount;
+ int MaxManaDouble = MaxMana * 2;
+ if (type == 1) // Small
  {
-  if (CurrentMana >= MaxManaLimit) CurrentMana = MaxManaLimit;
-  SetAmmoCapacity("DoomSpellMana", 0);
+  GiveManaAmount = 50;
  }
  else
+ if (type == 2) // Mediym
  {
-  SetAmmoCapacity("DoomSpellMana", 99999);
-  G3 = CheckInventory("DoomSpellMana");
-  TakeInventory("DoomSpellMana", G3);
-  if (CheckActorInventory(1001,"SauronHelmet") > 0)
-  {  
-   G3 = G3 * 9 / 8;
-  }
-  if (CharacterClass == 0 && CheckActorInventory(1001,"SauronGauntlets") > 0) G3 = G3 * 5 / 4;
-  if (CharacterClass == 1 && CheckActorInventory(1001,"SauronGauntletsIllucia") > 0) G3 = G3 * 5 / 4;
-  if (CharacterClass == 2 && CheckActorInventory(1001,"SauronGauntletsFlora") > 0) G3 = G3 * 5 / 4;
-  if (CheckActorInventory(1001,"TheOneRing") > 0)
-  {  
-   if (CharacterClass == 2) G3 = G3 * 5 / 4; else G3 = G3 / 2;
-  }
-
-  CurrentMana += G3;
-  if (G3 > 0)
-  {
-   if (CurrentMana >= MaxMana) CurrentMana = MaxMana;
-   //if (MiscellaneousVars[2000] == 0) HudMessage(s:"+",d:G3,s:" Mana";0,3419,cr_blue,0.036,0.081,0.75);
-  }
-  G3 = 0;
-
-
-  if (CurrentMana >= MaxMana)
-  {
-   if (CurrentMana >= MaxManaLimit) CurrentMana = MaxManaLimit;
-   SetAmmoCapacity("DoomSpellMana", 0);
-  }
+  GiveManaAmount = 125;
  }
- Delay(1);
- Restart;
+ else
+ if (type == 3) // Large
+ {
+  GiveManaAmount = 350;
+ }
+
+ if (CheckActorInventory(1001,"SauronHelmet") > 0) GiveManaAmount = GiveManaAmount * 9 / 8; // Sauron Helmet = 112.5%
+ if (CharacterClass == 0 && CheckActorInventory(1001,"SauronGauntlets") > 0) GiveManaAmount = GiveManaAmount * 5 / 4; // Sauron Gauntlets = 125%
+ if (CharacterClass == 1 && CheckActorInventory(1001,"SauronGauntletsIllucia") > 0) GiveManaAmount = GiveManaAmount * 5 / 4; // Sauron Gauntlets = 125%
+ if (CharacterClass == 2 && CheckActorInventory(1001,"SauronGauntletsFlora") > 0) GiveManaAmount = GiveManaAmount * 5 / 4; // Sauron Gauntlets = 125%
+ if (CheckActorInventory(1001,"TheOneRing") > 0)
+ {  
+  if (CharacterClass == 2) GiveManaAmount = GiveManaAmount * 5 / 4;	// The One Ring [Flora] = 125%
+                      else GiveManaAmount = GiveManaAmount / 2;		// The One Ring [Marines] = 50%
+ }
+
+ int ManaMultiplier;
+ if (GetCVar("dvds_manaitemmultiplier") > -1 && GetCVar("dvds_manaitemmultiplier") < 20) ManaMultiplier = (GetCVar("dvds_manaitemmultiplier") + 1) * 100;
+ if (GetCVar("dvds_manaitemmultiplier") > 19 && GetCVar("dvds_manaitemmultiplier") < 39) ManaMultiplier = (GetCVar("dvds_manaitemmultiplier") - 19) * 5;
+ GiveManaAmount = GiveManaAmount * ManaMultiplier / 100;
+
+ CurrentMana += GiveManaAmount;
+ if (overmana == 0 && CurrentMana > MaxMana) CurrentMana = MaxMana;
+ if (overmana == 1 && MaxManaDouble > MaxMana) CurrentMana = MaxManaDouble;
 }
+
 
 // Defines the Buildup to Sauravatar's appearance [DVI-DS]
 script "DVI-MainEyeDeath2" (void)
@@ -17240,15 +17245,7 @@ script "MaxHPBonusPickup" (void)
  if (CharacterClass == 1) BonusMaxHP = MaxHealthTrue / 420;
  if (CharacterClass == 2) BonusMaxHP = MaxHealthTrue / 440;
  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [Base]: ",d:BonusMaxHP);
-/*
- PerkFactor = ((MiscellaneousVars[10001] * 500) + (MiscellaneousVars[10002] * 1250)) + 10000;
- BonusMaxHP = BonusMaxHP * PerkFactor / 10000; // "LifeUp" and "LifeUp EX" perks.
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [LifeUp Perk]: ",d:BonusMaxHP);
 
- PerkFactor = (MiscellaneousVars[317] * 1250) + 10000;
- BonusMaxHP = BonusMaxHP * PerkFactor / 10000; // [STRIFE-Compatibility] Times "Stamina Upgraded
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [StaminaUpgrade (Strife)]: ",d:BonusMaxHP);
-*/
  if (CharacterClass == 0) HPError = MaxHealthTrue / 1200; // Deggaris has one more HP to his Error for the least amount of HP each [1200]
  if (CharacterClass == 1) HPError = MaxHealthTrue / 1260; // Illucia has one more HP to her Error for the middle amount of HP each [1260]
  if (CharacterClass == 2) HPError = MaxHealthTrue / 1320; // Flora has one more HP to her Error for the most amount of HP each [1320]
@@ -17724,6 +17721,7 @@ script "CheckArmorLevels" (int C5)
   if (C5 == 6 && CurrentArmorClass <= 6 && Z1 < 5000) SetResultValue(1);
  }
 }
+
 
 // Emulates Main Armor Item Pickups [Applies Only to Deggaris and Illucia]
 script "PickupArmorMain" (int C5)
@@ -34447,13 +34445,20 @@ script "MeleeImpactRadius" (int attacktype)
  {
   radius = 36 + (MiscellaneousVars[35] / 3);
  }
+ int baseradius = radius;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"EXPLRadius [Base]: ",d:radius);
+ if (MiscellaneousVars[317] > 0) radius = (radius * (8 + (MiscellaneousVars[317] * 3)) / 8);
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"EXPLRadius [StaminaUpgrades]: ",d:radius);
  if (CharacterClass == 0) radius = radius * 3 / 2;
  if (CharacterClass == 1) radius = radius * 5 / 4;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"EXPLRadius [ClassCheck]: ",d:radius);
 
  if (PowerupTimer[7] > 0) radius = radius * 6 / 5; // 1.2x Radius [Divine Avatar]
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"EXPLRadius [Divine]: ",d:radius);
  if (CheckActorInventory(1001,"PowerStrength") > 0) radius = radius * 7 / 4; // 1.75x Radius [Berserk]
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"EXPLRadius [Berserk]: ",d:radius);
 
- if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"EXPLRadius: ",d:radius);
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"EXPLRadius [Final]: ",d:radius,s:" [Base: ",d:baseradius,s:"]");
  SetResultValue(radius);
 }
 
@@ -34538,12 +34543,21 @@ script "QuakeMeleeIntensity" (int attacktype)
  {
   intensity = 0 + (MiscellaneousVars[35] / 12);
  }
+ int baseintensity = intensity;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Intensity [Base]: ",d:intensity);
+ if (MiscellaneousVars[317] > 0) intensity += ((MiscellaneousVars[317] * 3) / 8);
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Intensity [StaminaUpgrades]: ",d:intensity);
  if (CharacterClass == 0) intensity = intensity * 3 / 2;
  if (CharacterClass == 1) intensity = intensity * 5 / 4;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Intensity [CharacterCheck]: ",d:intensity);
 
- if (CheckActorInventory(1001,"PowerStrength") > 0) intensity += 1;
+ if (CheckActorInventory(1001,"PowerStrength") > 0) 
+ {
+  if (intensity <= 0) intensity += 1; else intensity = (intensity * 3) / 2;
+ }
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Intensity [Berserk]: ",d:intensity);
 
- if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Intensity: ",d:intensity);
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Intensity [Final]: ",d:intensity,s:" [Base: ",d:baseintensity,s:"]");
  SetResultValue(intensity);
 }
 script "QuakeMeleeDuration" (int attacktype)
@@ -34632,13 +34646,20 @@ script "QuakeMeleeDuration" (int attacktype)
   duration = 6;
   duration = duration + (MiscellaneousVars[35] / 14);
  }
+ int baseduration = duration;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Duration [Base]: ",d:duration);
+ if (MiscellaneousVars[317] > 0) duration = (duration * (8 + (MiscellaneousVars[317] * 3)) / 8);
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Duration [StaminaUpgrades]: ",d:duration);
  if (CharacterClass == 0) duration = duration * 3 / 2;
  if (CharacterClass == 1) duration = duration * 5 / 4;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Duration [CharacterCheck]: ",d:duration);
 
  if (PowerupTimer[7] > 0) duration = duration * 3 / 2;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Duration [DivineAvatar]: ",d:duration);
  if (CheckActorInventory(1001,"PowerStrength") > 0) duration *= 4;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Duration [Berserk]: ",d:duration);
 
- if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Duration: ",d:duration);
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"Duration [Final]: ",d:duration,s:" [Base: ",d:baseduration,s:"]");
  SetResultValue(duration);
 }
 script "QuakeMeleeTremrad" (int attacktype)
@@ -34727,13 +34748,20 @@ script "QuakeMeleeTremrad" (int attacktype)
   tremrad = 480;
   tremrad = tremrad + ((MiscellaneousVars[35] * 13) / 4);
  }
+ int basetremrad = tremrad;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"TremRad [Base]: ",d:tremrad);
+ if (MiscellaneousVars[317] > 0) tremrad = (tremrad * (8 + (MiscellaneousVars[317] * 3)) / 8);
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"TremRad [StaminaUpgrades]: ",d:tremrad);
  if (CharacterClass == 0) tremrad = tremrad * 3 / 2;
  if (CharacterClass == 1) tremrad = tremrad * 5 / 4;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"TremRad [CharacterCheck]: ",d:tremrad);
 
  if (PowerupTimer[7] > 0) tremrad = tremrad * 3 / 2;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"TremRad [DivineAvatar]: ",d:tremrad);
  if (CheckActorInventory(1001,"PowerStrength") > 0) tremrad *= 8;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"TremRad [Berserk]: ",d:tremrad);
 
- if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"TremRad: ",d:tremrad);
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"TremRad [Final]: ",d:tremrad,s:" [Base: ",d:basetremrad,s:"]");
  SetResultValue(tremrad);
 }
 
@@ -34942,6 +34970,8 @@ script "GetPunchDamage" (int altfire, int shockwave)
   if (altfire == 0) damage = damage / 6;
   if (altfire == 1) damage = damage / 5;
 
+  if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"MeleeDmg [Shockwave]: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Martial Arts Mastery Perk (Shockwave)]");
+  previousdamage = damage;
   if (MiscellaneousVars[10035] > 0)
   {
    temp1 = 0;
@@ -34955,11 +34985,12 @@ script "GetPunchDamage" (int altfire, int shockwave)
    if (MiscellaneousVars[10036] == 2) temp2 = 1125;
    PerkFactor = 1000 + (temp1 + temp2);
    damage = damage * PerkFactor / 1000;
-   if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"MeleeDmg: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Martial Arts Mastery Perk (Shockwave)]");
+   if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"MeleeDmg [Shockwave]: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Martial Arts Mastery Perk (Shockwave)]");
   }
  }
  else
  {
+  previousdamage = damage;
   if (MiscellaneousVars[10035] > 0)
   {
    temp1 = 0;
@@ -34981,7 +35012,7 @@ script "GetPunchDamage" (int altfire, int shockwave)
  If(StrIcmp(weapon, "FistDeggaris") == 0 || StrIcmp(weapon, "FistIllucia") == 0 || StrIcmp(weapon, "FistFlora") == 0)
  {
   if (altfire == 0) damage = damage;
-  if (altfire == 1) damage = damage / 4;
+  //if (altfire == 1) damage = damage / 4;
  }
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 0) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Punch]");
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 1) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Uppercut]");
