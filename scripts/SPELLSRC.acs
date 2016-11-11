@@ -8562,12 +8562,15 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
  int OldExp4 = RealExpGain;
 
  // "Higher Learning" Grand Mastery Perk
- if (MiscellaneousVars[11001] > 0)
+ if (MiscellaneousVars[11001] == 1)
  {
-  //PrintBold(d:RealExpGain,s:" [Base (EXPGain)]");
   if (CharacterClass == 0 | CharacterClass == 1) RealExpGain = RealExpGain * 115 / 100; // EXP Multiplier Option
   if (CharacterClass == 2) RealExpGain = RealExpGain * 110 / 100; // EXP Multiplier Option
-  //PrintBold(d:RealExpGain,s:" [Higher Learning (EXPGain)]");
+ }
+ if (MiscellaneousVars[11001] == 2)
+ {
+  if (CharacterClass == 0 | CharacterClass == 1) RealExpGain = RealExpGain * 130 / 100; // EXP Multiplier Option
+  if (CharacterClass == 2) RealExpGain = RealExpGain * 120 / 100; // EXP Multiplier Option
  }
  if (GameSkill() == SKILL_VERY_EASY) RealExpGain = RealExpGain * 25 / 8; // 312.5%
  else if (GameSkill() == SKILL_EASY) RealExpGain = RealExpGain * 5 / 2; // 250%
@@ -8717,12 +8720,9 @@ script "LevelUpCode" ENTER // (void)
      if (PlayerLevel >= 195) tempaeonpointincrease += 2;
      // 16
     }
-    if (MiscellaneousVars[11001] > 0) // "Higher Learning" Grand Mastery Perk
-	{ 
-	 //PrintBold(d:tempaeonpointincrease,s:" [base (AeonPts)]");
-	 tempaeonpointincrease = tempaeonpointincrease * 5 / 4; 
-	 //PrintBold(d:tempaeonpointincrease,s:" [Higher Learning (AeonPts)]"); 
-	}	
+    if (MiscellaneousVars[11001] == 1) tempaeonpointincrease = tempaeonpointincrease * 5 / 4;  // "Higher Learning" Grand Mastery Perk
+    if (MiscellaneousVars[11001] == 2) tempaeonpointincrease = tempaeonpointincrease * 3 / 2;  // "Higher Learning" Grand Mastery Perk [Level 2]
+
     if (DVDSSpecialArrayValue[3] > 0) tempaeonpointincrease += random(1,2); // If playing "Unloved"
     if (DVDSSpecialArrayValue[4] > 0) tempaeonpointincrease += random(1,3); // If playing "TCOTD:A"
     if (DVDSSpecialArrayValue[5] > 0) tempaeonpointincrease += random(2,4); // If playing "Circus2"
@@ -21873,14 +21873,32 @@ script "INGAMEMENUS_DISPLAYS" ENTER
     SetFont("DVDSSMLFONT"); // DQHUDFONTSTATUS
     xtemp1 = (HudXRange * 50000 / 100000) * 1.0; // 0.5;
     ytemp1 = (HudYRange *  8125 / 100000) * 1.0; // 0.038125;
-    HudMessage(s:"Grand-Mastery Perks";  HUDMSG_ALPHA,  1903, CR_WHITE,  xtemp1, ytemp1, 0.03, 1.0);
+    HudMessage(s:"GRAND-MASTERY PERKS";  HUDMSG_ALPHA,  1903, CR_WHITE,  xtemp1, ytemp1, 0.03, 1.0);
 
 	
     // Selection #1
 	SetFont("DVDSSMLFONT"); // DQHUDFONTSTATUS
     xtemp2 = (HudXRange * 0 / 100000) * 1.0 + 0.1; // -0.10;
     ytemp2 = (HudYRange * 15000 / 100000) * 1.0 + 0.1; // -0.15;
-	if (MiscellaneousVars[11001] > 0)
+	if (MiscellaneousVars[11001] == 2)
+	{
+     perkname = "\c[Green]HIGHER LEARNING [LEVEL 2]\c- -";
+	 perkdescript1 = "";
+	 if (CharacterClass == 2) perkdescript1 = "\n        \cd+20%\c- SCEPTRE EXP GAINED.";
+	 perkdescript2 = "\n        \cd+30%\c- EXP GAINED.";
+	 if (CharacterClass == 2) perkdescript2 = "\n        \cd+20%\c- EXP GAINED.";
+	 perkdescript3 = "\n        \cd+20%\c- COMBO TIMER GAINED PER KILL.";
+	 perkdescript4 = "\n        \cd+50%\c- AEON POINTS ACCQUIRED ON LEVEL UP.";
+	 if (MenuSystemVars[1] == 1) { textcolor = CR_GOLD; } else { textcolor = CR_WHITE; }
+	 HudMessage(s:perkname,
+                s:perkdescript1,
+                s:perkdescript2,
+                s:perkdescript3,
+	            s:perkdescript4;  
+			    HUDMSG_ALPHA,  1997, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
+	}
+	else
+	if (MiscellaneousVars[11001] == 1)
 	{
      perkname = "\c[Green]HIGHER LEARNING\c- -";
 	 perkdescript1 = "";
@@ -23054,7 +23072,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (MiscellaneousVars[10051] == 5) perks3mastered++;
  if (MiscellaneousVars[10053] == 5) perks3mastered++;
 
- if (perks3mastered >= 5) { MiscellaneousVars[11001] = 1; } // Higher Learning Enabled
+ if (perks3mastered >= 15) { MiscellaneousVars[11001] = 2; } // Higher Learning Lvl 2 Enabled
+ else if (perks3mastered >= 5) { MiscellaneousVars[11001] = 1; } // Higher Learning Enabled
  else { MiscellaneousVars[11001] = 0; } // Higher Learning Disabled
  
  int TempMaxHealth = MaxHealthTrue;
@@ -30634,13 +30653,9 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
    C2 = C2 * MiscellaneousVars[88] / 100;
 
    // "Higher Learning" Grand Mastery Perk
-   if (MiscellaneousVars[11001] > 0) 
-   { 
-    //PrintBold(d:C2,s:" [base SceptreEXP]");
-    C2 = C2 * 110 / 100; 
-	//PrintBold(d:C2,s:" [Higher Learning (SceptreEXP)]"); 
-   }
-
+   if (MiscellaneousVars[11001] == 1) C2 = C2 * 110 / 100; 
+   if (MiscellaneousVars[11001] == 2) C2 = C2 * 120 / 100; 
+ 
    if (ModType == 0) C2 = C2 * 4 / 3; // Classic Doom 1/2 / Heretic / Hexen / Strife
    MiscellaneousVars[203] += C2;
 
@@ -42551,12 +42566,8 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
    }
 
    // "Higher Learning" Grand Mastery Perk
-   if (MiscellaneousVars[11001] > 0) 
-   { 
-    //PrintBold(d:EXPTimerIncrease,s:" [base (ComboTimer)]");
-    EXPTimerIncrease = EXPTimerIncrease * 11 / 10; 
-	//PrintBold(d:EXPTimerIncrease,s:" [Higher Learning (ComboTimer)]"); 
-   }
+   if (MiscellaneousVars[11001] == 1) EXPTimerIncrease = EXPTimerIncrease * 11 / 10; 
+   if (MiscellaneousVars[11001] == 2) EXPTimerIncrease = EXPTimerIncrease * 12 / 10; 
 
    if (PowerupTimer[7] > 0) EXPTimerIncrease = EXPTimerIncrease * 5 / 4;
    MiscellaneousVars[157] += EXPTimerIncrease;
