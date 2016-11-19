@@ -13817,6 +13817,7 @@ ACTOR MageWandSmokeNew
   +NODAMAGETHRUST
   RenderStyle Translucent
   Alpha 0.6
+  Scale 0.75
   States
   {
   Spawn:
@@ -13827,11 +13828,12 @@ ACTOR MageWandSmokeNew
 
 ACTOR MageWandMissileNew : FastProjectile
 {
+  var int user_randompain;
   Speed 184
-  Radius 12
-  Height 8
+  Radius 9 // 12
+  Height 6 // 8
   Damage (ACS_NamedExecuteWithResult("GetPlayerATKDMG",44)) // 5
-  Scale 1
+  Scale 0.75
   +RIPPER
   +CANNOTPUSH
   +NODAMAGETHRUST
@@ -13843,6 +13845,16 @@ ACTOR MageWandMissileNew : FastProjectile
   States
   {
   Spawn:
+    MWN2 C 0 NoDelay Bright
+	{
+	 A_SetUserVar("user_randompain",2);
+	 if (ACS_NamedExecuteWithResult("MiscVarCheckDECORATE",10051) == 1) { A_SetUserVar("user_randompain",7); }
+	 if (ACS_NamedExecuteWithResult("MiscVarCheckDECORATE",10051) == 2) { A_SetUserVar("user_randompain",13); }
+	 if (ACS_NamedExecuteWithResult("MiscVarCheckDECORATE",10051) == 3) { A_SetUserVar("user_randompain",20); }
+	 if (ACS_NamedExecuteWithResult("MiscVarCheckDECORATE",10051) == 4) { A_SetUserVar("user_randompain",28); }
+	 if (ACS_NamedExecuteWithResult("MiscVarCheckDECORATE",10051) == 5) { A_SetUserVar("user_randompain",37); }
+	 if (random(1,100) <= user_randompain) { A_ChangeFlag("FORCEPAIN", TRUE); }
+	}
     MWN2 CD 4 Bright
     Loop
   Death:
@@ -13855,6 +13867,13 @@ ACTOR MageWandMissileNew : FastProjectile
   }
 }
 
+ACTOR MageWandMissile2New : MageWandMissileNew
+{
+  Radius 9 // 12
+  Height 6 // 8
+  Damage (ACS_NamedExecuteWithResult("GetPlayerATKDMG",45)) // 5
+}
+
 ACTOR SapphireWandNew : FloraWeapon
 {
   Weapon.Kickback 150
@@ -13863,12 +13882,21 @@ ACTOR SapphireWandNew : FloraWeapon
   Weapon.YAdjust 9
   Tag "$TAG_MWEAPWAND"
   Inventory.PickupMessage "Picked up a \cvSapphire Wand\c-!"
+  Inventory.PickupSound "pickuphellcore"
   States
   {
   Spawn:
     SWND A 0 NoDelay
 	{
 	 if (CountInv("SapphireWandNew",AAPTR_PLAYER1) > 0)
+	 {
+	  A_SpawnItemEx("DoomSpellMana3",0,0,0,0,0,0,0,0,0);
+      A_SpawnItemEx("DoomSpellMana3",0,0,0,random(-1,1),random(-1,1),random(-1,1),0,0,56);
+      A_SpawnItemEx("DoomSpellMana3",0,0,0,random(-1,1),random(-1,1),random(-1,1),0,0,206);
+      A_SpawnItemEx("DoomSpellMana3",0,0,0,random(-1,1),random(-1,1),random(-1,1),0,0,243);
+	  A_FadeOut(1,1);
+	 }
+	 if (CountInv("FloraInPlay",AAPTR_PLAYER1) != 1)
 	 {
 	  A_SpawnItemEx("DoomSpellMana3",0,0,0,0,0,0,0,0,0);
       A_SpawnItemEx("DoomSpellMana3",0,0,0,random(-1,1),random(-1,1),random(-1,1),0,0,56);
@@ -13958,24 +13986,24 @@ ACTOR SapphireWandNew : FloraWeapon
      ACS_NamedExecuteAlways("StartTensionCountDown");
 	 if (CountInv("SpreaderAura2",AAPTR_PLAYER1) > 0)
 	 {
-      A_FireCustomMissile("MageWandMissileNew",15+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",7.5+(random(-400,400)/100.0),0,0,0,0,7.5);
-      A_FireCustomMissile("MageWandMissileNew",7.5+(random(-400,400)/100.0),0,0,0,0,-7.5);
-      A_FireCustomMissile("MageWandMissileNew",0+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",-7.5+(random(-400,400)/100.0),0,0,0,0,-7.5);
-      A_FireCustomMissile("MageWandMissileNew",-7.5+(random(-400,400)/100.0),0,0,0,0,7.5);
-      A_FireCustomMissile("MageWandMissileNew",-15+(random(-400,400)/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,7.5);
+      A_FireCustomMissile("MageWandMissile2New",7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,-7.5);
+      A_FireCustomMissile("MageWandMissile2New",0+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",-7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,-7.5);
+      A_FireCustomMissile("MageWandMissile2New",-7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,7.5);
+      A_FireCustomMissile("MageWandMissile2New",-15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
 	 }
 	 else
 	 if (CountInv("SpreaderAura1",AAPTR_PLAYER1) > 0)
 	 {
-      A_FireCustomMissile("MageWandMissileNew",15+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",0+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",-15+(random(-400,400)/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",0+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",-15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
 	 }
 	 else
 	 {
-      A_FireCustomMissile("MageWandMissileNew",0+(random(-400,400)/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",0+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
 	 }
 	}
     MWN2 A 1 Offset(0, 40)
@@ -13990,24 +14018,24 @@ ACTOR SapphireWandNew : FloraWeapon
      ACS_NamedExecuteAlways("StartTensionCountDown");
 	 if (CountInv("SpreaderAura2",AAPTR_PLAYER1) > 0)
 	 {
-      A_FireCustomMissile("MageWandMissileNew",15+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",7.5+(random(-400,400)/100.0),0,0,0,0,7.5);
-      A_FireCustomMissile("MageWandMissileNew",7.5+(random(-400,400)/100.0),0,0,0,0,-7.5);
-      A_FireCustomMissile("MageWandMissileNew",0+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",-7.5+(random(-400,400)/100.0),0,0,0,0,-7.5);
-      A_FireCustomMissile("MageWandMissileNew",-7.5+(random(-400,400)/100.0),0,0,0,0,7.5);
-      A_FireCustomMissile("MageWandMissileNew",-15+(random(-400,400)/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,7.5);
+      A_FireCustomMissile("MageWandMissile2New",7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,-7.5);
+      A_FireCustomMissile("MageWandMissile2New",0+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",-7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,-7.5);
+      A_FireCustomMissile("MageWandMissile2New",-7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,7.5);
+      A_FireCustomMissile("MageWandMissile2New",-15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
 	 }
 	 else
 	 if (CountInv("SpreaderAura1",AAPTR_PLAYER1) > 0)
 	 {
-      A_FireCustomMissile("MageWandMissileNew",15+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",0+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",-15+(random(-400,400)/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",0+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",-15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
 	 }
 	 else
 	 {
-      A_FireCustomMissile("MageWandMissileNew",0+(random(-400,400)/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",0+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
 	 }
 	}
     MWN2 A 1 Offset(0, 40)
@@ -14022,24 +14050,24 @@ ACTOR SapphireWandNew : FloraWeapon
      ACS_NamedExecuteAlways("StartTensionCountDown");
 	 if (CountInv("SpreaderAura2",AAPTR_PLAYER1) > 0)
 	 {
-      A_FireCustomMissile("MageWandMissileNew",15+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",7.5+(random(-400,400)/100.0),0,0,0,0,7.5);
-      A_FireCustomMissile("MageWandMissileNew",7.5+(random(-400,400)/100.0),0,0,0,0,-7.5);
-      A_FireCustomMissile("MageWandMissileNew",0+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",-7.5+(random(-400,400)/100.0),0,0,0,0,-7.5);
-      A_FireCustomMissile("MageWandMissileNew",-7.5+(random(-400,400)/100.0),0,0,0,0,7.5);
-      A_FireCustomMissile("MageWandMissileNew",-15+(random(-400,400)/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,7.5);
+      A_FireCustomMissile("MageWandMissile2New",7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,-7.5);
+      A_FireCustomMissile("MageWandMissile2New",0+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",-7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,-7.5);
+      A_FireCustomMissile("MageWandMissile2New",-7.5+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,7.5);
+      A_FireCustomMissile("MageWandMissile2New",-15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
 	 }
 	 else
 	 if (CountInv("SpreaderAura1",AAPTR_PLAYER1) > 0)
 	 {
-      A_FireCustomMissile("MageWandMissileNew",15+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",0+(random(-400,400)/100.0),0,0,0,0,0);
-      A_FireCustomMissile("MageWandMissileNew",-15+(random(-400,400)/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",0+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",-15+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
 	 }
 	 else
 	 {
-      A_FireCustomMissile("MageWandMissileNew",0+(random(-400,400)/100.0),0,0,0,0,0);
+      A_FireCustomMissile("MageWandMissile2New",0+(random(ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",-1),ACS_NamedExecuteWithResult("GetSapphireWandAltSpread",1))/100.0),0,0,0,0,0);
 	 }
 	}
     MWN2 A 1 Offset(0, 40)

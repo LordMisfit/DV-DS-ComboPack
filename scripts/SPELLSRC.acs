@@ -28309,6 +28309,27 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  MiscellaneousVars[200] += 24;
  if (PowerupTimer[7] > 0) MiscellaneousVars[200] = MiscellaneousVars[200] * 4;
 
+ //**************
+ //*Air Control*
+ //**************
+ int AirControlBase = 0.390625;
+ int AirControlFinal = FixedMul(1.00, 1.00);
+ int AirControlFactor1 = FixedMul(1.00, 1.00);
+ int AirControlFactor2 = FixedMul(1.00, 1.00);
+ int AirControlFactor3 = FixedMul(1.00, 1.00);
+ int AirControlFactor4 = FixedMul(1.00, 1.00);
+ if (CharacterClass == 0) AirControlBase = 0.475;
+ if (CharacterClass == 1) AirControlBase = 0.500;
+ if (CharacterClass == 2) AirControlBase = 0.525;
+ if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) { AirControlFactor1 = AirControlFactor1 + FixedMul(1.00, 0.20); }		// +20%
+ if (CheckActorInventory(Player1TID,"CloakofEvasion") > 0) { AirControlFactor1 = AirControlFactor1 + FixedMul(1.00, 0.20); }    // +20%
+ AirControlFinal = AirControlBase;
+ AirControlFinal = FixedMul(AirControlFinal,AirControlFactor1);
+ AirControlFinal = FixedMul(AirControlFinal,AirControlFactor2);
+ AirControlFinal = FixedMul(AirControlFinal,AirControlFactor3);
+ AirControlFinal = FixedMul(AirControlFinal,AirControlFactor4);
+ SetAirControl(AirControlFinal);
+ 
 /*
  PrintBold(s:"Level X: ",f:MiscellaneousVars[66],
            s:"\nSeed X: ",f:MiscellaneousVars[67],
@@ -35853,11 +35874,21 @@ script "GetPlayerATKDMG" (int type, int puff)
  if (type == 44) // MageWandMissileNew [HEXEN]
  {
   perkfactor += ((MiscellaneousVars[10053] * 1250) + (MiscellaneousVars[10054] * 5000));
-  damage = (2 * random(1,8)) + random(-MiscellaneousVars[10053],MiscellaneousVars[10053]);
+  damage = (12 + random(-4,4)) + random(-MiscellaneousVars[10053],MiscellaneousVars[10053]);
   damage = damage * perkfactor / 10000;
   extradmg1 = ((MiscellaneousVars[34] * 5) / 4); // 125% of Sorcery
   extradmg1 = extradmg1 * perkfactor / 10000;
-  extradmg2 = ((MiscellaneousVars[36] * 1) / 3); // 50% of Therapeusis
+  extradmg2 = ((MiscellaneousVars[36] * 1) / 3); // 33% of Therapeusis
+  extradmg2 = extradmg2 * perkfactor / 10000;
+ }
+ if (type == 45) // MageWandMissile2New [HEXEN]
+ {
+  perkfactor += ((MiscellaneousVars[10053] * 1250) + (MiscellaneousVars[10054] * 5000));
+  damage = (9 + random(-3,3)) + random(-MiscellaneousVars[10053],MiscellaneousVars[10053]);
+  damage = damage * perkfactor / 10000;
+  extradmg1 = ((MiscellaneousVars[34] * 5) / 6); // 83.33% of Sorcery
+  extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg2 = ((MiscellaneousVars[36] * 2) / 9); // 22% of Therapeusis
   extradmg2 = extradmg2 * perkfactor / 10000;
  }
 
@@ -35868,7 +35899,7 @@ script "GetPlayerATKDMG" (int type, int puff)
   rand2 = (extradmg1 + extradmg2 + extradmg3 + extradmg4 + extradmg5 + extradmg6) * 6 / 5;
   finaldmg = damage + random(rand1,rand2);
 
-  if (type == 29 || type == 30 || type == 31 || type == 32 || type == 41 || type == 42 || type == 44)
+  if (type == 29 || type == 30 || type == 31 || type == 32 || type == 41 || type == 42 || type == 44 || type == 45)
   {
    int misc1 = 1000;
    if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) misc1 += 125;
@@ -35918,6 +35949,18 @@ script "GetPlayerATKDMG" (int type, int puff)
   }
  }
  SetResultValue(finaldmg);
+}
+
+script "GetSapphireWandAltSpread" (int type)
+{
+ int result = 400;
+ if (MiscellaneousVars[10053] == 1) result = result * 5 / 6;
+ if (MiscellaneousVars[10053] == 2) result = result * 4 / 6;
+ if (MiscellaneousVars[10053] == 3) result = result * 3 / 6;
+ if (MiscellaneousVars[10053] == 4) result = result * 2 / 6;
+ if (MiscellaneousVars[10053] == 5) result = result * 1 / 6;
+ if (type == -1) result *= -1;
+ SetResultValue(result);
 }
 
 // Returns Damage inflicted by misc attacks
@@ -42426,16 +42469,19 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   if (random(1,8192) == 1) DropItem(0,"GreaterVimstone",1,256);
   if (random(1,8192) == 1) DropItem(0,"LesserVimstone",1,256);
   if (random(1,8192) == 1) DropItem(0,"RockBombShard",1,256);
+  if (random(1,4096) == 1 && CharacterClass == 2) DropItem(0,"SapphireWandNew",1,256);
   if (random(1,4096) == 1) DropItem(0,"MonsterMunchies",1,256);
   if (random(1,4096) == 1) DropItem(0,"SageElixir",1,256);
   if (random(1,4096) == 1) DropItem(0,"PaxaPunch",1,256);
   if (random(1,4096) == 1) DropItem(0,"MercuryBandana",1,256);
   if (random(1,4096) == 1) DropItem(0,"RockBombShard",1,256);
+  if (random(1,2048) == 1 && CharacterClass == 2) DropItem(0,"SapphireWandNew",1,256);
   if (random(1,2048) == 1) DropItem(0,"RandomHerbSpawner",1,256);
   if (random(1,2048) == 1) DropItem(0,"RandomMagicSpawner",1,256);
   if (random(1,2048) == 1) DropItem(0,"RandomSeedDropAlways",1,256);
   if (random(1,2048) == 1) DropItem(0,"YggdrasilDew",1,256);
   if (random(1,2048) == 1) DropItem(0,"RockBombShard",1,256);
+  if (random(1,1024) == 1 && CharacterClass == 2) DropItem(0,"SapphireWandNew",1,256);
   if (random(1,1024) == 1) DropItem(0,"MonsterMunchies",1,256);
   if (random(1,1024) == 1) DropItem(0,"MagicWater",1,256);
   if (random(1,1024) == 1) DropItem(0,"RandomPowerupSpawner",1,256);
