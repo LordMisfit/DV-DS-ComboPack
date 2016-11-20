@@ -712,8 +712,11 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [336] is storage for the ultimate HEGrenadeRounds maximum.
 // [337] is storage for the ultimate PhosphorusGrenadeRounds maximum.
 // [338] is storage for the ultimate RifleAmmo maximum.
-	// [339 to 500] are undefined so far :P
+	// [339 to 399] are undefined so far :P
+// [399] Value for Friction
+// [400] Value for AirControl
 // [401] # of RockBomb Shards [for death-exit checks]
+	// [402 to 500] are undefined so far :P
 // [501] is to make sure Flag 1 is set [Strife]
 // [502] is to make sure Flag 2 is set [Strife]
 // [503] is to make sure Flag 3 is set [Strife]
@@ -745,7 +748,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [529] is to make sure Flag 29 is set [Strife]
 // [530] is to make sure Flag 30 is set [Strife]
 // [531] is to make sure Flag 31 is set [Strife]
-	// [532 to 1998] are undefined so far :P
+	// [532 to 554] are undefined so far :P
+// [555] Gets spell cost into a global array [if needed to give it back for a failed summon :V]
+	// [556 to 1998] are undefined so far :P
 // [1999] Save Old HUD Toggle [for times where the HUD needs to be turned off fully]
 // [2000] HUD mod toggle >.>
 // [2001] HUD X Size
@@ -944,6 +949,14 @@ global int 28:SecretsFound[]; // ***ARRAY*** Array to Replace "SecretsFoundMAPXX
 global int 31:CurrentArmorClass; // All Games
 
 global int 33:CharacterClass; // All Games
+// 0 = Deggaris [Doom]
+// 1 = Illucia [Doom]
+// 2 = Flora [All]
+// 3 = Corvus [Heretic]
+// 4 = Baratus [Hexen]
+// 5 = Parias [Hexen]
+// 6 = Daedolon [Hexen]
+// 7 = StrifeGuy [Strife]
 
 global int 34:ClassCheck; // All Games
 
@@ -9512,6 +9525,7 @@ script "SpellQuickAssign" (int Slot, int Type)
   {
    // Function Ran
    G1 = SpellCostCheck(ReadiedSpells[Slot] - 1); // Function testing to come later :P
+   MiscellaneousVars[555] = G1; // Saves spellcost into a global array [in case the spell fails, so it gives back the MP you lost] :P
    // Function Ran
 
    if (GetActorProperty(Player1TID,APROP_HEALTH) > 0) // Fix Oversight
@@ -9676,6 +9690,7 @@ script "SpellCasting" (void)
 
  // Function Ran
  G1 = SpellCostCheck(SelectedSpell); // Function testing to come later :P
+ MiscellaneousVars[555] = G1; // Saves spellcost into a global array [in case the spell fails, so it gives back the MP you lost] :P
  // Function Ran
 
  int buttons = GetPlayerInput(0, INPUT_BUTTONS);
@@ -15631,137 +15646,210 @@ script "MagicEffects" (int Type, int Strength)
  if (Type == 6) // Summon Monster
  {
   C1 = 0;
-  if (Random(0,100) < 25)
-  {
-   C1 = 1;
-  }
+  if (random(1,100) < 25) C1 = 1;
   if (Strength == 0) // Weak Monster
   {
    while(ThingCount(0,1002) < 1)
    {
-    ActivatorSound("monstersummon",127);
-    if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
-    SpawnForced(FriendID[Random(0,17)],PX + (Random(-50,50) << 16),PY + (Random(-50,50) << 16),PZ + (Random(0,50) << 16),1002,PA >> 16);
-    I1 += 1;
-    if (I1 == 10)
-    {
-     I1 = 0;
-     Delay(1);
-    }
-   }
-   Thing_ChangeTID(1002,1000);
-   if (C1 == 1)
-   {
-    while(ThingCount(0,1002) < 1)
-    {
+    Spawn(FriendID[Random(0,17)],PX + (Random(-48,48) << 16),PY + (Random(-48,48) << 16),PZ + (Random(0,48) << 16),1002,PA >> 16);
+	if (ThingCount(0,1002) > 0)
+	{
      ActivatorSound("monstersummon",127);
      if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
-     SpawnForced(FriendID[Random(0,17)],PX + (Random(-50,50) << 16),PY + (Random(-50,50) << 16),PZ + (Random(0,50) << 16),1002,PA >> 16);
+     Thing_ChangeTID(1002,1000);
+	 terminate;
+	}
+	else
+	{
      I1 += 1;
-     if (I1 == 10)
-     {
-      I1 = 0;
-      Delay(1);
-     }
+     if (I1 == 5) 
+ 	 {
+ 	  I1 = 0; 
+      ActivatorSound("inv_fail",127);
+      CurrentMana += MiscellaneousVars[555]; // Failed Summon returns MP to caster so it doesn't waste the energy.
+      MiscellaneousVars[243] = CurrentMana;
+      MiscellaneousVars[238] = CurrentMana;
+ 	  terminate;
+ 	 }
+	}
+   }
+   if (C1 == 1)
+   {
+    while(ThingCount(0,1003) < 1)
+    {
+     Spawn(FriendID[Random(0,17)],PX + (Random(-48,48) << 16),PY + (Random(-48,48) << 16),PZ + (Random(0,48) << 16),1003,PA >> 16);
+	 if (ThingCount(0,1003) > 0)
+	 {
+      ActivatorSound("monstersummon",127);
+      if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
+      Thing_ChangeTID(1003,1000);
+	  terminate;
+ 	 }
+	 else
+	 {
+      I1 += 1;
+      if (I1 == 5) 
+	  {
+	   I1 = 0; 
+	   terminate;
+ 	  }
+	 }
     }
-    Thing_ChangeTID(1002,1000);
    }
   }
   if (Strength == 1) // Moderate Monster
   {
    while(ThingCount(0,1002) < 1)
    {
-    ActivatorSound("monstersummon",127);
-    if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
-    SpawnForced(FriendID[Random(18,29)],PX + (Random(-100,100) << 16),PY + (Random(-100,100) << 16),PZ + (Random(0,50) << 16),1002,PA >> 16);
-    I1 += 1;
-    if (I1 == 10)
-    {
-     I1 = 0;
-     Delay(1);
-    }
-   }
-   Thing_ChangeTID(1002,1000);
-   if (C1 == 1)
-   {
-    while(ThingCount(0,1002) < 1)
-    {
+    Spawn(FriendID[Random(18,29)],PX + (Random(-96,96) << 16),PY + (Random(-96,96) << 16),PZ + (Random(0,48) << 16),1002,PA >> 16);
+	if (ThingCount(0,1002) > 0)
+	{
      ActivatorSound("monstersummon",127);
      if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
-     SpawnForced(FriendID[Random(18,29)],PX + (Random(-100,100) << 16),PY + (Random(-100,100) << 16),PZ + (Random(0,50) << 16),1002,PA >> 16);
+     Thing_ChangeTID(1002,1000);
+	 terminate;
+	}
+	else
+	{
      I1 += 1;
-     if (I1 == 10)
-     {
-      I1 = 0;
-      Delay(1);
-     }
+     if (I1 == 5) 
+ 	 {
+ 	  I1 = 0; 
+      ActivatorSound("inv_fail",127);
+      CurrentMana += MiscellaneousVars[555]; // Failed Summon returns MP to caster so it doesn't waste the energy.
+      MiscellaneousVars[243] = CurrentMana;
+      MiscellaneousVars[238] = CurrentMana;
+ 	  terminate;
+ 	 }
+	}
+   }
+   if (C1 == 1)
+   {
+    while(ThingCount(0,1003) < 1)
+    {
+     Spawn(FriendID[Random(18,29)],PX + (Random(-96,96) << 16),PY + (Random(-96,96) << 16),PZ + (Random(0,48) << 16),1003,PA >> 16);
+	 if (ThingCount(0,1003) > 0)
+	 {
+      ActivatorSound("monstersummon",127);
+      if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
+      Thing_ChangeTID(1003,1000);
+	  terminate;
+ 	 }
+	 else
+	 {
+      I1 += 1;
+      if (I1 == 5) 
+	  {
+	   I1 = 0; 
+	   terminate;
+ 	  }
+	 }
     }
-    Thing_ChangeTID(1002,1000);
    }
   }
   if (Strength == 2) // Strong Monster
   {
    while(ThingCount(0,1002) < 1)
    {
-    ActivatorSound("monstersummon",127);
-    if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
-    SpawnForced(FriendID[Random(30,47)],PX + (Random(-100,100) << 16),PY + (Random(-100,100) << 16),PZ + (Random(0,50) << 16),1002,PA >> 16);
-    I1 += 1;
-    if (I1 == 10)
-    {
-     I1 = 0;
-     Delay(1);
-    }
-   }
-   Thing_ChangeTID(1002,1000);
-   if (C1 == 1)
-   {
-    while(ThingCount(0,1002) < 1)
-    {
+    Spawn(FriendID[Random(30,47)],PX + (Random(-96,96) << 16),PY + (Random(-96,96) << 16),PZ + (Random(0,48) << 16),1002,PA >> 16);
+	if (ThingCount(0,1002) > 0)
+	{
      ActivatorSound("monstersummon",127);
      if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
-     SpawnForced(FriendID[Random(30,47)],PX + (Random(-100,100) << 16),PY + (Random(-100,100) << 16),PZ + (Random(0,50) << 16),1002,PA >> 16);
+     Thing_ChangeTID(1002,1000);
+	 terminate;
+	}
+	else
+	{
      I1 += 1;
-     if (I1 == 10)
-     {
-      I1 = 0;
-      Delay(1);
-     }
+     if (I1 == 5) 
+ 	 {
+ 	  I1 = 0; 
+      ActivatorSound("inv_fail",127);
+      CurrentMana += MiscellaneousVars[555]; // Failed Summon returns MP to caster so it doesn't waste the energy.
+      MiscellaneousVars[243] = CurrentMana;
+      MiscellaneousVars[238] = CurrentMana;
+ 	  terminate;
+ 	 }
+	}
+   }
+   if (C1 == 1)
+   {
+    while(ThingCount(0,1003) < 1)
+    {
+     Spawn(FriendID[Random(30,47)],PX + (Random(-96,96) << 16),PY + (Random(-96,96) << 16),PZ + (Random(0,48) << 16),1003,PA >> 16);
+	 if (ThingCount(0,1003) > 0)
+	 {
+      ActivatorSound("monstersummon",127);
+      if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
+      Thing_ChangeTID(1003,1000);
+	  terminate;
+ 	 }
+	 else
+	 {
+      I1 += 1;
+      if (I1 == 5) 
+	  {
+	   I1 = 0; 
+	   terminate;
+ 	  }
+	 }
     }
-    Thing_ChangeTID(1002,1000);
    }
   }
   if (Strength == 3) // ArchVile/Diabloist
   {
    while(ThingCount(0,1002) < 1)
    {
-    ActivatorSound("monstersummon",127);
-    if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
-    SpawnForced(FriendID[Random(48,49)],PX + (Random(-50,50) << 16),PY + (Random(-50,50) << 16),PZ + (Random(0,50) << 16),1002,PA >> 16);
-    I1 += 1;
-    if (I1 == 10)
-    {
-     I1 = 0;
-     Delay(1);
-    }
+    Spawn(FriendID[Random(48,49)],PX + (Random(-48,48) << 16),PY + (Random(-48,48) << 16),PZ + (Random(0,48) << 16),1002,PA >> 16);
+	if (ThingCount(0,1002) > 0)
+	{
+     ActivatorSound("monstersummon",127);
+     if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
+     Thing_ChangeTID(1002,1000);
+	 terminate;
+	}
+	else
+	{
+     I1 += 1;
+     if (I1 == 5) 
+ 	 {
+ 	  I1 = 0; 
+      ActivatorSound("inv_fail",127);
+      CurrentMana += MiscellaneousVars[555]; // Failed Summon returns MP to caster so it doesn't waste the energy.
+      MiscellaneousVars[243] = CurrentMana;
+      MiscellaneousVars[238] = CurrentMana;
+ 	  terminate;
+ 	 }
+	}
    }
-   Thing_ChangeTID(1002,1000);
   }
   if (Strength == 4) // Cyberdemon/Annihilator
   {
    while(ThingCount(0,1002) < 1)
    {
-    ActivatorSound("monstersummon",127);
-    if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
-    SpawnForced(FriendID[Random(50,51)],PX + (Random(-200,200) << 16),PY + (Random(-200,200) << 16),PZ + (Random(0,50) << 16),1002,PA >> 16);
-    I1 += 1;
-    if (I1 == 10)
-    {
-     I1 = 0;
-     Delay(1);
-    }
+    Spawn(FriendID[Random(50,51)],PX + (Random(-128,128) << 16),PY + (Random(-128,128) << 16),PZ + (Random(0,32) << 16),1002,PA >> 16);
+	if (ThingCount(0,1002) > 0)
+	{
+     ActivatorSound("monstersummon",127);
+     if (CharacterClass == 2 && random(1,5) == 1) PlaySound(Player1TID,"FloraSummon",CHAN_VOICE,1.0,0,ATTN_NORM);
+     Thing_ChangeTID(1002,1000);
+	 terminate;
+	}
+	else
+	{
+     I1 += 1;
+     if (I1 == 5) 
+ 	 {
+ 	  I1 = 0; 
+      ActivatorSound("inv_fail",127);
+      CurrentMana += MiscellaneousVars[555]; // Failed Summon returns MP to caster so it doesn't waste the energy.
+      MiscellaneousVars[243] = CurrentMana;
+      MiscellaneousVars[238] = CurrentMana;
+ 	  terminate;
+ 	 }
+	}
    }
-   Thing_ChangeTID(1002,1000);
   }
  }
  if (Type == 7) // Novas
@@ -28226,7 +28314,7 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  }
 
  // Calculates Friction [Ice/Mud] so Safe Tea Shoes can properly adjust for slowdown/slipperiness?
- int PlayerFriction = GetActorProperty(Player1TID,APROP_Friction);
+ MiscellaneousVars[399] = GetActorProperty(Player1TID,APROP_Friction);
  //PrintBold(f:PlayerFriction);
 
  // Calculate Jumping Heights
@@ -28281,8 +28369,9 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  if (CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0) { MiscellaneousVars[68] = MiscellaneousVars[68] - FixedMul(1.00, 0.05); }	// -5%
  if (CheckActorInventory(Player1TID,"TheOneRing") > 0) { MiscellaneousVars[68] = MiscellaneousVars[68] + FixedMul(1.00, 0.25); }			// +25%
 
- // Acceleratle Buff = +25% Jumping Height
+ // Buffs = +25% Jumping Height
  if (CheckActorInventory(Player1TID,"AcceleratleDQSpell") > 0) { MiscellaneousVars[68] = MiscellaneousVars[68] + FixedMul(1.00, 0.25); }			// +25%
+ if (CheckActorInventory(Player1TID,"DeceleratleDQSpell") > 0) { MiscellaneousVars[68] = MiscellaneousVars[68] - FixedMul(1.00, 0.25); }			// -25%
 
  // "69" is storage for Sceptre for JumpZ height.
  MiscellaneousVars[69] = FixedMul(1.00, 1.00);
@@ -28312,23 +28401,86 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  //**************
  //*Air Control*
  //**************
- int AirControlBase = 0.390625;
- int AirControlFinal = FixedMul(1.00, 1.00);
+ int AirControlBase = 0.2375;
+ if (CharacterClass == 0) AirControlBase = 0.2375;
+ if (CharacterClass == 1) AirControlBase = 0.2500;
+ if (CharacterClass == 2) AirControlBase = 0.2625;
+
+ // level-based multiplier
  int AirControlFactor1 = FixedMul(1.00, 1.00);
+ if (CharacterClass == 0) AirControlFactor1 = FixedMul((PlayerLevel << 16), 0.00113) + FixedMul(1.00, 1.00);
+ else if (CharacterClass == 1) AirControlFactor1 = FixedMul((PlayerLevel << 16), 0.00128) + FixedMul(1.00, 1.00);
+ else if (CharacterClass == 2) AirControlFactor1 = FixedMul((PlayerLevel << 16), 0.00138) + FixedMul(1.00, 1.00);
+ else AirControlFactor1 = FixedMul((PlayerLevel << 16), 0.00123) + FixedMul(1.00, 1.00);
+
+ // AGLSeed-based multiplier
  int AirControlFactor2 = FixedMul(1.00, 1.00);
+ if (CharacterClass == 0) AirControlFactor2 = FixedMul((MiscellaneousVars[31] << 16), 0.00038) + FixedMul(1.00, 1.00);
+ else if (CharacterClass == 1) AirControlFactor2 = FixedMul((MiscellaneousVars[31] << 16), 0.00043) + FixedMul(1.00, 1.00);
+ else if (CharacterClass == 2) AirControlFactor2 = FixedMul((MiscellaneousVars[31] << 16), 0.000415) + FixedMul(1.00, 1.00);
+ else AirControlFactor2 = FixedMul((MiscellaneousVars[31] << 16), 0.000415) + FixedMul(1.00, 1.00);
+
+ // Armor items
  int AirControlFactor3 = FixedMul(1.00, 1.00);
+ if (CharacterClass == 2) 
+ {
+  if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.20); }				// +30%
+  if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.0125); }			// +1.25%
+  if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.0125); }		// +1.25%
+  if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.0375); }		// +3.75%
+  if (CheckActorInventory(Player1TID,"CloakofEvasion") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.20); }    		// +20%
+  if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.025); }			// +2.5%
+  if (CheckActorInventory(Player1TID,"KissaBra") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.0375); }				// +3.75%
+  if (CheckActorInventory(Player1TID,"DivineShield") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.05); }				// +5.0%
+  if (CheckActorInventory(Player1TID,"BalrogRing") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.0125); }				// +1.25%
+  if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.0375); }				// +3.75%
+  if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.05); }		// +5.0%
+ }
+ else
+ {
+  if (CheckActorInventory(Player1TID,"DSGreenArmorClass") > 0) { AirControlFactor3 = AirControlFactor3 - FixedMul(1.00, 0.067); }		// -6.7%
+  if (CheckActorInventory(Player1TID,"DSBlueArmorClass") > 0) { AirControlFactor3 = AirControlFactor3 - FixedMul(1.00, 0.010); }		// -10%
+  if (CheckActorInventory(Player1TID,"DSStoneArmorClass1") > 0) { AirControlFactor3 = AirControlFactor3 - FixedMul(1.00, 0.134); }		// -13.4%
+  if (CheckActorInventory(Player1TID,"DSDiamondArmorClass1") > 0) { AirControlFactor3 = AirControlFactor3 - FixedMul(1.00, 0.18); }		// -18%
+  if (CheckActorInventory(Player1TID,"DSStoneArmorClass2") > 0) { AirControlFactor3 = AirControlFactor3 - FixedMul(1.00, 0.167); }		// -16.7%
+  if (CheckActorInventory(Player1TID,"DSDiamondArmorClass2") > 0) { AirControlFactor3 = AirControlFactor3 - FixedMul(1.00, 0.190); }	// -19.0%
+ }
+ if (CheckActorInventory(Player1TID,"SauronHelmet") > 0) { AirControlFactor3 = AirControlFactor3 - FixedMul(1.00, 0.15); }				// -15%
+ if (CheckActorInventory(Player1TID,"SauronGauntlets") > 0) { AirControlFactor3 = AirControlFactor3 - FixedMul(1.00, 0.10); }			// -10%
+ if (CheckActorInventory(Player1TID,"SauronGauntletsIllucia") > 0) { AirControlFactor3 = AirControlFactor3 - FixedMul(1.00, 0.10); }	// -10%
+ if (CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0) { AirControlFactor3 = AirControlFactor3 - FixedMul(1.00, 0.10); }		// -10%
+ if (CheckActorInventory(Player1TID,"TheOneRing") > 0) { AirControlFactor3 = AirControlFactor3 + FixedMul(1.00, 0.20); }				// +20%
+
+ // Buffs
  int AirControlFactor4 = FixedMul(1.00, 1.00);
- if (CharacterClass == 0) AirControlBase = 0.475;
- if (CharacterClass == 1) AirControlBase = 0.500;
- if (CharacterClass == 2) AirControlBase = 0.525;
- if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) { AirControlFactor1 = AirControlFactor1 + FixedMul(1.00, 0.20); }		// +20%
- if (CheckActorInventory(Player1TID,"CloakofEvasion") > 0) { AirControlFactor1 = AirControlFactor1 + FixedMul(1.00, 0.20); }    // +20%
- AirControlFinal = AirControlBase;
- AirControlFinal = FixedMul(AirControlFinal,AirControlFactor1);
- AirControlFinal = FixedMul(AirControlFinal,AirControlFactor2);
- AirControlFinal = FixedMul(AirControlFinal,AirControlFactor3);
- AirControlFinal = FixedMul(AirControlFinal,AirControlFactor4);
- SetAirControl(AirControlFinal);
+ if (CheckActorInventory(Player1TID,"AcceleratleDQSpell") > 0) { AirControlFactor4 = AirControlFactor4 + FixedMul(1.00, 0.25); }		// +25%
+ if (CheckActorInventory(Player1TID,"DeceleratleDQSpell") > 0) { AirControlFactor4 = AirControlFactor4 - FixedMul(1.00, 0.25); }		// -25%
+
+ // Sceptre for JumpZ height.
+ int AirControlFactor5 = FixedMul(1.00, 1.00);
+ if (CheckActorInventory(Player1TID,"ShieldSlowdown") > 0) { AirControlFactor5 = AirControlFactor5 - FixedMul(1.00, 0.20); }			// -20%
+ if (CheckActorInventory(Player1TID,"ShieldSlowdown2") > 0) { AirControlFactor5 = AirControlFactor5 - FixedMul(1.00, 0.10); }			// -10%
+ if (CheckActorInventory(Player1TID,"ShieldSlowdown3") > 0) { AirControlFactor5 = AirControlFactor5 - FixedMul(1.00, 0.05); }			// -5%
+
+ MiscellaneousVars[400] = FixedMul(1.00, 1.00);
+ MiscellaneousVars[400] = AirControlBase;
+ MiscellaneousVars[400] = FixedMul(MiscellaneousVars[400],AirControlFactor1);
+ MiscellaneousVars[400] = FixedMul(MiscellaneousVars[400],AirControlFactor2);
+ MiscellaneousVars[400] = FixedMul(MiscellaneousVars[400],AirControlFactor3);
+ MiscellaneousVars[400] = FixedMul(MiscellaneousVars[400],AirControlFactor4);
+ MiscellaneousVars[400] = FixedMul(MiscellaneousVars[400],AirControlFactor5);
+
+ // JumpMore perks
+ PerkFactorF = 0.0;
+ PerkFactorF = ((MiscellaneousVars[10009] * 0.05) + (MiscellaneousVars[10010] * 0.125)) + 1.0;
+ MiscellaneousVars[400] = FixedMul(MiscellaneousVars[400],PerkFactorF);
+
+ // Dashing :P
+ if (MiscellaneousVars[166] > 0) MiscellaneousVars[400] = FixedMul(MiscellaneousVars[400],0.015625);
+
+ // Final Calculations
+ if (MiscellaneousVars[400] > 1.0) MiscellaneousVars[400] = 1.0;
+ SetAirControl(MiscellaneousVars[400]);
  
 /*
  PrintBold(s:"Level X: ",f:MiscellaneousVars[66],
@@ -29141,7 +29293,9 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   PrintBold(s:"Angle: ",d:GetActorAngle(Player1TID),s:" (",f:GetActorAngle(Player1TID),s:")",
             s:"\nVelX: ",d:VelX,
             s:"\nVelY: ",d:VelY,
-            s:"\nVelZ: ",d:VelZ);
+            s:"\nVelZ: ",d:VelZ,s:"\n",
+            s:"\nFriction: ",f:MiscellaneousVars[399],
+            s:"\nAirControl: ",f:MiscellaneousVars[400]);
  }
 
  if (GetActorProperty(Player1TID,APROP_Health) > 0) 
@@ -43185,7 +43339,7 @@ script "KD-SideDodge" enter
 		  SetActorVelocity(0, velX, velY, velZ, true, false);
 		  PlaySound(0, dashSound, CHAN_BODY, dashsoundvolume);
 		  if (random(1,100) <= GetCVar("dvds_dashgruntchance")) PlaySound(0, dashGruntSound, CHAN_VOICE, dashgruntsoundvolume);
-		  MiscellaneousVars[166] = 18;
+		  MiscellaneousVars[166] = 18; // Set Dash Timer 
 		  Delay(dashcooldown);
 		 }
 
