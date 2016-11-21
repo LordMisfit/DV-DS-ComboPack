@@ -7968,14 +7968,13 @@ script "ManaRegenerationStuff" ENTER
  int FocusHumTimer, PerkFactor;
  int StamUpgradeDelay;
 
-
  if (FirstRun == 0)
  {
   FirstRun = 1;
   Thing_ChangeTID(0,Player1TID);
  }
 
- SetActivator(Player1TID); str weapon = GetWeapon(); SetActivator(0);
+ str weapon = GetWeapon();
 
  // Base Delay Count
  delaycount = 20; // 20 = 1 tic
@@ -8042,9 +8041,7 @@ script "ManaRegenerationStuff" ENTER
   if (MiscellaneousVars[231] >= 2100) FocusHumTimer = MiscellaneousVars[231] % 12;
   if (FocusHumTimer == 1)
   {
-   //SetActivator(Player1TID);
    ActivatorSound("focushum",127);
-   //SetActivator(0);
   }
  }
 
@@ -8071,12 +8068,12 @@ script "ManaRegenerationStuff" ENTER
    if (C2 > 0)
    {
     if (GameSkill() == SKILL_VERY_EASY) RegenedMana = 3;
-    if (GameSkill() == SKILL_EASY) RegenedMana = 3;
+    if (GameSkill() == SKILL_EASY) RegenedMana = random(2,3);
     if (GameSkill() == SKILL_NORMAL) RegenedMana = 2;
-    if (GameSkill() == SKILL_HARD) RegenedMana = 2;
+    if (GameSkill() == SKILL_HARD) RegenedMana = random(1,2);
     if (GameSkill() == SKILL_VERY_HARD) RegenedMana = 1;
  
-    // A combined total of 10 points of Sorcery/Theraphesuis are needed for an extra point of MP regen.
+    // A combined total of 12-20 points of Sorcery/Theraphesuis are needed for an extra point of MP regen.
     if (GameSkill() == SKILL_VERY_EASY) RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 12);
     if (GameSkill() == SKILL_EASY) RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 14);
     if (GameSkill() == SKILL_NORMAL) RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 16);
@@ -8149,11 +8146,11 @@ script "ManaRegenerationStuff" ENTER
  
    If(StrIcmp(weapon, "SapphireWandNew") == 0)
    {
-    if (MiscellaneousVars[10053] == 1) RegenedMana = RegenedMana * 21 / 20;
-    if (MiscellaneousVars[10053] == 2) RegenedMana = RegenedMana * 23 / 20;
-    if (MiscellaneousVars[10053] == 3) RegenedMana = RegenedMana * 25 / 20;
-    if (MiscellaneousVars[10053] == 4) RegenedMana = RegenedMana * 28 / 20;
-    if (MiscellaneousVars[10053] == 5) RegenedMana = RegenedMana * 31 / 20;
+    if (MiscellaneousVars[10053] == 1) RegenedMana = RegenedMana * 41 / 40;
+    if (MiscellaneousVars[10053] == 2) RegenedMana = RegenedMana * 43 / 40;
+    if (MiscellaneousVars[10053] == 3) RegenedMana = RegenedMana * 45 / 40;
+    if (MiscellaneousVars[10053] == 4) RegenedMana = RegenedMana * 48 / 40;
+    if (MiscellaneousVars[10053] == 5) RegenedMana = RegenedMana * 51 / 40;
    }
 
    if (RegenedMana < 1) RegenedMana = 1;
@@ -35990,7 +35987,7 @@ script "GetPlayerATKDMG" (int type, int puff)
   extradmg2 = (MiscellaneousVars[36] / 15); // 6.67% of Therapeusis
   extradmg2 = extradmg2 * perkfactor / 10000;
  }
- if (type == 44) // MageWandMissileNew [HEXEN]
+ if (type == 44 || type == 45) // MageWandMissileNew & MageWandMissile2New
  {
   perkfactor += ((MiscellaneousVars[10053] * 1250) + (MiscellaneousVars[10054] * 5000));
   damage = (6 + random(-3,3)) + random(-MiscellaneousVars[10053],MiscellaneousVars[10053]);
@@ -36000,20 +35997,22 @@ script "GetPlayerATKDMG" (int type, int puff)
   extradmg2 = ((MiscellaneousVars[36] * 1) / 6); // 16.67% of Therapeusis
   extradmg2 = extradmg2 * perkfactor / 10000;
  }
- if (type == 45) // MageWandMissile2New [HEXEN]
- {
-  perkfactor += ((MiscellaneousVars[10053] * 1250) + (MiscellaneousVars[10054] * 5000));
-  damage = (4 + random(-2,2)) + random(-MiscellaneousVars[10053],MiscellaneousVars[10053]);
-  damage = damage * perkfactor / 10000;
-  extradmg1 = ((MiscellaneousVars[34] * 5) / 12); // 41.667% of Sorcery
-  extradmg1 = extradmg1 * perkfactor / 10000;
-  extradmg2 = ((MiscellaneousVars[36] * 1) / 9); // 11% of Therapeusis
-  extradmg2 = extradmg2 * perkfactor / 10000;
- }
 
  if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE || puff == 1) // AAPTR_TARGET - the being who fires the shot
  {
   if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"Player Shot");
+
+  if (type == 45) // Reduce Sapphire Alt-Fire damage by 33%
+  {
+   damage = (damage * 2) / 3;
+   extradmg1 = (extradmg1 * 2) / 3;
+   extradmg2 = (extradmg2 * 2) / 3;
+   extradmg3 = (extradmg3 * 2) / 3;
+   extradmg4 = (extradmg4 * 2) / 3;
+   extradmg5 = (extradmg5 * 2) / 3;
+   extradmg6 = (extradmg6 * 2) / 3;
+  }
+
   rand1 = (extradmg1 + extradmg2 + extradmg3 + extradmg4 + extradmg5 + extradmg6) * 4 / 5;
   rand2 = (extradmg1 + extradmg2 + extradmg3 + extradmg4 + extradmg5 + extradmg6) * 6 / 5;
   finaldmg = damage + random(rand1,rand2);
