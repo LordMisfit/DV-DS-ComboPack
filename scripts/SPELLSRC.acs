@@ -9,7 +9,7 @@ Used Tags and Scripts
 Thing Tags:
 	1-999		-	Assume used in standard levels
 	1000		-	Friendly Monsters
-	1001		-	The Main Player
+	1001		-	The Main Player [set "Player1TID" to this or whatever ID you plan to use if you decide to change it]
 	1002-1014	-	Temporary ThingIDs
 	
 	1123		-	Main Sauron Eye's TID [Boss Lifemeters]
@@ -66,7 +66,7 @@ HudMessage ID Tags:
 		3202-3303	-	Mana Bar
 		3304-3405	-	Exp Bar
 		3406-3407	-	Spell Name, Spell Description
-		...
+		3408-3410   -   Bonus Text
 		3413		-	Level Display
 		...
 		3415		-	Mana Points Display
@@ -9253,6 +9253,185 @@ script "LevelUpCode" ENTER // (void)
 
  Delay(1);
  Restart;
+}
+
+// Old DoomSpellV2 Style Completion Bonues [optional, turned OFF by default]
+script "OldDoomSpellCompletion" ENTER
+{
+ str SecretBonusText1;
+ int SecretBonusText2;
+ str SecretBonusText3;
+ str ItemBonusText1;
+ int ItemBonusText2;
+ str ItemBonusText3;
+ str KillBonusText1;
+ int KillBonusText2;
+ str KillBonusText3;
+
+ int XSize = 800;
+ int YSize = 600;
+ int XPos = 0;
+ int XPosF = 0.0;
+ int YPos = 0;
+ int YPosF = 0.0;
+
+ int BaseEXPGain = 10; // Base % of EXP given for Completion Bonus
+ int BaseAeonPoints = 1;
+
+ int ExtraMultiplier = 1;
+ 
+ if (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) <= 0) SecretBonusApplied = 1;
+ if (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) <= 0) ItemBonusApplied = 1;
+ if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) <= 0) KillBonusApplied = 1;
+ 
+ if (GetCVar("dvds_oldcompletionbonuses") > 0)
+ {
+  if (SecretBonusApplied == 0)
+  {
+   if (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
+   {
+    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) / 16) + 1;
+    SecretBonusApplied = 1;
+    SecretBonusText1 = "100% secrets found bonus:\n\n";
+	if (GetCVar("dvds_secretsfoundbonus") == 0)
+	{
+     BaseEXPGain *= GetCVar("dvds_secretsfoundmulti");
+	 BaseEXPGain *= ExtraMultiplier;
+     BaseEXPGain = BaseEXPGain >> 16;
+	 if (PlayerLevel == 0) { Experience += (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
+	 else if (PlayerLevel >= 1) { Experience += ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
+	  
+	 SecretBonusText2 = BaseEXPGain;
+	 SecretBonusText3 = "% of the experience required to reach the next level.";
+	}
+	if (GetCVar("dvds_secretsfoundbonus") == 1)
+	{
+     BaseAeonPoints *= GetCVar("dvds_secretsfoundmulti");
+	 BaseAeonPoints *= ExtraMultiplier;
+     BaseAeonPoints = BaseAeonPoints >> 16;
+	 if (BaseAeonPoints < 1) BaseAeonPoints = 1;
+     MiscellaneousVars[25] += BaseAeonPoints;
+     MiscellaneousVars[224] += BaseAeonPoints; 
+	 MiscellaneousVars[2033] = 105;
+
+	 SecretBonusText2 = BaseAeonPoints;
+	 if (BaseAeonPoints > 1) { SecretBonusText3 = " Aeon Points."; } else { SecretBonusText3 = " Aeon Point."; }
+	}
+
+    SetFont("DVDSBIGFONT");
+    SetHudSize(XSize,YSize,0);
+    XPos = XSize / 2;
+    XPosF = XPos * 1.0 + 0.4;
+    YPos = YSize * 6 / 9;
+    YPosF = YPos * 1.0;
+	HudMessage(s:SecretBonusText1,d:SecretBonusText2,s:SecretBonusText3;
+	              HUDMSG_TYPEON,3406,CR_BLUE,XPosF,YPosF,2.5,0.025,0.125,0.75);
+    SetHudSize(0,0,0);
+    SetFont("SMALLFONT");
+   }
+  }
+  if (ItemBonusApplied == 0)
+  {
+   if (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) == GetLevelInfo(LEVELINFO_FOUND_ITEMS))
+   {
+    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) / 768) + 1;
+    ItemBonusApplied = 1;
+	ItemBonusText1 = "100% items found bonus:\n\n";
+	if (GetCVar("dvds_itemsfoundbonus") == 0)
+	{
+     BaseEXPGain *= GetCVar("dvds_itemsfoundmulti");
+	 BaseEXPGain *= ExtraMultiplier;
+     BaseEXPGain = BaseEXPGain >> 16;
+	 if (PlayerLevel == 0) { Experience += (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
+	 else if (PlayerLevel >= 1) { Experience += ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
+	  
+	 ItemBonusText2 = BaseEXPGain;
+	 ItemBonusText3 = "% of the experience required to reach the next level.";
+	}
+	if (GetCVar("dvds_itemsfoundbonus") == 1)
+	{
+     BaseAeonPoints *= GetCVar("dvds_itemsfoundmulti");
+	 BaseAeonPoints *= ExtraMultiplier;
+     BaseAeonPoints = BaseAeonPoints >> 16;
+	 if (BaseAeonPoints < 1) BaseAeonPoints = 1;
+     MiscellaneousVars[25] += BaseAeonPoints;
+     MiscellaneousVars[224] += BaseAeonPoints; 
+	 MiscellaneousVars[2033] = 105;
+
+	 ItemBonusText2 = BaseAeonPoints;
+	 if (BaseAeonPoints > 1) { ItemBonusText3 = " Aeon Points."; } else { ItemBonusText3 = " Aeon Point."; }
+	}
+
+    SetFont("DVDSBIGFONT");
+    SetHudSize(XSize,YSize,0);
+    XPos = XSize / 2;
+    XPosF = XPos * 1.0 + 0.4;
+    YPos = YSize * 7 / 9;
+    YPosF = YPos * 1.0;
+	HudMessage(s:ItemBonusText1,d:ItemBonusText2,s:ItemBonusText3;
+	              HUDMSG_TYPEON,3407,CR_GREEN,XPosF,YPosF,2.5,0.025,0.125,0.75);
+    SetHudSize(0,0,0);
+    SetFont("SMALLFONT");
+   }
+  }
+  if (KillBonusApplied == 0)
+  {
+   if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) == GetLevelInfo(LEVELINFO_KILLED_MONSTERS))
+   {
+    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / 1024) + 1;
+    KillBonusApplied = 1;
+	KillBonusText1 = "100% monsters killed bonus:\n\n";
+	if (GetCVar("dvds_monsterskilledbonus") == 0)
+	{
+     BaseEXPGain *= GetCVar("dvds_monsterskilledmulti");
+	 BaseEXPGain *= ExtraMultiplier;
+     BaseEXPGain = BaseEXPGain >> 16;
+	 if (PlayerLevel == 0) { Experience += (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
+	 else if (PlayerLevel >= 1) { Experience += ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
+	  
+	 KillBonusText2 = BaseEXPGain;
+	 KillBonusText3 = "% of the experience required to reach the next level.";
+	}
+	if (GetCVar("dvds_monsterskilledbonus") == 1)
+	{
+     BaseAeonPoints *= GetCVar("dvds_monsterskilledmulti");
+	 BaseAeonPoints *= ExtraMultiplier;
+     BaseAeonPoints = BaseAeonPoints >> 16;
+	 if (BaseAeonPoints < 1) BaseAeonPoints = 1;
+     MiscellaneousVars[25] += BaseAeonPoints;
+     MiscellaneousVars[224] += BaseAeonPoints; 
+	 MiscellaneousVars[2033] = 105;
+
+	 KillBonusText2 = BaseAeonPoints;
+	 if (BaseAeonPoints > 1) { KillBonusText3 = " Aeon Points."; } else { KillBonusText3 = " Aeon Point."; }
+	}
+
+    SetFont("DVDSBIGFONT");
+    SetHudSize(XSize,YSize,0);
+    XPos = XSize / 2;
+    XPosF = XPos * 1.0 + 0.4;
+    YPos = YSize * 8 / 9;
+    YPosF = YPos * 1.0;
+	HudMessage(s:KillBonusText1,d:KillBonusText2,s:KillBonusText3;
+	              HUDMSG_TYPEON,3408,CR_RED,XPosF,YPosF,2.5,0.025,0.125,0.75);
+    SetHudSize(0,0,0);
+    SetFont("SMALLFONT");
+   }
+  }
+ }
+
+ if (SecretBonusApplied == 1 && ItemBonusApplied == 1 && KillBonusApplied == 1)
+ {
+  Delay(175);
+
+  
+  Terminate;
+ }
+ else
+ {
+  Delay(10);
+  Restart;
+ }
 }
 
 
@@ -27599,7 +27778,8 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  }
  
  // Tension Aura Actor Control
- // TID 2001 - Aura
+ // TID 1501 - Aura
+ // TID 1502 - Aura Lights
  str TensionAuraLight;
  int TensionAuraSpawnHeight;
  int TensionAuraXScale;
