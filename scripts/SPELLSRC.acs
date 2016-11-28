@@ -34,7 +34,9 @@ HudMessage ID Tags:
 		3		-	Tunnel Vision Display [death]
 		4		-	Tunnel Vision Display [badly injured and/or dead]
 		...
-		111		-	Reserved? [TCOTD uses it for Note displays. :V]
+		106-108 -   Bonus Text
+		...
+		111		-	Reserved? [TCOTD:A uses it for Note displays. :V]
 		...
 		196		-	Debug Display for Lifebars
 		197		-	Level Display for Lifebars
@@ -66,7 +68,6 @@ HudMessage ID Tags:
 		3202-3303	-	Mana Bar
 		3304-3405	-	Exp Bar
 		3406-3407	-	Spell Name, Spell Description
-		3408-3410   -   Bonus Text
 		3413		-	Level Display
 		...
 		3415		-	Mana Points Display
@@ -644,7 +645,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [255] stored SkullRodAmmo [for Deg/Illu for Forced Pistol Restarts]
 // [256] stored PhoenixRodAmmo [for Flora for Forced Pistol Restarts]
 // [257] stored MaceAmmo [for Flora for Forced Pistol Restarts]
-	// [258 to 273] are undefined so far :P
+	// [258 to 270] are undefined so far :P
 // [271] Saves player's XVel when using the menus
 // [272] Saves player's YVel when using the menus
 // [273] Saves player's ZVel when using the menus
@@ -1519,6 +1520,15 @@ int FloraSpellCostsDQ[33] =
 //******FUNCTIONS******
 //*********************
 //*********************
+
+// SetActorPositionForced
+function bool SetActorPositionForced(int tid, int x, int y, int z, bool fog)
+{
+   Warp(tid, x, y, z, 0, WARPF_MOVEPTR|WARPF_ABSOLUTEPOSITION|WARPF_NOCHECKPOSITION);
+   if (fog)
+      SpawnForced("TeleportFog", x, y, z);
+   return true;
+}
 
 // Healing Formula [for displays and actual calculations]
 function int GetHealingValue (int type, int MinOrMax)
@@ -9268,6 +9278,10 @@ script "OldDoomSpellCompletion" ENTER
  int KillBonusText2;
  str KillBonusText3;
 
+ int ItemsForMultiplier = GetCVar("dvds_itemsfoundformulti");
+ int SecretsForMultiplier = GetCVar("dvds_secretsfoundformulti");
+ int KillsForMultiplier = GetCVar("dvds_monsterskilledformulti");
+ 
  int XSize = 800;
  int YSize = 600;
  int XPos = 0;
@@ -9290,7 +9304,7 @@ script "OldDoomSpellCompletion" ENTER
   {
    if (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
    {
-    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) / 16) + 1;
+    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) / SecretsForMultiplier) + 1;
     SecretBonusApplied = 1;
     SecretBonusText1 = "100% secrets found bonus:\n\n";
 	if (GetCVar("dvds_secretsfoundbonus") == 0)
@@ -9325,7 +9339,7 @@ script "OldDoomSpellCompletion" ENTER
     YPos = YSize * 6 / 9;
     YPosF = YPos * 1.0;
 	HudMessage(s:SecretBonusText1,d:SecretBonusText2,s:SecretBonusText3;
-	              HUDMSG_TYPEON,3406,CR_BLUE,XPosF,YPosF,2.5,0.025,0.125,0.75);
+	              HUDMSG_TYPEON,106,CR_BLUE,XPosF,YPosF,2.5,0.025,0.125,0.75);
     SetHudSize(0,0,0);
     SetFont("SMALLFONT");
    }
@@ -9334,7 +9348,7 @@ script "OldDoomSpellCompletion" ENTER
   {
    if (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) == GetLevelInfo(LEVELINFO_FOUND_ITEMS))
    {
-    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) / 768) + 1;
+    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) / ItemsForMultiplier) + 1;
     ItemBonusApplied = 1;
 	ItemBonusText1 = "100% items found bonus:\n\n";
 	if (GetCVar("dvds_itemsfoundbonus") == 0)
@@ -9369,7 +9383,7 @@ script "OldDoomSpellCompletion" ENTER
     YPos = YSize * 7 / 9;
     YPosF = YPos * 1.0;
 	HudMessage(s:ItemBonusText1,d:ItemBonusText2,s:ItemBonusText3;
-	              HUDMSG_TYPEON,3407,CR_GREEN,XPosF,YPosF,2.5,0.025,0.125,0.75);
+	              HUDMSG_TYPEON,107,CR_GREEN,XPosF,YPosF,2.5,0.025,0.125,0.75);
     SetHudSize(0,0,0);
     SetFont("SMALLFONT");
    }
@@ -9378,7 +9392,7 @@ script "OldDoomSpellCompletion" ENTER
   {
    if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) == GetLevelInfo(LEVELINFO_KILLED_MONSTERS))
    {
-    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / 1024) + 1;
+    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / KillsForMultiplier) + 1;
     KillBonusApplied = 1;
 	KillBonusText1 = "100% monsters killed bonus:\n\n";
 	if (GetCVar("dvds_monsterskilledbonus") == 0)
@@ -9413,23 +9427,24 @@ script "OldDoomSpellCompletion" ENTER
     YPos = YSize * 8 / 9;
     YPosF = YPos * 1.0;
 	HudMessage(s:KillBonusText1,d:KillBonusText2,s:KillBonusText3;
-	              HUDMSG_TYPEON,3408,CR_RED,XPosF,YPosF,2.5,0.025,0.125,0.75);
+	              HUDMSG_TYPEON,108,CR_RED,XPosF,YPosF,2.5,0.025,0.125,0.75);
     SetHudSize(0,0,0);
     SetFont("SMALLFONT");
    }
   }
  }
 
+ str FullBonusText1;
+ int FullBonusText2;
+ str FullBonusText3;
+
  if (SecretBonusApplied == 1 && ItemBonusApplied == 1 && KillBonusApplied == 1)
  {
-  Delay(175);
-
-  
   Terminate;
  }
  else
  {
-  Delay(10);
+  Delay(random(17,18));
   Restart;
  }
 }
@@ -24423,12 +24438,12 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [StatCheck2]: ",d:staminaregenfinal);
 
   // Tension
-  if (MiscellaneousVars[181] == 1) staminaregenfinal = staminaregenfinal * 102 / 100;
+  if (MiscellaneousVars[181] == 1) staminaregenfinal = staminaregenfinal * 1025 / 1000;
   if (MiscellaneousVars[181] == 2) staminaregenfinal = staminaregenfinal * 105 / 100;
   if (MiscellaneousVars[181] == 3) staminaregenfinal = staminaregenfinal * 110 / 100;
-  if (MiscellaneousVars[181] == 4) staminaregenfinal = staminaregenfinal * 120 / 100;
+  if (MiscellaneousVars[181] == 4) staminaregenfinal = staminaregenfinal * 125 / 100;
   if (MiscellaneousVars[181] == 5) staminaregenfinal = staminaregenfinal * 150 / 100;
-  if (MiscellaneousVars[181] == 6) staminaregenfinal = staminaregenfinal * 200 / 100;
+  if (MiscellaneousVars[181] == 6) staminaregenfinal = staminaregenfinal * 250 / 100;
   if (MiscellaneousVars[181] == 7) staminaregenfinal = staminaregenfinal * 500 / 100;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Tension]: ",d:staminaregenfinal);
 
@@ -36367,6 +36382,26 @@ script "GetPlayerATKDMG" (int type, int puff)
   extradmg1 = ((MiscellaneousVars[34] * 5) / 8); // 62.5% of Sorcery
   extradmg1 = extradmg1 * perkfactor / 10000;
   extradmg2 = ((MiscellaneousVars[36] * 1) / 6); // 16.67% of Therapeusis
+  extradmg2 = extradmg2 * perkfactor / 10000;
+ }
+ if (type == 46) // HubbleBubbleSmall [main]
+ {
+  perkfactor += ((MiscellaneousVars[10053] * 2000) + (MiscellaneousVars[10054] * 8000));
+  damage = (67 + random(-22,23));
+  damage = damage * perkfactor / 10000;
+  extradmg1 = ((MiscellaneousVars[34] * 20) / 8); // 250% of Sorcery
+  extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg2 = ((MiscellaneousVars[36] * 4) / 6); // 66.67% of Therapeusis
+  extradmg2 = extradmg2 * perkfactor / 10000;
+ }
+ if (type == 47) // HubbleBubbleLarge [main]
+ {
+  perkfactor += ((MiscellaneousVars[10053] * 2000) + (MiscellaneousVars[10054] * 8000));
+  damage = (200 + random(-67,67));
+  damage = damage * perkfactor / 10000;
+  extradmg1 = ((MiscellaneousVars[34] * 60) / 8); // 750% of Sorcery
+  extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg2 = ((MiscellaneousVars[36] * 12) / 6); // 200% of Therapeusis
   extradmg2 = extradmg2 * perkfactor / 10000;
  }
 
