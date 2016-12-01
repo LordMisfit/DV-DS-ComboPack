@@ -14348,10 +14348,12 @@ ACTOR HubbleBubbleSmall
   var int user_bubbletimer; var int user_maxbubbletimer;
   var int user_transpulsetype;
   var int user_sizepulsetype;
+  var int user_damageradius;
   var int user_velx; var int user_vely; var int user_velz;
+
   Radius 6 // 573 wide
   Height 6 // 569 tall
-  Scale 0.04
+  Scale 0.05
   Speed 1.5
   Damage (0)
   Projectile
@@ -14394,21 +14396,22 @@ ACTOR HubbleBubbleSmall
 	 A_SetUserVar("user_maxbubbletimer",random(270,315));
 	 A_SetUserVar("user_maxripperinterval",random(16,24));
 	 A_SetUserVar("user_halfmaxripperinterval",user_maxripperinterval/2);
+	 Thing_ChangeTID(0,5001);
 	}
   Idle:
     HUBB A 1 Bright
 	{
 	 A_ScaleVelocity(1.0005);
-	 if (scaleX <= 0.038 && scaleY <= 0.038) { A_SetUserVar("user_sizepulsetype",1); } // Set to Expand
-	 if (scaleX >= 0.042 && scaleY >= 0.042) { A_SetUserVar("user_sizepulsetype",0); } // Set to Shrink
+	 if (scaleX <= 0.0475 && scaleY <= 0.0475) { A_SetUserVar("user_sizepulsetype",1); } // Set to Expand
+	 if (scaleX >= 0.0525 && scaleY >= 0.0525) { A_SetUserVar("user_sizepulsetype",0); } // Set to Shrink
      if(user_sizepulsetype == 0) // Shrinking
 	 {
-      A_SetScale(scaleX-0.0001,scaleY-0.0001);
+      A_SetScale(scaleX-0.000125,scaleY-0.000125);
 	 }
 	 else
      if(user_sizepulsetype == 1) // Expanding
 	 {
-      A_SetScale(scaleX+0.0001,scaleY+0.0001);
+      A_SetScale(scaleX+0.000125,scaleY+0.000125);
 	 }
 
 	 if (alpha <= 0.64) { A_SetUserVar("user_transpulsetype",1); } // Set to Fade In
@@ -14423,6 +14426,7 @@ ACTOR HubbleBubbleSmall
       A_FadeIn(0.025);
 	 }
 
+     A_SetUserVar("user_damageradius",32);
 	 A_SetRoll(roll+4,SPF_INTERPOLATE,AAPTR_DEFAULT);
 	 A_SetUserVar("user_ripperinterval",user_ripperinterval+1);
 	 if (user_ripperinterval < user_maxripperinterval)
@@ -14434,14 +14438,14 @@ ACTOR HubbleBubbleSmall
 	 {
 	  if (random(1,4) == 1) 
 	  { 
-	   A_Explode(ACS_NamedExecuteWithResult("GetPlayerATKDMG",46),32,0,0,32); 
+	   A_Explode(ACS_NamedExecuteWithResult("GetPlayerATKDMG",46),user_damageradius,0,0,user_damageradius); 
 	   A_ChangeFlag("PAINLESS",0); 
 	   A_ChangeFlag("FORCEPAIN",1);
 	  }
 	 }
 	 if (user_ripperinterval >= user_maxripperinterval)
 	 {
-	  if (random(1,8) == 1) { A_Explode((ACS_NamedExecuteWithResult("GetPlayerATKDMG",46)*2),32,0,0,32); } else { A_Explode(ACS_NamedExecuteWithResult("GetPlayerATKDMG",46),32,0,0,32); } 
+	  A_Explode(ACS_NamedExecuteWithResult("GetPlayerATKDMG",46),user_damageradius,0,0,user_damageradius);
 	  A_ChangeFlag("PAINLESS",0);
 	  A_ChangeFlag("FORCEPAIN",1);
       A_SetUserVar("user_ripperinterval",0);
@@ -14453,13 +14457,16 @@ ACTOR HubbleBubbleSmall
 	 return state("");
 	}
     Loop
+
+  Pop:
   Death:
     TNT1 A 0 Bright
 	{
+     A_SetUserVar("user_damageradius",128);
 	 A_ChangeFlag("PAINLESS",0);
 	 A_ChangeFlag("FORCEPAIN",1);
 	 A_PlaySound("HubbleBubblePop");
-	 A_Explode((ACS_NamedExecuteWithResult("GetPlayerATKDMG",47)*8),320,0,0,320);
+	 A_Explode((ACS_NamedExecuteWithResult("GetPlayerATKDMG",46)*4),user_damageradius,0,0,user_damageradius); 
 	 if (random(1,2) == 1) { return state("Death1"); } else { return state("Death2"); }
      return state("");
     }
@@ -14474,7 +14481,7 @@ ACTOR HubbleBubbleSmall
 	HUBB FGHIJ 1 Bright
 	{
 	 A_ScaleVelocity(0.0);
-	 A_SetScale(scaleX*1.000,scaleY*1.000);
+	 A_SetScale(scaleX*1.125,scaleY*1.125);
 	}
     Stop
   }
@@ -14497,6 +14504,7 @@ ACTOR HubbleBubbleLarge : HubbleBubbleSmall
 	 A_SetUserVar("user_maxbubbletimer",random(405,467));
 	 A_SetUserVar("user_maxripperinterval",random(16,24));
 	 A_SetUserVar("user_halfmaxripperinterval",user_maxripperinterval/2);
+	 Thing_ChangeTID(0,5001);
 	}
   Idle:
     HUBB A 1 Bright
@@ -14526,6 +14534,7 @@ ACTOR HubbleBubbleLarge : HubbleBubbleSmall
       A_FadeIn(0.025);
 	 }
 
+     A_SetUserVar("user_damageradius",64);
 	 A_SetRoll(roll+4,SPF_INTERPOLATE,AAPTR_DEFAULT);
 	 A_SetUserVar("user_ripperinterval",user_ripperinterval+1);
 	 if (user_ripperinterval < user_maxripperinterval)
@@ -14537,14 +14546,14 @@ ACTOR HubbleBubbleLarge : HubbleBubbleSmall
 	 {
 	  if (random(1,8) <= 3) 
 	  { 
-	   A_Explode(ACS_NamedExecuteWithResult("GetPlayerATKDMG",47),80,0,0,80); 
+	   A_Explode(ACS_NamedExecuteWithResult("GetPlayerATKDMG",47),user_damageradius,0,0,user_damageradius); 
 	   A_ChangeFlag("PAINLESS",0); 
 	   A_ChangeFlag("FORCEPAIN",1);
 	  }
 	 }
 	 if (user_ripperinterval >= user_maxripperinterval)
 	 {
-	  if (random(1,8) <= 3) { A_Explode((ACS_NamedExecuteWithResult("GetPlayerATKDMG",47)*2),80,0,0,80); } else { A_Explode(ACS_NamedExecuteWithResult("GetPlayerATKDMG",47),80,0,0,80); } 
+	  A_Explode(ACS_NamedExecuteWithResult("GetPlayerATKDMG",47),user_damageradius,0,0,user_damageradius);
 	  A_ChangeFlag("PAINLESS",0);
 	  A_ChangeFlag("FORCEPAIN",1);
       A_SetUserVar("user_ripperinterval",0);
@@ -14556,13 +14565,16 @@ ACTOR HubbleBubbleLarge : HubbleBubbleSmall
 	 return state("");
 	}
     Loop
+
+  Pop:
   Death:
     TNT1 A 0 Bright
 	{
+     A_SetUserVar("user_damageradius",256);
 	 A_ChangeFlag("PAINLESS",0);
 	 A_ChangeFlag("FORCEPAIN",1);
 	 A_PlaySound("HubbleBubblePop");
-	 A_Explode((ACS_NamedExecuteWithResult("GetPlayerATKDMG",47)*8),320,0,0,320);
+	 A_Explode((ACS_NamedExecuteWithResult("GetPlayerATKDMG",47)*4),user_damageradius,0,0,user_damageradius); 
 	 if (random(1,2) == 1) { return state("Death1"); } else { return state("Death2"); }
      return state("");
     }

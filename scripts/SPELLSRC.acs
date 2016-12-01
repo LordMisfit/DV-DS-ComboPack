@@ -638,7 +638,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [247] Levelup Speech Timer
 // [248] Blind Timer
 // [249] Sleep Timer
-	// [250 to 251] are undefined so far :P
+// [250] Tension Duration Timer
+// [251] Tension OverCharge Timer
 // [252] stored GoldWandAmmo [for Flora for Forced Pistol Restarts]
 // [253] stored CrossbowAmmo [for Flora for Forced Pistol Restarts]
 // [254] stored BlasterAmmo [for Flora for Forced Pistol Restarts]
@@ -27166,6 +27167,8 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  // [191] Tension Countdown Multiplier [CVAR]
  // [192] Tension Cooldown Multiplier [CVAR]
  // [193] Tension Aura Appearance Frame
+ // [250] Tension Duration Timer
+ // [251] Tension OverCharge Timer
  str TensionPlaceholderItem;
  str TensionAttackItem;
  str TensionDefenseItem;
@@ -27179,12 +27182,18 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
  int randompulseinterval4;
  int pulsevolume;
  int maxpulseinterval;
+ int TensionOverchargeBuffer;
+ int TensionOverchargeTimeInterval;
 
  if (MiscellaneousVars[181] == 0)  // 0 to 5 Tension [4 Seconds, 20% Total Stamina Use, 0% Fail Rate]
  {
   TensionChargeFailRate = 0;
   TensionChargeTimeMax = 14000;
   TensionStaminaPerTic = 2000;
+  TensionOverchargeBuffer = 99999999;
+  TensionOverchargeTimeInterval = 99999999;
+  MiscellaneousVars[250] = 0;
+  MiscellaneousVars[251] = 0;
  }
 
  if (MiscellaneousVars[181] == 1)  // 5 to 20 Tension [4.25~ Seconds, 22.5% Total Stamina Use, 2.5% Fail Rate]
@@ -27192,6 +27201,8 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   TensionChargeFailRate = 25;
   TensionChargeTimeMax = 14880;
   TensionStaminaPerTic = 2250;
+  TensionOverchargeBuffer = 21000; // 600 Seconds [10 minutes]
+  TensionOverchargeTimeInterval = 130; // 3.71 seconds
  }
 
  if (MiscellaneousVars[181] == 2)  // 20 to 50 Tension [4.5~ Seconds, 25% Total Stamina Use, 10% Fail Rate]
@@ -27199,6 +27210,8 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   TensionChargeFailRate = 100;
   TensionChargeTimeMax = 15750;
   TensionStaminaPerTic = 2500;
+  TensionOverchargeBuffer = 15750; // 450 Seconds
+  TensionOverchargeTimeInterval = 110; // 3.14 seconds
  }
 
  if (MiscellaneousVars[181] == 3)  // 50 to 100 Tension [5 Seconds, 30% Total Stamina Use, 50% Fail Rate]
@@ -27206,6 +27219,8 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   TensionChargeFailRate = 500;
   TensionChargeTimeMax = 17500;
   TensionStaminaPerTic = 3000;
+  TensionOverchargeBuffer = 10500; // 300 Seconds
+  TensionOverchargeTimeInterval = 90; // 2.57 seconds
  }
 
  if (MiscellaneousVars[181] == 4)  // 100 to 250 Tension [5.5 Seconds, 35% Total Stamina Use, 70% Fail Rate]
@@ -27213,6 +27228,8 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   TensionChargeFailRate = 700;
   TensionChargeTimeMax = 19250;
   TensionStaminaPerTic = 3500;
+  TensionOverchargeBuffer = 5250; // 150 Seconds
+  TensionOverchargeTimeInterval = 70; // 2 seconds
  }
 
  if (MiscellaneousVars[181] == 5)  // 250 to 500 Tension [6 Seconds, 40% Total Stamina Use, 85% Fail Rate]
@@ -27220,6 +27237,8 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   TensionChargeFailRate = 850;
   TensionChargeTimeMax = 21000;
   TensionStaminaPerTic = 4000;
+  TensionOverchargeBuffer = 2100; // 60 Second
+  TensionOverchargeTimeInterval = 60; // 1.71 seconds
  }
 
  if (MiscellaneousVars[181] == 6)  // 500 to 1000 Tension [7.5 Seconds, 50% Total Stamina Use, 92.5% Fail Rate]
@@ -27227,13 +27246,26 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
   TensionChargeFailRate = 950;
   TensionChargeTimeMax = 26250;
   TensionStaminaPerTic = 5000;
+  TensionOverchargeBuffer = 1575; // 45 Seconds
+  TensionOverchargeTimeInterval = 50; // 1.42 seconds
  }
  if (MiscellaneousVars[181] == 7)
  {
   TensionChargeFailRate = 1000;
   TensionChargeTimeMax = 26250;
   TensionStaminaPerTic = 5000;
+  TensionOverchargeBuffer = 1050; // 30 Seconds
+  TensionOverchargeTimeInterval = 40; // 1.14 seconds
  }
+
+ if (MiscellaneousVars[184] == 1) TensionOverchargeTimeInterval *= 3;
+
+ if (PowerupTimer[7] > 0)
+ {
+  TensionOverchargeBuffer *= 4;
+  TensionOverchargeTimeInterval *= 4;
+ }
+ 
  TensionStaminaPerTic = TensionStaminaPerTic / (TensionChargeTimeMax / 190);
  // Check Tension Speed Option [also affects Stamina]
  TensionStaminaPerTic = TensionStaminaPerTic * MiscellaneousVars[193] / 4;
@@ -27444,6 +27476,8 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
     else if (MiscellaneousVars[181] == 6) { MiscellaneousVars[186] = 6560; FadeRange(254,104,253,0.99,254,104,253,0,2.0); }
     MiscellaneousVars[186] *= 2;
     MiscellaneousVars[188] = MiscellaneousVars[186];
+    MiscellaneousVars[250] = 0;
+    MiscellaneousVars[251] = 0;
 
     SetActivator(Player1TID);
     if (MiscellaneousVars[181] >= 0 && MiscellaneousVars[181] <= 2) // to 5,20,50
@@ -27608,6 +27642,38 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
     if (MiscellaneousVars[181] == 7) PlaySound(Player1TID,"tensionaura1000",CHAN_6,1.0,0,ATTN_NORM);
    }
    if (MiscellaneousVars[246] >= 68) MiscellaneousVars[246] = 0;
+
+   int TensionOverchargeDmgFactor;
+   int TensionOverchargeDmgBase;
+   int TensionOverchargeDmgFinal;
+   int TensionOverchargeDmgThreshold = GetActorProperty(Player1TID,APROP_HEALTH) / 64;
+   if (TensionOverchargeDmgThreshold < 1) TensionOverchargeDmgThreshold = 1;
+   // Overcharge Tracking
+   if (GetCVar("dvds_allowtensionocdmg") > 0) MiscellaneousVars[250]++; else MiscellaneousVars[250] = 0;
+   if (MiscellaneousVars[250] >= TensionOverchargeBuffer && GetCVar("dvds_allowtensionocdmg") > 0)
+   {
+    if (GetCVar("dvds_allowtensionocdmg") > 0) MiscellaneousVars[251]++; else MiscellaneousVars[251] = 0;
+    if (MiscellaneousVars[251] >= TensionOverchargeTimeInterval && GetCVar("dvds_allowtensionocdmg") > 0)
+    {
+     MiscellaneousVars[251] = 0;
+	 TensionOverchargeTimeInterval = 0;
+	 TensionOverchargeDmgFactor = random(4,8) + MiscellaneousVars[181];
+	 TensionOverchargeDmgBase = (2 * TensionOverchargeDmgFactor) / 8;
+	 if (TensionOverchargeDmgBase < 2 && MiscellaneousVars[181] > 4) TensionOverchargeDmgBase = 2;
+	 if (TensionOverchargeDmgBase < 1) TensionOverchargeDmgBase = 1;
+	 TensionOverchargeDmgFinal = GetActorProperty(Player1TID,APROP_HEALTH) - TensionOverchargeDmgBase;
+	 if (TensionOverchargeDmgFinal < TensionOverchargeDmgThreshold) TensionOverchargeDmgFinal = TensionOverchargeDmgThreshold;
+	 if (TensionOverchargeDmgFinal > TensionOverchargeDmgThreshold)
+	 {
+	  if (random(1,5) == 1) ACS_NamedExecuteAlways("FloraPainScreams",0,0,0,0);
+	  SetActorProperty(Player1TID,APROP_HEALTH,TensionOverchargeDmgFinal);
+	 }	 
+	}
+   }
+   else
+   {
+    MiscellaneousVars[251] = 0;
+   }
    
    int tensiontimerdecrease;
    if (MiscellaneousVars[184] > 0 && MiscellaneousVars[183] >= 0)
@@ -27984,7 +28050,10 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
              s:"AuraZAlpha: ",f:TensionAuraAlpha,s:"\n",
              s:"AuraSoundTimer: ",d:MiscellaneousVars[246],s:"\n",
              s:"TensionLevel: ",d:MiscellaneousVars[181],s:"\n",
-             s:"TensionLevelLastTic: ",d:MiscellaneousVars[182],s:"\n");
+             s:"TensionLevelLastTic: ",d:MiscellaneousVars[182],s:"\n",
+             s:"TensionOverchargeBuffer: ",d:MiscellaneousVars[250],s:" / ",d:TensionOverchargeBuffer,s:"\n",
+             s:"TensionOverchargeTimeInterval: ",d:MiscellaneousVars[251],s:" / ",d:TensionOverchargeTimeInterval,s:"\n",
+             s:"\n");
   }
   else
   {
@@ -28009,7 +28078,10 @@ if (MiscellaneousVars[9901] != TempCombinedLevels)
              s:"AuraZAlpha: ",f:TensionAuraAlpha,s:"\n",
              s:"AuraSoundTimer: ",d:MiscellaneousVars[246],s:"\n",
              s:"TensionLevel: ",d:MiscellaneousVars[181],s:"\n",
-             s:"TensionLevelLastTic: ",d:MiscellaneousVars[182],s:"\n");
+             s:"TensionLevelLastTic: ",d:MiscellaneousVars[182],s:"\n",
+             s:"TensionOverchargeBuffer: ",d:MiscellaneousVars[250],s:" / ",d:TensionOverchargeBuffer,s:"\n",
+             s:"TensionOverchargeTimeInterval: ",d:MiscellaneousVars[251],s:" / ",d:TensionOverchargeTimeInterval,s:"\n",
+             s:"\n");
   }
  }
 
@@ -36420,21 +36492,21 @@ script "GetPlayerATKDMG" (int type, int puff)
  if (type == 46) // HubbleBubbleSmall [main]
  {
   perkfactor += ((MiscellaneousVars[10053] * 2000) + (MiscellaneousVars[10054] * 8000));
-  damage = (67 + random(-22,23));
+  damage = (22 + random(-7,8));
   damage = damage * perkfactor / 10000;
-  extradmg1 = ((MiscellaneousVars[34] * 20) / 8); // 250% of Sorcery
+  extradmg1 = ((MiscellaneousVars[34] * 20) / 4); // 500% of Sorcery
   extradmg1 = extradmg1 * perkfactor / 10000;
-  extradmg2 = ((MiscellaneousVars[36] * 4) / 6); // 66.67% of Therapeusis
+  extradmg2 = ((MiscellaneousVars[36] * 4) / 3); // 133.33% of Therapeusis
   extradmg2 = extradmg2 * perkfactor / 10000;
  }
  if (type == 47) // HubbleBubbleLarge [main]
  {
   perkfactor += ((MiscellaneousVars[10053] * 2000) + (MiscellaneousVars[10054] * 8000));
-  damage = (200 + random(-67,67));
+  damage = (67 + random(-22,23));
   damage = damage * perkfactor / 10000;
-  extradmg1 = ((MiscellaneousVars[34] * 60) / 8); // 750% of Sorcery
+  extradmg1 = ((MiscellaneousVars[34] * 60) / 4); // 1500% of Sorcery
   extradmg1 = extradmg1 * perkfactor / 10000;
-  extradmg2 = ((MiscellaneousVars[36] * 12) / 6); // 200% of Therapeusis
+  extradmg2 = ((MiscellaneousVars[36] * 12) / 3); // 400% of Therapeusis
   extradmg2 = extradmg2 * perkfactor / 10000;
  }
 
@@ -44225,4 +44297,9 @@ script "GetPlayerHeight" (int checktype)
  }
  //PrintBold(d:finalresult);
  SetResultValue(finalresult);
+}
+
+script "PopBubbles" (void)
+{
+ SetActorState(5001,"Pop",TRUE);
 }
