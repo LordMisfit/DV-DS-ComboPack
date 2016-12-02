@@ -30424,18 +30424,19 @@ script "GetBuffTimer" (int bufftype)
  // [11] - Buff (2x defense, up to +10% survival rate, 2x balance)
  // [12] - Accelerate (1.33x Speed, up to +10% evade rate, 1.25x jumping)
 
- // [13] - Blunt (0.5x damage, down to -8% crit rate) [not implemented yet]
- // [14] - Sap (0.5x defense, down to -10% survival rate, 0.75x balance) [not implemented yet]
- // [15] - Decelerate (0.66x Speed, down to -10% evade rate, 0.875x jumping) [not implemented yet]
- // [16] - Poison (HP/Health is damaged every so many tics, down to as low as 1 [cannot kill the player]) [not implemented yet]
- // [17] - Corrosion (AP/Armor is damaged every so many tics, down to as low as 0) [not implemented yet]
- // [18] - Fatigue (HP/Mana/Stamina Regeneration and Hellcore Cooldown are drastically reduced in speed) [not implemented yet]
- // [19] - Blind (exactly as on the tin :V) [not implemented yet]
- // [20] - Sleep (can't move, see or perform actions, 1.25x more damage from attacks, however HP/MP/Stamina regeneration rates are 5x) [not implemented yet]
- // [21] - Silence/Mute (spells are locked out) [not implemented yet]
+ // [13] - Blunt (0.5x damage, down to -8% crit rate)
+ // [14] - Sap (0.5x defense, down to -10% survival rate, 0.75x balance)
+ // [15] - Decelerate (0.66x Speed, down to -10% evade rate, 0.875x jumping)
+ // [16] - Poison (HP/Health is damaged every so many tics, down to as low as 1 [cannot kill the player])
+ // [17] - Corrosion (AP/Armor is damaged every so many tics, down to as low as 0)
+ // [18] - Fatigue (HP/Mana/Stamina Regeneration and Hellcore Cooldown are drastically reduced in speed)
+ // [19] - Blind (exactly as on the tin :V)
+ // [20] - Sleep (can't move, see or perform actions, 1.25x more damage from attacks, however HP/MP/Stamina regeneration rates are 5x)
+ // [21] - Silence/Mute (spells are locked out)
  // [22] - RadSuit (mostly a proper timer for the radsuit)
  // [23] - Berserk (mostly a proper timer for the berserk powerup)
-
+ // [24] - Regen (HP/MP/Stamina regeneration rates are 10x)
+ 
  // [129] - ??????
  
  SetResultValue(PowerupTimer[bufftype]);
@@ -30875,6 +30876,19 @@ script "CheckBuffTimers" ENTER
  else
  {
   TakeActorInventory(Player1TID, "PowerStrength", 9999);
+ }
+
+ // Regen Effects
+ ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
+ if (PowerupTimer[24] > 0)
+ {
+  GiveActorInventory(Player1TID, "PowerStrength", 1);
+  if (GetActorProperty(Player1TID,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Berserk: ",d:(PowerupTimer[24]/35),s:" Secs";0,3445,cr_white,xpos,ypos,0.03);
+  If (MenuSystemVars[0] == 0) PowerupTimer[24] -= 1;
+ }
+ else
+ {
+ //
  }
 
 
@@ -38586,7 +38600,7 @@ script "CheckBFG2704" (void)
  SetResultValue(GetCVar("dvds_BFG2704"));
 }
 
-str dvds_monsternames[356][3] =
+str dvds_monsternames[361][3] =
 {
 // DOOM 1/2
   // Monsters
@@ -38763,6 +38777,7 @@ str dvds_monsternames[356][3] =
   // Monsters
   {"HereticImpNew", "Gargoyle", ""},
   {"HereticImpLeaderNew", "NitroGargoyle", ""},
+  {"PlagueImp", "Plague Gargoyle", ""},
   {"MummyNew", "Golem", ""},
   {"MummyLeaderNew", "NitroGolem", ""},
   {"MummyGhostNew", "Golem (Ghost)", ""},
@@ -38771,6 +38786,10 @@ str dvds_monsternames[356][3] =
   {"KnightGhostNew", "Undead Warrior (Ghost)", ""},
   {"WizardNew", "Disciple of D'Sparil", ""},
   {"IronlichNew", "Iron Lich", ""},
+  {"IceLich", "Ice Lich", ""},
+  {"GoldLich", "Gold Lich", ""},
+  {"FakeGoldLich", "'Gold Lich'", ""},
+  {"BloodLich", "Blood Lich", ""},
   {"ClinkNew", "Sabreclaw", ""},
   {"BeastNew", "Were-Dragon", ""},
   {"MaulotaurNew", "Maulotaur", ""},
@@ -39038,7 +39057,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
   int xpos = 0.0;
   int ypos = 0.0;
 
-  for (int i = 0; i < 356; i++)
+  for (int i = 0; i < 361; i++)
   {
    if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
   }
@@ -41990,6 +42009,76 @@ script "DoomMonsterDeathEmulation" OPEN
   }
   else if (ClassicDoomType == 2) // Heretic
   {
+   if (GetLevelInfo(LEVELINFO_LEVELNUM) == 8) // E1M8 [Liches (tag666)]
+   {
+    TotalCount1 = ThingCountName("IronLich", 0);
+    TotalCount1 += ThingCountName("IronLichNew", 0);
+    TotalCount1 += ThingCountName("IceLich", 0);
+    TotalCount1 += ThingCountName("GoldLich", 0);
+    TotalCount1 += ThingCountName("BloodLich", 0);
+    if (LevelTime > 2 && TotalCount1 <= 0 && Script1Done == 0) 
+    { 
+     Script1Delay++;
+     if (Script1Delay > 34) { Floor_LowerToLowest(666, 10); Script1Done++; }
+    }
+/*
+    PrintBold(d:LevelTime,s:" \n",
+              d:TotalCount1,s:" ",d:Script1Done,s:" ",d:Script1Delay,s:" \n",
+              d:TotalCount2,s:" ",d:Script2Done,s:" ",d:Script2Delay,s:" \n",
+              d:TotalCount3,s:" ",d:Script3Done,s:" ",d:Script3Delay);
+*/
+   }
+   if (GetLevelInfo(LEVELINFO_LEVELNUM) == 18) // E2M8 [Maulotaurs (tag666)]
+   {
+    TotalCount1 = ThingCountName("Minotaur", 0);
+    TotalCount1 += ThingCountName("MaulotaurNew", 0);
+    if (LevelTime > 2 && TotalCount1 <= 0 && Script1Done == 0) 
+    { 
+     Script1Delay++;
+     if (Script1Delay > 34) { Floor_LowerToLowest(666, 10); Script1Done++; }
+    }
+/*
+    PrintBold(d:LevelTime,s:" \n",
+              d:TotalCount1,s:" ",d:Script1Done,s:" ",d:Script1Delay,s:" \n",
+              d:TotalCount2,s:" ",d:Script2Done,s:" ",d:Script2Delay,s:" \n",
+              d:TotalCount3,s:" ",d:Script3Done,s:" ",d:Script3Delay);
+*/
+   }
+   if (GetLevelInfo(LEVELINFO_LEVELNUM) == 38) // E4M8 [Liches (tag666)]
+   {
+    TotalCount1 = ThingCountName("IronLich", 0);
+    TotalCount1 += ThingCountName("IronLichNew", 0);
+    TotalCount1 += ThingCountName("IceLich", 0);
+    TotalCount1 += ThingCountName("GoldLich", 0);
+    TotalCount1 += ThingCountName("BloodLich", 0);
+    if (LevelTime > 2 && TotalCount1 <= 0 && Script1Done == 0) 
+    { 
+     Script1Delay++;
+     if (Script1Delay > 34) { Floor_LowerToLowest(666, 10); Script1Done++; }
+    }
+/*
+    PrintBold(d:LevelTime,s:" \n",
+              d:TotalCount1,s:" ",d:Script1Done,s:" ",d:Script1Delay,s:" \n",
+              d:TotalCount2,s:" ",d:Script2Done,s:" ",d:Script2Delay,s:" \n",
+              d:TotalCount3,s:" ",d:Script3Done,s:" ",d:Script3Delay);
+*/
+   }
+   if (GetLevelInfo(LEVELINFO_LEVELNUM) == 48) // E5M8 [Maulotaurs (tag666)]
+   {
+    TotalCount1 = ThingCountName("Minotaur", 0);
+    TotalCount1 += ThingCountName("MaulotaurNew", 0);
+    if (LevelTime > 2 && TotalCount1 <= 0 && Script1Done == 0) 
+    { 
+     Script1Delay++;
+     if (Script1Delay > 34) { Floor_LowerToLowest(666, 10); Script1Done++; }
+    }
+/*
+    PrintBold(d:LevelTime,s:" \n",
+              d:TotalCount1,s:" ",d:Script1Done,s:" ",d:Script1Delay,s:" \n",
+              d:TotalCount2,s:" ",d:Script2Done,s:" ",d:Script2Delay,s:" \n",
+              d:TotalCount3,s:" ",d:Script3Done,s:" ",d:Script3Delay);
+*/
+   }
   }
   else if (ClassicDoomType == 1) // Doom 1
   {
@@ -43205,6 +43294,9 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
     if (random(1,2048) == 1) DropItem(0,"RockBombShard",1,256);
     if (random(1,512) == 1) DropItem(0,"RockBombShard",1,256);
     if (CheckActorClass(0,"IronlichNew") == 1 && random(1,48) == 1) DropItem(0,"SeedofSkillForced",1,256);
+    if (CheckActorClass(0,"IceLich") == 1 && random(1,48) == 1) DropItem(0,"SeedofSkillForced",1,256);
+    if (CheckActorClass(0,"GoldLich") == 1 && random(1,24) == 1) DropItem(0,"SeedofSkillForced",1,256);
+    if (CheckActorClass(0,"BloodLich") == 1 && random(1,24) == 1) DropItem(0,"SeedofSkillForced",1,256);
     if (CheckActorClass(0,"MaulotaurNew") == 1 && random(1,24) == 1) DropItem(0,"SeedofSkillForced",1,256);
     if (CheckActorClass(0,"DSparilMountedNew") == 1 && random(1,16) == 1) DropItem(0,"SeedofSkillForced",1,256);
     if (CheckActorClass(0,"DSparilUnmountedNew") == 1 && random(1,8) == 1) DropItem(0,"SeedofSkillForced",1,256);
