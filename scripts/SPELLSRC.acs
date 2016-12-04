@@ -32521,6 +32521,9 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   int LevelDifficultyInflation = GetCVar("dvds_leveldifficultyinflation");
   if (LevelDifficultyInflation < -2000) LevelDifficultyInflation = -2000;
   if (LevelDifficultyInflation > 2000) LevelDifficultyInflation = 2000;
+  int LevelDifficultyInflationPercent = GetCVar("dvds_leveldifficultyinflation2");
+  if (LevelDifficultyInflationPercent < -100) LevelDifficultyInflationPercent = -100;
+  if (LevelDifficultyInflationPercent > 2000) LevelDifficultyInflationPercent = 2000;
 
   if (ModType == 0)
   { 
@@ -32532,11 +32535,16 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
   {
      LevelCheck = PlayerLevel;
      LevelCheck += GetUserVariable(0,"user_ressurrectstr"); // Checks the "Resurrect" strength of a monster [Clay Devils in TCOTD get stronger each time they resurrect]
+     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [init]: ",d:(LevelCheck));
      LevelCheck += LevelDifficultyInflation;
+     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [inflation-exact]: ",d:(LevelCheck));
+	 LevelCheck = LevelCheck * (100 + LevelDifficultyInflationPercent) / 100;
+     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [inflation-percent]: ",d:(LevelCheck));
 
      LevelErrorRange = FixedMul(LevelCheck, 0.1667);
      if (LevelErrorRange < 1) LevelErrorRange = random(0,3);
      LevelCheck += random(-LevelErrorRange,LevelErrorRange);
+     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [error-range]: ",d:(LevelCheck));
 
      if (ModType == 1) // DV1 [general]
      {
@@ -32611,7 +32619,9 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
        // Oddball Tier Boss
  	  if (CheckActorClass(0, "Magmantis")) LevelCheck += random(52,75);
 	 }
-	 
+     str actorname = GetActorClass(0);
+	 if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [actor-check: ",s:actorname,s:"]: ",d:(LevelCheck));
+
 	 // Check if the actor is one of Strife's Peasents [and if so, cancel out most level additions and divide their level by 4]
 	 int IsAPeasent = 0;
 	 If(CheckActorClass(0,"PeasantNew") == 1) IsAPeasent ++;
@@ -32675,10 +32685,11 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
       }
       if (random(1,64) == 1) LevelCheck *= 4;
 	 }
+	 if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [peasent-checking]: ",d:(LevelCheck));
 
      if (LevelCheck < 0) LevelCheck = 0;
      if (LevelCheck > 2000) LevelCheck = 2000;
-     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel: ",d:(LevelCheck));
+     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [final calc]: ",d:(LevelCheck));
      SetUserVariable(0,"user_monsterlevel",LevelCheck);
 
      AttackFactor = 0.0;
@@ -43457,14 +43468,6 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   baseexp = baseamount;
  }
 
- if (CheckActorClass(0,"IceGolem") == 1 || CheckActorClass(0,"IceGolemGhost") == 1)
- {
-  finalexpamount = (finalexpamount * random(3,5)) / 2;
-  if (random(1,16) == 1) DropItem(0,"RandomSeedDropForcedAlways",1,256);
-  if (random(1,64) == 1) DropItem(0,"RandomSeedDropForcedAlways",1,256);
-  if (random(1,256) == 1) DropItem(0,"RandomSeedDropForcedAlways",1,256);
- }
-
  if (CheckActorClass(0,"Banshee") == 1 || CheckActorClass(0,"DeathKnight") == 1)
  {
   finalexpamount = (finalexpamount * random(3,5)) / 2;
@@ -43479,7 +43482,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   if (random(1,4) == 1) DropItem(0,"RandomSeedDropForcedAlways",1,256);
   if (random(1,16) == 1) DropItem(0,"RandomSeedDropForcedAlways",1,256);
  }
- if (CheckActorClass(0,"VampireDVDS") == 1)
+ if (CheckActorClass(0,"IceGolem") == 1 || CheckActorClass(0,"IceGolemGhost") == 1 || CheckActorClass(0,"VampireDVDS") == 1)
  {
   finalexpamount = (finalexpamount * random(2,4)) / 2;
   if (random(1,24) == 1) DropItem(0,"RandomSeedDropForcedAlways",1,256);
