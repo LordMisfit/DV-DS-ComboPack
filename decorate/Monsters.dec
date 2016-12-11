@@ -200,7 +200,6 @@ actor DSZombieman : Zombieman 26501
      else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 40) { A_SetTics(9); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*8)/9)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*8)/9)); }
 	 A_SetUserVar("user_shotaccuracy1",user_shotaccuracy/-2); A_SetUserVar("user_shotaccuracy2",user_shotaccuracy/2);
 	 A_SetUserVar("user_shotzaccuracy1",user_shotzaccuracy/-2); A_SetUserVar("user_shotzaccuracy2",user_shotzaccuracy/2);
-
 	}
   Attack:
     POSS E 0 A_PlaySound ("grunt/attack")
@@ -2598,17 +2597,17 @@ actor DSDoomImp : DoomImp 26515
   Missile1:
     TROO EF 8
 	{
-	 A_FaceTarget;
      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(6); }
      else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_SetTics(7); }
+	 A_FaceTarget;
 	}
 	goto EndMissile
   Missile2:
     IMP3 AB 8
 	{
-	 A_FaceTarget;
      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(6); }
      else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_SetTics(7); }
+	 A_FaceTarget;
 	}
 	goto EndMissile
   EndMissile:
@@ -5110,6 +5109,9 @@ actor DeathIncarnate : Revenant 30115
  var int user_theta; var int user_dormant; var int user_isstealth; var int user_basespeed; var int user_baseattack; var int user_basedefense; var int user_basemass; var int user_monsterlevel; var int user_legendaryevolved;
  var int user_MaxHP; var int user_HPLowRange; var int user_HPCritRange; var int user_HPBuffRange; var int user_HPXDeathRange;
  var int user_checkmapskill; var int user_ressurrectstr; var int user_canusecrisisatk; // For checking if a monster has been given Skill/Map inventory items yet.
+ var int user_shotsfired; var int user_shotsfiredmax;
+ var float user_shotaccuracy; var float user_shotaccuracy1; var float user_shotaccuracy2;
+ var float user_shotzaccuracy; var float user_shotzaccuracy1; var float user_shotzaccuracy2;
  dropitem DoomSpellMana1 64
  dropitem DoomSpellMana2 32
  dropitem DoomSpellMana3 8
@@ -5200,7 +5202,7 @@ actor DeathIncarnate : Revenant 30115
      else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_ChangeFlag("MISSILEEVENMORE",1); A_ChangeFlag("MISSILEMORE",0); }
      else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_ChangeFlag("MISSILEMORE",1); A_ChangeFlag("MISSILEEVENMORE",0); }
 	 else { A_ChangeFlag("MISSILEMORE",0); A_ChangeFlag("MISSILEEVENMORE",0); }
-     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_ChangeFlag("AVOIDMELEE",1); }
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_ChangeFlag("AVOIDMELEE",1); A_ChangeFlag("SHORTMISSILERANGE",0); }
      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(1); }
 	 A_Chase;
 	}
@@ -5309,7 +5311,17 @@ actor DeathIncarnate : Revenant 30115
 
   Missile:
     TNT1 A 0 ACS_NamedExecuteAlways("RefreshStealthInfo",0,1) // makes a Stealth Monster become more visible
-    INCA J 5 A_FaceTarget
+    INCA J 5
+	{
+	 A_FaceTarget;
+	 A_SetUserVar("user_shotaccuracy",30.0);
+	 A_SetUserVar("user_shotzaccuracy",0.0);
+	 A_SetUserVar("user_shotsfired",10);	 
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(3); A_SetUserVar("user_shotsfired",user_shotsfired+8); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*2)/4)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*2)/4)); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_SetTics(4); A_SetUserVar("user_shotsfired",user_shotsfired+4); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*3)/4)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*3)/4)); }
+	 A_SetUserVar("user_shotaccuracy1",user_shotaccuracy/-2); A_SetUserVar("user_shotaccuracy2",user_shotaccuracy/2);
+	 A_SetUserVar("user_shotzaccuracy1",user_shotzaccuracy/-2); A_SetUserVar("user_shotzaccuracy2",user_shotzaccuracy/2);
+	}
     INCA J 5
     TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 0, "HitscanGlare")
     TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 1, "TracerGlare")
@@ -5324,11 +5336,11 @@ actor DeathIncarnate : Revenant 30115
 	 {
       A_PlaySound("crisisattack",6);
       A_PlaySound("crisisattack2",7);
-	  A_CustomBulletAttack(30,0,10,(3 * ACS_NamedExecuteWithResult("CrisisMultiplier")),"DIPuff",1024);
+	  A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, user_shotsfired, (3 * ACS_NamedExecuteWithResult("CrisisMultiplier")), "DIPuff", 1024);
 	 }
 	 else
 	 {
-	  A_CustomBulletAttack(30,0,10,3,"DIPuff",1024);
+	  A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, user_shotsfired, 3, "DIPuff", 1024);
 	 }
 	}
     goto EndMissile
@@ -5342,29 +5354,57 @@ actor DeathIncarnate : Revenant 30115
 	 {
       A_PlaySound("crisisattack",6);
       A_PlaySound("crisisattack2",7);
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
+	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) 
+	  {
+	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  }
+      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) 
+	  {
+	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  }
 	 }
 	 else
 	 {
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(-15.0,15.0), CMF_OFFSETPITCH, frandom(-0.0,0.0));
+	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) 
+	  {
+	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  }
+      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) 
+	  {
+	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  }
 	 }
 	}
     goto EndMissile
@@ -9550,7 +9590,7 @@ actor DSBaronofHell : BaronofHell 26546
      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(6); }
      else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_SetTics(7); }
 	}
-   BOSS G 8
+    BOSS G 8
 	{
 	 A_FaceTarget;
      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(6); }
