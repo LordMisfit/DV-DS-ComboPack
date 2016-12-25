@@ -16,14 +16,14 @@ HOW TO INSTALL / RUN / ETC:
  - Installing - 2 Extra. If you get the DV-DS-CompatPacks stuff, you also need to do the above and unzip the entire DV-DS-CompatPacks folder into your GZDoom folder as well. However discussion for how to run those will be discussed in the Readme on its' respective git repository. :P
 - Note: This means DV-DS-ComboPacks and DV-DS-CompatPacks will each be their own folders in your GZDoom folder. Do NOT try to unzip one repo's folder into the other's main folder. You'll have messed things up and have to redo this again. >.>
 
- - Installing - 3. Go into the EXTRAs subfolder in the DV-DS-ComboPacks folder and extract the contents of "gzdoom-g2.2pre-889-g904a027.7z" into your GZDoom folder itself, as either the proper gzdoom.exe or rename it to something you'll remember. But it's REQUIRED to use this version right now due to various techincal reasons. :V
+ - Installing - 3. Go into the EXTRAs subfolder in the DV-DS-ComboPacks folder and extract the contents of "gzdoom-x64-g2.3pre-345-g824705e.7z" into your GZDoom folder itself, as either the proper gzdoom.exe or rename it to something you'll remember. But it's REQUIRED to use this version right now due to various techincal reasons. :V
 
  - Running - 1. There is no launcher packed with DV-DS-ComboPack, you'll have to rely on command lines for now. My general method is to create a batch [.bat] file and name it something you'll remember. Remember you can right click a .bat file and "edit" them to change the command line used inside.
 
- - Running - 2. The most basic commandline for playing DV-DS with Doom 2 is "start gzdoom.exe -iwad doom2.wad -file "DV-DS-ComboPack" +hud_scale 0 exit". 
- - Note: DV-DS highly recommends using "hud_scale 0" for HUDs, so keep that in mind if you play this and go back to a different mod and your hud looks odd, you'll likely need to enter "hud_scale 1" or so in your console when you play said other mod. :P
+ - Running - 2. The most basic commandline for playing "Aetherius" with Doom 2 is "start gzdoom.exe -iwad doom2.wad -file "DV-DS-ComboPack" +hud_scale 0 exit". 
+ - Note: "Aetherius" highly recommends using "hud_scale 0" for HUDs, so keep that in mind if you play this and go back to a different mod and your hud looks odd, you'll likely need to enter "hud_scale 1" or so in your console when you play said other mod. :P
  - Note: Putting "start" and "exit" around a command line makes the CMD prompt that pops up immediately disappear so you don't have to manually close the window after the command runs. However if you're making a shortcut that's not a .bat file, you don't need "start" or "exit" in those command lines.
- - Running - 3. If you want to run DV-DS properly in Doom 1 mode, you'll need to get the DV-DS-CompatPacks git as that has the necessary patch for running complete in Doom1. The command line will be "start gzdoom.exe -iwad doom.wad -file "DV-DS-ComboPack" "DV-DS-CompatPacks/Doom" +hud_scale 0 exit". 
+ - Running - 3. If you want to run "Aetherius" properly in Doom 1 mode, you'll need to get the DV-DS-CompatPacks git as that has the necessary patch for running complete in Doom1. The command line will be "start gzdoom.exe -iwad doom.wad -file "DV-DS-ComboPack" "DV-DS-CompatPacks/Doom" +hud_scale 0 exit". 
  - Note: Doom 1 mode will chain all four episodes together as a long single experience though [restarting your inventory/stats per episode breaks the point of the mod's RPG mechanics], so you won't be able to select a specfic episode at game load. You start at E1M1 and end at E4M8. :P
 
  - Running - 4. Plutonia Experiment Command line: "start gzdoom.exe -iwad plutonia.wad -file "DV-DS-ComboPack" +hud_scale 0 exit" 
