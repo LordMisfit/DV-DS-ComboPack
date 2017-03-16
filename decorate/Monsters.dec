@@ -12059,6 +12059,7 @@ actor DSSpiderMastermind : SpiderMastermind 26552
     loop
 
   Missile:
+    TNT1 A 0 ACS_NamedExecuteAlways("RefreshStealthInfo",0,1) // makes a Stealth Monster become more visible
     TNT1 A 0
 	{
  	 A_SetUserVar("user_shotsfiredmax",random(75,125));
@@ -15109,4 +15110,140 @@ Actor Hierophant 30135
 	HIER VUTSRQ 6
 	goto See
   } 
+}
+
+ACTOR DSHelperDog : MBFHelperDog replaces MBFHelperDog
+{
+  var int user_theta; var int user_dormant; var int user_isstealth; var int user_basespeed; var int user_baseattack; var int user_basedefense; var int user_basemass; var int user_monsterlevel; var int user_legendaryevolved; var int user_extraevolvechance; var int user_extrastealthchance;
+  var int user_MaxHP; var int user_HPLowRange; var int user_HPCritRange; var int user_HPBuffRange; var int user_HPXDeathRange;
+  var int user_checkmapskill; var int user_ressurrectstr; var int user_resurrectedtimes; var int user_canusecrisisatk; // For checking if a monster has been given Skill/Map inventory items yet.
+
+  Health 375
+  Speed 15
+
+  PainChance 120
+  Painchance "Fist", 180 // Fist attacks have a +50% chance of stunning an enemy
+  Painchance "Kick", 255 // Kick attacks have a +150% chance of stunning an enemy
+  Painchance "Gauntlets", 180 // Fist attacks have a +50% chance of stunning an enemy
+  Painchance "GravityHP", 255
+  Painchance "GravityMP", 255
+  Painchance "GravityHPMP", 255
+
+  Radius 12
+  Height 28
+  Mass 100
+  Monster
+  +JUMPDOWN
+  ActiveSound "dog/active"
+  AttackSound "dog/attack"
+  DeathSound "dog/death"
+  PainSound "dog/pain"
+  SeeSound "dog/sight"
+  Obituary "$OB_DOG" // "%o was mauled by a dog."
+  States
+  {
+  Pain.Charm: TNT1 A 0 { A_PlaySound("Munchies/Charmed"); A_ChangeFlag("FRIENDLY",1); Thing_ChangeTID(0,1000); } Goto See  Pain.Heal1: TNT1 A 0 { ACS_NamedExecuteAlways("Healing_Actor",0,0); } Goto See  Pain.Heal2: TNT1 A 0 { ACS_NamedExecuteAlways("Healing_Actor",0,1); } Goto See  Pain.Heal3: TNT1 A 0 { ACS_NamedExecuteAlways("Healing_Actor",0,2); } Goto See  Pain.Heal4: TNT1 A 0 { ACS_NamedExecuteAlways("Healing_Actor",0,3); } Goto See Goto See
+  Spawn:
+    DOGS A 0 NoDelay ACS_NamedExecuteAlways("MonsterStatsHP_ATK_DEF_SPD",0,0)
+    DOGS AB 10 A_Look
+    goto Spawn+1
+  See:
+    DOGS A 0 ACS_NamedExecuteAlways("RefreshStealthInfo",0,0)
+    DOGS AABBCCDD 2
+	{
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(1); }
+	 A_Chase;
+	}
+    Loop
+  Melee:
+    DOGS A 0 ACS_NamedExecuteAlways("RefreshStealthInfo",0,1)
+    DOGS EF 8
+	{
+	 A_FaceTarget;
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(5); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 80) { A_SetTics(6); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 40) { A_SetTics(7); }
+	}
+    DOGS G 8
+ 	{
+	 A_FaceTarget;
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(5); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 80) { A_SetTics(6); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 40) { A_SetTics(7); }
+	 A_SetUserVar("user_canusecrisisatk",0);
+	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
+     if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
+	 if(user_canusecrisisatk == 1)
+	 {
+      A_PlaySound("crisisattack2",7);
+      A_PlaySound("crisisattack",6);
+      A_CustomMeleeAttack( ((random(1,10)*4) * ACS_NamedExecuteWithResult("CrisisMultiplier")) ,"none","none"); // A_SargAttack
+	 }
+	 else
+	 {
+	  A_CustomMeleeAttack(random(1,10)*4,"none","none"); // A_SargAttack
+	 }
+	}
+    Goto See
+
+  Pain:
+    DOGS H 2
+    DOGS H 2 A_Pain
+    Goto See
+  Pain.Fist: 
+    DOGS H 2
+    DOGS H 2 A_Pain
+    DOGS HH 2 
+    Goto See 
+  Pain.Kick: 
+    DOGS H 2
+    DOGS H 2 A_Pain
+    DOGS HHHH 2 
+    Goto See 
+
+  Pain.GravityHP:
+    TNT1 A 0 ACS_NamedExecuteAlways("Hand-GravityAttack",0,0,0,0)
+    Goto See
+  Pain.GravityMP:
+    TNT1 A 0 ACS_NamedExecuteAlways("Hand-GravityAttack",0,1,0,0)
+    Goto See
+  Pain.GravityHPMP:
+    TNT1 A 0 ACS_NamedExecuteAlways("Hand-GravityAttack",0,2,0,0)
+    Goto See
+  Pain.Sceptre:
+    TNT1 A 0 A_CheckFlag("FRIENDLY",2,AAPTR_DEFAULT)
+    TNT1 A 0 ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,10) // Increase EXP for Sceptre [1+((HP/300)/10)]
+    TNT1 A 0 
+    Goto Pain
+  Death.Sceptre:
+    TNT1 A 0 A_CheckFlag("FRIENDLY",2,AAPTR_DEFAULT)
+    TNT1 A 0 ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,1) // Increase EXP for Sceptre [1+(HP/300)]
+    TNT1 A 0 A_JumpIfHealthLower(user_HPXDeathRange,"XDeath")
+    Goto Death
+  Pain.Gauntlets:
+    TNT1 A 0 ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,1,0) // Give some life when hurting a monster [1+(HP/500)]
+    Goto Pain
+  Death.Gauntlets:
+    TNT1 A 0 ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,2,0) // Give some life when killing a monster [3+(HP/100)]
+    TNT1 A 0 A_JumpIfHealthLower(user_HPXDeathRange,"XDeath")
+    Goto Death
+  Death:
+    TNT1 A 0 ACS_NamedExecuteAlways("AddEXP",0,-2,0,1)
+    DOGS I 8
+    DOGS J 8 A_Scream
+    DOGS K 4
+    DOGS L 4 A_Fall
+    DOGS M 4 ACS_NamedExecuteAlways("MonsterStatsHP_ATK_DEF_SPD",0,1)
+    DOGS N -1
+  Ice:
+    TNT1 A 0 ACS_NamedExecuteAlways("AddEXP",0,-2,0,1)
+    TNT1 A 0 A_ChangeFlag("CANTSEEK", TRUE)
+    DOGS H 5 A_GenericFreezeDeath
+    DOGS H 1 A_FreezeDeathChunks
+    wait
+  Raise:
+    DOGS N 5 ACS_NamedExecuteAlways("MonsterStatsHP_ATK_DEF_SPD",0,0)
+    DOGS MLKJI 5
+    Goto See
+  }
 }
