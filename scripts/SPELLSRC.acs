@@ -22541,7 +22541,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
       perkname = "STAM UP";
 	  temp4 = 10005; // MiscellaneousVars[]
 	  temp1 = MiscellaneousVars[temp4] * 5.0;
-	  temp2 = MiscellaneousVars[temp4] * 5.0;
+	  temp2 = MiscellaneousVars[temp4] * 7.5;
 	  temp3 = 0; // Cost for next level.
       temp11 = 5; // Max Levels
 	  if (MiscellaneousVars[temp4] == 0) temp3 = 3 * MiscellaneousVars[280] / 100;
@@ -22789,6 +22789,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 	  temp4 = 10006; // MiscellaneousVars[]
 	  temp5 = 10005;
 	  temp1 = MiscellaneousVars[temp4] * 12.5;
+	  temp2 = MiscellaneousVars[temp4] * 18.75;
       perkdescript1 = "";
       if (MiscellaneousVars[temp4] == 0)
 	  {
@@ -22805,7 +22806,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 	  if (MiscellaneousVars[temp4] == 0) temp3 = 11 * MiscellaneousVars[280] / 100;
 	  if (MiscellaneousVars[temp4] == 1) temp3 = 16 * MiscellaneousVars[280] / 100;
 	  if (MenuSystemVars[1] == 1) { textcolor = CR_GOLD; } else { textcolor = CR_WHITE; }
-	  HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - MAX-STAMINA AND MELEE DAMAGE INCREASED BY \cd",f:temp1,s:"%\c-",
+	  HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - MAX-STAMINA INCREASED BY \cd",f:temp1,s:"%\c- & AND MELEE DAMAGE INCREASED BY \cd",f:temp2,s:"%",
 				 s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS",s:perkdescript1;
 				 HUDMSG_ALPHA,  1997, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
 
@@ -22921,7 +22922,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
       perkname = "STAM UP EX";
 	  temp4 = 10006; // MiscellaneousVars[]
 	  temp5 = 10005;
-	  temp1 = MiscellaneousVars[temp4] * 6.25;
+	  temp1 = MiscellaneousVars[temp4] * 12.5;
+	  temp2 = MiscellaneousVars[temp4] * 18.75;
       perkdescript1 = "";
       if (MiscellaneousVars[temp4] == 0)
 	  {
@@ -22932,7 +22934,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
       temp11 = 1; // Max Levels
 	  if (MiscellaneousVars[temp4] == 0) temp3 = 11 * MiscellaneousVars[280] / 100;
 	  if (MenuSystemVars[1] == 3) { textcolor = CR_GOLD; } else { textcolor = CR_WHITE; }
-	  HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - MAX-STAMINA AND MELEE DAMAGE INCREASED BY \cd",f:temp1,s:"%\c-",
+	  HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - MAX-STAMINA INCREASED BY \cd",f:temp1,s:"%\c- & AND MELEE DAMAGE INCREASED BY \cd",f:temp2,s:"%",
 				 s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS",s:perkdescript1;
 				 HUDMSG_ALPHA,  1995, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
 
@@ -28210,7 +28212,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   {
    MiscellaneousVars[9802] = 0; // Resets to 0 on Death [because of Resurge.wad style pistol-resets :P]
   }
- 
+
+/*  
   if (GetActorProperty(Player1TID,APROP_Health) > 0)
   {
    PerkBitfield = 0;
@@ -28243,7 +28246,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   {
    MiscellaneousVars[9803] = 0; // Resets to 0 on Death [because of Resurge.wad style pistol-resets :P]
   }
- 
+ */
 
  
  
@@ -36382,6 +36385,7 @@ script "GetSceptreDamage" (int attacktype, int attacklevel, int shockwave)
  int sceptrestrbase;
  int sceptrestrmin;
  int sceptrestrmax;
+ int PerkFactor;
 
  SetActivator(Player1TID);
  str weapon = GetWeapon();
@@ -36462,9 +36466,18 @@ script "GetSceptreDamage" (int attacktype, int attacklevel, int shockwave)
 
  // Berserk Check
  if (CheckActorInventory(Player1TID,"PowerStrength") > 0) damage = damage * 10;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) { PrintBold(s:"Berserk: ",d:damage); }
 
  if (shockwave == 1) damage = damage / 6;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"ShockWave: (",s:weapon,s:") ",d:damage);
 
+ // StamUp Check
+ if (MiscellaneousVars[10005] > 0)
+ {
+  PerkFactor = ((MiscellaneousVars[10005] * 30) + (MiscellaneousVars[10006] * 75)) + 400;
+  damage = damage * PerkFactor / 400;
+ }
+ 
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage);
  SetResultValue(damage);
 }
@@ -37654,6 +37667,17 @@ script "GetPunchDamage" (int altfire, int shockwave)
   if (altfire == 0) damage = damage;
   //if (altfire == 1) damage = damage / 4;
  }
+
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 0) PrintBold(s:"MeleeDmgAltCheck: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Punch]");
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 1) PrintBold(s:"MeleeDmgAltCheck: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Uppercut]");
+
+ // StamUp Check
+ if (MiscellaneousVars[10005] > 0)
+ {
+  PerkFactor = ((MiscellaneousVars[10005] * 30) + (MiscellaneousVars[10006] * 75)) + 400;
+  damage = damage * PerkFactor / 400;
+ }
+
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 0) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Punch]");
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 1) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Uppercut]");
 
@@ -37757,6 +37781,15 @@ script "GetKickDamage" (int altfire, int shockwave)
  previousdamage = damage;
  if (altfire == 0) damage = damage;
  if (altfire == 1) damage = damage / 4;
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 0) PrintBold(s:"MeleeDmgAltCheck: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Kick]");
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 1) PrintBold(s:"MeleeDmgAltCheck: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Roundhouse Kick]");
+
+ // StamUp Check
+ if (MiscellaneousVars[10005] > 0)
+ {
+  PerkFactor = ((MiscellaneousVars[10005] * 30) + (MiscellaneousVars[10006] * 75)) + 400;
+  damage = damage * PerkFactor / 400;
+ }
 
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 0) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Kick]");
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0 && altfire == 1) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage,s:" - (Previous Dmg: ",d:previousdamage,s:")",s:" [Roundhouse Kick]");
@@ -38518,6 +38551,7 @@ script "GetMiscDMG" (int type)
 script "GetChainsawDamage" (int sawtype)
 {
  int damage;
+ int PerkFactor;
  SetActivator(Player1TID);
  str weapon = GetWeapon();
  SetActivator(0);
@@ -38538,6 +38572,14 @@ script "GetChainsawDamage" (int sawtype)
 
  // Berserk Check
  if (CheckActorInventory(Player1TID,"PowerStrength") > 0) damage = damage * 7 / 4; // 175% Damage when Berserked
+ if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"BerserkMeleeDmg: (",s:weapon,s:") ",d:damage);
+
+ // StamUp Check
+ if (MiscellaneousVars[10005] > 0)
+ {
+  PerkFactor = ((MiscellaneousVars[10005] * 30) + (MiscellaneousVars[10006] * 75)) + 400;
+  damage = damage * PerkFactor / 400;
+ }
 
  if (GetCVar("dvdsdebug_showmeleeinformation") > 0) PrintBold(s:"FinalMeleeDmg: (",s:weapon,s:") ",d:damage);
  SetResultValue(damage);
