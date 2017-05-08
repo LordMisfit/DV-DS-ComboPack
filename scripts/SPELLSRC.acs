@@ -1233,7 +1233,7 @@ str SpellDesc[58] =  {
                       "Fortify yourself with 1250 armor, 90% protection",				// Diamond Skin
                       "Shoot a highly damaging fireball",						// Major Fireball
                       "Fires lots of ice shards",							// Major Ice Blast
-                      "Fill an entire small room wiwith poison",					// Major Poison Cloud
+                      "Fill an entire small room with poison",					// Major Poison Cloud
                       "This shoots a shocking 5 lightning blasts",					// Major Lightning
                       "You cannot be damaged for a full minute",					// Major Invulnerability
                       "Hide from your enemies' senses for a full minute",				// Major Stealth
@@ -9593,7 +9593,12 @@ script "ManaRegenerationStuff" ENTER
  if (PowerupTimer[12] > 0) delaycount = delaycount * 6 / 5; // Acceleratle = 1.2x regen speed
  if (PowerupTimer[15] > 0) delaycount = delaycount * 4 / 5; // Deceleratle = 0.8x regen speed
  if (PowerupTimer[18] > 0) delaycount /= 5; // Fatigue = 0.2x regen speed
- if (PowerupTimer[20] > 0) delaycount *= 5; // Sleep = 5x regen speed
+ if (PowerupTimer[20] > 0)
+ {
+  delaycount *= 5; // Sleep = 5x regen speed
+  PerkFactor = ((MiscellaneousVars[10015] * 2000) + (MiscellaneousVars[10016] * 5000)) + 10000;
+  delaycount = delaycount * PerkFactor / 10000; // "RegenMPFast" and "RegenMPFast EX" perks.
+ }
 
  // RegenMPFast perks
  PerkFactor = ((MiscellaneousVars[10015] * 2000) + (MiscellaneousVars[10016] * 5000)) + 10000;
@@ -26106,7 +26111,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Fatigue]: ",d:staminaregenfinal);
 
   // Sleeping = +400% Regen
-  if (PowerupTimer[20] > 0) staminaregenfinal *= 5;
+  if (PowerupTimer[20] > 0)
+  {
+   staminaregenfinal *= 5;
+   PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
+   staminaregenfinal = staminaregenfinal * PerkFactor / 10000; // "RegenStamFast" and "RegenStamFast EX" perks.
+  }
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Sleep]: ",d:staminaregenfinal);
 
   // Berserk = +25% Regen
@@ -26244,7 +26254,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Fatigue]: ",d:staminaregenfinal);
 
   // Sleep = -80% Degen
-  if (PowerupTimer[20] > 0) staminaregenfinal /= 5;
+  if (PowerupTimer[20] > 0)
+  {
+   staminaregenfinal /= 5;
+   PerkFactor = 10000 - ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000));
+   staminaregenfinal = staminaregenfinal * PerkFactor / 10000; // "RegenStamFast" and "RegenStamFast EX" perks.
+  }
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Sleep]: ",d:staminaregenfinal);
 
   // Berserk = -20% Degen
@@ -26282,6 +26297,44 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  //*Calculate Stamina for HUD*
  //***************************
  StaminaPercent = MiscellaneousVars[21] * 100 / MiscellaneousVars[22];
+
+/*
+ //******************************************************
+ //*Calculated Attack [Main/"Normal"] for some Abilities*
+ //******************************************************
+ int TotalAttack = 1.0;
+
+ int MusouPTAttack = 1.0;
+ if (GetCVar("dvds_musou_powertripmode") == 1) MusouPTAttack = 5.0;
+ if (GetCVar("dvds_musou_powertripmode") == 2) MusouPTAttack = 10.0;
+ TotalAttack = FixedMul(TotalAttack,MusouPTAttack);
+
+ // Final
+ SetActorProperty(Player1TID,APROP_DamageMultiplier, TotalAttack);
+
+ //*******************************************************
+ //*Calculated Defense [Main/"Normal"] for some Abilities*
+ //*******************************************************
+ int TotalDefense = 1.0;
+
+ int MusouPTDefense = 1.0;
+ if (GetCVar("dvds_musou_powertripmode") == 1) MusouPTDefense = 0.2;
+ if (GetCVar("dvds_musou_powertripmode") == 2) MusouPTDefense = 0.1;
+ TotalDefense = FixedMul(TotalDefense,MusouPTDefense);
+ SetActorProperty(Player1TID,APROP_DamageFactor, TotalDefense);
+
+ if (GetCVar("dvdsdebug_attackdefensedisplays") > 0)
+ {
+  PrintBold(s:"MusouPTAttack x: ",f:MusouPTAttack,
+			s:"\n",
+            s:"\nTotalAttack x: ",f:TotalAttack,
+			s:"\n",
+			s:"\n",
+            s:"\nMusouPTDefense x: ",f:MusouPTDefense,
+			s:"\n",
+            s:"\nTotalDefense x: ",f:TotalDefense);
+ }
+*/
 
  //************************************
  //*Calculate Speed for some Abilities*
@@ -26396,7 +26449,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  //************************************************************************************************************************
  //**From here on, this script will run the remaining code constantly in order to keep tabs on Survivability ratings, etc**
  //************************************************************************************************************************
-
 
  
  //**************************
@@ -26843,7 +26895,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    if (PowerupTimer[18] > 0) delaycount = delaycount / 5;
 
    // Sleep = x5 regen speed
-   if (PowerupTimer[20] > 0) delaycount *= 5;
+   if (PowerupTimer[20] > 0)
+   {
+    delaycount *= 5;
+    PerkFactor = ((MiscellaneousVars[10013] * 2000) + (MiscellaneousVars[10014] * 5000)) + 10000;
+    delaycount = delaycount * PerkFactor / 10000; // "RegenHPFast" and "RegenHPFast EX" perks.
+   }
 
    // Flora's Regeneration Speed is reduced by 3/4s [75%] when holding the Ruinous Shield [curse effect]
    if (CharacterClass == 2) if (CheckActorInventory(Player1TID,"RuinousShield") > 0) delaycount = delaycount * 1 / 4;
@@ -26982,7 +27039,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     if (PowerupTimer[18] > 0) delaycount *= 5;
 
     // Sleep = 0.2x degen speed
-    if (PowerupTimer[20] > 0) delaycount /= 5;
+    if (PowerupTimer[20] > 0)
+	{
+	 delaycount /= 5;
+     PerkFactor = 10000 - ((MiscellaneousVars[10013] * 2000) + (MiscellaneousVars[10014] * 5000));
+     delaycount = delaycount * PerkFactor / 10000; // "RegenHPFast" and "RegenHPFast EX" perks.
+	}
 
     // Flora's Degeneration Speed is multiplied by 4 when holding the Ruinous Shield [curse effect]
     if (CharacterClass == 2) if (CheckActorInventory(Player1TID,"RuinousShield") > 0) delaycount = delaycount * 4;
