@@ -1794,12 +1794,94 @@ actor MajorPoisonCloud : MinorPoisonCloud
  }
 }
 
+// Poison Cloud Draw in Particle
+ACTOR PoisonCloudParticle
+{
+   Speed 0
+   Height 1
+   Radius 1
+   Damage 0
+   RenderStyle Add
+   Alpha 0.3
+   Scale 1.5
+   +NOTIMEFREEZE
+   +NOINTERACTION
+   +ForceXYBillboard
+   +CLIENTSIDEONLY
+   States
+   {
+   Spawn:
+      TGLT U 0 BRIGHT NoDelay
+	  {
+	   A_SetScale(frandom(0.8,1.2));
+	  }
+   Idle:
+      TGLT VWXW 1 BRIGHT
+	  {
+	   If (Alpha >= 0.6) { return state("Death"); } else { A_FadeIn(0.06); }
+	   return state("");	   
+	  }
+      Loop
+   Death:
+      TGLT VWXW 1 BRIGHT A_FadeOut(0.06)
+      Loop
+   }
+}
+
+ACTOR PoisonCloudParticle2 : PoisonCloudParticle
+{
+   Alpha 0.4
+   States
+   {
+   Spawn:
+      TGLT U 0 BRIGHT NoDelay
+	  {
+	   A_SetScale(frandom(0.9,1.3));
+	  }
+   Idle:
+      TGLT VWXW 1 BRIGHT
+	  {
+	   If (Alpha >= 0.8) { return state("Death"); } else { A_FadeIn(0.08); }
+	   return state("");	   
+	  }
+      Loop
+   Death:
+      TGLT VWXW 1 BRIGHT A_FadeOut(0.08)
+      Loop
+   }
+}
+
+ACTOR PoisonCloudParticle3 : PoisonCloudParticle
+{
+   Alpha 0.5
+   States
+   {
+   Spawn:
+      TGLT U 0 BRIGHT NoDelay
+	  {
+	   A_SetScale(frandom(1.0,1.4));
+	  }
+   Idle:
+      TGLT VWXW 1 BRIGHT
+	  {
+	   If (Alpha >= 1.0) { return state("Death"); } else { A_FadeIn(0.1); }
+	   return state("");	   
+	  }
+      Loop
+   Death:
+      TGLT VWXW 1 BRIGHT A_FadeOut(0.1)
+      Loop
+   }
+}
+
 actor HexenPoisonCloud1 // First and Only Cloud for the Dropped Minor Poison Cloud Spell
 {
  Mass 0x7FFFFFFD
  RenderStyle Translucent
  // DamageType PoisonCloud
  var int user_spawncloudheight;
+ var float user_distance;
+ var int user_duration;
  reactiontime 11
  DamageType "PoisonElemental"
  DamageType "Magic"
@@ -1843,6 +1925,11 @@ actor HexenPoisonCloud1 // First and Only Cloud for the Dropped Minor Poison Clo
 	{
      A_RadiusThrust(ACS_NamedExecuteWithResult("GetPSNCloudVortexSTR",0),ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",0),RTF_NOIMPACTDAMAGE|RTF_THRUSTZ,ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",0,1));
      A_Explode(ACS_NamedExecuteWithResult("GetPoisonCloudDMG",3),ACS_NamedExecuteWithResult("GetPSNCloudDmgRad",0,0),XF_HURTSOURCE,0,ACS_NamedExecuteWithResult("GetPSNCloudDmgRad",0,1));
+
+     A_SetUserVar( "user_distance", ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",0,0,1) );
+     A_SetUserVar( "user_duration", 15 ); // 24
+     A_SetPitch( frandom( -90, 90 ) );
+     A_SpawnItemEx( "PoisonCloudParticle", -user_distance * cos( pitch ), 0, -user_distance * sin( pitch ), ( user_distance / user_duration ) * cos( pitch ), 0, ( user_distance / user_duration ) * sin ( pitch ), frandom( 0, 360 ) );
 	}
     PSBG I 2 A_Countdown
     PSBG I 1 A_Countdown
@@ -1866,6 +1953,16 @@ actor HexenPoisonCloud2Source : HexenPoisonCloud1 // Center Cloud for the Droppe
 	{
      A_RadiusThrust(ACS_NamedExecuteWithResult("GetPSNCloudVortexSTR",1),ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",1),RTF_NOIMPACTDAMAGE|RTF_THRUSTZ,ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",1,1));
      A_Explode(ACS_NamedExecuteWithResult("GetPoisonCloudDMG",4),ACS_NamedExecuteWithResult("GetPSNCloudDmgRad",1,0),XF_HURTSOURCE,0,ACS_NamedExecuteWithResult("GetPSNCloudDmgRad",1,1));
+
+     A_SetUserVar( "user_distance", ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",1,0,1) );
+     A_SetUserVar( "user_duration", 15 ); // 24
+     A_SetPitch( frandom( -90, 90 ) );
+     A_SpawnItemEx( "PoisonCloudParticle2", -user_distance * cos( pitch ), 0, -user_distance * sin( pitch ), ( user_distance / user_duration ) * cos( pitch ), 0, ( user_distance / user_duration ) * sin ( pitch ), frandom( 0, 360 ) );
+
+     A_SetUserVar( "user_distance", ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",1,0,1) );
+     A_SetUserVar( "user_duration", 15 ); // 24
+     A_SetPitch( frandom( -90, 90 ) );
+     A_SpawnItemEx( "PoisonCloudParticle2", -user_distance * cos( pitch ), 0, -user_distance * sin( pitch ), ( user_distance / user_duration ) * cos( pitch ), 0, ( user_distance / user_duration ) * sin ( pitch ), frandom( 0, 360 ) );
 	}
     PSBG I 2 A_Countdown
     PSBG I 1 A_Countdown
@@ -1911,6 +2008,26 @@ actor HexenPoisonCloud3Source : HexenPoisonCloud2Source
 	{
      A_RadiusThrust(ACS_NamedExecuteWithResult("GetPSNCloudVortexSTR",2),ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",2),RTF_NOIMPACTDAMAGE|RTF_THRUSTZ,ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",2,1));
      A_Explode(ACS_NamedExecuteWithResult("GetPoisonCloudDMG",5),ACS_NamedExecuteWithResult("GetPSNCloudDmgRad",2,0),XF_HURTSOURCE,0,ACS_NamedExecuteWithResult("GetPSNCloudDmgRad",2,1));
+
+     A_SetUserVar( "user_distance", ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",2,0,1) );
+     A_SetUserVar( "user_duration", 15 ); // 24
+     A_SetPitch( frandom( -90, 90 ) );
+     A_SpawnItemEx( "PoisonCloudParticle3", -user_distance * cos( pitch ), 0, -user_distance * sin( pitch ), ( user_distance / user_duration ) * cos( pitch ), 0, ( user_distance / user_duration ) * sin ( pitch ), frandom( 0, 360 ) );
+
+     A_SetUserVar( "user_distance", ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",2,0,1) );
+     A_SetUserVar( "user_duration", 15 ); // 24
+     A_SetPitch( frandom( -90, 90 ) );
+     A_SpawnItemEx( "PoisonCloudParticle3", -user_distance * cos( pitch ), 0, -user_distance * sin( pitch ), ( user_distance / user_duration ) * cos( pitch ), 0, ( user_distance / user_duration ) * sin ( pitch ), frandom( 0, 360 ) );
+
+     A_SetUserVar( "user_distance", ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",2,0,1) );
+     A_SetUserVar( "user_duration", 15 ); // 24
+     A_SetPitch( frandom( -90, 90 ) );
+     A_SpawnItemEx( "PoisonCloudParticle3", -user_distance * cos( pitch ), 0, -user_distance * sin( pitch ), ( user_distance / user_duration ) * cos( pitch ), 0, ( user_distance / user_duration ) * sin ( pitch ), frandom( 0, 360 ) );
+
+     A_SetUserVar( "user_distance", ACS_NamedExecuteWithResult("GetPSNCloudVortexDIST",2,0,1) );
+     A_SetUserVar( "user_duration", 15 ); // 24
+     A_SetPitch( frandom( -90, 90 ) );
+     A_SpawnItemEx( "PoisonCloudParticle3", -user_distance * cos( pitch ), 0, -user_distance * sin( pitch ), ( user_distance / user_duration ) * cos( pitch ), 0, ( user_distance / user_duration ) * sin ( pitch ), frandom( 0, 360 ) );
 	}
     PSBG I 2 A_Countdown
     PSBG I 1 A_Countdown
