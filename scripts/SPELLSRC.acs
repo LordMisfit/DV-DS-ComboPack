@@ -523,13 +523,13 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [135] is the Current Mode for the Diabloist's Hand [0 = Gravity Glare, 1 = Immolation Glare, 2 = Fireblast Volley, 3 = Ground Snakes]
 // [136] is storage for EXP Check Runs [Menu CVar]
 // [137] is storage for Stamina Regen Rate [Menu CVar]
-// [138] is storage for Mealth Regen Rate [Menu CVar]
-// [139] is storage for Mana Regen Rate [Menu CVar]
+// [138] - ?
+// [139] - ?
 // [140] is storage for Starting Sceptre Level [Menu CVar]
 // [142] is storage for Health Degeneration Mode [Menu CVar]
 // [143] is for how far along the degeneration timer is.
 // [144] is the base degeneration interval for the character
-// [145] is storage for Mana Cost Rate [Menu CVar]
+// [145] - ?
 // [146] is storage for Level Up Stat Multiplier
 // [147] is storage for Starting HP/Mana Factor
 // [148] is storage for Starting Other Stats' Factor
@@ -597,7 +597,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [210] # of Therapeusis Points gained during a level up [for displays]
 // [211] Current Value of Mana Regen Timer
 // [212] 'Focus' is in use?
-// [213] Mana Regen Rate Multiplier
+// [213] - ?
 // [214] # of Medicinal Herbs [for death-exit checks]
 // [215] # of Strong Medicinal Herbs [for death-exit checks]
 // [216] # of Special Medicinal Herbs [for death-exit checks]
@@ -2010,7 +2010,7 @@ function int SpellCostCheck(int checktype)
  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [SorcTherChecks]");
 
  // Checks Mana Cost Rate Menu Option [circumvents Clamp]
- FinalSpellCost = FinalSpellCost * MiscellaneousVars[145] / 100;
+ FinalSpellCost = FinalSpellCost * GetCVar("dvds_manacostgmultiplier") / 100;
  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [CostRateOption]");
 
  if (FinalSpellCost < 1) FinalSpellCost = 1;
@@ -9748,7 +9748,7 @@ script "ManaRegenerationStuff" ENTER
  delaycount = delaycount * PerkFactor / 10000; // "RegenMPFast" and "RegenMPFast EX" perks.
 
  // Checks Mana Regen Rate Menu Option
- delaycount = delaycount * MiscellaneousVars[213] / 100;
+ delaycount = delaycount * GetCVar("dvds_manaregenratemultiplier") / 100;
  if (MiscellaneousVars[212] > 0) // Focusing
  {
   // Slowly increases the speed of regen as focus lasts longer
@@ -9911,7 +9911,7 @@ script "ManaRegenerationStuff" ENTER
    if (CharacterClass == 2 && CheckActorInventory(Player1TID,"RuinousShield") > 0) RegenedMana = RegenedMana * 1 / 6; // (16.6%)
  
    // Checks Mana Regen Rate Menu Option
-   RegenedMana = RegenedMana * MiscellaneousVars[139] / 100;
+   RegenedMana = RegenedMana * GetCVar("dvds_manaregenmultiplier") / 100;
  
    If(StrIcmp(weapon, "SapphireWandNew") == 0)
    {
@@ -10368,7 +10368,7 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
  int OldExp2 = RealExpGain;
  RealExpGain = RealExpGain * (GetCVar("dvds_deftnessexpbase") + MiscellaneousVars[40]) / GetCVar("dvds_deftnessexpbase");
  int OldExp3 = RealExpGain;
- RealExpGain = RealExpGain * MiscellaneousVars[90] / 100; // EXP Multiplier Option
+ RealExpGain = RealExpGain * GetCVar("dvds_expmultiplier") / 100; // EXP Multiplier Option
  int OldExp4 = RealExpGain;
 
  // "Higher Learning" Grand Mastery Perk
@@ -10401,7 +10401,7 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
   PrintBold(s:"OldEXP1: ",d:OldExp1,
            s:"\nOldEXP2: ",d:OldExp2,s:" [ExpMultiRand: ",d:ExpMultiFactor,s:" / 100]",
            s:"\nOldEXP3: ",d:OldExp3,s:" [DeftBonus: ",d:GetCVar("dvds_deftnessexpbase")+MiscellaneousVars[40],s:" / ",d:GetCVar("dvds_deftnessexpbase"),s:"]",
-           s:"\nOldEXP4: ",d:OldExp4,s:" [ExpMultiOption: ",d:MiscellaneousVars[90],s:" / 100]",
+           s:"\nOldEXP4: ",d:OldExp4,s:" [ExpMultiOption: ",d:GetCVar("dvds_expmultiplier"),s:" / 100]",
            s:"\nOldEXP5: ",d:OldExp5,
            s:"\nOldEXP6: ",d:OldExp6,
            s:"\nNewEXP: ",d:RealExpGain);
@@ -18813,10 +18813,7 @@ script "PickupManaCube" (int type, int overmana)
                       else GiveManaAmount = GiveManaAmount / 2;		// The One Ring [Marines] = 50%
  }
 
- int ManaMultiplier;
- if (GetCVar("dvds_manaitemmultiplier") > -1 && GetCVar("dvds_manaitemmultiplier") < 20) ManaMultiplier = (GetCVar("dvds_manaitemmultiplier") + 1) * 100;
- if (GetCVar("dvds_manaitemmultiplier") > 19 && GetCVar("dvds_manaitemmultiplier") < 39) ManaMultiplier = (GetCVar("dvds_manaitemmultiplier") - 19) * 5;
- GiveManaAmount = GiveManaAmount * ManaMultiplier / 100;
+ GiveManaAmount = GiveManaAmount * GetCVar("dvds_manaitemmultiplier") / 100;
 
  CurrentMana += GiveManaAmount;
  if (overmana == 0 && CurrentMana > MaxMana) CurrentMana = MaxMana;
@@ -24293,63 +24290,19 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (MiscellaneousVars[54] < -50) MiscellaneousVars[54] = -50;
  if (MiscellaneousVars[54] > 50) MiscellaneousVars[54] = 50;
 
- MiscellaneousVars[86] = GetCVar("dvds_aeonpointmultiplier") + 1;
- MiscellaneousVars[87] = GetCVar("dvds_seedmultiplier") + 1;
- MiscellaneousVars[146] = GetCVar("dvds_lvlstatmultiplier") + 1;
+ MiscellaneousVars[86] = GetCVar("dvds_aeonpointmultiplier");
+ if (MiscellaneousVars[86] < 1) MiscellaneousVars[86] = 1;
+ MiscellaneousVars[87] = GetCVar("dvds_seedmultiplier");
+ if (MiscellaneousVars[87] < 1) MiscellaneousVars[87] = 1;
+ MiscellaneousVars[146] = GetCVar("dvds_lvlstatmultiplier");
+ if (MiscellaneousVars[146] < 1) MiscellaneousVars[146] = 1;
 
  MiscellaneousVars[280] = GetCVar("dvdsperks_costratio");
  
- if (GetCVar("dvds_expmultiplier") > -1 && GetCVar("dvds_expmultiplier") < 20) MiscellaneousVars[90] = (GetCVar("dvds_expmultiplier") + 1) * 100;
- if (GetCVar("dvds_expmultiplier") > 19 && GetCVar("dvds_expmultiplier") < 39) MiscellaneousVars[90] = (GetCVar("dvds_expmultiplier") - 19) * 5;
+ MiscellaneousVars[148] = GetCVar("dvds_startotherstatsfactor");
 
- if (GetCVar("dvds_sceptreexpmultiplier") > -1 && GetCVar("dvds_sceptreexpmultiplier") < 20) MiscellaneousVars[88] = (GetCVar("dvds_sceptreexpmultiplier") + 1) * 100;
- if (GetCVar("dvds_sceptreexpmultiplier") > 19 && GetCVar("dvds_sceptreexpmultiplier") < 39) MiscellaneousVars[88] = (GetCVar("dvds_sceptreexpmultiplier") - 19) * 5;
-
- if (GetCVar("dvds_heatheatmultiplier") > -1 && GetCVar("dvds_heatheatmultiplier") < 20) MiscellaneousVars[130] = (GetCVar("dvds_heatheatmultiplier") + 1) * 100;
- if (GetCVar("dvds_heatheatmultiplier") > 19 && GetCVar("dvds_heatheatmultiplier") < 39) MiscellaneousVars[130] = (GetCVar("dvds_heatheatmultiplier") - 19) * 5;
-
- if (GetCVar("dvds_heatcoolmultiplier") > -1 && GetCVar("dvds_heatcoolmultiplier") < 20) MiscellaneousVars[131] = (GetCVar("dvds_heatcoolmultiplier") + 1) * 100;
- if (GetCVar("dvds_heatcoolmultiplier") > 19 && GetCVar("dvds_heatcoolmultiplier") < 39) MiscellaneousVars[131] = (GetCVar("dvds_heatcoolmultiplier") - 19) * 5;
-
- if (GetCVar("dvds_uncurserate") > -1 && GetCVar("dvds_uncurserate") < 20) MiscellaneousVars[89] = (GetCVar("dvds_uncurserate") + 1) * 100;
- if (GetCVar("dvds_uncurserate") > 19 && GetCVar("dvds_uncurserate") < 39) MiscellaneousVars[89] = (GetCVar("dvds_uncurserate") - 19) * 5;
-
- if (GetCVar("dvds_staminaregenmultiplier") > -1 && GetCVar("dvds_staminaregenmultiplier") < 20) MiscellaneousVars[137] = (GetCVar("dvds_staminaregenmultiplier") + 1) * 100;
- if (GetCVar("dvds_staminaregenmultiplier") > 19 && GetCVar("dvds_staminaregenmultiplier") < 39) MiscellaneousVars[137] = (GetCVar("dvds_staminaregenmultiplier") - 19) * 5;
-
- if (GetCVar("dvds_healthregenmultiplier") > -1 && GetCVar("dvds_healthregenmultiplier") < 20) MiscellaneousVars[138] = (GetCVar("dvds_healthregenmultiplier") + 1) * 100;
- if (GetCVar("dvds_healthregenmultiplier") > 19 && GetCVar("dvds_healthregenmultiplier") < 39) MiscellaneousVars[138] = (GetCVar("dvds_healthregenmultiplier") - 19) * 5;
-
- if (GetCVar("dvds_manaregenmultiplier") > -1 && GetCVar("dvds_manaregenmultiplier") < 20) MiscellaneousVars[139] = (GetCVar("dvds_manaregenmultiplier") + 1) * 100;
- if (GetCVar("dvds_manaregenmultiplier") > 19 && GetCVar("dvds_manaregenmultiplier") < 39) MiscellaneousVars[139] = (GetCVar("dvds_manaregenmultiplier") - 19) * 5;
-
- if (GetCVar("dvds_manaregenratemultiplier") > -1 && GetCVar("dvds_manaregenratemultiplier") < 20) MiscellaneousVars[213] = (GetCVar("dvds_manaregenratemultiplier") + 1) * 100;
- if (GetCVar("dvds_manaregenratemultiplier") > 19 && GetCVar("dvds_manaregenratemultiplier") < 39) MiscellaneousVars[213] = (GetCVar("dvds_manaregenratemultiplier") - 19) * 5;
-
- if (GetCVar("dvds_manacostgmultiplier") > -1 && GetCVar("dvds_manacostgmultiplier") < 20) MiscellaneousVars[145] = (GetCVar("dvds_manacostgmultiplier") + 1) * 100;
- if (GetCVar("dvds_manacostgmultiplier") > 19 && GetCVar("dvds_manacostgmultiplier") < 39) MiscellaneousVars[145] = (GetCVar("dvds_manacostgmultiplier") - 19) * 5;
-
- if (GetCVar("dvds_starthpmanafactor") > -1 && GetCVar("dvds_starthpmanafactor") < 20) MiscellaneousVars[147] = (GetCVar("dvds_starthpmanafactor") + 1) * 100;
- if (GetCVar("dvds_starthpmanafactor") > 19 && GetCVar("dvds_starthpmanafactor") < 39) MiscellaneousVars[147] = (GetCVar("dvds_starthpmanafactor") - 19) * 5;
-
- if (GetCVar("dvds_startotherstatsfactor") > -1 && GetCVar("dvds_startotherstatsfactor") < 20) MiscellaneousVars[148] = (GetCVar("dvds_startotherstatsfactor") + 1) * 100;
- if (GetCVar("dvds_startotherstatsfactor") > 19 && GetCVar("dvds_startotherstatsfactor") < 39) MiscellaneousVars[148] = (GetCVar("dvds_startotherstatsfactor") - 19) * 5;
-
- if (GetCVar("dvds_expcombotimermultiplier") > -1 && GetCVar("dvds_expcombotimermultiplier") < 20) MiscellaneousVars[161] = (GetCVar("dvds_expcombotimermultiplier") + 1) * 100;
- if (GetCVar("dvds_expcombotimermultiplier") > 19 && GetCVar("dvds_expcombotimermultiplier") < 39) MiscellaneousVars[161] = (GetCVar("dvds_expcombotimermultiplier") - 19) * 5;
-
- if (GetCVar("dvds_expcombobasemultiplier") > -1 && GetCVar("dvds_expcombobasemultiplier") < 20) MiscellaneousVars[162] = (GetCVar("dvds_expcombobasemultiplier") + 1) * 100;
- if (GetCVar("dvds_expcombobasemultiplier") > 19 && GetCVar("dvds_expcombobasemultiplier") < 39) MiscellaneousVars[162] = (GetCVar("dvds_expcombobasemultiplier") - 19) * 5;
-
- if (GetCVar("dvds_tension_chargemultiplier") > -1 && GetCVar("dvds_tension_chargemultiplier") < 20) MiscellaneousVars[187] = (GetCVar("dvds_tension_chargemultiplier") + 1) * 100;
- if (GetCVar("dvds_tension_chargemultiplier") > 19 && GetCVar("dvds_tension_chargemultiplier") < 39) MiscellaneousVars[187] = (GetCVar("dvds_tension_chargemultiplier") - 19) * 5;
-
- if (GetCVar("dvds_tension_countdownmultiplier") > -1 && GetCVar("dvds_tension_countdownmultiplier") < 20) MiscellaneousVars[191] = (GetCVar("dvds_tension_countdownmultiplier") + 1) * 100;
- if (GetCVar("dvds_tension_countdownmultiplier") > 19 && GetCVar("dvds_tension_countdownmultiplier") < 39) MiscellaneousVars[191] = (GetCVar("dvds_tension_countdownmultiplier") - 19) * 5;
-
- if (GetCVar("dvds_tension_cooldownmultiplier") > -1 && GetCVar("dvds_tension_cooldownmultiplier") < 20) MiscellaneousVars[192] = (GetCVar("dvds_tension_cooldownmultiplier") + 1) * 100;
- if (GetCVar("dvds_tension_cooldownmultiplier") > 19 && GetCVar("dvds_tension_cooldownmultiplier") < 39) MiscellaneousVars[192] = (GetCVar("dvds_tension_cooldownmultiplier") - 19) * 5;
-
+ MiscellaneousVars[187] = GetCVar("dvds_tension_chargemultiplier");
+ 
  if (GetCVar("dvds_tensionspeed") <= 0 ) MiscellaneousVars[193] = 1;
  if (GetCVar("dvds_tensionspeed") == 1 ) MiscellaneousVars[193] = 2;
  if (GetCVar("dvds_tensionspeed") == 2 ) MiscellaneousVars[193] = 4;
@@ -24360,7 +24313,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
  if (GetCVar("dvds_monstercrisisattacks") == 0) TakeActorInventory(Player1TID,"PlayerCanUseCrisisAttacks",9999);
 
- // Print(d:MiscellaneousVars[86],s:"\n",d:MiscellaneousVars[87],s:"\n",d:MiscellaneousVars[88],s:"\n",d:MiscellaneousVars[89],s:"\n",d:MiscellaneousVars[90],s:"\n",d:MiscellaneousVars[130],s:"\n",d:MiscellaneousVars[131],s:"\n",d:MiscellaneousVars[137],s:"\n",d:MiscellaneousVars[138],s:"\n",d:MiscellaneousVars[139]);
+ // Print(d:MiscellaneousVars[86],s:"\n",d:MiscellaneousVars[87],s:"\n",d:MiscellaneousVars[88],s:"\n",d:MiscellaneousVars[89],s:"\n",d:MiscellaneousVars[90],s:"\n",d:MiscellaneousVars[130],s:"\n",d:MiscellaneousVars[131],s:"\n",d:MiscellaneousVars[137]);
 
  if (ClassCheck == 1) // Will run the check only once at the beginning of a new game
  {
@@ -25040,7 +24993,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   MiscellaneousVars[35] = MiscellaneousVars[35] * MiscellaneousVars[148] / 100; // Check Start Other Stats Factor
   MiscellaneousVars[36] = MiscellaneousVars[36] * MiscellaneousVars[148] / 100; // Check Start Other Stats Factor
 
-  MaxMana = MaxMana * MiscellaneousVars[147] / 100; // Check Start Mana Factor
+  MaxMana = MaxMana * GetCVar("dvds_starthpmanafactor") / 100; // Check Start Mana Factor
   if (MaxMana < 1) MaxMana = 1;
   CurrentMana = MaxMana;
 
@@ -25063,7 +25016,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    if (GameSkill() == SKILL_HARD) MaxHealthTrue = MaxHealthTrue * random(85,105) / 100; 		// Deg: 76-132 HP [spread of 56], Illu: 56-102 HP [spread of 46]
    if (GameSkill() == SKILL_VERY_HARD) MaxHealthTrue = MaxHealthTrue * random(80,100) / 100; 	// Deg: 72-126 HP [spread of 54], Illu: 52-97 HP [spread of 45]
   }
-  MaxHealthTrue = MaxHealthTrue * MiscellaneousVars[147] / 100; // Check Start HP Factor
+  MaxHealthTrue = MaxHealthTrue * GetCVar("dvds_starthpmanafactor") / 100; // Check Start HP Factor
   if (MaxHealthTrue < 1) MaxHealthTrue = 1;
   SetActorProperty(Player1TID,APROP_Health,MaxHealthTrue);
   SetActorProperty(Player1TID,APROP_SPAWNHEALTH,MaxHealthTrue);
@@ -25771,7 +25724,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  // Check EXP Kill Combo Timer
  if (MiscellaneousVars[157] > 0)
  {
-  TimerMulti = 20 * MiscellaneousVars[161] / 100;
+  TimerMulti = 20 * GetCVar("dvds_expcombotimermultiplier") / 100;
   TimerPart1 = 100;
   if (CharacterClass == 2)
   {
@@ -26653,7 +26606,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Berserk]: ",d:staminaregenfinal);
 
   // Checks Stamina Regen Rate Menu Option
-  staminaregenfinal = staminaregenfinal * MiscellaneousVars[137] / 100;
+  staminaregenfinal = staminaregenfinal * GetCVar("dvds_staminaregenmultiplier") / 100;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [StamMenuOption]: ",d:staminaregenfinal);
 
   // Checks the final value based on how high the Max Stamina Pts Cap has been increased by various items
@@ -27471,7 +27424,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    delaycount = delaycount * PerkFactor / 10000; // "RegenHPFast" and "RegenHPFast EX" perks.
 
    // Checks Health Regen Rate Menu Option
-   delaycount = delaycount * MiscellaneousVars[138] / 100;
+   delaycount = delaycount * GetCVar("dvds_healthregenmultiplier") / 100;
 
    // Low Cap to 1 Tics
    if (delaycount < 1) delaycount = 1;
@@ -27615,6 +27568,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     // RegenHPFast perks
     PerkFactor = 10000 - ((MiscellaneousVars[10013] * 2000) + (MiscellaneousVars[10014] * 5000));
     delaycount = delaycount * PerkFactor / 10000; // "RegenHPFast" and "RegenHPFast EX" perks.
+
+    // Checks Health Regen Rate Menu Option
+    delaycount = delaycount * (100 / GetCVar("dvds_healthregenmultiplier") * 100) / 100;
 
     // Low Cap to 1 Tics
     if (delaycount < 1) delaycount = 1;
@@ -27817,7 +27773,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   RuinousShieldPercent = MiscellaneousVars[202] * 100 / RuinousPtsNeeded;
   RuinousShieldPercentF = MiscellaneousVars[202] * 1000 / RuinousPtsNeeded;
 
-  if (MenuSystemVars[0] == 0) MiscellaneousVars[11] += 10 * (MiscellaneousVars[89] / 100);
+  if (MenuSystemVars[0] == 0) MiscellaneousVars[11] += 10 * (GetCVar("dvds_uncurserate") / 100);
   if (MiscellaneousVars[11] >= UncurseInterval)
   {
    MiscellaneousVars[11] -= UncurseInterval;
@@ -28422,7 +28378,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (PowerupTimer[20] > 0) HellcoreCoolRatio *= 5; 
 
   // Check Hellcore Cooldown Multiplier in Options
-  HellcoreCoolRatio = (HellcoreCoolRatio * MiscellaneousVars[131]) / 100;
+  HellcoreCoolRatio = (HellcoreCoolRatio * GetCVar("dvds_heatcoolmultiplier")) / 100;
   if (HellcoreCoolRatio < 1) HellcoreCoolRatio = 1;
 
   if (CheckActorInventory(Player1TID,"IsHaSatanNow") > 0) HellcoreCoolRatio = HellcoreCoolRatio * 16;
@@ -29832,7 +29788,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  int TensionCoolDownRatio = 200;
  PerkFactor = ((MiscellaneousVars[10011] * 500) + (MiscellaneousVars[10012] * 1250)) + 10000;
  TensionCoolDownRatio = TensionCoolDownRatio * PerkFactor / 10000; // "PsycheMore" and "PsycheMore EX" perks.
- TensionCoolDownRatio = TensionCoolDownRatio * MiscellaneousVars[192] / 100;
+ TensionCoolDownRatio = TensionCoolDownRatio * GetCVar("dvds_tension_cooldownmultiplier") / 100;
  if (MiscellaneousVars[166] <= 0 && MenuSystemVars[0] == 0) MiscellaneousVars[186] -= TensionCoolDownRatio;
 
  if (MiscellaneousVars[186] <= 0) { MiscellaneousVars[186] = 0; MiscellaneousVars[188] = MiscellaneousVars[186]; }
@@ -30274,7 +30230,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    if (MiscellaneousVars[184] > 0 && MiscellaneousVars[183] >= 0)
    {
     tensiontimerdecrease = 20;
-    tensiontimerdecrease = tensiontimerdecrease * MiscellaneousVars[191] / 100;
+    tensiontimerdecrease = tensiontimerdecrease * GetCVar("dvds_tension_countdownmultiplier") / 100;
     if (GetCVar("dvds_musou_powertripmode") == 1) tensiontimerdecrease = tensiontimerdecrease / 5; // 'Power Trip' mode cheat
     if (GetCVar("dvds_musou_powertripmode") == 2) tensiontimerdecrease = tensiontimerdecrease / 10; // 'Power Trip' mode cheat
     if (CheckActorInventory(Player1TID,"MartArtsMaster1") > 0) tensiontimerdecrease = (tensiontimerdecrease * random(800,900)) / 1000;
@@ -33784,7 +33740,7 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
    }
    C2 = C2 * EXPBonus1 / 1000;
    C2 = C2 * (GetCVar("dvds_deftnessexpbase") + MiscellaneousVars[40]) / GetCVar("dvds_deftnessexpbase");
-   C2 = C2 * MiscellaneousVars[88] / 100;
+   C2 = C2 * GetCVar("dvds_sceptreexpmultiplier") / 100;
 
    // "Higher Learning" Grand Mastery Perk
    if (MiscellaneousVars[11001] == 1) C2 = C2 * 11 / 10; 
@@ -33894,7 +33850,7 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
 
    SExPts = SExPts * EXPBonus1 / 1000;
    SExPts = SExPts * (GetCVar("dvds_deftnessexpbase") + MiscellaneousVars[40]) / GetCVar("dvds_deftnessexpbase");
-   SExPts = SExPts * MiscellaneousVars[88] / 100;
+   SExPts = SExPts * GetCVar("dvds_sceptreexpmultiplier") / 100;
 
    while (SExPts > 15)
    {
@@ -34107,7 +34063,7 @@ script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
  if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"Hellcore Heat %: ",d:percent,s:" [Level Alteration]");
 
  // Check Hellcore Multiplier in Options
- percent = (percent * MiscellaneousVars[130]) / 100;
+ percent = (percent * GetCVar("dvds_heatheatmultiplier")) / 100;
  if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"Hellcore Heat %: ",d:percent,s:" [Menu Options]");
 
  // Soul Mastery Reduces rate of heat increase
@@ -46583,7 +46539,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
    MiscellaneousVars[159] = MiscellaneousVars[158] * 52;
    // Each enemy = +0.52% to the bonus multiplier [501+ enemies killed]
   }
-  MiscellaneousVars[159] = MiscellaneousVars[159] * MiscellaneousVars[162] / 100;
+  MiscellaneousVars[159] = MiscellaneousVars[159] * GetCVar("dvds_expcombobasemultiplier") / 100;
   if (MiscellaneousVars[159] < 1) MiscellaneousVars[159] = 1;
   MiscellaneousVars[159] = MiscellaneousVars[159] + 10000;
 
