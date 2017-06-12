@@ -808,6 +808,10 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [2501] Player should be frozen
 // [2502] Unfreeze Player
 
+// [5001] Arcana Points [Petra]
+
+// [5501] Spirit Strike Points [Ailish]
+
 // [9043] "Death Rage" Timer
 // [9044] "Death Rage" COOLDOWN Timer
 
@@ -985,7 +989,7 @@ global int 50:GameScriptEvents[]; // ***ARRAY*** Array for Controlling in-game s
 // [1403] = MAP04, Checks for the player having Iron Feet powerup or Flora's Safe Passage spells in effect to determine exposure to Hell-Toxins.
 // [1801] = MAP08, Spawns all AmbientSound Actors in places meant to be high off the ground.
 
-
+global int 51:SpiritStrikePoints; //Ailish specific points for Spirit Strike usage
 
 // 0 = Normal, 1 = Other
 
@@ -5926,6 +5930,41 @@ script "HUDDisplay" ENTER
         msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
         HudMessage(s:"ARC";HUDMSG_ALPHA,3502,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 
+		
+		// ARC Notches
+        xpos = ScreenXOffset + 225.0; // 225
+        ypos = 924.0; // 870
+      msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+      G10 = GetCVar("dvdsnewhud_hudmeternotchdetail");
+      G9 = 200 / G10;
+      G3 = MiscellaneousVars[5001];
+      G2 = 900; //To replace in the future with other max. Arcana Gauge options
+      I1 = G3 * G9 / G2;
+      if (I1 > G9) I1 = G9;
+      if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
+      if (G2 != 0)
+      {
+       // Normal
+       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
+       {    
+        if (C1 <= I1)
+        {
+         if (G10 == 4) { SetFont("ARBFILN4"); G11 = -2.0; }
+         if (G10 == 2) { SetFont("ARBFILN2"); G11 = -1.0; }
+         if (G10 == 1) { SetFont("ARBFILNR"); G11 = 1.0; }
+        }
+        else SetFont("ARBFILEM");
+        I2 = ((C1 << 16) * G10) + G11;
+        msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+        HudMessage(s:"A";HUDMSG_ALPHA,C1+3800,cr_untranslated,xpos+I2,ypos,HUDMsgDelayFixed,msgalpha);
+       }
+	  }
+       // ARC Amounts
+       xpos = ScreenXOffset + 326.0;
+       ypos = 926.0;
+       SetFont("DQHUDFONTSML");
+       msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
+       HudMessage(d:G3,s:"/",d:G2;HUDMSG_ALPHA,3503,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 	 }
 	 if (CharacterClass == 8) // Ailish = Spirit Strike Meter
 	 {
@@ -9242,7 +9281,8 @@ script "HUDDisplay" ENTER
 	  If(StrIcmp(weapon, "AChristinaWyvern") == 0) SetFont("WIACHWYV");  
 	  If(StrIcmp(weapon, "AChristinaHeresiarch") == 0) SetFont("WIACHHER");  
 	  // Special Petra-Specific Addons
-	  If(StrIcmp(weapon, "AChristinaPartinias") == 0) SetFont("WIACHPAR");    
+	  If(StrIcmp(weapon, "AChristinaPartinias") == 0) SetFont("WIACHPAR");
+	  If(StrIcmp(weapon, "AChristinaRagnarok") == 0) SetFont("WIACHRAG");
 	  
       // Flora-Specfic Weapons
       If(StrIcmp(weapon, "FistFlora") == 0) SetFont("WIFISTF");
@@ -10144,6 +10184,25 @@ script "ManaRegenerationStuff" ENTER
  Restart;
 }
 
+Script "ArcanaGaugeRegenerationStuff" ENTER
+{
+ int ArcanaRegenDelay, ArcanaRegenAmount;
+ if (ArcanaRegenDelay == 35 && MiscellaneousVars[5001] < 900)
+ {
+	MiscellaneousVars[5001] += 1;
+	ArcanaRegenDelay = 0;
+	if (MiscellaneousVars[5001] == 100 || MiscellaneousVars[5001] == 200 || MiscellaneousVars[5001] == 300 || MiscellaneousVars[5001] == 400 || MiscellaneousVars[5001] == 500 || MiscellaneousVars[5001] == 600 || MiscellaneousVars[5001] == 700 || MiscellaneousVars[5001] == 800 || MiscellaneousVars[5001] == 900 )
+	{
+		PlaySound(0,"ArcanaGaugeLevelup",CHAN_7);
+	}
+ }
+ else
+ {
+	ArcanaRegenDelay += 1;
+ }
+ Delay(1);
+ Restart;
+}
 //------------------------------
 // FUNCTION: Get ExpMultiFactor
 //------------------------------
@@ -39305,7 +39364,7 @@ script "GetPlayerATKDMG" (int type, int puff)
  if (type == 49) // A. Christina Long Range Blast (Weak)
  {
   perkfactor += ((MiscellaneousVars[10023] * 200) + (MiscellaneousVars[10024] * 1000));
-  damage = random(94,156);//125); //
+  damage = random(54,91);//125); //
   damage = damage * perkfactor / 10000;
   extradmg1 = (MiscellaneousVars[34] * 3); // 300% of Sorcery
   extradmg1 = extradmg1 * perkfactor / 10000;
@@ -39368,7 +39427,28 @@ script "GetPlayerATKDMG" (int type, int puff)
   extradmg2 = (MiscellaneousVars[35] * 2); // 200% of Strength
   extradmg2 = extradmg2 * perkfactor / 10000;
  }
- if (type == 55) // CStaffMissileNew (Serpent Staff projectile)
+ if (type == 55) // A. Christina Bouncing Shot (Weak)
+ {
+  perkfactor += ((MiscellaneousVars[10023] * 200) + (MiscellaneousVars[10024] * 1000));
+  damage = (random(54,90) / 6);//353); //
+  damage = damage * perkfactor / 10000;
+  extradmg1 = (MiscellaneousVars[34] * 3); // 300% of Sorcery
+  extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg2 = (MiscellaneousVars[35] * 2); // 200% of Strength
+  extradmg2 = extradmg2 * perkfactor / 10000;
+ }
+
+ if (type == 56) // A. Christina Bouncing Shot (Normal)
+ {
+  perkfactor += ((MiscellaneousVars[10023] * 200) + (MiscellaneousVars[10024] * 1000));
+  damage = (random(135,225) / 6);//353); //
+  damage = damage * perkfactor / 10000;
+  extradmg1 = (MiscellaneousVars[34] * 3); // 300% of Sorcery
+  extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg2 = (MiscellaneousVars[35] * 2); // 200% of Strength
+  extradmg2 = extradmg2 * perkfactor / 10000;
+ }
+ if (type == 57) // CStaffMissileNew (Serpent Staff projectile)
  {
   perkfactor += ((MiscellaneousVars[10053] * 1250) + (MiscellaneousVars[10054] * 5000));
   damage = (random(1,8) * 5) + random(-MiscellaneousVars[10053],MiscellaneousVars[10053]);
