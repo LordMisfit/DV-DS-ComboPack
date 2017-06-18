@@ -226,6 +226,9 @@ Functions
 	["UseCustomInventoryItem"]		-	For actual items that are stored in the inventory
 	["CheckCharacterClass"]			-	Returns the Character ID
 
+// Petra Specific Scripts
+	["CheckAChristinaCheck"]		-	Script that checks when certain keys are pressed while Alexandra Christina is selected. (Dodge, Bouncing Beams, Heel Kick, Reloading)
+	
 // Scripts imported from others [and possibly modified]
 
 //******************************************************************
@@ -526,7 +529,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [138] - ?
 // [139] - ?
 // [140] is storage for Starting Sceptre Level [Menu CVar]
-// [142] - ?
+// [141] - ?
+// [142] is EXP Combo Color Flash Timer
 // [143] is for how far along the degeneration timer is.
 // [144] is the base degeneration interval for the character
 // [145] - ?
@@ -1191,7 +1195,7 @@ str SpellTable[59] = {                               //[id] (deg?), (ill?), (flo
                       "\cfSpreader Aura Lv. 2\c-",	 //[55] X, X, O  [Status]
                       "\cfOomph\c-",				 //[56] X, X, O  [Status]
                       "\cfBuff\c-",					 //[57] X, X, O  [Status]
-					  "\cfDesperado Damsel"          //[58] X, X, X  [Status]
+					  "\cfDesperado Damsel\c-"          //[58] X, X, X  [Status]
                      };
 // 15, 20, 23, 29, 30, 33, 34, 36, 37, 41, 42, 44, 45, 46, 48, 49, 50, 54, 55, 56, 57, 58 = Deggaris Cannot use these Spell IDs in final version
 // 6, 26, 43, 49, 51, 55, 56, 57, 58 = Illucia Cannot use these Spell IDs in final version
@@ -1256,7 +1260,7 @@ str SpellDesc[59] =  {
                       "Allows You to Create 6 Extra Copies of Most Attacks/Spells.",	// Spreader Aura Lv. 2
                       "Doubles your damage output for a short time.",	// Oomph
                       "Cut Damage in Half and slightly increase survive rate.",		// Buff
-                      "Temporarily increase accuracy of all weapons.  Also increases damage for Hitscan weapons and A. Christina."		// Desperado Damsel
+                      "Temporary damage boost for A. Christina (non-enemy fire modes) and hitscan weaponry."		// Desperado Damsel
                      };
 int SpellCosts[59] = {
                         1,		// Minor Magic Missile
@@ -5517,24 +5521,47 @@ script "HUDDisplay" ENTER
        HudMessage(s:"A";HUDMSG_ALPHA,2111,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
       }
 
+	  str killmsgcolor = "Green";
+	  MiscellaneousVars[142]++;
+	  if (MiscellaneousVars[142] > 39) MiscellaneousVars[142] -= 39;
+
       // # of Kills
       if (MiscellaneousVars[158] > 0)
       {
+       // Kill Combo
+       if (MiscellaneousVars[158] > 1)
+       {
+        if (MiscellaneousVars[158] > 10 && MiscellaneousVars[158] < 21) { killmsgcolor = "LightBlue"; }
+        else if (MiscellaneousVars[158] > 20 && MiscellaneousVars[158] < 36) { killmsgcolor = "Cream"; }
+        else if (MiscellaneousVars[158] > 35 && MiscellaneousVars[158] < 61) { killmsgcolor = "Cyan"; }
+        else if (MiscellaneousVars[158] > 60 && MiscellaneousVars[158] < 101) { killmsgcolor = "Brick"; }
+        else if (MiscellaneousVars[158] > 100 && MiscellaneousVars[158] < 201) { killmsgcolor = "Orange"; }
+        else if (MiscellaneousVars[158] > 200 && MiscellaneousVars[158] < 501) { killmsgcolor = "Gold"; }
+        else if (MiscellaneousVars[158] > 500) 
+		{ 
+	     if (MiscellaneousVars[142] >= 0 && MiscellaneousVars[142] <= 9) killmsgcolor = "PetraOrange"; 
+	     if (MiscellaneousVars[142] >= 10 && MiscellaneousVars[142] <= 19) killmsgcolor = "FloraBlue"; 
+	     if (MiscellaneousVars[142] >= 20 && MiscellaneousVars[142] <= 29) killmsgcolor = "PetraOrange"; 
+	     if (MiscellaneousVars[142] >= 30 && MiscellaneousVars[142] <= 39) killmsgcolor = "FloraBlue"; 
+		}
+       }
+
        SetFont("DQHUDFONT");
        xpos = ScreenXOffset + 108.0 + 0.2;
        if (xpos < 0.0) xpos -= 0.4;
        //Print(f:xpos);
        ypos += -22.0; // = 750.0;
        msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
-       HudMessage(d:MiscellaneousVars[158];HUDMSG_ALPHA,2112,cr_green,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+       HudMessage(d:MiscellaneousVars[158];HUDMSG_ALPHA | HUDMSG_COLORSTRING,2112,killmsgcolor,xpos,ypos,HUDMsgDelayFixed,msgalpha);
        SetFont("DQHUDFONTSML");
        // "Kills" Label
        xpos = ScreenXOffset + 120.0 + 0.1;
        if (xpos < 0.0) xpos -= 0.2;
        ypos += 5.0; // = 755.0;
        msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
-       if (MiscellaneousVars[158] == 1) HudMessage(s:"KILL";HUDMSG_ALPHA,2113,cr_green,xpos,ypos,HUDMsgDelayFixed,msgalpha);
-       else HudMessage(s:"KILLS";HUDMSG_ALPHA,2113,cr_green,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+
+       if (MiscellaneousVars[158] == 1) HudMessage(s:"KILL";HUDMSG_ALPHA | HUDMSG_COLORSTRING,2113,killmsgcolor,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+       else HudMessage(s:"KILLS";HUDMSG_ALPHA | HUDMSG_COLORSTRING,2113,killmsgcolor,xpos,ypos,HUDMsgDelayFixed,msgalpha);
       }
 
       // "OVERKILL" text
@@ -10186,8 +10213,14 @@ script "ManaRegenerationStuff" ENTER
 
 Script "ArcanaGaugeRegenerationStuff" ENTER
 {
- int ArcanaRegenDelay, ArcanaRegenAmount;
- if (ArcanaRegenDelay == 35 && MiscellaneousVars[5001] < 900)
+ int ArcanaRegenDelay, ArcanaRegenDelaySkill, ArcanaRegenAmount;
+ if (CharacterClass != 9) Terminate;
+ if (GameSkill() == SKILL_VERY_EASY) { ArcanaRegenDelaySkill = 8; }
+ if (GameSkill() == SKILL_EASY) { ArcanaRegenDelaySkill = 16; }
+ if (GameSkill() == SKILL_NORMAL) { ArcanaRegenDelaySkill = 24; }
+ if (GameSkill() == SKILL_HARD) { ArcanaRegenDelaySkill = 32; }
+ if (GameSkill() == SKILL_VERY_HARD) { ArcanaRegenDelaySkill = 40; }
+ if (ArcanaRegenDelay == ArcanaRegenDelaySkill && MiscellaneousVars[5001] < 900)
  {
 	MiscellaneousVars[5001] += 1;
 	ArcanaRegenDelay = 0;
@@ -29888,7 +29921,22 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  int TensionCoolDownRatio = 200;
  PerkFactor = ((MiscellaneousVars[10011] * 500) + (MiscellaneousVars[10012] * 1250)) + 10000;
  TensionCoolDownRatio = TensionCoolDownRatio * PerkFactor / 10000; // "PsycheMore" and "PsycheMore EX" perks.
+
  TensionCoolDownRatio = TensionCoolDownRatio * GetCVar("dvds_tension_cooldownmultiplier") / 100;
+
+ // Kill Combo
+ if (MiscellaneousVars[158] > 1)
+ {
+  if (MiscellaneousVars[158] > 10 && MiscellaneousVars[158] < 21) { TensionCoolDownRatio = (TensionCoolDownRatio * 1010) / 1000; }
+  else if (MiscellaneousVars[158] > 20 && MiscellaneousVars[158] < 36) { TensionCoolDownRatio = (TensionCoolDownRatio * 1030) / 1000; }
+  else if (MiscellaneousVars[158] > 35 && MiscellaneousVars[158] < 61) { TensionCoolDownRatio = (TensionCoolDownRatio * 1060) / 1000; }
+  else if (MiscellaneousVars[158] > 60 && MiscellaneousVars[158] < 101) { TensionCoolDownRatio = (TensionCoolDownRatio * 1100) / 1000; }
+  else if (MiscellaneousVars[158] > 100 && MiscellaneousVars[158] < 201) { TensionCoolDownRatio = (TensionCoolDownRatio * 1200) / 1000; }
+  else if (MiscellaneousVars[158] > 200 && MiscellaneousVars[158] < 501) { TensionCoolDownRatio = (TensionCoolDownRatio * 1500) / 1000; }
+  else if (MiscellaneousVars[158] > 500) { TensionCoolDownRatio = (TensionCoolDownRatio * 1950) / 1000; }
+ }
+
+ 
  if (MiscellaneousVars[166] <= 0 && MenuSystemVars[0] == 0) MiscellaneousVars[186] -= TensionCoolDownRatio;
 
  if (MiscellaneousVars[186] <= 0) { MiscellaneousVars[186] = 0; MiscellaneousVars[188] = MiscellaneousVars[186]; }
@@ -29981,6 +30029,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
       if (GetCVar("dvds_musou_powertripmode") == 1) TensionChargeAmount *= 5;
       if (GetCVar("dvds_musou_powertripmode") == 2) TensionChargeAmount *= 10;
 
+	  // Kill Combo
+	  if (MiscellaneousVars[158] > 1)
+	  {
+	   if (MiscellaneousVars[158] > 10 && MiscellaneousVars[158] < 21) { TensionChargeAmount = (TensionChargeAmount * 1005) / 1000; }
+	   else if (MiscellaneousVars[158] > 20 && MiscellaneousVars[158] < 36) { TensionChargeAmount = (TensionChargeAmount * 1015) / 1000; }
+	   else if (MiscellaneousVars[158] > 35 && MiscellaneousVars[158] < 61) { TensionChargeAmount = (TensionChargeAmount * 1030) / 1000; }
+	   else if (MiscellaneousVars[158] > 60 && MiscellaneousVars[158] < 101) { TensionChargeAmount = (TensionChargeAmount * 1050) / 1000; }
+	   else if (MiscellaneousVars[158] > 100 && MiscellaneousVars[158] < 201) { TensionChargeAmount = (TensionChargeAmount * 1100) / 1000; }
+	   else if (MiscellaneousVars[158] > 200 && MiscellaneousVars[158] < 501) { TensionChargeAmount = (TensionChargeAmount * 1250) / 1000; }
+	   else if (MiscellaneousVars[158] > 500) { TensionChargeAmount = (TensionChargeAmount * 1475) / 1000; }
+	  }
+	  
       // PsycheMore perks
       PerkFactor = ((MiscellaneousVars[10011] * 750) + (MiscellaneousVars[10012] * 1875)) + 10000;
       TensionChargeAmount = TensionChargeAmount * PerkFactor / 10000; // "PsycheMore" and "PsycheMore EX" perks.
@@ -37220,6 +37280,28 @@ script "IncreaseHellcoreLevel" (int HellcoreWeapon)
 
  if (HellcoreWeapon == 17) MiscellaneousVars[112] += 1;
  if (MiscellaneousVars[112] > 8) MiscellaneousVars[112] = 8;
+}
+
+script "CheckAChristinaCheck" (void)
+{
+ int buttons = GetPlayerInput(0, INPUT_BUTTONS);
+ SetResultValue(0); //Always set to this initially!
+ if (buttons & BT_RELOAD) //Allow A. Christina's ammo to continue refilling by holding the button
+ {
+	SetResultValue(3);
+ }
+ 
+ if (buttons & BT_ZOOM) //A. Christina weapons fire mode
+ {
+  if (GetActorVelZ(Player1TID) < 0) //LGA Dodge can activate when Zoom key is pressed and on the ground
+  {
+	SetResultValue(2); //LGA Dodge can be used
+  }
+  else
+  {
+	SetResultValue(1); //Bouncing Beams and Heel Kick are only allowed when airborne
+  }
+ }
 }
 
 // Check if to perform Sceptre's downswing alternate attack while falling or it's spinning alternate while grounded.
