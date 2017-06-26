@@ -10484,12 +10484,14 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
 {
  int OldExp1 = RealExpGain;
  RealExpGain = RealExpGain * ExpMultiFactor / 100; // Randomizes some of the experience gained
+
  int OldExp2 = RealExpGain;
  RealExpGain = RealExpGain * (GetCVar("dvds_deftnessexpbase") + MiscellaneousVars[40]) / GetCVar("dvds_deftnessexpbase");
+
  int OldExp3 = RealExpGain;
  RealExpGain = RealExpGain * GetCVar("dvds_expmultiplier") / 100; // EXP Multiplier Option
- int OldExp4 = RealExpGain;
 
+ int OldExp4 = RealExpGain;
  // "Higher Learning" Grand Mastery Perk
  if (MiscellaneousVars[11001] == 1)
  {
@@ -10506,12 +10508,17 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
  else if (GameSkill() == SKILL_NORMAL) RealExpGain = RealExpGain * 15 / 8; // 187.5%
  else if (GameSkill() == SKILL_HARD) RealExpGain = RealExpGain * 5 / 4; // 125%
  else if (GameSkill() == SKILL_VERY_HARD) RealExpGain = RealExpGain * 7 / 8; // 87.5%
- int OldExp5 = RealExpGain;
 
- if (CharacterClass == 2) // Only Flora can Equip the Pearly Corset [+30% EXP Bonus (or a 5% chance for a +45% bonus)]
+ int OldExp5 = RealExpGain;
+ int ArmorEXPMulti = 20;
+ if (CharacterClass == 2)
  {
-  if (CheckActorInventory(Player1TID,"PearlyCorset")) { if (random(1,100) < 6) { RealExpGain = RealExpGain * 29 / 20; } else { RealExpGain = RealExpGain * 13 / 10; } }
+  if (CheckActorInventory(Player1TID,"SafeTeaShoes")) { if (random(1,100) < 6) { ArmorEXPMulti += 2; } else { ArmorEXPMulti += 1; } }
+  if (CheckActorInventory(Player1TID,"PearlyCorset")) { if (random(1,100) < 6) { ArmorEXPMulti += 9; } else { ArmorEXPMulti += 6; } }
+  if (CheckActorInventory(Player1TID,"DoveRibbon")) { if (random(1,100) < 6) { ArmorEXPMulti += 2; } else { ArmorEXPMulti += 1; } }
+  RealExpGain = RealExpGain * ArmorEXPMulti / 20;
  }
+
  int OldExp6 = RealExpGain;
  if (PowerupTimer[7] > 0) { if (random(1,100) > 67) { RealExpGain = RealExpGain * 7 / 6; } else { RealExpGain = RealExpGain * 13 / 12; } } // Divine Avatar [+8.333% EXP, (33% chance of +16.67% EXP instead]
 
@@ -10521,7 +10528,7 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
            s:"\nOldEXP2: ",d:OldExp2,s:" [ExpMultiRand: ",d:ExpMultiFactor,s:" / 100]",
            s:"\nOldEXP3: ",d:OldExp3,s:" [DeftBonus: ",d:GetCVar("dvds_deftnessexpbase")+MiscellaneousVars[40],s:" / ",d:GetCVar("dvds_deftnessexpbase"),s:"]",
            s:"\nOldEXP4: ",d:OldExp4,s:" [ExpMultiOption: ",d:GetCVar("dvds_expmultiplier"),s:" / 100]",
-           s:"\nOldEXP5: ",d:OldExp5,
+           s:"\nOldEXP5: ",d:OldExp5,s:" [ArmorEXPMulti: ",d:ArmorEXPMulti,s:" / 20]",
            s:"\nOldEXP6: ",d:OldExp6,
            s:"\nNewEXP: ",d:RealExpGain);
  }
@@ -33885,12 +33892,27 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
    if (C2 > 16) C2 -= 16;
 
    EXPBonus1 = 1000;
-   // Pearly Corset [+30% EXP Bonus]
+   // Pearly Corset [+5/10% EXP Bonus]
+   if (CheckActorInventory(Player1TID,"SafeTeaShoes")) 
+   {
+    if (random(1,100) <= 5) EXPBonus1 += 100; // 5% Chance of +10% EXP Bonus
+    else EXPBonus1 += 50; // Else +5% EXP Bonus
+   }
+   // Pearly Corset [+30/45% EXP Bonus]
    if (CheckActorInventory(Player1TID,"PearlyCorset")) 
    {
     if (random(1,100) <= 5) EXPBonus1 += 450; // 5% Chance of +45% EXP Bonus
     else EXPBonus1 += 300; // Else +30% EXP Bonus
    }
+   // Dove's [+5/10% EXP Bonus]
+   if (CheckActorInventory(Player1TID,"DoveRibbon")) 
+   {
+    if (random(1,100) <= 5) EXPBonus1 += 100; // 5% Chance of +10% EXP Bonus
+    else EXPBonus1 += 50; // Else +5% EXP Bonus
+   }
+   C2 = C2 * EXPBonus1 / 1000;
+
+   EXPBonus1 = 1000;
    // Divine Avatar {+25% EXP Bonus]
    if (PowerupTimer[7] > 0)
    {
@@ -37795,7 +37817,7 @@ script "GetKickStaminaUse" (int attacktype)
   if (MiscellaneousVars[10035] == 2) temp1 = 100;
   if (MiscellaneousVars[10035] == 3) temp1 = 175;
   if (MiscellaneousVars[10035] == 4) temp1 = 300;
-  if (MiscellaneousVars[10035] >= 5) temp1 = 500;
+  if (MiscellaneousVars[10035] >= 5) temp1 = 600;
   temp2 = 0;
   if (MiscellaneousVars[10036] == 1) temp2 = 150;
   if (MiscellaneousVars[10036] == 2) temp2 = 350;
@@ -40691,13 +40713,13 @@ script "ShowArmorStats" ENTER
 
                 s:ArmorString1,
                 s:ArmorString2,
+                s:"\cd+5%-10% Extra EXP Gained\n",
+                s:"\cd+5%-10% Extra Sceptre EXP Gained\n",
                 s:"\cd-60% Stamina Use when Dashing/Air-Dashing\n",
+
                 s:"\cd-25% Dash/Air-Dash Cooldown Time\n",
                 s:"\cd-10% EXP Combo Timer Speed\n",
-
                 s:ArmorString4,
-                s:" \n",
-                s:" \n",
                 s:" \n",
                 s:" \n",
 
@@ -41085,7 +41107,7 @@ script "ShowArmorStats" ENTER
 
                 s:"\cd+6.25% Magic-Focus Strength\n",
                 s:ArmorString3,
-                s:"\cd+33.3% Damage Done By Kicks\n",
+                s:"\cd+33.3% Damage Done By Kicks and Uppercuts\n",
                 s:ArmorString1,
                 s:ArmorString2,
 
@@ -41590,11 +41612,11 @@ script "ShowArmorStats" ENTER
                 s:"\cqDamage Suffered from Hellcore-Overheat Cut by 50%\n",
                 s:"\cdIncreases Maximum Evasion Chance from 75% to 92.5%\n",
 
+                s:"\cd+5%-10% Extra EXP Gained\n",
+                s:"\cd+5%-10% Extra Sceptre EXP Gained\n",
                 s:ArmorString1,
                 s:ArmorString2,
                 s:ArmorString4,
-                s:" \n",
-                s:" \n",
 
                 s:" \n",
                 s:" \n",
