@@ -891,6 +891,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [10052] "Berserker Fit EX" Perk Level
 // [10053] "Wand/Staff Mastery" Perk Level
 // [10054] "Wand/Staff Mastery EX" Perk Level
+// [10055] "Cleared of Mind" Perk Level
+// [10056] "Cleared of Mind EX" Perk Level
 // [11001] "Higher Learning" Grand Mastery Perk Level
 
 global int 22:MenuSystemVars[]; // Goto "MENUKEY" for array list.
@@ -6022,7 +6024,6 @@ script "HUDDisplay" ENTER
 	 }
      if (CharacterClass == 2) // Flora = HellCore/HLCR
      {
-       G3 = HellcoreOverheatLevel / 100;
        // HLCR Label
        xpos = ScreenXOffset + 220.0;
        ypos = 922.0;
@@ -6031,8 +6032,8 @@ script "HUDDisplay" ENTER
        HudMessage(s:"HLCR";HUDMSG_ALPHA,3502,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 
        // HLCR Amounts
-       G3 = HellcoreOverheatLevel / 100;
-       G4 = HellcoreOverheatLevel % 100;
+       G3 = (HellcoreOverheatLevel / 100) / 100;
+       G4 = (HellcoreOverheatLevel / 100) % 100;
        xpos = ScreenXOffset + 326.0;
        ypos = 926.0;
        msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
@@ -6086,8 +6087,7 @@ script "HUDDisplay" ENTER
  
         G10 = GetCVar("dvdsnewhud_hudmeternotchdetail");
         G9 = 200 / G10;
-        G3 = HellcoreOverheatLevel;
-        G2 = 10000;
+        G3 = HellcoreOverheatLevel; G2 = 1000000;
         I1 = G3 * G9 / G2;
         if (I1 > G9) I1 = G9;
         if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
@@ -6112,8 +6112,7 @@ script "HUDDisplay" ENTER
           // Overheat
           G10 = GetCVar("dvdsnewhud_hudmeternotchdetail");
           G9 = 200 / G10;
-          G3 = HellcoreOverheatLevel;
-          G2 = 10000;
+          G3 = HellcoreOverheatLevel; G2 = 1000000;
           I1 = ((G3 * G9 / G2) - G9) / 9;
           if (I1 > G9) I1 = G9;
           if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
@@ -9838,9 +9837,19 @@ script "ManaRegenerationStuff" ENTER
  }
 
  // RegenMPFast perks
- PerkFactor = ((MiscellaneousVars[10015] * 2000) + (MiscellaneousVars[10016] * 5000)) + 10000;
- delaycount = delaycount * PerkFactor / 10000; // "RegenMPFast" and "RegenMPFast EX" perks.
+ if (MiscellaneousVars[10015] > 0)
+ {
+  PerkFactor = ((MiscellaneousVars[10015] * 2) + (MiscellaneousVars[10016] * 5)) + 10;
+  delaycount = delaycount * PerkFactor / 10; // "RegenMPFast" and "RegenMPFast EX" perks.
+ }
 
+ // "Cleared of Mind" Perks
+ if (MiscellaneousVars[10055] > 0)
+ {
+  perkfactor = ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5)) + 80;
+  delaycount = delaycount * perkfactor / 80;
+ }
+  
  // Checks Mana Regen Rate Menu Option
  delaycount = delaycount * GetCVar("dvds_manaregenratemultiplier") / 100;
  if (MiscellaneousVars[212] > 0) // Focusing
@@ -10492,24 +10501,41 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
  RealExpGain = RealExpGain * GetCVar("dvds_expmultiplier") / 100; // EXP Multiplier Option
 
  int OldExp4 = RealExpGain;
+ int perkfactor;
+ // "Cleared of Mind" Perk
+ perkfactor = 100;
+ if (MiscellaneousVars[10055] > 0)
+ {
+  if (MiscellaneousVars[10055] >= 1) perkfactor += 3;
+  if (MiscellaneousVars[10055] >= 2) perkfactor += 4;
+  if (MiscellaneousVars[10055] >= 3) perkfactor += 5;
+  if (MiscellaneousVars[10055] >= 4) perkfactor += 6;
+  if (MiscellaneousVars[10055] >= 5) perkfactor += 7;
+  if (MiscellaneousVars[10056] >= 1) perkfactor += 10;
+  if (MiscellaneousVars[10056] >= 2) perkfactor += 15;
+  RealExpGain = RealExpGain * perkfactor / 100;
+ }
+ int OldExp5 = RealExpGain;
  // "Higher Learning" Grand Mastery Perk
  if (MiscellaneousVars[11001] == 1)
  {
-  if (CharacterClass == 0 | CharacterClass == 1) RealExpGain = RealExpGain * 23 / 20; // EXP Multiplier Option
-  if (CharacterClass == 2) RealExpGain = RealExpGain * 11 / 10; // EXP Multiplier Option
+  if (CharacterClass == 0 | CharacterClass == 1) RealExpGain = RealExpGain * 49 / 40; // EXP Multiplier Option [122.5%]
+  if (CharacterClass == 2) RealExpGain = RealExpGain * 23 / 20; // EXP Multiplier Option [115%]
  }
  if (MiscellaneousVars[11001] == 2)
  {
-  if (CharacterClass == 0 | CharacterClass == 1) RealExpGain = RealExpGain * 13 / 10; // EXP Multiplier Option
-  if (CharacterClass == 2) RealExpGain = RealExpGain * 6 / 5; // EXP Multiplier Option
+  if (CharacterClass == 0 | CharacterClass == 1) RealExpGain = RealExpGain * 29 / 20; // EXP Multiplier Option [145%]
+  if (CharacterClass == 2) RealExpGain = RealExpGain * 13 / 10; // EXP Multiplier Option [115%]
  }
+
+ int OldExp6 = RealExpGain;
  if (GameSkill() == SKILL_VERY_EASY) RealExpGain = RealExpGain * 25 / 8; // 312.5%
  else if (GameSkill() == SKILL_EASY) RealExpGain = RealExpGain * 5 / 2; // 250%
  else if (GameSkill() == SKILL_NORMAL) RealExpGain = RealExpGain * 15 / 8; // 187.5%
  else if (GameSkill() == SKILL_HARD) RealExpGain = RealExpGain * 5 / 4; // 125%
  else if (GameSkill() == SKILL_VERY_HARD) RealExpGain = RealExpGain * 7 / 8; // 87.5%
 
- int OldExp5 = RealExpGain;
+ int OldExp7 = RealExpGain;
  int ArmorEXPMulti = 20;
  if (CharacterClass == 2)
  {
@@ -10519,7 +10545,7 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
   RealExpGain = RealExpGain * ArmorEXPMulti / 20;
  }
 
- int OldExp6 = RealExpGain;
+ int OldExp8 = RealExpGain;
  if (PowerupTimer[7] > 0) { if (random(1,100) > 67) { RealExpGain = RealExpGain * 7 / 6; } else { RealExpGain = RealExpGain * 13 / 12; } } // Divine Avatar [+8.333% EXP, (33% chance of +16.67% EXP instead]
 
  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
@@ -10528,8 +10554,10 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
            s:"\nOldEXP2: ",d:OldExp2,s:" [ExpMultiRand: ",d:ExpMultiFactor,s:" / 100]",
            s:"\nOldEXP3: ",d:OldExp3,s:" [DeftBonus: ",d:GetCVar("dvds_deftnessexpbase")+MiscellaneousVars[40],s:" / ",d:GetCVar("dvds_deftnessexpbase"),s:"]",
            s:"\nOldEXP4: ",d:OldExp4,s:" [ExpMultiOption: ",d:GetCVar("dvds_expmultiplier"),s:" / 100]",
-           s:"\nOldEXP5: ",d:OldExp5,s:" [ArmorEXPMulti: ",d:ArmorEXPMulti,s:" / 20]",
+           s:"\nOldEXP5: ",d:OldExp5,s:" [PerkFactor: ",d:perkfactor,s:" / 100]",
            s:"\nOldEXP6: ",d:OldExp6,
+           s:"\nOldEXP7: ",d:OldExp7,
+           s:"\nOldEXP8: ",d:OldExp8,s:" [ArmorEXPMulti: ",d:ArmorEXPMulti,s:" / 20]",
            s:"\nNewEXP: ",d:RealExpGain);
  }
  return RealExpGain;
@@ -19093,35 +19121,34 @@ script "GrabSoulsphere" (void)
   if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
  }
 
+ int HellcoreRestored;
  if (CharacterClass == 2) // Flora's Hellcore Heating will also go down with each SoulSphere grabbed
  {
   if (HellcoreOverheatLevel > 0)
   {
-   H1 = 2500; // 25.00% [100000 is 1000.00% (maximum)]
+   H1 = 250000; // 25.00% [10000000 is 1000.00% (maximum)]
+   H2 = PlayerLevel * 2500;
+   H3 = random(-50000,50000);
 
-   H2 = PlayerLevel * 25;
-   H1 += H2;
-
-   H3 = random(-500,500);
-   H1 += H3;
-   if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) H1 = H1 * 5 / 3;
+   HellcoreRestored = H1 + H2 + H3;
+   if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
    if (MiscellaneousVars[10033] >= 0)
    {
-    if (MiscellaneousVars[10033] == 1) temp1 = 625;
-    if (MiscellaneousVars[10033] == 2) temp1 = 1250;
-    if (MiscellaneousVars[10033] == 3) temp1 = 1875;
-    if (MiscellaneousVars[10033] == 4) temp1 = 2500;
-    if (MiscellaneousVars[10033] == 5) temp1 = 3125;
-    if (MiscellaneousVars[10034] == 1) temp2 = random(1562,1563);
-    if (MiscellaneousVars[10034] == 2) temp2 = 3125;
-    PerkFactor = 10000 + (temp1 + temp2);
-    H1 = H1 * PerkFactor / 10000;
+    if (MiscellaneousVars[10033] == 1) temp1 = 1;
+    if (MiscellaneousVars[10033] == 2) temp1 = 2;
+    if (MiscellaneousVars[10033] == 3) temp1 = 3;
+    if (MiscellaneousVars[10033] == 4) temp1 = 4;
+    if (MiscellaneousVars[10033] == 5) temp1 = 5;
+    if (MiscellaneousVars[10034] == 1) temp2 = random(2,3);
+    if (MiscellaneousVars[10034] == 2) temp2 = 5;
+    PerkFactor = 16 + (temp1 + temp2);
+    HellcoreRestored = HellcoreRestored * PerkFactor / 16;
    }
 
-   if (H1 < 1) H1 = 1;
-   if (H1 > 100000) H1 = 100000;
+   if (HellcoreRestored < 1) HellcoreRestored = 1;
+   if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
 
-   HellcoreOverheatLevel -= H1;
+   HellcoreOverheatLevel -= HellcoreRestored;
    if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
   }
  }
@@ -19158,35 +19185,34 @@ script "MegaSphereHealth" (void)
  if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
  if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
 
+ int HellcoreRestored;
  if (CharacterClass == 2) // Flora's Hellcore Heating will also go down with each SoulSphere grabbed
  {
   if (HellcoreOverheatLevel > 0)
   {
-   H1 = 7500; // 75.00% [100000 is 1000.00% (maximum)]
+   H1 = 750000; // 75.00% [10000000 is 1000.00% (maximum)]
+   H2 = PlayerLevel * 7500;
+   H3 = random(-150000,150000);
+   HellcoreRestored = H1 + H2 + H3;
 
-   H2 = PlayerLevel * 75;
-   H1 += H2;
-
-   H3 = random(-1500,1500);
-   H1 += H3;
-   if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) H1 = H1 * 5 / 3;
+   if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
    if (MiscellaneousVars[10033] >= 0)
    {
-    if (MiscellaneousVars[10033] == 1) temp1 = 625;
-    if (MiscellaneousVars[10033] == 2) temp1 = 1250;
-    if (MiscellaneousVars[10033] == 3) temp1 = 1875;
-    if (MiscellaneousVars[10033] == 4) temp1 = 2500;
-    if (MiscellaneousVars[10033] == 5) temp1 = 3125;
-    if (MiscellaneousVars[10034] == 1) temp2 = random(1562,1563);
-    if (MiscellaneousVars[10034] == 2) temp2 = 3125;
-    PerkFactor = 10000 + (temp1 + temp2);
-    H1 = H1 * PerkFactor / 10000;
+    if (MiscellaneousVars[10033] == 1) temp1 = 1;
+    if (MiscellaneousVars[10033] == 2) temp1 = 2;
+    if (MiscellaneousVars[10033] == 3) temp1 = 3;
+    if (MiscellaneousVars[10033] == 4) temp1 = 4;
+    if (MiscellaneousVars[10033] == 5) temp1 = 5;
+    if (MiscellaneousVars[10034] == 1) temp2 = random(2,3);
+    if (MiscellaneousVars[10034] == 2) temp2 = 5;
+    PerkFactor = 16 + (temp1 + temp2);
+    HellcoreRestored = HellcoreRestored * PerkFactor / 16;
    }
 
-   if (H1 < 1) H1 = 1;
-   if (H1 > 100000) H1 = 100000;
+   if (HellcoreRestored < 1) HellcoreRestored = 1;
+   if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
 
-   HellcoreOverheatLevel -= H1;
+   HellcoreOverheatLevel -= HellcoreRestored;
    if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
   }
  }
@@ -19250,35 +19276,33 @@ script "EmulateGiveHealthBonus" (int multiplier, int givemanachance)
  if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
  if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
 
+ int HellcoreRestored;
  if (CharacterClass == 2) // Flora's Hellcore Heating will also marginally go down with each Health Bonus grabbed
  {
   if (HellcoreOverheatLevel > 0)
   {
-   TempHealAmount = 25; // 0.25% [100000 is 1000.00% (maximum)]
+   TempHealAmount = 2500; // 0.25% [10000000 is 1000.00% (maximum)]
    TempHealAmount *= multiplier;
-
-   TempHealAmount2 = PlayerLevel / 10;
-   TempHealAmount += TempHealAmount2;
-
-   TempHealAmount3 = random(-5,5);
-   TempHealAmount += TempHealAmount3;
-   if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) TempHealAmount = TempHealAmount * 5 / 3;
+   TempHealAmount2 = PlayerLevel * 10;
+   TempHealAmount3 = random(-500,500);
+   HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
+   if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
    if (MiscellaneousVars[10033] >= 0)
    {
-    if (MiscellaneousVars[10033] == 1) temp1 = 625;
-    if (MiscellaneousVars[10033] == 2) temp1 = 1250;
-    if (MiscellaneousVars[10033] == 3) temp1 = 1875;
-    if (MiscellaneousVars[10033] == 4) temp1 = 2500;
-    if (MiscellaneousVars[10033] == 5) temp1 = 3125;
-    if (MiscellaneousVars[10034] == 1) temp2 = random(1562,1563);
-    if (MiscellaneousVars[10034] == 2) temp2 = 3125;
-    PerkFactor = 10000 + (temp1 + temp2);
-    TempHealAmount = TempHealAmount * PerkFactor / 10000;
+    if (MiscellaneousVars[10033] == 1) temp1 = 1;
+    if (MiscellaneousVars[10033] == 2) temp1 = 2;
+    if (MiscellaneousVars[10033] == 3) temp1 = 3;
+    if (MiscellaneousVars[10033] == 4) temp1 = 4;
+    if (MiscellaneousVars[10033] == 5) temp1 = 5;
+    if (MiscellaneousVars[10034] == 1) temp2 = random(2,3);
+    if (MiscellaneousVars[10034] == 2) temp2 = 5;
+    PerkFactor = 16 + (temp1 + temp2);
+    HellcoreRestored = HellcoreRestored * PerkFactor / 16;
    }
-   if (TempHealAmount < 1) TempHealAmount = 1;
-   if (TempHealAmount > 100000) TempHealAmount = 100000;
+   if (HellcoreRestored < 1) HellcoreRestored = 1;
+   if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
 
-   HellcoreOverheatLevel -= TempHealAmount;
+   HellcoreOverheatLevel -= HellcoreRestored;
    if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
   }
  }
@@ -20719,6 +20743,19 @@ script "INGAMEMENUS_MECHANICS" ENTER
 	     else if (MiscellaneousVars[temp6] == 3 && MiscellaneousVars[25] >= temp4) { MiscellaneousVars[temp6] = 4; MiscellaneousVars[25] -= temp4; }
  	    }
 	   }
+
+	   if (MenuSystemVars[1] == 2) // Powerup Powerhouse [4]
+	   {
+	    temp6 = 10050; // MiscellaneousVars[] input
+	    temp1 = 7 * MiscellaneousVars[280] / 100;		// Level 1 Cost
+	    temp2 = 16 * MiscellaneousVars[280] / 100;		// Level 2 Cost
+	    temp3 = 27 * MiscellaneousVars[280] / 100;		// Level 3 Cost
+	    temp4 = 40 * MiscellaneousVars[280] / 100;		// Level 4 Cost
+	         if (MiscellaneousVars[temp6] == 0 && MiscellaneousVars[25] >= temp1) { MiscellaneousVars[temp6] = 1; MiscellaneousVars[25] -= temp1; }
+	    else if (MiscellaneousVars[temp6] == 1 && MiscellaneousVars[25] >= temp2) { MiscellaneousVars[temp6] = 2; MiscellaneousVars[25] -= temp2; }
+	    else if (MiscellaneousVars[temp6] == 2 && MiscellaneousVars[25] >= temp3) { MiscellaneousVars[temp6] = 3; MiscellaneousVars[25] -= temp3; }
+	    else if (MiscellaneousVars[temp6] == 3 && MiscellaneousVars[25] >= temp4) { MiscellaneousVars[temp6] = 4; MiscellaneousVars[25] -= temp4; }
+ 	   }
 	  }
 	  else
       if (CharacterClass == 2) // Flora Only
@@ -20811,6 +20848,20 @@ script "INGAMEMENUS_MECHANICS" ENTER
  	    else if (MiscellaneousVars[temp6] == 5 && MiscellaneousVars[25] >= temp21) { MiscellaneousVars[temp6] = 6; MiscellaneousVars[25] -= temp21; }
  	    else if (MiscellaneousVars[temp6] == 6 && MiscellaneousVars[25] >= temp22) { MiscellaneousVars[temp6] = 7; MiscellaneousVars[25] -= temp22; }
  	   }
+	   if (MenuSystemVars[1] == 5) // Cleared of Mind [5]
+	   {
+	    temp6 = 10055;	// MiscellaneousVars[] input
+	     temp1 = 8 * MiscellaneousVars[280] / 100;	// Level 1 Cost
+	     temp2 = 12 * MiscellaneousVars[280] / 100;	// Level 2 Cost
+	     temp3 = 16 * MiscellaneousVars[280] / 100;	// Level 3 Cost
+	     temp4 = 20 * MiscellaneousVars[280] / 100;	// Level 4 Cost
+	     temp5 = 24 * MiscellaneousVars[280] / 100;	// Level 5 Cost
+	         if (MiscellaneousVars[temp6] == 0 && MiscellaneousVars[25] >= temp1) { MiscellaneousVars[temp6] = 1; MiscellaneousVars[25] -= temp1; }
+	    else if (MiscellaneousVars[temp6] == 1 && MiscellaneousVars[25] >= temp2) { MiscellaneousVars[temp6] = 2; MiscellaneousVars[25] -= temp2; }
+	    else if (MiscellaneousVars[temp6] == 2 && MiscellaneousVars[25] >= temp3) { MiscellaneousVars[temp6] = 3; MiscellaneousVars[25] -= temp3; }
+	    else if (MiscellaneousVars[temp6] == 3 && MiscellaneousVars[25] >= temp4) { MiscellaneousVars[temp6] = 4; MiscellaneousVars[25] -= temp4; }
+ 	    else if (MiscellaneousVars[temp6] == 4 && MiscellaneousVars[25] >= temp5) { MiscellaneousVars[temp6] = 5; MiscellaneousVars[25] -= temp5; }
+ 	   }
 	  }
 	  else
       if (CharacterClass == 2) // Flora Only
@@ -20846,6 +20897,20 @@ script "INGAMEMENUS_MECHANICS" ENTER
  	    else if (MiscellaneousVars[temp6] == 4 && MiscellaneousVars[25] >= temp5) { MiscellaneousVars[temp6] = 5; MiscellaneousVars[25] -= temp5; }
  	    else if (MiscellaneousVars[temp6] == 5 && MiscellaneousVars[25] >= temp21) { MiscellaneousVars[temp6] = 6; MiscellaneousVars[25] -= temp21; }
  	    else if (MiscellaneousVars[temp6] == 6 && MiscellaneousVars[25] >= temp22) { MiscellaneousVars[temp6] = 7; MiscellaneousVars[25] -= temp22; }
+ 	   }
+	   if (MenuSystemVars[1] == 4) // Cleared of Mind [5]
+	   {
+	    temp6 = 10055;	// MiscellaneousVars[] input
+	     temp1 = 8 * MiscellaneousVars[280] / 100;	// Level 1 Cost
+	     temp2 = 12 * MiscellaneousVars[280] / 100;	// Level 2 Cost
+	     temp3 = 16 * MiscellaneousVars[280] / 100;	// Level 3 Cost
+	     temp4 = 20 * MiscellaneousVars[280] / 100;	// Level 4 Cost
+	     temp5 = 24 * MiscellaneousVars[280] / 100;	// Level 5 Cost
+	         if (MiscellaneousVars[temp6] == 0 && MiscellaneousVars[25] >= temp1) { MiscellaneousVars[temp6] = 1; MiscellaneousVars[25] -= temp1; }
+	    else if (MiscellaneousVars[temp6] == 1 && MiscellaneousVars[25] >= temp2) { MiscellaneousVars[temp6] = 2; MiscellaneousVars[25] -= temp2; }
+	    else if (MiscellaneousVars[temp6] == 2 && MiscellaneousVars[25] >= temp3) { MiscellaneousVars[temp6] = 3; MiscellaneousVars[25] -= temp3; }
+	    else if (MiscellaneousVars[temp6] == 3 && MiscellaneousVars[25] >= temp4) { MiscellaneousVars[temp6] = 4; MiscellaneousVars[25] -= temp4; }
+ 	    else if (MiscellaneousVars[temp6] == 4 && MiscellaneousVars[25] >= temp5) { MiscellaneousVars[temp6] = 5; MiscellaneousVars[25] -= temp5; }
  	   }
 	  }	  
 	 }
@@ -20923,12 +20988,12 @@ script "INGAMEMENUS_MECHANICS" ENTER
 	 {
       if (CharacterClass == 0) // Deggaris Only
 	  {
-	   if (MenuSystemVars[1] < 0) MenuSystemVars[1] = 1;
+	   if (MenuSystemVars[1] < 0) MenuSystemVars[1] = 2;
 	  }
 	  else
       if (CharacterClass == 1) // Illucia Only
 	  {
-	   if (MenuSystemVars[1] < 0) MenuSystemVars[1] = 1;
+	   if (MenuSystemVars[1] < 0) MenuSystemVars[1] = 2;
 	  }
 	  else
       if (CharacterClass == 2) // Flora
@@ -20940,17 +21005,17 @@ script "INGAMEMENUS_MECHANICS" ENTER
 	 {
       if (CharacterClass == 0) // Deggaris Only
 	  {
-	   if (MenuSystemVars[1] < 0) MenuSystemVars[1] = 4;
+	   if (MenuSystemVars[1] < 0) MenuSystemVars[1] = 5;
 	  }
 	  else
       if (CharacterClass == 1) // Illucia Only
 	  {
-	   if (MenuSystemVars[1] < 0) MenuSystemVars[1] = 4;
+	   if (MenuSystemVars[1] < 0) MenuSystemVars[1] = 5;
 	  }
 	  else
       if (CharacterClass == 2) // Flora
 	  {
-	   if (MenuSystemVars[1] < 0) MenuSystemVars[1] = 3;
+	   if (MenuSystemVars[1] < 0) MenuSystemVars[1] = 4;
 	  }
 	 }
      if (MenuSystemVars[5] == 5) // Mastery Perks
@@ -21026,12 +21091,12 @@ script "INGAMEMENUS_MECHANICS" ENTER
 	 {
       if (CharacterClass == 0) // Deggaris Only
 	  {
-	   if (MenuSystemVars[1] > 1) MenuSystemVars[1] = 0;
+	   if (MenuSystemVars[1] > 2) MenuSystemVars[1] = 0;
 	  }
 	  else
       if (CharacterClass == 1) // Illucia Only
 	  {
-	   if (MenuSystemVars[1] > 1) MenuSystemVars[1] = 0;
+	   if (MenuSystemVars[1] > 2) MenuSystemVars[1] = 0;
 	  }
 	  else
       if (CharacterClass == 2) // Flora
@@ -21043,17 +21108,17 @@ script "INGAMEMENUS_MECHANICS" ENTER
 	 {
       if (CharacterClass == 0) // Deggaris Only
 	  {
-	   if (MenuSystemVars[1] > 4) MenuSystemVars[1] = 0;
+	   if (MenuSystemVars[1] > 5) MenuSystemVars[1] = 0;
 	  }
 	  else
       if (CharacterClass == 1) // Illucia Only
 	  {
-	   if (MenuSystemVars[1] > 4) MenuSystemVars[1] = 0;
+	   if (MenuSystemVars[1] > 5) MenuSystemVars[1] = 0;
 	  }
 	  else
       if (CharacterClass == 2) // Flora
 	  {
-	   if (MenuSystemVars[1] > 3) MenuSystemVars[1] = 0;
+	   if (MenuSystemVars[1] > 4) MenuSystemVars[1] = 0;
 	  }
 	 }
      if (MenuSystemVars[5] == 5) // Mastery Perks
@@ -23917,8 +23982,6 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				   HUDMSG_ALPHA,  1997, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
 	  }
 
-	 if (CharacterClass == 2)
-	 {
 	  // Selection #2
       ytemp2 += (HudYRange * 7500 / 100000) * 1.0; // 0.075;
       perkname = "POWERUP POWERHOUSE";
@@ -23934,7 +23997,6 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 	  HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - POWERUP ITEMS/ARTIFACTS GIVE \cd+",f:temp1,s:"%\c- MORE DURATION",
 				 s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
 				 HUDMSG_ALPHA,  1996, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
-	 }
 
 	SetFont("STATAEON");
     xtemp3 = (HudXRange * 47500 / 100000) * 1.0; // 0.475;
@@ -24083,6 +24145,51 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 			      s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
 			      HUDMSG_ALPHA,  1994, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
 	 }
+
+	 // Selection #5
+     ytemp2 += (HudYRange * 11250 / 100000) * 1.0; // 0.1125;
+     perkname = "CLEARED OF MIND";
+	 temp4 = 10055; // MiscellaneousVars[]
+     temp1 = 0;
+	 if (MiscellaneousVars[temp4] == 1) temp1 = 3;
+	 if (MiscellaneousVars[temp4] == 2) temp1 = 7;
+	 if (MiscellaneousVars[temp4] == 3) temp1 = 12;
+	 if (MiscellaneousVars[temp4] == 4) temp1 = 18;
+	 if (MiscellaneousVars[temp4] == 5) temp1 = 25;
+     temp7 = 0;
+	 if (MiscellaneousVars[temp4] == 1) temp7 = 2.5;
+	 if (MiscellaneousVars[temp4] == 2) temp7 = 5.0;
+	 if (MiscellaneousVars[temp4] == 3) temp7 = 7.5;
+	 if (MiscellaneousVars[temp4] == 4) temp7 = 10.0;
+	 if (MiscellaneousVars[temp4] == 5) temp7 = 12.5;
+     temp9 = 0;
+	 if (MiscellaneousVars[temp4] == 1) temp9 = 7.5;
+	 if (MiscellaneousVars[temp4] == 2) temp9 = 15.0;
+	 if (MiscellaneousVars[temp4] == 3) temp9 = 22.5;
+	 if (MiscellaneousVars[temp4] == 4) temp9 = 30.0;
+	 if (MiscellaneousVars[temp4] == 5) temp9 = 37.5;
+     temp11 = 5; // Max Levels
+	 temp3 = 0; // Cost for next level.
+	 if (MiscellaneousVars[temp4] == 0) temp3 = 8 * MiscellaneousVars[280] / 100;
+	 if (MiscellaneousVars[temp4] == 1) temp3 = 12 * MiscellaneousVars[280] / 100;
+	 if (MiscellaneousVars[temp4] == 2) temp3 = 16 * MiscellaneousVars[280] / 100;
+	 if (MiscellaneousVars[temp4] == 3) temp3 = 20 * MiscellaneousVars[280] / 100;
+	 if (MiscellaneousVars[temp4] == 4) temp3 = 24 * MiscellaneousVars[280] / 100;
+	 if (MenuSystemVars[1] == 5) { textcolor = CR_GOLD; } else { textcolor = CR_WHITE; }
+	 if (MiscellaneousVars[temp4] == 0)
+	 {
+	   HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - WILL AFFECT EXP GAINED AND HP/MP/STAMINA REGENERATION.",
+			      s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
+			      HUDMSG_ALPHA,  1993, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
+	 }
+	 else
+	 {
+	   HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - +",d:temp1,s:"% MORE LEVEL EXP.",
+		          s:"\n\cf+",f:temp7,s:"% HP/MP/STAMINA REGENERATION SPEED.",
+		          s:"\n\cf+",f:temp9,s:"% HELLCORE COOLDOWN SPEED.",
+			      s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
+			      HUDMSG_ALPHA,  1993, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
+	 }	 
 	}
 	else
     if (CharacterClass == 2) // Flora (3)
@@ -24155,8 +24262,54 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 			      s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
 			      HUDMSG_ALPHA,  1995, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
 	 }	 
-	}
 	
+	 // Selection #4
+     ytemp2 += (HudYRange * 11250 / 100000) * 1.0; // 0.1125;
+     perkname = "CLEARED OF MIND";
+	 temp4 = 10055; // MiscellaneousVars[]
+     temp1 = 0;
+	 if (MiscellaneousVars[temp4] == 1) temp1 = 3;
+	 if (MiscellaneousVars[temp4] == 2) temp1 = 7;
+	 if (MiscellaneousVars[temp4] == 3) temp1 = 12;
+	 if (MiscellaneousVars[temp4] == 4) temp1 = 18;
+	 if (MiscellaneousVars[temp4] == 5) temp1 = 25;
+     temp7 = 0;
+	 if (MiscellaneousVars[temp4] == 1) temp7 = 2.5;
+	 if (MiscellaneousVars[temp4] == 2) temp7 = 5.0;
+	 if (MiscellaneousVars[temp4] == 3) temp7 = 7.5;
+	 if (MiscellaneousVars[temp4] == 4) temp7 = 10.0;
+	 if (MiscellaneousVars[temp4] == 5) temp7 = 12.5;
+     temp9 = 0;
+	 if (MiscellaneousVars[temp4] == 1) temp9 = 7.5;
+	 if (MiscellaneousVars[temp4] == 2) temp9 = 15.0;
+	 if (MiscellaneousVars[temp4] == 3) temp9 = 22.5;
+	 if (MiscellaneousVars[temp4] == 4) temp9 = 30.0;
+	 if (MiscellaneousVars[temp4] == 5) temp9 = 37.5;
+     temp11 = 5; // Max Levels
+	 temp3 = 0; // Cost for next level.
+	 if (MiscellaneousVars[temp4] == 0) temp3 = 8 * MiscellaneousVars[280] / 100;
+	 if (MiscellaneousVars[temp4] == 1) temp3 = 12 * MiscellaneousVars[280] / 100;
+	 if (MiscellaneousVars[temp4] == 2) temp3 = 16 * MiscellaneousVars[280] / 100;
+	 if (MiscellaneousVars[temp4] == 3) temp3 = 20 * MiscellaneousVars[280] / 100;
+	 if (MiscellaneousVars[temp4] == 4) temp3 = 24 * MiscellaneousVars[280] / 100;
+	 if (MenuSystemVars[1] == 4) { textcolor = CR_GOLD; } else { textcolor = CR_WHITE; }
+	 if (MiscellaneousVars[temp4] == 0)
+	 {
+	   HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - WILL AFFECT EXP GAINED AND HP/MP/STAMINA REGENERATION.",
+			      s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
+			      HUDMSG_ALPHA,  1994, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
+	 }
+	 else
+	 {
+	   HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - +",d:temp1,s:"% MORE LEVEL EXP.",
+		          s:"\n\cf+",f:temp7,s:"% HP/MP/STAMINA REGENERATION SPEED.",
+		          s:"\n\cf+",f:temp9,s:"% HELLCORE COOLDOWN SPEED.",
+			      s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
+			      HUDMSG_ALPHA,  1994, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
+	 }	 
+
+	}
+
 	SetFont("STATAEON");
     xtemp3 = (HudXRange * 47500 / 100000) * 1.0; // 0.475;
     ytemp3 = (HudYRange * 97500 / 100000) * 1.0; // 0.975;
@@ -24188,10 +24341,10 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 	{
      perkname = "\c[Green]HIGHER LEARNING [LEVEL 2]\c- -";
 	 perkdescript1 = "";
-	 if (CharacterClass == 2) perkdescript1 = "\n        \cd+20%\c- SCEPTRE EXP GAINED.";
-	 perkdescript2 = "\n        \cd+30%\c- EXP GAINED.";
-	 if (CharacterClass == 2) perkdescript2 = "\n        \cd+20%\c- EXP GAINED.";
-	 perkdescript3 = "\n        \cd+20%\c- COMBO TIMER GAINED PER KILL.";
+	 if (CharacterClass == 2) perkdescript1 = "\n        \cd+30%\c- SCEPTRE EXP GAINED.";
+	 perkdescript2 = "\n        \cd+45%\c- EXP GAINED.";
+	 if (CharacterClass == 2) perkdescript2 = "\n        \cd+30%\c- EXP GAINED.";
+	 perkdescript3 = "\n        \cd+30%\c- COMBO TIMER GAINED PER KILL.";
 	 perkdescript4 = "\n        \cd+50%\c- AEON POINTS ACCQUIRED ON LEVEL UP.";
 	 if (MenuSystemVars[1] == 1) { textcolor = CR_GOLD; } else { textcolor = CR_WHITE; }
 	 HudMessage(s:perkname,
@@ -24206,10 +24359,10 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 	{
      perkname = "\c[Green]HIGHER LEARNING\c- -";
 	 perkdescript1 = "";
-	 if (CharacterClass == 2) perkdescript1 = "\n        \cd+10%\c- SCEPTRE EXP GAINED.";
-	 perkdescript2 = "\n        \cd+15%\c- EXP GAINED.";
-	 if (CharacterClass == 2) perkdescript2 = "\n        \cd+10%\c- EXP GAINED.";
-	 perkdescript3 = "\n        \cd+10%\c- COMBO TIMER GAINED PER KILL.";
+	 if (CharacterClass == 2) perkdescript1 = "\n        \cd+15%\c- SCEPTRE EXP GAINED.";
+	 perkdescript2 = "\n        \cd+22.5%\c- EXP GAINED.";
+	 if (CharacterClass == 2) perkdescript2 = "\n        \cd+15%\c- EXP GAINED.";
+	 perkdescript3 = "\n        \cd+15%\c- COMBO TIMER GAINED PER KILL.";
 	 perkdescript4 = "\n        \cd+25%\c- AEON POINTS ACCQUIRED ON LEVEL UP.";
 	 if (MenuSystemVars[1] == 1) { textcolor = CR_GOLD; } else { textcolor = CR_WHITE; }
 	 HudMessage(s:perkname,
@@ -25542,6 +25695,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (MiscellaneousVars[10050] == 4) perks3mastered++;
  if (MiscellaneousVars[10051] == 5) perks3mastered++;
  if (MiscellaneousVars[10053] == 5) perks3mastered++;
+ if (MiscellaneousVars[10055] == 5) perks3mastered++;
 
  if (perks3mastered >= 15) { MiscellaneousVars[11001] = 2; } // Higher Learning Lvl 2 Enabled
  else if (perks3mastered >= 5) { MiscellaneousVars[11001] = 1; } // Higher Learning Enabled
@@ -26757,9 +26911,20 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [StamCapVal]: ",d:staminaregenfinal);
 
   // RegenStamFast perks
-  PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
-  staminaregenfinal = staminaregenfinal * PerkFactor / 10000; // "RegenStamFast" and "RegenStamFast EX" perks.
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Perks]: ",d:staminaregenfinal);
+  if (MiscellaneousVars[10017] > 0)
+  {
+   PerkFactor = ((MiscellaneousVars[10017] * 2) + (MiscellaneousVars[10018] * 5)) + 10;
+   staminaregenfinal = staminaregenfinal * PerkFactor / 10; // "RegenStamFast" and "RegenStamFast EX" perks.
+   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Perks]: ",d:staminaregenfinal);
+  }
+
+  // "Cleared of Mind" Perks
+  if (MiscellaneousVars[10055] > 0)
+  {
+   perkfactor = ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5)) + 80;
+   staminaregenfinal = staminaregenfinal * perkfactor / 80;
+   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Perks2]: ",d:staminaregenfinal);
+  }
 
   // Check Musou Power Trip Mode
   if (GetCVar("dvds_musou_powertripmode") == 1) staminaregenfinal = staminaregenfinal * 5 / 2; // 250%
@@ -26900,9 +27065,20 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [StamCapVal]: ",d:staminaregenfinal);
 
   // RegenStamFast perks
-  PerkFactor = 10000 - ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000));
-  staminaregenfinal = staminaregenfinal * PerkFactor / 10000; // "RegenStamFast" and "RegenStamFast EX" perks.
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Perks]: ",d:staminaregenfinal);
+  if (MiscellaneousVars[10017] > 0)
+  {
+   PerkFactor = 10 - ((MiscellaneousVars[10017] * 2) + (MiscellaneousVars[10018] * 5));
+   staminaregenfinal = staminaregenfinal * PerkFactor / 10; // "RegenStamFast" and "RegenStamFast EX" perks.
+   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Perks]: ",d:staminaregenfinal);
+  }
+
+  // "Cleared of Mind" Perks
+  if (MiscellaneousVars[10055] > 0)
+  {
+   perkfactor = 80 - ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5));
+   staminaregenfinal = staminaregenfinal * perkfactor / 80;
+   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Perks2]: ",d:staminaregenfinal);
+  }
 
   // Check Musou Power Trip Mode
   if (GetCVar("dvds_musou_powertripmode") == 1) staminaregenfinal = staminaregenfinal * (2 / 5); // 40%
@@ -27563,8 +27739,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    if (CharacterClass == 2) if (CheckActorInventory(Player1TID,"RuinousShield") > 0) delaycount = delaycount * 1 / 4;
 
    // RegenHPFast perks
-   PerkFactor = ((MiscellaneousVars[10013] * 2000) + (MiscellaneousVars[10014] * 5000)) + 10000;
-   delaycount = delaycount * PerkFactor / 10000; // "RegenHPFast" and "RegenHPFast EX" perks.
+   if (MiscellaneousVars[10013] > 0)
+   {
+    PerkFactor = ((MiscellaneousVars[10013] * 2) + (MiscellaneousVars[10014] * 5)) + 10;
+    delaycount = delaycount * PerkFactor / 10; // "RegenHPFast" and "RegenHPFast EX" perks.
+   }
+
+   // "Cleared of Mind" Perks
+   if (MiscellaneousVars[10055] > 0)
+   {
+    perkfactor = ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5)) + 80;
+    delaycount = delaycount * perkfactor / 80;
+   }
 
    // Checks Health Regen Rate Menu Option
    delaycount = delaycount * GetCVar("dvds_healthregenmultiplier") / 100;
@@ -27708,8 +27894,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     if (CharacterClass == 2) if (CheckActorInventory(Player1TID,"RuinousShield") > 0) delaycount = delaycount * 4;
  
     // RegenHPFast perks
-    PerkFactor = 10000 - ((MiscellaneousVars[10013] * 2000) + (MiscellaneousVars[10014] * 5000));
-    delaycount = delaycount * PerkFactor / 10000; // "RegenHPFast" and "RegenHPFast EX" perks.
+    if (MiscellaneousVars[10013] > 0)
+    {
+     PerkFactor = 10 - ((MiscellaneousVars[10013] * 2) + (MiscellaneousVars[10014] * 5));
+     delaycount = delaycount * PerkFactor / 10; // "RegenHPFast" and "RegenHPFast EX" perks.
+	}
+
+    // "Cleared of Mind" Perks
+    if (MiscellaneousVars[10055] > 0)
+    {
+     perkfactor = 80 - ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5));
+     delaycount = delaycount * perkfactor / 80;
+    }
 
     // Checks Health DeRegen Rate Menu Option
     delaycount = delaycount * GetCVar("dvds_healthdegenmultiplier") / 100;
@@ -28505,28 +28701,64 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  //******************************************************
  if (HellcoreOverheatLevel > 0 && GetActorProperty(Player1TID,APROP_HEALTH) > 0)
  {
-  HellcoreCoolRatio = 4; // 25 tics = 100 units [or 1% cooldown], so 1 tic = 4 units (or 0.04% cooldown)
+  HellcoreCoolRatio = 400; // 25 tics = 10000 units [or 1% cooldown], so 1 tic = 400 units (or 0.04% cooldown)
+  if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"CoolDown Amt [Base]: ",d:HellcoreCoolRatio);
 
   // Dove Ribbon quickly cools down Hellcore meter.
-  if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) HellcoreCoolRatio *= 3;
+  if (CheckActorInventory(Player1TID,"DoveRibbon") > 0)
+  {
+   HellcoreCoolRatio *= 3;
+   if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"CoolDown Amt [DoveRibbon]: ",d:HellcoreCoolRatio);
+  }
 
   // Divine Avatar speeds up cooldown by 50%
-  if (PowerupTimer[7] > 0) HellcoreCoolRatio = HellcoreCoolRatio * 3 / 2;
+  if (PowerupTimer[7] > 0) 
+  {
+   HellcoreCoolRatio = HellcoreCoolRatio * 3 / 2;
+   if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"CoolDown Amt [DivineAvatar]: ",d:HellcoreCoolRatio);
+  }
 
   // Fatigue = 0.2x cooldown speed
-  if (PowerupTimer[18] > 0) HellcoreCoolRatio /= 5;
+  if (PowerupTimer[18] > 0)
+  {
+   HellcoreCoolRatio /= 5;
+   if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"CoolDown Amt [Fatigue]: ",d:HellcoreCoolRatio);
+  }
 
   // Sleep VERY quickly cools down Hellcore meter.
-  if (PowerupTimer[20] > 0) HellcoreCoolRatio *= 5; 
+  if (PowerupTimer[20] > 0) 
+  {
+   HellcoreCoolRatio *= 5; 
+   if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"CoolDown Amt [Sleep]: ",d:HellcoreCoolRatio);
+  }
+
+  // "Cleared of Mind: Perk
+  if (MiscellaneousVars[10055] > 0)
+  {
+   PerkFactor = ((MiscellaneousVars[10055] * 6) + (MiscellaneousVars[10056] * 15)) + 80;
+   HellcoreCoolRatio = HellcoreCoolRatio * PerkFactor / 80;
+   if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"CoolDown Amt [CoM-Perk]: ",d:HellcoreCoolRatio);
+  }
 
   // Check Hellcore Cooldown Multiplier in Options
   HellcoreCoolRatio = (HellcoreCoolRatio * GetCVar("dvds_heatcoolmultiplier")) / 100;
   if (HellcoreCoolRatio < 1) HellcoreCoolRatio = 1;
+  if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"CoolDown Amt [HCC-Multiplier]: ",d:HellcoreCoolRatio);
 
-  if (CheckActorInventory(Player1TID,"IsHaSatanNow") > 0) HellcoreCoolRatio = HellcoreCoolRatio * 16;
-  if (DVDSSpecialArrayValue[3] > 0) HellcoreCoolRatio = HellcoreCoolRatio * 2;
+  if (CheckActorInventory(Player1TID,"IsHaSatanNow") > 0)
+  {  
+   HellcoreCoolRatio = HellcoreCoolRatio * 16;
+   if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"CoolDown Amt [HS-Check]: ",d:HellcoreCoolRatio);
+  }
+
+  if (DVDSSpecialArrayValue[3] > 0) // Playing Unloved [2x Cooldown Speed]
+  {
+   HellcoreCoolRatio = HellcoreCoolRatio * 2;
+   if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"CoolDown Amt [Unloved-Check]: ",d:HellcoreCoolRatio);
+  }
 
   HellcoreOverheatLevel -= HellcoreCoolRatio;
+  if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"CoolDown Amt [Final]: ",d:HellcoreCoolRatio);
  }
  if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
 
@@ -28565,12 +28797,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
   TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
 
-  if (HellcoreOverheatLevel < 2500) GiveActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-  if (HellcoreOverheatLevel > 2499 && HellcoreOverheatLevel < 5000) GiveActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-  if (HellcoreOverheatLevel > 4999 && HellcoreOverheatLevel < 7500) GiveActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-  if (HellcoreOverheatLevel > 7499 && HellcoreOverheatLevel < 10000) GiveActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-  if (HellcoreOverheatLevel > 9999 && HellcoreOverheatLevel < 25000) GiveActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-  if (HellcoreOverheatLevel > 24999) GiveActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+  if (HellcoreOverheatLevel < 250000) GiveActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+  if (HellcoreOverheatLevel > 249999 && HellcoreOverheatLevel < 500000) GiveActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+  if (HellcoreOverheatLevel > 499999 && HellcoreOverheatLevel < 750000) GiveActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+  if (HellcoreOverheatLevel > 749999 && HellcoreOverheatLevel < 1000000) GiveActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+  if (HellcoreOverheatLevel > 999999 && HellcoreOverheatLevel < 2500000) GiveActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+  if (HellcoreOverheatLevel > 2499999) GiveActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
  }
 
  // Melee Weapon Inv Check
@@ -33924,8 +34156,8 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
    C2 = C2 * GetCVar("dvds_sceptreexpmultiplier") / 100;
 
    // "Higher Learning" Grand Mastery Perk
-   if (MiscellaneousVars[11001] == 1) C2 = C2 * 11 / 10; 
-   if (MiscellaneousVars[11001] == 2) C2 = C2 * 12 / 10; 
+   if (MiscellaneousVars[11001] == 1) C2 = C2 * 23 / 20; // [115%]
+   if (MiscellaneousVars[11001] == 2) C2 = C2 * 13 / 10; // [130%]
  
    if (ModType == 0) C2 = C2 * 4 / 3; // Classic Doom 1/2 / Heretic / Hexen / Strife
    MiscellaneousVars[203] += C2;
@@ -34123,12 +34355,11 @@ script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
  //PrintBold(d:percent,s:" - ",d:trydamageuser);
 
  // Any damage from overheating is inflicted BEFORE increasing the heating counter (so going from below 100% to above 100% with a single attack doesn't harm you, only being above 100% at the moment of pulling the trigger will harm you)
- if (HellcoreOverheatLevel > 10000) // Translates to 100% or higher when you first fire your attack, which means you'll deal yourself damage upon use of this attack if above 100% at this point and the "trydamageuser" argument is set to something other than 0.
+ if (HellcoreOverheatLevel > 1000000) // Translates to 100% or higher when you first fire your attack, which means you'll deal yourself damage upon use of this attack if above 100% at this point and the "trydamageuser" argument is set to something other than 0.
  {
   if (trydamageuser != 0)
   {
-   DamageFactor = HellcoreOverheatLevel;
-   DamageFactor -= 10000;
+   DamageFactor = (HellcoreOverheatLevel - 1000000) / 100;
    if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"Hellcore Damage % Ratio : ",d:DamageFactor,s:" [unmitigated base]");
    // Dove's Ribbon cuts Hellcore Overheating Damage in half
    if (CheckActorInventory(Player1TID,"DoveRibbon") > 0)
@@ -34152,15 +34383,15 @@ script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
    // Soul Mastery Reduces some damage taken if Overheated.
    if (MiscellaneousVars[10033] >= 0)
    {
-    if (MiscellaneousVars[10033] == 1) temp1 = 375;
-    if (MiscellaneousVars[10033] == 2) temp1 = 750;
-    if (MiscellaneousVars[10033] == 3) temp1 = 1125;
-    if (MiscellaneousVars[10033] == 4) temp1 = 1500;
-    if (MiscellaneousVars[10033] == 5) temp1 = 1875;
-    if (MiscellaneousVars[10034] == 1) temp2 = random(937,938);
-    if (MiscellaneousVars[10034] == 2) temp2 = 1875;
-    PerkFactor = 10000 - (temp1 + temp2);
-	DamageFactor = DamageFactor * PerkFactor / 10000;
+    if (MiscellaneousVars[10033] == 1) temp1 = 3;
+    if (MiscellaneousVars[10033] == 2) temp1 = 6;
+    if (MiscellaneousVars[10033] == 3) temp1 = 9;
+    if (MiscellaneousVars[10033] == 4) temp1 = 12;
+    if (MiscellaneousVars[10033] == 5) temp1 = 15;
+    if (MiscellaneousVars[10034] == 1) temp2 = random(7,8);
+    if (MiscellaneousVars[10034] == 2) temp2 = 15;
+    PerkFactor = 80 - (temp1 + temp2);
+	DamageFactor = DamageFactor * PerkFactor / 80;
     if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"Hellcore Damage % Ratio : ",d:DamageFactor,s:" [Soul Mastery Perk]");
    }
 
@@ -34212,6 +34443,7 @@ script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
   }
  }
 
+ percent *= 100;
  if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"Hellcore Heat %: ",d:percent,s:" [Base]");
 
  int ArmorHellCoreRate = 200;
@@ -34250,15 +34482,15 @@ script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
  // Soul Mastery Reduces rate of heat increase
  if (MiscellaneousVars[10033] >= 0)
  {
-  if (MiscellaneousVars[10033] == 1) temp1 = 625;
-  if (MiscellaneousVars[10033] == 2) temp1 = 1250;
-  if (MiscellaneousVars[10033] == 3) temp1 = 1875;
-  if (MiscellaneousVars[10033] == 4) temp1 = 2500;
-  if (MiscellaneousVars[10033] == 5) temp1 = 3125;
-  if (MiscellaneousVars[10034] == 1) temp2 = random(1562,1563);
-  if (MiscellaneousVars[10034] == 2) temp2 = 3125;
-  PerkFactor = 10000 - (temp1 + temp2);
-  percent = percent * PerkFactor / 10000;
+  if (MiscellaneousVars[10033] == 1) temp1 = 1;
+  if (MiscellaneousVars[10033] == 2) temp1 = 2;
+  if (MiscellaneousVars[10033] == 3) temp1 = 3;
+  if (MiscellaneousVars[10033] == 4) temp1 = 4;
+  if (MiscellaneousVars[10033] == 5) temp1 = 5;
+  if (MiscellaneousVars[10034] == 1) temp2 = random(2,3);
+  if (MiscellaneousVars[10034] == 2) temp2 = 5;
+  PerkFactor = 16 - (temp1 + temp2);
+  percent = percent * PerkFactor / 16;
   if (GetCVar("dvdsdebug_hellcoreheatdisplay") > 0) PrintBold(s:"Hellcore Heat %: ",d:percent,s:" [Soul Mastery]");
  }
 
@@ -34273,7 +34505,7 @@ script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
 
  HellcoreOverheatLevel += percent;
  if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
- if (HellcoreOverheatLevel > 100000) HellcoreOverheatLevel = 100000;
+ if (HellcoreOverheatLevel > 10000000) HellcoreOverheatLevel = 10000000;
 
 }
 
@@ -46601,8 +46833,8 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
    }
 
    // "Higher Learning" Grand Mastery Perk
-   if (MiscellaneousVars[11001] == 1) EXPTimerIncrease = EXPTimerIncrease * 11 / 10; 
-   if (MiscellaneousVars[11001] == 2) EXPTimerIncrease = EXPTimerIncrease * 12 / 10; 
+   if (MiscellaneousVars[11001] == 1) EXPTimerIncrease = EXPTimerIncrease * 23 / 20; 
+   if (MiscellaneousVars[11001] == 2) EXPTimerIncrease = EXPTimerIncrease * 13 / 10; 
 
    if (PowerupTimer[7] > 0) EXPTimerIncrease = EXPTimerIncrease * 5 / 4;
    MiscellaneousVars[157] += EXPTimerIncrease;
