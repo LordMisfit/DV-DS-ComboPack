@@ -383,6 +383,7 @@ global int 18:MiscFixedVars[]; // ***ARRAY*** For various permenant fixed-point 
 // [18] HUD Y Position #9 [Debugger, for easily setting coordinates with HUD testing
 // [19] HUD X Position #10 [Debugger, for easily setting coordinates with HUD testing
 // [20] HUD Y Position #10 [Debugger, for easily setting coordinates with HUD testing
+// [101] Invisibility Pulse Level
 
 // Hellcore Energy and Heating
 global int 19:HellcoreOverheatLevel; // Every 1% is times 25 tics [1 tics of time equals 4 units]
@@ -529,14 +530,14 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [138] is Buff Timer Overlay Type [for Portraits]
 // [139] is Buff Type to show [for portraits]
 // [140] is storage for Starting Sceptre Level [Menu CVar]
-// [141] - ?
+// [141] is invisibility pulse timer [for portraits]
 // [142] is EXP Combo Color Flash Timer
 // [143] is for how far along the degeneration timer is.
 // [144] is the base degeneration interval for the character
-// [145] - ?
-// [146] - ?
-// [147] - ?
-// [148] - ?
+// [145] is the Night Vision Eyeglow Pulse timer [portraits]
+// [146] is Level Stat Multiplier [Menu CVar]
+// [147] is the Fear/Terror Aura frame timer [portraits]
+// [148] is other Stats starting factor [Menu CVar]
 // [149] checks if health is 0 after an initial start [for certain situations done by wads like resurgance >___>;]
 // [150] saves armor bits [Flora]
 // [151] save weapon bits [any character]
@@ -4937,12 +4938,61 @@ script "HUDDisplay" ENTER
     
 	 int tensionglowporttimer;
      //**********************************
-     //**Character Portrait [7797-7801]**
+     //**Character Portrait [7797-7802]**
      //**********************************
 	 xpos = ScreenXOffset + 200.0; // 200.0
 	 ypos = 814.0; // 814.0;
 
-	 MiscellaneousVars[136]++; // Buff Overlay Timer 1 [Overlay Frame]
+	 
+	 
+	 // Buff Overlays (1) [Fear Aura] [7797]
+	 int fearauraframe = 0;
+	 MiscellaneousVars[147]++; // Buff Overlay Timer 1 [Overlay Frame]
+	 if (MiscellaneousVars[147] >= 20) MiscellaneousVars[147] -= 20;
+	 if (MiscellaneousVars[147] == 0) fearauraframe = 0;
+	 if (MiscellaneousVars[147] == 1) fearauraframe = 0;
+	 if (MiscellaneousVars[147] == 2 || MiscellaneousVars[147] == 19) fearauraframe = 1;
+	 if (MiscellaneousVars[147] == 3 || MiscellaneousVars[147] == 18) fearauraframe = 1;
+	 if (MiscellaneousVars[147] == 4 || MiscellaneousVars[147] == 17) fearauraframe = 2;
+	 if (MiscellaneousVars[147] == 5 || MiscellaneousVars[147] == 16) fearauraframe = 2;
+	 if (MiscellaneousVars[147] == 6 || MiscellaneousVars[147] == 15) fearauraframe = 3;
+	 if (MiscellaneousVars[147] == 7 || MiscellaneousVars[147] == 14) fearauraframe = 3;
+	 if (MiscellaneousVars[147] == 8 || MiscellaneousVars[147] == 13) fearauraframe = 4;
+	 if (MiscellaneousVars[147] == 9 || MiscellaneousVars[147] == 12) fearauraframe = 4;
+	 if (MiscellaneousVars[147] == 10) fearauraframe = 5;
+	 if (MiscellaneousVars[147] == 11) fearauraframe = 5;
+	 SetFont("PBLKIMG");
+	 if (PowerupTimer[6] > 0 && GetActorProperty(Player1TID,APROP_HEALTH) > 0)
+	 {
+ 	  if (CharacterClass == 2)
+	  {
+	   if (PowerupTimer[7] > 0) 
+	   {
+	    if (fearauraframe == 0) SetFont("PF2FRAR0");
+	    if (fearauraframe == 1) SetFont("PF2FRAR1"); 
+	    if (fearauraframe == 2) SetFont("PF2FRAR2");
+	    if (fearauraframe == 3) SetFont("PF2FRAR3");
+	    if (fearauraframe == 4) SetFont("PF2FRAR4");
+	    if (fearauraframe == 5) SetFont("PF2FRAR5");
+       }
+	   else
+	   {
+	    if (fearauraframe == 0) SetFont("PF1FRAR0");
+	    if (fearauraframe == 1) SetFont("PF1FRAR1"); 
+	    if (fearauraframe == 2) SetFont("PF1FRAR2");
+	    if (fearauraframe == 3) SetFont("PF1FRAR3");
+	    if (fearauraframe == 4) SetFont("PF1FRAR4");
+	    if (fearauraframe == 5) SetFont("PF1FRAR5");
+       }
+      }	   
+	 }
+	 msgalpha = 1.0;
+	 if (PowerupTimer[1] > 0) msgalpha = FixedMul(msgalpha,MiscFixedVars[101]); // If using Invisiblity Spell, pulsate the alpha of the buff effect
+	 msgalpha = FixedMul(msgalpha,overallhudalpha);
+     HudMessage(s:"A";HUDMSG_ALPHA,7797,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+
+	 // Buff Overlays (2) [ATK/DEF/SPD Up/Down] [7798]
+	 MiscellaneousVars[136]++; // Buff Overlay Timer 2 [Overlay Frame]
 	 if (MiscellaneousVars[136] >= 30) MiscellaneousVars[136] -= 30;
 	 MiscellaneousVars[138]++; // Buff Overlay Timer 3 [Overlay Type]
 	 if (MiscellaneousVars[138] >= 120) MiscellaneousVars[138] -= 120;
@@ -5140,201 +5190,205 @@ script "HUDDisplay" ENTER
 	 if (MiscellaneousVars[136] >= 21 & MiscellaneousVars[136] <= 23) buffoverlayframe = 7;
 	 if (MiscellaneousVars[136] >= 24 & MiscellaneousVars[136] <= 26) buffoverlayframe = 8;
 	 if (MiscellaneousVars[136] >= 27 & MiscellaneousVars[136] <= 29) buffoverlayframe = 9;
-	 if (CharacterClass == 2)
+     if (GetActorProperty(Player1TID,APROP_HEALTH) > 0)
 	 {
-	  if (PowerupTimer[7] > 0) 
-	  { 
-	   if (bufftypebitfield > 0)
-	   {
-	    if (buffoverlayframe == 0) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU0"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU0"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU0"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD0"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD0"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD0"); // Deceleratle
-		}
-	    if (buffoverlayframe == 1) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU1"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU1"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU1"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD1"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD1"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD1"); // Deceleratle
-		}
-	    if (buffoverlayframe == 2) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU2"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU2"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU2"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD2"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD2"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD2"); // Deceleratle
-		}
-	    if (buffoverlayframe == 3) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU3"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU3"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU3"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD3"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD3"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD3"); // Deceleratle
-		}
-	    if (buffoverlayframe == 4) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU4"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU4"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU4"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD4"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD4"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD4"); // Deceleratle
-		}
-	    if (buffoverlayframe == 5) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU5"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU5"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU5"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD5"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD5"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD5"); // Deceleratle
-		}
-	    if (buffoverlayframe == 6) 
-		{
-		 if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU6"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU6"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU6"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD6"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD6"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD6"); // Deceleratle
-		}
-	    if (buffoverlayframe == 7) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU7"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU7"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU7"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD7"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD7"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD7"); // Deceleratle
-		}
-	    if (buffoverlayframe == 8) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU8"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU8"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU8"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD8"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD8"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD8"); // Deceleratle
-		}
-	    if (buffoverlayframe == 9) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU9"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU9"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU9"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD9"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD9"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD9"); // Deceleratle
-		}
-	   }
-	  }
-	  else
+ 	  if (CharacterClass == 2)
 	  {
-	   if (bufftypebitfield > 0)
+	   if (PowerupTimer[7] > 0) 
+	   { 
+	    if (bufftypebitfield > 0)
+	    {
+	     if (buffoverlayframe == 0) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU0"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU0"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU0"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD0"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD0"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD0"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 1) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU1"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU1"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU1"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD1"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD1"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD1"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 2) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU2"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU2"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU2"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD2"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD2"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD2"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 3) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU3"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU3"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU3"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD3"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD3"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD3"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 4) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU4"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU4"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU4"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD4"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD4"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD4"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 5) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU5"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU5"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU5"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD5"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD5"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD5"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 6) 
+		 {
+		  if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU6"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU6"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU6"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD6"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD6"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD6"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 7) 
+		  { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU7"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU7"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU7"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD7"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD7"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD7"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 8) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU8"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU8"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU8"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD8"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD8"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD8"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 9) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF2ATKU9"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF2DEFU9"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF2SPDU9"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF2ATKD9"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF2DEFD9"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF2SPDD9"); // Deceleratle
+		 }
+	    }
+	   }
+	   else
 	   {
-	    if (buffoverlayframe == 0) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU0"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU0"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU0"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD0"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD0"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD0"); // Deceleratle
-		}
-	    if (buffoverlayframe == 1) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU1"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU1"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU1"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD1"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD1"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD1"); // Deceleratle
-		}
-	    if (buffoverlayframe == 2) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU2"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU2"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU2"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD2"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD2"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD2"); // Deceleratle
-		}
-	    if (buffoverlayframe == 3) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU3"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU3"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU3"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD3"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD3"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD3"); // Deceleratle
-		}
-	    if (buffoverlayframe == 4) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU4"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU4"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU4"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD4"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD4"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD4"); // Deceleratle
-		}
-	    if (buffoverlayframe == 5) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU5"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU5"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU5"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD5"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD5"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD5"); // Deceleratle
-		}
-	    if (buffoverlayframe == 6) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU6"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU6"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU6"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD6"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD6"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD6"); // Deceleratle
-		}
-	    if (buffoverlayframe == 7) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU7"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU7"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU7"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD7"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD7"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD7"); // Deceleratle
-		}
-	    if (buffoverlayframe == 8) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU8"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU8"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU8"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD8"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD8"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD8"); // Deceleratle
-		}
-	    if (buffoverlayframe == 9) 
-		{ 
-		 if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU9"); // Oomph
-		 if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU9"); // Buff
-		 if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU9"); // Acceleratle
-		 if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD9"); // Blunt
-		 if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD9"); // Sap
-		 if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD9"); // Deceleratle
-		}
+	    if (bufftypebitfield > 0)
+	    {
+	     if (buffoverlayframe == 0) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU0"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU0"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU0"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD0"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD0"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD0"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 1) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU1"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU1"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU1"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD1"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD1"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD1"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 2) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU2"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU2"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU2"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD2"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD2"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD2"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 3) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU3"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU3"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU3"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD3"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD3"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD3"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 4) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU4"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU4"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU4"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD4"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD4"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD4"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 5) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU5"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU5"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU5"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD5"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD5"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD5"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 6) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU6"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU6"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU6"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD6"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD6"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD6"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 7) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU7"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU7"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU7"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD7"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD7"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD7"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 8) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU8"); // Oomph
+		  if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU8"); // Buff
+		  if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU8"); // Acceleratle
+		  if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD8"); // Blunt
+		  if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD8"); // Sap
+		  if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD8"); // Deceleratle
+		 }
+	     if (buffoverlayframe == 9) 
+		 { 
+		  if (MiscellaneousVars[139] == 0) SetFont("PF1ATKU9"); // Oomph
+	 	  if (MiscellaneousVars[139] == 1) SetFont("PF1DEFU9"); // Buff
+	 	  if (MiscellaneousVars[139] == 2) SetFont("PF1SPDU9"); // Acceleratle
+	 	  if (MiscellaneousVars[139] == 3) SetFont("PF1ATKD9"); // Blunt
+	 	  if (MiscellaneousVars[139] == 4) SetFont("PF1DEFD9"); // Sap
+	 	  if (MiscellaneousVars[139] == 5) SetFont("PF1SPDD9"); // Deceleratle
+	 	 }
+	    }
 	   }
 	  }
 	 }
+
 	 MiscellaneousVars[137]++; // Buff Overlay Timer 2 [Overlay Alpha]
      if (MiscellaneousVars[137] == 1 || MiscellaneousVars[137] == 35) msgalpha = 0.875;
      if (MiscellaneousVars[137] == 2 || MiscellaneousVars[137] == 34) msgalpha = 0.853;
@@ -5356,46 +5410,154 @@ script "HUDDisplay" ENTER
      if (MiscellaneousVars[137] == 18) msgalpha = 0.501;
 	 if (MiscellaneousVars[137] >= 35) MiscellaneousVars[137] -= 34;
 	 msgalpha += 0.00; 
+	 if (PowerupTimer[1] > 0) msgalpha = FixedMul(msgalpha,MiscFixedVars[101]); // If using Invisiblity Spell, pulsate the alpha of the buff effect
 	 msgalpha = FixedMul(msgalpha,overallhudalpha);
-     HudMessage(s:"A";HUDMSG_ALPHA,7797,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
-
-     // Main Character Portrait
-	 if (CharacterClass == 0)
-	 {
-	  if (PowerupTimer[4] > 0) SetFont("PDEG1INV");
-	  else SetFont("PDEG1NRM");
-	 }
-	 if (CharacterClass == 1)
-	 {
-	  if (PowerupTimer[4] > 0) SetFont("PILL1INV");
-	  else SetFont("PILL1NRM");
-	 }
-	 if (CharacterClass == 2)
-	 {
-	  if (PowerupTimer[7] > 0)
-	  {
-	   if (PowerupTimer[4] > 0) SetFont("PFLO2INV");
-	   else SetFont("PFLO2NRM");
-	  }
-	  else
-	  {
-	   if (PowerupTimer[4] > 0) SetFont("PFLO1INV");
-	   else SetFont("PFLO1NRM");
-	  }
-	 }
-	 if (CharacterClass == 8) SetFont("PORTAIL1");
-	 if (CharacterClass == 9)
-	 {
-	  if (PowerupTimer[7] > 0) SetFont("PORTPET2");
-	  else
-	  {
-	   SetFont("PORTPET1");
-	  }
-	 }
-	 msgalpha = 1.0; msgalpha = FixedMul(msgalpha,overallhudalpha);
      HudMessage(s:"A";HUDMSG_ALPHA,7798,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 
-     // Tension Background [portrait]
+	 // Night/Light-Vision Indicator [7799]
+     if (PowerupTimer[0] > 0)
+	 {
+	  if (CharacterClass == 0)
+	  {
+	   if (PowerupTimer[4] > 0) SetFont("PD1NGVI2");
+	   else SetFont("PD1NGVI1");
+	  }
+	  if (CharacterClass == 1)
+	  {
+	   if (PowerupTimer[4] > 0) SetFont("PI1NGVI2");
+	   else SetFont("PI1NGVI1");
+	  }
+	  if (CharacterClass == 2)
+	  {
+	   if (PowerupTimer[7] > 0) 
+	   {
+	    if (PowerupTimer[4] > 0) SetFont("PF2NGVI2");
+	    else SetFont("PF2NGVI1");
+	   }
+	   else
+	   {
+	    if (PowerupTimer[4] > 0) SetFont("PF1NGVI2");
+	    else SetFont("PF1NGVI1");
+	   }
+	  }
+
+      msgalpha = 0.9;
+	  MiscellaneousVars[145]++; // Buff Overlay Timer 2 [Overlay Alpha]
+	  if (MiscellaneousVars[145] >= 40) MiscellaneousVars[145] -= 40;
+	  if (MiscellaneousVars[145] == 0) msgalpha = 0.90;
+	  if (MiscellaneousVars[145] == 1 || MiscellaneousVars[145] == 39) msgalpha = 0.91;
+	  if (MiscellaneousVars[145] == 2 || MiscellaneousVars[145] == 38) msgalpha = 0.92;
+	  if (MiscellaneousVars[145] == 3 || MiscellaneousVars[145] == 37) msgalpha = 0.93;
+	  if (MiscellaneousVars[145] == 4 || MiscellaneousVars[145] == 36) msgalpha = 0.94;
+	  if (MiscellaneousVars[145] == 5 || MiscellaneousVars[145] == 35) msgalpha = 0.95;
+	  if (MiscellaneousVars[145] == 6 || MiscellaneousVars[145] == 34) msgalpha = 0.96;
+	  if (MiscellaneousVars[145] == 7 || MiscellaneousVars[145] == 33) msgalpha = 0.97;
+	  if (MiscellaneousVars[145] == 8 || MiscellaneousVars[145] == 32) msgalpha = 0.98;
+	  if (MiscellaneousVars[145] == 9 || MiscellaneousVars[145] == 31) msgalpha = 0.99;
+	  if (MiscellaneousVars[145] == 10 || MiscellaneousVars[145] == 30) msgalpha = 1.00;
+	  if (MiscellaneousVars[145] == 11 || MiscellaneousVars[145] == 29) msgalpha = 1.01;
+	  if (MiscellaneousVars[145] == 12 || MiscellaneousVars[145] == 28) msgalpha = 1.02;
+	  if (MiscellaneousVars[145] == 13 || MiscellaneousVars[145] == 27) msgalpha = 1.03;
+	  if (MiscellaneousVars[145] == 14 || MiscellaneousVars[145] == 26) msgalpha = 1.04;
+	  if (MiscellaneousVars[145] == 15 || MiscellaneousVars[145] == 25) msgalpha = 1.05;
+	  if (MiscellaneousVars[145] == 16 || MiscellaneousVars[145] == 24) msgalpha = 1.06;
+	  if (MiscellaneousVars[145] == 17 || MiscellaneousVars[145] == 23) msgalpha = 1.07;
+	  if (MiscellaneousVars[145] == 18 || MiscellaneousVars[145] == 22) msgalpha = 1.08;
+	  if (MiscellaneousVars[145] == 19 || MiscellaneousVars[145] == 21) msgalpha = 1.09;
+	  if (MiscellaneousVars[145] == 20) msgalpha = 1.10;
+
+	  if (PowerupTimer[1] > 0) msgalpha = FixedMul(msgalpha,MiscFixedVars[101]); // If using Invisiblity Spell, pulsate the alpha of the buff effect
+	  msgalpha = FixedMul(msgalpha,overallhudalpha);
+      HudMessage(s:"A";HUDMSG_ALPHA,7799,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+	 }
+
+	 // Berserk Indicator [7800]
+     if (PowerupTimer[23] > 0)
+	 {
+	  if (CharacterClass == 0)
+	  {
+	   if (PowerupTimer[4] > 0) SetFont("PD1BERS2");
+	   else SetFont("PD1BERS1");
+	  }
+	  if (CharacterClass == 1)
+	  {
+	   if (PowerupTimer[4] > 0) SetFont("PI1BERS2");
+	   else SetFont("PI1BERS1");
+	  }
+	  if (CharacterClass == 2)
+	  {
+	   if (PowerupTimer[7] > 0) 
+	   {
+	    if (PowerupTimer[4] > 0) SetFont("PF2BERS2");
+	    else SetFont("PF2BERS1");
+	   }
+	   else
+	   {
+	    if (PowerupTimer[4] > 0) SetFont("PF1BERS2");
+	    else SetFont("PF1BERS1");
+	   }
+	  }
+      msgalpha = 1.0;
+	  if (PowerupTimer[1] > 0) msgalpha = FixedMul(msgalpha,MiscFixedVars[101]); // If using Invisiblity Spell, pulsate the alpha of the buff effect
+	  msgalpha = FixedMul(msgalpha,overallhudalpha);
+      HudMessage(s:"A";HUDMSG_ALPHA,7800,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+	 }
+	 
+	 //*******************************
+     // Main Character Portrait [7810]
+	 //*******************************
+     if (GetActorProperty(Player1TID,APROP_HEALTH) <= 0) // If dead, show a coffin portrait :V
+	 {
+	  SetFont("PCOF1NRM");
+	 }
+	 else
+	 {
+	  if (CharacterClass == 0)
+	  {
+	   if (PowerupTimer[4] > 0) SetFont("PDEG1INV");
+	   else SetFont("PDEG1NRM");
+	  }
+	  if (CharacterClass == 1)
+	  {
+	   if (PowerupTimer[4] > 0) SetFont("PILL1INV");
+	   else SetFont("PILL1NRM");
+	  }
+	  if (CharacterClass == 2)
+	  {
+	   if (PowerupTimer[7] > 0)
+	   {
+	    if (PowerupTimer[4] > 0) SetFont("PFLO2INV");
+	    else SetFont("PFLO2NRM");
+	   }
+	   else
+	   {
+	    if (PowerupTimer[4] > 0) SetFont("PFLO1INV");
+	    else SetFont("PFLO1NRM");
+	   }
+	  }
+	  if (CharacterClass == 8) SetFont("PORTAIL1");
+	  if (CharacterClass == 9)
+	  {
+	   if (PowerupTimer[7] > 0) SetFont("PORTPET2");
+	   else
+	   {
+ 	    SetFont("PORTPET1");
+ 	   }
+  	  }
+	 }
+
+	 msgalpha = 1.0; 
+	 // If Invisible, pulsate the Alpha of the portrait
+	 if (PowerupTimer[1] > 0) msgalpha = FixedMul(msgalpha,MiscFixedVars[101]);
+	 msgalpha = FixedMul(msgalpha,overallhudalpha);
+     HudMessage(s:"A";HUDMSG_ALPHA,7810,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+
+     // Portrait Edges [7811]
+	 SetFont("PORTEMPT");
+	 msgalpha = 1.0; msgalpha = FixedMul(msgalpha,overallhudalpha);
+     HudMessage(s:"A";HUDMSG_ALPHA,7811,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+
+     // Tension Background [portrait] [7812]
 	 if (MiscellaneousVars[181] > 0)
 	 {
 	  if (MiscellaneousVars[181] >= 1 && MiscellaneousVars[181] <= 2) { SetFont("PORTTEN1"); }
@@ -5424,22 +5586,22 @@ script "HUDDisplay" ENTER
       if (tensionglowporttimer == 18) msgalpha = 0.501;
       if (tensionglowporttimer >= 35) tensionglowporttimer = -34;
 	  msgalpha = FixedMul(msgalpha,overallhudalpha);
-      HudMessage(s:"A";HUDMSG_ALPHA,7799,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+      HudMessage(s:"A";HUDMSG_ALPHA,7812,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 	 }
 
-     // Red Glow (critical health) [portrait]
+     // Red Glow (critical health) [portrait] [7813]
      int HealthRatio = GetActorProperty(Player1TID,APROP_Health) * 1000 / MaxHealthTrue;
 	 if (HealthRatio <= 100)
 	 {
 	  msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 	  SetFont("PORTCRTH");
-      HudMessage(s:"A";HUDMSG_ALPHA,7800,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+      HudMessage(s:"A";HUDMSG_ALPHA,7813,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 	 }
 
-	 // Normal Frame [portrait]
+	 // Normal Frame Background [portrait] [7814]
 	 msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 	 SetFont("PORTNRMH");
-     HudMessage(s:"A";HUDMSG_ALPHA,7801,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+     HudMessage(s:"A";HUDMSG_ALPHA,7814,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 
      //********************************
      //* Quickspell Bar [7854 to 7898]*
@@ -33930,13 +34092,38 @@ script "CheckBuffTimers" ENTER
  if (CheckActorInventory(Player1TID, "InvisAttack4") > 0) TakeActorInventory(Player1TID, "InvisAttack4", 1);
  if (CheckActorInventory(Player1TID, "InvisDefense4") > 0) TakeActorInventory(Player1TID, "InvisDefense4", 1);
  msgalpha = 1.0; msgalpha = FixedMul(msgalpha,overallhudalpha);
+
+ MiscellaneousVars[141]++;
+ if (MiscellaneousVars[141] >= 40) MiscellaneousVars[141] -= 40;
+ if (MiscellaneousVars[141] == 0 || MiscellaneousVars[141] == 20 || MiscellaneousVars[141] == 40) MiscFixedVars[101] = 0.20;
+ if (MiscellaneousVars[141] == 1 || MiscellaneousVars[141] == 19) MiscFixedVars[101] = 0.205;
+ if (MiscellaneousVars[141] == 2 || MiscellaneousVars[141] == 18) MiscFixedVars[101] = 0.21;
+ if (MiscellaneousVars[141] == 3 || MiscellaneousVars[141] == 17) MiscFixedVars[101] = 0.215;
+ if (MiscellaneousVars[141] == 4 || MiscellaneousVars[141] == 16) MiscFixedVars[101] = 0.22;
+ if (MiscellaneousVars[141] == 5 || MiscellaneousVars[141] == 15) MiscFixedVars[101] = 0.225;
+ if (MiscellaneousVars[141] == 6 || MiscellaneousVars[141] == 14) MiscFixedVars[101] = 0.23;
+ if (MiscellaneousVars[141] == 7 || MiscellaneousVars[141] == 13) MiscFixedVars[101] = 0.235;
+ if (MiscellaneousVars[141] == 8 || MiscellaneousVars[141] == 12) MiscFixedVars[101] = 0.24;
+ if (MiscellaneousVars[141] == 9 || MiscellaneousVars[141] == 11) MiscFixedVars[101] = 0.245;
+ if (MiscellaneousVars[141] == 10) MiscFixedVars[101] = 0.25;
+ if (MiscellaneousVars[141] == 21 || MiscellaneousVars[141] == 39) MiscFixedVars[101] = 0.195;
+ if (MiscellaneousVars[141] == 22 || MiscellaneousVars[141] == 38) MiscFixedVars[101] = 0.19;
+ if (MiscellaneousVars[141] == 23 || MiscellaneousVars[141] == 37) MiscFixedVars[101] = 0.185;
+ if (MiscellaneousVars[141] == 24 || MiscellaneousVars[141] == 36) MiscFixedVars[101] = 0.18;
+ if (MiscellaneousVars[141] == 25 || MiscellaneousVars[141] == 35) MiscFixedVars[101] = 0.175;
+ if (MiscellaneousVars[141] == 26 || MiscellaneousVars[141] == 34) MiscFixedVars[101] = 0.17;
+ if (MiscellaneousVars[141] == 27 || MiscellaneousVars[141] == 33) MiscFixedVars[101] = 0.165;
+ if (MiscellaneousVars[141] == 28 || MiscellaneousVars[141] == 32) MiscFixedVars[101] = 0.16;
+ if (MiscellaneousVars[141] == 29 || MiscellaneousVars[141] == 31) MiscFixedVars[101] = 0.155;
+ if (MiscellaneousVars[141] == 30) MiscFixedVars[101] = 0.15;
+
  if (PowerupTimer[1] > 0)
  {
   GiveActorInventory(Player1TID,"InvisiblitySpell",1);
   if (GetActorProperty(Player1TID,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Invisibility: ",d:(PowerupTimer[1]/35),s:" Secs";HUDMSG_ALPHA,3434,cr_white,xpos,ypos,0.03,msgalpha);
   if (MiscellaneousVars[194] == 0)
   {
-   SetActorProperty(Player1TID,APROP_Alpha,0.1);
+   SetActorProperty(Player1TID,APROP_Alpha,MiscFixedVars[101]);
    SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Translucent);
   }
   if (random(1,100) > 25) // 75% chance of the level 1 version
