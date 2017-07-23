@@ -202,51 +202,41 @@ actor DSZombieman : Zombieman 26501
 	 A_SetUserVar("user_shotzaccuracy1",user_shotzaccuracy/-2); A_SetUserVar("user_shotzaccuracy2",user_shotzaccuracy/2);
 	}
   Attack:
-    POSS E 0 A_PlaySound ("grunt/attack")
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 0, "HitscanBullet")
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 1, "TracerBullet")
-
-   HitscanBullet:
-     POSS F 0
-	 { 
+    POSS F 8 bright
+	{ 
+      A_PlaySound ("grunt/attack");
 	  A_FaceTarget;
 	  A_SetUserVar("user_canusecrisisatk",0);
 	  if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
       if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	  if(user_canusecrisisatk == 1)
+	  
+	  if (GetCVar("dvds_monsterbulletstracers") == 0)
 	  {
-       A_PlaySound("crisisattack",6);
-       A_PlaySound("crisisattack2",7);
-	   A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, CBAF_NORANDOM);
+ 	   if(user_canusecrisisatk == 1)
+	   {
+        A_PlaySound("crisisattack",6);
+        A_PlaySound("crisisattack2",7);
+	    A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, CBAF_NORANDOM);
+	   }
+	   else
+	   {
+	    A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, random(1,5) * 3, "BulletPuff", 0, CBAF_NORANDOM);
+	   }
 	  }
 	  else
 	  {
-	   A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, random(1,5) * 3, "BulletPuff", 0, CBAF_NORANDOM);
+	   if(user_canusecrisisatk == 1)
+	   {
+        A_PlaySound("crisisattack",6);
+        A_PlaySound("crisisattack2",7);
+        A_CustomMissile("ZombieBulletTracerCrisis", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   }
+	   else
+	   {
+        A_CustomMissile("ZombieBulletTracer", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   }
 	  }
-	 }
-     goto EndMissile
-   TracerBullet:
-     POSS F 0
-	 {
-	  A_FaceTarget;
-	  A_SetUserVar("user_canusecrisisatk",0);
-	  if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
-      if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	  if(user_canusecrisisatk == 1)
-	  {
-       A_PlaySound("crisisattack",6);
-       A_PlaySound("crisisattack2",7);
-       A_CustomMissile("ZombieBulletTracerCrisis", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  }
-	  else
-	  {
-       A_CustomMissile("ZombieBulletTracer", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  }
-	 }
-     goto EndMissile
-
-  EndMissile:
-    POSS F 8 bright A_FaceTarget 
+	}
     POSS E 8 
 	{
 	 A_SetUserVar("user_shotsfired",user_shotsfired+1);
@@ -254,7 +244,7 @@ actor DSZombieman : Zombieman 26501
 	}
     TNT1 A 0 A_MonsterRefire(32,"See")
     TNT1 A 0 A_JumpIf(user_shotsfired >= user_shotsfiredmax,"Decide1")
-	goto Attack
+	loop
   Decide1:
     TNT1 A 0 A_Jump(240,"See")
     TNT1 A 0 
@@ -871,7 +861,7 @@ Actor RepeaterZombie 26505
      A_GiveInventory("RepeaterZombieHeat", 1);
      A_FaceTarget;
      A_PlaySound("Weapons/RepeaterFire");
-	 if (ACS_NamedExecuteWithResult("CheckHitscanType") == 0)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
 	  A_SetUserVar("user_canusecrisisatk",0);
 	  if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
@@ -912,7 +902,7 @@ Actor RepeaterZombie 26505
      A_GiveInventory("RepeaterZombieHeat", 1);
      A_FaceTarget;
      A_PlaySound("Weapons/RepeaterFire");
-	 if (ACS_NamedExecuteWithResult("CheckHitscanType") == 0)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
 	  A_SetUserVar("user_canusecrisisatk",0);
 	  if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
@@ -1366,7 +1356,7 @@ actor DSShotgunGuy : ShotgunGuy 26509
      else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 40) { A_SetTics(9); }
 	 A_FaceTarget;
      A_PlaySound("shotguy/attack");
-	 if (ACS_NamedExecuteWithResult("CheckShotgunnerSpreads") == 0) { A_SetUserVar("user_pelletsfired",3); } else { A_SetUserVar("user_pelletsfired",7); }
+	 if (GetCVar("dvds_shotgunnerspread") == 0) { A_SetUserVar("user_pelletsfired",3); } else { A_SetUserVar("user_pelletsfired",7); }
 
 	 A_SetUserVar("user_canusecrisisatk",0);
 	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
@@ -1375,7 +1365,7 @@ actor DSShotgunGuy : ShotgunGuy 26509
 	 {
       A_PlaySound("crisisattack",6);
       A_PlaySound("crisisattack2",7);
-	  if (ACS_NamedExecuteWithResult("CheckHitscanType") == 0) // Hitscan
+	  if (GetCVar("dvds_monsterbulletstracers") == 0) // Hitscan
 	  {
 	   A_CustomBulletAttack (22.4, 0, user_pelletsfired, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, 1);
 	  }
@@ -1389,7 +1379,7 @@ actor DSShotgunGuy : ShotgunGuy 26509
 	 }
 	 else
 	 {
-	  if (ACS_NamedExecuteWithResult("CheckHitscanType") == 0) // Hitscan
+	  if (GetCVar("dvds_monsterbulletstracers") == 0) // Hitscan
 	  {
        A_CustomBulletAttack (22.4, 0, user_pelletsfired, random(1,5) * 3, "BulletPuff", 0, 1);
 	  }
@@ -1599,7 +1589,7 @@ actor SuperShotgunGuy 5005
      else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_SetTics(7); }
 
      A_PlaySound("weapons/sshotf");
-	 if (ACS_NamedExecuteWithResult("CheckShotgunnerSpreads") == 0) { A_SetUserVar("user_pelletsfired",7); } else { A_SetUserVar("user_pelletsfired",20); }
+	 if (GetCVar("dvds_shotgunnerspread") == 0) { A_SetUserVar("user_pelletsfired",7); } else { A_SetUserVar("user_pelletsfired",20); }
 
 	 A_SetUserVar("user_canusecrisisatk",0);
 	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
@@ -1608,7 +1598,7 @@ actor SuperShotgunGuy 5005
 	 {
       A_PlaySound("crisisattack",6);
       A_PlaySound("crisisattack2",7);
-	  if (ACS_NamedExecuteWithResult("CheckHitscanType") == 0) // Hitscan
+	  if (GetCVar("dvds_monsterbulletstracers") == 0) // Hitscan
 	  {
 	   A_CustomBulletAttack (44.8, 28.4, user_pelletsfired, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, 1);
 	  }
@@ -1622,7 +1612,7 @@ actor SuperShotgunGuy 5005
 	 }
 	 else
 	 {
-	  if (ACS_NamedExecuteWithResult("CheckHitscanType") == 0) // Hitscan
+	  if (GetCVar("dvds_monsterbulletstracers") == 0) // Hitscan
 	  {
 	   A_CustomBulletAttack (44.8, 28.4, user_pelletsfired, random(1,5) * 3, "BulletPuff", 0, 1);
 	  }
@@ -1813,7 +1803,7 @@ actor DSWolfensteinSS : WolfensteinSS replaces WolfensteinSS
 	{
      A_FaceTarget;
      A_PlaySound("chainguy/attack", CHAN_WEAPON);
-	 if (ACS_NamedExecuteWithResult("CheckHitscanType") == 0)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
 	  A_SetUserVar("user_canusecrisisatk",0);
 	  if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
@@ -1857,7 +1847,7 @@ actor DSWolfensteinSS : WolfensteinSS replaces WolfensteinSS
 	{
      A_FaceTarget;
      A_PlaySound("chainguy/attack", CHAN_WEAPON);
-	 if (ACS_NamedExecuteWithResult("CheckHitscanType") == 0)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
 	  A_SetUserVar("user_canusecrisisatk",0);
 	  if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
@@ -2071,7 +2061,7 @@ actor DSChaingunGuy : ChaingunGuy 26512
      A_FaceTarget;
      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(3); }
      A_PlaySound("chainguy/attack", CHAN_WEAPON);
-	 if (ACS_NamedExecuteWithResult("CheckHitscanType") == 0)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
 	  A_SetUserVar("user_canusecrisisatk",0);
 	  if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
@@ -2312,7 +2302,7 @@ ACTOR Minigunner 26525
  	{
      A_FaceTarget;
      A_PlaySound("weapons/minigunfire", CHAN_WEAPON);
-	 if (ACS_NamedExecuteWithResult("CheckHitscanType") == 0)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
 	  A_SetUserVar("user_canusecrisisatk",0);
 	  if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
@@ -5203,26 +5193,26 @@ actor ChaingunDemon : BloodDemon 26522
     TNT1 A 0
 	{
  	 A_SetUserVar("user_shotsfiredmax",random(15,45));
-	 if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetUserVar("user_shotsfiredmax",user_shotsfiredmax+(random(6,15))); }
-     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 80) { A_SetUserVar("user_shotsfiredmax",user_shotsfiredmax+(random(4,10))); }
-     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 40) { A_SetUserVar("user_shotsfiredmax",user_shotsfiredmax+(random(2,5))); }
+	 if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 200) { A_SetUserVar("user_shotsfiredmax",user_shotsfiredmax+(random(10,30))); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 160) { A_SetUserVar("user_shotsfiredmax",user_shotsfiredmax+(random(8,24))); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetUserVar("user_shotsfiredmax",user_shotsfiredmax+(random(6,18))); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 80) { A_SetUserVar("user_shotsfiredmax",user_shotsfiredmax+(random(4,12))); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 40) { A_SetUserVar("user_shotsfiredmax",user_shotsfiredmax+(random(2,6))); }
     }
     CRG2 H 9
 	{
 	 A_FaceTarget;
 	 A_SetUserVar("user_shotaccuracy",22.5);
 	 A_SetUserVar("user_shotzaccuracy",0.0);
-     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(6); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*5)/8)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*5)/8)); }
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 200) { A_SetTics(4); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*5)/8)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*3)/8)); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 160) { A_SetTics(5); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*6)/8)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*4)/8)); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(6); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*6)/8)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*5)/8)); }
      else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 80) { A_SetTics(7); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*6)/8)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*6)/8)); }
      else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 40) { A_SetTics(8); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*7)/8)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*7)/8)); }
 	 A_SetUserVar("user_shotaccuracy1",user_shotaccuracy/-2); A_SetUserVar("user_shotaccuracy2",user_shotaccuracy/2);
 	 A_SetUserVar("user_shotzaccuracy1",user_shotzaccuracy/-2); A_SetUserVar("user_shotzaccuracy2",user_shotzaccuracy/2);
 	}
   StartMissile:
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 0, "HitscanBullet")
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 1, "TracerBullet")
-
-  HitscanBullet:
     CRG2 E 3 bright
 	{
      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 240) { A_SetTics(1); }
@@ -5232,22 +5222,37 @@ actor ChaingunDemon : BloodDemon 26522
 	 A_SetUserVar("user_canusecrisisatk",0);
 	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
      if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-	  A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, ((random(1,5)*3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, CBAF_NORANDOM);
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+	   A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, ((random(1,5)*3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, CBAF_NORANDOM);
+	  }
+	  else
+	  {
+	   A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, random(1,5)*3, "BulletPuff", 0, CBAF_NORANDOM);
+	  }
 	 }
 	 else
 	 {
-	  A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, random(1,5)*3, "BulletPuff", 0, CBAF_NORANDOM);
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+       A_CustomMissile("ZombieBulletTracerCrisis", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  }
+	  else
+	  {
+       A_CustomMissile("ZombieBulletTracer", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  }
 	 }
      A_SetUserVar("user_shotsfired",user_shotsfired+1);
      If (A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")) { return state("EndMissile"); }
 	 return state("");
     }
     TNT1 A 0 A_MonsterRefire(32,"See")
-
     CRG2 F 3 bright
 	{
      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 240) { A_SetTics(1); }
@@ -5257,70 +5262,37 @@ actor ChaingunDemon : BloodDemon 26522
 	 A_SetUserVar("user_canusecrisisatk",0);
 	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
      if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-	  A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, ((random(1,5)*3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, CBAF_NORANDOM);
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+	   A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, ((random(1,5)*3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, CBAF_NORANDOM);
+	  }
+	  else
+	  {
+	   A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, random(1,5)*3, "BulletPuff", 0, CBAF_NORANDOM);
+	  }
 	 }
 	 else
 	 {
-	  A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, 1, random(1,5)*3, "BulletPuff", 0, CBAF_NORANDOM);
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+       A_CustomMissile("ZombieBulletTracerCrisis", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  }
+	  else
+	  {
+       A_CustomMissile("ZombieBulletTracer", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  }
 	 }
      A_SetUserVar("user_shotsfired",user_shotsfired+1);
      If (A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")) { return state("EndMissile"); }
 	 return state("");
     }
-    TNT1 A 0 A_MonsterRefire(32,"See")
-    goto StartMissile
-  TracerBullet:
-    CRG2 E 3 bright
-	{
-     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 240) { A_SetTics(1); }
-     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(2); }
-	 A_FaceTarget;
-     A_PlaySound("chainguy/attack", CHAN_WEAPON);
-	 A_SetUserVar("user_canusecrisisatk",0);
-	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
-     if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
-	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-      A_CustomMissile("ZombieBulletTracerCrisis", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	 }
-	 else
-	 {
-      A_CustomMissile("ZombieBulletTracer", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	 }
-    }
-    TNT1 A 0 A_SetUserVar("user_shotsfired",user_shotsfired+1)
-    TNT1 A 0 A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")
-    TNT1 A 0 A_MonsterRefire(32,"See")
-
-    CRG2 F 3 bright
-	{
-     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 240) { A_SetTics(1); }
-     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(2); }
-	 A_FaceTarget;
-     A_PlaySound("chainguy/attack", CHAN_WEAPON);
-	 A_SetUserVar("user_canusecrisisatk",0);
-	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
-     if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
-	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-      A_CustomMissile("ZombieBulletTracerCrisis", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	 }
-	 else
-	 {
-      A_CustomMissile("ZombieBulletTracer", 32, 12, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	 }
-    }
-    TNT1 A 0 A_SetUserVar("user_shotsfired",user_shotsfired+1)
-    TNT1 A 0 A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")
-    TNT1 A 0 A_MonsterRefire(32,"See")
+    TNT1 A 0 A_MonsterRefire(32,"EndMissile")
     goto StartMissile
   EndMissile:
     TNT1 A 0 A_SetUserVar("user_shotsfired",0)
@@ -5906,104 +5878,65 @@ actor DeathIncarnate : Revenant 30115
     TNT1 A 0 ACS_NamedExecuteAlways("RefreshStealthInfo",0,1) // makes a Stealth Monster become more visible
     INCA J 5
 	{
-	 A_FaceTarget;
+	 A_SetUserVar("user_shotsfiredmax",10);	 
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(3); A_SetUserVar("user_shotsfiredmax",user_shotsfiredmax+8); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*2)/4)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*2)/4)); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_SetTics(4); A_SetUserVar("user_shotsfiredmax",user_shotsfiredmax+4); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*3)/4)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*3)/4)); }
 	 A_SetUserVar("user_shotaccuracy",30.0);
-	 A_SetUserVar("user_shotzaccuracy",0.0);
-	 A_SetUserVar("user_shotsfired",10);	 
-     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(3); A_SetUserVar("user_shotsfired",user_shotsfired+8); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*2)/4)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*2)/4)); }
-     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_SetTics(4); A_SetUserVar("user_shotsfired",user_shotsfired+4); A_SetUserVar("user_shotaccuracy",((user_shotaccuracy*3)/4)); A_SetUserVar("user_shotzaccuracy",((user_shotzaccuracy*3)/4)); }
 	 A_SetUserVar("user_shotaccuracy1",user_shotaccuracy/-2); A_SetUserVar("user_shotaccuracy2",user_shotaccuracy/2);
+	 A_SetUserVar("user_shotzaccuracy",0.0);
 	 A_SetUserVar("user_shotzaccuracy1",user_shotzaccuracy/-2); A_SetUserVar("user_shotzaccuracy2",user_shotzaccuracy/2);
+	 A_FaceTarget;
 	}
     INCA J 5
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 0, "HitscanGlare")
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 1, "TracerGlare")
-
-   HitscanGlare:
-    INCA U 0 Bright 
-	{ 
-	 A_SetUserVar("user_canusecrisisatk",0);
-	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
-     if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
-	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-	  A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, user_shotsfired, (3 * ACS_NamedExecuteWithResult("CrisisMultiplier")), "DIPuff", 1024);
-	 }
-	 else
-	 {
-	  A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, user_shotsfired, 3, "DIPuff", 1024);
-	 }
-	}
-    goto EndMissile
-   TracerGlare:
-    INCA U 0 Bright 
 	{
-	 A_SetUserVar("user_canusecrisisatk",0);
-	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 150) { A_SetTics(3); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 75) { A_SetTics(4); }
+	}
+    INCA U 10 Bright
+	{
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 200) { A_SetTics(5); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 160) { A_SetTics(6); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(7); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 80) { A_SetTics(8); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 40) { A_SetTics(9); }
+	 A_FaceTarget;
+
+     A_SetUserVar("user_canusecrisisatk",0);
+     if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
      if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0) // Hitscan
 	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) 
+	  if(user_canusecrisisatk == 1)
 	  {
-	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+	   A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, user_shotsfiredmax, (3 * ACS_NamedExecuteWithResult("CrisisMultiplier")), "DIPuff", 1024);
 	  }
-      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) 
+	  else
 	  {
-	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   A_CustomBulletAttack(user_shotaccuracy, user_shotzaccuracy, user_shotsfiredmax, 3, "DIPuff", 1024);
 	  }
 	 }
-	 else
+	 else // Tracers
 	 {
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) 
+	  if(user_canusecrisisatk == 1)
 	  {
-	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+       for (A_SetUserVar(user_shotsfired, 0); user_shotsfired < user_shotsfiredmax; A_SetUserVar(user_shotsfired, user_shotsfired + 1))
+       {
+	    A_CustomMissile("IncarnateGlareTracerCrisis", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   }
 	  }
-      if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) 
+	  else
 	  {
-	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	   A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  }
+       for (A_SetUserVar(user_shotsfired, 0); user_shotsfired < user_shotsfiredmax; A_SetUserVar(user_shotsfired, user_shotsfired + 1))
+       {
+ 	    A_CustomMissile("IncarnateGlareTracer", 56, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   }
+ 	  }
 	 }
 	}
-    goto EndMissile
-	
-  EndMissile:
-    INCA U 10 Bright
     INCA K 10
     Goto See 
 
@@ -12249,6 +12182,7 @@ actor DSSpiderMastermind : SpiderMastermind 26552
   var int user_shotsfired; var int user_shotsfiredmax;
   var float user_shotaccuracy; var float user_shotaccuracy1; var float user_shotaccuracy2;
   var float user_shotzaccuracy; var float user_shotzaccuracy1; var float user_shotzaccuracy2;
+  var int user_pelletsfired;
   dropitem RandomPowerupSpawner 2
   dropitem Backpack 2
   dropitem Backpack 2
@@ -12451,10 +12385,6 @@ actor DSSpiderMastermind : SpiderMastermind 26552
 	}
 	SPID A 0 A_MonsterRefire(10,"See")
   Attack:
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 0, "HitscanBullet")
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 1, "TracerBullet")
-
-   HitscanBullet:
     SPID G 4 Bright
 	{
 	 A_FaceTarget;
@@ -12462,16 +12392,40 @@ actor DSSpiderMastermind : SpiderMastermind 26552
 	 A_SetUserVar("user_canusecrisisatk",0);
 	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
      if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
+
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-	  A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 3, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, 1);
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+	   A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 3, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, 1);
+	  }
+	  else
+	  {
+	   A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 3, random(1,5) * 3, "BulletPuff", 0, 1);
+	  }
 	 }
 	 else
 	 {
-	  A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 3, random(1,5) * 3, "BulletPuff", 0, 1);
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+       for (A_SetUserVar(user_pelletsfired, 0); user_pelletsfired < 3; A_SetUserVar(user_pelletsfired, user_pelletsfired + 1))
+       {
+	    A_CustomMissile("ZombieBulletTracerCrisis", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   }
+	  }
+	  else
+	  {
+       for (A_SetUserVar(user_pelletsfired, 0); user_pelletsfired < 3; A_SetUserVar(user_pelletsfired, user_pelletsfired + 1))
+       {
+   	    A_CustomMissile("ZombieBulletTracer", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   }
+	  }
 	 }
+
      A_SetUserVar("user_shotsfired",user_shotsfired+1);
      If (A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")) { return state("EndMissile"); }
 	 return state("");
@@ -12484,77 +12438,46 @@ actor DSSpiderMastermind : SpiderMastermind 26552
 	 A_SetUserVar("user_canusecrisisatk",0);
 	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
      if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
-	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-	  A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 3, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, 1);
-	 }
-	 else
-	 {
-	  A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 3, random(1,5) * 3, "BulletPuff", 0, 1);
-	 }
-     A_SetUserVar("user_shotsfired",user_shotsfired+1);
-     If (A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")) { return state("EndMissile"); }
-	 return state("");
-	}
-    SPID H 1 A_MonsterRefire(10,"See")
-    goto Attack
 
-   TracerBullet:
-    SPID G 4 Bright
-	{
-	 A_FaceTarget;
-     A_PlaySound("shotguy/attack");
-	 A_SetUserVar("user_canusecrisisatk",0);
-	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
-     if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-   	  A_CustomMissile("ZombieBulletTracerCrisis", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+	   A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 3, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, 1);
+	  }
+	  else
+	  {
+	   A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 3, random(1,5) * 3, "BulletPuff", 0, 1);
+	  }
 	 }
 	 else
 	 {
-   	  A_CustomMissile("ZombieBulletTracer", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+       for (A_SetUserVar(user_pelletsfired, 0); user_pelletsfired < 3; A_SetUserVar(user_pelletsfired, user_pelletsfired + 1))
+       {
+	    A_CustomMissile("ZombieBulletTracerCrisis", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   }
+	  }
+	  else
+	  {
+       for (A_SetUserVar(user_pelletsfired, 0); user_pelletsfired < 3; A_SetUserVar(user_pelletsfired, user_pelletsfired + 1))
+       {
+   	    A_CustomMissile("ZombieBulletTracer", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   }
+	  }
 	 }
+
      A_SetUserVar("user_shotsfired",user_shotsfired+1);
      If (A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")) { return state("EndMissile"); }
 	 return state("");
 	}
-    SPID G 0 A_MonsterRefire(10,"See")
-    SPID H 4 Bright
-	{
-	 A_FaceTarget;
-     A_PlaySound("shotguy/attack");
-	 A_SetUserVar("user_canusecrisisatk",0);
-	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
-     if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
-	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-   	  A_CustomMissile("ZombieBulletTracerCrisis", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	 }
-	 else
-	 {
-   	  A_CustomMissile("ZombieBulletTracer", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 48, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	 }
-     A_SetUserVar("user_shotsfired",user_shotsfired+1);
-     If (A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")) { return state("EndMissile"); }
-	 return state("");
-	}
-    SPID H 1 A_MonsterRefire(10,"See")
-    goto Attack
+    SPID H 1 A_MonsterRefire(10,"EndMissile")
+    loop
 
   EndMissile:
     TNT1 A 0 A_SetUserVar("user_shotsfired",0)
@@ -12740,6 +12663,7 @@ actor Demolisher : SpiderMastermind 30110
   var int user_shotsfired; var int user_shotsfiredmax;
   var float user_shotaccuracy; var float user_shotaccuracy1; var float user_shotaccuracy2;
   var float user_shotzaccuracy; var float user_shotzaccuracy1; var float user_shotzaccuracy2;
+  var int user_pelletsfired;
   Obituary "%o felt the power of the Spider-Demolisher."
   Health 6000 
   Radius 96 
@@ -12871,17 +12795,29 @@ actor Demolisher : SpiderMastermind 30110
   Attack1:
     DEMO A 20 BRIGHT
 	{
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(14); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 100) { A_SetTics(15); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 80) { A_SetTics(16); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_SetTics(17); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 40) { A_SetTics(18); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 20) { A_SetTics(19); }
 	 A_FaceTarget;
 	}
 	DEMO A 0 A_MonsterRefire(10,"See")
   Attack1Start:
     DEMO T 1 BRIGHT A_Playsound ("weapons/bfgf")
-    DEMO T 4 BRIGHT A_FaceTarget
-    DEMO T 4 BRIGHT A_FaceTarget
-    DEMO T 5 BRIGHT A_FaceTarget
-    DEMO T 5 BRIGHT A_FaceTarget
-    DEMO T 5 BRIGHT A_FaceTarget
-    DEMO T 5 BRIGHT A_FaceTarget
+    DEMO TT 4 BRIGHT 
+	{
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 180) { A_SetTics(2); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 90) { A_SetTics(3); }
+	 A_FaceTarget;
+	}
+    DEMO TTTT 5 BRIGHT 
+	{
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(3); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_SetTics(4); }
+	 A_FaceTarget;
+	}
     DEMO U 10 BRIGHT
 	{
 	 A_FaceTarget;
@@ -12906,12 +12842,18 @@ actor Demolisher : SpiderMastermind 30110
     DEMO T 0 BRIGHT A_MonsterRefire(10,"See")
     DEMO T 0 BRIGHT A_Jump (88, "Attack2")
     DEMO T 1 BRIGHT A_Playsound ("weapons/bfgf")
-    DEMO T 4 BRIGHT A_FaceTarget
-    DEMO T 4 BRIGHT A_FaceTarget
-    DEMO T 5 BRIGHT A_FaceTarget
-    DEMO T 5 BRIGHT A_FaceTarget
-    DEMO T 5 BRIGHT A_FaceTarget
-    DEMO T 5 BRIGHT A_FaceTarget 
+    DEMO TT 4 BRIGHT 
+	{
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 180) { A_SetTics(2); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 90) { A_SetTics(3); }
+	 A_FaceTarget;
+	}
+    DEMO TTTT 5 BRIGHT 
+	{
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 120) { A_SetTics(3); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 60) { A_SetTics(4); }
+	 A_FaceTarget;
+	}
     DEMO U 10 BRIGHT
 	{
 	 A_FaceTarget;
@@ -12955,27 +12897,49 @@ actor Demolisher : SpiderMastermind 30110
 	}
 	DEMO A 0 A_MonsterRefire(10,"See")
    Attack2Start:
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 0, "HitscanBullet1")
-    TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckHitscanType") == 1, "TracerBullet1")
-
-   HitscanBullet1:
     DEMO G 4
 	{
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 180) { A_SetTics(2); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 90) { A_SetTics(3); }
 	 A_PlaySound("spider2/attack");
 	 A_FaceTarget;
 	 A_SetUserVar("user_canusecrisisatk",0);
 	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
      if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
+
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-	  A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 12, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, 1);
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+	   A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 12, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, 1);
+	  }
+	  else
+	  {	 
+	   A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 12, random(1,5) * 3, "BulletPuff", 0, 1);
+	  }
 	 }
 	 else
-	 {	 
-	  A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 12, random(1,5) * 3, "BulletPuff", 0, 1);
+	 {
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+       for (A_SetUserVar(user_pelletsfired, 0); user_pelletsfired < 12; A_SetUserVar(user_pelletsfired, user_pelletsfired + 1))
+       {
+	    A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   }
+	  }
+	  else
+	  {
+       for (A_SetUserVar(user_pelletsfired, 0); user_pelletsfired < 12; A_SetUserVar(user_pelletsfired, user_pelletsfired + 1))
+       {
+	    A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	   }
+	  }
 	 }
+
      A_SetUserVar("user_shotsfired",user_shotsfired+1);
      If (A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")) { return state("EndMissile"); }
 	 return state("");
@@ -12983,119 +12947,45 @@ actor Demolisher : SpiderMastermind 30110
     DEMO G 0 BRIGHT A_MonsterRefire(10,"See")
     DEMO H 4
 	{
+     if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 180) { A_SetTics(2); }
+     else if (GetCVar("dvds_monsterlevelbehavior") > 0 && user_monsterlevel > 90) { A_SetTics(3); }
 	 A_PlaySound("spider2/attack");
 	 A_FaceTarget;
 	 A_SetUserVar("user_canusecrisisatk",0);
 	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
      if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
+	 if (GetCVar("dvds_monsterbulletstracers") == 0)
 	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-	  A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 12, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, 1);
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+	   A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 12, ((random(1,5) * 3) * ACS_NamedExecuteWithResult("CrisisMultiplier")), "BulletPuff", 0, 1);
+	  }
+	  else
+	  {	 
+	   A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 12, random(1,5) * 3, "BulletPuff", 0, 1);
+	  }
 	 }
 	 else
-	 {	 
-	  A_CustomBulletAttack (user_shotaccuracy, user_shotzaccuracy, 12, random(1,5) * 3, "BulletPuff", 0, 1);
+	 {
+	  if(user_canusecrisisatk == 1)
+	  {
+       A_PlaySound("crisisattack",6);
+       A_PlaySound("crisisattack2",7);
+	   A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  }
+	  else
+	  {
+	   A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
+	  }
 	 }
      A_SetUserVar("user_shotsfired",user_shotsfired+1);
      If (A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")) { return state("EndMissile"); }
 	 return state("");
 	}
-    goto EndShot
-   TracerBullet1:
-    DEMO G 4 
-	{
-	 A_PlaySound("spider2/attack");
-	 A_FaceTarget;
-	 A_SetUserVar("user_canusecrisisatk",0);
-	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
-     if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
-	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	 }
-	 else
-	 {
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	 }
-     A_SetUserVar("user_shotsfired",user_shotsfired+1);
-     If (A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")) { return state("EndMissile"); }
-	 return state("");
-	}
-    DEMO G 0 BRIGHT A_MonsterRefire(10,"See")
-    DEMO H 4 
-	{
-	 A_PlaySound("spider2/attack");
-	 A_FaceTarget;
-	 A_SetUserVar("user_canusecrisisatk",0);
-	 if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { A_SetUserVar("user_canusecrisisatk",1); } else { if (random(1,4) == 4) { A_SetUserVar("user_canusecrisisatk",1);	} } }
-     if(GetCVar("dvds_monstercrisisattacks") == 0) { A_SetUserVar("user_canusecrisisatk",0); }
-	 if(user_canusecrisisatk == 1)
-	 {
-      A_PlaySound("crisisattack",6);
-      A_PlaySound("crisisattack2",7);
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracerCrisis", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	 }
-	 else
-	 {
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	  A_CustomMissile("ZombieBulletTracer", 24, 0, frandom(user_shotaccuracy1,user_shotaccuracy2), CMF_OFFSETPITCH, frandom(user_shotzaccuracy1,user_shotzaccuracy2));
-	 }
-     A_SetUserVar("user_shotsfired",user_shotsfired+1);
-     If (A_JumpIf(user_shotsfired > user_shotsfiredmax, "EndMissile")) { return state("EndMissile"); }
-	 return state("");
-	}
-    goto EndShot
-	
-  EndShot:
-    DEMO H 1 BRIGHT A_MonsterRefire(10,"See")
-    Goto Attack2Start
+    DEMO H 1 BRIGHT A_MonsterRefire(10,"EndMissile")
+    loop
 
   EndMissile:
     TNT1 A 0 A_SetUserVar("user_shotsfired",0)
