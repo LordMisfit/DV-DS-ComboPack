@@ -648,7 +648,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [258 to 260] are undefined so far :P
 // [261] Tension OverPsyche Timer [Max]
 // [262] Tension Duration Timer [Max]
-	// [263 to 270] are undefined so far :P
+	// [263 to 269] are undefined so far :P
+// [270] Seal Timer
 // [271] Saves player's XVel when using the menus
 // [272] Saves player's YVel when using the menus
 // [273] Saves player's ZVel when using the menus
@@ -5961,7 +5962,14 @@ script "HUDDisplay" ENTER
   	  }
 	 }
 
-	 msgalpha = 1.0; 
+	 msgalpha = 1.0;
+     if (MiscellaneousVars[194] > 0)
+     {
+      if (MiscellaneousVars[196] >= 0 && MiscellaneousVars[196] <= 29) msgalpha = FixedMul(msgalpha,0.25);
+      if (MiscellaneousVars[196] >= 30 && MiscellaneousVars[196] <= 59) msgalpha = FixedMul(msgalpha,0.375);
+      if (MiscellaneousVars[196] >= 60 && MiscellaneousVars[196] <= 89) msgalpha = FixedMul(msgalpha,0.50);
+      if (MiscellaneousVars[196] >= 90 && MiscellaneousVars[196] <= 119) msgalpha = FixedMul(msgalpha,0.375);
+     }	 
 	 // If Invisible, pulsate the Alpha of the portrait
 	 if (PowerupTimer[1] > 0) msgalpha = FixedMul(msgalpha,MiscFixedVars[101]);
 	 msgalpha = FixedMul(msgalpha,overallhudalpha);
@@ -12431,9 +12439,9 @@ script "PickupExperiessence" (int percentage)
 {
  int BaseEXPGain = percentage;
  int perkfactor;
- if (random(1,32) == 1) BaseEXPGain *= 2;
- if (random(1,128) == 1) BaseEXPGain *= 2;
- if (random(1,512) == 1) BaseEXPGain *= 2;
+ if (random(1,64) == 1) BaseEXPGain *= 2;
+ if (random(1,256) == 1) BaseEXPGain *= 2;
+ if (random(1,1024) == 1) BaseEXPGain *= 2;
 
  int EXPGiven;
  
@@ -20070,7 +20078,7 @@ script "MagicEffects" (int Type, int Strength)
    GiveActorInventory(Player1TID, "DivineAvatarDamage", 1);
    GiveActorInventory(Player1TID, "DivineAvatarDefense", 1);
    GiveActorInventory(Player1TID, "PowerDoubleFiringSpeed", 1);
-   GiveActorInventory(Player1TID, "PowerHighJump", 1);
+   GiveActorInventory(Player1TID, "DivineAvatarHighJump", 1);
   }
  }
  if (Type == 17) // Spreader Aura Lv. 1
@@ -25435,7 +25443,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 	 {
 	   HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - +",d:temp1,s:"% MORE LEVEL EXP/EXPERIESSENCE-GAIN",
 		          s:"\n\c-+",f:temp7,s:"% HP/MP/STAMINA REGENERATION SPEED.",
-		          s:"\n\c-+",d:temp8,s:"% MANA COST FOR SPELLS.",
+		          s:"\n\c--",d:temp8,s:"% MANA COST FOR SPELLS.",
 		          s:"\n\c-+",f:temp9,s:"% GENERAL DAMAGE DEALT.",
 			      s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
 			      HUDMSG_ALPHA,  1993, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
@@ -25559,7 +25567,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 	 {
 	   HudMessage(s:perkname,s:" (\cn",d:MiscellaneousVars[temp4],s:"\c-/\cn",d:temp11,s:"\c-) - +",d:temp1,s:"% MORE LEVEL EXP/EXPERIESSENCE-GAIN.",
 		          s:"\n\c-+",f:temp7,s:"% HP/MP/STAMINA REGENERATION SPEED.",
-		          s:"\n\c-+",d:temp8,s:"% MANA COST FOR SPELLS.",
+		          s:"\n\c--",d:temp8,s:"% MANA COST FOR SPELLS.",
 		          s:"\n\c-+",f:temp9,s:"% HELLCORE COOLDOWN SPEED.",
 			      s:"\n\cfCOST FOR NEXT LEVEL: ",d:temp3,s:" AEON PTS";  
 			      HUDMSG_ALPHA,  1994, textcolor,  xtemp2, ytemp2, 0.03, 1.0);
@@ -27767,8 +27775,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
  }
 
+ int flickeralpha = 1.0;
+ int basealpha = 1.0;
+ 
  if (MiscellaneousVars[194] != 0) // Flickering
  {
+  if (PowerUpTimer[1] > 0) basealpha = MiscFixedVars[101]; // Invisible
   if (MiscellaneousVars[195] > 0) // Timer Above 0
   {
    if (PowerupTimer[4] == 0) 
@@ -27777,15 +27789,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     GiveActorInventory(Player1TID,"IsInvulnerable",1);
    }
    MiscellaneousVars[196] = MiscellaneousVars[195] % 120;
-   if (MiscellaneousVars[196] >= 0 && MiscellaneousVars[196] <= 59)
-   {
-    SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Fuzzy);
-   }
-   else
-   if (MiscellaneousVars[196] >= 60 && MiscellaneousVars[196] <= 119)
-   {
-    SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Add);
-   }
+   if (MiscellaneousVars[196] >= 0 && MiscellaneousVars[196] <= 29) flickeralpha = FixedMul(basealpha,0.25);
+   if (MiscellaneousVars[196] >= 30 && MiscellaneousVars[196] <= 59) flickeralpha = FixedMul(basealpha,0.375);
+   if (MiscellaneousVars[196] >= 60 && MiscellaneousVars[196] <= 89) flickeralpha = FixedMul(basealpha,0.5);
+   if (MiscellaneousVars[196] >= 90 && MiscellaneousVars[196] <= 119) flickeralpha = FixedMul(basealpha,0.375);
+   SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Add);
+   SetActorProperty(Player1TID,APROP_Alpha,flickeralpha);
 
    MiscellaneousVars[195] -= 20;
   }
@@ -27796,7 +27805,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     SetActorProperty(Player1TID,APROP_INVULNERABLE,0);
     TakeActorInventory(Player1TID,"IsInvulnerable",9999);
    }
-   if (MiscellaneousVars[195] != 0) SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Normal);
+   // if (MiscellaneousVars[195] != 0) SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Normal);
+   MiscellaneousVars[194] = 0;
    MiscellaneousVars[195] = 0;
   }
  }
@@ -27808,7 +27818,16 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    SetActorProperty(Player1TID,APROP_INVULNERABLE,0);
    TakeActorInventory(Player1TID,"IsInvulnerable",9999);
   }
-  if (MiscellaneousVars[195] != 0) SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Normal);
+  if (PowerUpTimer[1] > 0)
+  {
+   SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Add);
+   SetActorProperty(Player1TID,APROP_Alpha,MiscFixedVars[101]);
+  }
+  else
+  {
+   SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Normal);
+   SetActorProperty(Player1TID,APROP_Alpha,1.0);
+  }
   MiscellaneousVars[195] = 0;
  }
 
@@ -28135,16 +28154,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   staminaregenfinal = staminaregenfinal * C3 / 1000;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Armor]: ",d:staminaregenfinal);
 
-  // Initia1 Stat Check = 12pts of Strength = +1% Stamina Regen Speed [max of +42.6% @ 512 Str]
-  C3 = (MiscellaneousVars[35] / 12) + 100;
+  int basestatdivisor = 9;
+  // Initia1 Stat Check = 9pts of Strength = +1% Stamina Regen Speed [max of +56.89% @ 512 Str]
+  C3 = (MiscellaneousVars[35] / basestatdivisor) + 100;
   staminaregenfinal = staminaregenfinal * C3 / 100;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [StatCheck1]: ",d:staminaregenfinal);
 
-  // Secondary Stat Check = 12pts of [?] = +1% Stamina Regen Speed [max of +42.6% @ 512 [?]]
-  if (CharacterClass == 0) C3 = (MiscellaneousVars[35] / 12) + 100; // Deggaris's Secondary Stat is also strength, making it work doubly for him overall. :P
-  if (CharacterClass == 1) C3 = (MiscellaneousVars[32] / 12) + 100; // Illucia's Secondary Stat is Defense. :P
-  if (CharacterClass == 2) C3 = (MiscellaneousVars[31] / 12) + 100; // Flora's Secondary Stat is Agility. :P
-  if (CharacterClass == 9) C3 = (MiscellaneousVars[32] / 12) + 100; // Petra's Secondary Stat is Defense. :P
+  // Secondary Stat Check = 9pts of [?] = +1% Stamina Regen Speed [max of +56.89% @ 512 [?]]
+  if (CharacterClass == 0) C3 = (MiscellaneousVars[35] / basestatdivisor) + 100; // Deggaris's Secondary Stat is also strength, making it work doubly for him overall. :P
+  if (CharacterClass == 1) C3 = (MiscellaneousVars[32] / basestatdivisor) + 100; // Illucia's Secondary Stat is Defense. :P
+  if (CharacterClass == 2) C3 = (MiscellaneousVars[31] / basestatdivisor) + 100; // Flora's Secondary Stat is Agility. :P
+  if (CharacterClass == 8) C3 = (MiscellaneousVars[31] / basestatdivisor) + 100; // Ailish's Secondary Stat is Agility. :P
+  if (CharacterClass == 9) C3 = (MiscellaneousVars[32] / basestatdivisor) + 100; // Petra's Secondary Stat is Defense. :P
   staminaregenfinal = staminaregenfinal * C3 / 100;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [StatCheck2]: ",d:staminaregenfinal);
 
@@ -28202,6 +28223,25 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    staminaregenfinal = staminaregenfinal * PerkFactor / 10; // "RegenStamFast" and "RegenStamFast EX" perks.
    if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Perks]: ",d:staminaregenfinal);
   }
+
+  // Check for Weapons
+  If(StrIcmp(weapon, "SauronGauntlets") == 0 || StrIcmp(weapon, "SauronGauntletsIllucia") == 0 || StrIcmp(weapon, "SauronGauntletsFlora") == 0 || StrIcmp(weapon, "SauronGauntletsAilish") == 0 || StrIcmp(weapon, "SauronGauntletsPetra") == 0)
+  {
+   staminaregenfinal = staminaregenfinal * 3 / 4;
+  }
+  If(StrIcmp(weapon, "EvilWarriorShield") == 0)
+  {
+   staminaregenfinal = staminaregenfinal * 7 / 8;
+  }
+  If (StrIcmp(weapon, "Chainsaw2") == 0 || StrIcmp(weapon, "DoubleBladedChainsaw") == 0)
+  {
+   staminaregenfinal = staminaregenfinal * 9 / 10;
+  }
+  If (StrIcmp(weapon, "FistDeggaris") == 0 || StrIcmp(weapon, "FistIllucia") == 0 || StrIcmp(weapon, "FistAilish") == 0 || StrIcmp(weapon, "FistPetra") == 0 || StrIcmp(weapon, "FistFlora") == 0)
+  {
+   staminaregenfinal = staminaregenfinal * 21 / 20;
+  }
+  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Weapons]: ",d:staminaregenfinal);
 
   // "Cleared of Mind" Perks
   if (MiscellaneousVars[10055] > 0)
@@ -28294,15 +28334,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   staminaregenfinal = staminaregenfinal * C3 / 1000;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Armor]: ",d:staminaregenfinal);
 
-  // 12pts of Strength = -1% Stamina Degen Speed [max of -42.6% @ 512 Str]
-  C3 = ((MiscellaneousVars[35] / 12) * -1) + 100;
+  basestatdivisor = 18;
+  // 18pts of Strength = -1% Stamina Degen Speed [max of -28.44% @ 512 Str]
+  C3 = ((MiscellaneousVars[35] / basestatdivisor) * -1) + 100;
   staminaregenfinal = staminaregenfinal * C3 / 100;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [StatCheck1]: ",d:staminaregenfinal);
 
-  // Secondary Stat Check = 12pts of [?] = -1% Stamina Degen Speed [max of -42.6% @ 512 [?]]
-  if (CharacterClass == 0) C3 = ((MiscellaneousVars[35] / 12) * -1) + 100; // Deggaris's Secondary Stat is also strength, making it work doubly for him overall. :P
-  if (CharacterClass == 1) C3 = ((MiscellaneousVars[32] / 12) * -1) + 100; // Illucia's Secondary Stat is Defense. :P
-  if (CharacterClass == 2) C3 = ((MiscellaneousVars[31] / 12) * -1) + 100; // Flora's Secondary Stat is Agility. :P
+  // Secondary Stat Check = 18pts of [?] = -1% Stamina Degen Speed [max of -28.44% @ 512 [?]]
+  if (CharacterClass == 0) C3 = ((MiscellaneousVars[35] / basestatdivisor) * -1) + 100; // Deggaris's Secondary Stat is also strength, making it work doubly for him overall. :P
+  if (CharacterClass == 1) C3 = ((MiscellaneousVars[32] / basestatdivisor) * -1) + 100; // Illucia's Secondary Stat is Defense. :P
+  if (CharacterClass == 2) C3 = ((MiscellaneousVars[31] / basestatdivisor) * -1) + 100; // Flora's Secondary Stat is Agility. :P
+  if (CharacterClass == 8) C3 = ((MiscellaneousVars[31] / basestatdivisor) * -1) + 100; // Ailish's Secondary Stat is Agility. :P
+  if (CharacterClass == 9) C3 = ((MiscellaneousVars[32] / basestatdivisor) * -1) + 100; // Petra's Secondary Stat is Defense. :P
   staminaregenfinal = staminaregenfinal * C3 / 100;
   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [StatCheck2]: ",d:staminaregenfinal);
 
@@ -28356,6 +28399,25 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    staminaregenfinal = staminaregenfinal * PerkFactor / 10; // "RegenStamFast" and "RegenStamFast EX" perks.
    if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Perks]: ",d:staminaregenfinal);
   }
+
+  // Check for Weapons
+  If(StrIcmp(weapon, "SauronGauntlets") == 0 || StrIcmp(weapon, "SauronGauntletsIllucia") == 0 || StrIcmp(weapon, "SauronGauntletsFlora") == 0 || StrIcmp(weapon, "SauronGauntletsAilish") == 0 || StrIcmp(weapon, "SauronGauntletsPetra") == 0)
+  {
+   staminaregenfinal = staminaregenfinal * 4 / 3;
+  }
+  If(StrIcmp(weapon, "EvilWarriorShield") == 0)
+  {
+   staminaregenfinal = staminaregenfinal * 8 / 7;
+  }
+  If (StrIcmp(weapon, "Chainsaw2") == 0 || StrIcmp(weapon, "DoubleBladedChainsaw") == 0)
+  {
+   staminaregenfinal = staminaregenfinal * 10 / 9;
+  }
+  If (StrIcmp(weapon, "FistDeggaris") == 0 || StrIcmp(weapon, "FistIllucia") == 0 || StrIcmp(weapon, "FistAilish") == 0 || StrIcmp(weapon, "FistPetra") == 0 || StrIcmp(weapon, "FistFlora") == 0)
+  {
+   staminaregenfinal = staminaregenfinal * 20 / 21;
+  }
+  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Weapons]: ",d:staminaregenfinal);
 
   // "Cleared of Mind" Perks
   if (MiscellaneousVars[10055] > 0)
@@ -34806,11 +34868,6 @@ script "CheckBuffTimers" ENTER
  {
   GiveActorInventory(Player1TID,"InvisiblitySpell",1);
   if (GetActorProperty(Player1TID,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Invisibility: ",d:(PowerupTimer[1]/35),s:" Secs";HUDMSG_ALPHA,3434,cr_white,xpos,ypos,0.03,msgalpha);
-  if (MiscellaneousVars[194] == 0)
-  {
-   SetActorProperty(Player1TID,APROP_Alpha,MiscFixedVars[101]);
-   SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Translucent);
-  }
   if (random(1,100) > 25) // 75% chance of the level 1 version
   {
    if (CheckActorInventory(Player1TID, "InvisAttack1") < 1) GiveActorInventory(Player1TID, "InvisAttack1", 1); // +25% Damage Dealt
@@ -34842,11 +34899,6 @@ script "CheckBuffTimers" ENTER
  else
  {
   TakeActorInventory(Player1TID,"InvisiblitySpell",9999);
-  if (MiscellaneousVars[194] == 0)
-  {
-   SetActorProperty(Player1TID,APROP_Alpha,1.0);
-   SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Normal);
-  }
  }
 
  ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
@@ -34932,7 +34984,7 @@ script "CheckBuffTimers" ENTER
   GiveActorInventory(Player1TID, "DivineAvatarDamage", 1);
   GiveActorInventory(Player1TID, "DivineAvatarDefense", 1);
   GiveActorInventory(Player1TID, "PowerDoubleFiringSpeed", 1);
-  GiveActorInventory(Player1TID, "PowerHighJump", 1);
+  GiveActorInventory(Player1TID, "DivineAvatarHighJump", 1);
 
   if (GetActorProperty(Player1TID,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Divine Avatar: ",d:(PowerupTimer[7]/35),s:" Secs";HUDMSG_ALPHA,3440,cr_white,xpos,ypos,0.03,msgalpha);
     
@@ -34943,7 +34995,7 @@ script "CheckBuffTimers" ENTER
   TakeActorInventory(Player1TID, "DivineAvatarDamage", 9999);
   TakeActorInventory(Player1TID, "DivineAvatarDefense", 9999);
   TakeActorInventory(Player1TID, "PowerDoubleFiringSpeed", 9999);
-  TakeActorInventory(Player1TID, "PowerHighJump", 9999);
+  TakeActorInventory(Player1TID, "DivineAvatarHighJump", 9999);
  }
 
  ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
@@ -35174,6 +35226,12 @@ script "CheckBuffTimers" ENTER
  if (PowerupTimer[21] > 0)
  {
   if (GetActorProperty(Player1TID,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Silence: ",d:(PowerupTimer[21]/35),s:" Secs";HUDMSG_ALPHA,3448,cr_white,xpos,ypos,0.03,msgalpha);
+  MiscellaneousVars[270] += 1;
+  if (MiscellaneousVars[270] == 1)
+  {
+   PlaySound(Player1TID,"DraQue/sealed",CHAN_5,1.0,0,ATTN_NORM);
+   // if (CharacterClass == 2) { StopSound(Player1TID,CHAN_VOICE); PlaySound(Player1TID,"FloraSpSealed",CHAN_VOICE,1.0,0,ATTN_NORM); }
+  }
   BaseTimerIncrement = 1; 
   if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0 && random(1,6) == 1) BaseTimerIncrement += 1;
   if (CheckActorInventory(Player1TID,"BalrogRing") > 0 && random(1,12) == 1) BaseTimerIncrement += 1;
@@ -35182,6 +35240,7 @@ script "CheckBuffTimers" ENTER
  }
  else
  {
+  MiscellaneousVars[270] = 0;
  }
 
  // RadSphere Effects
@@ -35314,7 +35373,7 @@ script "GiveBuffsPowerup" (int powertype, int powertimeadd)
    GiveActorInventory(Player1TID, "DivineAvatarDamage", 1);
    GiveActorInventory(Player1TID, "DivineAvatarDefense", 1);
    GiveActorInventory(Player1TID, "PowerDoubleFiringSpeed", 1);
-   GiveActorInventory(Player1TID, "PowerHighJump", 1);
+   GiveActorInventory(Player1TID, "DivineAvatarHighJump", 1);
   }
   MiscellaneousVars[2040] = 70;
   MiscellaneousVars[2045] = 5;
