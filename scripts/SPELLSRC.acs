@@ -583,7 +583,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 // [189] Tension Sound Charge Loop Timer
 // [190] Active-Tension Pulse Timer
 // [191] Saves Minigun heat divisor
-// [192] - ?
+// [192] Railgun Charge Level [%]
 // [193] Tension Speed Central Multiplier [CVAR]
 // [194] Mercy Invincibility "Flag"
 // [195] Mercy Invincibility Timer
@@ -10270,10 +10270,11 @@ script "HUDDisplay" ENTER
       ammo = CheckActorInventory(Player1TID,"RocketAmmo");
       maxammo = GetAmmoCapacity("RocketAmmo");
      }
-     If(StrIcmp(weapon, "PlasmaRifle2") == 0 || StrIcmp(weapon, "Repeater2") == 0 || StrIcmp(weapon, "Karasawa2") == 0 || StrIcmp(weapon, "BFG90002") == 0)
+     If(StrIcmp(weapon, "PlasmaRifle2") == 0 || StrIcmp(weapon, "Railgun2") == 0 || StrIcmp(weapon, "Repeater2") == 0 || StrIcmp(weapon, "Karasawa2") == 0 || StrIcmp(weapon, "BFG90002") == 0)
      {
       ammo = CheckActorInventory(Player1TID,"Cell");
       maxammo = GetAmmoCapacity("Cell");
+	  if (StrIcmp(weapon, "Railgun2") == 0) showsecondmeter = 1;
      }
      If(StrIcmp(weapon, "DiarisLongbow") == 0)
      {
@@ -10592,6 +10593,7 @@ script "HUDDisplay" ENTER
        if (CheckActorInventory(Player1TID,"RLMode") == 1) SetFont("WIROCKL2");	   
 	  }
       If(StrIcmp(weapon, "PlasmaRifle2") == 0) SetFont("WIPLSRIF");
+      If(StrIcmp(weapon, "Railgun2") == 0) SetFont("WIRAILGN");
       If(StrIcmp(weapon, "Repeater2") == 0) SetFont("WIREPETR");
       If(StrIcmp(weapon, "Karasawa2") == 0) SetFont("WIKAWAS");
       If(StrIcmp(weapon, "BFG90002") == 0) SetFont("WIBFG9K");
@@ -11040,7 +11042,14 @@ script "HUDDisplay" ENTER
       SetFont("DQHUDFONTSML");
       If(StrIcmp(weapon, "Minigun") == 0)
       {
+	   minigunheat = CheckActorInventory(Player1TID,"MinigunHeat");
        HudMessage(s:"HEAT";HUDMSG_ALPHA,6301,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+      }
+	  else
+      If(StrIcmp(weapon, "Railgun2") == 0)
+      {
+	   minigunheat = CheckActorInventory(Player1TID,"RailgunCharge");
+       HudMessage(s:"CHRG";HUDMSG_ALPHA,6301,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
       }
 	  else
 	  {
@@ -11057,12 +11066,17 @@ script "HUDDisplay" ENTER
        HudMessage(d:minigunheat,s:"%";HUDMSG_ALPHA,6302,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
       }
 	  else
+      If(StrIcmp(weapon, "Railgun2") == 0)
+      {
+       HudMessage(d:minigunheat,s:"%";HUDMSG_ALPHA,6302,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+      }
+	  else
 	  {
        HudMessage(d:CurrentMana,s:"/",d:MaxMana;HUDMSG_ALPHA,6302,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 	  }
 
 	  // Heat Meter Empty "Glow" Border [6303]
-      xpos = ScreenXOffset + 1289.0;
+      xpos = ScreenXOffset + 1291.0;
       ypos = 1028.0; // 1060.0;
       msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
       If(StrIcmp(weapon, "Minigun") == 0)
@@ -11073,12 +11087,25 @@ script "HUDDisplay" ENTER
         HudMessage(s:"A";HUDMSG_ALPHA,6303,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
        }
       }
+      If(StrIcmp(weapon, "Railgun2") == 0)
+      {
+	   int chargealpha = 0.01 * CheckActorInventory(Player1TID,"RailgunCharge");
+       msgalpha = FixedMul(msgalpha,chargealpha);
+       SetFont("AIBFOCUS");
+       HudMessage(s:"A";HUDMSG_ALPHA,6303,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+      }
  
  	  // Heat/MP Meter Border [6304]
       xpos = ScreenXOffset + 1289.0;
       ypos = 1028.0; // 1060.0;
       msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
       If(StrIcmp(weapon, "Minigun") == 0)
+      {
+       SetFont("MHBFRAME"); 
+       HudMessage(s:"A";HUDMSG_ALPHA,6304,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+      }
+      else
+      If(StrIcmp(weapon, "Railgun2") == 0)
       {
        SetFont("MHBFRAME"); 
        HudMessage(s:"A";HUDMSG_ALPHA,6304,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
@@ -11098,8 +11125,9 @@ script "HUDDisplay" ENTER
  
       G10 = GetCVar("dvdsnewhud_hudmeternotchdetail");
       G9 = 200 / G10;
-      If(StrIcmp(weapon, "Minigun") == 0) { I1 = minigunheat * G9 / minigunheatmax; xpos+= 5.0; }
-	                                 else { I1 = currentmana * G9 / maxmana; }
+            If(StrIcmp(weapon, "Minigun") == 0) { I1 = minigunheat * G9 / minigunheatmax; xpos+= 5.0; }
+      else If(StrIcmp(weapon, "Railgun2") == 0) { I1 = minigunheat * G9 / minigunheatmax; xpos+= 5.0; }
+	                                       else { I1 = currentmana * G9 / maxmana; }
       if (I1 > G9) I1 = G9;
       if (GetCVar("dvdsnewhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
       // Normal
@@ -11112,6 +11140,13 @@ script "HUDDisplay" ENTER
           if (G10 == 4) { SetFont("MHBFILN4"); G11 = -2.0; }
           if (G10 == 2) { SetFont("MHBFILN2"); G11 = -1.0; }
           if (G10 == 1) { SetFont("MHBFILNR"); G11 = 1.0; }
+		 }
+		 else
+         If(StrIcmp(weapon, "Railgun2") == 0)
+         {
+          if (G10 == 4) { SetFont("AIBFILN4"); G11 = -2.0; }
+          if (G10 == 2) { SetFont("AIBFILN2"); G11 = -1.0; }
+          if (G10 == 1) { SetFont("AIBFILNR"); G11 = 1.0; }
 		 }
 		 else
 		 {
@@ -11130,6 +11165,13 @@ script "HUDDisplay" ENTER
       xpos = ScreenXOffset + 1289.0;
       ypos = 1028.0;
       If(StrIcmp(weapon, "Minigun") == 0)
+      {
+       SetFont("MHBGLASS"); 
+       msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+       HudMessage(s:"A";HUDMSG_ALPHA,6605,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+      }
+	  else
+      If(StrIcmp(weapon, "Railgun2") == 0)
       {
        SetFont("MHBGLASS"); 
        msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
@@ -28818,9 +28860,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   // Slot 6
   if (CheckActorInventory(Player1TID,"PlasmaRifle") > 0) TakeActorInventory(Player1TID,"PlasmaRifle", 1);
   if (CheckActorInventory(Player1TID,"PlasmaRifle2") > 0) TakeActorInventory(Player1TID,"PlasmaRifle2", 1);
-  //if (CheckActorInventory(Player1TID,"Repeater") > 0) TakeActorInventory(Player1TID,"Repeater", 1);
+  if (CheckActorInventory(Player1TID,"Railgun2") > 0) TakeActorInventory(Player1TID,"Railgun2", 1);
   if (CheckActorInventory(Player1TID,"Repeater2") > 0) TakeActorInventory(Player1TID,"Repeater2", 1);
-  //if (CheckActorInventory(Player1TID,"Karasawa") > 0) TakeActorInventory(Player1TID,"Karasawa", 1);
   if (CheckActorInventory(Player1TID,"Karasawa2") > 0) TakeActorInventory(Player1TID,"Karasawa2", 1);
   // Slot 7
   if (CheckActorInventory(Player1TID,"BFG9000") > 0) TakeActorInventory(Player1TID,"BFG9000", 1);
@@ -30548,10 +30589,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    if (CheckActorInventory(Player1TID,"RocketLauncher2") > 0) WeaponBits += 512;
    // Slot 6
    if (CheckActorInventory(Player1TID,"PlasmaRifle2") > 0) WeaponBits += 1024;
-   if (CheckActorInventory(Player1TID,"Repeater2") > 0) WeaponBits += 2048;
-   if (CheckActorInventory(Player1TID,"KaraSawa2") > 0) WeaponBits += 4096;
+   if (CheckActorInventory(Player1TID,"Railgun2") > 0) WeaponBits += 2048;
+   if (CheckActorInventory(Player1TID,"Repeater2") > 0) WeaponBits += 4096;
+   if (CheckActorInventory(Player1TID,"KaraSawa2") > 0) WeaponBits += 8192;
    // Slot 7
-   if (CheckActorInventory(Player1TID,"BFG90002") > 0) WeaponBits += 8192;
+   if (CheckActorInventory(Player1TID,"BFG90002") > 0) WeaponBits += 16384;
   }
   MiscellaneousVars[151] = WeaponBits;
   MiscellaneousVars[152] = CheckActorInventory(Player1TID,"Clip");
@@ -30623,10 +30665,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
      if (WeaponBits & 512) GiveActorInventory(Player1TID,"RocketLauncher2",1);
      // Slot 6
      if (WeaponBits & 1024) GiveActorInventory(Player1TID,"PlasmaRifle2",1);
-     if (WeaponBits & 2048) GiveActorInventory(Player1TID,"Repeater2",1);
-     if (WeaponBits & 4096) GiveActorInventory(Player1TID,"KaraSawa2",1);
+     if (WeaponBits & 2048) GiveActorInventory(Player1TID,"Railgun2",1);
+     if (WeaponBits & 4096) GiveActorInventory(Player1TID,"Repeater2",1);
+     if (WeaponBits & 8192) GiveActorInventory(Player1TID,"KaraSawa2",1);
      // Slot 7
-     if (WeaponBits & 8192) GiveActorInventory(Player1TID,"BFG90002",1);
+     if (WeaponBits & 16384) GiveActorInventory(Player1TID,"BFG90002",1);
     }
     if (GetCvar("dvds_pistolrestart_marineskeepammo") > 0)
     {
@@ -40673,6 +40716,36 @@ script "GetKickDamage" (int altfire, int shockwave)
  SetResultValue(damage);
 }
 
+script "GetRailgunPDuration" (int type)
+{
+ int sparsity = 31;
+ int sparsityadd = (CheckActorInventory(Player1TID,"RailgunCharge") * 4 / 5);
+ sparsity += sparsityadd;
+ SetResultValue(sparsity);
+}
+
+script "GetRailgunSparsity" (int type)
+{
+ int sparsity = 1.0;
+ int sparsityadd = 0.005 * CheckActorInventory(Player1TID,"RailgunCharge");
+ sparsity += sparsityadd;
+
+ if (GetCVar("dvdsdebug_accuracyspreadisplay") > 0) PrintBold(s:"Sparsity: ",f:sparsity);
+ sparsity = sparsity>>16;
+ SetResultValue(sparsity);
+}
+
+script "GetRailgunDriftSpeed" (int type)
+{
+ int driftspeed = 1.0;
+ int driftspeedadd = 0.0025 * CheckActorInventory(Player1TID,"RailgunCharge");
+ driftspeed += driftspeedadd;
+
+ if (GetCVar("dvdsdebug_accuracyspreadisplay") > 0) PrintBold(s:"DriftSpeed: ",f:driftspeed);
+ driftspeed = driftspeed>>16;
+ SetResultValue(driftspeed);
+}
+
 script "GetHitScanXSpread" (int type)
 {
  int spread = 0.0;
@@ -40861,6 +40934,8 @@ script "GetPlayerATKDMG" (int type, int puff)
  int rand1, rand2;
  int flagchecktype = 0;
  int perkfactor = 10000;
+ int chargefactor = 10000;
+ int playershot = 0;
  perkfactor = 10000;
  if (type == 1) // Pistol [Single]
  {
@@ -41422,7 +41497,6 @@ script "GetPlayerATKDMG" (int type, int puff)
   extradmg2 = (MiscellaneousVars[35] * 2); // 200% of Strength
   extradmg2 = extradmg2 * perkfactor / 10000;
  }
-
  if (type == 56) // A. Christina Bouncing Shot (Normal)
  {
   perkfactor += ((MiscellaneousVars[10023] * 200) + (MiscellaneousVars[10024] * 1000));
@@ -41443,7 +41517,25 @@ script "GetPlayerATKDMG" (int type, int puff)
   extradmg2 = ((MiscellaneousVars[36] * 1) / 6); // 16.67% of Therapeusis
   extradmg2 = extradmg2 * perkfactor / 10000;
  }
- if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE || puff == 1) // AAPTR_TARGET - the being who fires the shot
+ if (type == 58) // Railgun [Player]
+ {
+  perkfactor += ((MiscellaneousVars[10023] * 200) + (MiscellaneousVars[10024] * 1000));
+  damage = random(9,11) * 5; // 45 to 55
+  damage = damage * perkfactor / 10000;
+  extradmg1 = (MiscellaneousVars[31] * 15) / 8; // 187.5% of Agility
+  extradmg1 = extradmg1 * perkfactor / 10000;
+  extradmg2 = (MiscellaneousVars[35] * 18) / 20; // 90% of Strength 
+  extradmg2 = extradmg2 * perkfactor / 10000;
+
+  chargefactor = ( ( (CheckActorInventory(Player1TID,"RailgunCharge") * 2) + (CheckActorInventory(Player1TID,"RailgunCharge") / 3) ) * 10 );
+  damage = damage * chargefactor / 100;
+  extradmg1 = extradmg1 * chargefactor / 100;
+  extradmg2 = extradmg2 * chargefactor / 100;
+  playershot += 1;
+ }
+
+ if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE || puff == 1) playershot += 1; // AAPTR_TARGET - the being who fires the shot
+ if (playershot > 0)
  {
   if (GetCVar("dvdsdebug_showplayeratkinformation") == 1) PrintBold(s:"Player Shot");
 
@@ -41499,6 +41591,7 @@ script "GetPlayerATKDMG" (int type, int puff)
              s:"\nExtra6: ",d:extradmg6,
              s:"\nRandom: ",d:rand1,s:" - ",d:rand2,
              s:"\nPerkFactor: ",d:perkfactor,
+             s:"\nChargeFactor: ",d:chargefactor,
              s:"\n",
              s:"\nMisc1: ",d:misc1,
              s:"\nMisc2: ",d:misc2,
