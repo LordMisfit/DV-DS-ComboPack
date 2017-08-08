@@ -11078,14 +11078,13 @@ script "HUDDisplay" ENTER
 	  // Heat Meter Empty "Glow" Border [6303]
       xpos = ScreenXOffset + 1291.0;
       ypos = 1028.0; // 1060.0;
-      msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+      msgalpha = 1.0; msgalpha = FixedMul(msgalpha,overallhudalpha);
       If(StrIcmp(weapon, "Minigun") == 0)
       {
-       if (minigunheat >= minigunheatmax)
-       {
-        SetFont("MHBOVHET");
-        HudMessage(s:"A";HUDMSG_ALPHA,6303,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
-       }
+	   int miniheatalpha = 0.01 * CheckActorInventory(Player1TID,"MinigunHeat");
+       msgalpha = FixedMul(msgalpha,miniheatalpha);
+       SetFont("MHBOVHET");
+       HudMessage(s:"A";HUDMSG_ALPHA,6303,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
       }
       If(StrIcmp(weapon, "Railgun2") == 0)
       {
@@ -47553,20 +47552,30 @@ script "CheckManaAmmoHeretic" (void)
 // Consumes a set amount of MP/MANA when called or checks for that much for an A_JumpIf call (for Heretic's Tome-fire modes)
 script "UseManaAttack" (int amount, int check)
 {
+ // Check 0 = Takes MP without a return value.
+ // Check 1 = Takes NO MP and gives a return value [for just checking]
+ // Check 2 = Takes MP if applicable and gives a return value
  if (check > 0)
  {
-  if (CurrentMana >= amount) 
+  if (CheckActorInventory(Player1TID,"RandomInfiniteAmmo") > 0 || CheckActorInventory(Player1TID,"PowerInfiniteAmmo") > 0)
   {
-   if (check > 1)
-   {
-    CurrentMana -= amount;
-    if (CurrentMana < 1) CurrentMana = 0;
-    MiscellaneousVars[243] = CurrentMana;
-    MiscellaneousVars[238] = CurrentMana;
-   }
    SetResultValue(1); 
   }
-  else SetResultValue(0);
+  else
+  {
+   if (CurrentMana >= amount) 
+   {
+    if (check > 1)
+    {
+     CurrentMana -= amount;
+     if (CurrentMana < 1) CurrentMana = 0;
+     MiscellaneousVars[243] = CurrentMana;
+     MiscellaneousVars[238] = CurrentMana;
+    }
+    SetResultValue(1); 
+   }
+   else SetResultValue(0);
+  }
  }
  else
  {
