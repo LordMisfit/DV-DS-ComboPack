@@ -260,6 +260,7 @@ class AetheriusBaseWeaponZSC : Weapon
    } 
   }	   
  }
+
 }
 
 class AetheriusBaseCustomInventoryZSC : CustomInventory 
@@ -301,37 +302,205 @@ class AetheriusBaseCustomInventoryZSC : CustomInventory
 
   A_TakeInventory(ammousetype,ammouseamount,TIF_NOTAKEINFINITE,AAPTR_DEFAULT);
  }
+
 }
 
-// Base class [for later use]
-class AetheriusBaseZSC : Actor
+// Horn Rod FX 2 ------------------------------------------------------------
+class HornRodFX2Base : Actor
 {
- int user_theta, user_dormant, user_isstealth, user_basespeed, user_baseattack, user_basedefense, user_basemass, user_monsterlevel, user_legendaryevolved, user_extraevolvechance, user_extrastealthchance;
- int user_MaxHP, user_HPCritRange, user_HPBuffRange, user_HPXDeathRange, user_HPXDeathRange2, user_HPLowRange;
- int user_checkmapskill, user_ressurrectstr, user_resurrectedtimes, user_canusecrisisatk;
- int user_barragecounter, user_shotsfired, user_shotsfiredmax;
- float user_shotaccuracy, user_shotaccuracy1, user_shotaccuracy2; 
- float user_shotzaccuracy, user_shotzaccuracy1, user_shotzaccuracy2; 
- float user_randominaccuracy, user_randominaccuracy2;
- int user_pelletsfired, user_currenttracer, user_aimangleorigin; 
- int user_ammotype, user_gravitytype, user_shotangle, user_chargeinterval, user_pulseinterval;
- int user_spread, user_spread1, user_spread2;
- int user_attacktype, user_attacks, user_attackmax, user_fastchasechance;
+	Default
+	{
+		Radius 12;
+		Height 8;
+		Speed 22;
+		Damage 10;
+		Health 140;
+		Projectile;
+		RenderStyle "Add";
+		SeeSound "weapons/hornrodpowshoot";
+		DeathSound "weapons/hornrodpowhit";
+		Obituary "$OB_MPPSKULLROD";
+	}
 
- int user_autorestimer;
+	States
+	{
+	Spawn:	
+		FX00 C 3 BRIGHT;
+		FX00 D 3 BRIGHT A_SeekerMissile(10, 30);
+		FX00 E 3 BRIGHT;
+		FX00 F 3 BRIGHT A_SeekerMissile(10, 30);
+		Loop;
+	Death:
+		FX00 H 5 BRIGHT A_AddPlayerRain;
+		FX00 I 5 BRIGHT;
+		FX00 J 4 BRIGHT;
+		FX00 KLM 3 BRIGHT;
+		FX00 G 1 A_HideInCeiling;
+		FX00 G 1 A_SkullRodStorm;
+		Wait;
+	}
+	
+	override int DoSpecialDamage (Actor target, int damage, Name damagetype)
+	{
+		Sorcerer2 s2 = Sorcerer2(target);
+		if (s2 != null && random[HornRodFX2]() < 96)
+		{ // D'Sparil teleports away
+			s2.DSparilTeleport ();
+			return -1;
+		}
+		return damage;
+	}
+	
+	//----------------------------------------------------------------------------
+	//
+	// PROC A_AddPlayerRain
+	//
+	//----------------------------------------------------------------------------
 
- int user_random, user_random1, user_ailment1, user_ailmentmaxchance, user_attackpoint;
- 
- int user_healthset, user_healthmoderaterange, user_healthlowrange;
-}
+	void A_AddPlayerRain()
+	{
+		RainTracker tracker;
 
-// Base monster class [for later use]
-class AetheriusMonsterZSC : AetheriusBaseZSC
-{
- void A_MonsterCrisisCheck (void)
- {
-  user_canusecrisisatk = 0;
-  if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { user_canusecrisisatk = 1; } else { if (random(1,4) == 4) { user_canusecrisisatk = 1;	} } }
-  if(GetCVar("dvds_monstercrisisattacks") == 0) { user_canusecrisisatk = 0; }
- }
+		if (target == null || target.health <= 0)
+		{ // Shooter is dead or nonexistant
+			return;
+		}
+
+		tracker = RainTracker(target.FindInventory("RainTracker"));
+
+		// They player is only allowed two rainstorms at a time. Shooting more
+		// than that will cause the oldest one to terminate.
+		if (tracker != null)
+		{
+			if (tracker.Rain1 && tracker.Rain2)
+			{ // Terminate an active rain
+				if (tracker.Rain1.health < tracker.Rain2.health)
+				{
+					if (tracker.Rain1.health > 16)
+					{
+						tracker.Rain1.health = 16;
+					}
+					tracker.Rain1 = null;
+				}
+				else
+				{
+					if (tracker.Rain2.health > 16)
+					{
+						tracker.Rain2.health = 16;
+					}
+					tracker.Rain2 = null;
+				}
+			}
+		}
+		else
+		{
+			tracker = RainTracker(target.GiveInventoryType("RainTracker"));
+		}
+		// Add rain mobj to list
+		if (tracker.Rain1)
+		{
+			tracker.Rain2 = self;
+		}
+		else
+		{
+			tracker.Rain1 = self;
+		}
+		ActiveSound = "misc/rain";
+	}
+	
+	//----------------------------------------------------------------------------
+	//
+	// PROC A_HideInCeiling
+	//
+	//----------------------------------------------------------------------------
+
+	void A_HideInCeiling()
+	{
+		// This no longer hides in the ceiling. It just makes the actor invisible and keeps it in place.
+		// We need its actual position to determine the correct ceiling height in A_SkullRodStorm.
+		bInvisible = true;
+		bSolid = false;
+		bMissile = false;
+		Vel = (0,0,0);
+	}
+	
+	//----------------------------------------------------------------------------
+	//
+	// PROC A_SkullRodStorm [CUSTOMIZED for Aetherius Acid Rain stuff] :V
+	//
+	//----------------------------------------------------------------------------
+	void A_AcidRainDrop(Class<Actor> missiletype)
+	{
+		static const Name translations[] =
+		{
+			"RainPillar1", "RainPillar2", "RainPillar3", "RainPillar4",
+			"RainPillar5", "RainPillar6", "RainPillar7", "RainPillar8"
+		};
+
+		 double xo = ((Random[SkullRodStorm]() & 127) - 64);
+		 double yo = ((Random[SkullRodStorm]() & 127) - 64);
+		 Vector3 spawnpos = Vec2OffsetZ(xo, yo, pos.z);
+		 Actor mo = Spawn(missiletype, spawnpos, ALLOW_REPLACE);
+		 if (!mo) return;
+		
+		 // Find the ceiling above the spawn location. This may come from 3D floors but will not reach through portals.
+		 // (should probably be fixed for portals, too.)
+		 double newz = mo.CurSector.NextHighestCeilingAt(mo.pos.x, mo.pos.y, mo.pos.z, mo.pos.z, FFCF_NOPORTALS) - mo.height;
+		 mo.SetZ(newz);
+
+		 if (multiplayer && target.player)
+		 {
+			mo.A_SetTranslation(translations[target.PlayerNumber()]);
+		 }
+		 mo.target = target;
+		 mo.Vel.X = MinVel; // Force collision detection
+		 mo.Vel.Z = -mo.Speed;
+	 	 mo.CheckMissileSpawn (radius);
+	 	 if (ActiveSound > 0) A_PlaySound(ActiveSound, CHAN_BODY, 1, true);
+	}
+
+	void A_SkullRodStorm(Class<Actor> missiletype = "RainPillar", int rainspawnchance = 231, int rainspawnchance2 = 0, int rainspawnchance3 = 0, int rainspawnchance4 = 0, int rainspawnchance5 = 0, int rainspawnchance6 = 0, int rainspawnchance7 = 0, int rainspawnchance8 = 0, int rainspawnchance9 = 231, int rainspawnchance10 = 0, int rainspawnchance11 = 0, int rainspawnchance12 = 0, int rainspawnchance13 = 0, int rainspawnchance14 = 0, int rainspawnchance15 = 0, int rainspawnchance16 = 0)
+	{
+		if (health-- == 0)
+		{
+			A_StopSound (CHAN_BODY);
+			if (target == null)
+			{ // Player left the game
+				Destroy ();
+				return;
+			}
+			RainTracker tracker = RainTracker(target.FindInventory("RainTracker"));
+			if (tracker != null)
+			{
+				if (tracker.Rain1 == self)
+				{
+					tracker.Rain1 = null;
+				}
+				else if (tracker.Rain2 == self)
+				{
+					tracker.Rain2 = null;
+				}
+			}
+			Destroy ();
+			return;
+		}
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance) A_AcidRainDrop(missiletype);
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance2) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance3) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance4) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance5) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance6) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance7) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance8) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance9) A_AcidRainDrop(missiletype);
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance10) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance11) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance12) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance13) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance14) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance15) A_AcidRainDrop(missiletype); 
+		if (Random[SkullRodStorm](1,256) <= rainspawnchance16) A_AcidRainDrop(missiletype); 
+	}
+
+	
 }
