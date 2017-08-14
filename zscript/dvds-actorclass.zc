@@ -54,7 +54,50 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
   if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { user_canusecrisisatk = 1; } else { if (random(1,4) == 4) { user_canusecrisisatk = 1;	} } }
   if(GetCVar("dvds_monstercrisisattacks") == 0) { user_canusecrisisatk = 0; }
  }
+
+ void A_PlayCrisisAtkSound ()
+ {
+  A_PlaySound("crisisattack",6);
+  A_PlaySound("crisisattack2",7);
+ }
+
+ void A_CrisisSpawnProjectile (Class<Actor> missiletype, Class<Actor> crisismissiletype, float spawnheight = 32.0, float spawnofs_xy = 0.0, double angle = 0.0, int flags = 0, double pitch = 0, int ptr = AAPTR_TARGET)
+ {
+  if(user_canusecrisisatk == 1) { A_PlayCrisisAtkSound(); A_SpawnProjectile(crisismissiletype,spawnheight,spawnofs_xy,angle,flags,pitch,ptr); }
+  else { A_SpawnProjectile(missiletype,spawnheight,spawnofs_xy,angle,flags,pitch,ptr); }
+ }
+
+ void A_CrisisBulletAttack(float horz_spread, float vert_spread, int numbullets, int damageperbullet, string pufftype = "BulletPuff", float range = 2048.0, int flags = 0, int ptr = AAPTR_TARGET, string missile = "none", float spawnheight = 32.0, float Spawnofs_xy = 0.0)
+ {
+  if(user_canusecrisisatk == 1) { A_PlayCrisisAtkSound(); damageperbullet *= CallACS("CrisisMultiplier"); }
+  for (int i = 0; i < numbullets; i++) { A_CustomBulletAttack(horz_spread,vert_spread,1,damageperbullet,pufftype,range,flags,ptr,missile,spawnheight,Spawnofs_xy); }
+ }
  
+ void A_CrisisRailgun(int damage, int spawnofs_xy = 0, color ringcolor = 0, color corecolor = 0, int flags = 0, int aim = 0, double maxdiff = 0, string pufftype = "", double spread_xy = 0.0, double spread_z = 0.0, int range = 8192, int duration = 35, double sparsity = 1.0, double driftspeed = 1.0, string spawnclass = "", double spawnofs_z = 0.0, int spiraloffset = 270, int limit = 0, double veleffect = 3.0)
+ {
+  if(user_canusecrisisatk == 1) { A_PlayCrisisAtkSound(); damage *= CallACS("CrisisMultiplier"); }
+  A_CustomRailgun(damage,spawnofs_xy,ringcolor,corecolor,flags,aim,maxdiff,pufftype,spread_xy,spread_z,range,duration,sparsity,driftspeed,spawnclass,spawnofs_z,spiraloffset,limit,veleffect);
+ }
+ 
+ void A_CrisisComboAttack(Class<Actor> missiletype, Class<Actor> crisismissiletype, float spawnheight = 32.0, int meleedamage = 0, string meleesound = "imp/melee", string damagetype = "Melee", bool bleed = 1)
+ {
+  if(user_canusecrisisatk == 1) 
+  {
+   A_PlayCrisisAtkSound(); meleedamage *= CallACS("CrisisMultiplier"); 
+   A_CustomComboAttack(crisismissiletype,spawnheight,meleedamage,meleesound,damagetype,bleed);
+  }
+  else
+  {
+   A_CustomComboAttack(missiletype,spawnheight,meleedamage,meleesound,damagetype,bleed);
+  }
+ }
+
+ void A_CrisisMeleeAttack(int meleedamage, string meleesound = "", string misssound = "", string damagetype = "Melee", bool bleed = 1)
+ {
+  if(user_canusecrisisatk == 1) { A_PlayCrisisAtkSound(); meleedamage *= CallACS("CrisisMultiplier"); }
+  A_CustomMeleeAttack(meleedamage,meleesound,misssound,damagetype,bleed);
+ } 
+
     //**************************
     //*HERETIC-UNIQUE FUNCTIONS*
     //**************************
@@ -1600,19 +1643,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
   Pain.Sceptre:
     TNT1 A 0 
 	{
-	 if (bFRIENDLY == 1)
-	 {
-      ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,10); // Increase EXP for Sceptre [1+(HP/300)]
-	 }
+	 if (bFRIENDLY == 0) ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,10); // Increase EXP for Sceptre [1+(HP/300)]
 	 SetStateLabel("Pain");
 	}
   Death.Sceptre:
     TNT1 A 0
 	{
-	 if (bFRIENDLY == 1)
-	 {
-      ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,1); // Increase EXP for Sceptre [1+(HP/300)]
-	 }
+	 if (bFRIENDLY == 0) ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,1); // Increase EXP for Sceptre [1+(HP/300)]
 	 if (health <= user_HPXDeathRange) SetStateLabel("XDeath"); else SetStateLabel("Death");
 	}
   Pain.Gauntlets:
