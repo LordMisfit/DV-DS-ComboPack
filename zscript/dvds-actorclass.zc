@@ -21,6 +21,7 @@ class AetheriusBaseZSC : Actor
  int user_chargechange; 
  int user_healthset, user_healthmoderaterange, user_healthlowrange;
  int user_charmchance;
+ int user_regencycles, user_regencyclemax;
 }
 
 // Base monster class [for later use, general monster use outside of game]
@@ -108,6 +109,141 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		bFloorClip = true;
 		bNoGravity = true;
 		extremecrash = true;
+	}
+
+	// Knight
+	void A_KnightAttack ()
+	{
+		if (!target) return;
+		if (CheckMeleeRange ())
+		{
+			int damage = random[KnightAttack](1, 8) * 3;
+			int newdam = target.DamageMobj (self, self, damage, 'Melee');
+			target.TraceBleed (newdam > 0 ? newdam : damage, self);
+			A_PlaySound ("hknight/melee", CHAN_BODY);
+			return;
+		}
+		// Throw axe
+		A_PlaySound (AttackSound, CHAN_BODY);
+		if (self.bShadow || random[KnightAttack]() < 40)
+		{ // Red axe
+			SpawnMissileZ (pos.Z + 36, target, "RedAxe");
+		}
+		else
+		{ // Green axe
+			SpawnMissileZ (pos.Z + 36, target, "KnightAxe");
+		}
+	}
+
+	// Disciple
+	void A_GhostOff ()
+	{
+		A_SetRenderStyle(1.0, STYLE_Normal);
+		bGhost = false;
+	}
+
+	void A_WizAtk1 ()
+	{
+		A_FaceTarget ();
+		A_GhostOff();
+	}
+
+	void A_WizAtk2 ()
+	{
+		A_FaceTarget ();
+		A_SetRenderStyle(HR_SHADOW, STYLE_Translucent);
+		bGhost = true;
+	}
+
+	void A_WizAtk3 ()
+	{
+		A_GhostOff();
+		if (!target) return;
+		A_PlaySound (AttackSound, CHAN_WEAPON);
+		if (CheckMeleeRange())
+		{
+			int damage = random[WizAtk3](1, 8) * 4;
+			int newdam = target.DamageMobj (self, self, damage, 'Melee');
+			target.TraceBleed (newdam > 0 ? newdam : damage, self);
+			return;
+		}
+		Actor mo = SpawnMissile (target, "WizardFX1");
+		if (mo != null)
+		{
+			SpawnMissileAngle("WizardFX1", mo.Angle - 45. / 8, mo.Vel.Z);
+			SpawnMissileAngle("WizardFX1", mo.Angle + 45. / 8, mo.Vel.Z);
+		}
+	}
+
+	// Iron Lich
+	void A_LichAttack (int fireshots = 5, int tornados = 1)
+	{
+		static const int atkResolve1[] = { 50, 150 };
+		static const int atkResolve2[] = { 150, 200 };
+
+		// Ice ball		(close 20% : far 60%)
+		// Fire column	(close 40% : far 20%)
+		// Whirlwind	(close 40% : far 20%)
+		// Distance threshold = 8 cells
+
+		if (target == null)
+		{
+			return;
+		}
+		A_FaceTarget ();
+		if (CheckMeleeRange ())
+		{
+			int damage = random[LichAttack](1, 8) * 6;
+			int newdam = target.DamageMobj (self, self, damage, 'Melee');
+			target.TraceBleed (newdam > 0 ? newdam : damage, self);
+			return;
+		}
+		int dist = Distance2D(target) > 8 * 64;
+		int randAttack = random[LichAttack]();
+		if (randAttack < atkResolve1[dist])
+		{ // Ice ball
+			SpawnMissile (target, "HeadFX1");
+			A_PlaySound ("ironlich/attack2", CHAN_BODY);
+		}
+		else if (randAttack < atkResolve2[dist])
+		{ // Fire column
+			Actor baseFire = SpawnMissile (target, "HeadFX3");
+			if (baseFire != null)
+			{
+				baseFire.SetStateLabel("NoGrow");
+				for (int i = 0; i < fireshots; i++)
+				{
+					Actor fire = Spawn("HeadFX3", baseFire.Pos, ALLOW_REPLACE);
+					if (i == 0)
+					{
+						A_PlaySound ("ironlich/attack1", CHAN_BODY);
+					}
+					if (fire != null)
+					{
+						fire.target = baseFire.target;
+						fire.angle = baseFire.angle;
+						fire.Vel = baseFire.Vel;
+						fire.SetDamage(0);
+						fire.health = (i+1) * 2;
+						fire.CheckMissileSpawn (radius);
+					}
+				}
+			}
+		}
+		else
+		{ // Whirlwind
+		  for (int i = 0; i < tornados; i++)
+		  {
+			Actor mo = SpawnMissile (target, "Whirlwind");
+			if (mo != null)
+			{
+				mo.AddZ(-32+(i*16));
+				mo.tracer = target;
+				mo.health = 20*TICRATE; // Duration
+				A_PlaySound ("ironlich/attack3", CHAN_BODY);
+			}
+		  }
+		}
 	}
 
 	//************************
@@ -1025,6 +1161,383 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 	
+	// Templar
+	void A_TemplarAttack()
+	{
+		if (target != null)
+		{
+			A_PlaySound ("templar/shoot", CHAN_WEAPON);
+			A_FaceTarget ();
+			double pitch = AimLineAttack (angle, MISSILERANGE);
+
+			for (int i = 0; i < 10; ++i)
+			{
+				int damage = (random[Templar]() & 4) * 2;
+				double ang = angle + random2[Templar]() * (11.25 / 256);
+				LineAttack (ang, MISSILERANGE+64., pitch + random2[Templar]() * (7.097 / 256), damage, 'Hitscan', "MaulerPuff");
+			}
+		}
+	}
+
+	// Inquisitor
+	void A_InquisitorWalk ()
+	{
+		A_PlaySound ("inquisitor/walk", CHAN_BODY);
+		A_Chase ();
+	}
+
+	private bool InquisitorCheckDistance ()
+	{
+		if (reactiontime == 0 && CheckSight (target))
+		{
+			return Distance2D (target) < 264.;
+		}
+		return false;
+	}
+
+	void A_InquisitorDecide ()
+	{
+		if (target == null)
+			return;
+
+		A_FaceTarget ();
+		if (!InquisitorCheckDistance ())
+		{
+			SetStateLabel("Grenade");
+		}
+		if (target.pos.z != pos.z)
+		{
+			if (pos.z + height + 54 < ceilingz)
+			{
+				SetStateLabel("Jump");
+			}
+		}
+	}
+
+	void A_InquisitorAttack ()
+	{
+		if (target == null)
+			return;
+
+		A_FaceTarget ();
+
+		AddZ(32);
+		angle -= 45./32;
+		Actor proj = SpawnMissileZAimed (pos.z, target, "InquisitorShot");
+		if (proj != null)
+		{
+			proj.Vel.Z += 9;
+		}
+		angle += 45./16;
+		proj = SpawnMissileZAimed (pos.z, target, "InquisitorShot");
+		if (proj != null)
+		{
+			proj.Vel.Z += 16;
+		}
+		AddZ(-32);
+	}
+
+	void A_InquisitorJump ()
+	{
+		if (target == null)
+			return;
+
+		A_PlaySound ("inquisitor/jump", CHAN_ITEM, 1, true);
+		AddZ(64);
+		A_FaceTarget ();
+		let localspeed = Speed * (2./3);
+		VelFromAngle(localspeed);
+		double dist = DistanceBySpeed(target, localspeed);
+		Vel.Z = (target.pos.z - pos.z) / dist;
+		reactiontime = 60;
+		bNoGravity = true;
+	}
+
+	void A_InquisitorCheckLand ()
+	{
+		reactiontime--;
+		if (reactiontime < 0 ||
+			Vel.X == 0 ||
+			Vel.Y == 0 ||
+			pos.z <= floorz)
+		{
+			SetState (SeeState);
+			reactiontime = 0;
+			bNoGravity = false;
+			A_StopSound (CHAN_ITEM);
+			return;
+		}
+		A_PlaySound ("inquisitor/jump", CHAN_ITEM, 1, true);
+	}
+
+	void A_TossArm ()
+	{
+		Actor foo = Spawn("InquisitorArm", Pos + (0,0,24), ALLOW_REPLACE);
+		if (foo != null)
+		{
+			foo.angle = angle - 90. + Random2[Inquisitor]() * (360./1024.);
+			foo.VelFromAngle(foo.Speed / 8);
+			foo.Vel.Z = random[Inquisitor]() / 64.;
+		}
+	}
+	
+	// Reaver
+	void A_ReaverRanged ()
+	{
+		if (target != null)
+		{
+			A_FaceTarget ();
+			A_PlaySound ("reaver/attack", CHAN_WEAPON);
+			double bangle = Angle;
+			double pitch = AimLineAttack (bangle, MISSILERANGE);
+
+			for (int i = 0; i < 3; ++i)
+			{
+				double ang = bangle + Random2[ReaverAttack]() * (22.5 / 256);
+				int damage = ((random[ReaverAttack]() & 7) + 1) * 3;
+				LineAttack (ang, MISSILERANGE, pitch, damage, 'Hitscan', "StrifePuff");
+			}
+		}
+	}
+
+	// Crusader
+	private bool CrusaderCheckRange ()
+	{
+		if (reactiontime == 0 && CheckSight (target))
+		{
+			return Distance2D (target) < 264.;
+		}
+		return false;
+	}
+
+	void A_CrusaderChoose ()
+	{
+		if (target == null)
+			return;
+
+		if (CrusaderCheckRange ())
+		{
+			A_FaceTarget ();
+			angle -= 180./16;
+			SpawnMissileZAimed (pos.z + 40, target, "FastFlameMissile");
+		}
+		else
+		{
+			if (CheckMissileRange ())
+			{
+				A_FaceTarget ();
+				SpawnMissileZAimed (pos.z + 56, target, "CrusaderMissile");
+				angle -= 45./32;
+				SpawnMissileZAimed (pos.z + 40, target, "CrusaderMissile");
+				angle += 45./16;
+				SpawnMissileZAimed (pos.z + 40, target, "CrusaderMissile");
+				angle -= 45./16;
+				reactiontime += 15;
+			}
+			SetState (SeeState);
+		}
+	}
+
+	void A_CrusaderSweepLeft ()
+	{
+		angle += 90./16;
+		Actor misl = SpawnMissileZAimed (pos.z + 48, target, "FastFlameMissile");
+		if (misl != null)
+		{
+			misl.Vel.Z += 1;
+		}
+	}
+
+	void A_CrusaderSweepRight ()
+	{
+		angle -= 90./16;
+		Actor misl = SpawnMissileZAimed (pos.z + 48, target, "FastFlameMissile");
+		if (misl != null)
+		{
+			misl.Vel.Z += 1;
+		}
+	}
+
+	void A_CrusaderRefire ()
+	{
+		if (target == null ||
+			target.health <= 0 ||
+			!CheckSight (target))
+		{
+			SetState (SeeState);
+		}
+	}
+
+	void A_CrusaderDeath ()
+	{
+		if (CheckBossDeath ())
+		{
+			Floor_LowerToLowest(667, 8);
+		}
+	}
+
+    // Sentinel
+	void A_SentinelAttack (Class<Actor> missiletype = "SentinelFX2", string trailtype = "SentinelFX1")
+	{
+		// [BB] Without a target the P_SpawnMissileZAimed call will crash.
+		if (!target)
+		{
+			return;
+		}
+
+		Actor missile = SpawnMissileZAimed (pos.z + 32, target, missiletype);
+
+		if (missile != NULL && (missile.Vel.X != 0 || missile.Vel.Y != 0))
+		{
+			for (int i = 8; i > 1; --i)
+			{
+				Actor trail = Spawn(trailtype, Vec3Angle(missile.radius*i, missile.angle, 32 + missile.Vel.Z / 4 * i), ALLOW_REPLACE);
+				if (trail != NULL)
+				{
+					trail.target = self;
+					trail.Vel = missile.Vel;
+					trail.CheckMissileSpawn (radius);
+				}
+			}
+			missile.AddZ(missile.Vel.Z / 4);
+		}
+	}
+
+	// Stalker
+	void A_StalkerChaseDecide ()
+	{
+		if (!bNoGravity)
+		{
+			SetStateLabel("SeeFloor");
+		}
+		else if (ceilingz > pos.z + height)
+		{
+			SetStateLabel("Drop");
+		}
+	}
+
+	void A_StalkerLookInit ()
+	{
+		State st;
+		if (bNoGravity)
+		{
+			st = FindState("LookCeiling");
+		}
+		else
+		{
+			st = FindState("LookFloor");
+		}
+		if (st != CurState.NextState)
+		{
+			SetState (st);
+		}
+	}
+
+	void A_StalkerDrop ()
+	{
+		bNoVerticalMeleeRange = false;
+		bNoGravity = false;
+	}
+
+	void A_StalkerAttack ()
+	{
+		if (bNoGravity)
+		{
+			SetStateLabel("Drop");
+		}
+		else if (target != null)
+		{
+			A_FaceTarget ();
+			if (CheckMeleeRange ())
+			{
+				int damage = (random[Stalker]() & 7) * 2 + 2;
+
+				int newdam = target.DamageMobj (self, self, damage, 'Melee');
+				target.TraceBleed (newdam > 0 ? newdam : damage, self);
+			}
+		}
+	}
+
+	void A_StalkerWalk ()
+	{
+		A_PlaySound ("stalker/walk", CHAN_BODY);
+		A_Chase ();
+	}
+	
+	// Programmer
+	void A_ProgrammerMelee ()
+	{
+		if (target == null)
+			return;
+
+		A_FaceTarget ();
+
+		if (!CheckMeleeRange ())
+			return;
+
+		A_PlaySound("programmer/clank", CHAN_WEAPON);
+
+		int damage = ((random[Programmer]() % 10) + 1) * 6;
+		int newdam = target.DamageMobj (self, self, damage, 'Melee');
+		target.TraceBleed (newdam > 0 ? newdam : damage, self);
+	}
+
+	void A_SpawnProgrammerBase ()
+	{
+		Actor foo = Spawn("ProgrammerBase", Pos + (0,0,24), ALLOW_REPLACE);
+		if (foo != null)
+		{
+			foo.Angle = Angle + 180. + Random2[Programmer]() * (360. / 1024.);
+			foo.VelFromAngle();
+			foo.Vel.Z = random[Programmer]() / 128.;
+		}
+	}
+
+	void A_ProgrammerDeath ()
+	{
+		if (!CheckBossDeath ())
+			return;
+
+		for (int i = 0; i < MAXPLAYERS; ++i)
+		{
+			if (playeringame[i] && players[i].health > 0)
+			{
+				players[i].mo.GiveInventoryType ("ProgLevelEnder");
+				break;
+			}
+		}
+		// the sky change scripts are now done as special actions in MAPINFO
+		A_BossDeath();
+	}
+
+	void A_SpotLightning()
+	{
+		if (target == null) return;
+
+		Actor spot = Spawn("SpectralLightningSpot", (target.pos.xy, target.floorz), ALLOW_REPLACE);
+		if (spot != null)
+		{
+			spot.threshold = 25;
+			spot.target = self;
+			spot.FriendPlayer = 0;
+			spot.tracer = target;
+		}
+	}
+
+	// Oracle
+	void A_WakeOracleSpectre (Class<Actor> spawntype)
+	{
+		ThinkerIterator it = ThinkerIterator.Create(spawntype);
+		Actor spectre = Actor(it.Next());
+
+		if (spectre != NULL && spectre.health > 0 && self.target != spectre)
+		{
+			spectre.CurSector.SoundTarget = spectre.LastHeard = self.LastHeard;
+			spectre.target = self.target;
+			spectre.SetState (spectre.SeeState);
+		}
+	}
+	
  States
  {
   Pain.Charm: 
@@ -1066,7 +1579,449 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	 ACS_NamedExecuteAlways("Healing_Actor",0,3); 
 	 SetStateLabel("See");
     } 
+  Pain.GravityHP:
+    TNT1 A 0 
+	{ 
+	 ACS_NamedExecuteAlways("Hand-GravityAttack",0,0,0,0); 
+	 SetStateLabel("See");
+    } 
+  Pain.GravityMP:
+    TNT1 A 0
+	{ 
+	 ACS_NamedExecuteAlways("Hand-GravityAttack",0,1,0,0); 
+	 SetStateLabel("See");
+    } 
+  Pain.GravityHPMP:
+    TNT1 A 0
+	{ 
+	 ACS_NamedExecuteAlways("Hand-GravityAttack",0,2,0,0); 
+	 SetStateLabel("See");
+    } 
+  Pain.Sceptre:
+    TNT1 A 0 
+	{
+	 if (bFRIENDLY == 1)
+	 {
+      ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,10); // Increase EXP for Sceptre [1+(HP/300)]
+	 }
+	 SetStateLabel("Pain");
+	}
+  Death.Sceptre:
+    TNT1 A 0
+	{
+	 if (bFRIENDLY == 1)
+	 {
+      ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,1); // Increase EXP for Sceptre [1+(HP/300)]
+	 }
+	 if (health <= user_HPXDeathRange) SetStateLabel("XDeath"); else SetStateLabel("Death");
+	}
+  Pain.Gauntlets:
+    TNT1 A 0
+	{
+	 ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,1,0); // Give some life when hurting a monster [1+(HP/500)]
+	 SetStateLabel("Pain");
+	}
+  Death.Gauntlets:
+    TNT1 A 0
+	{
+	 ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,2,0); // Give some life when hurting a monster [1+(HP/500)]
+	 if (health <= user_HPXDeathRange) SetStateLabel("XDeath"); else SetStateLabel("Death");
+	}
  }
+}
+
+class MaulotaurBase : AetheriusMonsterZSC
+{
+ const MAULATORTICS = 25 * TICRATE;
+ const MNTR_CHARGE_SPEED =13.;
+ const MINOTAUR_LOOK_DIST = 16*54.;
+	
+	void MinotaurSlam (Actor target)
+	{
+		double ang = AngleTo(target);
+		double thrust = 16 + random[MinotaurSlam]() / 64.;
+		target.VelFromAngle(ang, thrust);
+		int damage = random[MinotaurSlam](1, 8) * (bSummonedMonster? 4 : 6);
+		int newdam = target.DamageMobj (null, null, damage, 'Melee');
+		target.TraceBleedAngle (newdam > 0 ? newdam : damage, ang, 0.);
+		if (target.player)
+		{
+			target.reactiontime = random[MinotaurSlam](14, 21);
+		}
+	}
+
+	override void Tick ()
+	{
+		Super.Tick ();
+		
+		// The unfriendly Minotaur (Heretic's) is invulnerable while charging
+		if (!bSummonedMonster)
+		{
+			bInvulnerable = bSkullFly;
+		}
+	}
+
+	override bool Slam (Actor thing)
+	{
+		// Slamming minotaurs shouldn't move non-creatures
+		if (!thing.bIsMonster && !thing.player)
+		{
+			return false;
+		}
+		return Super.Slam (thing);
+	}
+
+	override int DoSpecialDamage (Actor target, int damage, Name damagetype)
+	{
+		damage = Super.DoSpecialDamage (target, damage, damagetype);
+		if (damage != -1 && bSkullFly)
+		{ // Slam only when in charge mode
+			MinotaurSlam (target);
+			return -1;
+		}
+		return damage;
+	}
+
+	void A_MinotaurAtk1()
+	{
+		if (!target)
+		{
+			return;
+		}
+		A_PlaySound ("minotaur/melee", CHAN_WEAPON);
+		if (CheckMeleeRange())
+		{
+			int damage = random[MinotaurAtk1](1, 8) * 4;
+			int newdam = target.DamageMobj (self, self, damage, 'Melee');
+			target.TraceBleed (newdam > 0 ? newdam : damage, self);
+			PlayerInfo player = target.player;
+			if (player != null && player.mo == target)
+			{ // Squish the player
+				player.deltaviewheight = -16;
+			}
+		}
+	}
+
+	void A_MinotaurDecide()
+	{
+		bool friendly = bSummonedMonster;
+
+		if (!target)
+		{
+			return;
+		}
+		if (!friendly)
+		{
+			A_PlaySound ("minotaur/sight", CHAN_WEAPON);
+		}
+		double dist = Distance2D(target);
+		if (target.pos.z + target.height > pos.z
+			&& target.pos.z + target.height < pos.z + height
+			&& dist < (friendly ? 16*64. : 8*64.)
+			&& dist > 1*64.
+			&& random[MinotaurDecide]() < 150)
+		{ // Charge attack
+			// Don't call the state function right away
+			SetStateLabel("Charge", true);
+			bSkullFly = true;
+			if (!friendly)
+			{ // Heretic's Minotaur is invulnerable during charge attack
+				bInvulnerable = true;
+			}
+			A_FaceTarget ();
+			VelFromAngle(MNTR_CHARGE_SPEED);
+			special1 = TICRATE/2; // Charge duration
+		}
+		else if (target.pos.z == target.floorz
+			&& dist < 9*64.
+			&& random[MinotaurDecide]() < (friendly ? 100 : 220))
+		{ // Floor fire attack
+			SetStateLabel("Hammer");
+			special2 = 0;
+		}
+		else
+		{ // Swing attack
+			A_FaceTarget ();
+			// Don't need to call P_SetMobjState because the current state
+			// falls through to the swing attack
+		}
+	}
+	
+	void A_MinotaurCharge()
+	{
+		if (target == null)
+		{
+			return;
+		}
+		if (special1 > 0)
+		{
+			Class<Actor> type;
+
+			if (gameinfo.gametype == GAME_Heretic)
+			{
+				type = "PhoenixPuff";
+			}
+			else
+			{
+				type = "PunchPuff";
+			}
+			Actor puff = Spawn (type, Pos, ALLOW_REPLACE);
+			if (puff != null) puff.Vel.Z = 2;
+			special1--;
+		}
+		else
+		{
+			bSkullFly = false;
+			bInvulnerable = false;
+			SetState (SeeState);
+		}
+	}
+
+	void A_MinotaurAtk2()
+	{
+		bool friendly = bSummonedMonster;
+
+		if (target == null)
+		{
+			return;
+		}
+		A_PlaySound ("minotaur/attack2", CHAN_WEAPON);
+		if (CheckMeleeRange())
+		{
+			int damage = random[MinotaurAtk2](1, 8) * (friendly ? 3 : 5);
+			int newdam = target.DamageMobj (self, self, damage, 'Melee');
+			target.TraceBleed (newdam > 0 ? newdam : damage, self);
+			return;
+		}
+		double z = pos.z + 40;
+		Class<Actor> fx = "MinotaurFX1";
+		Actor mo = SpawnMissileZ (z, target, fx);
+		if (mo != null)
+		{
+//			S_Sound (mo, CHAN_WEAPON, "minotaur/attack2", 1, ATTN_NORM);
+			double vz = mo.Vel.Z;
+			double ang = mo.angle;
+			SpawnMissileAngleZ (z, fx, ang-(45./8), vz);
+			SpawnMissileAngleZ (z, fx, ang+(45./8), vz);
+			SpawnMissileAngleZ (z, fx, ang-(45./16), vz);
+			SpawnMissileAngleZ (z, fx, ang+(45./16), vz);
+		}
+	}
+
+	void A_MinotaurAtk3()
+	{
+		bool friendly = bSummonedMonster;
+
+		if (!target)
+		{
+			return;
+		}
+		A_PlaySound ("minotaur/attack3", CHAN_VOICE);
+		if (CheckMeleeRange())
+		{
+			int damage = random[MinotaurAtk3](1, 8) * (friendly ? 3 : 5);
+			int newdam = target.DamageMobj (self, self, damage, 'Melee');
+			target.TraceBleed (newdam > 0 ? newdam : damage, self);
+			PlayerInfo player = target.player;
+			if (player != null && player.mo == target)
+			{ // Squish the player
+				player.deltaviewheight = -16;
+			}
+		}
+		else
+		{
+			if (Floorclip > 0 && compat_minotaur)
+			{
+				// only play the sound. 
+				A_PlaySound ("minotaur/fx2hit", CHAN_WEAPON);
+			}
+			else
+			{
+				Actor mo = SpawnMissile (target, "MinotaurFX2");
+				if (mo != null)
+				{
+					mo.A_PlaySound ("minotaur/attack1", CHAN_WEAPON);
+				}
+			}
+		}
+		if (random[MinotaurAtk3]() < 192 && special2 == 0)
+		{
+			SetStateLabel ("HammerLoop");
+			special2 = 1;
+		}
+	}
+
+	void A_MinotaurDeath()
+	{
+		if (Wads.CheckNumForName ("MNTRF1", Wads.ns_sprites) < 0 &&
+			Wads.CheckNumForName ("MNTRF0", Wads.ns_sprites) < 0)
+			SetStateLabel("FadeOut");
+	}
+
+	void A_MinotaurRoam()
+	{
+		// In case pain caused him to skip his fade in.
+		A_SetRenderStyle(1, STYLE_Normal);
+
+		let mf = MinotaurFriend(self);
+		if (mf)
+		{
+			if (mf.StartTime >= 0 && (level.maptime - mf.StartTime) >= MAULATORTICS)
+			{
+				DamageMobj (null, null, TELEFRAG_DAMAGE, 'None');
+				return;
+			}
+		}
+
+		if (random[MinotaurRoam]() < 30)
+			A_MinotaurLook();		// adjust to closest target
+
+		if (random[MinotaurRoam]() < 6)
+		{
+			//Choose new direction
+			movedir = random[MinotaurRoam]() % 8;
+			FaceMovementDirection ();
+		}
+		if (!MonsterMove())
+		{
+			// Turn
+			if (random[MinotaurRoam]() & 1)
+				movedir = (movedir + 1) % 8;
+			else
+				movedir = (movedir + 7) % 8;
+			FaceMovementDirection ();
+		}
+	}
+
+	void A_MinotaurLook()
+	{
+		if (!(self is "MinotaurFriend"))
+		{
+			A_Look();
+			return;
+		}
+
+		Actor mo = null;
+		PlayerInfo player;
+		double dist;
+		Actor master = tracer;
+
+		target = null;
+		if (deathmatch)					// Quick search for players
+		{
+			for (int i = 0; i < MAXPLAYERS; i++)
+			{
+				if (!playeringame[i]) continue;
+				player = players[i];
+				mo = player.mo;
+				if (mo == master) continue;
+				if (mo.health <= 0) continue;
+				dist = Distance2D(mo);
+				if (dist > MINOTAUR_LOOK_DIST) continue;
+				target = mo;
+				break;
+			}
+		}
+
+		if (!target)				// Near player monster search
+		{
+			if (master && (master.health > 0) && (master.player))
+				mo = master.RoughMonsterSearch(20);
+			else
+				mo = RoughMonsterSearch(20);
+			target = mo;
+		}
+
+		if (!target)				// Normal monster search
+		{
+			ThinkerIterator it = ThinkerIterator.Create("Actor");
+
+			while ((mo = Actor(it.Next())) != null)
+			{
+				if (!mo.bIsMonster) continue;
+				if (mo.health <= 0) continue;
+				if (!mo.bShootable) continue;
+				dist = Distance2D(mo);
+				if (dist > MINOTAUR_LOOK_DIST) continue;
+				if (mo == master || mo == self) continue;
+				if (mo.bSummonedMonster && mo.tracer == master) continue;
+				target = mo;
+				break;			// Found actor to attack
+			}
+		}
+
+		if (target)
+		{
+			SetState (SeeState, true);
+		}
+		else
+		{
+			SetStateLabel ("Roam", true);
+		}
+	}
+
+	void A_MinotaurChase()
+	{
+		let mf = MinotaurFriend(self);
+		if (!mf)
+		{
+			A_Chase();
+			return;
+		}
+
+
+		// In case pain caused him to skip his fade in.
+		A_SetRenderStyle(1, STYLE_Normal);
+
+		if (mf.StartTime >= 0 && (level.maptime - mf.StartTime) >= MAULATORTICS)
+		{
+			DamageMobj (null, null, TELEFRAG_DAMAGE, 'None');
+			return;
+		}
+
+		if (random[MinotaurChase]() < 30)
+			A_MinotaurLook();		// adjust to closest target
+
+		if (!target || (target.health <= 0) || !target.bShootable)
+		{ // look for a new target
+			SetIdle();
+			return;
+		}
+
+		FaceMovementDirection ();
+		reactiontime = 0;
+
+		// Melee attack
+		if (MeleeState && CheckMeleeRange ())
+		{
+			if (AttackSound)
+			{
+				A_PlaySound (AttackSound, CHAN_WEAPON);
+			}
+			SetState (MeleeState);
+			return;
+		}
+
+		// Missile attack
+		if (MissileState && CheckMissileRange())
+		{
+			SetState (MissileState);
+			return;
+		}
+
+		// chase towards target
+		if (!MonsterMove ())
+		{
+			NewChaseDir ();
+			FaceMovementDirection ();
+		}
+
+		// Active sound
+		if (random[MinotaurChase]() < 6)
+		{
+			PlayActiveSound ();
+		}
+	}	
 }
 
 class AetheriusBossZSC : AetheriusMonsterZSC
