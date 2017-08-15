@@ -24,6 +24,40 @@ class AetheriusBaseZSC : Actor
  int user_regencycles, user_regencyclemax;
 }
 
+// Base Projectile Class
+class AetheriusProjectileZSC : AetheriusBaseZSC
+{
+    // Customizable version of A_Tracer, allowing you to change the puff and smoke, as well as the tracing angle.
+	void A_CustomTracer(double traceang = 16.875, string pufftype = "BulletPuff", string smoketype = "RevenantTracerSmoke")
+	{
+		// killough 1/18/98: this is why some missiles do not have smoke
+		// and some do. Also, internal demos start at random gametics, thus
+		// the bug in which revenants cause internal demos to go out of sync.
+		//
+		// killough 3/6/98: fix revenant internal demo bug by subtracting
+		// levelstarttic from gametic:
+		//
+		// [RH] level.time is always 0-based, so nothing special to do here.
+
+		if (level.time & 3)	return;
+	
+		// spawn a puff of smoke behind the rocket
+		SpawnPuff (pufftype, pos, angle, angle, 3);
+		Actor smoke = Spawn ("RevenantTracerSmoke", Vec3Offset(-Vel.X, -Vel.Y, 0.), ALLOW_REPLACE);
+	
+		if (smoke != null)
+		{
+			smoke.Vel.Z = 1.;
+			smoke.tics -= random[Tracer](0, 3);
+			if (smoke.tics < 1)
+				smoke.tics = 1;
+		}
+
+		// The rest of this function was identical with Strife's version, except for the angle being used.
+		A_Tracer2(traceang);
+	}
+}
+
 // Base monster class [for later use, general monster use outside of game]
 class AetheriusMonsterZSC : AetheriusBaseZSC
 {
