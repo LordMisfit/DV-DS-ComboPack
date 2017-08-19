@@ -36726,7 +36726,7 @@ script "Hand-GravityAttack" (int type)
 }
 
 // Determines Attack/Defense/Speed Bonuses for Monsters [depending on difficulty level and maps and game mode]
-script "MonsterStatsHP_ATK_DEF_SPD" (int type)
+script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 {
  int CurrHP, MaxHP, Speed, Attack, Defense, Balance, Temp, RangeVar, LevelCheck, MapCheck;
  int StealthChance;
@@ -36734,7 +36734,11 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
  if (type < 0) type = 0;
  if (type > 1) type = 1;
 
- if (type == 0)
+ // extraflags
+ // & 1 = Always multiply level by 4 instead of a 1/64 chance of it. [basically "Elitifies" the monster all the time when called]
+ // & 2 = Multiplies the monsters' level by 4 [again]
+ 
+ if (type == 0) // Giving Stats
  {
   ACS_NamedExecuteWithResult("RefreshStealthInfo"); // Runs to check Stealth information [in case something like finding the Ring has happened]
 
@@ -37484,7 +37488,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type)
         LevelCheck += random(4,6);
        }
       }
-      if (random(1,64) == 1) LevelCheck *= 4;
+	  if (extraflags & 1) { LevelCheck *= 4; } else { if (random(1,64) == 1) LevelCheck *= 4; }
+	  if (extraflags & 2) { LevelCheck *= 4; }
 	 }
 	 if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [peasent-checking]: ",d:(LevelCheck));
 
@@ -44453,6 +44458,7 @@ script "UseCustomInventoryItem" (int type)
  int PerkFactor;
  int CurrentHealth = GetActorProperty(Player1TID,APROP_HEALTH);
  int perkbasemulti = 16;
+ int MaxHealthLimit = MaxHealthTrue * 2;
  
  if (type == -7 && CheckActorInventory(Player1TID,"ArtiInvisibilityNew") > 0) // Icon of the Defender
  {
@@ -44509,7 +44515,7 @@ script "UseCustomInventoryItem" (int type)
  {
   // Heal HP/Health [62.5%] up to 200%
   temp1 = CurrentHealth;
-  healmax = MaxHealthTrue * 2;
+  healmax = MaxHealthLimit;
   if (temp1 < healmax)
   {
    check1 += 1;
@@ -44593,10 +44599,16 @@ script "UseCustomInventoryItem" (int type)
   // Heal Health [~100 to 110% HP] up to 192.5% Max HP
   temp1 = CurrentHealth;
   healmax = ((MaxHealthTrue * 1925) / 1000);
+  if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+  healmax = healmax * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
+  if (healmax > (MaxHealthLimit)) healmax = MaxHealthLimit;
+
   if (temp1 < healmax)
   {
    check1 += 1;
    temp1 += (MaxHealthTrue * random(100,110)) / 100;
+   if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+   temp1 = temp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
    if (temp1 > healmax) temp1 = healmax;
    SetActorProperty(Player1TID,APROP_Health,temp1);
   }
@@ -44634,16 +44646,25 @@ script "UseCustomInventoryItem" (int type)
   // Heal Health [~25 to 30% HP] up to 105% Max HP
   temp1 = CurrentHealth;
   healmax = ((MaxHealthTrue * 1050) / 1000);
+  if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+  healmax = healmax * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
+  if (healmax > MaxHealthLimit) healmax = MaxHealthLimit;
+
   if (temp1 < healmax)
   {
    check1 += 1;
    temp1 += (MaxHealthTrue * random(25,30)) / 100;
+   if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+   temp1 = temp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
    if (temp1 > healmax) temp1 = healmax;
    SetActorProperty(Player1TID,APROP_Health,temp1);
   }
 
   // Heal Stamina [12.5%]
   healmax = MiscellaneousVars[22];
+  if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+  healmax = healmax * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
+
   if (MiscellaneousVars[21] < healmax)
   {
    check1 += 1;
@@ -44652,6 +44673,9 @@ script "UseCustomInventoryItem" (int type)
    if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
    PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
    perktemp1 = perktemp1 * PerkFactor / 10000;
+   if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+   perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
+
    if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
    temp2 = perktemp1;
    MiscellaneousVars[21] += temp2;
