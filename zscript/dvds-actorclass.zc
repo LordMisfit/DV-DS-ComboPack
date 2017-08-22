@@ -14,11 +14,12 @@ class AetheriusBaseZSC : Actor
  int user_attacktype, user_attacks, user_attackmax, user_fastchasechance, user_fastchaseextra, user_painfastchase;
  int user_paintomissile;
 
+ int user_crisisprojectile;
  int user_defendtimer, user_defendtimermax, user_defendcycles;
  int user_autorestimer;
  int user_firevolleys, user_firevolleymax;
  int user_random, user_random1, user_ailment1, user_ailmentmaxchance, user_attackpoint;
- int user_chargechange; 
+ int user_chargechance; 
  int user_healthset, user_healthmoderaterange, user_healthlowrange;
  int user_charmchance;
  int user_regencycles, user_regencyclemax;
@@ -87,6 +88,135 @@ class AetheriusProjectileZSC : AetheriusBaseZSC
 		// The rest of this function was identical with Strife's version, except for the angle being used.
 		A_Tracer2(traceang);
 	}
+
+    // Red Axe [Heretic]
+	void A_DripBlood (string missiletype = "Blood")
+	{
+		double xo = random2[DripBlood]() / 32.0;
+		double yo = random2[DripBlood]() / 32.0;
+		Actor mo = Spawn (missiletype, Vec3Offset(xo, yo, 0.), ALLOW_REPLACE);
+		if (mo != null)
+		{
+			mo.Vel.X = random2[DripBlood]() / 64.0;
+			mo.Vel.Y = random2[DripBlood]() / 64.0;
+			mo.Gravity = 1./8;
+		}
+	}
+
+	// Ice Ball Splits
+	void A_LichIceImpact(string missiletype = "HeadFX2")
+	{
+		for (int i = 0; i < 8; i++)
+		{
+			Actor shard = Spawn(missiletype, Pos, ALLOW_REPLACE);
+			if (shard != null)
+			{
+				shard.target = target;
+				shard.angle = i*45.;
+				shard.VelFromAngle();
+				shard.Vel.Z = -.6;
+				shard.CheckMissileSpawn (radius);
+			}
+		}
+	}
+
+	// Lich Fire Pillar
+	void A_LichFireGrow ()
+	{
+		health--;
+		AddZ(9.);
+		if (health == 0)
+		{
+			RestoreDamage();
+			SetStateLabel("NoGrow");
+		}
+	}
+
+	// Wendigo/IceLich Balls
+	void A_IceGuyMissileExplode(string missiletype = "IceGuyFX2")
+	{
+		for (int i = 0; i < 8; i++)
+		{
+			Actor mo = SpawnMissileAngleZ (pos.z+3, missiletype, i*45., -0.3);
+			if (mo)
+			{
+				mo.target = target;
+			}
+		}
+	}	
+
+	//
+	void A_MntrFloorFire(string missiletype = "MinotaurFX3")
+	{
+		SetZ(floorz);
+		double x = Random2[MntrFloorFire]() / 64.;
+		double y = Random2[MntrFloorFire]() / 64.;
+		
+		Actor mo = Spawn(missiletype, Vec2OffsetZ(x, y, floorz), ALLOW_REPLACE);
+		if (mo != null)
+		{
+			mo.target = target;
+			mo.Vel.X = MinVel; // Force block checking
+			mo.CheckMissileSpawn (radius);
+		}
+	}
+}
+
+class AetheriusWhirlwind : AetheriusProjectileZSC
+{
+
+	override int DoSpecialDamage (Actor target, int damage, Name damagetype)
+	{
+	    int randVal;
+	    int whirldmg = 3 * random(1,8);            
+	    if (Stamina == 30) { whirldmg *= CallACS("CrisisMultiplier"); }
+		//A_LogInt(whirldmg);
+
+		if (!target.bDontThrust)
+		{
+			target.angle += Random2[WhirlwindDamage]() * (360 / 4096.);
+			target.Vel.X += Random2[WhirlwindDamage]() / 64.;
+			target.Vel.Y += Random2[WhirlwindDamage]() / 64.;
+		}
+
+		if ((level.time & 16) && !target.bBoss && !target.bDontThrust)
+		{
+			randVal = min(160, random[WhirlwindSeek]());
+			target.Vel.Z += randVal / 32.;
+			if (target.Vel.Z > 12)
+			{
+				target.Vel.Z = 12;
+			}
+		}
+		if (!(level.time & 7))
+		{
+			target.DamageMobj (null, target, whirldmg, 'Wind');
+		}
+		return -1;
+	}
+
+	void A_WhirlwindSeek()
+	{
+		health -= 3;
+		if (health < 0)
+		{
+			Vel = (0,0,0);
+			SetStateLabel("Death");
+			bMissile = false;
+			return;
+		}
+		if ((threshold -= 3) < 0)
+		{
+			threshold = 58 + (random[WhirlwindSeek]() & 31);
+			A_PlaySound("ironlich/attack3", CHAN_BODY);
+		}
+		if (tracer && tracer.bShadow)
+		{
+			return;
+		}
+		A_SeekerMissile(10, 30);
+	}
+	
 }
 
 class AetheriusBaseLightning : AetheriusBaseZSC
@@ -662,28 +792,44 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		bGhost = true;
 	}
 
-	void A_WizAtk3 ()
+	// Disciple Shot [Heretic]
+	void A_WizAtk3 (string missiletype = "WizardFX1", string crisismissiletype = "WizardFX1Crisis", int meleedamage = 4, bool playcrisissound = 1)
 	{
 		A_GhostOff();
 		if (!target) return;
 		A_PlaySound (AttackSound, CHAN_WEAPON);
 		if (CheckMeleeRange())
 		{
-			int damage = random[WizAtk3](1, 8) * 4;
+		    if(user_canusecrisisatk == 1) { meleedamage *= CallACS("CrisisMultiplier"); if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } }
+			int damage = meleedamage;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
 			target.TraceBleed (newdam > 0 ? newdam : damage, self);
 			return;
 		}
-		Actor mo = SpawnMissile (target, "WizardFX1");
-		if (mo != null)
+
+		if(user_canusecrisisatk == 1) 
+		{ 
+		 if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
+		 Actor mo = SpawnMissile (target, crisismissiletype);
+		 if (mo != null)
+		 {
+			SpawnMissileAngle(crisismissiletype, mo.Angle - 45. / 8, mo.Vel.Z);
+			SpawnMissileAngle(crisismissiletype, mo.Angle + 45. / 8, mo.Vel.Z);
+		 }
+		}
+		else
 		{
-			SpawnMissileAngle("WizardFX1", mo.Angle - 45. / 8, mo.Vel.Z);
-			SpawnMissileAngle("WizardFX1", mo.Angle + 45. / 8, mo.Vel.Z);
+		 Actor mo = SpawnMissile (target, missiletype);
+		 if (mo != null)
+		 {
+			SpawnMissileAngle(missiletype, mo.Angle - 45. / 8, mo.Vel.Z);
+			SpawnMissileAngle(missiletype, mo.Angle + 45. / 8, mo.Vel.Z);
+		 }
 		}
 	}
 
 	// Iron Lich
-	void A_LichAttack (int fireshots = 5, int tornados = 1)
+	void A_LichAttack (int fireshots = 5, int tornados = 1, int meleedamage = 6, string icemissile = "HeadFX1New", string icemissilecrisis = "HeadFX1Crisis", string firemissile = "HeadFX3New", string firemissilecrisis = "HeadFX3Crisis", string twistermissile = "WhirlwindNew", string twistermissilecrisis = "WhirlwindCrisis", bool playcrisissound = 1)
 	{
 		static const int atkResolve1[] = { 50, 150 };
 		static const int atkResolve2[] = { 150, 200 };
@@ -700,27 +846,38 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_FaceTarget ();
 		if (CheckMeleeRange ())
 		{
-			int damage = random[LichAttack](1, 8) * 6;
+		    if(user_canusecrisisatk == 1) { meleedamage *= CallACS("CrisisMultiplier"); if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } }
+			int damage = meleedamage;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
 			target.TraceBleed (newdam > 0 ? newdam : damage, self);
 			return;
 		}
+		if(user_canusecrisisatk == 1) { if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } }
 		int dist = Distance2D(target) > 8 * 64;
 		int randAttack = random[LichAttack]();
 		if (randAttack < atkResolve1[dist])
 		{ // Ice ball
-			SpawnMissile (target, "HeadFX1");
+		    if(user_canusecrisisatk == 1) 
+			{ 
+			 SpawnMissile (target, icemissilecrisis); 
+			}
+			else 
+			{
+ 			 SpawnMissile (target, icemissile); 
+			}
 			A_PlaySound ("ironlich/attack2", CHAN_BODY);
 		}
 		else if (randAttack < atkResolve2[dist])
 		{ // Fire column
-			Actor baseFire = SpawnMissile (target, "HeadFX3");
+		    string firetype = firemissile;
+		    if(user_canusecrisisatk == 1) { firetype = firemissilecrisis; }
+		    Actor baseFire = SpawnMissile (target, firetype);
 			if (baseFire != null)
 			{
 				baseFire.SetStateLabel("NoGrow");
 				for (int i = 0; i < fireshots; i++)
 				{
-					Actor fire = Spawn("HeadFX3", baseFire.Pos, ALLOW_REPLACE);
+				    Actor fire = Spawn(firetype, baseFire.Pos, ALLOW_REPLACE);
 					if (i == 0)
 					{
 						A_PlaySound ("ironlich/attack1", CHAN_BODY);
@@ -741,7 +898,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{ // Whirlwind
 		  for (int i = 0; i < tornados; i++)
 		  {
-			Actor mo = SpawnMissile (target, "Whirlwind");
+		    string twistertype = twistermissile;
+			if(user_canusecrisisatk == 1) { twistertype = twistermissilecrisis; }
+		    Actor mo = SpawnMissile (target, twistertype);
 			if (mo != null)
 			{
 				mo.AddZ(-32+(i*16));
@@ -1350,14 +1509,23 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (random[IceGuyLook]() < 128) SpawnWisp();
 	}
 
-	void A_IceGuyAttack()
+	void A_IceGuyAttack(string missiletype = "IceGuyFXNew", string crisismissiletype = "IceGuyFXCrisis", bool playcrisissound = 1)
 	{
 		if(!target) 
 		{
 			return;
 		}
-		SpawnMissileXYZ(Vec3Angle(radius / 2, angle + 90, 40.), target, "IceGuyFX");
-		SpawnMissileXYZ(Vec3Angle(radius / 2, angle - 90, 40.), target, "IceGuyFX");
+		
+		string specialmissile = missiletype;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1)
+		{ 
+		 if (playcrisissound == 1) { A_PlayCrisisAtkSound(); A_PlayCrisisAtkSound(); } 
+		 specialmissile = crisismissiletype;
+		}
+
+		SpawnMissileXYZ(Vec3Angle(radius / 2, angle + 90, 40.), target, specialmissile);
+		SpawnMissileXYZ(Vec3Angle(radius / 2, angle - 90, 40.), target, specialmissile);
 		A_PlaySound (AttackSound, CHAN_WEAPON);
 	}
 	
@@ -2183,8 +2351,11 @@ class MaulotaurBase : AetheriusMonsterZSC
 		return damage;
 	}
 
-	void A_MinotaurAtk1()
+	void A_MinotaurAtk1(int atkdamage = 4, int squishamount = -16)
 	{
+	    A_MonsterCrisisCheck();
+	    if(user_canusecrisisatk == 1) atkdamage *= CallACS("CrisisMultiplier");
+
 		if (!target)
 		{
 			return;
@@ -2192,13 +2363,14 @@ class MaulotaurBase : AetheriusMonsterZSC
 		A_PlaySound ("minotaur/melee", CHAN_WEAPON);
 		if (CheckMeleeRange())
 		{
-			int damage = random[MinotaurAtk1](1, 8) * 4;
+		    if(user_canusecrisisatk == 1) A_PlayCrisisAtkSound(); 
+			int damage = atkdamage;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
 			target.TraceBleed (newdam > 0 ? newdam : damage, self);
 			PlayerInfo player = target.player;
 			if (player != null && player.mo == target)
 			{ // Squish the player
-				player.deltaviewheight = -16;
+				player.deltaviewheight = squishamount;
 			}
 		}
 	}
@@ -2227,15 +2399,18 @@ class MaulotaurBase : AetheriusMonsterZSC
 			bSkullFly = true;
 			if (!friendly)
 			{ // Heretic's Minotaur is invulnerable during charge attack
-				bInvulnerable = true;
+				// bInvulnerable = true;
+				A_GiveInventory("MaulotaurChargeDefense",1);
+				bNoPain = true;
+				bNoBlood = true;
 			}
 			A_FaceTarget ();
 			VelFromAngle(MNTR_CHARGE_SPEED);
 			special1 = TICRATE/2; // Charge duration
 		}
 		else if (target.pos.z == target.floorz
-			&& dist < 9*64.
-			&& random[MinotaurDecide]() < (friendly ? 100 : 220))
+				&& dist < 9*64.
+				&& random[MinotaurDecide]() < (friendly ? 100 : 220))
 		{ // Floor fire attack
 			SetStateLabel("Hammer");
 			special2 = 0;
@@ -2274,13 +2449,29 @@ class MaulotaurBase : AetheriusMonsterZSC
 		{
 			bSkullFly = false;
 			bInvulnerable = false;
+			bNoPain = false;
+			bNoBlood = false;
 			SetState (SeeState);
 		}
 	}
 
-	void A_MinotaurAtk2()
+	void A_MinotaurAtk2(string missiletype = "MinotaurFX1", string crisismissiletype = "MinotaurFX1Crisis", int meleedamage = 5, int friendlymeleedamage = 3)
 	{
 		bool friendly = bSummonedMonster;
+
+	    int actualmeleedmg = meleedamage;
+		if (friendly == 1) actualmeleedmg = friendlymeleedamage;
+	    string actualmissile = missiletype;
+
+	    A_MonsterCrisisCheck();
+	    if(user_canusecrisisatk == 1) 
+		{
+		 actualmeleedmg *= CallACS("CrisisMultiplier");
+	     actualmissile = crisismissiletype;
+		}
+	    //A_LogInt(actualmeleedmg);
+	    //A_Log(actualmissile);
+		
 
 		if (target == null)
 		{
@@ -2289,17 +2480,19 @@ class MaulotaurBase : AetheriusMonsterZSC
 		A_PlaySound ("minotaur/attack2", CHAN_WEAPON);
 		if (CheckMeleeRange())
 		{
-			int damage = random[MinotaurAtk2](1, 8) * (friendly ? 3 : 5);
+		    if(user_canusecrisisatk == 1) A_PlayCrisisAtkSound(); 
+			int damage = actualmeleedmg;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
 			target.TraceBleed (newdam > 0 ? newdam : damage, self);
 			return;
 		}
 		double z = pos.z + 40;
-		Class<Actor> fx = "MinotaurFX1";
+		Class<Actor> fx = actualmissile;
 		Actor mo = SpawnMissileZ (z, target, fx);
 		if (mo != null)
 		{
 //			S_Sound (mo, CHAN_WEAPON, "minotaur/attack2", 1, ATTN_NORM);
+		    if(user_canusecrisisatk == 1) A_PlayCrisisAtkSound(); 
 			double vz = mo.Vel.Z;
 			double ang = mo.angle;
 			SpawnMissileAngleZ (z, fx, ang-(45./8), vz);
@@ -2309,9 +2502,16 @@ class MaulotaurBase : AetheriusMonsterZSC
 		}
 	}
 
-	void A_MinotaurAtk3()
+	void A_MinotaurAtk3(int atkdamage = 4, int squishamount = -16, string missiletype = "MinotaurFX2New", string crisismissiletype = "MinotaurFX2Crisis")
 	{
-		bool friendly = bSummonedMonster;
+	    A_MonsterCrisisCheck();
+		string attacktype = missiletype;
+	    if(user_canusecrisisatk == 1) 
+		{
+		 attacktype = crisismissiletype;
+		 atkdamage *= CallACS("CrisisMultiplier");
+		}
+		//A_LogInt(atkdamage);
 
 		if (!target)
 		{
@@ -2320,13 +2520,14 @@ class MaulotaurBase : AetheriusMonsterZSC
 		A_PlaySound ("minotaur/attack3", CHAN_VOICE);
 		if (CheckMeleeRange())
 		{
-			int damage = random[MinotaurAtk3](1, 8) * (friendly ? 3 : 5);
+		    if(user_canusecrisisatk == 1) A_PlayCrisisAtkSound(); 
+			int damage = atkdamage;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
 			target.TraceBleed (newdam > 0 ? newdam : damage, self);
 			PlayerInfo player = target.player;
 			if (player != null && player.mo == target)
 			{ // Squish the player
-				player.deltaviewheight = -16;
+				player.deltaviewheight = squishamount;
 			}
 		}
 		else
@@ -2338,7 +2539,8 @@ class MaulotaurBase : AetheriusMonsterZSC
 			}
 			else
 			{
-				Actor mo = SpawnMissile (target, "MinotaurFX2");
+		        if(user_canusecrisisatk == 1) A_PlayCrisisAtkSound(); 
+				Actor mo = SpawnMissile (target, attacktype);
 				if (mo != null)
 				{
 					mo.A_PlaySound ("minotaur/attack1", CHAN_WEAPON);
