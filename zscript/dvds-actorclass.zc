@@ -160,6 +160,79 @@ class AetheriusProjectileZSC : AetheriusBaseZSC
 			mo.CheckMissileSpawn (radius);
 		}
 	}
+
+	// DragonFX2
+	void A_DragonFX2(string missiletype = "DragonExplosion")
+	{
+		int delay = 16+(random[DragonFX2]()>>3);
+		for (int i = random[DragonFX2](1, 4); i; i--)
+		{
+			double xo = (random[DragonFX2]() - 128) / 4.;
+			double yo = (random[DragonFX2]() - 128) / 4.;
+			double zo = (random[DragonFX2]() - 128) / 16.;
+
+			Actor mo = Spawn (missiletype, Vec3Offset(xo, yo, zo), ALLOW_REPLACE);
+			if (mo)
+			{
+				mo.tics = delay + (random[DragonFX2](0, 3)) * i*2;
+				mo.target = target;
+			}
+		}
+	}
+
+	// WraithVerge
+	void A_CHolyAttack2(string missiletype = "HolySpirit", int spiritnums = 4, int spiritfuse = 105, int spiritfusedm = 85)
+	{
+		for (int j = 0; j < spiritnums; j++)
+		{
+			Actor mo = Spawn(missiletype, Pos, ALLOW_REPLACE);
+			if (!mo)
+			{
+				continue;
+			}
+			switch (j)
+			{ // float bob index
+
+				case 0:
+					mo.WeaveIndexZ = random[HolyAtk2]() & 7; // upper-left
+					break;
+				case 1:
+					mo.WeaveIndexZ = 32 + (random[HolyAtk2]() & 7); // upper-right
+					break;
+				case 2:
+					mo.WeaveIndexXY = 32 + (random[HolyAtk2]() & 7); // lower-left
+					break;
+				case 3:
+					mo.WeaveIndexXY = 32 + (random[HolyAtk2]() & 7);
+					mo.WeaveIndexZ = 32 + (random[HolyAtk2]() & 7);
+					break;
+			}
+			mo.SetZ(pos.z);
+			mo.angle = angle + 67.5 - 45.*j;
+			mo.Thrust();
+			mo.target = target;
+			mo.args[0] = 10; // initial turn value
+			mo.args[1] = 0; // initial look angle
+			if (deathmatch)
+			{ // Ghosts last slightly less longer in DeathMatch
+				mo.health = spiritfusedm;
+			    if (spiritfusedm <= 0) mo.health = 85;
+			}
+			else
+			{
+				mo.health = spiritfuse;
+			    if (spiritfuse <= 0) mo.health = 105;
+			}
+			if (tracer)
+			{
+				mo.tracer = tracer;
+				mo.bNoClip = true;
+				mo.bSkullFly = true;
+				mo.bMissile = false;
+			}
+			HolyTail.SpawnSpiritTail (mo);
+		}
+	}
 }
 
 class AetheriusWhirlwind : AetheriusProjectileZSC
@@ -217,6 +290,315 @@ class AetheriusWhirlwind : AetheriusProjectileZSC
 		A_SeekerMissile(10, 30);
 	}
 	
+}
+
+// Holy Spirit --------------------------------------------------------------
+class HolySpiritBase : AetheriusProjectileZSC
+{
+	Default
+	{
+		Health 105;
+		Speed 12;
+		Radius 10;
+		Height 6;
+		Damage 3;
+		Projectile;
+		+RIPPER +SEEKERMISSILE
+		+FOILINVUL +SKYEXPLODE +NOEXPLODEFLOOR +CANBLAST
+		+EXTREMEDEATH +NOSHIELDREFLECT
+		RenderStyle "Translucent";
+		Alpha 0.4;
+		DeathSound "SpiritDie";
+		Obituary "$OB_MPCWEAPWRAITHVERGE";
+	}
+
+	States
+	{
+	Spawn:
+		SPIR AAB 2 A_CHolySeek;
+		SPIR B 2 A_CHolyCheckScream;
+		Loop;
+	Death:
+		SPIR D 4;
+		SPIR E 4 A_Scream;
+		SPIR FGHI 4;
+		Stop;
+	}
+	
+	//============================================================================
+	//
+	//
+	//
+	//============================================================================
+
+	override bool Slam(Actor thing)
+	{
+		if (thing.bShootable && thing != target)
+		{
+			if (multiplayer && !deathmatch && thing.player && target.player)
+			{ // don't attack other co-op players
+				return true;
+			}
+			if (thing.bReflective && (thing.player || thing.bBoss))
+			{
+				tracer = target;
+				target = thing;
+				return true;
+			}
+			if (thing.bIsMonster || thing.player)
+			{
+				tracer = thing;
+			}
+			if (random[SpiritSlam]() < 96)
+			{
+				int dam = 12;
+				if (thing.player || thing.bBoss)
+				{
+					dam = 3;
+					// ghost burns out faster when attacking players/bosses
+					health -= 6;
+				}
+				if (Stamina == 30) { dam *= CallACS("CrisisMultiplier"); }
+				//A_LogInt(dam);
+
+				thing.DamageMobj(self, target, dam, 'Melee');
+				if (random[SpiritSlam]() < 128)
+				{
+					Spawn("HolyPuff", Pos, ALLOW_REPLACE);
+					A_PlaySound("SpiritAttack", CHAN_WEAPON);
+					if (thing.bIsMonster && random[SpiritSlam]() < 128)
+					{
+						thing.Howl();
+					}
+				}
+			}
+			if (thing.health <= 0)
+			{
+				tracer = null;
+			}
+		}
+		return true;
+	}
+
+	override bool SpecialBlastHandling (Actor source, double strength)
+	{
+		if (tracer == source)
+		{
+			tracer = target;
+			target = source;
+		}
+		return true;
+	}
+
+	//============================================================================
+	//
+	// CHolyFindTarget
+	//
+	//============================================================================
+
+	private void CHolyFindTarget ()
+	{
+		Actor target;
+
+		if ( (target = RoughMonsterSearch (6, true)) )
+		{
+			tracer = target;
+			bNoClip = true;
+			bSkullFly = true;
+			bMissile = false;
+		}
+	}
+
+	//============================================================================
+	//
+	// CHolySeekerMissile
+	//
+	// 	 Similar to P_SeekerMissile, but seeks to a random Z on the target
+	//============================================================================
+
+	private void CHolySeekerMissile (double thresh, double turnMax)
+	{
+		Actor target = tracer;
+		if (target == NULL)
+		{
+			return;
+		}
+		if (!target.bShootable || (!target.bIsMonster && !target.player))
+		{ // Target died/target isn't a player or creature
+			tracer = null;
+			bNoClip = false;
+			bSkullFly = false;
+			bMissile = true;
+			CHolyFindTarget();
+			return;
+		}
+		double ang = deltaangle(angle, AngleTo(target));
+		double delta = abs(ang);
+		
+		if (delta > thresh)
+		{
+			delta /= 2;
+			if (delta > turnMax)
+			{
+				delta = turnMax;
+			}
+		}
+		if (ang > 0)
+		{ // Turn clockwise
+			angle += delta;
+		}
+		else
+		{ // Turn counter clockwise
+			angle -= delta;
+		}
+		VelFromAngle();
+
+		if (!(level.time&15) 
+			|| pos.z > target.pos.z + target.height
+			|| pos.z + height < target.pos.z)
+		{
+			double newZ = target.pos.z + ((random[HolySeeker]()*target.Height) / 256.);
+			double deltaZ = newZ - pos.z;
+			if (abs(deltaZ) > 15)
+			{
+				if (deltaZ > 0)
+				{
+					deltaZ = 15;
+				}
+				else
+				{
+					deltaZ = -15;
+				}
+			}
+			Vel.Z = deltaZ / DistanceBySpeed(target, Speed);
+		}
+	}
+
+	//============================================================================
+	//
+	// A_CHolySeek
+	//
+	//============================================================================
+
+	void A_CHolySeek()
+	{
+		health--;
+		if (health <= 0)
+		{
+			Vel.X /= 4;
+			Vel.Y /= 4;
+			Vel.Z = 0;
+			SetStateLabel ("Death");
+			tics -= random[HolySeeker]()&3;
+			return;
+		}
+		if (tracer)
+		{
+			CHolySeekerMissile (args[0], args[0]*2.);
+			if (!((level.time+7)&15))
+			{
+				args[0] = 5+(random[HolySeeker]()/20);
+			}
+		}
+
+		int xyspeed = (random[HolySeeker]() % 5);
+		int zspeed = (random[HolySeeker]() % 5);
+		A_Weave(xyspeed, zspeed, 4., 2.);
+	}
+
+	//============================================================================
+	//
+	// A_CHolyCheckScream
+	//
+	//============================================================================
+
+	void A_CHolyCheckScream()
+	{
+		A_CHolySeek();
+		if (random[HolyScream]() < 20)
+		{
+			A_PlaySound ("SpiritActive", CHAN_VOICE);
+		}
+		if (!tracer)
+		{
+			CHolyFindTarget();
+		}
+	}
+}
+
+// Mage Staff FX2 (Bloodscourge) --------------------------------------------
+class MageStaffFX2Base : AetheriusProjectileZSC
+{
+	Default
+	{
+		Speed 17;
+		Height 8;
+		Damage 4;
+		DamageType "Fire";
+		Projectile;
+		+SEEKERMISSILE
+		+SCREENSEEKER
+		+EXTREMEDEATH
+		DeathSound "MageStaffExplode";
+		Obituary "$OB_MPMWEAPBLOODSCOURGE";
+	}
+
+
+	States
+	{
+	Spawn:
+		MSP2 ABCD 2 Bright A_MStaffTrack;
+		Loop;
+	Death:
+		MSP2 E 4 Bright A_SetTranslucent(1,1);
+		MSP2 F 5 Bright A_Explode (80, 192, 0);
+		MSP2 GH 5 Bright;
+		MSP2 I 4 Bright;
+		Stop;
+	}
+	
+	//============================================================================
+	//
+	//
+	//
+	//============================================================================
+
+	override int SpecialMissileHit (Actor victim)
+	{
+		if (victim != target && !victim.player && !victim.bBoss)
+		{
+			int dam = 10;
+			if (Stamina == 30) { dam *= CallACS("CrisisMultiplier"); }
+			A_LogInt(dam);
+
+			victim.DamageMobj (self, target, dam, 'Fire');
+			return 1;	// Keep going
+		}
+		return -1;
+	}
+
+	override bool SpecialBlastHandling (Actor source, double strength)
+	{
+		// Reflect to originator
+		tracer = target;	
+		target = source;
+		return true;
+	}
+
+	//============================================================================
+	//
+	// A_MStaffTrack
+	//
+	//============================================================================
+
+	void A_MStaffTrack()
+	{
+		if (tracer == null && random[MStaffTrack]() < 50)
+		{
+			tracer = RoughMonsterSearch (10, true);
+		}
+		A_SeekerMissile(2, 10);
+	}
 }
 
 class AetheriusBaseLightning : AetheriusBaseZSC
@@ -1543,7 +1925,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	}
 	
     // Death Wyvern
-	private void DragonSeek (double thresh, double turnMax)
+	private void DragonSeek (double thresh, double turnMax, int meleedamage, string missiletype = "DragonFireball", string crisismissiletype = "DragonFireballCrisis")
 	{
 		double dist;
 		double delta;
@@ -1595,14 +1977,30 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				target = targ;
 				if (CheckMeleeRange ())
 				{
-					int damage = random[DragonSeek](1, 8) * 10;
+				    A_MonsterCrisisCheck();
+					int basedmg = meleedamage;
+					if(user_canusecrisisatk == 1) 
+					{
+					 basedmg *= CallACS("CrisisMultiplier");	
+					 A_PlayCrisisAtkSound();
+					}
+					A_LogInt(basedmg);
+
+					int damage = basedmg;
 					int newdam = target.DamageMobj (self, self, damage, 'Melee');
 					target.TraceBleed (newdam > 0 ? newdam : damage, self);
 					A_PlaySound (AttackSound, CHAN_WEAPON);
 				}
 				else if (random[DragonSeek]() < 128 && CheckMissileRange())
 				{
-					SpawnMissile(targ, "DragonFireball");		
+				    string atktype = missiletype;
+				    A_MonsterCrisisCheck();
+					if(user_canusecrisisatk == 1)
+					{ 
+					 A_PlayCrisisAtkSound();
+					 atktype = crisismissiletype;
+					}
+					SpawnMissile(targ, atktype);		
 					A_PlaySound (AttackSound, CHAN_WEAPON);
 				}
 				target = oldTarget;
@@ -1680,11 +2078,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		RemoveFromHash ();
 	}
 
-	void A_DragonFlight()
+	void A_DragonFlight(double thresh = 4., double turnMax = 8., int meleedamage = 10, string missiletype = "DragonFireball", string crisismissiletype = "DragonFireballCrisis")
 	{
 		double ang;
 
-		DragonSeek (4., 8.);
+		DragonSeek (thresh, turnMax, meleedamage, missiletype, crisismissiletype);
 		if (target)
 		{
 			if(!target.bShootable)
@@ -1695,7 +2093,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			ang = absangle(angle, AngleTo(target));
 			if (ang <22.5 && CheckMeleeRange())
 			{
-				int damage = random[DragonFlight](1, 8) * 8;
+				int basedmg = meleedamage;
+			    A_MonsterCrisisCheck();
+				if(user_canusecrisisatk == 1) 
+				{ 
+				 basedmg *= CallACS("CrisisMultiplier");	
+				 A_PlayCrisisAtkSound();
+				}
+				A_LogInt(basedmg);
+
+				int damage = basedmg;
 				int newdam = target.DamageMobj (self, self, damage, 'Melee');
 				target.TraceBleed (newdam > 0 ? newdam : damage, self);
 				A_PlaySound (AttackSound, CHAN_WEAPON);
@@ -1712,9 +2119,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 
-	void A_DragonFlap()
+	void A_DragonFlap(double thresh = 4., double turnMax = 8., int meleedamage = 10, string missiletype = "DragonFireball", string crisismissiletype = "DragonFireballCrisis")
 	{
-		A_DragonFlight();
+		A_DragonFlight(thresh,turnMax,meleedamage,missiletype,crisismissiletype);
 		if (random[DragonFlight]() < 240)
 		{
 			A_PlaySound ("DragonWingflap", CHAN_BODY);
@@ -1725,9 +2132,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 
-	void A_DragonAttack()
+	void A_DragonAttack(string missiletype = "DragonFireball", string crisismissiletype = "DragonFireballCrisis")
 	{
-		SpawnMissile (target, "DragonFireball");
+		string atktype = missiletype;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1)
+		{ 
+		 A_PlayCrisisAtkSound();
+		 atktype = crisismissiletype;
+		}
+		SpawnMissile (target, atktype);
 	}
 
 	void A_DragonPain()
@@ -1748,49 +2162,64 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	}
 	
 	// Traductus
-	void A_ClericAttack()
+	void A_ClericAttack(string missiletype = "HolyMissile", string crisismissiletype = "HolyMissileCrisis")
 	{
+	    string atktype = missiletype;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
+
 		if (!target) return;
 
-		Actor missile = SpawnMissileZ (pos.z + 40., target, "HolyMissile");
+		Actor missile = SpawnMissileZ (pos.z + 40., target, atktype);
 		if (missile != null) missile.tracer = null;	// No initial target
 		A_PlaySound ("HolySymbolFire", CHAN_WEAPON);
 	}
 
     // Menelkir	
-	void MStaffSpawn2 (double angle)
+	void MStaffSpawn2 (double angle, string missiletype = "MageStaffFX2", string crisismissiletype = "MageStaffFX2Crisis")
 	{
-		Actor mo = SpawnMissileAngleZ (pos.z + 40, "MageStaffFX2", angle, 0.);
+	    string atktype = missiletype;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
+
+		Actor mo = SpawnMissileAngleZ (pos.z + 40, atktype, angle, 0.);
 		if (mo)
 		{
 			mo.target = self;
 			mo.tracer = RoughMonsterSearch(10, true, true);
 		}
 	}
-	void A_MageAttack()
+	void A_MageAttack(string missiletype = "MageStaffFX2", string crisismissiletype = "MageStaffFX2Crisis")
 	{
 		if (target == NULL)
 		{
 			return;
 		}
-		MStaffSpawn2(angle);
-		MStaffSpawn2(angle - 5);
-		MStaffSpawn2(angle + 5);
+		MStaffSpawn2(angle,missiletype,crisismissiletype);
+		MStaffSpawn2(angle-5,missiletype,crisismissiletype);
+		MStaffSpawn2(angle+5,missiletype,crisismissiletype);
 		A_PlaySound("MageStaffFire", CHAN_WEAPON);
 	}
 
 	// Zedek
-	void A_FighterAttack()
+	void A_FighterAttack(string missiletype = "FSwordMissile", string crisismissiletype = "FSwordMissileCrisis")
 	{
+	    string atktype = missiletype;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
+
 		if (!target) return;
 
-		SpawnMissileAngle("FSwordMissile", Angle + (45. / 4), 0);
-		SpawnMissileAngle("FSwordMissile", Angle + (45. / 8), 0);
-		SpawnMissileAngle("FSwordMissile", Angle, 0);
-		SpawnMissileAngle("FSwordMissile", Angle - (45. / 8), 0);
-		SpawnMissileAngle("FSwordMissile", Angle - (45. / 4), 0);
+		SpawnMissileAngle(atktype, Angle + (45. / 4), 0);
+		SpawnMissileAngle(atktype, Angle + (45. / 8), 0);
+		SpawnMissileAngle(atktype, Angle, 0);
+		SpawnMissileAngle(atktype, Angle - (45. / 8), 0);
+		SpawnMissileAngle(atktype, Angle - (45. / 4), 0);
 		A_PlaySound ("FighterSwordFire", CHAN_WEAPON);
 	}
+
+
+
     //*************************
     //*STRIFE-UNIQUE FUNCTIONS*
     //*************************
