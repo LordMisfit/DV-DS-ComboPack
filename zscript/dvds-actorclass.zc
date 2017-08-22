@@ -839,6 +839,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		// Whirlwind	(close 40% : far 20%)
 		// Distance threshold = 8 cells
 
+		A_MonsterCrisisCheck();
 		if (target == null)
 		{
 			return;
@@ -1093,8 +1094,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	}
 	
     // Bishop
-	void A_BishopAttack()
+	void A_BishopAttack(int meleedmg = 4, int missilenum = 5)
 	{
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) meleedmg *= CallACS("CrisisMultiplier");
+
 		if (!target)
 		{
 			return;
@@ -1102,23 +1106,28 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_PlaySound (AttackSound, CHAN_BODY);
 		if (CheckMeleeRange())
 		{
-			int damage = random[BishopAttack](1, 8) * 4;
+			if(user_canusecrisisatk == 1) A_PlayCrisisAtkSound();
+			int damage = meleedmg;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
 			target.TraceBleed (newdam > 0 ? newdam : damage, self);
 			return;
 		}
-		missilecount = (random[BishopAttack]() & 3) + 5;
+		missilecount = missilenum;
 	}
 
-	void A_BishopAttack2()
+	void A_BishopAttack2(string missiletype = "BishopFX", string crisismissiletype = "BishopFXCrisis")
 	{
+	    string atktype = missiletype;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
+
 		if (!target || !missilecount)
 		{
 			missilecount = 0;
 			SetState (SeeState);
 			return;
 		}
-		Actor mo = SpawnMissile (target, "BishopFX");
+		Actor mo = SpawnMissile (target, atktype);
 		if (mo != null)
 		{
 			mo.tracer = target;
@@ -1440,10 +1449,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 	    int maxdrain;
 		if (drainamount == 0) drainamount = random[StealHealth](1,8)*2;
+	    A_MonsterCrisisCheck();
+	    if(user_canusecrisisatk == 1) drainamount *= CallACS("CrisisMultiplier");
+
 	    if (user_MaxHP <= 0) maxdrain = spawnhealth(); else maxdrain = user_MaxHP;
 		// Steal health from target and give to self
 		if (CheckMeleeRange() && (random[StealHealth]()<maxdrain))
 		{
+		    if(user_canusecrisisatk == 1) A_PlayCrisisAtkSound(); 
 			int amount = drainamount;
 			target.DamageMobj (self, self, amount, 'Melee');
 			if (health < maxdrain && target.bINVULNERABLE == 0)
