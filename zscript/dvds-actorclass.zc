@@ -14,6 +14,7 @@ class AetheriusBaseZSC : Actor
  int user_attacktype, user_attacks, user_attackmax, user_fastchasechance, user_fastchaseextra, user_painfastchase;
  int user_paintomissile;
 
+ int user_golddrop;
  int user_crisisprojectile;
  int user_defendtimer, user_defendtimermax, user_defendcycles;
  int user_autorestimer;
@@ -962,6 +963,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
  //****************************
  //*AETHERIUS UNIQUE FUNCTIONS*
  //****************************
+ void A_GiveGold(int basegold)
+ {
+	int goldamt = CountInv("Coin",AAPTR_DEFAULT);
+	user_golddrop = basegold;
+	user_golddrop += goldamt;
+	A_GiveToTarget("Coin",user_golddrop);
+	A_TakeInventory("Coin",goldamt,0,AAPTR_DEFAULT);
+	//A_LogInt(user_golddrop);
+ }
+
  void A_StealthChecker(int type = 0)
  {
   float user_stealthlevel, user_stealthmulti, user_stealthmulti2;
@@ -2331,8 +2342,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 
-	void A_InquisitorAttack ()
+	void A_InquisitorAttack (string missiletype = "InquisitorShot", string crisismissiletype = "InquisitorShotCrisis")
 	{
+	    string atktype = missiletype;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
+
 		if (target == null)
 			return;
 
@@ -2340,13 +2355,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		AddZ(32);
 		angle -= 45./32;
-		Actor proj = SpawnMissileZAimed (pos.z, target, "InquisitorShot");
+		Actor proj = SpawnMissileZAimed (pos.z, target, atktype);
 		if (proj != null)
 		{
 			proj.Vel.Z += 9;
 		}
 		angle += 45./16;
-		proj = SpawnMissileZAimed (pos.z, target, "InquisitorShot");
+		proj = SpawnMissileZAimed (pos.z, target, atktype);
 		if (proj != null)
 		{
 			proj.Vel.Z += 16;
@@ -2427,8 +2442,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		return false;
 	}
 
-	void A_CrusaderChoose ()
+	void A_CrusaderChoose (string firemissile = "FastFlameMissile", string crisisfiremissile = "FastFlameMissileCrisis", string rockmissile = "CrusaderMissile", string crisisrockmissile = "CrusaderMissileCrisis")
 	{
+	    string fireatktype = firemissile;
+	    string missileatktype = rockmissile;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) { fireatktype = crisisfiremissile; missileatktype = crisisrockmissile; A_PlayCrisisAtkSound(); }
+
 		if (target == null)
 			return;
 
@@ -2436,18 +2456,18 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			A_FaceTarget ();
 			angle -= 180./16;
-			SpawnMissileZAimed (pos.z + 40, target, "FastFlameMissile");
+			SpawnMissileZAimed (pos.z + 40, target, fireatktype);
 		}
 		else
 		{
 			if (CheckMissileRange ())
 			{
 				A_FaceTarget ();
-				SpawnMissileZAimed (pos.z + 56, target, "CrusaderMissile");
+				SpawnMissileZAimed (pos.z + 56, target, missileatktype);
 				angle -= 45./32;
-				SpawnMissileZAimed (pos.z + 40, target, "CrusaderMissile");
+				SpawnMissileZAimed (pos.z + 40, target, missileatktype);
 				angle += 45./16;
-				SpawnMissileZAimed (pos.z + 40, target, "CrusaderMissile");
+				SpawnMissileZAimed (pos.z + 40, target, missileatktype);
 				angle -= 45./16;
 				reactiontime += 15;
 			}
@@ -2455,20 +2475,28 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 
-	void A_CrusaderSweepLeft ()
+	void A_CrusaderSweepLeft (string firemissile = "FastFlameMissile", string crisisfiremissile = "FastFlameMissileCrisis")
 	{
+	    string fireatktype = firemissile;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) { fireatktype = crisisfiremissile; A_PlayCrisisAtkSound(); }
+
 		angle += 90./16;
-		Actor misl = SpawnMissileZAimed (pos.z + 48, target, "FastFlameMissile");
+		Actor misl = SpawnMissileZAimed (pos.z + 48, target, fireatktype);
 		if (misl != null)
 		{
 			misl.Vel.Z += 1;
 		}
 	}
 
-	void A_CrusaderSweepRight ()
+	void A_CrusaderSweepRight (string firemissile = "FastFlameMissile", string crisisfiremissile = "FastFlameMissileCrisis")
 	{
+	    string fireatktype = firemissile;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) { fireatktype = crisisfiremissile; A_PlayCrisisAtkSound(); }
+
 		angle -= 90./16;
-		Actor misl = SpawnMissileZAimed (pos.z + 48, target, "FastFlameMissile");
+		Actor misl = SpawnMissileZAimed (pos.z + 48, target, fireatktype);
 		if (misl != null)
 		{
 			misl.Vel.Z += 1;
@@ -2494,19 +2522,23 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	}
 
     // Sentinel
-	void A_SentinelAttack (Class<Actor> missiletype = "SentinelFX2", string trailtype = "SentinelFX1")
+	void A_SentinelAttack (string missiletype = "SentinelFX2", string crisismissiletype = "SentinelFX2Crisis", string trailtype = "SentinelFX1", int trailsize = 8)
 	{
+		string atktype = missiletype;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
+		
 		// [BB] Without a target the P_SpawnMissileZAimed call will crash.
 		if (!target)
 		{
 			return;
 		}
 
-		Actor missile = SpawnMissileZAimed (pos.z + 32, target, missiletype);
+		Actor missile = SpawnMissileZAimed (pos.z + 32, target, atktype);
 
 		if (missile != NULL && (missile.Vel.X != 0 || missile.Vel.Y != 0))
 		{
-			for (int i = 8; i > 1; --i)
+			for (int i = trailsize; i > 1; --i)
 			{
 				Actor trail = Spawn(trailtype, Vec3Angle(missile.radius*i, missile.angle, 32 + missile.Vel.Z / 4 * i), ALLOW_REPLACE);
 				if (trail != NULL)
@@ -2556,7 +2588,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		bNoGravity = false;
 	}
 
-	void A_StalkerAttack ()
+	void A_StalkerAttack(int dmg = 2)
 	{
 		if (bNoGravity)
 		{
@@ -2567,8 +2599,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			A_FaceTarget ();
 			if (CheckMeleeRange ())
 			{
-				int damage = (random[Stalker]() & 7) * 2 + 2;
+				A_MonsterCrisisCheck();
+				if(user_canusecrisisatk == 1) { dmg *= CallACS("CrisisMultiplier"); A_PlayCrisisAtkSound(); }
 
+				int damage = dmg;
 				int newdam = target.DamageMobj (self, self, damage, 'Melee');
 				target.TraceBleed (newdam > 0 ? newdam : damage, self);
 			}
@@ -2655,6 +2689,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 	
+	void A_DropFire(string missiletype = "FireDroplet", int expdmg = 64, int exprad = 64, int expflags = XF_NOSPLASH, string type = "Fire")
+	{
+		Actor drop = Spawn(missiletype, pos + (0,0,24), ALLOW_REPLACE);
+		if (drop != null)
+		{
+			drop.Vel.Z = -1.;
+		}
+		A_Explode(expdmg, exprad, expflags, damagetype: type);
+	}	
+
  States
  {
   Pain.Charm: 
