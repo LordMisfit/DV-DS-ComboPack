@@ -37406,6 +37406,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
       if (CheckActorClass(0, "Macil2New")) LevelCheck += random(9,18);
       if (CheckActorClass(0, "LoremasterNew")) LevelCheck += random(9,18);
        // Tier 2 Boss
+ 	  if (CheckActorClass(0, "DSBossBrain")) LevelCheck += random(15,30);
       if (CheckActorClass(0, "AlienSpectre1New")) LevelCheck += random(15,30);
       if (CheckActorClass(0, "AlienSpectre2New")) LevelCheck += random(15,30);
       if (CheckActorClass(0, "AlienSpectre3New")) LevelCheck += random(15,30);
@@ -37663,6 +37664,13 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
   //*******************************************************************
   //** Specialized Boss Options [D'Sparil/Korax/Spectres/Entity/etc] **
   //*******************************************************************
+  // Doom2
+  if (CheckActorClass(0, "DSBossBrain"))
+  {
+   MaxHP *= 8;
+   if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\caMaxHP (Icon of Sin): ",d:MaxHP);
+  }
+
   // DUMP3
   if (CheckActorClass(0, "AdolfHitlerDS"))
   {
@@ -44300,30 +44308,26 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
    if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
   }
 
-  int hpcritlevel = 2;
-  if (GameSkill() == SKILL_VERY_EASY) hpcritlevel = 1; // 1.0%
-  if (GameSkill() == SKILL_EASY) hpcritlevel = 1; // 1.5%
-  if (GameSkill() == SKILL_NORMAL) hpcritlevel = 2; // 2.0%
-  if (GameSkill() == SKILL_HARD) hpcritlevel = 2; // 2.5%
-  if (GameSkill() == SKILL_VERY_HARD) hpcritlevel = 3; // 3.0%
-  if (GameSkill() == 5) hpcritlevel = 4; // 4.0%
-
-  int hplowlevel = 16;
-  if (GameSkill() == SKILL_VERY_EASY) hplowlevel = 8; // 8.0%
-  if (GameSkill() == SKILL_EASY) hplowlevel = 12; // 12.0%
-  if (GameSkill() == SKILL_NORMAL) hplowlevel = 16; // 16.0%
-  if (GameSkill() == SKILL_HARD) hplowlevel = 20; // 20.0%
-  if (GameSkill() == SKILL_VERY_HARD) hplowlevel = 24; // 24.0%
-  if (GameSkill() == 5) hplowlevel = 32; // 32.0%
+  int hpcritlevel = GetUserVariable(0, "user_HPCritRange");
+  int hplowlevel = GetUserVariable(0, "user_HPLowRange");
+  int hphalflevel = (GetUserVariable(0, "user_MaxHP") / 2);
+  if (GetCVar("dvdsdebug_lifebardisplaystuff") == 1)
+  {
+   PrintBold(s:"CritLevel: ",d:hpcritlevel,
+             s:"\nLowLevel: ",d:hplowlevel,
+             s:"\nHalfLevel: ",d:hphalflevel);
+  }
 
   int actormaxhp;
   int actorcurrhp;
   int hppercentdisp;
+
+ 
   If(ActivatorTID() != Activator)
   {
    actormaxhp = GetUserVariable(0, "user_MaxHP");
    actorcurrhp = GetActorProperty(0, APROP_Health);
-   if (GetCVar("dvdsdebug_lifebardisplaystuff") == 1) PrintBold(s:"Activator [1]: ",d:Activator,s:"");
+   if (GetCVar("dvdsdebug_lifebardisplaystuff") == 1) PrintBold(s:"Activator [1]: ",d:Activator,s:"  ActorMaxHP: ",d:actormaxhp,s:"");
    SetActivator(Activator);
 
    If (MenuSystemVars[0] == 0 && actormaxhp != 0)
@@ -44392,22 +44396,40 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
      if (leveldifference >= 101 && leveldifference <= 250) textcolor = CR_DARKRED;
      if (leveldifference >= 251) textcolor = CR_PURPLE;
      HudMessage (d:levelcheck; 0, 197, textcolor, xpos, ypos, 0.05);
-	 
+
      SetFont ("DVDSSMLFONT");
      for (acounter = 0; acounter <= hppercentdisp; acounter++)
      {
       bcounter = bcounter + 2.0;
       SetActivatorToTarget(0);
 
-      if (hppercentdisp > 50) SetFont ("FILLNORM");
-      else if (hppercentdisp > hplowlevel && hppercentdisp <= 50 ) SetFont ("FILLCAUT");
-      else if (hppercentdisp > hpcritlevel && hppercentdisp <= hplowlevel ) SetFont ("FILLDANG");
-      else if (hppercentdisp <= hpcritlevel ) SetFont ("FILLCRIT");
+      if (actorcurrhp > hphalflevel) 
+	  {
+	   SetFont ("FILLNORM");
+	  }
+      else 
+	  if (actorcurrhp > hplowlevel && actorcurrhp <= hphalflevel) 
+	  {
+	   SetFont ("FILLCAUT");
+	  }
+      else 
+	  if (actorcurrhp > hpcritlevel && actorcurrhp <= hplowlevel) 
+	  { 
+	   SetFont ("FILLDANG"); 
+	  }
+      else 
+	  if (actorcurrhp <= hpcritlevel) 
+	  { 
+	   SetFont ("FILLCRIT"); 
+	  }
 
       SetActivator(Activator);
       SetHudSize (800,600,0);
 
-      If(actorcurrhp > 0) hudmessage(s:"a"; 0, acounter+202, CR_GREEN, 303.0 + bcounter, 100.0, 0.05);
+      If(actorcurrhp > 0)
+      {
+	   hudmessage(s:"a"; 0, acounter+202, CR_GREEN, 303.0 + bcounter, 100.0, 0.05, 1.0);
+	  }
      }
      bcounter = 0;
      acounter = 0;
@@ -48404,8 +48426,14 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
    if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Uncurse Pts: ",d:MiscellaneousVars[202],s:" [+",d:uncursepts,s:"]");
   }
 
-  MiscellaneousVars[167] += 1; // Increases Player's actual total kill count by 1
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Kills: ",d:MiscellaneousVars[167]);
+  int donotincreasekills = 0;
+  if (CheckActorClass(0,"DSBossBrain") == 1) { donotincreasekills = 1; }
+  if (CheckActorClass(0,"ClayDevilNew") == 1) { donotincreasekills = 1; }
+  if (donotincreasekills == 0) 
+  {
+   MiscellaneousVars[167] += 1; // Increases Player's actual total kill count by 1
+   if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Kills: ",d:MiscellaneousVars[167]);
+  }
  }
 
  if (ModType == 0) // Classic Doom 1-2/Heretic/Hexen/Strife mode :P
@@ -48497,6 +48525,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  // Drops
  if (CheckFlag(0,"BOSS") == 1) experiessencefactor = random(8,16);
  if (CheckFlag(0,"FRIENDLY") == 1) { randomdropsallowed = 0; experiessencefactor = 0; }
+ if (CheckActorClass(0,"DSBossBrain") == 1) { randomdropsallowed = 0; experiessencefactor = 0; }
  if (CheckActorClass(0,"ClayDevilNew") == 1) { randomdropsallowed = 0; experiessencefactor = 0; }
  if (CheckActorClass(0,"FakeGoldLich") == 1) { randomdropsallowed = 0; experiessencefactor = 0; }
  if (CheckActorClass(0,"FireDemonQueenClone") == 1) { randomdropsallowed = 0; experiessencefactor = 0; }
@@ -48879,6 +48908,11 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   baseexp = baseamount;
  }
 
+ if (CheckActorClass(0,"DSBossBrain") == 1)
+ {
+  finalexpamount = finalexpamount * random(3,5);
+ }
+ 
  if (CheckActorClass(0,"Banshee") == 1 || CheckActorClass(0,"DeathKnight") == 1)
  {
   finalexpamount = (finalexpamount * random(3,5)) / 2;
