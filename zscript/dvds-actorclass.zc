@@ -234,6 +234,67 @@ class AetheriusProjectileZSC : AetheriusBaseZSC
 			HolyTail.SpawnSpiritTail (mo);
 		}
 	}
+
+	// Sigil 1/Programmer Lightning Spawn Spot
+	void A_SpectralLightning (string spawntype1 = "SpectralLightningV1", string spawntype2 = "SpectralLightningV2")
+	{
+		if (threshold != 0)
+			--threshold;
+
+		Vel.X += random2[Zap5](3);
+		Vel.Y += random2[Zap5](3);
+
+		double xo = random2[Zap5](3) * 50.;
+		double yo = random2[Zap5](3) * 50.;
+		
+		class<Actor> cls;
+		if (threshold > 25) cls = spawntype2;
+		else cls = spawntype1;
+
+		Actor flash = Spawn (cls, Vec2OffsetZ(xo, yo, ONCEILINGZ), ALLOW_REPLACE);
+
+		if (flash != null)
+		{
+			flash.target = target;
+			flash.Vel.Z = -18;
+			flash.FriendPlayer = FriendPlayer;
+		}
+
+		flash = Spawn(spawntype2, (pos.xy, ONCEILINGZ), ALLOW_REPLACE);
+
+		if (flash != null)
+		{
+			flash.target = target;
+			flash.Vel.Z = -18;
+			flash.FriendPlayer = FriendPlayer;
+		}
+	}
+
+    // Player Sigil 2 Shots
+	void A_SpectralLightningTail ()
+	{
+		Actor foo = Spawn("SpectralLightningHTail", Vec3Offset(-Vel.X, -Vel.Y, 0.), ALLOW_REPLACE);
+		if (foo != null)
+		{
+			foo.Angle = Angle;
+			foo.FriendPlayer = FriendPlayer;
+		}
+	}
+
+	// Sigil5 Shots
+	void A_SpectralBigBallLightning (string spawntype = "SpectralLightningH3")
+	{
+		Class<Actor> cls = spawntype;
+		if (cls)
+		{
+			angle += 90.;
+			SpawnSubMissile (cls, target);
+			angle += 180.;
+			SpawnSubMissile (cls, target);
+			angle -= 270.;
+			SpawnSubMissile (cls, target);
+		}
+	}
 }
 
 class AetheriusWhirlwind : AetheriusProjectileZSC
@@ -2616,8 +2677,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	}
 	
 	// Programmer
-	void A_ProgrammerMelee ()
+	void A_ProgrammerMelee (int dmg = 6)
 	{
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) { dmg *= CallACS("CrisisMultiplier"); A_PlayCrisisAtkSound(); }
+
 		if (target == null)
 			return;
 
@@ -2628,7 +2692,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		A_PlaySound("programmer/clank", CHAN_WEAPON);
 
-		int damage = ((random[Programmer]() % 10) + 1) * 6;
+		int damage = dmg;
 		int newdam = target.DamageMobj (self, self, damage, 'Melee');
 		target.TraceBleed (newdam > 0 ? newdam : damage, self);
 	}
@@ -2661,11 +2725,19 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_BossDeath();
 	}
 
-	void A_SpotLightning()
+	void A_SpotLightning(string missiletype = "SpectralLightningSpot", string crisismissiletype = "SpectralLightningSpotCrisis")
 	{
+		string atktype = missiletype;
+		A_MonsterCrisisCheck();
+		if(user_canusecrisisatk == 1) 
+		{
+ 		 atktype = crisismissiletype;
+		 A_PlayCrisisAtkSound(); 
+		}
+
 		if (target == null) return;
 
-		Actor spot = Spawn("SpectralLightningSpot", (target.pos.xy, target.floorz), ALLOW_REPLACE);
+		Actor spot = Spawn(atktype, (target.pos.xy, target.floorz), ALLOW_REPLACE);
 		if (spot != null)
 		{
 			spot.threshold = 25;
