@@ -20252,7 +20252,7 @@ script "MagicEffects" (int Type, int Strength)
  {
   ActivatorSound("CastTimeFreeze",127);
   PowerupTimer[5] += (Strength*35);
-  if (PowerupTimer[5] > 0) GiveActorInventory(Player1TID, "PowerTimeFreezer", 1);
+  if (PowerupTimer[5] > 0) GiveActorInventory(Player1TID, "AetheriusTimeFreezer", 1);
  }
  if (Type == 14) // Terrorization Aura
  {
@@ -21623,12 +21623,12 @@ script "INGAMEMENUS_MECHANICS" ENTER
 
  if (MenuSystemVars[0] == 0) // Menu is off...
  {
-  if (PowerupTimer[5] == 0) TakeActorInventory(Player1TID, "PowerTimeFreezer", 9999);
+  if (PowerupTimer[5] == 0) TakeActorInventory(Player1TID, "AetheriusTimeFreezer", 9999);
   TakeActorInventory(Player1TID, "MenuInvulnerability", 9999);
  }
  else // Turned on...
  {
-  GiveActorInventory(Player1TID, "PowerTimeFreezer", 1);
+  GiveActorInventory(Player1TID, "AetheriusTimeFreezer", 1);
   GiveActorInventory(Player1TID, "MenuInvulnerability", 1);
 
   // Use press button
@@ -35340,13 +35340,13 @@ script "CheckBuffTimers" ENTER
  msgalpha = 1.0; msgalpha = FixedMul(msgalpha,overallhudalpha);
  if (PowerupTimer[5] > 0)
  {
-  GiveActorInventory(Player1TID, "PowerTimeFreezer", 1);
+  GiveActorInventory(Player1TID, "AetheriusTimeFreezer", 1);
   if (GetActorProperty(Player1TID,APROP_Health) > 0 && MiscellaneousVars[2000] == 0) HudMessageBold(s:"Time Freeze: ",d:(PowerupTimer[5]/35),s:" Secs";HUDMSG_ALPHA,3438,cr_white,xpos,ypos,0.03,msgalpha);
   If (MenuSystemVars[0] == 0) PowerupTimer[5] -= 1;
  }
  else
  {
-  if (MenuSystemVars[0] == 0) TakeActorInventory(Player1TID, "PowerTimeFreezer", 9999);
+  if (MenuSystemVars[0] == 0) TakeActorInventory(Player1TID, "AetheriusTimeFreezer", 9999);
  }
 
  ypos = ypos + yposint; // 210.0; // 90% [towards bottom]
@@ -35741,7 +35741,7 @@ script "GiveBuffsPowerup" (int powertype, int powertimeadd)
  if (powertype == 5) // Time Freeze
  {
   PowerupTimer[5] += powertimeadd;
-  if (PowerupTimer[5] > 0) GiveActorInventory(Player1TID, "PowerTimeFreezer", 1);
+  if (PowerupTimer[5] > 0) GiveActorInventory(Player1TID, "AetheriusTimeFreezer", 1);
   MiscellaneousVars[2040] = 70;
   MiscellaneousVars[2045] = -4;
  }
@@ -36822,7 +36822,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
            s:"\n\co------------------------------");
   }
 
-  MaxHP = GetActorProperty(0,APROP_Health);
+  MaxHP = GetActorProperty(0,APROP_SpawnHealth);
   if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) 
   {
    PrintBold(s:"\chStart Speed: ",f:Speed,s:"\n\n",
@@ -37665,7 +37665,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
   //** Specialized Boss Options [D'Sparil/Korax/Spectres/Entity/etc] **
   //*******************************************************************
   // Doom2
-  if (CheckActorClass(0, "DSBossBrain"))
+  if (CheckActorClass(0, "DSBossBrain") && GetCVar("dvds_improvediconofsin") > 0)
   {
    MaxHP *= 8;
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\caMaxHP (Icon of Sin): ",d:MaxHP);
@@ -37890,11 +37890,12 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
   SetActorProperty(0,APROP_SpawnHealth,MaxHP);
   if (GetCVar("dvdsdebug_showstatcalcstuff") != 0)
   {
-   PrintBold(s:"\chFinal Speed: ",f:Speed,s:"\n\n",
-             s:"\cgFinal Attack: ",f:Attack,s:"\n\n",
-			 s:"\cdFinal Defense: ",f:Defense,s:"\n\n",
-			 s:"\caFinal Max HP: ",d:MaxHP,s:"\n\n",
-             s:"\cpFinal Balance: ",d:Balance);
+   PrintBold(s:"\chFinal Speed: ",f:Speed,s:"\n",
+             s:"\cgFinal Attack: ",f:Attack,s:"\n",
+			 s:"\cdFinal Defense: ",f:Defense,s:"\n",
+			 s:"\caFinal Max HP: ",d:MaxHP,s:"\n",
+             s:"\cpFinal Balance: ",d:Balance,s:"\n",
+			 s:"\ck[Actor-Check: ",s:actorname,s:"]");
   }
 
   if (GetActorClass(0) != "Sauravatar") { SetInventory("CurrentMaxHealth", MaxHP); SetUserVariable(0,"user_MaxHP",MaxHP); }
@@ -43798,7 +43799,7 @@ script "CheckBFG2704" (void)
  SetResultValue(GetCVar("dvds_BFG2704"));
 }
 
-str dvds_monsternames[403][3] =
+str dvds_monsternames[404][3] =
 {
 // DOOM 1/2
   // Monsters
@@ -43865,6 +43866,7 @@ str dvds_monsternames[403][3] =
   {"HadesElemental", "Hades Elemental", ""},
   {"HadesOverlord", "Hades Overlord", ""},
   {"Hierophant", "Hierophant", ""},
+  {"DSBossBrain", "\cfJohn Romero", ""},
 
   {"FZombieman", "Zombieman", ""},
   {"FPlasmaGuy", "Plasma Dude", ""},
@@ -44303,7 +44305,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
   int xpos = 0.0;
   int ypos = 0.0;
 
-  for (int i = 0; i < 403; i++)
+  for (int i = 0; i < 404; i++)
   {
    if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
   }
