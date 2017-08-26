@@ -67,7 +67,14 @@ class AetheriusProjectileZSC : AetheriusBaseZSC
 
 	//
 	
-	
+
+	// A_SeekerMissile that will clear its tracer pointer if the tracer is friendly.
+	void A_NFSeekerMissile(int threshold, int maxturnangle, int flags = 0, int chance = 50, int distance = 10)
+	{
+	 A_SeekerMissile(threshold,maxturnangle,flags,chance,distance);
+	 // Clears if the tracer is friendly.
+	 if (tracer && tracer.bFRIENDLY == 1) tracer = null;
+	}	
 	
     // Customizable version of A_Tracer, allowing you to change the puff and smoke, as well as the tracing angle.
 	void A_CustomTracer(double traceang = 16.875, string pufftype = "BulletPuff", string smoketype = "RevenantTracerSmoke")
@@ -535,12 +542,19 @@ class AetheriusEffectProjectile : AetheriusProjectileZSC
 class AetheriusWhirlwind : AetheriusProjectileZSC
 {
 
+	default
+	{
+	 Accuracy 8;
+	 DamageType "Wind";
+	}
+
 	override int DoSpecialDamage (Actor target, int damage, Name damagetype)
 	{
 	    int randVal;
-	    int whirldmg = 3 * random(1,8);            
-	    if (Stamina == 30) { whirldmg *= CallACS("CrisisMultiplier"); }
-		//A_LogInt(whirldmg);
+		if (Accuracy < 1) Accuracy = 1;
+		int whirltimer = level.time & (Accuracy-1);
+	    int whirldmg = 3 * randompick(1,1,1,1,1,1,1,1,2,2,2,3);            
+	    if (Stamina == 30) whirldmg *= CallACS("CrisisMultiplier");
 
 		if (!target.bDontThrust)
 		{
@@ -558,7 +572,8 @@ class AetheriusWhirlwind : AetheriusProjectileZSC
 				target.Vel.Z = 12;
 			}
 		}
-		if (!(level.time & 7))
+
+		if (whirltimer == 0)
 		{
 			target.DamageMobj (null, target, whirldmg, 'Wind');
 		}
@@ -898,6 +913,37 @@ class MageStaffFX2Base : AetheriusProjectileZSC
 	}
 }
 
+class HealMissile : AetheriusProjectileZSC
+{
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		// Non-passive means the one moving into the other is performing the checks.
+		if (!passive)
+		{
+			if (!other.bFRIENDLY)
+				return false;
+		}
+		// We don't really care about others making the check.
+		return true;
+	}
+
+	override int SpecialMissileHit (Actor victim)
+ 	{
+ 		if (victim == target) return 1;
+ 		if (victim == tracer && !victim.bFRIENDLY) return 1;
+
+ 		return -1;
+ 	}
+
+	
+	override void Tick()
+	{
+		//if (tracer.bFRIENDLY) tracer = null;
+		//This space for rent.
+		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO Tick() BREAK :V
+	}
+}
+
 class CharmMissile : AetheriusProjectileZSC
 {
 	override bool CanCollideWith(Actor other, bool passive)
@@ -913,19 +959,20 @@ class CharmMissile : AetheriusProjectileZSC
 	}
 
 	override int SpecialMissileHit (Actor victim)
-	{
-		if (victim == target && victim.bFRIENDLY)
-		{
-			return 1;	// Keep going
-		}
-		else
-		if (victim == target && !victim.bFRIENDLY)
-		{
-			return -1;	// Keep going
-		}
-		return -1;
-	}
+ 	{
+ 		if (victim == target) return 1;
+ 		if (victim == tracer && victim.bFRIENDLY) return 1;
 
+ 		return -1;
+ 	}
+
+	
+	override void Tick()
+	{
+		//if (tracer.bFRIENDLY) tracer = null;
+		//This space for rent.
+		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO Tick() BREAK :V
+	}
 }
 
 class AetheriusBaseLightning : AetheriusBaseZSC
@@ -936,10 +983,15 @@ class AetheriusBaseLightning : AetheriusBaseZSC
 		AttackSound "MageLightningZap";
 		ActiveSound "MageLightningContinuous";
 		Obituary "$OB_MPMWEAPLIGHTNING";
+		Mass 3;
+		Stamina 1;
+		Accuracy 1;
 	}
 	
 	override int SpecialMissileHit (Actor thing)
 	{
+		int dmg = self.mass * random(self.stamina,self.accuracy);
+		A_LogInt(dmg);
 		if (thing.bShootable && thing != target)
 		{
 			if (thing.Mass < LARGE_MASS)
@@ -949,7 +1001,7 @@ class AetheriusBaseLightning : AetheriusBaseZSC
 			}
 			if ((!thing.player && !thing.bBoss) || !(level.time&1))
 			{
-				thing.DamageMobj(self, target, 3, 'Electric');
+				thing.DamageMobj(self, target, dmg, 'Electric');
 				A_PlaySound(AttackSound, CHAN_WEAPON|CHAN_NOSTOP, 1, false);
 				if (thing.bIsMonster && random[LightningHit]() < 64)
 				{
@@ -1318,16 +1370,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (self.health > 0 && CountInv("MonsterHasBuffs") == 0) { A_AetheriusStats(0); }
 
 		friendlytimer = actortimer & 15;
-		if (bFRIENDLY > 0)
+		if (self.bFRIENDLY > 0 && self.health > 0 && friendlytimer == 1 && timefreeze == 0)
 		{
-			if (self.health > 0 && friendlytimer == 1 && timefreeze == 0)
+			for (int i = 1; i < 3; i++)
 			{
-			 for (int i = 1; i < 3; i++)
-			 {
 			  A_SpawnItemEx("FyggGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
 			  if (random(1,10) == 1) A_SpawnItemEx("FyggGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
 			  if (random(1,10) == 1) A_SpawnItemEx("FyggGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
-			 }
 			}
 		}
 
@@ -1486,14 +1535,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_ImpWarShieldOff()
 	{
 		bNOBLOOD = 0; bNOPAIN = 0;
-		A_TakeInventory("ImpWarlordShieldDefend",9999); // A_UnSetInvulnerable
-		A_TakeInventory("ImpWarlordShieldDefendExtra",9999);
+		A_TakeInventory("ImpWarlordShieldDefend",0x7FFFFFFF); // A_UnSetInvulnerable
+		A_TakeInventory("ImpWarlordShieldDefendExtra",0x7FFFFFFF);
 	}
 	void A_ImpWarShieldOn()
 	{
 		bNOPAIN = 1; bNOBLOOD = 1;
 		A_GiveInventory("ImpWarlordShieldDefend",1); // A_SetInvulnerable
-		A_TakeInventory("ImpWarlordShieldDefendExtra",9999);
+		A_TakeInventory("ImpWarlordShieldDefendExtra",0x7FFFFFFF);
 		if (random(1,4) == 1) { A_GiveInventory("ImpWarlordShieldDefendExtra",1); } 
 	}
 
@@ -1502,14 +1551,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		user_defendtimer = 0; user_defendcycles = 0;
 		bNOBLOOD = 0; bNOPAIN = 0; bREFLECTIVE = 0;
-		A_TakeInventory("DKnightShieldDefend",9999); // A_UnSetInvulnerable
-		A_TakeInventory("DKnightShieldDefendExtra",9999);
+		A_TakeInventory("DKnightShieldDefend",0x7FFFFFFF); // A_UnSetInvulnerable
+		A_TakeInventory("DKnightShieldDefendExtra",0x7FFFFFFF);
     }
 	void A_DeathKnightShieldOn()
 	{
 		bNOBLOOD = 1; bNOPAIN = 1; bREFLECTIVE = 1;
 		A_GiveInventory("DKnightShieldDefend",1); // A_SetInvulnerable
-		A_TakeInventory("DKnightShieldDefendExtra",9999);
+		A_TakeInventory("DKnightShieldDefendExtra",0x7FFFFFFF);
 		if (random(1,4) == 1) { A_GiveInventory("DKnightShieldDefendExtra",1); } 
     }
 	
@@ -1517,14 +1566,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_AcolyteShieldOff()
 	{
 		bNOBLOOD = 0; bNOPAIN = 0;
-		A_TakeInventory("AcolyteShieldDefend",9999); // A_UnSetInvulnerable
-		A_TakeInventory("AcolyteShieldDefendExtra",9999);
+		A_TakeInventory("AcolyteShieldDefend",0x7FFFFFFF); // A_UnSetInvulnerable
+		A_TakeInventory("AcolyteShieldDefendExtra",0x7FFFFFFF);
 	}
 	void A_AcolyteShieldOn()
 	{ 
 		if (random(1,2) == 1) { bNOPAIN = 1; bNOBLOOD = 1; } else { bNOPAIN = 0; bNOBLOOD = 0; }
 		A_GiveInventory("AcolyteShieldDefend",1); // A_SetInvulnerable
-		A_TakeInventory("AcolyteShieldDefendExtra",9999);
+		A_TakeInventory("AcolyteShieldDefendExtra",0x7FFFFFFF);
 		if (random(1,4) == 1) { A_GiveInventory("AcolyteShieldDefendExtra",1); } 
 	}
  
@@ -1533,14 +1582,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		user_defendtimer = 0; user_defendcycles = 0;
 		bNOBLOOD = 0; bNOPAIN = 0; bREFLECTIVE = 0;
-		A_TakeInventory("CentaurShieldDefend",9999); // A_UnSetInvulnerable
-		A_TakeInventory("CentaurShieldDefendExtra",9999);
+		A_TakeInventory("CentaurShieldDefend",0x7FFFFFFF); // A_UnSetInvulnerable
+		A_TakeInventory("CentaurShieldDefendExtra",0x7FFFFFFF);
     }
 	void A_CentaurShieldOn()
 	{
 		bNOBLOOD = 1; bNOPAIN = 1; bREFLECTIVE = 1;
 		A_GiveInventory("CentaurShieldDefend",1); // A_SetInvulnerable
-		A_TakeInventory("CentaurShieldDefendExtra",9999);
+		A_TakeInventory("CentaurShieldDefendExtra",0x7FFFFFFF);
 		if (random(1,4) == 1) { A_GiveInventory("CentaurShieldDefendExtra",1); } 
     }
 
@@ -1549,14 +1598,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		user_defendtimer = 0; user_defendcycles = 0;
 		bNOBLOOD = 0; bNOPAIN = 0; bREFLECTIVE = 0;
-		A_TakeInventory("SlaughtaurShieldDefend",9999); // A_UnSetInvulnerable
-		A_TakeInventory("SlaughtaurShieldDefendExtra",9999);
+		A_TakeInventory("SlaughtaurShieldDefend",0x7FFFFFFF); // A_UnSetInvulnerable
+		A_TakeInventory("SlaughtaurShieldDefendExtra",0x7FFFFFFF);
     }
 	void A_SlaughtaurShieldOn()
 	{
 		bNOBLOOD = 1; bNOPAIN = 1; bREFLECTIVE = 1;
 		A_GiveInventory("SlaughtaurShieldDefend",1); // A_SetInvulnerable
-		A_TakeInventory("SlaughtaurShieldDefendExtra",9999);
+		A_TakeInventory("SlaughtaurShieldDefendExtra",0x7FFFFFFF);
 		if (random(1,4) == 1) { A_GiveInventory("SlaughtaurShieldDefendExtra",1); } 
     }
 
@@ -1564,14 +1613,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_HellWarShieldOff()
 	{
 		bNOBLOOD = 0; bNOPAIN = 0; bREFLECTIVE = 0;
-		A_TakeInventory("EWShieldDefendMode",9999); // A_UnSetInvulnerable
-		A_TakeInventory("EWShieldDefendModeExtra",9999);
+		A_TakeInventory("EWShieldDefendMode",0x7FFFFFFF); // A_UnSetInvulnerable
+		A_TakeInventory("EWShieldDefendModeExtra",0x7FFFFFFF);
     }
 	void A_HellWarShieldOn()
 	{
 		bNOBLOOD = 1; bNOPAIN = 1; bREFLECTIVE = 1;
 		A_GiveInventory("EWShieldDefendMode",1); // A_SetInvulnerable
-		A_TakeInventory("EWShieldDefendModeExtra",9999);
+		A_TakeInventory("EWShieldDefendModeExtra",0x7FFFFFFF);
 		if (random(1,4) == 1) { A_GiveInventory("EWShieldDefendModeExtra",1); } 
     }
 
@@ -1584,7 +1633,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_NightmarePhaseIn()
 	{
 		bSHOOTABLE = 1; bNORADIUSDMG = 0; bNOPAIN = 0; bNOBLOOD = 0; 
-		A_TakeInventory("HightmarePhaseOutDefense",9999); // A_SetInvulnerable
+		A_TakeInventory("HightmarePhaseOutDefense",0x7FFFFFFF); // A_SetInvulnerable
 	}
  
     //**************************
@@ -3307,7 +3356,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	 {
 	  if(bFRIENDLY != 1)
 	  {
-       A_PlaySound("Munchies/Charmed"); 
+       A_PlaySound("Munchies/Charmed");
+	   health = user_MaxHP;
        bFRIENDLY = 1; 
        Thing_ChangeTID(0,1000);
 	  }
