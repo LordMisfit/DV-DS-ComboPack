@@ -898,6 +898,36 @@ class MageStaffFX2Base : AetheriusProjectileZSC
 	}
 }
 
+class CharmMissile : AetheriusProjectileZSC
+{
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		// Non-passive means the one moving into the other is performing the checks.
+		if (!passive)
+		{
+			if (other.bFRIENDLY)
+				return false;
+		}
+		// We don't really care about others making the check.
+		return true;
+	}
+
+	override int SpecialMissileHit (Actor victim)
+	{
+		if (victim == target && victim.bFRIENDLY)
+		{
+			return 1;	// Keep going
+		}
+		else
+		if (victim == target && !victim.bFRIENDLY)
+		{
+			return -1;	// Keep going
+		}
+		return -1;
+	}
+
+}
+
 class AetheriusBaseLightning : AetheriusBaseZSC
 {
 	Default
@@ -1278,6 +1308,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int glitterheight;
 		int glitterheight2;
 		int glitterwidth;
+		int timefreeze;
+		if (CountInv("AetheriusTimeFreezer",AAPTR_PLAYER1) == 1 
+		 || CountInv("PowerTimeFreezer",AAPTR_PLAYER1) == 1) timefreeze = 1;
+
 		glitterheight = self.height / 2;
 		glitterheight2 = self.height / 4;
 		glitterwidth = self.radius * 5 / 4;
@@ -1286,7 +1320,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		friendlytimer = actortimer & 15;
 		if (bFRIENDLY > 0)
 		{
-			if (self.health > 0 && friendlytimer == 1)
+			if (self.health > 0 && friendlytimer == 1 && timefreeze == 0)
 			{
 			 for (int i = 1; i < 3; i++)
 			 {
@@ -1312,6 +1346,28 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	    Super.Die(source, inflictor, dmgflags);
 	}
 
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		// Non-passive means the one moving into the other is performing the checks.
+		if (!passive)
+		{
+			// Pass through players, if the calling monster is Friendly
+			if (bFRIENDLY == 1 && other.GetSpecies() == "Players")
+				return false;
+
+			// Pass through other actors, if the calling monster is Friendly
+			if (bFRIENDLY == 1 && other.bFRIENDLY == 1)
+				return false;
+
+			// Pass through charm shots if the calling monster is Friendly
+			if (bFRIENDLY == 1 && other.CheckClass("CharmShot") == 1)
+				return false;
+		}
+		// We don't really care about others making the check.
+		return true;
+	}
+
+	
 	//****************************
 	//*AETHERIUS UNIQUE FUNCTIONS*
 	//****************************
@@ -3775,6 +3831,19 @@ class AetheriusPlayerPawn : PlayerPawn
 
 		actortimer++;
 		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO Tick() BREAK :V
+	}
+
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		// Non-passive means the one moving into the other is performing the checks.
+		if (!passive)
+		{
+			// Pass through different species of select types.
+			if (other.bFRIENDLY == 1)
+				return false;
+		}
+		// We don't really care about others making the check.
+		return true;
 	}
 }
 
