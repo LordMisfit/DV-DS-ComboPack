@@ -929,8 +929,45 @@ class HealMissile : AetheriusProjectileZSC
 
 	override int SpecialMissileHit (Actor victim)
  	{
- 		if (victim == target) return 1;
- 		if (victim == tracer && !victim.bFRIENDLY) return 1;
+		if (victim) let healee = AetheriusMonsterZSC(victim);
+
+ 		if (healee == target) return 1;
+ 		if (healee && healee == tracer && !healee.bFRIENDLY) return 1;
+		if (healee && healee.bFRIENDLY)
+		{
+		 if (self.CheckClass("Heal1Shot") == 1)
+		 { 
+		  if (healee.health > 0 && healee.health < healee.User_MaxHP)
+		  {
+		   healee.health += CallACS("Healing_Actor",0,1); 
+		   if (healee.health > healee.User_MaxHP) healee.health = healee.User_MaxHP;
+		   return -1;
+		  }
+		  else { return 1; }
+		 }
+
+		 if (self.CheckClass("Heal2Shot") == 1) 
+		 { 
+		  if (healee.health > 0 && healee.health < healee.User_MaxHP)
+		  {
+		   healee.health += CallACS("Healing_Actor",1,1);
+		   if (healee.health > healee.User_MaxHP) healee.health = healee.User_MaxHP;
+		   return -1;
+		  }
+		  else { return 1; }
+		 }
+
+		 if (self.CheckClass("Heal3Shot") == 1) 
+		 { 
+		  if (healee.health > 0 && healee.health < (healee.User_MaxHP*2))
+		  {
+		   healee.health += CallACS("Healing_Actor",2,1); 
+		   if (healee.health > (healee.User_MaxHP*2)) healee.health = (healee.User_MaxHP*2);
+		   return -1;
+		  }
+		  else { return 1; }
+		 }
+		}
 
  		return -1;
  	}
@@ -1402,15 +1439,52 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			// Pass through players, if the calling monster is Friendly
 			if (bFRIENDLY == 1 && other.GetSpecies() == "Players")
-				return false;
+			{ 
+			 return false; 
+			 //A_Log("False - Friendly - Player"); 
+			}
 
 			// Pass through other actors, if the calling monster is Friendly
 			if (bFRIENDLY == 1 && other.bFRIENDLY == 1)
-				return false;
+			{ 
+			 return false; 
+			 //A_Log("False - Friendly - Other Friendly"); 
+			}
 
 			// Pass through charm shots if the calling monster is Friendly
-			if (bFRIENDLY == 1 && other.CheckClass("CharmShot") == 1)
-				return false;
+			if (bFRIENDLY == 1 && other.CheckClass("CharmShot")) 
+			{ 
+			 return false; 
+			 //A_Log("False - Friendly - Charm Shot"); 
+			}
+
+			if (bFRIENDLY == 1 && other.CheckClass("Heal1Shot"))
+			{
+			 if (self.health < self.User_MaxHP) { return true; } 
+			 else 
+			 { 
+			  return false; 
+			  //A_Log("False - Heal1"); 
+			 }
+			}
+			if (bFRIENDLY == 1 && other.CheckClass("Heal2Shot"))
+			{
+			 if (self.health < self.User_MaxHP) { return true; } 
+			 else
+			 { 
+			  return false; 
+			  //A_Log("False - Heal2"); 
+			 }
+			}
+			if (bFRIENDLY == 1 && other.CheckClass("Heal3Shot"))
+			{
+			 if (self.health < (self.User_MaxHP*2)) { return true; }
+			 else
+			 { 
+			  return false; 
+			  //A_Log("False - Heal3"); 
+			 }
+			}
 		}
 		// We don't really care about others making the check.
 		return true;
