@@ -13,6 +13,8 @@ class AetheriusBaseZSC : Actor
  int user_spread, user_spread1, user_spread2;
  int user_attacktype, user_attacks, user_attackmax, user_fastchasechance, user_fastchaseextra, user_painfastchase;
  int user_paintomissile;
+ int user_painreacttimer;
+ int user_fastchasetimer;
 
  int user_golddrop;
  int user_crisisprojectile;
@@ -1516,6 +1518,38 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_GiveToTarget("Coin",user_golddrop);
 		A_TakeInventory("Coin",goldamt,0,AAPTR_DEFAULT);
 		//A_LogInt(user_golddrop);
+	}
+
+	// Attempts to mitigate floating-monsters from drifting too out of control when fast-chasing or damaged [like if they get kicked backwards]
+	// by slowing them down gradually and then stopping them at a certain interval that won't reset until they get hurt again or they attempt 
+	// to fast-chase.
+	void A_FloatLook(int time = 16)
+	{
+	 A_Look();
+	 user_fastchasetimer = time;
+	 user_painreacttimer = time;
+	}
+	void A_FloatPain(int settime = 0, int settime2 = 8, int settime2chance = 64)
+	{
+	 A_Pain();
+	 if (random(1,256) <= settime2chance) user_painreacttimer = settime2; else user_painreacttimer = settime;
+	}
+	void A_FloatSetFChaseT(int time = 0)
+	{
+	 user_fastchasetimer = time;
+	}
+	void A_FloatChaseCheck(int time1 = 4, int time2 = 8, int time3 = 12, int time4 = 16, double decelrate1 = 0.5, double decelrate2 = 0.5)
+	{
+	 user_painreacttimer++;
+	 if (user_painreacttimer == time1) { A_ScaleVelocity(decelrate1); }
+	 if (user_painreacttimer == time2) { A_ScaleVelocity(decelrate1); }
+	 if (user_painreacttimer == time3) { A_ScaleVelocity(decelrate1); }
+	 if (user_painreacttimer == time4) { A_ScaleVelocity(0); }
+	 user_fastchasetimer++;
+	 if (user_fastchasetimer == time1) { A_ScaleVelocity(decelrate2); }
+	 if (user_fastchasetimer == time2) { A_ScaleVelocity(decelrate2); }
+	 if (user_fastchasetimer == time3) { A_ScaleVelocity(decelrate2); }
+	 if (user_fastchasetimer == time4) { A_ScaleVelocity(0); }
 	}
 
 	void A_MonsterCrisisCheck ()
