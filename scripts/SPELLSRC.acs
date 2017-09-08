@@ -259,16 +259,33 @@ Functions
 // Global Vars NOT YET USED AT ALL [26/64]
 //-------------------------------------
 
+/*
+		global int 0:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
+		global int 24:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V 
+		global int 25:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
+		global int 32:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
+		global int 56:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
+						--- [KDIZD'S intermap.acs uses it]
+		global int 57:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
+						--- [KDIZD'S intermap.acs uses it]
+		global int 58:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
+						--- [KDIZD'S intermap.acs uses it]
+		global int 59:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
+						--- [KDIZD'S intermap.acs uses it]
+		global int 60:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
+						--- [KDIZD'S intermap.acs uses it]
+		global int 61:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V 
+						--- [TUTNT'S TNT03A1 uses it]
+						--- [TUTNT'S TNT03A2 uses it]
+*/
+
 //		global int 9:?;
 //      global int 13:?;
 //		global int 14:?;
 //      global int 15:?;
 //		global int 17:?;
 
-//		global int 24:?; 
-//		global int 25:?; 
 
-//		global int 32:?;
 //		global int 35:?;
 //		global int 39:?;
 
@@ -281,14 +298,7 @@ Functions
 //		global int 51:?;
 //		global int 52:?;
 //		global int 53:?;
-//		global int 56:?;
-//		global int 57:?;
-//		global int 58:?;
-//		global int 59:?;
-//		global int 60:?;
 
-//		global int 61:?;
-//		global int 64:?;
 
 // Global Vars Used by SBARINFO/other lumps, or other vars that can't be changed [13/64]
 //-----------------------------------------------------------------------------------
@@ -326,7 +336,7 @@ global int 7:DVDSSpecialArrayValue[];
 // [0] = Unconsciousness Toggle
 
 global int 9:Experience;
-global int 10:ExpTable[]; // Note To Self: NECESSARY TO BE "GLOBAL INT" TO RUN WITH HUB-BASED LEVELS LIKE IN HEXEN OR STRIFE, MISFIT YOU DINGUS-FACE.
+global int 10:ExpTable[]; // Note To Self: NECESSARY TO BE "GLOBAL INT" TO RUN WITH HUB-BASED LEVELS LIKE IN HEXEN OR STRIFE, MISFIT YOU DINGUS-FACE. :V
 global int 11:BaseEXPRequirement;
 
 global int 12:ModType; 
@@ -21657,7 +21667,7 @@ script "MaxHPBonusPickup" (void)
 }
 
 // Check if Health is above or below normal max [for customized "normal" health item checks] (All games)
-script "CheckHealthLevels" (void)
+script "CheckHealthLevels" (int maxhealtype)
 {
  int currenthealth = GetActorProperty(Player1TID,APROP_HEALTH);
  int perkhealthlimit = MaxHealthTrue;
@@ -21665,6 +21675,8 @@ script "CheckHealthLevels" (void)
 
  if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
  perkhealthlimit = perkhealthlimit * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
+ if (maxhealtype > 0) perkhealthlimit *= 2;
+ if (perkhealthlimit > (MaxHealthTrue*2)) perkhealthlimit = (MaxHealthTrue * 2);
 
  if (currenthealth < perkhealthlimit) SetResultValue(1); else SetResultValue(0);
 }
@@ -21704,7 +21716,7 @@ script "Stamina-HealingItem" (int PercentMax, int PercentAmount, int ExactAmount
 }
 
 // Stimpacks/Medikits/Berserk Packs (All games)
-script "PickupMedicalItem" (int HealItemType) //
+script "PickupMedicalItem" (int HealItemType, int maxhealtype) //
 {
  int I1, I2, Z1, Z2, C1, C2, HealAmount, ExtraHeal, CurrentHP;
  int tempstaminalimit;
@@ -21713,6 +21725,37 @@ script "PickupMedicalItem" (int HealItemType) //
  int perkbasemulti = 16;
  CurrentHP = GetActorProperty(Player1TID,APROP_HEALTH);
 
+ if (HealItemType == -1) // Source Guardian Lifeseed
+ {
+  HealAmount = MaxHealthTrue * 25 / 100;
+
+  if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+  perktemp2 = perktemp2 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
+
+  tempstaminalimit = MiscellaneousVars[22] * 5;
+
+  if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+  tempstaminalimit = tempstaminalimit * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
+
+  if (MiscellaneousVars[21] < tempstaminalimit)
+  {
+   MiscellaneousVars[165] = MiscellaneousVars[22] / 8; // 12.5%
+   perktemp1 = MiscellaneousVars[165];
+   if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+   PerkFactor = ((MiscellaneousVars[10017] * 2) + (MiscellaneousVars[10018] * 5)) + 10;
+   perktemp1 = perktemp1 * PerkFactor / 10;
+
+   if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+   perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
+
+   MiscellaneousVars[21] += perktemp1;
+
+   if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Stamina Limit: ",d:tempstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+                                                          s:"\nStamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
+   if (MiscellaneousVars[21] > tempstaminalimit) MiscellaneousVars[21] = tempstaminalimit;
+  }
+
+ }
  if (HealItemType == 0 | HealItemType == 1) // Stimpack / Crystal Vial (1) and Medikit / Quartz Flask / Mini Berserk Pack (2) [Health]
  {
   if (HealItemType == 0) HealAmount = MaxHealthTrue * 10 / 100; // [Stimpack/Vial]
@@ -21774,10 +21817,12 @@ script "PickupMedicalItem" (int HealItemType) //
  }
 
  int temphealthlimit = MaxHealthTrue;
+ if (maxhealtype > 0) temphealthlimit *= 2;
 
  if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
  temphealthlimit = temphealthlimit * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
+ if (temphealthlimit > (MaxHealthTrue*2)) temphealthlimit = MaxHealthTrue * 2;
  if (GetCVar("dvdsdebug_healitemdisplays") > 0) PrintBold(s:"Healing Limit: ",d:temphealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
                                                         s:"\nHealth Restored: ",d:perktemp2,s:" VS [",d:HealAmount,s:"]");
  if (CurrentHP <= temphealthlimit)
@@ -36563,6 +36608,7 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
    if (CheckActorClass(0, "Macil1New")) DivAmount *= 16;
    if (CheckActorClass(0, "Macil2New")) DivAmount *= 16;
    if (CheckActorClass(0, "LoremasterNew")) DivAmount *= 16;
+   if (CheckActorClass(0, "SourceGuardian")) DivAmount *= 16;
    if (CheckActorClass(0, "AlienSpectre1New")) DivAmount *= 16; // 24
    if (CheckActorClass(0, "AlienSpectre2New")) DivAmount *= 16; // 24
    if (CheckActorClass(0, "AlienSpectre3New")) DivAmount *= 16; // 24
@@ -36580,6 +36626,7 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
    if (CheckActorClass(0, "ThamuzNew")) DivAmount *= 24; // 32
    if (CheckActorClass(0, "TchernobogNew")) DivAmount *= 24; // 32
    if (CheckActorClass(0, "PennywiseBoss")) DivAmount *= 32; // 32
+   if (CheckActorClass(0, "TheSource")) DivAmount *= 32; // 128
    if (CheckActorClass(0, "Magmantis")) DivAmount *= 64; // 32
    if (CheckActorClass(0, "AdolfHitlerDS")) DivAmount *= 64; // 32
    if (CheckActorClass(0, "Sauravatar")) DivAmount *= 96; // 128
@@ -37956,9 +38003,15 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
   if (CheckActorClass(0, "DSBossBrain") && ThingCountName("DSBossEye", 0) <= 0) nonstatmonster = 1;
   if (LevelChecker == 1 && nonstatmonster == 0)
   {
-     LevelCheck = PlayerLevel;
+     LevelCheck = GetUserVariable(0,"user_presetleveladd"); // Checks the "Preset" strength of a monster
+     LevelCheck += random(GetUserVariable(0,"user_presetlevelrand1"),GetUserVariable(0,"user_presetlevelrand2")); // Checks the "Preset" strength of a monster
+     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [PresetLevel Add]: ",d:(LevelCheck));
+
+     LevelCheck += PlayerLevel;
+     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [PlayerLevel Check]: ",d:(LevelCheck));
+
      LevelCheck += GetUserVariable(0,"user_ressurrectstr"); // Checks the "Resurrect" strength of a monster [Clay Devils in TCOTD get stronger each time they resurrect]
-     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [init]: ",d:(LevelCheck));
+     if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [ResurrectStr Check]: ",d:(LevelCheck));
      LevelCheck += LevelDifficultyInflation;
      if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\ckMonsterLevel [inflation-exact]: ",d:(LevelCheck));
 	 LevelCheck = LevelCheck * (100 + LevelDifficultyInflationPercent) / 100;
@@ -38026,6 +38079,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
       if (CheckActorClass(0, "AlienSpectre3Model")) LevelCheck += random(15,30);
       if (CheckActorClass(0, "AlienSpectre4Model")) LevelCheck += random(15,30);
       if (CheckActorClass(0, "AlienSpectre5Model")) LevelCheck += random(15,30);
+ 	  if (CheckActorClass(0, "SourceGuardian")) LevelCheck += random(15,30);
        // Tier 3 Boss
  	  if (CheckActorClass(0, "DSparilUnmountedNew")) LevelCheck += random(23,45);
 	  if (CheckActorClass(0, "Zakachi")) LevelCheck += random(23,45);
@@ -38040,6 +38094,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 	  if (CheckActorClass(0, "EntitySecondNew")) LevelCheck += random(37,75);
  	  if (CheckActorClass(0, "PennywiseBoss")) LevelCheck += random(37,75);
  	  if (CheckActorClass(0, "Sauravatar")) LevelCheck += random(37,75);
+ 	  if (CheckActorClass(0, "TheSource")) LevelCheck += random(37,75);
        // Tier 5 Boss
  	  if (CheckActorClass(0, "EntityAscended")) LevelCheck += random(75,112);
        // Oddball Tier Boss
@@ -38339,6 +38394,17 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
   {
    MaxHP = (MaxHP * 3) / 2;
    if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\caMaxHP (Thamuz): ",d:MaxHP);
+  }
+  // TUTNT
+  if (CheckActorClass(0, "SourceGuardian"))
+  {
+   MaxHP = (MaxHP * random(4,5)) / 4;
+   if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\caMaxHP (Source Guardian [TUTNT]): ",d:MaxHP);
+  }
+  if (CheckActorClass(0, "TheSource"))
+  {
+   MaxHP *= 4;
+   if (GetCVar("dvdsdebug_showstatcalcstuff") != 0) PrintBold(s:"\caMaxHP (The Source of All Evil [TUTNT]): ",d:MaxHP);
   }
 
   // Hexen
@@ -44412,7 +44478,7 @@ script "CheckBFG2704" (void)
  SetResultValue(GetCVar("dvds_BFG2704"));
 }
 
-str dvds_monsternames[406][3] =
+str dvds_monsternames[410][3] =
 {
   {"PracticeTarget", "Practicing Target", ""},
   {"PracticeTarget2", "Practicing Target", ""},
@@ -44876,16 +44942,16 @@ str dvds_monsternames[406][3] =
   {"WickedNew", "Wicked", ""},
   {"AvatarNew", "\cfThe Avatar\c-", ""},
 
-  // Epic 2
+// Epic 2
   {"StrangeAlien", "Strange Alien Creature", ""},
   
-  // DUMP3
+// DUMP3
   {"AdolfHitlerDS", "\cfAdolf Hitler", ""},
   {"Benellus1DS", "\cfBenellus, God of Shotguns", ""},
   {"Benellus2DS", "\cfBenellus, God of Shotguns", ""},
   {"Benellus3DS", "\cfBenellus, God of Shotguns", ""},
 
-  // Doom 64 Retribution
+// Doom 64 Retribution
   {"DSZombieman64", "Zombieman", ""},
   {"DSShotgunGuy64", "Shotgun Guy", ""},
   {"DSDoomImp64", "Imp", ""},
@@ -44901,7 +44967,14 @@ str dvds_monsternames[406][3] =
   {"DSPainElemental64", "Pain Elemental", ""},
   {"DSFatso64", "Mancubus", ""},
   {"DSCyberdemon64", "Cyberdemon", ""},
-  {"DSMotherDemon64", "\cfThe Mother of all Demons", ""}
+  {"DSMotherDemon64", "\cfThe Mother of all Demons", ""},
+
+// The Ultimate Torment and Torture
+
+  {"TNTSpider", "Giant Spider", ""},
+  {"TNTMiniSpider", "Small Spider", ""},
+  {"SourceGuardian", "\cgGuardian of the Source", ""},
+  {"TheSource", "\cfThe Source of All Evil", ""}
   
 };
 
@@ -44920,7 +44993,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
   int xpos = 0.0;
   int ypos = 0.0;
 
-  for (int i = 0; i < 406; i++)
+  for (int i = 0; i < 410; i++)
   {
    if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
   }
@@ -45057,7 +45130,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
    }
   }
  }
- If(GetCVar("dvds_actorlifebars") == 1 && GetActorProperty(0,APROP_Health) > 0) Restart;
+ If(GetCVar("dvds_actorlifebars") == 1 && GetActorProperty(Player1TID,APROP_Health) > 0) Restart;
 }
 
 script "CheckShotgunnerSpreads" (void)
