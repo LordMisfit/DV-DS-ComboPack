@@ -2105,7 +2105,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (mo) A_PlaySound ("FireDemonAttack", CHAN_BODY);
 	}
 
-	void A_FiredChase()
+	void A_FireDChase(int minheight = 64, int strafecnt = 3, int strafechance = 30, int atkchance = 20)
 	{
 		int weaveindex = special1;
 		double ang;
@@ -2119,7 +2119,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		special1 = (weaveindex + 2) & 63;
 
 		// Ensure it stays above certain height
-		if (pos.Z < floorz + 64)
+		if (pos.Z < floorz + minheight)
 		{
 			AddZ(2);
 		}
@@ -2142,7 +2142,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			dist = Distance2D(target);
 			if (dist < FIREDEMON_ATTACK_RANGE)
 			{
-				if (random[FiredChase]() < 30)
+				if (random[FiredChase]() < strafechance)
 				{
 					ang = AngleTo(target);
 					if (random[FiredChase]() < 128)
@@ -2150,7 +2150,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					else
 						ang -= 90;
 					Thrust(8, ang);
-					fdstrafecount = 3;		// strafe time
+					fdstrafecount = strafecnt;	// strafe time
 				}
 			}
 		}
@@ -2171,9 +2171,17 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			if (CheckMissileRange () && (random[FiredChase]() < 20))
 			{
-				SetState (MissileState);
-				bJustAttacked = true;
-				return;
+				if(!target || !target.bShootable || target.health < 1)
+				{	// Invalid target
+					LookForPlayers (true);
+					return;
+				}
+				else
+				{
+					SetState (MissileState);
+					bJustAttacked = true;
+					return;
+				}
 			}
 		}
 		else
@@ -4075,7 +4083,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		if (!player || !player.mo || player.mo != self) { return super.DamageMobj(inflictor, source, damage, mod, flags, angle); }
 
 		// Makes the HUD show "Missed!" and play a sound if you evade an attack. V:
-	    if ( !bSHOOTABLE || bINVULNERABLE || player.cheats & CF_GODMODE2 || player.cheats & CF_GODMODE || CountInv("InvulnerabilitySpell",AAPTR_PLAYER1) > 0 || CountInv("IsInvulnerable",AAPTR_PLAYER1) > 0)
+	    if (self.health <= 0 || !bSHOOTABLE || bINVULNERABLE || player.cheats & CF_GODMODE2 || player.cheats & CF_GODMODE || CountInv("InvulnerabilitySpell",AAPTR_PLAYER1) > 0 || CountInv("IsInvulnerable",AAPTR_PLAYER1) > 0)
 		{
 	     damage = 0;
 		}
