@@ -1546,12 +1546,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (flags & DMG_NO_ARMOR) { } else { flags += DMG_NO_ARMOR; } // This ignores armor [similar to how DQ crits ignore armor]				
 			}
 
-			if (GetCVar("dvdsdebug_actordmgdisplays") > 0) 
-			{
-			 if (CountInv("DealCriticalHit", AAPTR_PLAYER1) > 0) dealtcrit = 1;
-			 if (dealtcrit == 1) Console.Printf("(CRIT INPUT: olddmg = %d, dmgmulti = %4f, newdmg = %d, dmgtype = %s)", olddmg, dmgmulti, damage, mod);
-			                else Console.Printf("(HIT INPUT: dmg = %d, dmgtype = %s)", damage, mod);
-			} 
+			if (CountInv("DealCriticalHit", AAPTR_PLAYER1) > 0) dealtcrit = 1;
 		}
 
 		// Monster Check
@@ -1560,12 +1555,20 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 		}
 	
+		int predmg = damage;
+		string infl, sour, vict;
+		vict = GetClassName();
+		if (inflictor == null) infl = "NONE";
+		                  else infl = inflictor.GetClassName();
+		if (source == null) sour = "NONE";
+		               else sour = source.GetClassName();
+
 		// Space for rent :V	
         let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		if (GetCVar("dvdsdebug_actordmgdisplays") > 0) 
 		{
-			if (dealtcrit == 1) Console.Printf("(CRIT OUTPUT: dmg = %d, dmgtype = %s)", ret, mod);
-						   else Console.Printf("(HIT OUTPUT: dmg = %d, dmgtype = %s)", ret, mod);
+			if (dealtcrit == 1) Console.Printf("(\cfCRIT:\c- \cyolddmg/critdmg/finaldmg\c- = \cy%d\c- / \cy%d\c- / \cy%d\c-, \cadmgmulti\c- = \ca%3f\c-, \cwdmgtype = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, predmg, ret, dmgmulti, mod, vict, infl, sour);
+						   else Console.Printf("(\ckHIT:\c- \cyolddmg/finaldmg\c- = \cy%d\c- / \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, ret, mod, vict, infl, sour);
 		}
         return ret;
 	}
@@ -4096,13 +4099,13 @@ class AetheriusPlayerPawn : PlayerPawn
 		if (!player || !player.mo || player.mo != self) { return super.DamageMobj(inflictor, source, damage, mod, flags, angle); }
 
 		// Makes the HUD show "Missed!" and play a sound if you evade an attack. V:
-	    if (self.health <= 0 || !bSHOOTABLE || bINVULNERABLE || player.cheats & CF_GODMODE2 || player.cheats & CF_GODMODE || CountInv("InvulnerabilitySpell",AAPTR_PLAYER1) > 0 || CountInv("IsInvulnerable",AAPTR_PLAYER1) > 0 || CountInv("MenuInvulnerability",AAPTR_PLAYER1) > 0)
+	    if (self.health <= 0 || !bSHOOTABLE || bINVULNERABLE || player.cheats & CF_GODMODE2 || player.cheats & CF_GODMODE || CountInv("InvulnerabilitySpell",AAPTR_PLAYER1) > 0 || CountInv("IsInvulnerable",AAPTR_PLAYER1) > 0 || CountInv("MenuInvulnerability",AAPTR_PLAYER1) > 0 || (CountInv("IronFeetNoPoison",AAPTR_PLAYER1) > 0 && (mod == "PoisonElemental" || mod == "Poison")) )
 		{
 	     damage = 0;
 		}
 		else
 		{
-	     if (CountInv("EvadeAnAttack",AAPTR_DEFAULT) > 0 || CountInv("PlayerDashing",AAPTR_DEFAULT) > 0)
+	     if (mod != "Falling" && (CountInv("EvadeAnAttack",AAPTR_DEFAULT) > 0 || CountInv("PlayerDashing",AAPTR_DEFAULT) > 0))
 		 {
 		  A_Playsound("DraQue/miss");
 		  A_Playsound("DraQue/miss");
