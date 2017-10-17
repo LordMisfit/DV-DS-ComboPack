@@ -1529,9 +1529,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags = 0, double angle = 0)
 	{
+		
 		int olddmg = damage;
 		int dealtcrit = 0;
-		double dmgmulti = frandom(1.9,2.1);
+		double dmgmulti = 2.0 + (0.01 * random(-10,10));
 		// Player Check
 		if (source) let playpawn = AetheriusPlayerPawn(source);
 		if (playpawn)
@@ -1570,6 +1571,20 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (dealtcrit == 1) Console.Printf("(\cfCRIT:\c- \cyolddmg/critdmg/finaldmg\c- = \cy%d\c- / \cy%d\c- / \cy%d\c-, \cadmgmulti\c- = \ca%3f\c-, \cwdmgtype = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, predmg, ret, dmgmulti, mod, vict, infl, sour);
 						   else Console.Printf("(\ckHIT:\c- \cyolddmg/finaldmg\c- = \cy%d\c- / \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, ret, mod, vict, infl, sour);
 		}
+
+	    // Gauntlet HP/MP/AP drain
+		if (ret > 0 && bFRIENDLY == 0 && (infl == "GauntletPuff" || infl == "GauntletAltPuff"))
+		{
+		 if (health > 0) ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,1,0); // Give some life when hurting a monster [1+(HP/500)]
+		 if (health <= 0) ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,2,0); // Give more life when killing a monster [3+(HP/100)]
+		}
+	    // Sceptre EXP Gain
+		if (ret > 0 && bFRIENDLY == 0 && (infl == "SceptrePuff-Normal" || infl == "SceptrePuff-Spinning"))
+		{
+		 if (health > 0) ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,10);
+		 if (health <= 0) ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,1);
+		}
+
         return ret;
 	}
 	//****************************
@@ -3598,30 +3613,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	 ACS_NamedExecuteAlways("Hand-GravityAttack",0,2,0,0); 
 	 SetStateLabel("See");
     } 
-  Pain.Sceptre:
-    TNT1 A 0 
-	{
-	 if (bFRIENDLY == 0) ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,10); // Increase EXP for Sceptre [1+(HP/300)]
-	 SetStateLabel("Pain");
-	}
-  Death.Sceptre:
-    TNT1 A 0
-	{
-	 if (bFRIENDLY == 0) ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,1); // Increase EXP for Sceptre [1+(HP/300)]
-	 if (health <= user_HPXDeathRange) SetStateLabel("XDeath"); else SetStateLabel("Death");
-	}
-  Pain.Gauntlets:
-    TNT1 A 0
-	{
-	 ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,1,0); // Give some life when hurting a monster [1+(HP/500)]
-	 SetStateLabel("Pain");
-	}
-  Death.Gauntlets:
-    TNT1 A 0
-	{
-	 ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,2,0); // Give some life when hurting a monster [1+(HP/500)]
-	 if (health <= user_HPXDeathRange) SetStateLabel("XDeath"); else SetStateLabel("Death");
-	}
  }
 }
 
@@ -4136,6 +4127,10 @@ class AetheriusPlayerPawn : PlayerPawn
 
 		 damage -= defense;
 		 if (damage < 0) damage = 0;
+		 else
+		 {
+          ACS_NamedExecuteAlways("CursedShieldPain",0,1,0,0);
+		 }
 
 		 if (GetCVar("dvdsdebug_playerdmgdisplays") > 0 && damage > 0) Console.Printf("(player-damagemobj input:  olddmg = %d, basedef = %d, armdef = %d, def = %d, newdmg = %d, type = %s)", olddmg, basedef, armordef, defense, damage, mod);
 		}
