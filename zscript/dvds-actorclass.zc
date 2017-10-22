@@ -1529,13 +1529,21 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags = 0, double angle = 0)
 	{
+		string infl, sour, vict;
+		vict = GetClassName();
+		if (inflictor == null) infl = "NONE";
+		                  else infl = inflictor.GetClassName();
+		if (source == null) sour = "NONE";
+		               else sour = source.GetClassName();
+					   
+		// if (infl == "Heal1Shot" || infl == "Heal2Shot" || infl == "Heal3Shot") return -1
 		
 		int olddmg = damage;
 		int dealtcrit = 0;
 		double dmgmulti = 2.0 + (0.01 * random(-10,10));
 		// Player Check
 		if (source) let playpawn = AetheriusPlayerPawn(source);
-		if (playpawn)
+		if (playpawn && damage > 0)
 		{
 		    // if (flags & DMG_PLAYERATTACK) { } else { flags += DMG_PLAYERATTACK; }			
 			// Dealing with Critical hits
@@ -1552,17 +1560,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		// Monster Check
 		if (source) let monspawn = AetheriusMonsterZSC(source);
-		if (monspawn)
+		if (monspawn && damage > 0)
 		{
 		}
 	
 		int predmg = damage;
-		string infl, sour, vict;
-		vict = GetClassName();
-		if (inflictor == null) infl = "NONE";
-		                  else infl = inflictor.GetClassName();
-		if (source == null) sour = "NONE";
-		               else sour = source.GetClassName();
 
 		// Space for rent :V	
         let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
@@ -1605,8 +1607,39 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int goldamt = CountInv("Coin",AAPTR_DEFAULT);
 		user_golddrop = basegold;
 		user_golddrop += goldamt;
+		
+		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
+		int deftness = CallACS("MiscVarCheckDECORATE",33);
+		int extragold;
+		int extragold2;
+		int bonusgold;
+		int bonusgold2;
+		int basecoins = user_golddrop;
+		if (target) let playpawn = AetheriusPlayerPawn(target);
+		if (playpawn)
+		{
+			if (clearofmind > 0)
+			{
+			 bonusgold = (100 + (clearofmind * 6));
+			 user_golddrop = user_golddrop * (bonusgold) / 100;
+
+			 extragold = ((clearofmind * 8) / 5) - 5;
+			 if (extragold < 0) extragold = 0;
+			 user_golddrop += extragold;
+			}
+			
+			bonusgold2 = (100 + (deftness / 2));
+			user_golddrop = user_golddrop * (bonusgold2) / 100;
+
+			extragold2 = deftness / 16;
+			if (extragold2 < 0) extragold2 = 0;
+			user_golddrop += extragold2;
+		}
 		A_GiveToTarget("Coin",user_golddrop);
 		A_TakeInventory("Coin",goldamt,0,AAPTR_DEFAULT);
+
+		//if (playpawn) Console.Printf("Gained %d Coins! [bonusdft%: %d, extra2: %d, bonus%: %d, extra: %d, base2: %d, base1: %d]", user_golddrop, bonusgold2, extragold2, bonusgold, extragold, basecoins, basegold);
+		if (playpawn) Console.Printf("Gained %d Coins!", user_golddrop);
 	}
 
 	// Attempts to mitigate floating-monsters from drifting too out of control when fast-chasing or damaged [like if they get kicked backwards]
