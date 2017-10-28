@@ -4174,13 +4174,12 @@ class AetheriusPlayerPawn : PlayerPawn
 			defense += ((armordef * 5) / 4);
 		 }
 
-		 if (mod == "Slime") defense /= 25; // Total Defense is only 4% as effective for damagefloors/slime sectors.
+		 if (mod == "Slime" || mod == "Crush") defense /= 25; // Total Defense is only 4% as effective for damagefloors/slime sectors.
 
 		 damage -= defense;
-		 if (damage < 0) damage = 0;
-		 else
+		 if (damage < 1)
 		 {
-          ACS_NamedExecuteAlways("CursedShieldPain",0,1,0,0);
+		  if (random(1,256) < (248 - ((CallACS("MiscVarCheckDECORATE",10001) * 2) + (CallACS("MiscVarCheckDECORATE",10002) * 5))) ) damage = 1; else damage = 0;
 		 }
 
 		 if (GetCVar("dvdsdebug_playerdmgdisplays") > 0 && damage > 0) Console.Printf("(player-damagemobj input:  olddmg = %d, basedef = %d, armdef = %d, def = %d, \cynewdmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, basedef, armordef, defense, damage, mod, infl, sour);
@@ -4189,6 +4188,17 @@ class AetheriusPlayerPawn : PlayerPawn
 		// Space for rent :V	
         let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		if (GetCVar("dvdsdebug_playerdmgdisplays") > 0 && ret > 0) Console.Printf("(player-damagemobj output: \cydmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", ret, mod, infl, sour);
+		if (ret > 0) 
+		{
+		 int hpratio = ret * 100 / CallACS("StatCheck",1);
+		 int cursemulti = 1;
+		 if (hpratio >= 101) cursemulti = 4;
+		 if (hpratio >= 51 && hpratio <= 100) cursemulti = 3;
+		 if (hpratio >= 26 && hpratio <= 50) cursemulti = 2;
+		 if (hpratio <= 25) cursemulti = 1;
+		 if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) Console.Printf("(uncurse: \cydmg = \cy%d\c-, \cwcursemulti\c- = \cw%d\c-, \cdhpratio\c- = \cd%d\c-)", ret, cursemulti, hpratio);
+		 ACS_NamedExecuteAlways("CursedShieldPain",0,1,cursemulti);
+		}
         return ret;
 	}
 }
