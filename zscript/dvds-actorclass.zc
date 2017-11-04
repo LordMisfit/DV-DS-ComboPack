@@ -1543,9 +1543,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		                  else infl = inflictor.GetClassName();
 		if (source == null) sour = "NONE";
 		               else sour = source.GetClassName();
-					   
-		// if (infl == "Heal1Shot" || infl == "Heal2Shot" || infl == "Heal3Shot") return -1
-		
+
 		int olddmg = damage;
 		int dealtcrit = 0;
 		double dmgmulti = 2.0 + (0.01 * random(-10,10));
@@ -1553,14 +1551,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (source) let playpawn = AetheriusPlayerPawn(source);
 		if (playpawn && damage > 0)
 		{
-		    // if (flags & DMG_PLAYERATTACK) { } else { flags += DMG_PLAYERATTACK; }			
 			// Dealing with Critical hits
 			if (CountInv("DealCriticalHit", AAPTR_PLAYER1) > 0)
 			{
+				if (CountInv("AnubisCufflinksFear", AAPTR_PLAYER1) > 0) dmgmulti *= 1.25;
+				if (CountInv("RuinousShield", AAPTR_PLAYER1) > 0) dmgmulti /= 1.25;
 				damage *= dmgmulti;
 				A_GiveInventory("TookCriticalHit",1);
 				if (flags & DMG_NO_FACTOR) { } else { flags += DMG_NO_FACTOR; } // This ignores damage factors [similar to how DQ crits ignore defense]
-				if (flags & DMG_NO_ARMOR) { } else { flags += DMG_NO_ARMOR; } // This ignores armor [similar to how DQ crits ignore armor]				
+				if (flags & DMG_NO_ARMOR) { } else { flags += DMG_NO_ARMOR; } // This ignores armor [similar to how DQ crits ignore armor]
 			}
 
 			if (CountInv("DealCriticalHit", AAPTR_PLAYER1) > 0) dealtcrit = 1;
@@ -1575,27 +1574,27 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int predmg = damage;
 
 		// Space for rent :V	
-        let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+		let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		if (GetCVar("dvdsdebug_actordmgdisplays") > 0) 
 		{
 			if (dealtcrit == 1) Console.Printf("(\cfCRIT:\c- \cyolddmg/critdmg/finaldmg\c- = \cy%d\c- / \cy%d\c- / \cy%d\c-, \cadmgmulti\c- = \ca%3f\c-, \cwdmgtype = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, predmg, ret, dmgmulti, mod, vict, infl, sour);
-						   else Console.Printf("(\ckHIT:\c- \cyolddmg/finaldmg\c- = \cy%d\c- / \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, ret, mod, vict, infl, sour);
+										 else Console.Printf("(\ckHIT:\c- \cyolddmg/finaldmg\c- = \cy%d\c- / \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, ret, mod, vict, infl, sour);
 		}
 
-	    // Gauntlet HP/MP/AP drain
+		// Gauntlet HP/MP/AP drain
 		if (ret > 0 && bFRIENDLY == 0 && (infl == "GauntletPuff" || infl == "GauntletAltPuff"))
 		{
 		 if (health > 0) ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,1,0); // Give some life when hurting a monster [1+(HP/500)]
 		 if (health <= 0) ACS_NamedExecuteAlways("SauronGauntletsHit",0,0,2,0); // Give more life when killing a monster [3+(HP/100)]
 		}
-	    // Sceptre EXP Gain
+		// Sceptre EXP Gain
 		if (ret > 0 && bFRIENDLY == 0 && (infl == "SceptrePuff-Normal" || infl == "SceptrePuff-Spinning"))
 		{
 		 if (health > 0) ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,10);
 		 if (health <= 0) ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,1);
 		}
 
-        return ret;
+		return ret;
 	}
 	//****************************
 	//*AETHERIUS UNIQUE FUNCTIONS*
@@ -4154,7 +4153,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		}
 
 		int defense;
-        // Defense Calculation
+		// Defense Calculation
 		if (damage > 0)
 		{
 		 int olddmg = damage;
@@ -4174,8 +4173,9 @@ class AetheriusPlayerPawn : PlayerPawn
 			defense += ((armordef * 5) / 4);
 		 }
 
-		 if (mod == "Slime" || mod == "Crush") defense /= 25; // Total Defense is only 4% as effective for damagefloors/slime sectors.
-
+		 if (inflictor == null && source == null && (mod == 'Slime' || mod == 'Crush' || mod == 'Fire' || mod == 'Magma')) defense /= 25; // Total Defense is only 4% as effective for damagefloors/slime sectors.
+		 if (gameinfo.gametype & GAME_Raven && inflictor == null && source == null && (mod == 'Fire' || mod == 'Magma')) damage = damage * frandom(1.5,2.5);
+		 
 		 damage -= defense;
 		 if (damage < 1)
 		 {
@@ -4186,7 +4186,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		}
 
 		// Space for rent :V	
-        let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+		let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		if (GetCVar("dvdsdebug_playerdmgdisplays") > 0 && ret > 0) Console.Printf("(player-damagemobj output: \cydmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", ret, mod, infl, sour);
 		if (ret > 0) 
 		{
@@ -4199,7 +4199,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		 if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) Console.Printf("(uncurse: \cydmg = \cy%d\c-, \cwcursemulti\c- = \cw%d\c-, \cdhpratio\c- = \cd%d\c-)", ret, cursemulti, hpratio);
 		 ACS_NamedExecuteAlways("CursedShieldPain",0,1,cursemulti);
 		}
-        return ret;
+		return ret;
 	}
 }
 
@@ -4276,4 +4276,17 @@ class SingleDamageRipperTracker : StaticEventHandler
         if (e.Inflictor is "SingleDamageFastRipper")
             SingleDamageFastRipper(e.Inflictor).ActorsAlreadyHit.Push(e.Thing);
     }
+}
+
+class FireFloorAdjuster : StaticEventHandler 
+{
+		override void WorldLoaded(WorldEvent evt) 
+		{
+			if (gameinfo.gametype & GAME_Raven)
+			{
+				for (let i = 0, l = level.Sectors.Size(); i < l; i++)
+				if (level.Sectors[i].damagetype == 'Fire' || level.Sectors[i].damagetype == 'Lava')
+						level.Sectors[i].damagetype = 'Magma';
+			}
+		}
 }
