@@ -25,7 +25,6 @@ class AetheriusBaseZSC : Actor
  int user_firevolleys, user_firevolleymax;
  int user_random, user_random1, user_ailment1, user_ailmentmaxchance, user_attackpoint;
  int user_chargechance; 
- int user_healthset, user_healthmoderaterange, user_healthlowrange;
  int user_charmchance;
  int user_regencycles, user_regencyclemax;
 }
@@ -1409,32 +1408,32 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	double oldVelZ;
 	int actortimer;
 	int user_tookcrit;
-    override void PostBeginPlay()
-    {
+	override void PostBeginPlay()
+	{
 		if (begintimer <= 1) 
 		{
-         if (special == 0)
-		 {
-		  user_presetleveladd = Args[0];
-		  user_presetlevelrand1 = Args[1];
-		  user_presetlevelrand2 = Args[2];
-         }		 
-		 A_AetheriusStats(0); 
-		 if (self.health <= User_MaxHP) self.health = User_MaxHP;
+			if (special == 0)
+			{
+				user_presetleveladd = Args[0];
+				user_presetlevelrand1 = Args[1];
+				user_presetlevelrand2 = Args[2];
+			}
+			A_AetheriusStats(0); 
+			if (self.health <= User_MaxHP) self.health = User_MaxHP;
+			begintimer++;
 		}
 		//This space for rent.
-		begintimer++;
 		Super.PostBeginPlay();
-    }
+	}
 
 	int begintimer;
 	int friendlytimer;
+	int glitterheight;
+	int glitterheight2;
+	int glitterwidth;
+	int timefreeze;
 	override void Tick()
 	{
-		int glitterheight;
-		int glitterheight2;
-		int glitterwidth;
-		int timefreeze;
 		levelbehavior = GetCVar("dvds_monsterlevelbehavior");
 		if (CountInv("AetheriusTimeFreezer",AAPTR_PLAYER1) == 1 
 		 || CountInv("PowerTimeFreezer",AAPTR_PLAYER1) == 1) timefreeze = 1;
@@ -1455,15 +1454,18 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 		}
 
-		// Undoes LDLite Tokens if the var is set to !0
-        string LDLToken = "LDLegendaryMonsterToken";
-        class<Actor> cls = LDLToken;
-		if (user_nolegendarytrans != 0 && CountInv(LDLToken) > 0) { A_TakeInventory(LDLToken, 0x7FFFFFFF); }
+		if (friendlytimer == 1)
+		{
+			// Undoes LDLite Tokens if the var is set to !0
+			string LDLToken = "LDLegendaryMonsterToken";
+			class<Actor> cls = LDLToken;
+			if (user_nolegendarytrans != 0 && CountInv(LDLToken) > 0) { A_TakeInventory(LDLToken, 0x7FFFFFFF); }
 
-		// Unsets BUDDHA from a transformed legendary [in the rare case a monster doesn't get it removed by the inital transformation]
-        string LDLCheck = "LDLegendaryMonsterTransformed";
-        class<Actor> cls2 = LDLCheck;
-		if (CountInv(LDLCheck) > 0 && bBUDDHA) !bBUDDHA;
+			// Unsets BUDDHA from a transformed legendary [in the rare case a monster doesn't get it removed by the initial transformation]
+			string LDLCheck = "LDLegendaryMonsterTransformed";
+			class<Actor> cls2 = LDLCheck;
+			if (CountInv(LDLCheck) > 0 && bBUDDHA) !bBUDDHA;
+		}
 
 		actortimer++;
 		//This space for rent.
@@ -1473,11 +1475,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int deathtimer;
 	override void Die(Actor source, Actor inflictor, int dmgflags = 0)
 	{
-		if (self.health <= 0 && CountInv("MonsterHasBuffs") == 1) { A_AetheriusStats(1); }
+		if (self.health <= 0 && CountInv("MonsterHasBuffs") == 1 && !bICECORPSE) { A_AetheriusStats(1); }
 
 		deathtimer++;
 		//This space for rent.
-	    Super.Die(source, inflictor, dmgflags);
+		Super.Die(source, inflictor, dmgflags);
 	}
 
 	override bool CanCollideWith(Actor other, bool passive)
@@ -1569,13 +1571,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (CountInv("DealCriticalHit", AAPTR_PLAYER1) > 0) dealtcrit = 1;
 		}
 
+/*
 		// Monster Check
 		AetheriusMonsterZSC monspawn;
 		if (source) monspawn = AetheriusMonsterZSC(source);
 		if (monspawn && damage > 0)
 		{
 		}
-	
+*/
+
 		int predmg = damage;
 
 		// Space for rent :V	
