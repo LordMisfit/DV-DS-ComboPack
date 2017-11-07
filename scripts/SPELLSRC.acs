@@ -1797,6 +1797,7 @@ function int SpellCostCheck(int checktype)
 {
  int SpellIsSelected, FinalSpellCost, DivineAvatarPercentCost, SpellCostDeclineLevelsNeeded, LevelSpellCostReductionFactor, LvlSpellCostReducePercent, SecretSplCostReduceBonus, Check1, Check2;
  int OriginalSpellCost, StatManaCostReduction;
+ int spellcostdebug = GetCVar("dvdsdebug_showspellcoststuff");
 
  // G1 = FinalSpellCost
  SpellIsSelected = checktype;
@@ -1805,10 +1806,10 @@ function int SpellCostCheck(int checktype)
  if (SpellIsSelected == 53) // Divine Avatar Costs at most 90% of Mana Supply by Default
  {
   if (GameSkill() == SKILL_VERY_EASY) DivineAvatarPercentCost = 80;
-  else if (GameSkill() == SKILL_EASY) DivineAvatarPercentCost = 90;
-  else if (GameSkill() == SKILL_NORMAL) DivineAvatarPercentCost = 92;
-  else if (GameSkill() == SKILL_HARD) DivineAvatarPercentCost = 95;
-  else if (GameSkill() == SKILL_VERY_HARD) DivineAvatarPercentCost = 100;
+  if (GameSkill() == SKILL_EASY) DivineAvatarPercentCost = 90;
+  if (GameSkill() == SKILL_NORMAL) DivineAvatarPercentCost = 92;
+  if (GameSkill() == SKILL_HARD) DivineAvatarPercentCost = 95;
+  if (GameSkill() == SKILL_VERY_HARD) DivineAvatarPercentCost = 100;
 
   if (PowerupTimer[7] > 0) DivineAvatarPercentCost *= 2;
 
@@ -1848,7 +1849,7 @@ function int SpellCostCheck(int checktype)
   FinalSpellCost = SpellCosts[SpellIsSelected];
   OriginalSpellCost = SpellCosts[SpellIsSelected];
  }
- if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [Original Base]");
+ if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [Original Base]");
  
   // SpellCostDeclineLevelsNeeded = Number of Levels needed to be gained before the spell begins to decline in cost at every level up
   if (SpellIsSelected == 0) SpellCostDeclineLevelsNeeded = 12; // (Minor Magic Missile) Level 0
@@ -1908,11 +1909,14 @@ function int SpellCostCheck(int checktype)
   if (SpellIsSelected == 54) SpellCostDeclineLevelsNeeded = 43; // (Summon Cyberdemon) Level 31
   if (SpellIsSelected == 55) SpellCostDeclineLevelsNeeded = 68; // (Spreader Aura Lv. 2) Level 56 [Flora Only]
 
-  if (GameSkill() == SKILL_VERY_EASY) SpellCostDeclineLevelsNeeded = (SpellCostDeclineLevelsNeeded * 100) / 100;
-  else if (GameSkill() == SKILL_EASY) SpellCostDeclineLevelsNeeded = (SpellCostDeclineLevelsNeeded * 125) / 100;
-  else if (GameSkill() == SKILL_NORMAL) SpellCostDeclineLevelsNeeded = (SpellCostDeclineLevelsNeeded * 150) / 100;
-  else if (GameSkill() == SKILL_HARD) SpellCostDeclineLevelsNeeded = (SpellCostDeclineLevelsNeeded * 175) / 100;
-  else if (GameSkill() == SKILL_VERY_HARD) SpellCostDeclineLevelsNeeded = (SpellCostDeclineLevelsNeeded * 200) / 100;
+	int SpellCostDeclineFactor = 150;
+	if (GameSkill() == SKILL_VERY_EASY) SpellCostDeclineFactor = 100;
+	if (GameSkill() == SKILL_EASY) SpellCostDeclineFactor = 125;
+	if (GameSkill() == SKILL_NORMAL) SpellCostDeclineFactor = 150;
+	if (GameSkill() == SKILL_HARD) SpellCostDeclineFactor = 175;
+	if (GameSkill() == SKILL_VERY_HARD) SpellCostDeclineFactor = 200;
+
+	SpellCostDeclineLevelsNeeded = (SpellCostDeclineLevelsNeeded * SpellCostDeclineFactor) / 100;
 
   // Base Spell Cost Reduction Factor [level-based] 
   LevelSpellCostReductionFactor = PlayerLevel - SpellCostDeclineLevelsNeeded;
@@ -1928,13 +1932,13 @@ function int SpellCostCheck(int checktype)
   LvlSpellCostReducePercent = 100;
   LvlSpellCostReducePercent -= LevelSpellCostReductionFactor;
   FinalSpellCost = FinalSpellCost * LvlSpellCostReducePercent / 100;
-  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [LevelCostReduce]");
+  if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [LevelCostReduce]");
 
   if (SpellIsSelected == 50) // Time Freezer Costs at least 25% of Mana Supply by Default (Deggaris and Illucia Only)
   {
    LevelSpellCostReductionFactor = MaxMana / 4;
    FinalSpellCost += LevelSpellCostReductionFactor;
-   if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [TimeFreezerCheck]");
+   if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [TimeFreezerCheck]");
   }
 
   // Z1 = SecretSplCostReduceBonus
@@ -1960,7 +1964,7 @@ function int SpellCostCheck(int checktype)
    if (SecretSplCostReduceBonus < 63) SecretSplCostReduceBonus = 63; // Deggaris/Illucia
   }
   FinalSpellCost = FinalSpellCost * SecretSplCostReduceBonus / 100;
-  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [CostReduceBonus]");
+  if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [CostReduceBonus]");
  
 
  // Check for having The Ring in you inventory
@@ -1968,7 +1972,7 @@ function int SpellCostCheck(int checktype)
  {  
   if (CharacterClass == 2) FinalSpellCost = FinalSpellCost * 13 / 16; // 81.25% MP Cost (Flora is the only one who doesn't have her MP Costs increased by the One Ring)
   else FinalSpellCost = FinalSpellCost * 5 / 4; // 125% MP Cost (Deggaris and Illucia)
-  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [Ring]");
+  if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [Ring]");
  } 
  
  int SpellCostMinimum;
@@ -1986,7 +1990,7 @@ function int SpellCostCheck(int checktype)
 
   // Ruinous Shield = +50% MP Consumption
   if (CheckActorInventory(Player1TID,"RuinousShield") > 0) FinalSpellCost = FinalSpellCost * 3 / 2;
-  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [FloraArmors]");
+  if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [FloraArmors]");
  }
 
  int MaxManaDouble = MaxMana * 2;
@@ -1998,7 +2002,7 @@ function int SpellCostCheck(int checktype)
  {
   if (FinalSpellCost > MaxMana) FinalSpellCost = MaxMana;
  }
- if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [MaxManaClamp]");
+ if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [MaxManaClamp]");
 
  if (GameSkill() == SKILL_VERY_EASY) SpellCostMinimum = OriginalSpellCost * 42 / 100;
  if (GameSkill() == SKILL_EASY) SpellCostMinimum =  OriginalSpellCost * 49 / 100;
@@ -2008,7 +2012,7 @@ function int SpellCostCheck(int checktype)
 
  // Clamp Minimum Mana Cost
  if (FinalSpellCost < SpellCostMinimum) FinalSpellCost = SpellCostMinimum;
- if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [CostMinimumClamp]");
+ if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [CostMinimumClamp]");
 
  int SpellCostMinimum2 = 0;
  // Clearer of Mind Perk
@@ -2019,18 +2023,18 @@ function int SpellCostCheck(int checktype)
   if (MiscellaneousVars[10055] >= 4) SpellCostMinimum2 += 2;
   if (MiscellaneousVars[10056] >= 2) SpellCostMinimum2 += 5;
   FinalSpellCost = FinalSpellCost * (100 - SpellCostMinimum2) / 100;
-  if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [ClearMindChecks]");
+  if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [ClearMindChecks]");
  }
  
  // ((Sorcery + Therapeusis) / 2) = -0.1% Final Mana Cost [circumvents Clamp]
  StatManaCostReduction = 100 - ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 20);
  if (StatManaCostReduction < 50) StatManaCostReduction = 50;
  FinalSpellCost = FinalSpellCost * StatManaCostReduction / 100;
- if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [SorcTherChecks]");
+ if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [SorcTherChecks]");
 
  // Checks Mana Cost Rate Menu Option [circumvents Clamp]
  FinalSpellCost = FinalSpellCost * GetCVar("dvds_manacostgmultiplier") / 100;
- if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [CostRateOption]");
+ if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [CostRateOption]");
 
  if (FinalSpellCost < 1) FinalSpellCost = 1;
  if (SpellIsSelected == 53 && PowerupTimer[7] > 0)
@@ -2041,7 +2045,7 @@ function int SpellCostCheck(int checktype)
  {
   if (FinalSpellCost > MaxMana) FinalSpellCost = MaxMana;
  }
- if (GetCVar("dvdsdebug_showspellcoststuff") == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [FinalClamps]");
+ if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [FinalClamps]");
 
  return FinalSpellCost;
 }
@@ -2078,9 +2082,9 @@ script "Initializer" OPEN
   MiscellaneousVars[21] = 10000; // Current Stamina Points
   MiscellaneousVars[22] = 10000; // Maximum Stamina Points
 
+  SetActivator(Player1TID); // Set to Player's ID
   if (GameSkill() == SKILL_VERY_EASY)
   {
-   SetActivator(Player1TID); // Set to Player's ID
    if (CharacterClass == 2) // Flora cannot wield Doom-equse guns/armor, so ammo and armor is set to zero.
    {
     SetAmmoCapacity("Clip", 0);
@@ -2097,11 +2101,9 @@ script "Initializer" OPEN
     SetAmmoCapacity("Cell", 750);
     SetAmmoCapacity("DiarisArrow", 0);
    }
-   SetActivator(0); // Set back to worldly activator
   }
   if (GameSkill() == SKILL_EASY)
   {
-   SetActivator(Player1TID); // Set to Player's ID
    if (CharacterClass == 2) // Flora cannot wield Doom-equse guns/armor, so ammo and armor is set to zero.
    {
     SetAmmoCapacity("Clip", 0);
@@ -2118,11 +2120,9 @@ script "Initializer" OPEN
     SetAmmoCapacity("Cell", 600);
     SetAmmoCapacity("DiarisArrow", 0);
    }
-   SetActivator(0); // Set back to worldly activator
   }
   if (GameSkill() == SKILL_NORMAL)
   {
-   SetActivator(Player1TID); // Set to Player's ID
    if (CharacterClass == 2) // Flora cannot wield Doom-equse guns/armor, so ammo and armor is set to zero.
    {
     SetAmmoCapacity("Clip", 0);
@@ -2139,11 +2139,9 @@ script "Initializer" OPEN
     SetAmmoCapacity("Cell", 450);
     SetAmmoCapacity("DiarisArrow", 0);
    }
-   SetActivator(0); // Set back to worldly activator
   }
   if (GameSkill() == SKILL_HARD)
   {
-   SetActivator(Player1TID); // Set to Player's ID
    if (CharacterClass == 2) // Flora cannot wield Doom-equse guns/armor, so ammo and armor is set to zero.
    {
     SetAmmoCapacity("Clip", 0);
@@ -2160,11 +2158,9 @@ script "Initializer" OPEN
     SetAmmoCapacity("Cell", 300);
     SetAmmoCapacity("DiarisArrow", 0);
    }
-   SetActivator(0); // Set back to worldly activator
   }
   if (GameSkill() == SKILL_VERY_HARD)
   {
-   SetActivator(Player1TID); // Set to Player's ID
    if (CharacterClass == 2) // Flora cannot wield Doom-equse guns/armor, so ammo and armor is set to zero.
    {
     SetAmmoCapacity("Clip", 0);
@@ -2181,8 +2177,8 @@ script "Initializer" OPEN
     SetAmmoCapacity("Cell", 150);
     SetAmmoCapacity("DiarisArrow", 0);
    }
-   SetActivator(0); // Set back to worldly activator
   }
+  SetActivator(0); // Set back to worldly activator
   // Starting Armor
 
   MiscellaneousVars[197] = GetCVAR("dvds_aeonstartlvl"); // MiscellaneousVars[197] = 32;
@@ -2198,31 +2194,26 @@ script "Initializer" OPEN
   if (GameSkill() == SKILL_VERY_EASY)
   {
    SpecialGameFlags[10002] = 111375; // Sauravatar [DVI-DS]
-
    BaseEXPRequirement = BaseEXPRequirement * 7 / 10;
   }
   if (GameSkill() == SKILL_EASY)
   {
    SpecialGameFlags[10002] = 141750; // Sauravatar [DVI-DS]
-
    BaseEXPRequirement = BaseEXPRequirement * 4 / 5;
   }
   if (GameSkill() == SKILL_NORMAL)
   {
    SpecialGameFlags[10002] = 162000; // Sauravatar [DVI-DS]
-
    BaseEXPRequirement = BaseEXPRequirement * 9 / 10;
   }
   if (GameSkill() == SKILL_HARD)
   {
    SpecialGameFlags[10002] = 182250; // Sauravatar [DVI-DS]
-
    BaseEXPRequirement = BaseEXPRequirement;
   }
   if (GameSkill() == SKILL_VERY_HARD)
   {
    SpecialGameFlags[10002] = 212625; // Sauravatar [DVI-DS]
-
    BaseEXPRequirement = BaseEXPRequirement * 6 / 5;
   }
   SpecialGameFlags[10001] = SpecialGameFlags[10002];
@@ -11638,6 +11629,7 @@ script "ManaRegenerationStuff" ENTER
  int MaxManaLimit, buttons, delaycount;
  int FocusHumTimer, PerkFactor;
  int StamUpgradeDelay;
+ int debugregenmana = GetCVar("dvdsdebug_showmanaregenstuff");
 
  if (FirstRun == 0)
  {
@@ -11768,25 +11760,41 @@ script "ManaRegenerationStuff" ENTER
  RegenedMana = 0;
  if (MiscellaneousVars[211] < 1)
  {
-  // Main Regeneration
-  if (CurrentMana < MaxMana)
-  {
-   C2 = GetActorProperty(Player1TID,APROP_HEALTH);
-   if (C2 > 0)
-   {
-    if (GameSkill() == SKILL_VERY_EASY) RegenedMana = 3;
-    if (GameSkill() == SKILL_EASY) RegenedMana = random(2,3);
-    if (GameSkill() == SKILL_NORMAL) RegenedMana = 2;
-    if (GameSkill() == SKILL_HARD) RegenedMana = random(1,2);
-    if (GameSkill() == SKILL_VERY_HARD) RegenedMana = 1;
- 
-    // A combined total of 12-20 points of Sorcery/Theraphesuis are needed for an extra point of MP regen.
-    if (GameSkill() == SKILL_VERY_EASY) RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 12);
-    if (GameSkill() == SKILL_EASY) RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 14);
-    if (GameSkill() == SKILL_NORMAL) RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 16);
-    if (GameSkill() == SKILL_HARD) RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 18);
-    if (GameSkill() == SKILL_VERY_HARD) RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / 20);    
-   }
+	// Main Regeneration
+	if (CurrentMana < MaxMana)
+	{
+		C2 = GetActorProperty(Player1TID,APROP_HEALTH);
+		if (C2 > 0)
+		{
+			// A combined total of 12-20 points of Sorcery/Theraphesuis are needed for an extra point of MP regen.
+			int regenedmanabasereq = 16;
+			if (GameSkill() == SKILL_VERY_EASY)
+			{
+			 RegenedMana = 3;
+			 regenedmanabasereq = 12;
+			}
+			if (GameSkill() == SKILL_EASY) 
+			{
+			 RegenedMana = random(2,3);
+			 regenedmanabasereq = 14;
+			}
+			if (GameSkill() == SKILL_NORMAL) RegenedMana = 2;
+			{
+			 RegenedMana = 2;
+			 regenedmanabasereq = 16;
+			}
+			if (GameSkill() == SKILL_HARD) 
+			{
+			 RegenedMana = random(1,2);
+			 regenedmanabasereq = 18;
+			}
+			if (GameSkill() == SKILL_VERY_HARD) 
+			{
+			 RegenedMana = 1;
+			 regenedmanabasereq = 20;
+			}
+			RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / regenedmanabasereq);
+		}
  
    if (PowerupTimer[7] > 0) // Divine Avatar
    {
@@ -11973,13 +11981,13 @@ script "ManaRegenerationStuff" ENTER
   if (GameSkill() == SKILL_NORMAL) SkillLevelManaDelay = 740; // 37 tics
   if (GameSkill() == SKILL_HARD) SkillLevelManaDelay = 840; // 42 tics
   if (GameSkill() == SKILL_VERY_HARD) SkillLevelManaDelay = 960; // 48 tics
-  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0) PrintBold(d:SkillLevelManaDelay);
+  if (debugregenmana > 0) PrintBold(d:SkillLevelManaDelay);
   if (CharacterClass == 0) SkillLevelManaDelay += (20 * random(-3,5)); 
   if (CharacterClass == 1) SkillLevelManaDelay += (20 * random(-4,4));
   if (CharacterClass == 2) SkillLevelManaDelay += (20 * random(-5,3));
   if (CharacterClass == 8) SkillLevelManaDelay += (20 * random(-5,3));
   if (CharacterClass == 9) SkillLevelManaDelay += (20 * random(-4,4));
-  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0) PrintBold(d:SkillLevelManaDelay);
+  if (debugregenmana > 0) PrintBold(d:SkillLevelManaDelay);
 
   if (CharacterClass == 0) ManaReDelay = PlayerLevel / 30; // Deggaris (up to 3/6)
   else if (CharacterClass == 1) ManaReDelay = PlayerLevel / 25; // Illucia (up to 4/8)
@@ -11987,23 +11995,23 @@ script "ManaRegenerationStuff" ENTER
   else if (CharacterClass == 8) ManaReDelay = PlayerLevel / 21; // Ailish 
   else if (CharacterClass == 9) ManaReDelay = PlayerLevel / 25; // Petra (up to 4/8)
   OverallDelay = SkillLevelManaDelay - ManaReDelay;
-  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0) PrintBold(d:OverallDelay);
+  if (debugregenmana > 0) PrintBold(d:OverallDelay);
 
   // A combined total of 15 points of Sorcery/Theraphesuis are needed for a tic-point of faster regen time.
   ManaReDelay = (MiscellaneousVars[34] + MiscellaneousVars[36]) / 300;
   OverallDelay -= ManaReDelay;
-  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0) PrintBold(d:OverallDelay);
+  if (debugregenmana > 0) PrintBold(d:OverallDelay);
 
   if (GameSkill() == SKILL_VERY_EASY) if (OverallDelay < 20) OverallDelay = 20;
   if (GameSkill() == SKILL_EASY) if (OverallDelay < 40) OverallDelay = 40;
   if (GameSkill() == SKILL_NORMAL) if (OverallDelay < 80) OverallDelay = 80;
   if (GameSkill() == SKILL_HARD) if (OverallDelay < 140) OverallDelay = 140;
   if (GameSkill() == SKILL_VERY_HARD) if (OverallDelay < 220) OverallDelay = 220;
-  if (GetCVar("dvdsdebug_showmanaregenstuff") > 0) PrintBold(d:OverallDelay);
+  if (debugregenmana > 0) PrintBold(d:OverallDelay);
   MiscellaneousVars[211] = OverallDelay;
  }
 
- if (GetCVar("dvdsdebug_showmanaregenstuff") > 0)
+ if (debugregenmana > 0)
  {
   PrintBold(
              s:"Focus?: ",d:MiscellaneousVars[212],s:"\n",
@@ -12091,6 +12099,8 @@ Script "ArcanaGaugeRegenerationStuff" ENTER
 function int GetExpMultiFactor (void)
 {
   int ExpMultiFactor, Exp1, Exp2;
+	int debugexp = GetCVar("dvdsdebug_showexpdebugstuff");
+
   // Gets the Experience Multiplication Factor [Part 1]
   ExpMultiFactor = Random(90,120);
   if (PlayerLevel < 40) ExpMultiFactor += PlayerLevel * 17 / 16; // +6.25%
@@ -12319,7 +12329,7 @@ function int GetExpMultiFactor (void)
 
   ExpMultiFactor += Exp2;
 
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+  if (debugexp == 1)
   {
    PrintBold(s:"ModType: ",d:ModType,s:"\nExp1: ",d:Exp1,s:"\nExp2: ",d:Exp2,s:"\nExpMultiFactor: ",d:ExpMultiFactor);
   }
@@ -12331,6 +12341,8 @@ function int GetExpMultiFactor (void)
 //---------------------------------------------
 function int GetExperience (int RealExpGain, int ExpMultiFactor)
 {
+ int debugexp = GetCVar("dvdsdebug_showexpdebugstuff");
+
  int OldExp1 = RealExpGain;
  RealExpGain = RealExpGain * ExpMultiFactor / 100; // Randomizes some of the experience gained
 
@@ -12388,7 +12400,7 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
  int OldExp8 = RealExpGain;
  if (PowerupTimer[7] > 0) { if (random(1,100) > 67) { RealExpGain = RealExpGain * 7 / 6; } else { RealExpGain = RealExpGain * 13 / 12; } } // Divine Avatar [+8.333% EXP, (33% chance of +16.67% EXP instead]
 
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ if (debugexp == 1)
  {
   PrintBold(s:"OldEXP1: ",d:OldExp1,
            s:"\nOldEXP2: ",d:OldExp2,s:" [ExpMultiRand: ",d:ExpMultiFactor,s:" / 100]",
@@ -13074,6 +13086,7 @@ script "PickupExperiessence" (int percentage)
 {
  int BaseEXPGain = percentage;
  int perkfactor;
+ int debugexp = GetCVar("dvdsdebug_showexpdebugstuff");
  if (random(1,64) == 1) BaseEXPGain *= 2;
  if (random(1,256) == 1) BaseEXPGain *= 2;
  if (random(1,1024) == 1) BaseEXPGain *= 2;
@@ -13082,7 +13095,7 @@ script "PickupExperiessence" (int percentage)
  
  if (PlayerLevel == 0) { EXPGiven = (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
  else if (PlayerLevel >= 1) { EXPGiven = ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Experiessence: ",d:EXPGiven,s:" [Base]");
+ if (debugexp == 1) PrintBold(s:"Experiessence: ",d:EXPGiven,s:" [Base]");
 
  if (MiscellaneousVars[10055] > 0)
  {
@@ -13095,7 +13108,7 @@ script "PickupExperiessence" (int percentage)
   if (MiscellaneousVars[10056] >= 1) perkfactor += 15;
   if (MiscellaneousVars[10056] >= 2) perkfactor += 15;
   EXPGiven = (EXPGiven * perkfactor) / 100;
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Experiessence: ",d:EXPGiven,s:" [Perks1]");
+  if (debugexp == 1) PrintBold(s:"Experiessence: ",d:EXPGiven,s:" [Perks1]");
  }
  if (MiscellaneousVars[11001] > 0)
  {
@@ -13109,7 +13122,7 @@ script "PickupExperiessence" (int percentage)
    if (CharacterClass == 0 | CharacterClass == 1) EXPGiven = EXPGiven * 29 / 20; // EXP Multiplier Option [145%]
    if (CharacterClass == 2) EXPGiven = EXPGiven * 13 / 10; // EXP Multiplier Option [115%]
   }
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Experiessence: ",d:EXPGiven,s:" [Perks2]");
+  if (debugexp == 1) PrintBold(s:"Experiessence: ",d:EXPGiven,s:" [Perks2]");
  }
   
  Experience += EXPGiven;
@@ -21525,7 +21538,7 @@ script "SetSauravatarHealth" (void)
 
   SetActorProperty(1124,APROP_Health,SpecialGameFlags[10001]);
   SetActorProperty(1124,APROP_SpawnHealth,SpecialGameFlags[10001]);
-  SetInventory("CurrentMaxHealth", SpecialGameFlags[10001]);
+  //SetInventory("CurrentMaxHealth", SpecialGameFlags[10001]);
   SetUserVariable(1124,"user_MaxHP",SpecialGameFlags[10001]);
 
   Thing_Damage2(666,999999,"Massacre"); 
@@ -21634,6 +21647,7 @@ script "MaxHPBonusPickup" (void)
  int I1, I2, Z1, Z2, HPError, C1, C2, BonusMaxHP, CurrentHP, PerkFactor; 
  int ArmorHPBonus = 0;
  int MapNoBonus = 0;
+ int debugseedstuff = GetCVar("dvdsdebug_showseedstuff");
 
  if (ModType == 0 && GetCVar("dvds_canseedsappear") == 0) terminate;
 
@@ -21642,7 +21656,7 @@ script "MaxHPBonusPickup" (void)
  if (CharacterClass == 2) BonusMaxHP = MaxHealthTrue / 440;
  if (CharacterClass == 8) BonusMaxHP = MaxHealthTrue / 450;
  if (CharacterClass == 9) BonusMaxHP = MaxHealthTrue / 400;
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [Base]: ",d:BonusMaxHP);
+ if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [Base]: ",d:BonusMaxHP);
 
  if (CharacterClass == 0) HPError = MaxHealthTrue / 1200; // Deggaris has one more HP to his Error for the least amount of HP each [1200]
  if (CharacterClass == 1) HPError = MaxHealthTrue / 1260; // Illucia has one more HP to her Error for the middle amount of HP each [1260]
@@ -21650,52 +21664,52 @@ script "MaxHPBonusPickup" (void)
  if (CharacterClass == 8) HPError = MaxHealthTrue / 1350; // Ailish has one more HP to her Error for the most amount of HP each [1350]
  if (CharacterClass == 9) HPError = MaxHealthTrue / 1200; // Petra has one more HP to her Error for the least amount of HP each [1200]
  HPError += 1;
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"HPError: ",d:HPError);
+ if (debugseedstuff > 0) PrintBold(s:"HPError: ",d:HPError);
  BonusMaxHP = BonusMaxHP + random(-HPError,HPError);
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [After HPError]: ",d:BonusMaxHP);
+ if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [After HPError]: ",d:BonusMaxHP);
 
  if (CharacterClass == 0) { C1 = random(18,21); } // Deggaris receives most HP from a bonus
  if (CharacterClass == 1) { C1 = random(15,17); } // Illucia receives less HP from a bonus than Deggaris, but more than Flora.
  if (CharacterClass == 2) { C1 = random(12,14); } // Flora used to receive the least HP from a bonus...
  if (CharacterClass == 8) { C1 = random(10,12); } // Ailish receives the least HP from a bonus
  if (CharacterClass == 9) { C1 = random(18,21); } // Petra receives most HP from a bonus
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"Randomizer C1: ",d:C1);
+ if (debugseedstuff > 0) PrintBold(s:"Randomizer C1: ",d:C1);
  BonusMaxHP = BonusMaxHP * C1 / 16;
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [After HPError]: ",d:BonusMaxHP);
+ if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [After HPError]: ",d:BonusMaxHP);
 
  // Flora's Armor Items [up to +55% Max HP gained from Max HP Bonuses]
  if (CharacterClass == 2 && CheckActorInventory(Player1TID,"PearlyCorset")) ArmorHPBonus += 20; // +20%
  if (CharacterClass == 2 && CheckActorInventory(Player1TID,"KissaBra")) ArmorHPBonus += 10; // +10%
  if (CharacterClass == 2 && CheckActorInventory(Player1TID,"BalrogRing")) ArmorHPBonus += 15; // +25%
  ArmorHPBonus += 100;
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"ArmorHPBonus [Flora]: ",d:ArmorHPBonus);
+ if (debugseedstuff > 0) PrintBold(s:"ArmorHPBonus [Flora]: ",d:ArmorHPBonus);
  BonusMaxHP = BonusMaxHP * ArmorHPBonus / 100; // Flora is the only one who can use the Pearly Corset / Kissa Bra / Balrog Ring
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [After ArmorHPBonus]: ",d:BonusMaxHP);
+ if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [After ArmorHPBonus]: ",d:BonusMaxHP);
 
  PerkFactor = ((MiscellaneousVars[10001] * 500) + (MiscellaneousVars[10002] * 1250)) + 10000;
  BonusMaxHP = BonusMaxHP * PerkFactor / 10000; // "LifeUp" and "LifeUp EX" perks.
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [LifeUp Perk]: ",d:BonusMaxHP);
+ if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [LifeUp Perk]: ",d:BonusMaxHP);
 
  PerkFactor = (MiscellaneousVars[317] * 1250) + 10000;
  BonusMaxHP = BonusMaxHP * PerkFactor / 10000; // [STRIFE-Compatibility] Times "Stamina Upgraded
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [StaminaUpgrade (Strife)]: ",d:BonusMaxHP);
+ if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [StaminaUpgrade (Strife)]: ",d:BonusMaxHP);
 
  // Overall Modifier
  MapNoBonus = GetLevelInfo(LEVELINFO_LEVELNUM) * 9 / 20; // 45%
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"MapNoBonus: ",d:MapNoBonus);
+ if (debugseedstuff > 0) PrintBold(s:"MapNoBonus: ",d:MapNoBonus);
  BonusMaxHP = BonusMaxHP * (random(70,80) + MapNoBonus) / 100;
  if (GameSkill() == SKILL_VERY_EASY)	BonusMaxHP = BonusMaxHP * (random(90,100) + MapNoBonus) / 100;
  if (GameSkill() == SKILL_EASY)			BonusMaxHP = BonusMaxHP * (random(80,90) + MapNoBonus) / 100;
  if (GameSkill() == SKILL_NORMAL)		BonusMaxHP = BonusMaxHP * (random(75,85) + MapNoBonus) / 100;
  if (GameSkill() == SKILL_HARD)			BonusMaxHP = BonusMaxHP * (random(70,80) + MapNoBonus) / 100;
  if (GameSkill() == SKILL_VERY_HARD)	BonusMaxHP = BonusMaxHP * (random(60,70) + MapNoBonus) / 100;
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [After MapNoBonus]: ",d:BonusMaxHP);
+ if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [After MapNoBonus]: ",d:BonusMaxHP);
 
  PerkFactor = 1;
  PerkFactor += ((MiscellaneousVars[10001] * 1) / 10) + ((MiscellaneousVars[317] * 1) / 4);
  PerkFactor += ((MiscellaneousVars[317] * 1) / 4);
  if (BonusMaxHP < PerkFactor) BonusMaxHP = PerkFactor;
- if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"BonusMaxHP [Final]: ",d:BonusMaxHP);
+ if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [Final]: ",d:BonusMaxHP);
 
  MiscellaneousVars[222] += BonusMaxHP;
  MiscellaneousVars[2031] = 105; 
@@ -29144,7 +29158,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
  MiscellaneousVars[164] = MiscellaneousVars[22] * 5;
  
-
+ int debugstaminaregen = GetCVar("dvdsdebug_showstaminaregenstuff");
  if (MiscellaneousVars[21] < MiscellaneousVars[22])
  {
   staminaregenfinal = 0;
@@ -29154,7 +29168,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CharacterClass == 8) staminaregenbase = 8; // Ailish (0.08%/tic = 3.15%/sec)
   if (CharacterClass == 9) staminaregenbase = 15; // Petra (0.15%/tic = 5.25%/sec)
   staminaregenfinal += staminaregenbase;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinal [Base1]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Base1]: ",d:staminaregenfinal);
 
   if (CharacterClass == 0) staminaregenbase = (PlayerLevel / 14); // +7-15
   if (CharacterClass == 1) staminaregenbase = (PlayerLevel / 14); // +7-15
@@ -29162,11 +29176,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CharacterClass == 8) staminaregenbase = (PlayerLevel / 10); // +10-20
   if (CharacterClass == 9) staminaregenbase = (PlayerLevel / 14); // +7-15
   staminaregenfinal += staminaregenbase;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinal [Base2]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Base2]: ",d:staminaregenfinal);
 
   // Stamina Bonuses [Strife]
   staminaregenfinal += ((MiscellaneousVars[317] * 1) / 8);
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinal [Strife1]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Strife1]: ",d:staminaregenfinal);
   
   // Check Input for Bonus/Penalties
   FreezePlayer = 0;
@@ -29186,7 +29200,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    else C3 = 100;
    staminaregenfinal = staminaregenfinal * C3 / 100;
   }
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinal [Input]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Input]: ",d:staminaregenfinal);
 
   // Check Armor for Bonus/Penalties
   C3 = 1000;
@@ -29209,7 +29223,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CheckActorInventory(Player1TID,"DoveRibbon") > 0)	 		C3 += 50;  
   if (C3 < 125) C3 = 125;
   staminaregenfinal = staminaregenfinal * C3 / 1000;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Armor]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Armor]: ",d:staminaregenfinal);
 
   int basestatdivisor = 8;
   // Initia1 Stat Check = 8pts of Strength = +1% Stamina Regen Speed
@@ -29223,7 +29237,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   C3 /= basestatdivisor;
   C3 += 100;
   staminaregenfinal = staminaregenfinal * C3 / 100;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [StatCheck]: ",d:staminaregenfinal,s:" [Factor: ",d:C3,s:"%]");
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [StatCheck]: ",d:staminaregenfinal,s:" [Factor: ",d:C3,s:"%]");
 
   // Tension
   if (MiscellaneousVars[181] == 1) staminaregenfinal = staminaregenfinal * 1025 / 1000;
@@ -29233,23 +29247,23 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (MiscellaneousVars[181] == 5) staminaregenfinal = staminaregenfinal * 150 / 100;
   if (MiscellaneousVars[181] == 6) staminaregenfinal = staminaregenfinal * 250 / 100;
   if (MiscellaneousVars[181] == 7) staminaregenfinal = staminaregenfinal * 500 / 100;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Tension]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Tension]: ",d:staminaregenfinal);
 
   // Divine Avatar = +100% Regen
   if (PowerupTimer[7] > 0) staminaregenfinal = staminaregenfinal * 2;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [DivineAvatar]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [DivineAvatar]: ",d:staminaregenfinal);
 
   if (PowerupTimer[12] > 0) staminaregenfinal = staminaregenfinal * 6 / 5; // Acceleratle
   if (PowerupTimer[15] > 0) staminaregenfinal = staminaregenfinal * 4 / 5; // Deceleratle
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Accel/Decel]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Accel/Decel]: ",d:staminaregenfinal);
 
   // Poison = -25% Regen
   if (PowerupTimer[16] > 0 && PowerupTimer[4] == 0) staminaregenfinal = staminaregenfinal * 3 / 4;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Poison]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Poison]: ",d:staminaregenfinal);
 
   // Fatigue = -80% Regen
   if (PowerupTimer[18] > 0) staminaregenfinal /= 5;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Fatigue]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Fatigue]: ",d:staminaregenfinal);
 
   // Sleeping = +400% Regen
   if (PowerupTimer[20] > 0)
@@ -29258,26 +29272,26 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
    staminaregenfinal = staminaregenfinal * PerkFactor / 10000; // "RegenStamFast" and "RegenStamFast EX" perks.
   }
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Sleep]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Sleep]: ",d:staminaregenfinal);
 
   // Berserk = +25% Regen
   if (PowerupTimer[23] > 0) staminaregenfinal = staminaregenfinal * 5 / 4;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Berserk]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Berserk]: ",d:staminaregenfinal);
 
   // Checks Stamina Regen Rate Menu Option
   staminaregenfinal = staminaregenfinal * GetCVar("dvds_staminaregenmultiplier") / 100;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [StamMenuOption]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [StamMenuOption]: ",d:staminaregenfinal);
 
   // Checks the final value based on how high the Max Stamina Pts Cap has been increased by various items
   staminaregenfinal = (staminaregenfinal * MiscellaneousVars[22]) / 10000;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [StamCapVal]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [StamCapVal]: ",d:staminaregenfinal);
 
   // RegenStamFast perks
   if (MiscellaneousVars[10017] > 0)
   {
    PerkFactor = ((MiscellaneousVars[10017] * 2) + (MiscellaneousVars[10018] * 5)) + 10;
    staminaregenfinal = staminaregenfinal * PerkFactor / 10; // "RegenStamFast" and "RegenStamFast EX" perks.
-   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Perks]: ",d:staminaregenfinal);
+   if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Perks]: ",d:staminaregenfinal);
   }
 
   // Check for Weapons
@@ -29298,24 +29312,24 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    staminaregenfinal = staminaregenfinal * 21 / 20;
    if (CheckActorInventory(Player1TID,"FistPlayerBlockItem") > 0) staminaregenfinal = staminaregenfinal * random(28,32) / 20;
   }
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Weapons]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Weapons]: ",d:staminaregenfinal);
 
   // "Cleared of Mind" Perks
   if (MiscellaneousVars[10055] > 0)
   {
    perkfactor = ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5)) + 80;
    staminaregenfinal = staminaregenfinal * perkfactor / 80;
-   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [Perks2]: ",d:staminaregenfinal);
+   if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Perks2]: ",d:staminaregenfinal);
   }
 
   // Check Musou Power Trip Mode
   if (GetCVar("dvds_musou_powertripmode") == 1) staminaregenfinal = staminaregenfinal * 5 / 2; // 250%
   if (GetCVar("dvds_musou_powertripmode") == 2) staminaregenfinal = staminaregenfinal * 5; // 500%
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [PowerTrip]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [PowerTrip]: ",d:staminaregenfinal);
 
   // Low Caps Regen to 1 tic minimum
   if (staminaregenfinal < 1) staminaregenfinal = 1;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [LowCap]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [LowCap]: ",d:staminaregenfinal);
 
   if (MenuSystemVars[0] != 0) staminaregenfinal = 0; // If using In-Game Menus
   if (DVDSSpecialArrayValue[0] == 0) // If "Conscious"
@@ -29334,7 +29348,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CharacterClass == 8) staminaregenbase = -8; // Ailish (-0.08%/tic = -2.45%/sec)
   if (CharacterClass == 9) staminaregenbase = -4; // Petra (-0.04%/tic = -1.40%/sec)
   staminaregenfinal += staminaregenbase;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Base1]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Base1]: ",d:staminaregenfinal);
 
   if (CharacterClass == 0) staminaregenbase = (PlayerLevel / 56); // +1-3
   if (CharacterClass == 1) staminaregenbase = (PlayerLevel / 56); // +1-3
@@ -29342,11 +29356,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CharacterClass == 8) staminaregenbase = (PlayerLevel / 30); // +2-5
   if (CharacterClass == 9) staminaregenbase = (PlayerLevel / 56); // +1-3
   staminaregenfinal += staminaregenbase;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Base2]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Base2]: ",d:staminaregenfinal);
 
   // Stamina Bonuses [Strife]
   staminaregenfinal += ((MiscellaneousVars[317] * 1) / 8);
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Strife1]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Strife1]: ",d:staminaregenfinal);
 
   FreezePlayer = 0;
   if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
@@ -29365,7 +29379,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    else C3 = 100;
    staminaregenfinal = staminaregenfinal * C3 / 100;
   }
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Input]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Input]: ",d:staminaregenfinal);
 
   // Check Armor for Bonus/Penalties
   C3 = 1000;
@@ -29389,7 +29403,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (C3 < 1) C3 = 1;
   if (C3 > 2500) C3 = 2500;
   staminaregenfinal = staminaregenfinal * C3 / 1000;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Armor]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Armor]: ",d:staminaregenfinal);
 
   basestatdivisor = 16;
   // 16pts of Strength = -1% Stamina Degen Speed
@@ -29404,7 +29418,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   C3 /= basestatdivisor;
   C3 += 100;
   staminaregenfinal = staminaregenfinal * C3 / 100;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [StatCheck]: ",d:staminaregenfinal,s:" [Factor: ",d:C3,s:"%]");
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [StatCheck]: ",d:staminaregenfinal,s:" [Factor: ",d:C3,s:"%]");
 
   // Tension
   if (MiscellaneousVars[181] == 1) staminaregenfinal = staminaregenfinal * 990 / 1000;
@@ -29414,23 +29428,23 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (MiscellaneousVars[181] == 5) staminaregenfinal = staminaregenfinal * 750 / 1000;
   if (MiscellaneousVars[181] == 6) staminaregenfinal = staminaregenfinal * 500 / 1000;
   if (MiscellaneousVars[181] == 7) staminaregenfinal = staminaregenfinal * 200 / 1000;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Tension]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Tension]: ",d:staminaregenfinal);
 
   // Divine Avatar = -50% Degen
   if (PowerupTimer[7] > 0) staminaregenfinal = staminaregenfinal / 2;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [DivineAvatar]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [DivineAvatar]: ",d:staminaregenfinal);
 
   if (PowerupTimer[12] > 0) staminaregenfinal = staminaregenfinal * 6 / 5; // Acceleratle
   if (PowerupTimer[15] > 0) staminaregenfinal = staminaregenfinal * 4 / 5; // Deceleratle
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Accel/Decel]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Accel/Decel]: ",d:staminaregenfinal);
 
   // Poison = +20% Degen
   if (PowerupTimer[16] > 0 && PowerupTimer[4] == 0) staminaregenfinal = staminaregenfinal * 6 / 5;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Poison]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Poison]: ",d:staminaregenfinal);
 
   // Fatigue = +400% Degen
   if (PowerupTimer[18] > 0) staminaregenfinal = staminaregenfinal * 5;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Fatigue]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Fatigue]: ",d:staminaregenfinal);
 
   // Sleep = -80% Degen
   if (PowerupTimer[20] > 0)
@@ -29439,22 +29453,22 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PerkFactor = 10000 - ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000));
    staminaregenfinal = staminaregenfinal * PerkFactor / 10000; // "RegenStamFast" and "RegenStamFast EX" perks.
   }
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Sleep]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Sleep]: ",d:staminaregenfinal);
 
   // Berserk = -20% Degen
   if (PowerupTimer[23] > 0) staminaregenfinal = staminaregenfinal * 4 / 5;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Berserk]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Berserk]: ",d:staminaregenfinal);
 
   // Checks the final value based on how high the Max Stamina Pts Cap has been increased by various items
   staminaregenfinal = (staminaregenfinal * MiscellaneousVars[22]) / 10000;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaRegenFinall [StamCapVal]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [StamCapVal]: ",d:staminaregenfinal);
 
   // RegenStamFast perks
   if (MiscellaneousVars[10017] > 0)
   {
    PerkFactor = 10 - ((MiscellaneousVars[10017] * 2) + (MiscellaneousVars[10018] * 5));
    staminaregenfinal = staminaregenfinal * PerkFactor / 10; // "RegenStamFast" and "RegenStamFast EX" perks.
-   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Perks]: ",d:staminaregenfinal);
+   if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Perks]: ",d:staminaregenfinal);
   }
 
   // Check for Weapons
@@ -29475,24 +29489,24 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    staminaregenfinal = staminaregenfinal * 20 / 21;
    if (CheckActorInventory(Player1TID,"FistPlayerBlockItem") > 0) staminaregenfinal = staminaregenfinal * 20 / random(28,32);
   }
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Weapons]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Weapons]: ",d:staminaregenfinal);
 
   // "Cleared of Mind" Perks
   if (MiscellaneousVars[10055] > 0)
   {
    perkfactor = 80 - ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5));
    staminaregenfinal = staminaregenfinal * perkfactor / 80;
-   if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [Perks2]: ",d:staminaregenfinal);
+   if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Perks2]: ",d:staminaregenfinal);
   }
 
   // Check Musou Power Trip Mode
   if (GetCVar("dvds_musou_powertripmode") == 1) staminaregenfinal = staminaregenfinal * (2 / 5); // 40%
   if (GetCVar("dvds_musou_powertripmode") == 2) staminaregenfinal = staminaregenfinal / 5; // 20%
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [PowerTrip]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [PowerTrip]: ",d:staminaregenfinal);
 
   // Low Caps Regen to 1 tic minimum
   if (staminaregenfinal > -1) staminaregenfinal = -1;
-  if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0) PrintBold(s:"StaminaDegenFinall [LowCap]: ",d:staminaregenfinal);
+  if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [LowCap]: ",d:staminaregenfinal);
 
   if (MenuSystemVars[0] != 0) staminaregenfinal = 0; // If using In-Game Menus
   if (DVDSSpecialArrayValue[0] == 0) // If "Conscious"
@@ -29581,7 +29595,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (StaminaPercentFull > 42500 && StaminaPercentFull < 48751) StaminaSpeed = 1.525;
   if (StaminaPercentFull > 48750) StaminaSpeed = 1.675;
  }
- if (GetCVar("dvdsdebug_showstaminaregenstuff") > 0)
+ if (debugstaminaregen > 0)
  {
    PrintBold(s:"Stamina Points: ",d:MiscellaneousVars[21],s:" / ",d:MiscellaneousVars[22],s:" [",d:staminaregenfinal,s:"]",
              s:"\nStamina Speed: ",f:StaminaSpeed);
@@ -29909,6 +29923,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  int DegenMinimumHPFactor = 10; int DegenMinimumManaFactor = 80;
  if (GameSkill() == SKILL_VERY_EASY) { DegenMinimumHPFactor = 8; DegenMinimumManaFactor = 64; }
  if (GameSkill() == SKILL_EASY) { DegenMinimumHPFactor = 9; DegenMinimumManaFactor = 72; }
+ if (GameSkill() == SKILL_NORMAL) { DegenMinimumHPFactor = 10; DegenMinimumManaFactor = 80; }
  if (GameSkill() == SKILL_HARD) { DegenMinimumHPFactor = 11; DegenMinimumManaFactor = 88; }
  if (GameSkill() == SKILL_VERY_HARD) { DegenMinimumHPFactor = 12; DegenMinimumManaFactor = 96; }
  DegenMinimumHPFactor = DegenMinimumHPFactor * 3 / 4;
@@ -30032,6 +30047,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
   if (GameSkill() == SKILL_VERY_EASY) MiscellaneousVars[14] -= 6;
   if (GameSkill() == SKILL_EASY) MiscellaneousVars[14] -= 2;
+  if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[14] += 0;
   if (GameSkill() == SKILL_HARD) MiscellaneousVars[14] += 2;
   if (GameSkill() == SKILL_VERY_HARD) MiscellaneousVars[14] += 6;
   C3 = PlayerLevel / 7; // up to -28
@@ -30225,6 +30241,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
    if (GameSkill() == SKILL_VERY_EASY) MiscellaneousVars[144] += 3;
    if (GameSkill() == SKILL_EASY) MiscellaneousVars[144] += 1;
+   if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[144] += 0;
    if (GameSkill() == SKILL_HARD) MiscellaneousVars[144] -= 1;
    if (GameSkill() == SKILL_VERY_HARD) MiscellaneousVars[144] -= 3;
    C3 = MiscellaneousVars[32] / 24; // 24pts of Defense will increase degen wait by 1 tic each
@@ -30840,11 +30857,14 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  MiscellaneousVars[232] = (PlayerLevel / 2) + MiscellaneousVars[0];
 
  // Every 3/4/5 Points of Defenses = 0.1% increase to Survivability Rate
- if (GameSkill() < SKILL_NORMAL) MiscellaneousVars[232] += MiscellaneousVars[32] / 3;
+ if (GameSkill() == SKILL_VERY_EASY) MiscellaneousVars[232] += MiscellaneousVars[32] / 3;
+ if (GameSkill() == SKILL_EASY) MiscellaneousVars[232] += MiscellaneousVars[32] / 3;
  if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[232] += MiscellaneousVars[32] / 4;
- if (GameSkill() > SKILL_NORMAL) MiscellaneousVars[232] += MiscellaneousVars[32] / 5;
+ if (GameSkill() == SKILL_HARD) MiscellaneousVars[232] += MiscellaneousVars[32] / 5;
+ if (GameSkill() == SKILL_VERY_HARD) MiscellaneousVars[232] += MiscellaneousVars[32] / 5;
 
- if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [Base]");
+ int debugsurvival = GetCVar("dvdsdebug_showsurvivalstuff");
+ if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [Base]");
 
  // Abhorrent's Equipment Set
  if (CheckActorInventory(Player1TID,"SauronHelmet") > 0) MiscellaneousVars[232] += 175; // Helmet = 17.5%
@@ -30854,7 +30874,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  if (CheckActorInventory(Player1TID,"SauronGauntletsAilish") > 0) MiscellaneousVars[232] += 80; // Gauntlets (Ailish) = 8.0%
  if (CheckActorInventory(Player1TID,"SauronGauntletsPetra") > 0) MiscellaneousVars[232] += 70; // Gauntlets (Petra) = 7.0%
  if (CheckActorInventory(Player1TID,"TheOneRing") > 0) MiscellaneousVars[232] += 333; // The One Ring = 33.3%
- if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [SauronEquipCheck]");
+ if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [SauronEquipCheck]");
 
  if (CharacterClass != 2) // Deggaris and Illucia take advantage of Doom-equse Armor, however Flora, Ailish, and Petra cannot.
  {
@@ -30864,7 +30884,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CheckActorInventory(Player1TID,"DSDiamondArmorClass1") > 0) MiscellaneousVars[232] += 44; // Diamond Skin [1] = 4.4% [Deggaris and Illucia Only]
   if (CheckActorInventory(Player1TID,"DSStoneArmorClass2") > 0) MiscellaneousVars[232] += 66; // Stone Skin [2] = 6.6% [Deggaris and Illucia Only]
   if (CheckActorInventory(Player1TID,"DSDiamondArmorClass2") > 0) MiscellaneousVars[232] += 176; // Diamond Skin [2] = 17.6% [Deggaris and Illucia Only]
-  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [MarineArmorCheck]");
+  if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [MarineArmorCheck]");
  }
  if (CharacterClass == 2) // Items only Flora can make use of
  {
@@ -30873,27 +30893,27 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (CheckActorInventory(Player1TID,"DSSpiritualExoskin2") > 0) MiscellaneousVars[232] += 288; // Perfected Spiritual Exoskin = 28.8% [Flora Only]
   if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) MiscellaneousVars[232] += 100; // Anubis Cufflinks = 10.0% [Flora Only]
   if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) MiscellaneousVars[232] += 150; // Dove Ribbon = 15.0% [Flora Only]
-  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [FloraArmorCheck]");
+  if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [FloraArmorCheck]");
  }
  // Divine Avatar = (25.0% of remaining amount uncovered)
  if (PowerupTimer[7] > 0)
  {  
   DivineAvatarBuffValue = (1000 - MiscellaneousVars[232]) / 4;
   MiscellaneousVars[232] += DivineAvatarBuffValue;
-  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [DivineAvatarCheck]");
+  if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [DivineAvatarCheck]");
  }
 
  // [STRIFE-Compatibility] Stamina Upgrades
  PerkFactor = (MiscellaneousVars[317] * 11);
  MiscellaneousVars[232] += PerkFactor; // [STRIFE-Compatibility] Stamina Upgrades
- if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [STRIFEStamCheck]");
+ if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [STRIFEStamCheck]");
 
  // Buff = (10.0% of remaining amount uncovered)
  if (PowerupTimer[11] > 0)
  {  
   DivineAvatarBuffValue = (1000 - MiscellaneousVars[232]) / 10;
   MiscellaneousVars[232] += DivineAvatarBuffValue;
-  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [BuffCheck]");
+  if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [BuffCheck]");
  }
  
  // Life Up Perks = total of +6% Survival
@@ -30913,24 +30933,24 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  {
   if (MiscellaneousVars[232] > 875) MiscellaneousVars[232] = 875;
  }
- if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [KissaBraCheck]");
+ if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [KissaBraCheck]");
 
  if (CheckActorInventory(Player1TID,"RuinousShield") > 0)
  {
   MiscellaneousVars[232] = MiscellaneousVars[232] / 5; // Ruinous Shield divides Survival Rate by 5
-  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [CursedShieldCheck]");
+  if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [CursedShieldCheck]");
  }
 
  if (PowerupTimer[4] > 0) // Invulnerability
  {
   MiscellaneousVars[232] = 1000;
-  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [Invulnerable]");
+  if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [Invulnerable]");
  }
 
  if (MiscellaneousVars[9043] > 0) // Death Rage's Invulnerability
  {
   MiscellaneousVars[232] = 1000;
-  if (GetCVar("dvdsdebug_showsurvivalstuff") > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [DeathRageInvuln]");
+  if (debugsurvival > 0) PrintBold(s:"Survival Rate %: ",d:MiscellaneousVars[232],s:" [DeathRageInvuln]");
  }
 
  // For the Status Bar (Only shows an int value, not a floating point amount)
@@ -30938,7 +30958,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
  if (BuddhaRNGVal <= MiscellaneousVars[232]) SetPlayerProperty(1,1,PROP_BUDDHA); // Buddha Mode is basically perfect for emulating Survivability [this also means, you can't use the Buddha cheat directly though]
  else SetPlayerProperty(1,0,PROP_BUDDHA);
- if (GetCVar("dvdsdebug_showsurvivalstuff") > 0)
+ if (debugsurvival > 0)
  {
   if (BuddhaRNGVal <= MiscellaneousVars[232])
   {
@@ -30956,11 +30976,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  //*Dealing Critical Hits*
  //***********************
  MiscellaneousVars[235] = MiscellaneousVars[0];
- if (GameSkill() <= SKILL_VERY_EASY) MiscellaneousVars[235] /= 3;
+ if (GameSkill() == SKILL_VERY_EASY) MiscellaneousVars[235] /= 3;
  if (GameSkill() == SKILL_EASY) MiscellaneousVars[235] /= 4;
  if (GameSkill() == SKILL_NORMAL) MiscellaneousVars[235] /= 5; 
  if (GameSkill() == SKILL_HARD) MiscellaneousVars[235] /= 6; 
- if (GameSkill() >= SKILL_VERY_HARD) MiscellaneousVars[235] /= 7;
+ if (GameSkill() == SKILL_VERY_HARD) MiscellaneousVars[235] /= 7;
  if (GetCVar("dvdsdebug_showcriticalhitstuff") > 0) PrintBold(s:"Crit Rate %: ",d:MiscellaneousVars[235],s:" [Base]");
 
  int LevelCritValue = ((PlayerLevel * 5) / 8); // Each level is +0.0625% crit rate
@@ -38772,7 +38792,11 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 			 s:"\ck[Actor-Check: ",s:actorname,s:"]");
   }
 
-  if (GetActorClass(0) != "Sauravatar") { SetInventory("CurrentMaxHealth", MaxHP); SetUserVariable(0,"user_MaxHP",MaxHP); }
+  if (GetActorClass(0) != "Sauravatar") 
+	{
+	 //SetInventory("CurrentMaxHealth", MaxHP); 
+	 SetUserVariable(0,"user_MaxHP",MaxHP); 
+	}
   if (CheckActorClass(0, "HeresiarchNew"))
   {  
    SetActorProperty(0,APROP_Score,MaxHP);
@@ -39516,6 +39540,7 @@ script "CheckModType" (void)
 script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
 {
  int SkillSeedRuns, SkillSeedRND, OldHP, NewHP, OldMP, NewMP, StatGain1, StatGain2, ArmorHPBonus, PerkFactor;
+ int debugseedstuff = GetCVar("dvdsdebug_showseedstuff");
 
  if (ModType == 0 && GetCVar("dvds_canseedsappear") == 0) terminate;
 
@@ -39535,7 +39560,7 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
   if (CharacterClass == 2) StatGain1 += 1;
   if (CharacterClass == 8) StatGain1 += 1;
   if (CharacterClass == 9) StatGain1 += 4;
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [Base]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [Base]: ",d:StatGain1);
 
   SkillSeedRND = random(1,13);
 
@@ -39544,28 +39569,28 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
   if (SkillSeedRND >= 5 && SkillSeedRND <= 9) StatGain1 = StatGain1 * 2;
   if (SkillSeedRND >= 10 && SkillSeedRND <= 12) StatGain1 = StatGain1 * 5 / 2;
   if (SkillSeedRND == 13) StatGain1 = StatGain1 * 3;
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [Randomizer1]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [Randomizer1]: ",d:StatGain1);
 
   StatGain1 = StatGain1 * SeedAmount;
   StatGain1 = StatGain1 * MiscellaneousVars[87];
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [Multipliers]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [Multipliers]: ",d:StatGain1);
 
   // Flora's Armor Items [up to +45% Max HP gained from Max HP Bonuses]
   if (CharacterClass == 2 && CheckActorInventory(Player1TID,"PearlyCorset")) ArmorHPBonus += 20; // +20%
   if (CharacterClass == 2 && CheckActorInventory(Player1TID,"KissaBra")) ArmorHPBonus += 10; // +10%
   if (CharacterClass == 2 && CheckActorInventory(Player1TID,"BalrogRing")) ArmorHPBonus += 15; // +25%
   ArmorHPBonus += 100;
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"ArmorHPBonus: ",d:ArmorHPBonus);
+  if (debugseedstuff > 0) PrintBold(s:"ArmorHPBonus: ",d:ArmorHPBonus);
   StatGain1 = StatGain1 * ArmorHPBonus / 100; // Flora is the only one who can use the Pearly Corset
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [ArmorHPBonus]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [ArmorHPBonus]: ",d:StatGain1);
 
   PerkFactor = ((MiscellaneousVars[10001] * 500) + (MiscellaneousVars[10002] * 1250)) + 10000;
   StatGain1 = StatGain1 * PerkFactor / 10000; // "LifeUp" and "LifeUp EX" perks.
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [LifeUp Perks]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [LifeUp Perks]: ",d:StatGain1);
 
   PerkFactor = (MiscellaneousVars[317] * 1250) + 10000;
   StatGain1 = StatGain1 * PerkFactor / 10000; // [STRIFE-Compatibility] Times "Stamina Upgraded"
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [Stamina Upgrade (Strife)]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [Stamina Upgrade (Strife)]: ",d:StatGain1);
 
   if (StatGain1 < 1) StatGain1 = 1;
   MiscellaneousVars[222] += StatGain1;
@@ -39586,7 +39611,7 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
   if (CharacterClass == 2) StatGain1 += 4;
   if (CharacterClass == 8) StatGain1 += 4;
   if (CharacterClass == 9) StatGain1 += 2;
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [Base]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [Base]: ",d:StatGain1);
 
   SkillSeedRND = random(1,13);
 
@@ -39595,19 +39620,19 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
   if (SkillSeedRND >= 5 && SkillSeedRND <= 9) StatGain1 = StatGain1 * 2;
   if (SkillSeedRND >= 10 && SkillSeedRND <= 12) StatGain1 = StatGain1 * 5 / 2;
   if (SkillSeedRND == 13) StatGain1 = StatGain1 * 3;
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [Randomizer1]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [Randomizer1]: ",d:StatGain1);
 
   StatGain1 = StatGain1 * SeedAmount;
   StatGain1 = StatGain1 * MiscellaneousVars[87];
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [Multipliers]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [Multipliers]: ",d:StatGain1);
 
   PerkFactor = ((MiscellaneousVars[10003] * 500) + (MiscellaneousVars[10004] * 1250)) + 10000;
   StatGain1 = StatGain1 * PerkFactor / 10000; // "MagiUp" and "MagiUp EX" perks.
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [LifeUp Perks]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [LifeUp Perks]: ",d:StatGain1);
 
   PerkFactor = (MiscellaneousVars[317] * 1250) + 10000;
   StatGain1 = StatGain1 * PerkFactor / 10000; // [STRIFE-Compatibility] Times "Stamina Upgraded"
-  if (GetCVar("dvdsdebug_showseedstuff") > 0) PrintBold(s:"StatGain1 [Stamina Upgrade (Strife)]: ",d:StatGain1);
+  if (debugseedstuff > 0) PrintBold(s:"StatGain1 [Stamina Upgrade (Strife)]: ",d:StatGain1);
 
   if (StatGain1 < 1) StatGain1 = 1;
   MiscellaneousVars[223] += StatGain1;
@@ -49085,151 +49110,152 @@ script "SetKillCount" (int amount)
 // New Method of adding EXP when certain kills or actions are performed, and searches for specfic things like +FRIENDLY of if the player killed said enemy, etc
 script "AddEXP" (int baseamount, int flags, int incrementcombo)
 {
- int baseexp, finalexpamount, overkillhp, overkillhp2;
- int Exp1, Exp2, ExpMultiFactor, RealExpGain;
- int ComboMultiplier;
- int KillExpMultiplier;
- int KilledByPlayer = 1;
- int fakedeath;
- int random1;
+	int baseexp, finalexpamount, overkillhp, overkillhp2;
+	int Exp1, Exp2, ExpMultiFactor, RealExpGain;
+	int ComboMultiplier;
+	int KillExpMultiplier;
+	int KilledByPlayer = 1;
+	int fakedeath;
+	int random1;
 
- if (flags & 2) fakedeath = 1;
+	if (flags & 2) fakedeath = 1;
 
- int MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
- //PrintBold(s:"MapNumber: ",d:MapCheck);
- int MonsterX = GetActorX(0);
- int MonsterY = GetActorY(0);
- int MonsterZ = GetActorZ(0);
+	int MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
+	//PrintBold(s:"MapNumber: ",d:MapCheck);
+	int MonsterX = GetActorX(0);
+	int MonsterY = GetActorY(0);
+	int MonsterZ = GetActorZ(0);
 
- int RandomArmorDropChance;
- int RandomArmorDropMulti;
+	int RandomArmorDropChance;
+	int RandomArmorDropMulti;
 
- if (ClassicDoomType == 4) // Strife
- {
-    // Enemies in the Degnin Mines or levels in the factory HUB can sometimes drop Degnin Ore depending on the area
-    if (MapCheck == 14) // Degnin Mines
+	int debugexp = GetCVar("dvdsdebug_showexpdebugstuff");
+	if (ClassicDoomType == 4) // Strife
 	{
-     if (random(1,768) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,384) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,192) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,96) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,72) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,48) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,24) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,12) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP14]");
+		// Enemies in the Degnin Mines or levels in the factory HUB can sometimes drop Degnin Ore depending on the area
+		if (MapCheck == 14) // Degnin Mines
+		{
+			if (random(1,768) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,384) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,192) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,96) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,72) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,48) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,24) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,12) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (debugexp == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP14]");
+		}
+		if (MapCheck == 20) // Factory: Receiving
+		{
+			if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (debugexp == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP20]");
+		}
+		if (MapCheck == 21) // Factory: Manufacturing
+		{
+			if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (debugexp == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP21]");
+		}
+		if (MapCheck == 22) // Factory: Forge
+		{
+			if (random(1,192) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,160) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,128) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,96) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,32) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,16) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (debugexp == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP22]");
+		}
+		if (MapCheck == 24) // Factory: Conversion Chapel
+		{
+			if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (debugexp == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP24]");
+		}
+		if (MapCheck == 26) // Proving Grounds
+		{
+			if (random(1,7168) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,1536) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,384) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,96) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (debugexp == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP26]");
+		}
+		if (MapCheck == 27) // The Lab [Loremaster boss]
+		{
+			if (random(1,8192) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,2048) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,512) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,128) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (debugexp == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP27]");
+		}
+		if (CheckActorInventory(Player1TID,"QuestItem29") > 0) // Destroying the Transmitter allows any other enemy in the game to have a chance to drop Degnin Ore [any level]
+		{
+			if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
+			if (debugexp == 1) PrintBold(s:"Degnin Ore Drop Attempt [Post-Transmitter]");
+		}
 	}
-	if (MapCheck == 20) // Factory: Receiving
-	{
-     if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP20]");
-	}
-	if (MapCheck == 21) // Factory: Manufacturing
-	{
-     if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP21]");
-	}
-	if (MapCheck == 22) // Factory: Forge
-	{
-     if (random(1,192) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,160) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,128) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,96) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,32) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,16) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP22]");
-	}
-	if (MapCheck == 24) // Factory: Conversion Chapel
-	{
-     if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP24]");
-	}
-	if (MapCheck == 26) // Proving Grounds
-	{
-     if (random(1,7168) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,1536) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,384) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,96) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP26]");
-	}
-	if (MapCheck == 27) // The Lab [Loremaster boss]
-	{
-     if (random(1,8192) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,2048) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,512) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,128) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP27]");
-	}
-	if (CheckActorInventory(Player1TID,"QuestItem29") > 0) // Destroying the Transmitter allows any other enemy in the game to have a chance to drop Degnin Ore [any level]
-	{
-     if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (random(1,256) == 1) DropItem(0,"DegninOrePickup",1,256);
-     if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Degnin Ore Drop Attempt [Post-Transmitter]");
-	}
- }
 
 
- if (GameSkill() == SKILL_VERY_EASY) RandomArmorDropMulti = 75;
- else if (GameSkill() == SKILL_EASY) RandomArmorDropMulti = 90;
- else if (GameSkill() == SKILL_NORMAL) RandomArmorDropMulti = 100;
- else if (GameSkill() == SKILL_HARD) RandomArmorDropMulti = 110;
- else if (GameSkill() == SKILL_VERY_HARD) RandomArmorDropMulti = 125;
+	if (GameSkill() == SKILL_VERY_EASY) RandomArmorDropMulti = 75;
+	else if (GameSkill() == SKILL_EASY) RandomArmorDropMulti = 90;
+	else if (GameSkill() == SKILL_NORMAL) RandomArmorDropMulti = 100;
+	else if (GameSkill() == SKILL_HARD) RandomArmorDropMulti = 110;
+	else if (GameSkill() == SKILL_VERY_HARD) RandomArmorDropMulti = 125;
 
- KilledByPlayer = 1;
- KillExpMultiplier = 20; // 20 = 100% [1 = 5%]
- int KillerTID = GetActorProperty(0,APROP_TargetTID);
- if (GetCVar("dvds_exppropercredit") == 1)
- { 
-  if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == FALSE)
-  {
-   // TODO: Detect if a friendly monster/summon is the killer of the monster to give EXP credit to the player
-   if (CheckFlag(KillerTID,"FRIENDLY") == 1)
-   {
-    KilledByPlayer = 0;
-    KillExpMultiplier = random(13,18); // [65 to 90%]
-	if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) KillExpMultiplier += 2;
-   }
-   else
-   {
-    if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Passed Player/Friendly-Monster Credit Check: NO");
-    terminate;
-   }
-  }
- }
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
- {
-  if (KilledByPlayer == 1) PrintBold(s:"Passed Player/Friendly-Monster Credit Check: YES (PLAYER)");
-  else PrintBold(s:"Passed Player/Friendly-Monster Credit Check: YES (FRIENDLY ACTOR)");
- }
+	KilledByPlayer = 1;
+	KillExpMultiplier = 20; // 20 = 100% [1 = 5%]
+	int KillerTID = GetActorProperty(0,APROP_TargetTID);
+	if (GetCVar("dvds_exppropercredit") == 1)
+	{ 
+		if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == FALSE)
+		{
+			// TODO: Detect if a friendly monster/summon is the killer of the monster to give EXP credit to the player
+			if (CheckFlag(KillerTID,"FRIENDLY") == 1)
+			{
+				KilledByPlayer = 0;
+				KillExpMultiplier = random(13,18); // [65 to 90%]
+				if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) KillExpMultiplier += 2;
+			}
+			else
+			{
+				if (debugexp == 1) PrintBold(s:"Passed Player/Friendly-Monster Credit Check: NO");
+				terminate;
+			}
+		}
+	}
+	if (debugexp == 1)
+	{
+		if (KilledByPlayer == 1) PrintBold(s:"Passed Player/Friendly-Monster Credit Check: YES (PLAYER)");
+		else PrintBold(s:"Passed Player/Friendly-Monster Credit Check: YES (FRIENDLY ACTOR)");
+	}
 
- if (GetActorProperty(Player1TID,APROP_Health) <= 0)  
- {
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Passed Player-Alive Check: NO"); 
-  terminate; 
- }
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Passed Player-Alive Check: YES");
+	if (GetActorProperty(Player1TID,APROP_Health) <= 0)  
+	{
+		if (debugexp == 1) PrintBold(s:"Passed Player-Alive Check: NO"); 
+		terminate; 
+	}
+	if (debugexp == 1) PrintBold(s:"Passed Player-Alive Check: YES");
 
- if (CheckFlag(0,"FRIENDLY") == 1) // Any "FRIENDLY" flagged monster who runs the script will not get beyond this point UNLESS they have bit 1 enabled.
- {
-  if (flags & 1) { }
-  else
-  {
-   if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Passed FRIENDLY Check: NO");
-   terminate;
-  }
- }
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Passed FRIENDLY Check: YES");
+	if (CheckFlag(0,"FRIENDLY") == 1) // Any "FRIENDLY" flagged monster who runs the script will not get beyond this point UNLESS they have bit 1 enabled.
+	{
+		if (flags & 1) { }
+		else
+		{
+			if (debugexp == 1) PrintBold(s:"Passed FRIENDLY Check: NO");
+			terminate;
+		}
+	}
+	if (debugexp == 1) PrintBold(s:"Passed FRIENDLY Check: YES");
 
  int HellCoreRuinousDropChance = 5;
  if (CheckActorInventory(Player1TID,"RuinousShield") > 0) HellCoreRuinousDropChance *= 3; // Ruinous Shield triples drop rate
@@ -49251,7 +49277,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (CheckActorClass(0,"DSArchvile") == 1) 		DropItem(0,"ArchvileHandCI",1,HellCoreRuinousDropChance);
  if (CheckActorClass(0,"Diabloist") == 1) 		DropItem(0,"DiabloistHandCI",1,HellCoreRuinousDropChance);
  if (CheckActorClass(0,"FlyingBalrog") == 1) 	DropItem(0,"BalrogFistCI",1,HellCoreRuinousDropChance);
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(d:HellCoreRuinousDropChance);
+ if (debugexp == 1) PrintBold(d:HellCoreRuinousDropChance);
 
  int uncursethreshold;
  int uncursethreshold2;
@@ -49261,7 +49287,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  {
   if (CharacterClass == 2 && CheckActorInventory(Player1TID,"RuinousShield") > 0) // Flora
   {
-   if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(d:MiscellaneousVars[202]);
+   if (debugexp == 1) PrintBold(d:MiscellaneousVars[202]);
    // Increase Ruinous Shield Counter by 1 or 2 pts [this allows the player to uncurse the shield slowly by killing enemies.
    uncursethreshold = 9375;
    uncursethreshold2 = 6250;
@@ -49287,7 +49313,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
    if (KilledByPlayer != 1) uncursepts /= 4;
    if (uncursepts < 1) uncursepts = 1;
    MiscellaneousVars[202] += uncursepts;
-   if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Uncurse Pts: ",d:MiscellaneousVars[202],s:" [+",d:uncursepts,s:"]");
+   if (debugexp == 1) PrintBold(s:"Uncurse Pts: ",d:MiscellaneousVars[202],s:" [+",d:uncursepts,s:"]");
   }
 
   int donotincreasekills = 0;
@@ -49296,7 +49322,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   if (donotincreasekills == 0) 
   {
    MiscellaneousVars[167] += 1; // Increases Player's actual total kill count by 1
-   if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"Kills: ",d:MiscellaneousVars[167]);
+   if (debugexp == 1) PrintBold(s:"Kills: ",d:MiscellaneousVars[167]);
   }
  }
 
@@ -49687,7 +49713,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  
  if (ModType == 0 && GetCVar("dvds_noexpgains") != 0) 
  {
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"EXP Gains: STOPPED");
+  if (debugexp == 1) PrintBold(s:"EXP Gains: STOPPED");
   terminate; // If in Classic mode and the EXP Gain option is turned off, stop script here.
  }
  //**********************
@@ -49800,22 +49826,22 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  }
  
  finalexpamount = baseexp;
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"EXP1: ",d:finalexpamount,s:" [Base EXP]");
+ if (debugexp == 1) PrintBold(s:"EXP1: ",d:finalexpamount,s:" [Base EXP]");
 
  if (fakedeath > 0) // Fake deaths [Death Incarnate, etc] cut EXP gain by 75%
  {
   finalexpamount = finalexpamount / 4;
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Fake-Death]");
+  if (debugexp == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Fake-Death]");
  }
  
  finalexpamount = finalexpamount * KillExpMultiplier / 20;
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"EXP2: ",d:finalexpamount,s:" [Multiplier: ",d:KillExpMultiplier,s:" / 20]");
+ if (debugexp == 1) PrintBold(s:"EXP2: ",d:finalexpamount,s:" [Multiplier: ",d:KillExpMultiplier,s:" / 20]");
 
   // Check for Fast Monsters setting
  if (GetCVar("sv_fastmonsters") == 1)
  {
   finalexpamount = finalexpamount * 11 / 8; // [+37.5%]
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Fast Monsters On]");
+  if (debugexp == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Fast Monsters On]");
  }
 
  // Check Proper Flags
@@ -49823,14 +49849,14 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  {
   if (CheckActorInventory(Player1TID,"TheOneRing") > 0) finalexpamount = finalexpamount * 9 / 8;	// DV-DS Style Stealth = [+12.5%]
   else finalexpamount = finalexpamount * 15 / 8;	// DV-DS Style Stealth = [+87.5%]
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Was Stealth]");
+  if (debugexp == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Was Stealth]");
  }
  if (CheckFlag(0,"STEALTH") == 1) // ZDoom Style STEALTH = [+100%]
  {
   finalexpamount = finalexpamount * 2;
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Has ZDoom(tm) Stealth]");
+  if (debugexp == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Has ZDoom(tm) Stealth]");
  }
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ if (debugexp == 1)
  {
   PrintBold(s:"EXP3: ",d:finalexpamount);
  }
@@ -49839,7 +49865,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  If (GetUserVariable(0, "user_legendaryevolved") > 0)
  {
   finalexpamount = (finalexpamount * 5) / 2;
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Is a 'Legendary' Monster? (LDL)]");
+  if (debugexp == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Is a 'Legendary' Monster? (LDL)]");
  }
  
  if (GetUserVariable(0,"user_MaxHP") <= 0) { overkillhp = GetActorProperty(0,APROP_SpawnHealth) * -1; }
@@ -49860,14 +49886,14 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   MiscellaneousVars[2022] = 2; // OVERKILL display color 
   MiscellaneousVars[2023] = 52; // OVERKILL Timer Tics 
  }
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ if (debugexp == 1)
  {
   PrintBold(s:"EXP4: ",d:finalexpamount);
  }
 
  ExpMultiFactor = GetExpMultiFactor(); // FUNCTION CALL
  finalexpamount = GetExperience(finalexpamount,ExpMultiFactor); // FUNCTION CALL
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ if (debugexp == 1)
  {
   PrintBold(s:"EXP5: ",d:finalexpamount);
  }
@@ -49876,12 +49902,12 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  levelcheck += 1000;
  if (levelcheck < 1000) levelcheck = 1000;
  if (levelcheck > 3000) levelcheck = 3000;
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ if (debugexp == 1)
  {
   PrintBold(s:"levelcheck: ",d:levelcheck);
  }
  finalexpamount = finalexpamount * levelcheck / 1000;
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ if (debugexp == 1)
  {
   PrintBold(s:"EXP6: ",d:finalexpamount);
  }
@@ -49948,7 +49974,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
   //if (finalexpamount > 200000) finalexpamount = 200000;
 
   finalexpamount = (finalexpamount * MiscellaneousVars[159]) / 10000;
-  if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+  if (debugexp == 1)
   {
    PrintBold(s:"Combo %: ",d:MiscellaneousVars[159],
              s:"\nEXP7: ",d:finalexpamount);
@@ -49958,7 +49984,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
  if (finalexpamount < 1) finalexpamount = 1;
  Experience += finalexpamount;
 
- if (GetCVar("dvdsdebug_showexpdebugstuff") == 1)
+ if (debugexp == 1)
  {
   PrintBold(s:"LstHPAmt: ",d:GetActorProperty(0,APROP_Health),s:" / OverkillHP: ",d:overkillhp,s:"\n",
             s:"BaseEXP: ",d:baseexp,s:" / FinalEXP: ",d:finalexpamount,s:"\n",
@@ -50947,9 +50973,4 @@ script "PopBubbles" (void)
 script "SetSceptreShieldLevel" (int level)
 {
  MiscellaneousVars[397] = level;
-}
-
-script "GameSkill" (void)
-{
- SetResultValue(GameSkill());
 }
