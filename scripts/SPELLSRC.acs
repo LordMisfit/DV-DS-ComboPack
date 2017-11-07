@@ -128,7 +128,6 @@ Functions
 	["CheckWeaponFlash"]			-	***WEAPON*** Used for the revised Plasma Rifle to assure proper muzzle-flash animations w/ Spreader Aura
 	["CheckBFG2704"]				-	***WEAPON*** Used to check the option for BFG2704 usage by both players and BFG-Commandos.
 	["CheckShotgunnerSpreads"]		-	***WEAPON*** Used to check the option for what kind of shotgun spreads are used by the Zombies.
-	["CheckCrisisAttackType"]		-	***WEAPON*** Used to determine what type of 'crisis' attacks monsters/hellcore-weapons use, if any.
 
 	["DV1M04-Music1"]				-	***EVENT*** Changes Music for Entering the Fishmouth Temple in MAP04 [DVI-DS] or MAP12 [DVII-DS] ***EVENT***
 	["DVI-M02EyeDead"]				-	***EVENT*** Killed MAP02 Eye [DVI-DS] / MAP12 First Eye [DVII-DS] ***EVENT***
@@ -3575,12 +3574,13 @@ script "HUDDisplay" ENTER
 
  int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 
+ int HUDGFXLevel = GetCVar("dvds_gfxeffectlevel");
  int HUDMsgDelayBase = GetCVar("dvdsallhuds_refreshdelay");
  if (HUDMsgDelayBase < 1) HUDMsgDelayBase = 1;
  if (HUDMsgDelayBase > 420) HUDMsgDelayBase = 420;
- if (GetCVar("dvds_gfxeffectlevel") == 0) HUDMsgDelayBase *= 1;
- else if (GetCVar("dvds_gfxeffectlevel") == 1) HUDMsgDelayBase *= 3;
- else if (GetCVar("dvds_gfxeffectlevel") == 2) HUDMsgDelayBase *= 9;
+ if (HUDGFXLevel == 0) HUDMsgDelayBase *= 1;
+ else if (HUDGFXLevel == 1) HUDMsgDelayBase *= 3;
+ else if (HUDGFXLevel == 2) HUDMsgDelayBase *= 9;
  int HUDMsgDelayFixed = HUDMsgDelayBase * 1.0;
  HUDMsgDelayFixed /= 35;
 /*
@@ -3590,6 +3590,8 @@ script "HUDDisplay" ENTER
  HUDMsgDelayFixed += 0.008;
 
  int overallhudalpha = GetCVar("dvdsoldhud_generaltransperancy");
+ int OldHudNotchDetail = GetCVar("dvdsoldhud_hudmeternotchdetail");
+ int OldHudShowEmptyNotches = GetCVar("dvdsoldhud_showemptynotches");
  
  int EXPGainChecker = 1;
  if (ModType == 0 && GetCVar("dvds_noexpgains") != 0) EXPGainChecker = 0; // If in Classic mode and the EXP Gain option is turned off, don't show EXP stuff on HUD.
@@ -3617,11 +3619,11 @@ script "HUDDisplay" ENTER
    if (GetCVar("dvdsoldhud_showmanabar") > 0)
    {
     if (EXPGainChecker == 1) ypos = 32.0; else ypos = 24.0;
-    G10 = GetCVar("dvdsoldhud_hudmeternotchdetail");
+    G10 = OldHudNotchDetail;
     G9 = 100 / G10;
     I1 = CurrentMana * G9 / MaxMana;
     if (I1 > G9) I1 = G9;
-    if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
+    if (OldHudShowEmptyNotches == 0) G7 = I1; else G7 = G9;
     for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
     {
      if (MaxMana != 0)
@@ -3653,13 +3655,13 @@ script "HUDDisplay" ENTER
     {
      // EXP Bar
      // 3302-3402	- EXP Bar Notches
-     G10 = GetCVar("dvdsoldhud_hudmeternotchdetail");
+     G10 = OldHudNotchDetail;
      G9 = 100 / G10;
      Z1 = Experience - ExpTable[PlayerLevel - 1];
      Z2 = ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1];
      I1 = Z1 * G9 / Z2;     
      if (I1 > G9) I1 = G9;
-     if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
+     if (OldHudShowEmptyNotches == 0) G7 = I1; else G7 = G9;
      for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
      {
        if (Z2 != 0)
@@ -3693,13 +3695,13 @@ script "HUDDisplay" ENTER
     if (PowerupTimer[7] > 0) MaxEXPCombotimer = 7000; else MaxEXPCombotimer = 5600;
     // EXP Combo Timer Bar
     // 2200-2300	- EXP Combo Timer Bar Notches
-    G10 = GetCVar("dvdsoldhud_hudmeternotchdetail");
+    G10 = OldHudNotchDetail;
     G9 = 100 / G10;
     Z1 = MiscellaneousVars[157];
     Z2 = MaxEXPCombotimer;
     I1 = Z1 * G9 / Z2;     
     if (I1 > G9) I1 = G9;
-    if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
+    if (OldHudShowEmptyNotches == 0) G7 = I1; else G7 = G9;
     if (Z1 > 0 && Z2 > 0)
     {
      for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
@@ -3826,7 +3828,7 @@ script "HUDDisplay" ENTER
 
    int MaxTensionChargeTimer;
    int TensionTimerMax = 3600;
-   if (GetCVar("dvds_allowtension") > 0)
+   if (MiscellaneousVars[110002] > 0)
    {
     if (GetCVar("dvdsoldhud_showtensionbars") > 0)
     {
@@ -3842,13 +3844,13 @@ script "HUDDisplay" ENTER
  
      if (MiscellaneousVars[181] < 7 && MiscellaneousVars[185] > 0 && MiscellaneousVars[184] == 0)
      {
-      G10 = GetCVar("dvdsoldhud_hudmeternotchdetail");
+      G10 = OldHudNotchDetail;
       G9 = 100 / G10;
       Z1 = MiscellaneousVars[185];
       Z2 = MaxTensionChargeTimer;
       I1 = Z1 * G9 / Z2;     
       if (I1 > G9) I1 = G9;
-      if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
+      if (OldHudShowEmptyNotches == 0) G7 = I1; else G7 = G9;
       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
       {
        if (C1 <= I1)
@@ -3875,13 +3877,13 @@ script "HUDDisplay" ENTER
      // Tension Time-Left Bar
      if (MiscellaneousVars[181] > 0) //   && MiscellaneousVars[183] < TensionTimerMax
      {
-      G10 = GetCVar("dvdsoldhud_hudmeternotchdetail");
+      G10 = OldHudNotchDetail;
       G9 = 100 / G10;
       Z1 = MiscellaneousVars[183];
       Z2 = TensionTimerMax;
       I1 = Z1 * G9 / Z2;     
       if (I1 > G9) I1 = G9;
-      if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
+      if (OldHudShowEmptyNotches == 0) G7 = I1; else G7 = G9;
       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
       {
        if (C1 <= I1)
@@ -3908,13 +3910,13 @@ script "HUDDisplay" ENTER
      // MiscellaneousVars[188] = MiscellaneousVars[186];
      if (MiscellaneousVars[186] > 0 && MiscellaneousVars[188] > 0 && MiscellaneousVars[184] == 0)
      {
-      G10 = GetCVar("dvdsoldhud_hudmeternotchdetail");
+      G10 = OldHudNotchDetail;
       G9 = 100 / G10;
       Z1 = MiscellaneousVars[186];
       Z2 = MiscellaneousVars[188];
       I1 = Z1 * G9 / Z2;     
       if (I1 > G9) I1 = G9;
-      if (GetCVar("dvdsoldhud_showemptynotches") == 0) G7 = I1; else G7 = G9;
+      if (OldHudShowEmptyNotches == 0) G7 = I1; else G7 = G9;
       for (C1 = 1; C1 <= G7; C1 ++) //for (C1 = 101; C1 > 1; C1 --)
       {
        if (C1 <= I1)
@@ -8055,7 +8057,7 @@ script "HUDDisplay" ENTER
 
 
 
-    if (GetCVar("dvds_allowtension") > 0)
+    if (MiscellaneousVars[110002] > 0)
 	{
      //****************************************
      //** Tension Charge/Timer [5110 to 5525]**
@@ -8198,7 +8200,7 @@ script "HUDDisplay" ENTER
      // MiscellaneousVars[250] - OverPsyche Timer [Current]
      // MiscellaneousVars[262] - OverPsyche Timer [Max]
      G6 = 0;
-     if (GetCVar("dvds_allowtensionocdmg") > 0)
+     if (MiscellaneousVars[110003] > 0)
 	 {
 	  if (MiscellaneousVars[250] > 0) G6 += 1;
 	 }
@@ -12352,14 +12354,16 @@ function int GetExpMultiFactor (void)
 //---------------------------------------------
 function int GetExperience (int RealExpGain, int ExpMultiFactor)
 {
+ int DeftnessExpBase = GetCVar("dvds_deftnessexpbase");
+ int ExpMultiplier = GetCVar("dvds_expmultiplier");
  int OldExp1 = RealExpGain;
  RealExpGain = RealExpGain * ExpMultiFactor / 100; // Randomizes some of the experience gained
 
  int OldExp2 = RealExpGain;
- RealExpGain = RealExpGain * (GetCVar("dvds_deftnessexpbase") + MiscellaneousVars[40]) / GetCVar("dvds_deftnessexpbase");
+ RealExpGain = RealExpGain * (DeftnessExpBase + MiscellaneousVars[40]) / DeftnessExpBase;
 
  int OldExp3 = RealExpGain;
- RealExpGain = RealExpGain * GetCVar("dvds_expmultiplier") / 100; // EXP Multiplier Option
+ RealExpGain = RealExpGain * ExpMultiplier / 100; // EXP Multiplier Option
 
  int OldExp4 = RealExpGain;
  int perkfactor;
@@ -12413,8 +12417,8 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
  {
   PrintBold(s:"OldEXP1: ",d:OldExp1,
            s:"\nOldEXP2: ",d:OldExp2,s:" [ExpMultiRand: ",d:ExpMultiFactor,s:" / 100]",
-           s:"\nOldEXP3: ",d:OldExp3,s:" [DeftBonus: ",d:GetCVar("dvds_deftnessexpbase")+MiscellaneousVars[40],s:" / ",d:GetCVar("dvds_deftnessexpbase"),s:"]",
-           s:"\nOldEXP4: ",d:OldExp4,s:" [ExpMultiOption: ",d:GetCVar("dvds_expmultiplier"),s:" / 100]",
+           s:"\nOldEXP3: ",d:OldExp3,s:" [DeftBonus: ",d:DeftnessExpBase+MiscellaneousVars[40],s:" / ",d:DeftnessExpBase,s:"]",
+           s:"\nOldEXP4: ",d:OldExp4,s:" [ExpMultiOption: ",d:ExpMultiplier,s:" / 100]",
            s:"\nOldEXP5: ",d:OldExp5,s:" [PerkFactor: ",d:perkfactor,s:" / 100]",
            s:"\nOldEXP6: ",d:OldExp6,
            s:"\nOldEXP7: ",d:OldExp7,
@@ -12524,7 +12528,7 @@ script "LevelUpCode" ENTER // (void)
      }
     }
     // Extra AeonPts for "Perk Mode"
-    if (GetCVar("dvdsperks_active") == 1)
+    if (MiscellaneousVars[110001] == 1)
     {
      tempaeonpointincrease += 2;
      if (PlayerLevel >= 15) tempaeonpointincrease += 1;
@@ -13139,185 +13143,193 @@ script "PickupExperiessence" (int percentage)
 // Old DoomSpellV2 Style Completion Bonues [optional, turned OFF by default]
 script "OldDoomSpellCompletion" ENTER
 {
- str SecretBonusText1;
- int SecretBonusText2;
- str SecretBonusText3;
- str ItemBonusText1;
- int ItemBonusText2;
- str ItemBonusText3;
- str KillBonusText1;
- int KillBonusText2;
- str KillBonusText3;
+	str SecretBonusText1;
+	int SecretBonusText2;
+	str SecretBonusText3;
+	str ItemBonusText1;
+	int ItemBonusText2;
+	str ItemBonusText3;
+	str KillBonusText1;
+	int KillBonusText2;
+	str KillBonusText3;
 
- int ItemsForMultiplier = GetCVar("dvds_itemsfoundformulti");
- int SecretsForMultiplier = GetCVar("dvds_secretsfoundformulti");
- int KillsForMultiplier = GetCVar("dvds_monsterskilledformulti");
+	int ItemsForMultiplier = GetCVar("dvds_itemsfoundformulti");
+	int SecretsForMultiplier = GetCVar("dvds_secretsfoundformulti");
+	int KillsForMultiplier = GetCVar("dvds_monsterskilledformulti");
+
+	int ItemsFoundMulti = GetCVar("dvds_itemsfoundmulti");
+	int SecretsFoundMulti = GetCVar("dvds_secretsfoundmulti");
+	int MonstersKilledMulti = GetCVar("dvds_monsterskilledmulti");
+
+	int ItemsFoundBonus = GetCVar("dvds_itemsfoundbonus");
+	int SecretsFoundBonus = GetCVar("dvds_secretsfoundbonus");
+	int MonstersKilledBonus = GetCVar("dvds_monsterskilledbonus");
+
+	int XSize = 800;
+	int YSize = 600;
+	int XPos = 0;
+	int XPosF = 0.0;
+	int YPos = 0;
+	int YPosF = 0.0;
+
+	int BaseEXPGain = 10; // Base % of EXP given for Completion Bonus
+	int BaseAeonPoints = 1;
+
+	int ExtraMultiplier = 1;
+
+	if (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) <= 0) SecretBonusApplied = 1;
+	if (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) <= 0) ItemBonusApplied = 1;
+	if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) <= 0) KillBonusApplied = 1;
  
- int XSize = 800;
- int YSize = 600;
- int XPos = 0;
- int XPosF = 0.0;
- int YPos = 0;
- int YPosF = 0.0;
-
- int BaseEXPGain = 10; // Base % of EXP given for Completion Bonus
- int BaseAeonPoints = 1;
-
- int ExtraMultiplier = 1;
- 
- if (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) <= 0) SecretBonusApplied = 1;
- if (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) <= 0) ItemBonusApplied = 1;
- if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) <= 0) KillBonusApplied = 1;
- 
- if (GetCVar("dvds_oldcompletionbonuses") > 0)
- {
-  if (SecretBonusApplied == 0)
-  {
-   if (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
-   {
-    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) / SecretsForMultiplier) + 1;
-    SecretBonusApplied = 1;
-    SecretBonusText1 = "100% secrets found bonus:\n\n";
-	if (GetCVar("dvds_secretsfoundbonus") == 0)
+	if (GetCVar("dvds_oldcompletionbonuses") > 0)
 	{
-     BaseEXPGain *= GetCVar("dvds_secretsfoundmulti");
-	 BaseEXPGain *= ExtraMultiplier;
-     BaseEXPGain = BaseEXPGain >> 16;
-	 if (PlayerLevel == 0) { Experience += (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
-	 else if (PlayerLevel >= 1) { Experience += ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
-	  
-	 SecretBonusText2 = BaseEXPGain;
-	 SecretBonusText3 = "% of the experience required to reach the next level.";
-	}
-	if (GetCVar("dvds_secretsfoundbonus") == 1)
-	{
-     BaseAeonPoints *= GetCVar("dvds_secretsfoundmulti");
-	 BaseAeonPoints *= ExtraMultiplier;
-     BaseAeonPoints = BaseAeonPoints >> 16;
-	 if (BaseAeonPoints < 1) BaseAeonPoints = 1;
-     MiscellaneousVars[25] += BaseAeonPoints;
-     MiscellaneousVars[224] += BaseAeonPoints; 
-	 MiscellaneousVars[2033] = 105;
+		if (SecretBonusApplied == 0)
+		{
+		 if (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
+		 {
+			ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) / SecretsForMultiplier) + 1;
+			SecretBonusApplied = 1;
+			SecretBonusText1 = "100% secrets found bonus:\n\n";
+			if (SecretsFoundBonus == 0)
+			{
+			 BaseEXPGain *= SecretsFoundMulti;
+			 BaseEXPGain *= ExtraMultiplier;
+			 BaseEXPGain = BaseEXPGain >> 16;
+			 if (PlayerLevel == 0) { Experience += (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
+			 else if (PlayerLevel >= 1) { Experience += ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
+			
+			 SecretBonusText2 = BaseEXPGain;
+			 SecretBonusText3 = "% of the experience required to reach the next level.";
+			}
+			if (SecretsFoundBonus == 1)
+			{
+			 BaseAeonPoints *= SecretsFoundMulti;
+			 BaseAeonPoints *= ExtraMultiplier;
+			 BaseAeonPoints = BaseAeonPoints >> 16;
+			 if (BaseAeonPoints < 1) BaseAeonPoints = 1;
+			 MiscellaneousVars[25] += BaseAeonPoints;
+			 MiscellaneousVars[224] += BaseAeonPoints; 
+			 MiscellaneousVars[2033] = 105;
 
-	 SecretBonusText2 = BaseAeonPoints;
-	 if (BaseAeonPoints > 1) { SecretBonusText3 = " Aeon Points."; } else { SecretBonusText3 = " Aeon Point."; }
-	}
+			 SecretBonusText2 = BaseAeonPoints;
+			 if (BaseAeonPoints > 1) { SecretBonusText3 = " Aeon Points."; } else { SecretBonusText3 = " Aeon Point."; }
+			}
 
-    SetFont("DVDSBIGFONT");
-    SetHudSize(XSize,YSize,0);
-    XPos = XSize / 2;
-    XPosF = XPos * 1.0 + 0.4;
-    YPos = YSize * 6 / 9;
-    YPosF = YPos * 1.0;
-	HudMessage(s:SecretBonusText1,d:SecretBonusText2,s:SecretBonusText3;
-	              HUDMSG_TYPEON,106,CR_BLUE,XPosF,YPosF,2.5,0.025,0.125,0.75);
-    SetHudSize(0,0,0);
-    SetFont("SMALLFONT");
-   }
-  }
-  if (ItemBonusApplied == 0)
-  {
-   if (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) == GetLevelInfo(LEVELINFO_FOUND_ITEMS))
-   {
-    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) / ItemsForMultiplier) + 1;
-    ItemBonusApplied = 1;
-	ItemBonusText1 = "100% items found bonus:\n\n";
-	if (GetCVar("dvds_itemsfoundbonus") == 0)
-	{
-     BaseEXPGain *= GetCVar("dvds_itemsfoundmulti");
-	 BaseEXPGain *= ExtraMultiplier;
-     BaseEXPGain = BaseEXPGain >> 16;
-	 if (PlayerLevel == 0) { Experience += (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
-	 else if (PlayerLevel >= 1) { Experience += ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
-	  
-	 ItemBonusText2 = BaseEXPGain;
-	 ItemBonusText3 = "% of the experience required to reach the next level.";
-	}
-	if (GetCVar("dvds_itemsfoundbonus") == 1)
-	{
-     BaseAeonPoints *= GetCVar("dvds_itemsfoundmulti");
-	 BaseAeonPoints *= ExtraMultiplier;
-     BaseAeonPoints = BaseAeonPoints >> 16;
-	 if (BaseAeonPoints < 1) BaseAeonPoints = 1;
-     MiscellaneousVars[25] += BaseAeonPoints;
-     MiscellaneousVars[224] += BaseAeonPoints; 
-	 MiscellaneousVars[2033] = 105;
+			SetFont("DVDSBIGFONT");
+			SetHudSize(XSize,YSize,0);
+			XPos = XSize / 2;
+			XPosF = XPos * 1.0 + 0.4;
+			YPos = YSize * 6 / 9;
+			YPosF = YPos * 1.0;
+			HudMessage(s:SecretBonusText1,d:SecretBonusText2,s:SecretBonusText3;
+									HUDMSG_TYPEON,106,CR_BLUE,XPosF,YPosF,2.5,0.025,0.125,0.75);
+			SetHudSize(0,0,0);
+			SetFont("SMALLFONT");
+		 }
+		}
+		if (ItemBonusApplied == 0)
+		{
+		 if (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) == GetLevelInfo(LEVELINFO_FOUND_ITEMS))
+		 {
+			ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) / ItemsForMultiplier) + 1;
+			ItemBonusApplied = 1;
+			ItemBonusText1 = "100% items found bonus:\n\n";
+			if (ItemsFoundBonus == 0)
+			{
+			 BaseEXPGain *= ItemsFoundMulti;
+			 BaseEXPGain *= ExtraMultiplier;
+			 BaseEXPGain = BaseEXPGain >> 16;
+			 if (PlayerLevel == 0) { Experience += (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
+			 else if (PlayerLevel >= 1) { Experience += ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
+			
+			 ItemBonusText2 = BaseEXPGain;
+			 ItemBonusText3 = "% of the experience required to reach the next level.";
+			}
+			if (ItemsFoundBonus == 1)
+			{
+			 BaseAeonPoints *= ItemsFoundMulti;
+			 BaseAeonPoints *= ExtraMultiplier;
+			 BaseAeonPoints = BaseAeonPoints >> 16;
+			 if (BaseAeonPoints < 1) BaseAeonPoints = 1;
+			 MiscellaneousVars[25] += BaseAeonPoints;
+			 MiscellaneousVars[224] += BaseAeonPoints; 
+			 MiscellaneousVars[2033] = 105;
 
-	 ItemBonusText2 = BaseAeonPoints;
-	 if (BaseAeonPoints > 1) { ItemBonusText3 = " Aeon Points."; } else { ItemBonusText3 = " Aeon Point."; }
-	}
+			 ItemBonusText2 = BaseAeonPoints;
+			 if (BaseAeonPoints > 1) { ItemBonusText3 = " Aeon Points."; } else { ItemBonusText3 = " Aeon Point."; }
+			}
 
-    SetFont("DVDSBIGFONT");
-    SetHudSize(XSize,YSize,0);
-    XPos = XSize / 2;
-    XPosF = XPos * 1.0 + 0.4;
-    YPos = YSize * 7 / 9;
-    YPosF = YPos * 1.0;
-	HudMessage(s:ItemBonusText1,d:ItemBonusText2,s:ItemBonusText3;
-	              HUDMSG_TYPEON,107,CR_GREEN,XPosF,YPosF,2.5,0.025,0.125,0.75);
-    SetHudSize(0,0,0);
-    SetFont("SMALLFONT");
-   }
-  }
-  if (KillBonusApplied == 0)
-  {
-   if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) == GetLevelInfo(LEVELINFO_KILLED_MONSTERS))
-   {
-    ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / KillsForMultiplier) + 1;
-    KillBonusApplied = 1;
-	KillBonusText1 = "100% monsters killed bonus:\n\n";
-	if (GetCVar("dvds_monsterskilledbonus") == 0)
-	{
-     BaseEXPGain *= GetCVar("dvds_monsterskilledmulti");
-	 BaseEXPGain *= ExtraMultiplier;
-     BaseEXPGain = BaseEXPGain >> 16;
-	 if (PlayerLevel == 0) { Experience += (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
-	 else if (PlayerLevel >= 1) { Experience += ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
-	  
-	 KillBonusText2 = BaseEXPGain;
-	 KillBonusText3 = "% of the experience required to reach the next level.";
-	}
-	if (GetCVar("dvds_monsterskilledbonus") == 1)
-	{
-     BaseAeonPoints *= GetCVar("dvds_monsterskilledmulti");
-	 BaseAeonPoints *= ExtraMultiplier;
-     BaseAeonPoints = BaseAeonPoints >> 16;
-	 if (BaseAeonPoints < 1) BaseAeonPoints = 1;
-     MiscellaneousVars[25] += BaseAeonPoints;
-     MiscellaneousVars[224] += BaseAeonPoints; 
-	 MiscellaneousVars[2033] = 105;
+			SetFont("DVDSBIGFONT");
+			SetHudSize(XSize,YSize,0);
+			XPos = XSize / 2;
+			XPosF = XPos * 1.0 + 0.4;
+			YPos = YSize * 7 / 9;
+			YPosF = YPos * 1.0;
+			HudMessage(s:ItemBonusText1,d:ItemBonusText2,s:ItemBonusText3;
+									HUDMSG_TYPEON,107,CR_GREEN,XPosF,YPosF,2.5,0.025,0.125,0.75);
+			SetHudSize(0,0,0);
+			SetFont("SMALLFONT");
+		 }
+		}
+		if (KillBonusApplied == 0)
+		{
+		 if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) == GetLevelInfo(LEVELINFO_KILLED_MONSTERS))
+		 {
+			ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / KillsForMultiplier) + 1;
+			KillBonusApplied = 1;
+			KillBonusText1 = "100% monsters killed bonus:\n\n";
+			if (MonstersKilledBonus == 0)
+			{
+			 BaseEXPGain *= MonstersKilledMulti;
+			 BaseEXPGain *= ExtraMultiplier;
+			 BaseEXPGain = BaseEXPGain >> 16;
+			 if (PlayerLevel == 0) { Experience += (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
+			 else if (PlayerLevel >= 1) { Experience += ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
+				
+			 KillBonusText2 = BaseEXPGain;
+			 KillBonusText3 = "% of the experience required to reach the next level.";
+			}
+			if (MonstersKilledBonus == 1)
+			{
+			 BaseAeonPoints *= MonstersKilledMulti;
+			 BaseAeonPoints *= ExtraMultiplier;
+			 BaseAeonPoints = BaseAeonPoints >> 16;
+			 if (BaseAeonPoints < 1) BaseAeonPoints = 1;
+			 MiscellaneousVars[25] += BaseAeonPoints;
+			 MiscellaneousVars[224] += BaseAeonPoints; 
+			 MiscellaneousVars[2033] = 105;
 
-	 KillBonusText2 = BaseAeonPoints;
-	 if (BaseAeonPoints > 1) { KillBonusText3 = " Aeon Points."; } else { KillBonusText3 = " Aeon Point."; }
+			 KillBonusText2 = BaseAeonPoints;
+			 if (BaseAeonPoints > 1) { KillBonusText3 = " Aeon Points."; } else { KillBonusText3 = " Aeon Point."; }
+			}
+
+			SetFont("DVDSBIGFONT");
+			SetHudSize(XSize,YSize,0);
+			XPos = XSize / 2;
+			XPosF = XPos * 1.0 + 0.4;
+			YPos = YSize * 8 / 9;
+			YPosF = YPos * 1.0;
+			HudMessage(s:KillBonusText1,d:KillBonusText2,s:KillBonusText3;
+									HUDMSG_TYPEON,108,CR_RED,XPosF,YPosF,2.5,0.025,0.125,0.75);
+			SetHudSize(0,0,0);
+			SetFont("SMALLFONT");
+		 }
+		}
 	}
 
-    SetFont("DVDSBIGFONT");
-    SetHudSize(XSize,YSize,0);
-    XPos = XSize / 2;
-    XPosF = XPos * 1.0 + 0.4;
-    YPos = YSize * 8 / 9;
-    YPosF = YPos * 1.0;
-	HudMessage(s:KillBonusText1,d:KillBonusText2,s:KillBonusText3;
-	              HUDMSG_TYPEON,108,CR_RED,XPosF,YPosF,2.5,0.025,0.125,0.75);
-    SetHudSize(0,0,0);
-    SetFont("SMALLFONT");
-   }
-  }
- }
+	str FullBonusText1;
+	int FullBonusText2;
+	str FullBonusText3;
 
- str FullBonusText1;
- int FullBonusText2;
- str FullBonusText3;
-
- if (SecretBonusApplied == 1 && ItemBonusApplied == 1 && KillBonusApplied == 1)
- {
-  Terminate;
- }
- else
- {
-  Delay(random(17,18));
-  Restart;
- }
+	if (SecretBonusApplied == 1 && ItemBonusApplied == 1 && KillBonusApplied == 1)
+	{
+	Terminate;
+	}
+	else
+	{
+	Delay(random(17,18));
+	Restart;
+	}
 }
 
 
@@ -21229,7 +21241,6 @@ script "GrabSoulsphere" (void)
  int temp1, temp2;
  int PerkFactor;
  int perktemp1;
- int debughealitems = GetCVar("dvdsdebug_healitemdisplays");
  
  G1 = GetActorProperty(Player1TID,APROP_Health); 
  G2 = MaxHealthLimit;
@@ -21248,7 +21259,7 @@ script "GrabSoulsphere" (void)
  if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
  PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
  perktemp1 = perktemp1 * PerkFactor / 10000;
- if (debughealitems > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
+ if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
 
  if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
  if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
@@ -21305,7 +21316,6 @@ script "MegaSphereHealth" (void)
  int temp1, temp2;
  int PerkFactor;
  int perktemp1;
- int debughealitems = GetCVar("dvdsdebug_healitemdisplays");
 
  if (G1 < G2)
  {
@@ -21322,7 +21332,7 @@ script "MegaSphereHealth" (void)
  if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
  PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
  perktemp1 = perktemp1 * PerkFactor / 10000;
- if (debughealitems > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
+ if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
 
  if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
  if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
@@ -21370,7 +21380,6 @@ script "EmulateGiveHealthBonus" (int multiplier, int givemanachance)
  int temp1, temp2;
  int PerkFactor;
  int CurrentHealth, TempHealAmount, TempHealAmount2, TempHealAmount3;
- int debughealitems = GetCVar("dvdsdebug_healitemdisplays");
 
  If (multiplier <= 0) multiplier = 1;
 
@@ -21413,7 +21422,7 @@ script "EmulateGiveHealthBonus" (int multiplier, int givemanachance)
  PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
  perktemp1 = perktemp1 * PerkFactor / 10000;
  if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) perktemp1 = perktemp1 * 5 / 3;
- if (debughealitems > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
+ if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
  MiscellaneousVars[165] = perktemp1;
 
  if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
@@ -21660,7 +21669,7 @@ script "MaxHPBonusPickup" (void)
  int MapNoBonus = 0;
  int debugseedstuff = GetCVar("dvdsdebug_showseedstuff");
 
- if (ModType == 0 && GetCVar("dvds_canseedsappear") == 0) terminate;
+ if (ModType == 0 && MiscellaneousVars[110005] == 0) terminate;
 
  if (CharacterClass == 0) BonusMaxHP = MaxHealthTrue / 400;
  if (CharacterClass == 1) BonusMaxHP = MaxHealthTrue / 420;
@@ -21809,7 +21818,6 @@ script "PickupMedicalItem" (int HealItemType, int maxhealtype) //
  int PerkFactor;
  int perkbasemulti = 16;
  CurrentHP = GetActorProperty(Player1TID,APROP_HEALTH);
- int debughealitems = GetCVar("dvdsdebug_healitemdisplays");
 
  if (HealItemType == -1) // Source Guardian Lifeseed
  {
@@ -21836,7 +21844,7 @@ script "PickupMedicalItem" (int HealItemType, int maxhealtype) //
 
    MiscellaneousVars[21] += perktemp1;
 
-   if (debughealitems > 0) PrintBold(s:"Stamina Limit: ",d:tempstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Limit: ",d:tempstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
                                                           s:"\nStamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
    if (MiscellaneousVars[21] > tempstaminalimit) MiscellaneousVars[21] = tempstaminalimit;
   }
@@ -21870,7 +21878,7 @@ script "PickupMedicalItem" (int HealItemType, int maxhealtype) //
 
    MiscellaneousVars[21] += perktemp1;
 
-   if (debughealitems > 0) PrintBold(s:"Stamina Limit: ",d:tempstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Limit: ",d:tempstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
                                                           s:"\nStamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
    if (MiscellaneousVars[21] > tempstaminalimit) MiscellaneousVars[21] = tempstaminalimit;
   }
@@ -21896,7 +21904,7 @@ script "PickupMedicalItem" (int HealItemType, int maxhealtype) //
   if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
   perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
-  if (debughealitems > 0) PrintBold(s:"Stamina Limit: [",d:MiscellaneousVars[164],s:"]",
+  if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Limit: [",d:MiscellaneousVars[164],s:"]",
                                                          s:"\nStamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
   if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += perktemp1;
   if (MiscellaneousVars[21] >= MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164]; 
@@ -21909,7 +21917,7 @@ script "PickupMedicalItem" (int HealItemType, int maxhealtype) //
  temphealthlimit = temphealthlimit * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
  if (temphealthlimit > (MaxHealthTrue*2)) temphealthlimit = MaxHealthTrue * 2;
- if (debughealitems > 0) PrintBold(s:"Healing Limit: ",d:temphealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+ if (MiscellaneousVars[110008] > 0) PrintBold(s:"Healing Limit: ",d:temphealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
                                                         s:"\nHealth Restored: ",d:perktemp2,s:" VS [",d:HealAmount,s:"]");
  if (CurrentHP <= temphealthlimit)
  {
@@ -22353,7 +22361,7 @@ script "INGAMEMENUS_MECHANICS" ENTER
 	{
      if (MenuSystemVars[1] == 1) { MenuSystemVars[4] = 1; MenuSystemVars[1] = 0; MenuSystemVars[2] = 0; MenuSystemVars[3] = 0; } // Go to Stats
      if (MenuSystemVars[1] == 2) { MenuSystemVars[4] = 2; MenuSystemVars[1] = 0; MenuSystemVars[2] = 0; MenuSystemVars[3] = 0; } // Go to Spells
-     if (GetCVar("dvdsperks_active") == 1 && MenuSystemVars[1] == 3) { MenuSystemVars[4] = 3; MenuSystemVars[1] = 0; MenuSystemVars[2] = 0; MenuSystemVars[3] = 0; } // Go to Perks
+     if (MiscellaneousVars[110001] == 1 && MenuSystemVars[1] == 3) { MenuSystemVars[4] = 3; MenuSystemVars[1] = 0; MenuSystemVars[2] = 0; MenuSystemVars[3] = 0; } // Go to Perks
      if (MenuSystemVars[1] == 4) { MenuSystemVars[4] = 4; MenuSystemVars[1] = 0; MenuSystemVars[2] = 0; MenuSystemVars[3] = 0; } // Go to Codex
 	}
 	else
@@ -23209,7 +23217,7 @@ script "INGAMEMENUS_MECHANICS" ENTER
     MenuSystemVars[1] -= 1;
     if (MenuSystemVars[4] == 0) // Main Menu
 	{
-	 if (GetCVar("dvdsperks_active") == 0 && MenuSystemVars[1] == 3) MenuSystemVars[1] -= 1;
+	 if (MiscellaneousVars[110001] == 0 && MenuSystemVars[1] == 3) MenuSystemVars[1] -= 1;
 	 if (MenuSystemVars[1] < 1) MenuSystemVars[1] = 4;
 	}
     if (MenuSystemVars[4] == 3) // Perks Menu
@@ -23313,7 +23321,7 @@ script "INGAMEMENUS_MECHANICS" ENTER
     MenuSystemVars[1] += 1;
     if (MenuSystemVars[4] == 0) // Main Menu
 	{
-	 if (GetCVar("dvdsperks_active") == 0 && MenuSystemVars[1] == 3) MenuSystemVars[1] += 1;
+	 if (MiscellaneousVars[110001] == 0 && MenuSystemVars[1] == 3) MenuSystemVars[1] += 1;
 	 if (MenuSystemVars[1] > 4) MenuSystemVars[1] = 1;
 	}
     if (MenuSystemVars[4] == 3) // Perks Menu
@@ -23591,7 +23599,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
    if (MenuSystemVars[1] == 2) HudMessage(s:"SPELLS"; HUDMSG_ALPHA,  1997, CR_GOLD,  xtemp1, ytemp1, 0.03, 1.0);
                           else HudMessage(s:"SPELLS"; HUDMSG_ALPHA,  1997, CR_WHITE, xtemp1, ytemp1, 0.03, 1.0);
 
-   if (GetCVar("dvdsperks_active") == 1) 
+   if (MiscellaneousVars[110001] == 1) 
    {
     xtemp1 = (HudXRange * 50000 / 100000) * 1.0; // 0.5;
     ytemp1 = (HudYRange * 55000 / 100000) * 1.0; // 0.55;
@@ -23601,7 +23609,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 
    xtemp1 = (HudXRange * 50000 / 100000) * 1.0; // 0.5;
    ytemp1 = (HudYRange * 65000 / 100000) * 1.0; // 0.65;
-   if (GetCVar("dvdsperks_active") == 0) ytemp1 = (HudYRange * 55000 / 100000) * 1.0; // 0.65;
+   if (MiscellaneousVars[110001] == 0) ytemp1 = (HudYRange * 55000 / 100000) * 1.0; // 0.65;
    if (MenuSystemVars[1] == 4) HudMessage(s:"CODEX [UNFINISHED]";  HUDMSG_ALPHA,  1995, CR_GOLD,  xtemp1, ytemp1, 0.03, 1.0);
                           else HudMessage(s:"CODEX [UNFINISHED]";  HUDMSG_ALPHA,  1995, CR_WHITE, xtemp1, ytemp1, 0.03, 1.0);
   }
@@ -26872,7 +26880,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  int FreezePlayer;
  int PerkFactor, BasePerkFactor;
  int project_RealZ;
+
  int powertripmode = GetCVar("dvds_musou_powertripmode");
+ int tensionspeedmulti = GetCVar("dvds_tensionspeed");
+ int DVIIArmorSpawn = GetCVAR("dvds_dviiarmorspawn");
 
  SetActivator(Player1TID);
  str weapon = GetWeapon();
@@ -26906,6 +26917,15 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  MiscellaneousVars[100007] = GetCVar("dvdsdebug_accuracyspreadisplay");
  MiscellaneousVars[100008] = GetCVar("dvdsdebug_showexpdebugstuff");
  
+ MiscellaneousVars[110001] = GetCVar("dvdsperks_active");
+ MiscellaneousVars[110002] = GetCVar("dvds_allowtension");
+ MiscellaneousVars[110003] = GetCVar("dvds_allowtensionocdmg");
+ MiscellaneousVars[110004] = GetCVar("dvds_rnd_stealthlevel");
+ MiscellaneousVars[110005] = GetCVar("dvds_canseedsappear");
+ MiscellaneousVars[110006] = GetCVar("dvds_flora_ignorearmormadelevelcap");
+ MiscellaneousVars[110007] = GetCVar("dvds_monstercrisisattacks");
+ MiscellaneousVars[110008] = GetCVar("dvdsdebug_healitemdisplays");
+ 
  MiscellaneousVars[197] = GetCVAR("dvds_aeonstartlvl");
  if (MiscellaneousVars[197] < 0) MiscellaneousVars[197] = 0;
  if (MiscellaneousVars[197] > 200) MiscellaneousVars[197] = 200;
@@ -26937,15 +26957,15 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  
  MiscellaneousVars[148] = GetCVar("dvds_startotherstatsfactor");
 
- if (GetCVar("dvds_tensionspeed") <= 0 ) MiscellaneousVars[193] = 1;
- if (GetCVar("dvds_tensionspeed") == 1 ) MiscellaneousVars[193] = 2;
- if (GetCVar("dvds_tensionspeed") == 2 ) MiscellaneousVars[193] = 4;
- if (GetCVar("dvds_tensionspeed") == 3 ) MiscellaneousVars[193] = 8;
- if (GetCVar("dvds_tensionspeed") == 4 ) MiscellaneousVars[193] = 16;
- if (GetCVar("dvds_tensionspeed") == 5 ) MiscellaneousVars[193] = 32;
- if (GetCVar("dvds_tensionspeed") >= 6 ) MiscellaneousVars[193] = 64;
+ if (tensionspeedmulti <= 0) MiscellaneousVars[193] = 1;
+ if (tensionspeedmulti == 1) MiscellaneousVars[193] = 2;
+ if (tensionspeedmulti == 2) MiscellaneousVars[193] = 4;
+ if (tensionspeedmulti == 3) MiscellaneousVars[193] = 8;
+ if (tensionspeedmulti == 4) MiscellaneousVars[193] = 16;
+ if (tensionspeedmulti == 5) MiscellaneousVars[193] = 32;
+ if (tensionspeedmulti >= 6) MiscellaneousVars[193] = 64;
 
- if (GetCVar("dvds_monstercrisisattacks") == 0) TakeActorInventory(Player1TID,"PlayerCanUseCrisisAttacks",0x7FFFFFFF);
+ if (MiscellaneousVars[110007] == 0) TakeActorInventory(Player1TID,"PlayerCanUseCrisisAttacks",0x7FFFFFFF);
 
  if (ClassCheck == 1) // Will run the check only once at the beginning of a new game
  {
@@ -30511,7 +30531,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
   else
   {
-   if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 0)
+   if (MiscellaneousVars[110006] == 0)
    {
     LevelCap = 100;
     if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) LevelCap += 9;
@@ -30674,34 +30694,35 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
  //*********************
  //*Death Music/Effects*
  //*********************
+ int deathmusic = GetCVar("dvds_deathmusic");
  int DY1 = MaxHealthTrue * -1;
  // [12] is for the death time counter, to fade the screen to blackish-red when the player dies.
  if (GetActorProperty(Player1TID,APROP_Health) < 1)
  {
   MiscellaneousVars[12] += 1;
   // Game Over Music
-  if (GetCVar("dvds_deathmusic") != 0)
+  if (deathmusic != 0)
   {
    if (MiscellaneousVars[12] == 1) SetMusic("",0);
-   if (GetCVar("dvds_deathmusic") == 1 && MiscellaneousVars[12] == 8) SetMusic("RoReDead",0);
-   if (GetCVar("dvds_deathmusic") == 2 && MiscellaneousVars[12] == 35) SetMusic("GaOvYe",0);
-   if (GetCVar("dvds_deathmusic") == 3 && MiscellaneousVars[12] == 35) SetMusic("DRQUDEAD",0);
-   if (GetCVar("dvds_deathmusic") == 4 && MiscellaneousVars[12] == 4) SetMusic("MiRiBuTi",0);
-   if (GetCVar("dvds_deathmusic") == 5 && MiscellaneousVars[12] == 14) SetMusic("ToDiYoAD",0);
-   if (GetCVar("dvds_deathmusic") == 6 && MiscellaneousVars[12] == 4) SetMusic("MGS2GMOV",0);
-   if (GetCVar("dvds_deathmusic") == 7 && MiscellaneousVars[12] == 35) SetMusic("ShGYaheh",0);
-   if (GetCVar("dvds_deathmusic") == 8 && MiscellaneousVars[12] == 4) SetMusic("AH3GMOVR",0);
-   if (GetCVar("dvds_deathmusic") == 9 && MiscellaneousVars[12] == 50) SetMusic("JURPRKP2",0);
+   if (deathmusic == 1 && MiscellaneousVars[12] == 8) SetMusic("RoReDead",0);
+   if (deathmusic == 2 && MiscellaneousVars[12] == 35) SetMusic("GaOvYe",0);
+   if (deathmusic == 3 && MiscellaneousVars[12] == 35) SetMusic("DRQUDEAD",0);
+   if (deathmusic == 4 && MiscellaneousVars[12] == 4) SetMusic("MiRiBuTi",0);
+   if (deathmusic == 5 && MiscellaneousVars[12] == 14) SetMusic("ToDiYoAD",0);
+   if (deathmusic == 6 && MiscellaneousVars[12] == 4) SetMusic("MGS2GMOV",0);
+   if (deathmusic == 7 && MiscellaneousVars[12] == 35) SetMusic("ShGYaheh",0);
+   if (deathmusic == 8 && MiscellaneousVars[12] == 4) SetMusic("AH3GMOVR",0);
+   if (deathmusic == 9 && MiscellaneousVars[12] == 50) SetMusic("JURPRKP2",0);
    
-   if (GetCVar("dvds_deathmusic") == 1 && MiscellaneousVars[12] >= 2220) SetMusic("",0);
-   if (GetCVar("dvds_deathmusic") == 2 && MiscellaneousVars[12] >= 367) SetMusic("",0);
-   if (GetCVar("dvds_deathmusic") == 3 && MiscellaneousVars[12] >= 255) SetMusic("",0);
-   if (GetCVar("dvds_deathmusic") == 4 && MiscellaneousVars[12] >= 290) SetMusic("",0);
-   if (GetCVar("dvds_deathmusic") == 5 && MiscellaneousVars[12] >= 3970) SetMusic("",0);
-   if (GetCVar("dvds_deathmusic") == 6 && MiscellaneousVars[12] == 284) SetMusic("",0);
-   if (GetCVar("dvds_deathmusic") == 7 && MiscellaneousVars[12] == 1365) SetMusic("",0);
-   if (GetCVar("dvds_deathmusic") == 8 && MiscellaneousVars[12] == 350) SetMusic("",0);
-   if (GetCVar("dvds_deathmusic") == 9 && MiscellaneousVars[12] == 273) SetMusic("",0);
+   if (deathmusic == 1 && MiscellaneousVars[12] >= 2220) SetMusic("",0);
+   if (deathmusic == 2 && MiscellaneousVars[12] >= 367) SetMusic("",0);
+   if (deathmusic == 3 && MiscellaneousVars[12] >= 255) SetMusic("",0);
+   if (deathmusic == 4 && MiscellaneousVars[12] >= 290) SetMusic("",0);
+   if (deathmusic == 5 && MiscellaneousVars[12] >= 3970) SetMusic("",0);
+   if (deathmusic == 6 && MiscellaneousVars[12] == 284) SetMusic("",0);
+   if (deathmusic == 7 && MiscellaneousVars[12] == 1365) SetMusic("",0);
+   if (deathmusic == 8 && MiscellaneousVars[12] == 350) SetMusic("",0);
+   if (deathmusic == 9 && MiscellaneousVars[12] == 273) SetMusic("",0);
   }
 
   // "YOU DIED!" msg [HudMessage id 2] :V
@@ -30784,7 +30805,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
   HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
   if (CheckActorInventory(Player1TID,"PlayerDeathFadeOut") > 0) TakeActorInventory(Player1TID,"PlayerDeathFadeOut", 1);
-  if (GetCVar("dvds_deathmusic") != 0)
+  if (deathmusic != 0)
   {
    if (MiscellaneousVars[12] > 0) SetMusic("*", 0);
   }
@@ -32774,7 +32795,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (PowerupTimer[20] > 0) FreezePlayer += 1;
   if (buttons & BT_USE && buttons & BT_SPEED && MiscellaneousVars[186] <= 0 && FreezePlayer == 0)
   {   
-   if (GetCVar("dvds_allowtension") > 0 && DVDSSpecialArrayValue[0] == 0)
+   if (MiscellaneousVars[110002] > 0 && DVDSSpecialArrayValue[0] == 0)
    {
     MiscellaneousVars[186] = 0;
     MiscellaneousVars[188] = MiscellaneousVars[186];
@@ -32934,7 +32955,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   if (PowerupTimer[20] > 0) FreezePlayer += 1;
   if (C3 != 0 && MiscellaneousVars[186] < 7000 && FreezePlayer == 0)
   {
-   if (GetCVar("dvds_allowtension") > 0)
+   if (MiscellaneousVars[110002] > 0)
    {
     MiscellaneousVars[186] = 7000; // 1 Sec
     MiscellaneousVars[188] = MiscellaneousVars[186];
@@ -33018,7 +33039,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    {
     MiscellaneousVars[184] = 0;
 
-    if (GetCVar("dvds_allowtension") > 0)
+    if (MiscellaneousVars[110002] > 0)
     {
      if (MiscellaneousVars[181] == 0) MiscellaneousVars[186] = 3500;
      else if (MiscellaneousVars[181] == 1) MiscellaneousVars[186] = 3720;
@@ -33177,12 +33198,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     TensionOCTimer2Amount = TensionOCTimer2Amount / 3;
    }
 
-   if (GetCVar("dvds_allowtensionocdmg") > 0) MiscellaneousVars[250] += TensionOCTimer1Amount; else MiscellaneousVars[250] = 0;
-   if (MiscellaneousVars[250] >= MiscellaneousVars[262] && GetCVar("dvds_allowtensionocdmg") > 0)
+   if (MiscellaneousVars[110003] > 0) MiscellaneousVars[250] += TensionOCTimer1Amount; else MiscellaneousVars[250] = 0;
+   if (MiscellaneousVars[250] >= MiscellaneousVars[262] && MiscellaneousVars[110003] > 0)
    {
     MiscellaneousVars[250] = MiscellaneousVars[262];
-    if (GetCVar("dvds_allowtensionocdmg") > 0) MiscellaneousVars[251] += TensionOCTimer2Amount; else MiscellaneousVars[251] = 0;
-    if (MiscellaneousVars[251] >= MiscellaneousVars[261] && GetCVar("dvds_allowtensionocdmg") > 0)
+    if (MiscellaneousVars[110003] > 0) MiscellaneousVars[251] += TensionOCTimer2Amount; else MiscellaneousVars[251] = 0;
+    if (MiscellaneousVars[251] >= MiscellaneousVars[261] && MiscellaneousVars[110003] > 0)
     {
      MiscellaneousVars[251] = 0;
 	 MiscellaneousVars[261] = 0;
@@ -33224,7 +33245,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    }
    if (MiscellaneousVars[183] <= 0) 
    { 
-    if (GetCVar("dvds_allowtension") > 0)
+    if (MiscellaneousVars[110002] > 0)
     {
      if (MiscellaneousVars[181] == 1) MiscellaneousVars[186] = 14000; // Cooldown Timer set to 4 seconds
      if (MiscellaneousVars[181] == 2) MiscellaneousVars[186] = 14880; // Cooldown Timer set to 4.25 seconds
@@ -33247,7 +33268,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
     PlaySound(Player1TID,"tensionrevert",CHAN_6,1.0,0,ATTN_NORM);
    }
   }
-  if (GetCVar("dvds_allowtension") > 0)
+  if (MiscellaneousVars[110002] > 0)
   {
    if (MiscellaneousVars[181] < 0) MiscellaneousVars[181] = 0;
    if (MiscellaneousVars[181] > 7) MiscellaneousVars[181] = 7;
@@ -33264,7 +33285,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
   }
   if (GetActorProperty(Player1TID,APROP_Health) > 0)
   {
-   if (GetCVar("dvds_allowtension") > 0)
+   if (MiscellaneousVars[110002] > 0)
    {
     if (MiscellaneousVars[181] == 1) // Tension is "5"
     {
@@ -34596,7 +34617,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = 1744 * 65536; SpawnFixedY = -724 * 65536; SpawnFixedZ = 16 * 65536;
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("SafeTeaShoes",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    SpecialGameFlags[0] = 1;
   }
@@ -34607,7 +34628,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = 1440 * 65536; SpawnFixedY = 160 * 65536; SpawnFixedZ = 112 * 65536;
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("PearlyCorset",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    SpecialGameFlags[1] = 1;
   }
@@ -34618,7 +34639,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = -6592 * 65536; SpawnFixedY = 4416 * 65536; SpawnFixedZ = 24 * 65536;
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("WaterFlyingDress",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    SpecialGameFlags[2] = 1;
   }
@@ -34633,7 +34654,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    if (Randomizer1 == 2) { SpawnFixedX = -2560 * 65536; SpawnFixedY = 4064 * 65536; SpawnFixedZ = 16 * 65536; } // -2560,4064,0 coords
    if (Randomizer1 == 3) { SpawnFixedX = -2752 * 65536; SpawnFixedY = 4256 * 65536; SpawnFixedZ = 16 * 65536; } // -2752,4256,0 coords
    if (Randomizer1 == 4) { SpawnFixedX = -2944 * 65536; SpawnFixedY = 4064 * 65536; SpawnFixedZ = 16 * 65536; } // -2944,4064,0 coords
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("EvenstarNecklace",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    SpecialGameFlags[3] = 1;
   }
@@ -34644,7 +34665,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = 1216 * 65536; SpawnFixedY = -464 * 65536; SpawnFixedZ = 1416 * 65536; // 1216,-464,1400 coords
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("CloakOfEvasion",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    SpecialGameFlags[4] = 1;
   }
@@ -34655,7 +34676,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = -4160 * 65536; SpawnFixedY = -2396 * 65536; SpawnFixedZ = 16 * 65536; // -4160,-2396,0 coords
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("FalconKnifeEarrings",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    SpecialGameFlags[5] = 1;
   }
@@ -34666,7 +34687,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = -128 * 65536; SpawnFixedY = -1312 * 65536; SpawnFixedZ = -48 * 65536; // -128,-1312,-64 coords
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("AnubisCufflinks",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    SpecialGameFlags[6] = 1;
   }
@@ -34677,7 +34698,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = -544 * 65536; SpawnFixedY = -224 * 65536; SpawnFixedZ = 272 * 65536; // -544,-224,256 coords
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("KissaBra",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    SpecialGameFlags[7] = 1;
   }
@@ -34688,7 +34709,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = -6784 * 65536; SpawnFixedY = 12320 * 65536; SpawnFixedZ = 16 * 65536; // -6784,12320,0 coords
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else
    {
     if (random(1,256) < 5) { SpawnForced("DivineShield",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0); }
@@ -34703,7 +34724,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = 512 * 65536; SpawnFixedY = 2240 * 65536; SpawnFixedZ = 16 * 65536; // 512,2240,0 coords
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("BalrogRing",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    SpecialGameFlags[9] = 1;
   }
@@ -34714,7 +34735,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
    PrintBold(s:"A SPECIAL ITEM HAS SPAWNED SOMEWHERE IN THE AREA!");
    AmbientSound("foundhiddenitem",127); 
    SpawnFixedX = 8048 * 65536; SpawnFixedY = 2272 * 65536; SpawnFixedZ = 256 * 65536; // 8048,2272,240 coords
-   if (GetCVAR("dvds_dviiarmorspawn") == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
+   if (DVIIArmorSpawn == 1) SpawnForced("FloraRandomArmor2",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    else SpawnForced("DoveRibbon",SpawnFixedX,SpawnFixedY,SpawnFixedZ,0,0);
    SpecialGameFlags[10] = 1;
   }
@@ -36759,6 +36780,8 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
  int C1, C2;
  int EXPBonus1;
  int BossEnemy;
+ int DeftnessExpBase = GetCVar("dvds_deftnessexpbase");
+ int SceptreExpMultiplier = GetCVar("dvds_sceptreexpmultiplier");
 
  if (ModType == 0 && GetCVar("dvds_noscexpgains") != 0) terminate;
 
@@ -36803,8 +36826,8 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
     else EXPBonus1 += 250; // 20% Else +25% EXP Bonus
    }
    C2 = C2 * EXPBonus1 / 1000;
-   C2 = C2 * (GetCVar("dvds_deftnessexpbase") + MiscellaneousVars[40]) / GetCVar("dvds_deftnessexpbase");
-   C2 = C2 * GetCVar("dvds_sceptreexpmultiplier") / 100;
+   C2 = C2 * (DeftnessExpBase + MiscellaneousVars[40]) / DeftnessExpBase;
+   C2 = C2 * SceptreExpMultiplier / 100;
 
    // "Higher Learning" Grand Mastery Perk
    if (MiscellaneousVars[11001] == 1) C2 = C2 * 23 / 20; // [115%]
@@ -36916,8 +36939,8 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
    }
 
    SExPts = SExPts * EXPBonus1 / 1000;
-   SExPts = SExPts * (GetCVar("dvds_deftnessexpbase") + MiscellaneousVars[40]) / GetCVar("dvds_deftnessexpbase");
-   SExPts = SExPts * GetCVar("dvds_sceptreexpmultiplier") / 100;
+   SExPts = SExPts * (DeftnessExpBase + MiscellaneousVars[40]) / DeftnessExpBase;
+   SExPts = SExPts * SceptreExpMultiplier / 100;
 
    while (SExPts > 15)
    {
@@ -37614,6 +37637,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
  int StealthChance;
  int nonstatmonster = 0;
  int debugstatcalc = GetCVar("dvdsdebug_showstatcalcstuff");
+ int skilllevelcalctype = GetCVar("dvds_skilllevelcalctype");
 
  if (type < 0) type = 0;
  if (type > 1) type = 1;
@@ -37650,14 +37674,14 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
    else
    {
     TakeInventory("IsAStealthMonsterRing", 1); 
-    if (GetCVar("dvds_rnd_stealthlevel") == 0) GiveInventory("IsAStealthMonster5000", 1); 
-    if (GetCVar("dvds_rnd_stealthlevel") == 1) GiveInventory("IsAStealthMonster7500", 1); 
-    if (GetCVar("dvds_rnd_stealthlevel") == 2) GiveInventory("IsAStealthMonster8750", 1); 
-    if (GetCVar("dvds_rnd_stealthlevel") == 3) GiveInventory("IsAStealthMonster9375", 1); 
-    if (GetCVar("dvds_rnd_stealthlevel") != 0) TakeInventory("IsAStealthMonster5000", 1); 
-    if (GetCVar("dvds_rnd_stealthlevel") != 1) TakeInventory("IsAStealthMonster7500", 1); 
-    if (GetCVar("dvds_rnd_stealthlevel") != 2) TakeInventory("IsAStealthMonster8750", 1); 
-    if (GetCVar("dvds_rnd_stealthlevel") != 3) TakeInventory("IsAStealthMonster9375", 1); 
+    if (MiscellaneousVars[110004] == 0) GiveInventory("IsAStealthMonster5000", 1); 
+    if (MiscellaneousVars[110004] == 1) GiveInventory("IsAStealthMonster7500", 1); 
+    if (MiscellaneousVars[110004] == 2) GiveInventory("IsAStealthMonster8750", 1); 
+    if (MiscellaneousVars[110004] == 3) GiveInventory("IsAStealthMonster9375", 1); 
+    if (MiscellaneousVars[110004] != 0) TakeInventory("IsAStealthMonster5000", 1); 
+    if (MiscellaneousVars[110004] != 1) TakeInventory("IsAStealthMonster7500", 1); 
+    if (MiscellaneousVars[110004] != 2) TakeInventory("IsAStealthMonster8750", 1); 
+    if (MiscellaneousVars[110004] != 3) TakeInventory("IsAStealthMonster9375", 1); 
    }   
    SetUserVariable(0, "user_isstealth", 1);
   }
@@ -37716,7 +37740,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
   {
    if (GameSkill() == SKILL_VERY_EASY)
    {
-    if (GetCVar("dvds_skilllevelcalctype") == 0)
+    if (skilllevelcalctype == 0)
     {
      AttackFactor = -0.3333;
      DefenseFactor = 0.5000;
@@ -37736,7 +37760,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
    else
    if (GameSkill() == SKILL_EASY)
    {
-    if (GetCVar("dvds_skilllevelcalctype") == 0)
+    if (skilllevelcalctype == 0)
     {
      AttackFactor = -0.1667;
      DefenseFactor = 0.2000;
@@ -37756,7 +37780,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
    else
    if (GameSkill() == SKILL_NORMAL)
    {
-    if (GetCVar("dvds_skilllevelcalctype") == 0)
+    if (skilllevelcalctype == 0)
     {
      AttackFactor = 0.0;
      DefenseFactor = 0.0;
@@ -37776,7 +37800,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
    else
    if (GameSkill() == SKILL_HARD)
    {
-    if (GetCVar("dvds_skilllevelcalctype") == 0)
+    if (skilllevelcalctype == 0)
     {
      AttackFactor = 0.1667;
      DefenseFactor = -0.142857;
@@ -37796,7 +37820,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
    else
    if (GameSkill() == SKILL_VERY_HARD)
    {
-    if (GetCVar("dvds_skilllevelcalctype") == 0)
+    if (skilllevelcalctype == 0)
     {
      AttackFactor = 0.5;
      DefenseFactor = -0.333334;
@@ -37816,7 +37840,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
    else
    if (GameSkill() == 5)
    {
-    if (GetCVar("dvds_skilllevelcalctype") == 0)
+    if (skilllevelcalctype == 0)
     {
      AttackFactor = 1.0;
      DefenseFactor = -0.5;
@@ -39433,14 +39457,14 @@ script "RefreshStealthInfo" (int type)
      TakeInventory("IsAStealthMonster7500", 1); 
      TakeInventory("IsAStealthMonster8750", 1); 
      TakeInventory("IsAStealthMonster9375", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 0) GiveInventory("IsAStealthMonster5000NV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 1) GiveInventory("IsAStealthMonster7500NV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 2) GiveInventory("IsAStealthMonster8750NV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 3) GiveInventory("IsAStealthMonster9375NV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 0) TakeInventory("IsAStealthMonster5000NV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 1) TakeInventory("IsAStealthMonster7500NV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 2) TakeInventory("IsAStealthMonster8750NV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 3) TakeInventory("IsAStealthMonster9375NV", 1); 
+     if (MiscellaneousVars[110004] == 0) GiveInventory("IsAStealthMonster5000NV", 1); 
+     if (MiscellaneousVars[110004] == 1) GiveInventory("IsAStealthMonster7500NV", 1); 
+     if (MiscellaneousVars[110004] == 2) GiveInventory("IsAStealthMonster8750NV", 1); 
+     if (MiscellaneousVars[110004] == 3) GiveInventory("IsAStealthMonster9375NV", 1); 
+     if (MiscellaneousVars[110004] != 0) TakeInventory("IsAStealthMonster5000NV", 1); 
+     if (MiscellaneousVars[110004] != 1) TakeInventory("IsAStealthMonster7500NV", 1); 
+     if (MiscellaneousVars[110004] != 2) TakeInventory("IsAStealthMonster8750NV", 1); 
+     if (MiscellaneousVars[110004] != 3) TakeInventory("IsAStealthMonster9375NV", 1); 
     }
     else
     {
@@ -39449,14 +39473,14 @@ script "RefreshStealthInfo" (int type)
      TakeInventory("IsAStealthMonster7500NV", 1); 
      TakeInventory("IsAStealthMonster8750NV", 1); 
      TakeInventory("IsAStealthMonster9375NV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 0) GiveInventory("IsAStealthMonster5000", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 1) GiveInventory("IsAStealthMonster7500", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 2) GiveInventory("IsAStealthMonster8750", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 3) GiveInventory("IsAStealthMonster9375", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 0) TakeInventory("IsAStealthMonster5000", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 1) TakeInventory("IsAStealthMonster7500", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 2) TakeInventory("IsAStealthMonster8750", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 3) TakeInventory("IsAStealthMonster9375", 1); 
+     if (MiscellaneousVars[110004] == 0) GiveInventory("IsAStealthMonster5000", 1); 
+     if (MiscellaneousVars[110004] == 1) GiveInventory("IsAStealthMonster7500", 1); 
+     if (MiscellaneousVars[110004] == 2) GiveInventory("IsAStealthMonster8750", 1); 
+     if (MiscellaneousVars[110004] == 3) GiveInventory("IsAStealthMonster9375", 1); 
+     if (MiscellaneousVars[110004] != 0) TakeInventory("IsAStealthMonster5000", 1); 
+     if (MiscellaneousVars[110004] != 1) TakeInventory("IsAStealthMonster7500", 1); 
+     if (MiscellaneousVars[110004] != 2) TakeInventory("IsAStealthMonster8750", 1); 
+     if (MiscellaneousVars[110004] != 3) TakeInventory("IsAStealthMonster9375", 1); 
     }
    }   
    SetUserVariable(0, "user_isstealth", 1);
@@ -39517,26 +39541,26 @@ script "RefreshStealthInfo" (int type)
     if (PowerupTimer[0] > 0)
     {
      TakeInventory("IsAStealthMonsterRingAttackingNV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 0) GiveInventory("IsAStealthMonster5000AttackingNV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 1) GiveInventory("IsAStealthMonster7500AttackingNV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 2) GiveInventory("IsAStealthMonster8750AttackingNV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 3) GiveInventory("IsAStealthMonster9375AttackingNV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 0) TakeInventory("IsAStealthMonster5000AttackingNV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 1) TakeInventory("IsAStealthMonster7500AttackingNV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 2) TakeInventory("IsAStealthMonster8750AttackingNV", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 3) TakeInventory("IsAStealthMonster9375AttackingNV", 1); 
+     if (MiscellaneousVars[110004] == 0) GiveInventory("IsAStealthMonster5000AttackingNV", 1); 
+     if (MiscellaneousVars[110004] == 1) GiveInventory("IsAStealthMonster7500AttackingNV", 1); 
+     if (MiscellaneousVars[110004] == 2) GiveInventory("IsAStealthMonster8750AttackingNV", 1); 
+     if (MiscellaneousVars[110004] == 3) GiveInventory("IsAStealthMonster9375AttackingNV", 1); 
+     if (MiscellaneousVars[110004] != 0) TakeInventory("IsAStealthMonster5000AttackingNV", 1); 
+     if (MiscellaneousVars[110004] != 1) TakeInventory("IsAStealthMonster7500AttackingNV", 1); 
+     if (MiscellaneousVars[110004] != 2) TakeInventory("IsAStealthMonster8750AttackingNV", 1); 
+     if (MiscellaneousVars[110004] != 3) TakeInventory("IsAStealthMonster9375AttackingNV", 1); 
     }
     else
     {
      TakeInventory("IsAStealthMonsterRingAttacking", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 0) GiveInventory("IsAStealthMonster5000Attacking", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 1) GiveInventory("IsAStealthMonster7500Attacking", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 2) GiveInventory("IsAStealthMonster8750Attacking", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") == 3) GiveInventory("IsAStealthMonster9375Attacking", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 0) TakeInventory("IsAStealthMonster5000Attacking", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 1) TakeInventory("IsAStealthMonster7500Attacking", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 2) TakeInventory("IsAStealthMonster8750Attacking", 1); 
-     if (GetCVar("dvds_rnd_stealthlevel") != 3) TakeInventory("IsAStealthMonster9375Attacking", 1); 
+     if (MiscellaneousVars[110004] == 0) GiveInventory("IsAStealthMonster5000Attacking", 1); 
+     if (MiscellaneousVars[110004] == 1) GiveInventory("IsAStealthMonster7500Attacking", 1); 
+     if (MiscellaneousVars[110004] == 2) GiveInventory("IsAStealthMonster8750Attacking", 1); 
+     if (MiscellaneousVars[110004] == 3) GiveInventory("IsAStealthMonster9375Attacking", 1); 
+     if (MiscellaneousVars[110004] != 0) TakeInventory("IsAStealthMonster5000Attacking", 1); 
+     if (MiscellaneousVars[110004] != 1) TakeInventory("IsAStealthMonster7500Attacking", 1); 
+     if (MiscellaneousVars[110004] != 2) TakeInventory("IsAStealthMonster8750Attacking", 1); 
+     if (MiscellaneousVars[110004] != 3) TakeInventory("IsAStealthMonster9375Attacking", 1); 
     }
    }   
    SetUserVariable(0, "user_isstealth", 1);
@@ -39570,7 +39594,7 @@ script "GrabLifeManaSeed" (int SeedType, int SeedAmount, int SeedLimitTypeIncrea
  int SkillSeedRuns, SkillSeedRND, OldHP, NewHP, OldMP, NewMP, StatGain1, StatGain2, ArmorHPBonus, PerkFactor;
  int debugseedstuff = GetCVar("dvdsdebug_showseedstuff");
 
- if (ModType == 0 && GetCVar("dvds_canseedsappear") == 0) terminate;
+ if (ModType == 0 && MiscellaneousVars[110005] == 0) terminate;
 
  if (SeedAmount < 1) SeedAmount = 1;
 
@@ -39699,7 +39723,7 @@ script "GrabSeedOther" (int SeedType, int SeedAmount, int SeedLimitTypeIncrease)
  int SkillSeedRuns, MaxSkillSeedRuns, SkillSeedRND, OldAGL, NewAGL, OldDEF, NewDEF, OldDFT, NewDFT, OldSOR, NewSOR, OldSTR, NewSTR, OldTHE, NewTHE, OldAeonPts, NewAeonPts;
  int SeedMulti;
  
- if (ModType == 0 && GetCVar("dvds_canseedsappear") == 0) terminate;
+ if (ModType == 0 && MiscellaneousVars[110005] == 0) terminate;
 
  if (SeedAmount < 1) SeedAmount = 1;
 
@@ -39974,7 +39998,7 @@ script "CalculateSpellBaseAngles" (void)
 // Checks to Remove Seeds on the Map if too many have been picked up already.
 script "SeedLimitChecker" (int SeedType)
 {
- if (ModType == 0 && GetCVar("dvds_canseedsappear") == 0) Thing_Remove(0);
+ if (ModType == 0 && MiscellaneousVars[110005] == 0) Thing_Remove(0);
  if (SeedType == 0 && MiscellaneousVars[37] >= MiscellaneousVars[28]) Thing_Remove(0); // Seed of Skill
  if (SeedType == 1 && MiscellaneousVars[30] >= MiscellaneousVars[29]) Thing_Remove(0); // Seed of Agility/Defense/Deftness/Sorcery/Strength/Therapeusis
  if (SeedType == 2 && MiscellaneousVars[27] >= MiscellaneousVars[26]) Thing_Remove(0); // Fygg Fruit
@@ -39986,7 +40010,7 @@ script "SeedDrop" (int type, int OldRand0, int Forced)
 {
  int Rand0, Rand1, Rand2, PX, PY, PZ, FullOnSkill, FullOnSeeds, spawnedaitem, SeedDropChance;
 
- if (ModType == 0 && GetCVar("dvds_canseedsappear") == 0) terminate;
+ if (ModType == 0 && MiscellaneousVars[110005] == 0) terminate;
 
  if (ActivatorTID() == 0) Thing_ChangeTID(0,1537);
  PX = GetActorX(1537);
@@ -42080,11 +42104,6 @@ script "GetBFGTracers" (void)
  SetResultValue(result);
 }
 
-script "GetGFXEffectLevel" (void)
-{
- SetResultValue(GetCVar("dvds_gfxeffectlevel"));
-}
-
 // Returns Damage inflicted by certain player attacks
 script "GetPlayerATKDMG" (int type, int puff)
 {
@@ -42894,6 +42913,7 @@ script "DamageDisplays" (void)
 	int critdmgpalused;
 	int xpos, ypos, zpos;
 	int PlayerCrit;
+	int dmgind_GFXLevel = GetCVar("dvds_gfxeffectlevel");
 	int dmgind_delay = GetCVAR("dvds_dmgind_delay");
 	if (dmgind_delay < 1) dmgind_delay = 1;
 	if (dmgind_delay > 35) dmgind_delay = 35;
@@ -42905,9 +42925,9 @@ script "DamageDisplays" (void)
 		int PreviousHealth = GetActorProperty(0,APROP_Health);
 
 		int totaldelay = ((1 + (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / 160) ) * dmgind_delay);
-		if (GetCVar("dvds_gfxeffectlevel") == 0) totaldelay *= 1;
-		else if (GetCVar("dvds_gfxeffectlevel") == 1) totaldelay *= 4;
-		else if (GetCVar("dvds_gfxeffectlevel") == 2) totaldelay *= 16;
+		if (dmgind_GFXLevel == 0) totaldelay *= 1;
+		else if (dmgind_GFXLevel == 1) totaldelay *= 4;
+		else if (dmgind_GFXLevel == 2) totaldelay *= 16;
 		delay(totaldelay); // 1
 		If (GetActorProperty(0,APROP_Health) != PreviousHealth)
 		{
@@ -43710,10 +43730,10 @@ script "ShowArmorStats" ENTER
      if (CheckActorInventory(Player1TID,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
 
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString3 = "\ck(?)\n";
                                                         else ArmorString3 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\n";
                                                         else ArmorString4 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -43788,10 +43808,10 @@ script "ShowArmorStats" ENTER
      if (CheckActorInventory(Player1TID,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString3 = "\ck(?)\n";
                                                         else ArmorString3 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\n";
                                                         else ArmorString4 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -43866,10 +43886,10 @@ script "ShowArmorStats" ENTER
      if (CheckActorInventory(Player1TID,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString3 = "\ck(?)\n";
                                                         else ArmorString3 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\n";
                                                         else ArmorString4 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -43945,10 +43965,10 @@ script "ShowArmorStats" ENTER
      if (CheckActorInventory(Player1TID,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString3 = "\ck(?)\n";
                                                         else ArmorString3 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\n";
                                                         else ArmorString4 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -44023,10 +44043,10 @@ script "ShowArmorStats" ENTER
      if (CheckActorInventory(Player1TID,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString3 = "\ck(?)\n";
                                                         else ArmorString3 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\n";
                                                         else ArmorString4 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -44104,10 +44124,10 @@ script "ShowArmorStats" ENTER
      if (CheckActorInventory(Player1TID,"SauronGauntletsItem") > 0) ArmorString3 = "\cd+33.3% Damage Done By Punches and Gauntlet Punches\n";
                                                else ArmorString3 = "\cd+33.3% Damage Done By Punches\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\ck(?)\n";
                                                         else ArmorString4 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString5 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString5 = "\n";
                                                         else ArmorString5 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -44188,10 +44208,10 @@ script "ShowArmorStats" ENTER
      if (CheckActorInventory(Player1TID,"TheOneRing") > 0) ArmorString4 = "\cd+33.3% Chance to Induce Fear On Enemies and Make Them Hesitate\n";
                                       else ArmorString4 = "\cd+20% Chance to Induce Fear On Enemies and Make Them Hesitate\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString5 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString5 = "\ck(?)\n";
                                                         else ArmorString5 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString6 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString6 = "\n";
                                                         else ArmorString6 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -44266,10 +44286,10 @@ script "ShowArmorStats" ENTER
      if (CheckActorInventory(Player1TID,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString3 = "\ck(?)\n";
                                                         else ArmorString3 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\n";
                                                         else ArmorString4 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -44339,10 +44359,10 @@ script "ShowArmorStats" ENTER
    {
     if (CheckActorInventory(Player1TID,"RuinousShield") > 0)
     {
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString3 = "\ck(?)\n";
                                                         else ArmorString3 = "\cd+4 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\n";
                                                         else ArmorString4 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -44429,10 +44449,10 @@ script "ShowArmorStats" ENTER
      ArmorString1 = "% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
      ArmorString2 = "% Damage Reduced by '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability.\n";
 
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString3 = "\ck(?)\n";
                                                         else ArmorString3 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\n";
                                                         else ArmorString4 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -44507,10 +44527,10 @@ script "ShowArmorStats" ENTER
      if (CheckActorInventory(Player1TID,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "\ck(?)\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString3 = "\ck(?)\n";
                                                         else ArmorString3 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\n";
                                                         else ArmorString4 = "";
      
      // Dims the screen without using Fade-based commands that'll interfere with other flashes/etc
@@ -44585,10 +44605,10 @@ script "ShowArmorStats" ENTER
      if (CheckActorInventory(Player1TID,"DivineShield") > 0) ArmorString2 = "\cq+2% Chance for '\cnDivine Shield's\cq' '\cuOmniblock\cq' ability to activate.\n";
                                         else ArmorString2 = "\ck(?)\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString3 = "";
+     if (MiscellaneousVars[110006] == 1) ArmorString3 = "";
                                                         else ArmorString3 = "\cd+9 Max Level Cap\n";
      
-     if (GetCVar("dvds_flora_ignorearmormadelevelcap") == 1) ArmorString4 = "\n";
+     if (MiscellaneousVars[110006] == 1) ArmorString4 = "\n";
                                                         else ArmorString4 = "";
      
      misc4 = (PlayerLevel / 50) + 1;
@@ -44681,7 +44701,7 @@ script "CheckPlayerHealth" (void)
 
 script "LifebarOptionChecker" ENTER
 {
- If(GetCVar("dvds_actorlifebars") == 1) ACS_NamedExecuteAlways ("LifebarDisplayClientSide",0,0,0,0);
+	If(GetCVar("dvds_actorlifebars") == 1) ACS_NamedExecuteAlways ("LifebarDisplayClientSide",0,0,0,0);
 }
 
 script "CheckBFG2704" (void)
@@ -45203,158 +45223,158 @@ str dvds_monsternames[420][3] =
 
 Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 {
- While(GetCVar("dvds_actorlifebars") == 1 && GetActorProperty(Player1TID,APROP_Health) > 0)
- {
-  int activator;
-  activator = ActivatorTid();
-  SetActivatorToTarget(0);
-  int OldActivator;
-  OldActivator = ActivatorTid();
-  Delay(1);
-
-  int class_index;
-  int xpos = 0.0;
-  int ypos = 0.0;
-
-  for (int i = 0; i < 420; i++)
-  {
-   if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
-  }
-
 	int debuglifebar = GetCVar("dvdsdebug_lifebardisplaystuff");
-  int hpcritlevel = GetUserVariable(0, "user_HPCritRange");
-  int hplowlevel = GetUserVariable(0, "user_HPLowRange");
-  int hphalflevel = (GetUserVariable(0, "user_MaxHP") / 2);
-  if (debuglifebar == 1)
-  {
-   PrintBold(s:"CritLevel: ",d:hpcritlevel,
-             s:"\nLowLevel: ",d:hplowlevel,
-             s:"\nHalfLevel: ",d:hphalflevel);
-  }
+	While(GetCVar("dvds_actorlifebars") && GetActorProperty(Player1TID,APROP_Health) > 0)
+	{
+		int activator;
+		activator = ActivatorTid();
+		SetActivatorToTarget(0);
+		int OldActivator;
+		OldActivator = ActivatorTid();
+		Delay(1);
 
-  int actormaxhp;
-  int actorcurrhp;
-  int hppercentdisp;
+		int class_index;
+		int xpos = 0.0;
+		int ypos = 0.0;
 
-  int nonstatmonster = 0;
-  if (GetActorClass(0) == "PracticeTarget") nonstatmonster = 1;
-  if (GetActorClass(0) == "PracticeTarget2") nonstatmonster = 1;
-  If(ActivatorTID() != Activator && nonstatmonster == 0)
-  {
-   actormaxhp = GetUserVariable(0, "user_MaxHP");
-   actorcurrhp = GetActorProperty(0, APROP_Health);
-   if (debuglifebar == 1) PrintBold(s:"Activator [1]: ",d:Activator,s:"  ActorMaxHP: ",d:actormaxhp,s:"");
-   SetActivator(Activator);
+		for (int i = 0; i < 420; i++)
+		{
+			if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
+		}
 
-   If (MenuSystemVars[0] == 0 && actormaxhp != 0)
-   {
-    if (debuglifebar == 1) PrintBold(s:"ActorMaxHP: ",d:actormaxhp,s:"");
-    hppercentdisp = (actorcurrhp * 100 / actormaxhp);
-    if (hppercentdisp < 0) hppercentdisp = 0;
-    if (hppercentdisp > 100) hppercentdisp = 100;
-	
-    int acounter;
-    int bcounter;
-    SetActivatorToTarget(0);
-    If(ActivatorTID() != Activator)
-    {
-     if (debuglifebar == 1) PrintBold(s:"Activator [2]: ",d:Activator,s:"");
-     If (CheckActorProperty(0, APROP_Friendly, 0)) SetFont ("MNRHPBAR");
-     else If (CheckActorProperty(0, APROP_Friendly, 1)) SetFont ("MNGHPBAR");
-     int stealthcheck = GetUserVariable(0, "user_isstealth");
-     str stealthcheck2 = ""; if (stealthcheck > 0) stealthcheck2 = "?";
-     int levelcheck = GetUserVariable(0, "user_monsterlevel");
-     int leveldifference = levelcheck - PlayerLevel;
-	 
-	 int Speed = GetActorProperty(0,APROP_Speed); //Set's Final Speed values
-     int Attack = GetActorProperty(0,APROP_DamageMultiplier); 
-     int Defense = GetActorProperty(0,APROP_DamageFactor); 
-     int Balance = GetActorProperty(0,APROP_Mass); 
+		int hpcritlevel = GetUserVariable(0, "user_HPCritRange");
+		int hplowlevel = GetUserVariable(0, "user_HPLowRange");
+		int hphalflevel = (GetUserVariable(0, "user_MaxHP") / 2);
+		if (debuglifebar == 1)
+		{
+			PrintBold(s:"CritLevel: ",d:hpcritlevel,
+								s:"\nLowLevel: ",d:hplowlevel,
+								s:"\nHalfLevel: ",d:hphalflevel);
+		}
 
-     str monstercolor = "";
-     If (CheckActorProperty(0, APROP_Friendly, 0)) monstercolor = "\c[Red]";
-     else If (CheckActorProperty(0, APROP_Friendly, 1)) monstercolor = "\c[Green]";
-	 str isfriendly = "";
-     If (CheckActorProperty(0, APROP_Friendly, 0)) isfriendly = "";
-     else If (CheckActorProperty(0, APROP_Friendly, 1)) isfriendly = " \cn(Friend)";
-	 str islegendary = "";
-     If (GetUserVariable(0, "user_legendaryevolved") > 0) islegendary = " \c[purple](LEGENDARY)";
-     ypos = MiscFixedVars[1] + 0.0;
-	 SetActivator(Activator);
-     SetHudSize (800,600,0);
-     HudMessage (s:"a"; 0, 201, CR_GREEN, 400.0, 100.0, 0.05);
-     SetFont ("DVDSSMLFONT");
-     SetHudSize (800,600,0);
-     if (GetCVar("dvds_actorlifebarhp") == 1)
-	 {
-	  HudMessage (d:actorcurrhp, s:"/", d:actormaxhp; 0, 199, CR_WHITE, 400.0, 100.0, 0.05);
-	 }
-     if (GetCVar("dvds_actorlifebarnames") == 1)
-	 {
-	  if (debuglifebar == 1) HudMessage (s:monstercolor,s:dvds_monsternames[class_index][1],s:stealthcheck2,s:isfriendly,s:islegendary,s:" [",d:OldActivator,s:"]"; 0, 198, CR_WHITE, 400.0, 115.0, 0.05);
-	                                                else HudMessage (s:monstercolor,s:dvds_monsternames[class_index][1],s:stealthcheck2,s:isfriendly,s:islegendary; 0, 198, CR_WHITE, 400.0, 115.0, 0.05); 
-	 }
-     if (GetCVar("dvds_actorlifebarstats") == 1)
-	 {
- 	  HudMessage (s:"\c[LightBlue]Speed: ",f:Speed,s:"\n",
-	                  s:"\c[Olive]Balance: ",d:Balance,s:"\n",
-	                  s:"\c[Brick]Damage Dealt: ",f:Attack,s:"x\n",
-				      s:"\c[Green]Damage Taken: ",f:Defense,s:"x"; 0, 196, CR_WHITE, 400.0, 70.0, 0.05);
-	 }
-     SetFont ("DVDSBIGFONT");
-     xpos = 274.2; //400.0;
-     ypos = 100.0; //115.0;
-     str textcolor = "";
-     if (leveldifference <= 0) textcolor = CR_LIGHTBLUE;
-     if (leveldifference >= 0 && leveldifference <= 20) textcolor = CR_GOLD;
-     if (leveldifference >= 21 && leveldifference <= 50) textcolor = CR_ORANGE;
-     if (leveldifference >= 51 && leveldifference <= 100) textcolor = CR_RED;
-     if (leveldifference >= 101 && leveldifference <= 250) textcolor = CR_DARKRED;
-     if (leveldifference >= 251) textcolor = CR_PURPLE;
-     HudMessage (d:levelcheck; 0, 197, textcolor, xpos, ypos, 0.05);
+		int actormaxhp;
+		int actorcurrhp;
+		int hppercentdisp;
 
-     SetFont ("DVDSSMLFONT");
-     for (acounter = 0; acounter <= hppercentdisp; acounter++)
-     {
-      bcounter = bcounter + 2.0;
-      SetActivatorToTarget(0);
+		int nonstatmonster = 0;
+		if (GetActorClass(0) == "PracticeTarget") nonstatmonster = 1;
+		if (GetActorClass(0) == "PracticeTarget2") nonstatmonster = 1;
+		If(ActivatorTID() != Activator && nonstatmonster == 0)
+		{
+		 actormaxhp = GetUserVariable(0, "user_MaxHP");
+		 actorcurrhp = GetActorProperty(0, APROP_Health);
+		 if (debuglifebar == 1) PrintBold(s:"Activator [1]: ",d:Activator,s:"  ActorMaxHP: ",d:actormaxhp,s:"");
+		 SetActivator(Activator);
 
-      if (actorcurrhp > hphalflevel) 
-	  {
-	   SetFont ("FILLNORM");
-	  }
-      else 
-	  if (actorcurrhp > hplowlevel && actorcurrhp <= hphalflevel) 
-	  {
-	   SetFont ("FILLCAUT");
-	  }
-      else 
-	  if (actorcurrhp > hpcritlevel && actorcurrhp <= hplowlevel) 
-	  { 
-	   SetFont ("FILLDANG"); 
-	  }
-      else 
-	  if (actorcurrhp <= hpcritlevel) 
-	  { 
-	   SetFont ("FILLCRIT"); 
-	  }
+		 If (MenuSystemVars[0] == 0 && actormaxhp != 0)
+		 {
+			if (debuglifebar == 1) PrintBold(s:"ActorMaxHP: ",d:actormaxhp,s:"");
+			hppercentdisp = (actorcurrhp * 100 / actormaxhp);
+			if (hppercentdisp < 0) hppercentdisp = 0;
+			if (hppercentdisp > 100) hppercentdisp = 100;
 
-      SetActivator(Activator);
-      SetHudSize (800,600,0);
+			int acounter;
+			int bcounter;
+			SetActivatorToTarget(0);
+			If(ActivatorTID() != Activator)
+			{
+				if (debuglifebar == 1) PrintBold(s:"Activator [2]: ",d:Activator,s:"");
+				If (CheckActorProperty(0, APROP_Friendly, 0)) SetFont ("MNRHPBAR");
+				else If (CheckActorProperty(0, APROP_Friendly, 1)) SetFont ("MNGHPBAR");
+				int stealthcheck = GetUserVariable(0, "user_isstealth");
+				str stealthcheck2 = ""; if (stealthcheck > 0) stealthcheck2 = "?";
+				int levelcheck = GetUserVariable(0, "user_monsterlevel");
+				int leveldifference = levelcheck - PlayerLevel;
 
-      If(actorcurrhp > 0)
-      {
-	   hudmessage(s:"a"; 0, acounter+202, CR_GREEN, 303.0 + bcounter, 100.0, 0.05, 1.0);
-	  }
-     }
-     bcounter = 0;
-     acounter = 0;
-     Restart;
-    }
-   }
-  }
- }
- If(GetCVar("dvds_actorlifebars") == 1 && GetActorProperty(Player1TID,APROP_Health) > 0) Restart;
+				int Speed = GetActorProperty(0,APROP_Speed); //Set's Final Speed values
+				int Attack = GetActorProperty(0,APROP_DamageMultiplier); 
+				int Defense = GetActorProperty(0,APROP_DamageFactor); 
+				int Balance = GetActorProperty(0,APROP_Mass); 
+
+				str monstercolor = "";
+				If (CheckActorProperty(0, APROP_Friendly, 0)) monstercolor = "\c[Red]";
+				else If (CheckActorProperty(0, APROP_Friendly, 1)) monstercolor = "\c[Green]";
+				str isfriendly = "";
+				If (CheckActorProperty(0, APROP_Friendly, 0)) isfriendly = "";
+				else If (CheckActorProperty(0, APROP_Friendly, 1)) isfriendly = " \cn(Friend)";
+				str islegendary = "";
+				If (GetUserVariable(0, "user_legendaryevolved") > 0) islegendary = " \c[purple](LEGENDARY)";
+				ypos = MiscFixedVars[1] + 0.0;
+				SetActivator(Activator);
+				SetHudSize (800,600,0);
+				HudMessage (s:"a"; 0, 201, CR_GREEN, 400.0, 100.0, 0.05);
+				SetFont ("DVDSSMLFONT");
+				SetHudSize (800,600,0);
+				if (GetCVar("dvds_actorlifebarhp") == 1)
+				{
+					HudMessage (d:actorcurrhp, s:"/", d:actormaxhp; 0, 199, CR_WHITE, 400.0, 100.0, 0.05);
+				}
+				if (GetCVar("dvds_actorlifebarnames") == 1)
+				{
+					if (debuglifebar == 1) HudMessage (s:monstercolor,s:dvds_monsternames[class_index][1],s:stealthcheck2,s:isfriendly,s:islegendary,s:" [",d:OldActivator,s:"]"; 0, 198, CR_WHITE, 400.0, 115.0, 0.05);
+																												else HudMessage (s:monstercolor,s:dvds_monsternames[class_index][1],s:stealthcheck2,s:isfriendly,s:islegendary; 0, 198, CR_WHITE, 400.0, 115.0, 0.05); 
+				}
+				if (GetCVar("dvds_actorlifebarstats") == 1)
+				{
+					HudMessage (s:"\c[LightBlue]Speed: ",f:Speed,s:"\n",
+										s:"\c[Olive]Balance: ",d:Balance,s:"\n",
+										s:"\c[Brick]Damage Dealt: ",f:Attack,s:"x\n",
+										s:"\c[Green]Damage Taken: ",f:Defense,s:"x"; 0, 196, CR_WHITE, 400.0, 70.0, 0.05);
+				}
+				SetFont ("DVDSBIGFONT");
+				xpos = 274.2; //400.0;
+				ypos = 100.0; //115.0;
+				str textcolor = "";
+				if (leveldifference <= 0) textcolor = CR_LIGHTBLUE;
+				if (leveldifference >= 0 && leveldifference <= 20) textcolor = CR_GOLD;
+				if (leveldifference >= 21 && leveldifference <= 50) textcolor = CR_ORANGE;
+				if (leveldifference >= 51 && leveldifference <= 100) textcolor = CR_RED;
+				if (leveldifference >= 101 && leveldifference <= 250) textcolor = CR_DARKRED;
+				if (leveldifference >= 251) textcolor = CR_PURPLE;
+				HudMessage (d:levelcheck; 0, 197, textcolor, xpos, ypos, 0.05);
+
+				SetFont ("DVDSSMLFONT");
+				for (acounter = 0; acounter <= hppercentdisp; acounter++)
+				{
+					bcounter = bcounter + 2.0;
+					SetActivatorToTarget(0);
+
+					if (actorcurrhp > hphalflevel) 
+					{
+						SetFont ("FILLNORM");
+					}
+					else 
+					if (actorcurrhp > hplowlevel && actorcurrhp <= hphalflevel) 
+					{
+						SetFont ("FILLCAUT");
+					}
+					else 
+					if (actorcurrhp > hpcritlevel && actorcurrhp <= hplowlevel) 
+					{ 
+						SetFont ("FILLDANG"); 
+					}
+					else 
+					if (actorcurrhp <= hpcritlevel) 
+					{ 
+						SetFont ("FILLCRIT"); 
+					}
+
+					SetActivator(Activator);
+					SetHudSize (800,600,0);
+
+					If(actorcurrhp > 0)
+					{
+						hudmessage(s:"a"; 0, acounter+202, CR_GREEN, 303.0 + bcounter, 100.0, 0.05, 1.0);
+					}
+				}
+				bcounter = 0;
+				acounter = 0;
+				Restart;
+			}
+		 }
+		}
+	}
+	If(GetCVar("dvds_actorlifebars") == 1 && GetActorProperty(Player1TID,APROP_Health) > 0) Restart;
 }
 
 script "CheckShotgunnerSpreads" (void)
@@ -45376,11 +45396,6 @@ script "CheckMinigunHeat" (int save)
   if (MiscellaneousVars[191] > 0) TakeActorInventory(Player1TID,"MinigunHeat",MiscellaneousVars[191]);
   //PrintBold(s:"- ",d:MiscellaneousVars[191]);
  }
-}
-
-script "CheckCrisisAttackType" (void)
-{
- SetResultValue(GetCVar("dvds_monstercrisisattacks"));
 }
 
 // Extends the 'lifespan' of Ultra Magic Missiles based on both Sorcery and Therapeusis stats
@@ -45439,7 +45454,6 @@ script "UseCustomInventoryItem" (int type)
  int CurrentHealth = GetActorProperty(Player1TID,APROP_HEALTH);
  int perkbasemulti = 16;
  int MaxHealthLimit = MaxHealthTrue * 2;
- int debughealitems = GetCVar("dvdsdebug_healitemdisplays");
  
  if (type == -7 && CheckActorInventory(Player1TID,"ArtiInvisibilityNew") > 0) // Icon of the Defender
  {
@@ -45524,7 +45538,7 @@ script "UseCustomInventoryItem" (int type)
    if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
    PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
    perktemp1 = perktemp1 * PerkFactor / 10000;
-   if (debughealitems > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
    temp2 = perktemp1;
    MiscellaneousVars[21] += temp2;
    if (MiscellaneousVars[21] > healmax) MiscellaneousVars[21] = healmax;
@@ -45603,7 +45617,7 @@ script "UseCustomInventoryItem" (int type)
    if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
    PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
    perktemp1 = perktemp1 * PerkFactor / 10000;
-   if (debughealitems > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
    temp2 = perktemp1;
    MiscellaneousVars[21] += temp2;
    if (MiscellaneousVars[21] > healmax) MiscellaneousVars[21] = healmax;
@@ -45657,7 +45671,7 @@ script "UseCustomInventoryItem" (int type)
    if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
    perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
-   if (debughealitems > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
    temp2 = perktemp1;
    MiscellaneousVars[21] += temp2;
    if (MiscellaneousVars[21] > healmax) MiscellaneousVars[21] = healmax;
@@ -45694,7 +45708,7 @@ script "UseCustomInventoryItem" (int type)
    if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
    perkhealthlimit = perkhealthlimit * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
-   if (debughealitems > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
                                                           s:"\nHealth Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
    temp1 += perktemp1;
    if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
@@ -45720,7 +45734,7 @@ script "UseCustomInventoryItem" (int type)
    perktemp2 = perktemp2 * PerkFactor / 10000;
    MiscellaneousVars[21] += perktemp2;
 
-   if (debughealitems > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
                                                           s:"\nStamina Restored: ",d:perktemp2,s:" VS [",d:temp2,s:"]");
    if (MiscellaneousVars[21] > perkstaminalimit) MiscellaneousVars[21] = perkstaminalimit;
   }
@@ -45756,7 +45770,7 @@ script "UseCustomInventoryItem" (int type)
    perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
    temp1 += perktemp1;
-   if (debughealitems > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
                                                           s:"\nHealth Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
    if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
    SetActorProperty(Player1TID,APROP_Health,temp1);
@@ -45782,7 +45796,7 @@ script "UseCustomInventoryItem" (int type)
    perktemp2 = perktemp2 * PerkFactor / 10000;
    MiscellaneousVars[21] += perktemp2;
 
-   if (debughealitems > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
                                                           s:"\nStamina Restored: ",d:perktemp2,s:" VS [",d:temp2,s:"]");
    if (MiscellaneousVars[21] > perkstaminalimit) MiscellaneousVars[21] = perkstaminalimit;
   }
@@ -45818,7 +45832,7 @@ script "UseCustomInventoryItem" (int type)
    perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
    temp1 += perktemp1;
-   if (debughealitems > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
                                                           s:"\nHealth Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
    if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
    SetActorProperty(Player1TID,APROP_Health,temp1);
@@ -45844,7 +45858,7 @@ script "UseCustomInventoryItem" (int type)
    perktemp2 = perktemp2 * PerkFactor / 10000;
    MiscellaneousVars[21] += perktemp2;
 
-   if (debughealitems > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
                                                           s:"\nStamina Restored: ",d:perktemp2,s:" VS [",d:temp2,s:"]");
    if (MiscellaneousVars[21] > perkstaminalimit) MiscellaneousVars[21] = perkstaminalimit;
   }
@@ -45879,7 +45893,7 @@ script "UseCustomInventoryItem" (int type)
    perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
    temp1 += perktemp1;
-   if (debughealitems > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
                                                           s:"\nHealth Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
    if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
    SetActorProperty(Player1TID,APROP_Health,temp1);
@@ -45903,7 +45917,7 @@ script "UseCustomInventoryItem" (int type)
    temp3 = perktemp3;
    CurrentMana += temp3;
 
-   if (debughealitems > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
                                                           s:"\nMana Restored: ",d:perktemp3,s:" VS [",d:temp2,s:"]");
    if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
   }
@@ -45928,7 +45942,7 @@ script "UseCustomInventoryItem" (int type)
    perktemp2 = perktemp2 * PerkFactor / 10000;
    MiscellaneousVars[21] += perktemp2;
 
-   if (debughealitems > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Limit: ",d:perkstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
                                                           s:"\nStamina Restored: ",d:perktemp2,s:" VS [",d:temp2,s:"]");
    if (MiscellaneousVars[21] > perkstaminalimit) MiscellaneousVars[21] = perkstaminalimit;
   }
@@ -46033,7 +46047,7 @@ script "UseCustomInventoryItem" (int type)
    if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
    perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
-   if (debughealitems > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
                                                           s:"\nMana Restored: ",d:perktemp1,s:" VS [",d:temp1,s:"]");
    CurrentMana += perktemp1;
    if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
@@ -46063,7 +46077,7 @@ script "UseCustomInventoryItem" (int type)
    if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
    perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
-   if (debughealitems > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
                                                           s:"\nMana Restored: ",d:perktemp1,s:" VS [",d:temp1,s:"]");
    CurrentMana += perktemp1;
    if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
@@ -46094,7 +46108,7 @@ script "UseCustomInventoryItem" (int type)
    if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
    perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
 
-   if (debughealitems > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
                                                           s:"\nMana Restored: ",d:perktemp1,s:" VS [",d:temp1,s:"]");
    CurrentMana += perktemp1;
    if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
@@ -46131,10 +46145,10 @@ script "UseCustomInventoryItem" (int type)
   else
   {
    if (CurrentHealth < perkhealthlimit) SetActorProperty(Player1TID,APROP_HEALTH,perkhealthlimit);
-   if (debughealitems > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Healing Limit: ",d:perkhealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
                                                           s:"\nHealth Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
    if (CurrentMana < perkmanalimit) CurrentMana = perkmanalimit;
-   if (debughealitems > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
+   if (MiscellaneousVars[110008] > 0) PrintBold(s:"Mana Limit: ",d:perkmanalimit,s:" VS [",d:MaxMana,s:"]",
                                                           s:"\nMana Restored: ",d:perktemp3,s:" VS [",d:temp2,s:"]");
 
    PlaySound(Player1TID,"misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
@@ -48811,7 +48825,7 @@ script "MaxHPDropChance" (void)
  // PrintBold(d:roll,s:"/",d:Chance);
  SetResultValue(0);
  if (roll <= Chance) SetResultValue(1);
- if (ModType == 0 && GetCVar("dvds_canseedsappear") == 0) SetResultValue(0);
+ if (ModType == 0 && MiscellaneousVars[110005] == 0) SetResultValue(0);
 }
 
 script "CheckPlayerIfDead" (void)
@@ -50475,7 +50489,7 @@ script "KD-ReactivateSideDodge" respawn
 script "CrisisMultiplierMonsters" (void)
 {
  int canusecrisisatk = 0;
- if (GetCVar("dvds_monstercrisisattacks") == 1)
+ if (MiscellaneousVars[110007] == 1)
  {
   if(GetActorProperty(0,APROP_Health) <= GetUserVariable(0,"user_HPLowRange"))
   {
@@ -50504,7 +50518,7 @@ script "CrisisMultiplier" (int type)
 {
  int base = 1;
  if (type <= 1) type = 1;
- if (GetCVar("dvds_monstercrisisattacks") == 1)
+ if (MiscellaneousVars[110007] == 1)
  {
   base = GetCVar("dvds_monstercrisismulti");
   base /= type;
