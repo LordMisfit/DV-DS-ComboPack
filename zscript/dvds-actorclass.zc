@@ -1399,9 +1399,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int levelbehavior;
 	int bullet_tracer_mode;
 	int gfxeffectlevel;
+	int AggressionLevelThreshold1, AggressionLevelThreshold2, AggressionLevelThreshold3;
+
+	property AggressionLevelThreshold: AggressionLevelThreshold1, AggressionLevelThreshold2, AggressionLevelThreshold3;
 
 	default
 	{
+    AetheriusMonsterZSC.AggressionLevelThreshold 60, 120, 180;
 		Painchance "GravityHP", 256;
 		Painchance "GravityMP", 256;
 		Painchance "GravityHPMP", 256;
@@ -1623,19 +1627,34 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		return ret;
 	}
+
 	//****************************
 	//*AETHERIUS UNIQUE FUNCTIONS*
 	//****************************
 	void A_AetheriusStats(int type)
 	{
-	 // 0 = Set special stats
-	 // 1 = Unset special stats
-	 if (type == 0 && CountInv("MonsterHasBuffs") == 0) ACS_NamedExecuteAlways("MonsterStatsHP_ATK_DEF_SPD",0,type);
-	 else
-	 {
-	  if (CountInv("MonsterHasBuffs") > 0) ACS_NamedExecuteAlways("MonsterStatsHP_ATK_DEF_SPD",0,type); 
-	 }
+		// 0 = Set special stats
+		// 1 = Unset special stats
+		int flagsbaselevel;
+		levelbehavior = dvds_monsterlevelbehavior;
+		if (type == 0 && CountInv("MonsterHasBuffs") == 0) 
+		{
+			CallACS("MonsterStatsHP_ATK_DEF_SPD",type);
+			if (levelbehavior > 0)
+			{
+				//Console.Printf("Level %d!", user_monsterlevel);
+				if (user_monsterlevel > AggressionLevelThreshold3) { bMISSILEEVENMORE = true; bMISSILEMORE = true; }
+				else if (user_monsterlevel > AggressionLevelThreshold2) { bMISSILEEVENMORE = true; bMISSILEMORE = false; }
+				else if (user_monsterlevel > AggressionLevelThreshold1) { bMISSILEEVENMORE = false; bMISSILEMORE = true; }
+			}
+		}
+
+		if (type != 0 && CountInv("MonsterHasBuffs") > 0) 
+		{
+			CallACS("MonsterStatsHP_ATK_DEF_SPD",type);
+		}
 	}
+
 	void A_GiveGold(int basegold)
 	{
 		int goldamt = CountInv("Coin",AAPTR_DEFAULT);
