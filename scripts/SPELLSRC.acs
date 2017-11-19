@@ -21452,7 +21452,7 @@ script "MegaSphereHealth" (void)
 }
 
 // New Health Bonus Script :P
-script "EmulateGiveHealthBonus" (int multiplier, int givemanachance)
+script "EmulateGiveHealthBonus" (int multiplier, int givemanachance, int staminagive)
 {
 	int C1, C2, C3, G1, G2, G3, H1, H2, H3;
 	int MaxHealthLimit = MaxHealthTrue * 2;
@@ -21494,19 +21494,22 @@ script "EmulateGiveHealthBonus" (int multiplier, int givemanachance)
 		}
 	}
 	
-	// Add 0.5% to Stamina Value [up to 500%]
-	MiscellaneousVars[165] = MiscellaneousVars[22] / 200;
-	MiscellaneousVars[165] *= multiplier;
-	int perktemp1 = MiscellaneousVars[165];
-	
-	PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
-	perktemp1 = perktemp1 * PerkFactor / 10000;
-	if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) perktemp1 = perktemp1 * 5 / 3;
-	if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
-	MiscellaneousVars[165] = perktemp1;
-	
-	if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
-	if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
+	if (staminagive > 0)
+	{
+		// Add 0.5% to Stamina Value [up to 500%]
+		MiscellaneousVars[165] = MiscellaneousVars[22] / 200;
+		MiscellaneousVars[165] *= multiplier;
+		int perktemp1 = MiscellaneousVars[165];
+		
+		PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
+		perktemp1 = perktemp1 * PerkFactor / 10000;
+		if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) perktemp1 = perktemp1 * 5 / 3;
+		if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
+		MiscellaneousVars[165] = perktemp1;
+		
+		if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
+		if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
+	}
 	
 	int HellcoreRestored;
 	if (CharacterClass == 2) // Flora's Hellcore Heating will also marginally go down with each Health Bonus grabbed
@@ -36046,20 +36049,11 @@ script "SauronGauntletsHit" (int Amount, int HitType)
 	if (HitType <= 0) HitType = 1;
 	if (HitType >= 3) HitType = 2;
 	
-	if (HitType == 1) // Give some life when hurting a monster [1+(HP/500)]
-	{
-		if (GetUserVariable(0,"user_MaxHP") > 0) Amount = GetUserVariable(0,"user_MaxHP");
-		else Amount = GetActorProperty(0,APROP_SpawnHealth);
-		Amount = (Amount / 500) + 1;
-	}
-	else
-	if (HitType == 2) // Give more life when killing a monster [3+(HP/100)]
-	{
-		if (GetUserVariable(0,"user_MaxHP") > 0) Amount = GetUserVariable(0,"user_MaxHP");
-		else Amount = GetActorProperty(0,APROP_SpawnHealth);
-		Amount = (Amount / 100) + 3;
-	}
+	if (HitType == 1) Amount = (Amount / 250) + 1; // Give some life when hurting a monster [1+(Damage/250)]
+	if (HitType == 2) Amount = (Amount / 50) + 5; // Give more life when killing a monster [5+(Damage/50)]
+
 	If (Amount <= 0) Amount = 1;
+	If (Amount >= 65) Amount = 64;
 	
 	if (CharacterClass == 2) ActivatorSound("healing_dq",127);
 	else ActivatorSound("HealSpell1",127); 
