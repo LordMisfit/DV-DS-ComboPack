@@ -7378,7 +7378,7 @@ script "HUDDisplay" ENTER
 					ypos = 924.0;
 					tempvar1 = 2005;
 
-					if (HellcoreOverheatLevel > 10000) // Hellcore - "Overheated" Glow
+					if (HellcoreOverheatLevel > 1000000) // Hellcore - "Overheated" Glow
 					{
 						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 						MiscellaneousVars[tempvar1] += 1;
@@ -21452,7 +21452,7 @@ script "MegaSphereHealth" (void)
 }
 
 // New Health Bonus Script :P
-script "EmulateGiveHealthBonus" (int multiplier, int givemanachance, int staminagive)
+script "EmulateGiveHealthBonus" (int multiplier, int givemanachance, int staminagive, int hellcorecool)
 {
 	int C1, C2, C3, G1, G2, G3, H1, H2, H3;
 	int MaxHealthLimit = MaxHealthTrue * 2;
@@ -21494,7 +21494,7 @@ script "EmulateGiveHealthBonus" (int multiplier, int givemanachance, int stamina
 		}
 	}
 	
-	if (staminagive > 0)
+	if (staminagive >= 0)
 	{
 		// Add 0.5% to Stamina Value [up to 500%]
 		MiscellaneousVars[165] = MiscellaneousVars[22] / 200;
@@ -21507,12 +21507,15 @@ script "EmulateGiveHealthBonus" (int multiplier, int givemanachance, int stamina
 		if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
 		MiscellaneousVars[165] = perktemp1;
 		
+		// Tweaks the multiplier for Stamina Recovery.
+		MiscellaneousVars[165] = MiscellaneousVars[165] * staminagive / 100;
+		
 		if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
 		if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
 	}
 	
 	int HellcoreRestored;
-	if (CharacterClass == 2) // Flora's Hellcore Heating will also marginally go down with each Health Bonus grabbed
+	if (CharacterClass == 2 && hellcorecool > 0) // Flora's Hellcore Heating will also marginally go down with each Health Bonus grabbed
 	{
 		if (HellcoreOverheatLevel > 0)
 		{
@@ -36057,15 +36060,15 @@ script "SauronGauntletsHit" (int Amount, int HitType)
 	
 	if (CharacterClass == 2) ActivatorSound("healing_dq",127);
 	else ActivatorSound("HealSpell1",127); 
-	
+
 	MiscellaneousVars[49] = 1; // Screen Flash
 	// Restore Health
-	ACS_NamedExecuteAlways("EmulateGiveHealthBonus",0,Amount,0,0);
+	ACS_NamedExecuteWithResult("EmulateGiveHealthBonus",Amount,0,50,0);
 	
 	// Restore Armor
 	int ArmorAmount = (Amount * random(2,3)) / 5;
 	If (ArmorAmount <= 0) ArmorAmount = 1;
-	if (CharacterClass != 2) ACS_NamedExecuteAlways("EmulateGiveArmorBonus",0,ArmorAmount,0,0);  // Restore Armor [Flora Cannot Gain Armor from it though]
+	if (CharacterClass != 2) ACS_NamedExecuteWithResult("EmulateGiveArmorBonus",ArmorAmount,0,0);  // Restore Armor [Flora Cannot Gain Armor from it though]
 	
 	// Restore Mana
 	int ManaAmount = (Amount * random(2,3)) / 3;
