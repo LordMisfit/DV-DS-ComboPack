@@ -6160,6 +6160,82 @@ script "HUDDisplay" ENTER
 				HudMessage(s:"A";HUDMSG_ALPHA,7806,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 			}
 
+			// Tension Indicator[s] [7819]
+			if (GetActorProperty(Player1TID,APROP_HEALTH) > 0 && MiscellaneousVars[181] > 0)
+			{
+				if (CharacterClass == 0)
+				{
+					if (PowerupTimer[4] > 0) SetFont("PDEG1TN2");
+					else SetFont("PDEG1TNS");
+				}
+				if (CharacterClass == 1)
+				{
+					if (PowerupTimer[4] > 0) SetFont("PILL1TN2");
+					else SetFont("PILL1TNS");
+				}
+				if (CharacterClass == 2)
+				{
+					if (PowerupTimer[7] > 0)
+					{
+						if (PowerupTimer[4] > 0) SetFont("PFLO2TN2");
+						else SetFont("PFLO2TNS");
+					}
+					else
+					{
+						if (PowerupTimer[4] > 0) SetFont("PFLO1TN2");
+						else SetFont("PFLO1TNS");
+					}
+				}
+				if (CharacterClass == 8)
+				{
+					if (PowerupTimer[7] > 0)
+					{
+						if (PowerupTimer[4] > 0) SetFont("PAIL2TN2");
+						else SetFont("PAIL2TNS");
+					}
+					else
+					{
+						if (PowerupTimer[4] > 0) SetFont("PAIL1TN2");
+						else SetFont("PAIL1TNS");
+					}
+				}
+				if (CharacterClass == 9)
+				{
+					if (PowerupTimer[7] > 0)
+					{
+						if (PowerupTimer[4] > 0) SetFont("PPET2TN2");
+						else SetFont("PPET2TNS");
+					}
+					else
+					{
+						if (PowerupTimer[4] > 0) SetFont("PPET1TN2");
+						else SetFont("PPET1TNS");
+					}
+				}
+
+				msgalpha = 1.0;
+				// Check Mercy Invincibility
+				if (MiscellaneousVars[194] > 0)
+				{
+					if (MiscellaneousVars[196] >= 0 && MiscellaneousVars[196] <= 29) msgalpha = FixedMul(msgalpha,0.25);
+					if (MiscellaneousVars[196] >= 30 && MiscellaneousVars[196] <= 59) msgalpha = FixedMul(msgalpha,0.375);
+					if (MiscellaneousVars[196] >= 60 && MiscellaneousVars[196] <= 89) msgalpha = FixedMul(msgalpha,0.50);
+					if (MiscellaneousVars[196] >= 90 && MiscellaneousVars[196] <= 119) msgalpha = FixedMul(msgalpha,0.375);
+				}
+				// Check Tension Level
+				if (MiscellaneousVars[181] == 1) msgalpha = FixedMul(msgalpha,0.14);
+				if (MiscellaneousVars[181] == 2) msgalpha = FixedMul(msgalpha,0.28);
+				if (MiscellaneousVars[181] == 3) msgalpha = FixedMul(msgalpha,0.42);
+				if (MiscellaneousVars[181] == 4) msgalpha = FixedMul(msgalpha,0.56);
+				if (MiscellaneousVars[181] == 5) msgalpha = FixedMul(msgalpha,0.70);
+				if (MiscellaneousVars[181] == 6) msgalpha = FixedMul(msgalpha,0.84);
+				if (MiscellaneousVars[181] == 7) msgalpha = FixedMul(msgalpha,0.98);
+				// If Invisible, pulsate the Alpha of the portrait
+				if (PowerupTimer[1] > 0) msgalpha = FixedMul(msgalpha,MiscFixedVars[101]);
+				msgalpha = FixedMul(msgalpha,overallhudalpha);
+				HudMessage(s:"A";HUDMSG_ALPHA,7819,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+			}
+
 			//*******************************
 			// Main Character Portrait [7820]
 			//*******************************
@@ -6221,6 +6297,7 @@ script "HUDDisplay" ENTER
 			}
 
 			msgalpha = 1.0;
+			// Check Mercy Invincibility
 			if (MiscellaneousVars[194] > 0)
 			{
 				if (MiscellaneousVars[196] >= 0 && MiscellaneousVars[196] <= 29) msgalpha = FixedMul(msgalpha,0.25);
@@ -50861,7 +50938,7 @@ function int IsButtonPressed (int input, int oldInput, int mask)
 script "KD-SideDodge" enter
 {
 	int input, oldInput, taps, tics, last, angle, velX, velY, velZ;
-	int dashstamina, cooldownreduction;
+	int dashstamina, cooldownreduction, cooldownreductionlvl, cooldownreductionagl;
 	
 	int dashtapwindow = 8;			// Same type of var/define as SD_TIMEFRAME, but made to be editable
 	int dashcooldown = 30;			// Same type of var/define as SD_DASHDELAY, but made to be editable
@@ -50880,17 +50957,16 @@ script "KD-SideDodge" enter
 	
 		dashcooldown = 30;
 		cooldownreduction = 0;
-		if (PlayerLevel >= 25) cooldownreduction += 1 + ((PlayerLevel - 25) / 50); // Max of -8 [22 left]
-		if (MiscellaneousVars[31] >= 10) cooldownreduction += (MiscellaneousVars[31] / 10);
-		dashcooldown -= cooldownreduction;
+		if (PlayerLevel >= 25) cooldownreductionlvl = 1 + ((PlayerLevel - 25) / 50); // Max of -8 [22 left]
+		if (MiscellaneousVars[31] >= 32) cooldownreductionagl = (MiscellaneousVars[31] / 32); // Agility
+		dashcooldown -= cooldownreductionlvl;
+		dashcooldown -= cooldownreductionagl;
 		if (dashcooldown < 4) dashcooldown = 4;
 		if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) dashcooldown = dashcooldown * 3 / 4; // Dash-Cooldown time cut by 25%
 	
 		if (GetActorZ(0) - GetActorFloorZ(0) > 0) { dashstamina = 625; } else { dashstamina = 500; }
 		if (powertripmode == 1) dashstamina = dashstamina / 5;
 		if (powertripmode == 2) dashstamina = dashstamina / 10; 
-		if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) dashstamina = dashstamina * 2 / 5; // Stamina require for dash/air-dash cut by 60%
-		if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) dashstamina = dashstamina * 3 / 4;
 		if (CharacterClass == 0) dashstamina -= ((MiscellaneousVars[31] * 5) / 6);
 		if (CharacterClass == 1) dashstamina -= ((MiscellaneousVars[31] * 6) / 6);
 		if (CharacterClass == 2) dashstamina -= ((MiscellaneousVars[31] * 7) / 6);
@@ -50904,6 +50980,8 @@ script "KD-SideDodge" enter
 		{ 
 			if (dashstamina < 40) dashstamina = 40;
 		}
+		if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) dashstamina = dashstamina * 2 / 5; // Stamina require for dash/air-dash cut by 60%
+		if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) dashstamina = dashstamina * 3 / 4;
 	
 		int candash = 1;
 		if (DVDSSpecialArrayValue[0] == 1) candash--;
@@ -51002,7 +51080,8 @@ script "KD-SideDodge" enter
 								s:"\ntics: ",d:tics,
 								s:"\nlast: ",d:last,
 								s:"\ntaps: ",d:taps,
-								s:"\ncooldownreduction: ",d:cooldownreduction,
+								s:"\ncooldownreductionlvl: ",d:cooldownreductionlvl,
+								s:"\ncooldownreductionagl: ",d:cooldownreductionagl,
 								s:"\ndashcooldown: ",d:dashcooldown);
 		}
 		Delay(const:1);
