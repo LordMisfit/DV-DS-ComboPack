@@ -1578,6 +1578,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int olddmg = damage;
 		bool dealtcrit;
 		double dmgmulti = 2.0 + (0.01 * random(-10,10));
+		double ldldmgmulti = 1.0;
 		// Player Check
 		AetheriusPlayerPawn playpawn;
 		if (source) playpawn = AetheriusPlayerPawn(source);
@@ -1592,6 +1593,17 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				A_GiveInventory("TookCriticalHit",1);
 				if (flags & DMG_NO_FACTOR) { } else { flags += DMG_NO_FACTOR; } // This ignores damage factors [similar to how DQ crits ignore defense]
 				if (flags & DMG_NO_ARMOR) { } else { flags += DMG_NO_ARMOR; } // This ignores armor [similar to how DQ crits ignore armor]
+			}
+			// "Villain Killer" Perk [for extra damage specifically against Legendaries]
+			if (CountInv(LDLCheck))
+			{
+				double ldlbasemod;
+				if (bBOSS) ldlbasemod = frandom(0.15,0.2);
+				else ldlbasemod = frandom(0.10,0.125);
+
+				ldldmgmulti += (ldlbasemod * CallACS("MiscVarCheckDECORATE",10057));
+				ldldmgmulti += ((ldlbasemod * 2.5) * CallACS("MiscVarCheckDECORATE",10058));
+				damage *= ldldmgmulti;
 			}
 
 			if (CountInv("DealCriticalHit", AAPTR_PLAYER1) > 0) dealtcrit = true;
@@ -1612,8 +1624,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		if (dvdsdebug_actordmgdisplays > 0) 
 		{
-			if (dealtcrit == 1) Console.Printf("(\cfCRIT:\c- \cyolddmg/critdmg/finaldmg\c- = \cy%d\c- / \cy%d\c- / \cy%d\c-, \cadmgmulti\c- = \ca%3f\c-, \cwdmgtype = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, predmg, ret, dmgmulti, mod, vict, infl, sour);
-											else Console.Printf("(\ckHIT:\c- \cyolddmg/finaldmg\c- = \cy%d\c- / \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, ret, mod, vict, infl, sour);
+			if (dealtcrit == 1)  Console.Printf("(\cfCRIT:\c- \cyolddmg/critdmg/finaldmg\c- = \cy%d\c- / \cy%d\c- / \cy%d\c-, \cadmgmulti\c- = \ca%3f\c-, \caldldmgmulti\c- = \ca%3f\c-, \cwdmgtype = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, predmg, ret, dmgmulti, ldldmgmulti, mod, vict, infl, sour);
+											else Console.Printf("(\ckHIT:\c- \cyolddmg/finaldmg\c- = \cy%d\c- / \cy%d\c-, \caldldmgmulti\c- = \ca%3f\c-, \cwdmgtype\c- = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, ret, ldldmgmulti, mod, vict, infl, sour);
 		}
 
 		// Gauntlet HP/MP/AP drain
