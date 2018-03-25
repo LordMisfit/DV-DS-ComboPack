@@ -1,12 +1,314 @@
+class PlayerStatItem : Inventory 
+{
+	default 
+	{
+		//Powerup.Duration 0xfffffffd;
+		+Inventory.PERSISTENTPOWER;
+		+Inventory.UNDROPPABLE;
+		+Inventory.UNTOSSABLE;
+	}
 
+	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive)
+	{
+		if (!passive && damage > 0) // If the wielder [usually the player] of the item is the ATTACKER
+		{
+			int PlayerLevel = CallACS("StatCheck",0);
+			double LVLfactor = 1.0; double LVLfactorclamp = 10.00;
+			if (CallACS("CheckCharacterClass") == 0) LVLFactor = 1.00 + (PlayerLevel * .00117);				// Deggaris	(1 LVL = 0.117% Damage Dealt)
+			if (CallACS("CheckCharacterClass") == 1) LVLFactor = 1.00 + (PlayerLevel * .000863);			// Illucia	(1 LVL = 0.0863% Damage Dealt)
+			if (CallACS("CheckCharacterClass") == 2) LVLFactor = 1.00 + (PlayerLevel * .0011577);			// Flora		(1 LVL = 0.11577% Damage Dealt)
+			if (CallACS("CheckCharacterClass") == 8) LVLFactor = 1.00 + (PlayerLevel * .001075);			// Petra		(1 LVL = 0.1075% Damage Dealt)
+			if (CallACS("CheckCharacterClass") == 9) LVLFactor = 1.00 + (PlayerLevel * .000825);			// Ailish		(1 LVL = 0.0825% Damage Dealt)
+			if (LVLfactor > LVLfactorclamp) LVLfactor = LVLfactorclamp;
+
+			int PlayerSTR = CallACS("StatCheck",7);
+			double STRfactor = 1.0; double STRfactorclamp = 10.00;
+			if (damageType != 'Magic')
+			{
+				if (CallACS("CheckCharacterClass") == 0) STRfactor = 1.00 + (PlayerSTR * .006667);			// Deggaris	(1 STR = +0.6667~% Damage Dealt)
+				if (CallACS("CheckCharacterClass") == 1) STRfactor = 1.00 + (PlayerSTR * .005);					// Illucia	(1 STR = +0.5% Damage Dealt)
+				if (CallACS("CheckCharacterClass") == 2) STRfactor = 1.00 + (PlayerSTR * .003334);			// Flora		(1 STR = +0.3334~% Damage Dealt)
+				if (CallACS("CheckCharacterClass") == 8) STRfactor = 1.00 + (PlayerSTR * .00625);				// Petra		(1 STR = +0.625% Damage Dealt)
+				if (CallACS("CheckCharacterClass") == 9) STRfactor = 1.00 + (PlayerSTR * .003);					// Ailish		(1 STR = +0.3% Damage Dealt)
+			}
+			if (STRfactor > STRfactorclamp) STRfactor = STRfactorclamp;
+
+			int PlayerSOR = CallACS("StatCheck",6);
+			double SORfactor = 1.0; double SORfactorclamp = 10.00;
+			if (damageType == 'Magic')
+			{
+				if (CallACS("CheckCharacterClass") == 0) SORfactor = 1.00 + (PlayerSOR * .003334);			// Deggaris	(1 SOR = +0.3334~% Damage Dealt)
+				if (CallACS("CheckCharacterClass") == 1) SORfactor = 1.00 + (PlayerSOR * .005);					// Illucia	(1 SOR = +0.5% Damage Dealt)
+				if (CallACS("CheckCharacterClass") == 2) SORfactor = 1.00 + (PlayerSOR * .006667);			// Flora		(1 SOR = +0.6667~% Damage Dealt)
+				if (CallACS("CheckCharacterClass") == 8) SORfactor = 1.00 + (PlayerSOR * .003);					// Petra		(1 SOR = +0.3% Damage Dealt)
+				if (CallACS("CheckCharacterClass") == 9) SORfactor = 1.00 + (PlayerSOR * .00625);				// Ailish		(1 SOR = +0.625% Damage Dealt)
+			}
+			if (SORfactor > SORfactorclamp) SORfactor = SORfactorclamp;
+
+			double MusouFactor = 1.0;
+			if (GetCVar("dvds_musou_powertripmode") == 1) MusouFactor = 5.0;
+			if (GetCVar("dvds_musou_powertripmode") == 2) MusouFactor = 10.0;
+
+			double SoulMasteryFactor = 1.0;
+			if (damageType == 'ImpClaw' || damageType == 'DarkImpClaw' || damageType == 'CacodemonEye' || damageType == 'CacolanternEye' || damageType == 'AbaddonEye' || 
+			    damageType == 'KnightFist' || damageType == 'BaronFist' || damageType == 'BelphegorFist' || damageType == 'BruiserFist' || damageType == 'ArchonFist' || damageType == 'PyroFist' || 
+			    damageType == 'IncarnateSkull' || damageType == 'ArchvileHand' || damageType == 'DiabloistHand' || damageType == 'BalrogFist')
+			{
+				SoulMasteryFactor = 1.00 + ((CallACS("MiscVarCheckDECORATE",10033) * .10) + (CallACS("MiscVarCheckDECORATE",10034) * .25));;
+			}
+			
+			double MagiUpATKFactor = 1.0;
+			double WandStaffMasteryFactor = 1.0;
+			if (damageType == 'Magic')
+			{
+				MagiUpATKFactor = 1.00 + ((CallACS("MiscVarCheckDECORATE",10003) * .075) + (CallACS("MiscVarCheckDECORATE",10004) * .1875)); 
+				WandStaffMasteryFactor = 1.00 + ((CallACS("MiscVarCheckDECORATE",10053) * .0625) + (CallACS("MiscVarCheckDECORATE",10054) * .15625)); 
+			}
+			
+			double ClearOfMindFactor = 1.0;
+			if (CallACS("CheckCharacterClass") == 0 || CallACS("CheckCharacterClass") == 1)
+			{
+				ClearOfMindFactor = 1.00 + ((CallACS("MiscVarCheckDECORATE",10055) * .0375) + (CallACS("MiscVarCheckDECORATE",10056) * .09375)); 
+			}
+			
+			double StamUpATKFactor = 1.0;
+			if (damageType == 'Sceptre' || damageType == 'Gauntlets' || damageType == 'Fist' || damageType == 'Kick' || damageType == 'Chainsaw' )
+			{
+				StamUpATKFactor = 1.00 + ((CallACS("MiscVarCheckDECORATE",10005) * .075) + (CallACS("MiscVarCheckDECORATE",10006) * .1875)); 
+			}
+			
+			double StrifeAccuracyFactor = 1.0;
+			StrifeAccuracyFactor = 1.00 + (CallACS("MiscVarCheckDECORATE",318) * .005);
+			
+			double TOTALFactor = LVLfactor 
+													* STRfactor 
+													* SORfactor 
+													* MusouFactor 
+													* MagiUpATKFactor 
+													* WandStaffMasteryFactor 
+													* StamUpATKFactor 
+													* StrifeAccuracyFactor 
+													* ClearOfMindFactor 
+													* SoulMasteryFactor;
+			newdamage = max(1, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
+			if (Owner != null && newdamage > damage) Owner.A_PlaySound(ActiveSound, CHAN_AUTO, 1.0, false, ATTN_NONE);
+			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("(input: damage = %d, newDamage = %d, TOTALFactor = %8f, LVLFactor [%d] = %8f, STRfactor [%d] = %8f, SORfactor [%d] = %8f, MusouFactor = %8f, StamUpATKFactor = %8f, MagiUpATKFactor = %8f, WandStaffMasteryFactor = %8f, StrifeAccuracyFactor = %8f, ClearOfMindFactor = %8f, SoulMasteryFactor = %8f)", damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerSTR, STRfactor, PlayerSOR, SORfactor, MusouFactor, StamUpATKFactor, MagiUpATKFactor, WandStaffMasteryFactor, StrifeAccuracyFactor, ClearOfMindFactor, SoulMasteryFactor);
+		}
+
+		if (passive && damage > 0) // If the wielder [usually the player] of the item is the DEFENDER
+		{
+			int PlayerLevel = CallACS("StatCheck",0);
+			double LVLfactor = 1.0; double LVLfactorclamp = 0.05;
+			if (CallACS("CheckCharacterClass") == 0) LVLFactor = 1.00 - (PlayerLevel * .00117);				// Deggaris	(1 LVL = -0.117% Damage Taken)
+			if (CallACS("CheckCharacterClass") == 1) LVLFactor = 1.00 - (PlayerLevel * .0009707);			// Illucia	(1 LVL = -0.09707% Damage Taken)
+			if (CallACS("CheckCharacterClass") == 2) LVLFactor = 1.00 - (PlayerLevel * .0007633);			// Flora		(1 LVL = -0.07633% Damage Taken)
+			if (CallACS("CheckCharacterClass") == 8) LVLFactor = 1.00 - (PlayerLevel * .0010875);			// Petra		(1 LVL = -0.10875% Damage Taken)
+			if (CallACS("CheckCharacterClass") == 9) LVLFactor = 1.00 - (PlayerLevel * .000800);			// Ailish		(1 LVL = -0.0800% Damage Taken)
+			if (LVLfactor < LVLfactorclamp) LVLfactor = LVLfactorclamp;
+
+			int PlayerDEF = CallACS("StatCheck",4);
+			double DEFfactor = 1.0; double DEFfactorclamp = 0.05;
+			if (damageType != 'Magic')
+			{
+				if (CallACS("CheckCharacterClass") == 0) DEFfactor = 1.00 - (PlayerDEF * .006667);			// Deggaris	(1 DEF = -0.6667~% Physical Damage)
+				if (CallACS("CheckCharacterClass") == 1) DEFfactor = 1.00 - (PlayerDEF * .005);					// Illucia	(1 DEF = -0.5000% Physical Damage)
+				if (CallACS("CheckCharacterClass") == 2) DEFfactor = 1.00 - (PlayerDEF * .003334);			// Flora		(1 DEF = -0.3334~% Physical Damage)
+				if (CallACS("CheckCharacterClass") == 8) DEFfactor = 1.00 - (PlayerDEF * .00725);				// Petra		(1 DEF = -0.7250% Physical Damage)
+				if (CallACS("CheckCharacterClass") == 9) DEFfactor = 1.00 - (PlayerDEF * .003);					// Ailish		(1 DEF = -0.3000% Physical Damage)
+			}
+			if (DEFfactor < DEFfactorclamp) DEFfactor = DEFfactorclamp;
+
+			int PlayerTHE = CallACS("StatCheck",8);
+			double THEfactor = 1.0; double THEfactorclamp = 0.05;
+			if (damageType == 'Magic')
+			{
+				if (CallACS("CheckCharacterClass") == 0) THEfactor = 1.00 - (PlayerTHE * .003334);			// Deggaris	(1 THE = -0.3334~% Magic Damage)
+				if (CallACS("CheckCharacterClass") == 1) THEfactor = 1.00 - (PlayerTHE * .005);					// Illucia	(1 THE = -0.5000% Magic Damage)
+				if (CallACS("CheckCharacterClass") == 2) THEfactor = 1.00 - (PlayerTHE * .006667);			// Flora		(1 THE = -0.6667~% Magic Damage)
+				if (CallACS("CheckCharacterClass") == 8) THEfactor = 1.00 - (PlayerTHE * .003);					// Petra		(1 THE = -0.3000% Magic Damage)
+				if (CallACS("CheckCharacterClass") == 9) THEfactor = 1.00 - (PlayerTHE * .00725);				// Ailish		(1 THE = -0.7250% Magic Damage)
+			}
+			if (THEfactor < THEfactorclamp) THEfactor = THEfactorclamp;
+			
+			double MusouFactor = 1.0;
+			if (GetCVar("dvds_musou_powertripmode") == 1) MusouFactor = 0.2;
+			if (GetCVar("dvds_musou_powertripmode") == 2) MusouFactor = 0.1;
+
+			double LifeUpDEFFactor = 1.0;
+			LifeUpDefFactor = 1.00 - ((CallACS("MiscVarCheckDECORATE",10001) * .075) + (CallACS("MiscVarCheckDECORATE",10002) * .1875)); 
+
+			double StrifeStaminaFactor = 1.0;
+			StrifeStaminaFactor = 1.00 - (CallACS("MiscVarCheckDECORATE",317) * .005);
+			
+			double TOTALFactor = LVLfactor 
+													* DEFfactor 
+													* THEfactor 
+													* MusouFactor 
+													* LifeUpDEFFactor 
+													* StrifeStaminaFactor;
+			newdamage = max(0, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
+			if (Owner != null && newdamage > damage) Owner.A_PlaySound(ActiveSound, CHAN_AUTO, 1.0, false, ATTN_NONE);
+			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("(input: damage = %d, newDamage = %d, TOTALFactor = %8f, LVLFactor [%d] = %8f, DEFfactor [%d] = %8f, THEfactor [%d] = %8f, MusouFactor = %8f, LifeUpDEFFactor = %8f, StrifeStaminaFactor = %8f)", damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerDEF, DEFfactor, PlayerTHE, THEfactor, MusouFactor, LifeUpDEFFactor, StrifeStaminaFactor);
+		}
+	}
+}
+/*
+class Offensive : Inventory 
+{
+	default 
+	{
+		//Powerup.Duration 0xfffffffd;
+		+Inventory.PERSISTENTPOWER;
+		+Inventory.UNDROPPABLE;
+		+Inventory.UNTOSSABLE;
+	}
+
+	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive)
+	{
+		// Deggaris	(1 LVL = 0.117% Damage Dealt)
+		// Illucia	(1 LVL = 0.0863% Damage Dealt)
+		// Flora		(1 LVL = 0.11577% Damage Dealt)
+		// Petra		(1 LVL = 0.1075% Damage Dealt)
+		// Ailish		(1 LVL = 0.0825% Damage Dealt)
+		int PlayerLevel = CallACS("StatCheck",0);
+		double LVLfactor = 1.0; double LVLfactorclamp = 10.00;
+		if (CallACS("CheckCharacterClass") == 0) LVLFactor = 1.00 + (PlayerLevel * .00117);
+		if (CallACS("CheckCharacterClass") == 1) LVLFactor = 1.00 + (PlayerLevel * .000863);
+		if (CallACS("CheckCharacterClass") == 2) LVLFactor = 1.00 + (PlayerLevel * .0011577);
+		if (CallACS("CheckCharacterClass") == 8) LVLFactor = 1.00 + (PlayerLevel * .001075);
+		if (CallACS("CheckCharacterClass") == 9) LVLFactor = 1.00 + (PlayerLevel * .000825);
+		if (LVLfactor > LVLfactorclamp) LVLfactor = LVLfactorclamp;
+
+		// Deggaris	(1 STR = +0.6667~% Damage Dealt)
+		// Illucia	(1 STR = +0.5% Damage Dealt)
+		// Flora		(1 STR = +0.3334~% Damage Dealt)
+		// Petra		(1 STR = +0.625% Damage Dealt)
+		// Ailish		(1 STR = +0.3% Damage Dealt)
+		int PlayerSTR = CallACS("StatCheck",7);
+		double STRfactor = 1.0; double STRfactorclamp = 10.00;
+		if (damageType != 'Magic')
+		{
+			if (CallACS("CheckCharacterClass") == 0) STRfactor = 1.00 + (PlayerSTR * .006667);
+			if (CallACS("CheckCharacterClass") == 1) STRfactor = 1.00 + (PlayerSTR * .005);
+			if (CallACS("CheckCharacterClass") == 2) STRfactor = 1.00 + (PlayerSTR * .003334);
+			if (CallACS("CheckCharacterClass") == 8) STRfactor = 1.00 + (PlayerSTR * .00625);
+			if (CallACS("CheckCharacterClass") == 9) STRfactor = 1.00 + (PlayerSTR * .003);
+		}
+		if (STRfactor > STRfactorclamp) STRfactor = STRfactorclamp;
+
+		// Deggaris	(1 SOR = +0.3334~% Damage Dealt)
+		// Illucia	(1 SOR = +0.5% Damage Dealt)
+		// Flora		(1 SOR = +0.6667~% Damage Dealt)
+		// Petra		(1 SOR = +0.3% Damage Dealt)
+		// Ailish		(1 SOR = +0.625% Damage Dealt)
+		int PlayerSOR = CallACS("StatCheck",6);
+		double SORfactor = 1.0; double SORfactorclamp = 10.00;
+		if (damageType == 'Magic')
+		{
+			if (CallACS("CheckCharacterClass") == 0) SORfactor = 1.00 + (PlayerSOR * .003334);
+			if (CallACS("CheckCharacterClass") == 1) SORfactor = 1.00 + (PlayerSOR * .005);
+			if (CallACS("CheckCharacterClass") == 2) SORfactor = 1.00 + (PlayerSOR * .006667);
+			if (CallACS("CheckCharacterClass") == 8) SORfactor = 1.00 + (PlayerSOR * .003);
+			if (CallACS("CheckCharacterClass") == 9) SORfactor = 1.00 + (PlayerSOR * .00625);
+		}
+		if (SORfactor > SORfactorclamp) SORfactor = SORfactorclamp;
+
+		double TOTALFactor = LVLfactor * STRfactor * SORfactor;
+		if (!passive && damage > 0)
+		{
+			newdamage = max(1, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
+			if (Owner != null && newdamage > damage) Owner.A_PlaySound(ActiveSound, CHAN_AUTO, 1.0, false, ATTN_NONE);
+			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("(input: damage = %d, newDamage = %d, TOTALFactor = %8f, LVLFactor [%d] = %8f, STRfactor [%d] = %8f, SORfactor [%d] = %8f)", damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerSTR, STRfactor, PlayerSOR, SORfactor);
+		}
+	}
+}
+
+class Defensive : Inventory 
+{
+	default 
+	{
+		//Powerup.Duration 0xfffffffd;
+		+Inventory.PERSISTENTPOWER;
+		+Inventory.UNDROPPABLE;
+		+Inventory.UNTOSSABLE;
+	}
+
+	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive)
+	{
+		// Deggaris	(1 LVL = -0.117% Damage Taken)
+		// Illucia	(1 LVL = -0.09707% Damage Taken)
+		// Flora		(1 LVL = -0.07633% Damage Taken)
+		// Petra		(1 LVL = -0.10875% Damage Taken)
+		// Ailish		(1 LVL = -0.0800% Damage Taken)
+		int PlayerLevel = CallACS("StatCheck",0);
+		double LVLfactor = 1.0; double LVLfactorclamp = 0.01;
+		if (CallACS("CheckCharacterClass") == 0) LVLFactor = 1.00 - (PlayerLevel * .00117);
+		if (CallACS("CheckCharacterClass") == 1) LVLFactor = 1.00 - (PlayerLevel * .0009707);
+		if (CallACS("CheckCharacterClass") == 2) LVLFactor = 1.00 - (PlayerLevel * .0007633);
+		if (CallACS("CheckCharacterClass") == 8) LVLFactor = 1.00 - (PlayerLevel * .0010875);
+		if (CallACS("CheckCharacterClass") == 9) LVLFactor = 1.00 - (PlayerLevel * .000800);
+		if (LVLfactor < LVLfactorclamp) LVLfactor = LVLfactorclamp;
+
+		// Deggaris	(1 DEF = -0.6667~% Physical Damage)
+		// Illucia	(1 DEF = -0.5000% Physical Damage)
+		// Flora		(1 DEF = -0.3334~% Physical Damage)
+		// Petra		(1 DEF = -0.7250% Physical Damage)
+		// Ailish		(1 DEF = -0.3000% Physical Damage)
+		int PlayerDEF = CallACS("StatCheck",4);
+		double DEFfactor = 1.0; double DEFfactorclamp = 0.01;
+		if (damageType != 'Magic')
+		{
+			if (CallACS("CheckCharacterClass") == 0) DEFfactor = 1.00 - (PlayerDEF * .006667);
+			if (CallACS("CheckCharacterClass") == 1) DEFfactor = 1.00 - (PlayerDEF * .005);
+			if (CallACS("CheckCharacterClass") == 2) DEFfactor = 1.00 - (PlayerDEF * .003334);
+			if (CallACS("CheckCharacterClass") == 8) DEFfactor = 1.00 - (PlayerDEF * .00725);
+			if (CallACS("CheckCharacterClass") == 9) DEFfactor = 1.00 - (PlayerDEF * .003);
+		}
+		if (DEFfactor < DEFfactorclamp) DEFfactor = DEFfactorclamp;
+
+		// Deggaris	(1 THE = -0.3334~% Magic Damage)
+		// Illucia	(1 THE = -0.5000% Magic Damage)
+		// Flora		(1 THE = -0.6667~% Magic Damage)
+		// Petra		(1 THE = -0.3000% Magic Damage)
+		// Ailish		(1 THE = -0.7250% Magic Damage)
+		int PlayerTHE = CallACS("StatCheck",8);
+		double THEfactor = 1.0; double THEfactorclamp = 0.01;
+		if (damageType == 'Magic')
+		{
+			if (CallACS("CheckCharacterClass") == 0) THEfactor = 1.00 - (PlayerTHE * .003334);
+			if (CallACS("CheckCharacterClass") == 1) THEfactor = 1.00 - (PlayerTHE * .005);
+			if (CallACS("CheckCharacterClass") == 2) THEfactor = 1.00 - (PlayerTHE * .006667);
+			if (CallACS("CheckCharacterClass") == 8) THEfactor = 1.00 - (PlayerTHE * .003);
+			if (CallACS("CheckCharacterClass") == 9) THEfactor = 1.00 - (PlayerTHE * .00725);
+		}
+		if (THEfactor < THEfactorclamp) THEfactor = THEfactorclamp;
+		
+		double TOTALFactor = LVLfactor * DEFfactor * THEfactor;
+		if (passive && damage > 0)
+		{
+			newdamage = max(0, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
+			if (Owner != null && newdamage > damage) Owner.A_PlaySound(ActiveSound, CHAN_AUTO, 1.0, false, ATTN_NONE);
+			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("(input: damage = %d, newDamage = %d, TOTALFactor = %8f, LVLFactor [%d] = %8f, DEFfactor [%d] = %8f, THEfactor [%d] = %8f)", damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerDEF, DEFfactor, PlayerTHE, THEfactor);
+		}
+	}
+}
+*/
 // Resistance code [w/ some help from argv :V]
 class Resistances : Inventory 
 {
+	default 
+	{
+		//Powerup.Duration 0xfffffffd;
+		+Inventory.PERSISTENTPOWER;
+		+Inventory.UNDROPPABLE;
+		+Inventory.UNTOSSABLE;
+	}
+
 	override void AbsorbDamage(int damage, Name damageType, out int newdamage) 
 	{
 		double resist = 0;
 		double resistN = 0;
-        
+
 		for (let inv = Owner.Inv; inv != NULL; inv = inv.Inv)
 				if (inv is "ResistanceGrantingItem")
 						resist += ResistanceGrantingItem(inv).GetResistForDamageType(damageType);        
