@@ -53,11 +53,53 @@ class PlayerStatItem : Inventory
 			if (GetCVar("dvds_musou_powertripmode") == 1) MusouFactor = 5.0;
 			if (GetCVar("dvds_musou_powertripmode") == 2) MusouFactor = 10.0;
 
+			// Hellcore Level Checker
+			double HellcoreLevelFactor = 1.0;
+			int HellcoreType = 0; 
+			int HellcoreLevel = 0;
+			// Slot 4 Hellcore Weapons
+			if (damageType == 'ImpClaw') HellcoreType = 96;
+			if (damageType == 'DarkImpClaw') HellcoreType = 97;
+			if (damageType == 'CacodemonEye') HellcoreType = 98;
+			if (damageType == 'CacolanternEye') HellcoreType = 99;
+			if (damageType == 'AbaddonEye') HellcoreType = 100;
+			// Slot 5 Hellcore Weapons
+			if (damageType == 'KnightFist') HellcoreType = 101;
+			if (damageType == 'BaronFist') HellcoreType = 102;
+			if (damageType == 'BelphegorFist') HellcoreType = 103;
+			if (damageType == 'BruiserFist') HellcoreType = 104;
+			if (damageType == 'ArchonFist') HellcoreType = 105;
+			if (damageType == 'PyroFist') HellcoreType = 106;
+			// Slot 6 Hellcore Weapons
+			if (damageType == 'IncarnateSkull') HellcoreType = 107;
+			if (damageType == 'ArchvileHand') HellcoreType = 108;
+			if (damageType == 'DiabloistHand') HellcoreType = 109;
+			if (damageType == 'BalrogFist') HellcoreType = 110;
+			if (damageType == 'ElementalEye') HellcoreType = 111;
+			if (damageType == 'OverlordEye') HellcoreType = 112;
+			if (HellcoreType != 0)
+			{
+				HellcoreLevel = CallACS("MiscVarCheckDECORATE",HellcoreType);
+				if (HellcoreLevel > 0)
+				{
+					double HellcoreBaseMulti = 1.5;
+					if (HellcoreLevel >= 1) HellcoreLevelFactor = HellcoreBaseMulti;
+					if (HellcoreLevel >= 2) HellcoreLevelFactor *= HellcoreBaseMulti;
+					if (HellcoreLevel >= 3) HellcoreLevelFactor *= HellcoreBaseMulti;
+					if (HellcoreLevel >= 4) HellcoreLevelFactor *= HellcoreBaseMulti;
+					if (HellcoreLevel >= 5) HellcoreLevelFactor *= HellcoreBaseMulti;
+					if (HellcoreLevel >= 6) HellcoreLevelFactor *= HellcoreBaseMulti;
+					if (HellcoreLevel >= 7) HellcoreLevelFactor *= HellcoreBaseMulti;
+					if (HellcoreLevel >= 8) HellcoreLevelFactor *= HellcoreBaseMulti;
+				}
+				//Console.Printf("(input: HellcoreLevelFactor [%d, LVL %d] = %10f)", HellcoreType, HellcoreLevel, HellcoreLevelFactor);
+			}
+
 			// "Soul Mastery" Perk [Hellcore damage ONLY]
 			double SoulMasteryFactor = 1.0;
 			if (damageType == 'ImpClaw' || damageType == 'DarkImpClaw' || damageType == 'CacodemonEye' || damageType == 'CacolanternEye' || damageType == 'AbaddonEye' || 
 			    damageType == 'KnightFist' || damageType == 'BaronFist' || damageType == 'BelphegorFist' || damageType == 'BruiserFist' || damageType == 'ArchonFist' || damageType == 'PyroFist' || 
-			    damageType == 'IncarnateSkull' || damageType == 'ArchvileHand' || damageType == 'DiabloistHand' || damageType == 'BalrogFist')
+			    damageType == 'IncarnateSkull' || damageType == 'ArchvileHand' || damageType == 'DiabloistHand' || damageType == 'BalrogFist' || damageType == 'ElementalEye' || damageType == 'OverlordEye')
 			{
 				SoulMasteryFactor = 1.00 + ((CallACS("MiscVarCheckDECORATE",10033) * .10) + (CallACS("MiscVarCheckDECORATE",10034) * .25));;
 			}
@@ -180,6 +222,14 @@ class PlayerStatItem : Inventory
 			if (TensionLevel == 6) TensionFactor = 17.5;	// "500" Tension
 			if (TensionLevel == 7) TensionFactor = 25;		// "1000" Tension
 			
+			// The One Ring [DEFENSIVE]
+			double RingFactor = 1.0;
+			if (Owner.CountInv("TheOneRing") > 0) RingFactor = 2.5;
+
+			// Divine Avatar [OFFENSIVE]
+			double DivineAvatarFactor = 1.0;
+			if (CallACS("GetBuffTimer",7) > 0) DivineAvatarFactor = 4.0;
+
 			double TOTALFactor = LVLfactor 
 													* STRfactor 
 													* SORfactor 
@@ -189,13 +239,16 @@ class PlayerStatItem : Inventory
 													* StamUpATKFactor 
 													* StrifeAccuracyFactor 
 													* ClearOfMindFactor 
+													* HellcoreLevelFactor
 													* SoulMasteryFactor
 													* DoomSpellFactor
 													* InvisFactor
-													* TensionFactor;
+													* TensionFactor
+													* RingFactor
+													* DivineAvatarFactor;
 			newdamage = max(1, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
 			if (Owner != null && newdamage > damage) Owner.A_PlaySound(ActiveSound, CHAN_AUTO, 1.0, false, ATTN_NONE);
-			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("(input: damage = %d, newDamage = %d, TOTALFactor = %8f, LVLFactor [%d] = %8f, STRfactor [%d] = %8f, SORfactor [%d] = %8f, MusouFactor = %8f, StamUpATKFactor = %8f, MagiUpATKFactor = %8f, WandStaffMasteryFactor = %8f, StrifeAccuracyFactor = %8f, ClearOfMindFactor = %8f, SoulMasteryFactor = %8f, DoomSpellFactor = %8f, InvisFactor = %8f, TensionFactor = %8f)", damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerSTR, STRfactor, PlayerSOR, SORfactor, MusouFactor, StamUpATKFactor, MagiUpATKFactor, WandStaffMasteryFactor, StrifeAccuracyFactor, ClearOfMindFactor, SoulMasteryFactor, DoomSpellFactor, InvisFactor, TensionFactor);
+			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("(input: \cydamage\c- = \cy%d\c-, \cynewDamage\c- = \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, STRfactor [%d] = %8f, SORfactor [%d] = %8f, MusouFactor = %8f, StamUpATKFactor = %8f, MagiUpATKFactor = %8f, WandStaffMasteryFactor = %8f, StrifeAccuracyFactor = %8f, ClearOfMindFactor = %8f, HellcoreLevelFactor = %8f, SoulMasteryFactor = %8f, DoomSpellFactor = %8f, InvisFactor = %8f, TensionFactor = %8f, RingFactor = %8f, DivineAvatarFactor = %8f)", damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerSTR, STRfactor, PlayerSOR, SORfactor, MusouFactor, StamUpATKFactor, MagiUpATKFactor, WandStaffMasteryFactor, StrifeAccuracyFactor, ClearOfMindFactor, HellcoreLevelFactor, SoulMasteryFactor, DoomSpellFactor, InvisFactor, TensionFactor, RingFactor, DivineAvatarFactor);
 		}
 
 		if (passive && damage > 0) // If the wielder [usually the player] of the item is the DEFENDER
@@ -277,6 +330,22 @@ class PlayerStatItem : Inventory
 			if (TensionLevel == 6) TensionFactor = 0.35;		// "500" Tension
 			if (TensionLevel == 7) TensionFactor = 0.1;			// "1000" Tension
 
+			// Sauron Equipment [DEFENSIVE]
+			double SauronEquipFactor = 1.0;
+			if (Owner.CountInv("SauronHelmet") > 0) 
+			{
+				SauronEquipFactor = SauronEquipFactor * 3 / 4; // General Reduction
+				if (damageType == 'Bullet') SauronEquipFactor = SauronEquipFactor * 5 / 6;
+			}
+
+			// The One Ring [DEFENSIVE]
+			double RingFactor = 1.0;
+			if (Owner.CountInv("TheOneRing") > 0) RingFactor = 0.4;
+
+			// Divine Avatar [DEFENSIVE]
+			double DivineAvatarFactor = 1.0;
+			if (CallACS("GetBuffTimer",7) > 0) DivineAvatarFactor = 0.25;
+
 			double TOTALFactor = LVLfactor 
 													* DEFfactor 
 													* THEfactor 
@@ -284,23 +353,28 @@ class PlayerStatItem : Inventory
 													* LifeUpDEFFactor 
 													* StrifeStaminaFactor
 													* InvisFactor
-													* TensionFactor;
+													* TensionFactor
+													* SauronEquipFactor
+													* RingFactor
+													* DivineAvatarFactor;
 			newdamage = max(0, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
 			if (Owner != null && newdamage > damage) Owner.A_PlaySound(ActiveSound, CHAN_AUTO, 1.0, false, ATTN_NONE);
-			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("(input: damage = %d, newDamage = %d, TOTALFactor = %8f, LVLFactor [%d] = %8f, DEFfactor [%d] = %8f, THEfactor [%d] = %8f, MusouFactor = %8f, LifeUpDEFFactor = %8f, StrifeStaminaFactor = %8f, InvisFactor = %8f, TensionFactor = %8f)", damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerDEF, DEFfactor, PlayerTHE, THEfactor, MusouFactor, LifeUpDEFFactor, StrifeStaminaFactor, InvisFactor, TensionFactor);
+			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("(input: \cydamage\c- = \cy%d\c-, \cynewDamage\c- = \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, DEFfactor [%d] = %8f, THEfactor [%d] = %8f, MusouFactor = %8f, LifeUpDEFFactor = %8f, StrifeStaminaFactor = %8f, InvisFactor = %8f, TensionFactor = %8f, SauronEquipFactor = %8f, RingFactor = %8f, DivineAvatarFactor = %8f)", damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerDEF, DEFfactor, PlayerTHE, THEfactor, MusouFactor, LifeUpDEFFactor, StrifeStaminaFactor, InvisFactor, TensionFactor, SauronEquipFactor, RingFactor, DivineAvatarFactor);
 		}
 	}
 
+/*
 	override double GetSpeedFactor() 
 	{
 		double CVarAdjustSpeed = 1.00;
+		CVarAdjustSpeed = GetCVar("dvds_speedmult");
+
 		double StaminaSpeed = 1.00;
 
 		double DodgeMoreSpeed = 1.00;
 		double JumpMoreSpeed = 1.00;
 		double OnTheMoveSpeed = 1.00;
 
-		double FocusSpeed = 1.00;
 
 		double LVLSpeed = 1.00;
 		double AGLSpeed = 1.00;
@@ -314,9 +388,21 @@ class PlayerStatItem : Inventory
 
 		double BuffSpeed = 1.00;
 		double TensionSpeed = 1.00;
-		double DivineAvatarSpeed = 1.00;
+		if (CallACS("MiscVarCheckDECORATE",181) == 1) TensionSpeed = 1.035;
+		if (CallACS("MiscVarCheckDECORATE",181) == 2) TensionSpeed = 1.15;
+		if (CallACS("MiscVarCheckDECORATE",181) == 3) TensionSpeed = 1.25;
+		if (CallACS("MiscVarCheckDECORATE",181) == 4) TensionSpeed = 1.375;
+		if (CallACS("MiscVarCheckDECORATE",181) == 5) TensionSpeed = 1.5625;
+		if (CallACS("MiscVarCheckDECORATE",181) == 6) TensionSpeed = 1.875;
+		if (CallACS("MiscVarCheckDECORATE",181) == 7) TensionSpeed = 2.25;
 
-		Speed = 1.00000000
+		double FocusSpeed = 1.00;
+		if (CallACS("MiscVarCheckDECORATE",212) > 0) FocusSpeed = 0.25;
+
+		double DivineAvatarSpeed = 1.00;
+		if (CallACS("GetBuffTimer",7) > 0) DivineAvatarSpeed = 1.5;
+
+		Speed = 1.00
 					* CVarAdjustSpeed
 					* StaminaSpeed 
 					* DodgeMoreSpeed
@@ -336,6 +422,7 @@ class PlayerStatItem : Inventory
 		//Console.Printf("(input: Speed = %8f)", Speed);
 		return Speed; 
 	}
+*/
 
 }
 
