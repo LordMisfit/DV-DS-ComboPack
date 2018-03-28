@@ -10,7 +10,7 @@ class PlayerStatItem : Inventory
 
 	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive)
 	{
-		if (!passive && damage > 0) // If the wielder [usually the player] of the item is the ATTACKER
+		if (!passive && damage > 0) // If the owner [usually the player] of the item is the ATTACKER
 		{
 			// Check Level
 			int PlayerLevel = CallACS("StatCheck",0);
@@ -211,6 +211,18 @@ class PlayerStatItem : Inventory
 			}
 			//Console.Printf("(input: InvisFactor = %8f)", InvisFactor);
 			
+			// Dashing Bonus
+			double DashingFactor = 1.0;
+			if (CallACS("MiscVarCheckDECORATE",166) > 0)
+			{
+				if (damageType == 'Sceptre') DashingFactor = 1.75;
+				if (damageType == 'Gauntlets') DashingFactor = 1.625;
+				if (damageType == 'Fist') DashingFactor = 1.5;
+				if (damageType == 'Kick') DashingFactor = 1.5;
+				if (damageType == 'Chainsaw') DashingFactor = 1.25;
+				if (damageType == 'Melee') DashingFactor = 1.25;
+			}
+			
 			// Tension Level [OFFENSIVE]
 			double TensionFactor = 1.0;
 			int TensionLevel = CallACS("MiscVarCheckDECORATE",181);
@@ -222,7 +234,30 @@ class PlayerStatItem : Inventory
 			if (TensionLevel == 6) TensionFactor = 17.5;	// "500" Tension
 			if (TensionLevel == 7) TensionFactor = 25;		// "1000" Tension
 			
-			// The One Ring [DEFENSIVE]
+			// Flora Armor
+			double FloraArmorFactor = 1.0;
+			if (CallACS("CheckCharacterClass") == 2)
+			{
+				if (Owner.CountInv("EvenstarNecklace") > 0) 
+				{
+					if (damageType == 'Magic') FloraArmorFactor += 0.2;
+					if (damageType == 'Fire') FloraArmorFactor += 0.5;
+					if (damageType == 'Ice') FloraArmorFactor += 0.5;
+					if (damageType == 'Thunder' || damageType == 'Electric' || damageType == 'Lightning') FloraArmorFactor += 0.5;
+					if (damageType == 'Holy') FloraArmorFactor += 0.5;
+				}
+				if (Owner.CountInv("DoveRibbon") > 0) 
+				{
+					if (damageType == 'Magic') FloraArmorFactor += 0.2;
+				}
+				if (Owner.CountInv("FalconKnifeEarrings") > 0)
+				{
+					FloraArmorFactor *= 2.0;
+					if (damageType == 'Gauntlets' || damageType == 'Fist' || damageType == 'Kick') FloraArmorFactor *= 1.3333;
+				}
+			}
+			
+			// The One Ring [OFFENSIVE]
 			double RingFactor = 1.0;
 			if (Owner.CountInv("TheOneRing") > 0) RingFactor = 2.5;
 
@@ -243,15 +278,17 @@ class PlayerStatItem : Inventory
 													* SoulMasteryFactor
 													* DoomSpellFactor
 													* InvisFactor
+													* DashingFactor
 													* TensionFactor
+													* FloraArmorFactor
 													* RingFactor
 													* DivineAvatarFactor;
 			newdamage = max(1, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
 			if (Owner != null && newdamage > damage) Owner.A_PlaySound(ActiveSound, CHAN_AUTO, 1.0, false, ATTN_NONE);
-			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("(input: \cydamage\c- = \cy%d\c-, \cynewDamage\c- = \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, STRfactor [%d] = %8f, SORfactor [%d] = %8f, MusouFactor = %8f, StamUpATKFactor = %8f, MagiUpATKFactor = %8f, WandStaffMasteryFactor = %8f, StrifeAccuracyFactor = %8f, ClearOfMindFactor = %8f, HellcoreLevelFactor = %8f, SoulMasteryFactor = %8f, DoomSpellFactor = %8f, InvisFactor = %8f, TensionFactor = %8f, RingFactor = %8f, DivineAvatarFactor = %8f)", damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerSTR, STRfactor, PlayerSOR, SORfactor, MusouFactor, StamUpATKFactor, MagiUpATKFactor, WandStaffMasteryFactor, StrifeAccuracyFactor, ClearOfMindFactor, HellcoreLevelFactor, SoulMasteryFactor, DoomSpellFactor, InvisFactor, TensionFactor, RingFactor, DivineAvatarFactor);
+			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("(\cyDamageType:\c- \cy%s\c-, input: \cydamage\c- = \cy%d\c-, \cynewDamage\c- = \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, STRfactor [%d] = %8f, SORfactor [%d] = %8f, MusouFactor = %8f, StamUpATKFactor = %8f, MagiUpATKFactor = %8f, WandStaffMasteryFactor = %8f, StrifeAccuracyFactor = %8f, ClearOfMindFactor = %8f, HellcoreLevelFactor = %8f, SoulMasteryFactor = %8f, DoomSpellFactor = %8f, InvisFactor = %8f, DashingFactor = %8f, TensionFactor = %8f, FloraArmorFactor = %8f, RingFactor = %8f, DivineAvatarFactor = %8f)", damageType, damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerSTR, STRfactor, PlayerSOR, SORfactor, MusouFactor, StamUpATKFactor, MagiUpATKFactor, WandStaffMasteryFactor, StrifeAccuracyFactor, ClearOfMindFactor, HellcoreLevelFactor, SoulMasteryFactor, DoomSpellFactor, InvisFactor, DashingFactor, TensionFactor, FloraArmorFactor, RingFactor, DivineAvatarFactor);
 		}
 
-		if (passive && damage > 0) // If the wielder [usually the player] of the item is the DEFENDER
+		if (passive && damage > 0) // If the owner [usually the player] of the item is the DEFENDER
 		{
 			// Check Level
 			int PlayerLevel = CallACS("StatCheck",0);
@@ -338,6 +375,26 @@ class PlayerStatItem : Inventory
 				if (damageType == 'Bullet') SauronEquipFactor = SauronEquipFactor * 5 / 6;
 			}
 
+			// Flora Armor [Mostly Divine Shield OmniBlock Bonus]
+			double FloraArmorFactor = 1.0;
+			if (Owner.CountInv("DivineShield") > 0) 
+			{
+				int DivineShieldBlock = 13;
+				int DivineShieldBlockLVL = 1;
+				if (Owner.CountInv("SafeTeaShoes") > 0)					{ DivineShieldBlock += 2; DivineShieldBlockLVL += 1; }
+				if (Owner.CountInv("PearlyCorset") > 0)					{ DivineShieldBlock += 2; DivineShieldBlockLVL += 1; }
+				if (Owner.CountInv("WaterFlyingDress") > 0)			{ DivineShieldBlock += 2; DivineShieldBlockLVL += 1; }
+				if (Owner.CountInv("EvenstarNecklace") > 0)			{ DivineShieldBlock += 2; DivineShieldBlockLVL += 1; }
+				if (Owner.CountInv("CloakofEvasion") > 0)				{ DivineShieldBlock += 2; DivineShieldBlockLVL += 1; }
+				if (Owner.CountInv("AnubisCufflinks") > 0)			{ DivineShieldBlock += 2; DivineShieldBlockLVL += 1; }
+				if (Owner.CountInv("KissaBra") > 0)							{ DivineShieldBlock += 2; DivineShieldBlockLVL += 1; }
+				if (Owner.CountInv("BalrogRing") > 0)						{ DivineShieldBlock += 2; DivineShieldBlockLVL += 1; }
+				if (Owner.CountInv("DoveRibbon") > 0)						{ DivineShieldBlock += 2; DivineShieldBlockLVL += 1; }
+				if (Owner.CountInv("FalconKnifeEarrings") > 0)	{ DivineShieldBlock += 2; DivineShieldBlockLVL += 1; }
+
+				if (random(1,100) <= DivineShieldBlock) FloraArmorFactor = 1.0 - (DivineShieldBlockLVL * 0.07);
+			}
+
 			// The One Ring [DEFENSIVE]
 			double RingFactor = 1.0;
 			if (Owner.CountInv("TheOneRing") > 0) RingFactor = 0.4;
@@ -359,12 +416,13 @@ class PlayerStatItem : Inventory
 													* InvisFactor
 													* TensionFactor
 													* SauronEquipFactor
+													* FloraArmorFactor
 													* RingFactor
 													* FocusFactor
 													* DivineAvatarFactor;
 			newdamage = max(0, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
 			if (Owner != null && newdamage > damage) Owner.A_PlaySound(ActiveSound, CHAN_AUTO, 1.0, false, ATTN_NONE);
-			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("(input: \cydamage\c- = \cy%d\c-, \cynewDamage\c- = \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, DEFfactor [%d] = %8f, THEfactor [%d] = %8f, MusouFactor = %8f, LifeUpDEFFactor = %8f, StrifeStaminaFactor = %8f, InvisFactor = %8f, TensionFactor = %8f, SauronEquipFactor = %8f, RingFactor = %8f, FocusFactor = %8f, DivineAvatarFactor = %8f)", damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerDEF, DEFfactor, PlayerTHE, THEfactor, MusouFactor, LifeUpDEFFactor, StrifeStaminaFactor, InvisFactor, TensionFactor, SauronEquipFactor, RingFactor, FocusFactor, DivineAvatarFactor);
+			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("(\cyDamageType:\c- \cy%s\c-, input: \cydamage\c- = \cy%d\c-, \cynewDamage\c- = \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, DEFfactor [%d] = %8f, THEfactor [%d] = %8f, MusouFactor = %8f, LifeUpDEFFactor = %8f, StrifeStaminaFactor = %8f, InvisFactor = %8f, TensionFactor = %8f, SauronEquipFactor = %8f, FloraArmorFactor = %8f, RingFactor = %8f, FocusFactor = %8f, DivineAvatarFactor = %8f)", damageType, damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerDEF, DEFfactor, PlayerTHE, THEfactor, MusouFactor, LifeUpDEFFactor, StrifeStaminaFactor, InvisFactor, TensionFactor, SauronEquipFactor, FloraArmorFactor, RingFactor, FocusFactor, DivineAvatarFactor);
 		}
 	}
 
@@ -458,7 +516,7 @@ class Resistances : Inventory
 							resistN += ResistanceGrantingItem(inv).ResistNormal;
 		newdamage = newdmg1 * (1. - resistN);
 
-		if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) Console.Printf("(FloraArmorAbsorb:  DmgType = %s, dmg = %d, res = %.4f, newdmg1 = %d, resN = %.4f, finaldmg = %d)", damageType, damage, resist, newdmg1, resistN, newdamage);
+		if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) Console.Printf("(\cyFloraArmorAbsorb\c-:  \cyDmgType\c- = \cy%s\c-, \cydmg\c- = \cy%d\c-, \cares\c- = \ca%.4f\c-, \cynewdmg1\c- = \cy%d\c-, \caresN\c- = \ca%.4f\c-, \cyfinaldmg\c- = \cy%d\c-)", damageType, damage, resist, newdmg1, resistN, newdamage);
 	}
 
 	States
