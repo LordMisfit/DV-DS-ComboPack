@@ -39,6 +39,10 @@ class PlayerStatItem : Inventory
 		DemoExpertRDFactor = 1.00 - ((CallACS("MiscVarCheckDECORATE",10025) * frandom[demordfactor](0.07,0.14)) + (CallACS("MiscVarCheckDECORATE",10026) * (frandom[demordfactor2](0.07,0.14) * 5 / 2))); 
 		if (DemoExpertRDFactor < 0.025) DemoExpertRDFactor = 0.025;
 
+		// Death Rage [Invulnerablity?]
+		double DeathRageRDFactor = 1.0;
+		if (CallACS("MiscVarCheckDECORATE",9043) > 0) DeathRageRDFactor = 0.0;
+		
 		// DQ Buffs
 		double DQBuffRDFactor = 1.00;
 		if (CallACS("GetBuffTimer",11) > 0) DQBuffRDFactor *= 0.50; // Buff
@@ -48,13 +52,35 @@ class PlayerStatItem : Inventory
 			if(random(1,16) == 1) DQBuffRDFactor *= 5.0; else DQBuffRDFactor *= 1.25;
 		}
 
+		// Sceptre Swinging [DEFENSIVE]
+		double SceptreDefenseRDFactor = 1.0;
+		if (Owner.CountInv("SwingDefense0") > 0) SceptreDefenseRDFactor *= 0.95;
+		if (Owner.CountInv("SwingDefense1") > 0) SceptreDefenseRDFactor *= 0.8333;
+		if (Owner.CountInv("SwingDefense2") > 0) SceptreDefenseRDFactor *= 0.6666;
+		if (Owner.CountInv("SwingDefense3") > 0) SceptreDefenseRDFactor *= 0.5;
+		if (Owner.CountInv("ShieldDefense") > 0) SceptreDefenseRDFactor *= 0.5;
+		if (Owner.CountInv("ShieldDefense2") > 0) SceptreDefenseRDFactor *= 0.25;
+		if (Owner.CountInv("ShieldDefense3") > 0) SceptreDefenseRDFactor *= 0.06125;
+		if (Owner.CountInv("SceptreSpinDefense1") > 0) SceptreDefenseRDFactor *= 0.9375;
+		if (Owner.CountInv("SceptreSpinDefense2") > 0) SceptreDefenseRDFactor *= 0.875;
+		if (Owner.CountInv("SceptreSpinDefense3") > 0) SceptreDefenseRDFactor *= 0.75;
+		if (Owner.CountInv("SceptreSpinDefense4") > 0) SceptreDefenseRDFactor *= 0.5;
+
 		RDFactor = 1.00
 						 * MarineArmorRDFactor
 						 * FloraArmorRDFactor
+						 * DemoExpertRDFactor
+						 * DeathRageRDFactor
 						 * DQBuffRDFactor
-						 * DemoExpertRDFactor;
+						 * SceptreDefenseRDFactor;
 		owner.RadiusDamageFactor = RDFactor;
-		if (dvdsdebug_playerdmgdisplays > 0 && currenthealth < previoushealth) Console.Printf("    \czRADIUSDAMAGE\c-: \cyRDFactor\c- = \cy%8f\c-, MarineArmorRDFactor = %8f, FloraArmorRDFactor = %8f, DQBuffRDFactor = %8f, DemoExpertRDFactor = %8f", RDFactor, MarineArmorRDFactor, FloraArmorRDFactor, DQBuffRDFactor, DemoExpertRDFactor);
+		if (dvdsdebug_playerdmgdisplays > 0 && currenthealth < previoushealth) 
+		{
+			Console.Printf("    \czRADIUSDAMAGE\c-: \cyRDFactor\c- = \cy%8f\c-, MarineArmorRDFactor = %8f, FloraArmorRDFactor = %8f, DemoExpertRDFactor = %8f, DeathRageRDFactor = %8f, DQBuffRDFactor = %8f, SceptreDefenseRDFactor = %8f", 
+			RDFactor, 
+			MarineArmorRDFactor, DemoExpertRDFactor, FloraArmorRDFactor, 
+			DeathRageRDFactor, DQBuffRDFactor, SceptreDefenseRDFactor);
+		}
 
 		previoushealth = owner.health;
 		super.DoEffect();
@@ -203,6 +229,15 @@ class PlayerStatItem : Inventory
 				StamUpATKFactor = 1.00 + ((CallACS("MiscVarCheckDECORATE",10005) * .075) + (CallACS("MiscVarCheckDECORATE",10006) * .1875)); 
 			}
 			
+			// Death Rage
+			double DeathRageFactor = 1.0;
+			if (CallACS("MiscVarCheckDECORATE",9043) > 0)
+			{
+				if (CallACS("MiscVarCheckDECORATE",10043) == 1) DeathRageFactor = 2.5;
+				if (CallACS("MiscVarCheckDECORATE",10043) == 2) DeathRageFactor = 3.75;
+				if (CallACS("MiscVarCheckDECORATE",10043) == 3) DeathRageFactor = 5.0;
+			}
+			
 			// Strife's "Accuracy" Upgrades
 			double StrifeAccuracyFactor = 1.0;
 			StrifeAccuracyFactor = 1.00 + (CallACS("MiscVarCheckDECORATE",318) * .005);
@@ -294,6 +329,24 @@ class PlayerStatItem : Inventory
 				if (damageType == 'Melee') DashingFactor = 1.25;
 			}
 			
+			// Uppercut Bonus
+			double UppercutFactor = 1.0;
+			if (damageType == 'Fist' || damageType == 'Gauntlets')
+			{
+				if (Owner.CountInv("UppercutATKBonus1") > 0) UppercutFactor = 1.25;
+				if (Owner.CountInv("UppercutATKBonus2") > 0) UppercutFactor = 1.625;
+			}
+
+			// Landing Bonus
+			double LandingFactor = 1.0;
+			if (damageType == 'Melee' || damageType == 'Sceptre' || damageType == 'Gauntlets' || damageType == 'Fist' || damageType == 'Kick' || damageType == 'Chainsaw')
+			{
+				if (Owner.CountInv("LandingDMGBonus") > 0) LandingFactor = 2.0;
+				if (Owner.CountInv("LandingDMGBonus2") > 0) LandingFactor = 3.5;
+				if (Owner.CountInv("LandingDMGBonus3") > 0) LandingFactor = 6.5625;
+				if (Owner.CountInv("LandingDMGBonus4") > 0) LandingFactor = 13.9453125;
+			}
+
 			// Tension Level [OFFENSIVE]
 			double TensionFactor = 1.0;
 			int TensionLevel = CallACS("MiscVarCheckDECORATE",181);
@@ -356,6 +409,7 @@ class PlayerStatItem : Inventory
 													* MagiUpATKFactor 
 													* WandStaffMasteryFactor 
 													* StamUpATKFactor 
+													* DeathRageFactor 
 													* StrifeAccuracyFactor 
 													* ClearOfMindFactor 
 													* HellcoreLevelFactor
@@ -365,6 +419,8 @@ class PlayerStatItem : Inventory
 													* DoomSpellFactor
 													* InvisFactor
 													* DashingFactor
+													* UppercutFactor
+													* LandingFactor
 													* TensionFactor
 													* FloraArmorFactor
 													* RingFactor
@@ -372,7 +428,19 @@ class PlayerStatItem : Inventory
 													* DivineAvatarFactor
 													* GoEFactor;
 			newdamage = max(1, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
-			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czOffensive Input\c-: \cwDmgType:\c- \cw%s\c-, input: \cyolddmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, STRfactor [%d] = %8f, SORfactor [%d] = %8f, MusouFactor = %8f, StamUpATKFactor = %8f, MagiUpATKFactor = %8f, WandStaffMasteryFactor = %8f, StrifeAccuracyFactor = %8f, ClearOfMindFactor = %8f, HellcoreLevelFactor = %8f, SoulMasteryFactor = %8f, SauronGauntletsFactor = %8f, CursedShieldFactor = %8f, DoomSpellFactor = %8f, InvisFactor = %8f, DashingFactor = %8f, TensionFactor = %8f, FloraArmorFactor = %8f, RingFactor = %8f, DQBuffFactor = %8f, DivineAvatarFactor = %8f, GoEFactor = %8f)", damageType, damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerSTR, STRfactor, PlayerSOR, SORfactor, MusouFactor, StamUpATKFactor, MagiUpATKFactor, WandStaffMasteryFactor, StrifeAccuracyFactor, ClearOfMindFactor, HellcoreLevelFactor, SoulMasteryFactor, SauronGauntletsFactor, CursedShieldFactor, DoomSpellFactor, InvisFactor, DashingFactor, TensionFactor, FloraArmorFactor, RingFactor, DQBuffFactor, DivineAvatarFactor, GoEFactor);
+			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) 
+			{
+				Console.Printf("    (\czOffensive Input\c-: \cwDmgType:\c- \cw%s\c-, input: \cyolddmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, STRfactor [%d] = %8f, SORfactor [%d] = %8f, MusouFactor = %8f, StamUpATKFactor = %8f, MagiUpATKFactor = %8f, WandStaffMasteryFactor = %8f, DeathRageFactor = %8f, StrifeAccuracyFactor = %8f, ClearOfMindFactor = %8f, HellcoreLevelFactor = %8f, SoulMasteryFactor = %8f, SauronGauntletsFactor = %8f, CursedShieldFactor = %8f, DoomSpellFactor = %8f, InvisFactor = %8f, DashingFactor = %8f, UppercutFactor = %8f, LandingFactor = %8f, TensionFactor = %8f, FloraArmorFactor = %8f, RingFactor = %8f, DQBuffFactor = %8f, DivineAvatarFactor = %8f, GoEFactor = %8f)", 
+				damageType, damage, newdamage, TOTALFactor, 
+				PlayerLevel, LVLFactor, PlayerSTR, STRfactor, PlayerSOR, SORfactor, 
+				MusouFactor, StamUpATKFactor, MagiUpATKFactor, 
+				WandStaffMasteryFactor, DeathRageFactor, StrifeAccuracyFactor, 
+				ClearOfMindFactor, HellcoreLevelFactor, SoulMasteryFactor, 
+				SauronGauntletsFactor, CursedShieldFactor, DoomSpellFactor, 
+				InvisFactor, DashingFactor, UppercutFactor, 
+				LandingFactor, TensionFactor, FloraArmorFactor, 
+				RingFactor, DQBuffFactor, DivineAvatarFactor, GoEFactor);
+			}
 		}
 
 		if (passive && damage > 0) // If the owner [usually the player] of the item is the DEFENDER
@@ -441,6 +509,10 @@ class PlayerStatItem : Inventory
 				}
 			}
 			
+			// Death Rage [Invulnerablity?]
+			double DeathRageFactor = 1.0;
+			if (CallACS("MiscVarCheckDECORATE",9043) > 0) DeathRageFactor = 0.0;
+			
 			// Strife's "Stamina" Upgrades
 			double StrifeStaminaFactor = 1.0;
 			StrifeStaminaFactor = 1.00 - (CallACS("MiscVarCheckDECORATE",317) * .005);
@@ -462,6 +534,29 @@ class PlayerStatItem : Inventory
 			}
 			//Console.Printf("    (input: InvisFactor = %8f)", InvisFactor);
 			
+			// Uppercut Bonus
+			double UppercutFactor = 1.0;
+			if (Owner.CountInv("UppercutDEFBonus1") > 0) UppercutFactor = 0.80;
+			if (Owner.CountInv("UppercutDEFBonus2") > 0) UppercutFactor = 0.615;
+
+			// Kicking Bonus
+			double KickingFactor = 1.0;
+			if (Owner.CountInv("UppercutDEFBonus1") > 0) KickingFactor = 0.75;
+			if (Owner.CountInv("UppercutDEFBonus2") > 0) KickingFactor = 0.5625;
+
+			// Kicking Bonus
+			double MartArtFactor = 1.0;
+			if (Owner.CountInv("MartArtsMaster1") > 0)
+			{
+				MartArtFactor *= 0.80;
+				if (damageType == 'Melee') MartArtFactor *= 0.90;
+			}
+			if (Owner.CountInv("MartArtsMaster2") > 0)
+			{
+				MartArtFactor *= 0.50;
+				if (damageType == 'Melee') MartArtFactor *= 0.75;
+			}
+
 			// Tension Level [DEFENSIVE]
 			double TensionFactor = 1.0;
 			int TensionLevel = CallACS("MiscVarCheckDECORATE",181);
@@ -472,6 +567,20 @@ class PlayerStatItem : Inventory
 			if (TensionLevel == 5) TensionFactor = 0.55;		// "250" Tension
 			if (TensionLevel == 6) TensionFactor = 0.35;		// "500" Tension
 			if (TensionLevel == 7) TensionFactor = 0.1;			// "1000" Tension
+
+			// Sceptre Swinging [DEFENSIVE]
+			double SceptreDefenseFactor = 1.0;
+			if (Owner.CountInv("SwingDefense0") > 0) SceptreDefenseFactor = 0.95;
+			if (Owner.CountInv("SwingDefense1") > 0) SceptreDefenseFactor = 0.8333;
+			if (Owner.CountInv("SwingDefense2") > 0) SceptreDefenseFactor = 0.6666;
+			if (Owner.CountInv("SwingDefense3") > 0) SceptreDefenseFactor = 0.5;
+			if (Owner.CountInv("ShieldDefense") > 0) SceptreDefenseFactor *= 0.5;
+			if (Owner.CountInv("ShieldDefense2") > 0) SceptreDefenseFactor *= 0.25;
+			if (Owner.CountInv("ShieldDefense3") > 0) SceptreDefenseFactor *= 0.06125;
+			if (Owner.CountInv("SceptreSpinDefense1") > 0) SceptreDefenseFactor *= 0.9375;
+			if (Owner.CountInv("SceptreSpinDefense2") > 0) SceptreDefenseFactor *= 0.875;
+			if (Owner.CountInv("SceptreSpinDefense3") > 0) SceptreDefenseFactor *= 0.75;
+			if (Owner.CountInv("SceptreSpinDefense4") > 0) SceptreDefenseFactor *= 0.5;
 
 			// Sauron Equipment [DEFENSIVE]
 			double SauronEquipFactor = 1.0;
@@ -533,9 +642,14 @@ class PlayerStatItem : Inventory
 													* LifeUpDEFFactor 
 													* DemoExpertFactor 
 													* CursedShieldFactor
+													* DeathRageFactor
 													* StrifeStaminaFactor
 													* InvisFactor
+													* UppercutFactor
+													* KickingFactor
+													* MartArtFactor
 													* TensionFactor
+													* SceptreDefenseFactor
 													* SauronEquipFactor
 													* FloraArmorFactor
 													* RingFactor
@@ -544,8 +658,18 @@ class PlayerStatItem : Inventory
 													* DivineAvatarFactor
 													* GoEFactor;
 			newdamage = max(0, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
-			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("    (\czDefensive Input\c-: \cwDmgType:\c- \cw%s\c-, input: \cyolddmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, DEFfactor [%d] = %8f, THEfactor [%d] = %8f, MusouFactor = %8f, LifeUpDEFFactor = %8f, DemoExpertFactor = %8f, CursedShieldFactor = %8f, StrifeStaminaFactor = %8f, InvisFactor = %8f, TensionFactor = %8f, SauronEquipFactor = %8f, FloraArmorFactor = %8f, RingFactor = %8f, FocusFactor = %8f, DQBuffFactor = %8f, DivineAvatarFactor = %8f, GoEFactor = %8f)", damageType, damage, newdamage, TOTALFactor, PlayerLevel, LVLFactor, PlayerDEF, DEFfactor, PlayerTHE, THEfactor, MusouFactor, LifeUpDEFFactor, DemoExpertFactor, CursedShieldFactor, StrifeStaminaFactor, InvisFactor, TensionFactor, SauronEquipFactor, FloraArmorFactor, RingFactor, FocusFactor, DQBuffFactor, DivineAvatarFactor, GoEFactor);
-
+			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) 
+			{
+				Console.Printf("    (\czDefensive Input\c-: \cwDmgType:\c- \cw%s\c-, input: \cyolddmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, DEFfactor [%d] = %8f, THEfactor [%d] = %8f, MusouFactor = %8f, LifeUpDEFFactor = %8f, DemoExpertFactor = %8f, CursedShieldFactor = %8f, DeathRageFactor = %8f, StrifeStaminaFactor = %8f, InvisFactor = %8f, TensionFactor = %8f, SceptreDefenseFactor = %8f, UppercutFactor = %8f, KickingFactor = %8f, MartArtFactor = %8f, SauronEquipFactor = %8f, FloraArmorFactor = %8f, RingFactor = %8f, FocusFactor = %8f, DQBuffFactor = %8f, DivineAvatarFactor = %8f, GoEFactor = %8f)", 
+				damageType, damage, newdamage, TOTALFactor, 
+				PlayerLevel, LVLFactor, PlayerDEF, DEFfactor, PlayerTHE, THEfactor, 
+				MusouFactor, LifeUpDEFFactor, DemoExpertFactor, 
+				CursedShieldFactor, DeathRageFactor, StrifeStaminaFactor, 
+				InvisFactor, TensionFactor, SceptreDefenseFactor, 
+				UppercutFactor, KickingFactor, MartArtFactor,
+				SauronEquipFactor, FloraArmorFactor, RingFactor, 
+				FocusFactor, DQBuffFactor, DivineAvatarFactor, GoEFactor);
+			}
 /*
 			// RadiusDamageFactor
 			double RDFactor = 1.00;
@@ -864,7 +988,7 @@ class ResistanceGrantingItem : CustomInventory
 
 class BaseFloraArmorItemZSC : ResistanceGrantingItem
 {
-	int loopernum;
+	int loopernum, armorhumtimer;
 	default
 	{
 		radius 20;
@@ -888,18 +1012,19 @@ class BaseFloraArmorItemZSC : ResistanceGrantingItem
 
 	override void Tick() 
 	{
+		int gfxeffectlvl = GetCVar("dvds_gfxeffectlevel");
 		if (Owner == null)
 		{
 			ACS_NamedExecuteAlways("CheckFloraArmorCopies",0,loopernum,0,0);
-			if (A_CheckRange(1024,"Null")) { } else { if (GetCVar("dvds_gfxeffectlevel") == 0) { A_SpawnItemEx("ArmorGlitter", 0, 0, 16, random(-2,2), random(-2,2), random(-2,2) ,64); } }
-			if (A_CheckRange(1024,"Null")) { } else { if (GetCVar("dvds_gfxeffectlevel") <= 1) { A_SpawnItemEx("ArmorGlitter", 0, 0, 16, random(-2,2), random(-2,2), random(-2,2) ,128); } }
-			if (A_CheckRange(1024,"Null")) { } else { if (GetCVar("dvds_gfxeffectlevel") <= 2) { A_SpawnItemEx("ArmorGlitter", 0, 0, 16, random(-2,2), random(-2,2), random(-2,2) ,192); } }
-			A_GiveInventory("ActorVar1",1);
-			if (CountInv("ActorVar1") >= 42)
+			if (A_CheckRange(1024,"Null")) { } else { if (gfxeffectlvl == 0) { A_SpawnItemEx("ArmorGlitter", 0, 0, 16, random(-2,2), random(-2,2), random(-2,2) ,64); } }
+			if (A_CheckRange(1024,"Null")) { } else { if (gfxeffectlvl <= 1) { A_SpawnItemEx("ArmorGlitter", 0, 0, 16, random(-2,2), random(-2,2), random(-2,2) ,128); } }
+			if (A_CheckRange(1024,"Null")) { } else { if (gfxeffectlvl <= 2) { A_SpawnItemEx("ArmorGlitter", 0, 0, 16, random(-2,2), random(-2,2), random(-2,2) ,192); } }
+			armorhumtimer++;
+			if (armorhumtimer >= 42)
 			{
 				A_Stopsound(CHAN_ITEM);
 				A_Playsound("FloraArmor/Hum",CHAN_ITEM);
-				A_SetInventory("ActorVar1",0);
+				armorhumtimer = 0;
 			}
 		}
 		Super.Tick(); 
@@ -939,10 +1064,11 @@ class SafeTeaShoes : BaseFloraArmorItemZSC
 		BaseFloraArmorItemZSC.loopernum 1;
 	}
 
-	override void Tick() 
+	override void DoEffect() 
 	{
-		ResistSlime = frandom(0.25, 0.3); 
-		Super.Tick(); 
+		ResistSlime = 0.25 + (0.005 * random[safeteashoes](0,10));
+		//if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) Console.Printf("    (\czFloraArmorAbsorb\c-: ResistSlime = %8f)", ResistSlime);
+		Super.DoEffect(); 
 	}
 
 	States
