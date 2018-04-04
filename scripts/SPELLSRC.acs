@@ -27386,14 +27386,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	int checkmeleeweapons;
 	int staminaregenbase;
 	int staminaregenfinal;
-	int buttons;
 	int haveruinousshield;
 	int SpawnFixedX, SpawnFixedY, SpawnFixedZ, KilledMonsterFactor, Randomizer1;
 	int MaxHealthLimit = MaxHealthTrue * 2;
 	int FreezePlayer;
 	int PerkFactor, BasePerkFactor;
 	int project_RealZ;
+
+	int VelX = GetActorVelX(Player1TID);
+	int VelY = GetActorVelY(Player1TID);
+	int VelZ = GetActorVelZ(Player1TID);
 	
+	int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 	int powertripmode = GetCVar("dvds_musou_powertripmode");
 	int tensionspeedmulti = GetCVar("dvds_tensionspeed");
 	int DVIIArmorSpawn = GetCVAR("dvds_dviiarmorspawn");
@@ -29425,7 +29429,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	
 	int flickeralpha = 1.0;
 	int basealpha = 1.0;
-	
+	// Mercy Invulnerablity
 	if (MiscellaneousVars[194] != 0) // Flickering
 	{
 		if (PowerUpTimer[1] > 0) basealpha = MiscFixedVars[101]; // Invisible
@@ -29458,8 +29462,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 			MiscellaneousVars[195] = 0;
 		}
 	}
-	
-	if (MiscellaneousVars[194] == 0) // Not Flickering
+	else // Not Flickering
 	{
 		if (PowerupTimer[4] == 0) 
 		{
@@ -29722,24 +29725,21 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Strife1]: ",d:staminaregenfinal);
 		
 		// Check Input for Bonus/Penalties
+		int StamMoveMultiplier = 100;
 		FreezePlayer = 0;
 		if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
 		if (PowerupTimer[20] > 0) FreezePlayer += 1;
 		if (FreezePlayer == 0)
 		{
-			buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-			if (buttons & BT_FORWARD) C3 = 76;
-			else if (buttons & BT_BACK) C3 = 76;
-			else if (buttons & BT_MOVELEFT) C3 = 76;
-			else if (buttons & BT_MOVERIGHT) C3 = 76;
-			else if (buttons & BT_MOVEUP) C3 = 84;
-			else if (buttons & BT_MOVEDOWN) C3 = 84;
-			else if (buttons & BT_JUMP) C3 = 76;
-			else if (buttons & BT_CROUCH) C3 = 120;
-			else C3 = 100;
-			staminaregenfinal = staminaregenfinal * C3 / 100;
+			buttons = GetPlayerInput(0, INPUT_BUTTONS);
+			if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) StamMoveMultiplier = StamMoveMultiplier * 76 / 100;
+			if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) StamMoveMultiplier = StamMoveMultiplier * 84 / 100;
+			if (buttons & BT_JUMP) StamMoveMultiplier = StamMoveMultiplier * 76 / 100;
+			if (buttons & BT_CROUCH) StamMoveMultiplier = StamMoveMultiplier * 120 / 100;
+
+			staminaregenfinal = staminaregenfinal * StamMoveMultiplier / 100;
 		}
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Input]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Input]: ",d:staminaregenfinal,s:" [Multiplier: ",d:StamMoveMultiplier,s:"%]");
 		
 		// Check Armor for Bonus/Penalties
 		C3 = 1000;
@@ -29762,7 +29762,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (CheckActorInventory(Player1TID,"DoveRibbon") > 0)						C3 += 50;  
 		if (C3 < 125) C3 = 125;
 		staminaregenfinal = staminaregenfinal * C3 / 1000;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Armor]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Armor]: ",d:staminaregenfinal);
 		
 		int basestatdivisor = 8;
 		// Initia1 Stat Check = 8pts of Strength = +1% Stamina Regen Speed
@@ -29776,7 +29776,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		C3 /= basestatdivisor;
 		C3 += 100;
 		staminaregenfinal = staminaregenfinal * C3 / 100;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [StatCheck]: ",d:staminaregenfinal,s:" [Factor: ",d:C3,s:"%]");
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [StatCheck]: ",d:staminaregenfinal,s:" [Factor: ",d:C3,s:"%]");
 		
 		// Tension
 		if (MiscellaneousVars[181] == 1) staminaregenfinal = staminaregenfinal * 1025 / 1000;
@@ -29786,23 +29786,23 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (MiscellaneousVars[181] == 5) staminaregenfinal = staminaregenfinal * 150 / 100;
 		if (MiscellaneousVars[181] == 6) staminaregenfinal = staminaregenfinal * 250 / 100;
 		if (MiscellaneousVars[181] == 7) staminaregenfinal = staminaregenfinal * 500 / 100;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Tension]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Tension]: ",d:staminaregenfinal);
 		
 		// Divine Avatar = +100% Regen
 		if (PowerupTimer[7] > 0) staminaregenfinal = staminaregenfinal * 2;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [DivineAvatar]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [DivineAvatar]: ",d:staminaregenfinal);
 		
 		if (PowerupTimer[12] > 0) staminaregenfinal = staminaregenfinal * 6 / 5; // Acceleratle
 		if (PowerupTimer[15] > 0) staminaregenfinal = staminaregenfinal * 4 / 5; // Deceleratle
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Accel/Decel]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Accel/Decel]: ",d:staminaregenfinal);
 		
 		// Poison = -25% Regen
 		if (PowerupTimer[16] > 0 && PowerupTimer[4] == 0) staminaregenfinal = staminaregenfinal * 3 / 4;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Poison]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Poison]: ",d:staminaregenfinal);
 		
 		// Fatigue = -80% Regen
 		if (PowerupTimer[18] > 0) staminaregenfinal /= 5;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Fatigue]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Fatigue]: ",d:staminaregenfinal);
 		
 		// Sleeping = +400% Regen
 		if (PowerupTimer[20] > 0)
@@ -29811,26 +29811,26 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 			PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
 			staminaregenfinal = staminaregenfinal * PerkFactor / 10000; // "RegenStamFast" and "RegenStamFast EX" perks.
 		}
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Sleep]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Sleep]: ",d:staminaregenfinal);
 		
 		// Berserk = +25% Regen
 		if (PowerupTimer[23] > 0) staminaregenfinal = staminaregenfinal * 5 / 4;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Berserk]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Berserk]: ",d:staminaregenfinal);
 		
 		// Checks Stamina Regen Rate Menu Option
 		staminaregenfinal = staminaregenfinal * GetCVar("dvds_staminaregenmultiplier") / 100;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [StamMenuOption]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [StamMenuOption]: ",d:staminaregenfinal);
 		
 		// Checks the final value based on how high the Max Stamina Pts Cap has been increased by various items
 		staminaregenfinal = (staminaregenfinal * MiscellaneousVars[22]) / 10000;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [StamCapVal]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [StamCapVal]: ",d:staminaregenfinal);
 		
 		// RegenStamFast perks
 		if (MiscellaneousVars[10017] > 0)
 		{
 			PerkFactor = ((MiscellaneousVars[10017] * 2) + (MiscellaneousVars[10018] * 5)) + 10;
 			staminaregenfinal = staminaregenfinal * PerkFactor / 10; // "RegenStamFast" and "RegenStamFast EX" perks.
-			if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Perks]: ",d:staminaregenfinal);
+			if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Perks]: ",d:staminaregenfinal);
 		}
 		
 		// Check for Weapons
@@ -29851,24 +29851,24 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 			staminaregenfinal = staminaregenfinal * 21 / 20;
 			if (CheckActorInventory(Player1TID,"FistPlayerBlockItem") > 0) staminaregenfinal = staminaregenfinal * random(28,32) / 20;
 		}
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Weapons]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Weapons]: ",d:staminaregenfinal);
 		
 		// "Cleared of Mind" Perks
 		if (MiscellaneousVars[10055] > 0)
 		{
 			perkfactor = ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5)) + 80;
 			staminaregenfinal = staminaregenfinal * perkfactor / 80;
-			if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [Perks2]: ",d:staminaregenfinal);
+			if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [Perks2]: ",d:staminaregenfinal);
 		}
 		
 		// Check Musou Power Trip Mode
 		if (powertripmode == 1) staminaregenfinal = staminaregenfinal * 5 / 2; // 250%
 		if (powertripmode == 2) staminaregenfinal = staminaregenfinal * 5; // 500%
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [PowerTrip]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [PowerTrip]: ",d:staminaregenfinal);
 		
 		// Low Caps Regen to 1 tic minimum
 		if (staminaregenfinal < 1) staminaregenfinal = 1;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [LowCap]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [LowCap/FINAL]: ",d:staminaregenfinal,s:" [Move Multiplier: ",d:StamMoveMultiplier,s:"%]");
 		
 		if (MenuSystemVars[0] != 0) staminaregenfinal = 0; // If using In-Game Menus
 		if (DVDSSpecialArrayValue[0] == 0) // If Player is "Conscious"
@@ -29901,24 +29901,21 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		staminaregenfinal += ((MiscellaneousVars[317] * 1) / 8);
 		if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Strife1]: ",d:staminaregenfinal);
 		
+		StamMoveMultiplier = 100;
 		FreezePlayer = 0;
 		if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
 		if (PowerupTimer[20] > 0) FreezePlayer += 1;
 		if (FreezePlayer == 0)
 		{
 			buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-			if (buttons & BT_FORWARD) C3 = 112;
-			else if (buttons & BT_BACK) C3 = 112;
-			else if (buttons & BT_MOVELEFT) C3 = 112;
-			else if (buttons & BT_MOVERIGHT) C3 = 112;
-			else if (buttons & BT_MOVEUP) C3 = 108;
-			else if (buttons & BT_MOVEDOWN) C3 = 108;
-			else if (buttons & BT_JUMP) C3 = 112;
-			else if (buttons & BT_CROUCH) C3 = 90;
-			else C3 = 100;
-			staminaregenfinal = staminaregenfinal * C3 / 100;
+			if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) StamMoveMultiplier = StamMoveMultiplier * 100 / 76;
+			if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) StamMoveMultiplier = StamMoveMultiplier * 100 / 84;
+			if (buttons & BT_JUMP) StamMoveMultiplier = StamMoveMultiplier * 100 / 76;
+			if (buttons & BT_CROUCH) StamMoveMultiplier = StamMoveMultiplier * 100 / 120;
+
+			staminaregenfinal = staminaregenfinal * StamMoveMultiplier / 100;
 		}
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Input]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [Input]: ",d:staminaregenfinal,s:" [Multiplier: ",d:StamMoveMultiplier,s:"%]");
 		
 		// Check Armor for Bonus/Penalties
 		C3 = 1000;
@@ -30000,7 +29997,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		
 		// Checks the final value based on how high the Max Stamina Pts Cap has been increased by various items
 		staminaregenfinal = (staminaregenfinal * MiscellaneousVars[22]) / 10000;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinall [StamCapVal]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaRegenFinal [StamCapVal]: ",d:staminaregenfinal);
 		
 		// RegenStamFast perks
 		if (MiscellaneousVars[10017] > 0)
@@ -30045,7 +30042,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		
 		// Low Caps Regen to 1 tic minimum
 		if (staminaregenfinal > -1) staminaregenfinal = -1;
-		if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [LowCap]: ",d:staminaregenfinal);
+		if (debugstaminaregen > 0) PrintBold(s:"StaminaDegenFinall [LowCap/Final]: ",d:staminaregenfinal,s:" [Move Multiplier: ",d:StamMoveMultiplier,s:"%]");
 		
 		if (MenuSystemVars[0] != 0) staminaregenfinal = 0; // If using In-Game Menus
 		if (DVDSSpecialArrayValue[0] == 0) // If Player is "Conscious"
@@ -30432,18 +30429,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (FreezePlayer == 0)
 		{
 			buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-			if (buttons & BT_FORWARD) CursedShieldDegenInterval = 6;
-			else if (buttons & BT_BACK) CursedShieldDegenInterval = 6;
-			else if (buttons & BT_MOVELEFT) CursedShieldDegenInterval = 6;
-			else if (buttons & BT_MOVERIGHT) CursedShieldDegenInterval = 6;
-			else if (buttons & BT_ATTACK) CursedShieldDegenInterval = random(6,7);
-			else if (buttons & BT_ALTATTACK) CursedShieldDegenInterval = random(6,7);
-			else if (buttons & BT_MOVEUP) CursedShieldDegenInterval = 7;
-			else if (buttons & BT_MOVEDOWN) CursedShieldDegenInterval = 7;
-			else if (buttons & BT_JUMP) CursedShieldDegenInterval = 6;
-			else if (buttons & BT_CROUCH) CursedShieldDegenInterval = 2;
+			if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) CursedShieldDegenInterval = CursedShieldDegenInterval * 6 / 5;
+			if (buttons & BT_ATTACK || buttons & BT_ALTATTACK) CursedShieldDegenInterval = CursedShieldDegenInterval * random(6,7) / 5;
+			if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) CursedShieldDegenInterval = CursedShieldDegenInterval * 7 / 5;
+			if (buttons & BT_JUMP) CursedShieldDegenInterval = CursedShieldDegenInterval * 6 / 5;
+			if (buttons & BT_CROUCH) CursedShieldDegenInterval = CursedShieldDegenInterval * 2 / 5;
 		}
-		
 		if (random(1,16) == 1) CursedShieldDegenInterval *= 2;
 		
 		// Checks Armor Items and other types for Degen speed.
@@ -30546,12 +30537,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	MiscellaneousVars[14] -= C3; 
 	MiscellaneousVars[14] *= 20;
 	
-	buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-	if (CharacterClass == 2) // Flora
-	{
-	if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) C1 = MaxHealthLimit; else C1 = MaxHealthTrue;
-	}
-	else C1 = MaxHealthTrue;
+	int RegenMaxHealth;
+	int CurrHealth = GetActorProperty(Player1TID,APROP_HEALTH);
+	if (CharacterClass == 2 && CheckActorInventory(Player1TID,"DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = MaxHealthTrue;
 	
 	int delaycount;
 	int StamUpgradeDelay;
@@ -30605,20 +30593,15 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	if (powertripmode == 1) delaycount = delaycount * 5 / 2; // 250%
 	if (powertripmode == 2) delaycount = delaycount * 5; // 500%
 	
-	I3 = GetActorProperty(Player1TID,APROP_HEALTH);
-	if (I3 < C1)
+	StaminaInputFactor = 100;
+	if (CurrHealth < RegenMaxHealth)
 	{
-		if (buttons & BT_FORWARD) StaminaInputFactor = 40;
-		else if (buttons & BT_BACK) StaminaInputFactor = 40;
-		else if (buttons & BT_MOVELEFT) StaminaInputFactor = 40;
-		else if (buttons & BT_MOVERIGHT) StaminaInputFactor = 40;
-		else if (buttons & BT_ATTACK) StaminaInputFactor = 50;
-		else if (buttons & BT_ALTATTACK) StaminaInputFactor = 50;
-		else if (buttons & BT_MOVEUP) StaminaInputFactor = 60;
-		else if (buttons & BT_MOVEDOWN) StaminaInputFactor = 60;
-		else if (buttons & BT_JUMP) StaminaInputFactor = 40;
-		else if (buttons & BT_CROUCH) StaminaInputFactor = 180;
-		else StaminaInputFactor = 100;
+		buttons = GetPlayerInput(0, INPUT_BUTTONS);
+		if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) StaminaInputFactor = StaminaInputFactor * 40 / 100;
+		if (buttons & BT_ATTACK || buttons & BT_ALTATTACK) StaminaInputFactor = StaminaInputFactor * 50 / 100;
+		if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) StaminaInputFactor = StaminaInputFactor * 60 / 100;
+		if (buttons & BT_JUMP) StaminaInputFactor = StaminaInputFactor * 40 / 100;
+		if (buttons & BT_CROUCH) StaminaInputFactor = StaminaInputFactor * 180 / 100;
 		
 		delaycount = (delaycount * StaminaInputFactor) / 100;
 		
@@ -30655,7 +30638,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		}
 		
 		// Flora's Regeneration Speed is reduced by 5/8s [62.5%] when holding the Ruinous Shield [curse effect]
-		if (CharacterClass == 2) if (CheckActorInventory(Player1TID,"RuinousShield") > 0) delaycount = delaycount * 3 / 8;
+		if (CharacterClass == 2 && CheckActorInventory(Player1TID,"RuinousShield") > 0) delaycount = delaycount * 3 / 8;
 		
 		// RegenHPFast perks
 		if (MiscellaneousVars[10013] > 0)
@@ -30694,29 +30677,22 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	{
 		// Base of 1 HP regen
 		HPRegenAmount = 1;
-		
 		// Every 50 Levels = +1 HP Regen
 		HPRegenAmount += (PlayerLevel / 50);
-		
 		// Every 15 Pts of Strength = +1 HP Regen
 		HPRegenAmount += (MiscellaneousVars[35] / 15);
 		
 		// Makes having the Dove Ribbon allow HP Regen up to 200% maximum
-		if (CharacterClass == 2) // Flora
-		{
-			if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) C2 = MaxHealthLimit; else C2 = MaxHealthTrue;
-		}
-		else C2 = MaxHealthTrue;
+		if (CharacterClass == 2 && CheckActorInventory(Player1TID,"DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = MaxHealthTrue;
 		
-		if (I3 > 0 && I3 < C2)
+		if (CurrHealth > 0 && CurrHealth < RegenMaxHealth)
 		{
-			I3 += HPRegenAmount;
-			if (I3 > C2) I3 = C2;
-			SetActorProperty(Player1TID,APROP_HEALTH,I3);
-			MiscellaneousVars[241] = GetActorProperty(Player1TID,APROP_Health);
-			MiscellaneousVars[175] = GetActorProperty(Player1TID,APROP_Health);
+			CurrHealth += HPRegenAmount;
+			if (CurrHealth > RegenMaxHealth) CurrHealth = RegenMaxHealth;
+			SetActorProperty(Player1TID,APROP_HEALTH,CurrHealth);
+			MiscellaneousVars[241] = CurrHealth;
+			MiscellaneousVars[175] = CurrHealth;
 		}
-		
 		MiscellaneousVars[13] = MiscellaneousVars[14] + random(-20,20);
 	}
 	
@@ -30747,11 +30723,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		MiscellaneousVars[144] *= 20;
 		
 		buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-		if (CharacterClass == 2) // Flora
-		{
-			if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) C1 = MaxHealthLimit; else C1 = MaxHealthTrue;
-		}
-		else C1 = MaxHealthTrue;
+		if (CharacterClass == 2 && CheckActorInventory(Player1TID,"DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = MaxHealthTrue;
 		
 		delaycount = 20;
 		
@@ -30771,20 +30743,15 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (powertripmode == 1) delaycount = delaycount * 2 / 5; // 40%
 		if (powertripmode == 2) delaycount = delaycount / 5; // 20%
 		
-		I3 = GetActorProperty(Player1TID,APROP_HEALTH);
-		if (I3 > C1)
+		StaminaInputFactor = 100;
+		if (CurrHealth > RegenMaxHealth)
 		{
-			if (buttons & BT_FORWARD) StaminaInputFactor = 120;
-			else if (buttons & BT_BACK) StaminaInputFactor = 120;
-			else if (buttons & BT_MOVELEFT) StaminaInputFactor = 120;
-			else if (buttons & BT_MOVERIGHT) StaminaInputFactor = 120;
-			else if (buttons & BT_ATTACK) StaminaInputFactor = 130;
-			else if (buttons & BT_ALTATTACK) StaminaInputFactor = 130;
-			else if (buttons & BT_MOVEUP) StaminaInputFactor = 120;
-			else if (buttons & BT_MOVEDOWN) StaminaInputFactor = 120;
-			else if (buttons & BT_JUMP) StaminaInputFactor = 140;
-			else if (buttons & BT_CROUCH) StaminaInputFactor = 40;
-			else StaminaInputFactor = 100;
+			buttons = GetPlayerInput(0, INPUT_BUTTONS);
+			if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) StaminaInputFactor = StaminaInputFactor * 100 / 40;
+			if (buttons & BT_ATTACK || buttons & BT_ALTATTACK) StaminaInputFactor = StaminaInputFactor * 100 / 50;
+			if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) StaminaInputFactor = StaminaInputFactor * 100 / 60;
+			if (buttons & BT_JUMP) StaminaInputFactor = StaminaInputFactor * 100 / 40;
+			if (buttons & BT_CROUCH) StaminaInputFactor = StaminaInputFactor * 100 / 180;
 		
 			delaycount = (delaycount * StaminaInputFactor) / 100;
 		
@@ -30792,11 +30759,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 			C2 = 200;
 			if (CharacterClass == 2)
 			{
-			if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) C2 -= 20;
-			if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) C2 -= 10;
-			if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) C2 -= 15;
-			if (CheckActorInventory(Player1TID,"BalrogRing") > 0) C2 -= 25;
-			// total of -34 = 66% speed with all four items
+				if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) C2 -= 20;
+				if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) C2 -= 10;
+				if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) C2 -= 15;
+				if (CheckActorInventory(Player1TID,"BalrogRing") > 0) C2 -= 25;
+				// total of -34 = 66% speed with all four items
 			}
 			delaycount = delaycount * C2 / 200;
 		
@@ -30846,8 +30813,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 			if (MenuSystemVars[0] != 0) delaycount = 0; // If using In-Game Menus
 			if (DVDSSpecialArrayValue[0] == 0) // If Player is "Conscious"
 			{
-			StaminaDegenRate = delaycount;
-			MiscellaneousVars[143] -= delaycount;
+				StaminaDegenRate = delaycount;
+				MiscellaneousVars[143] -= delaycount;
 			}
 		}
 		else MiscellaneousVars[143] = MiscellaneousVars[144] + random(-20,20);
@@ -30861,17 +30828,17 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 			// Makes having the Dove Ribbon allow HP Regen up to 200% maximum
 			if (CharacterClass == 2) // Flora
 			{
-				if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) C2 = MaxHealthLimit; else C2 = MaxHealthTrue;
+				if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = MaxHealthTrue;
 			}
-			else C2 = MaxHealthTrue;
+			else RegenMaxHealth = MaxHealthTrue;
 		
-			if (I3 > C2)
+			if (CurrHealth > RegenMaxHealth)
 			{
-				I3 -= HPDegenAmount;
-				if (I3 < C2) I3 = C2;
-				SetActorProperty(Player1TID,APROP_HEALTH,I3);
-				MiscellaneousVars[241] = GetActorProperty(Player1TID,APROP_Health);
-				MiscellaneousVars[175] = GetActorProperty(Player1TID,APROP_Health);
+				CurrHealth -= HPDegenAmount;
+				if (CurrHealth < RegenMaxHealth) CurrHealth = RegenMaxHealth;
+				SetActorProperty(Player1TID,APROP_HEALTH,CurrHealth);
+				MiscellaneousVars[241] = CurrHealth;
+				MiscellaneousVars[175] = CurrHealth;
 			}
 		
 			MiscellaneousVars[143] = MiscellaneousVars[144] + random(-20,20);
@@ -30880,8 +30847,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (GetCVar("dvdsdebug_showhpregenstuff") == 1)
 		{
 			PrintBold(
-								s:"Regen: [",d:I3,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[13],s:"/",d:MiscellaneousVars[14],s:"] & [",d:StaminaRegenRate,s:"]\n",
-								s:"Degen: [",d:I3,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[143],s:"/",d:MiscellaneousVars[144],s:"] & [",d:StaminaDegenRate,s:"]"
+								s:"Regen: [",d:CurrHealth,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[13],s:"/",d:MiscellaneousVars[14],s:"] & [",d:StaminaRegenRate,s:"]\n",
+								s:"Degen: [",d:CurrHealth,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[143],s:"/",d:MiscellaneousVars[144],s:"] & [",d:StaminaDegenRate,s:"]"
 							);
 		}
 	}
@@ -31710,19 +31677,60 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	
 	if (CharacterClass == 2) 
 	{
-		TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-		TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-		TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-		TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-		TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-		TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-		
-		if (HellcoreOverheatLevel < 250000) GiveActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-		if (HellcoreOverheatLevel > 249999 && HellcoreOverheatLevel < 500000) GiveActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-		if (HellcoreOverheatLevel > 499999 && HellcoreOverheatLevel < 750000) GiveActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-		if (HellcoreOverheatLevel > 749999 && HellcoreOverheatLevel < 1000000) GiveActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-		if (HellcoreOverheatLevel > 999999 && HellcoreOverheatLevel < 2500000) GiveActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-		if (HellcoreOverheatLevel > 2499999) GiveActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+		if (HellcoreOverheatLevel < 250000) 
+		{
+			GiveActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+		}
+		if (HellcoreOverheatLevel > 249999 && HellcoreOverheatLevel < 500000) 
+		{
+			TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+			GiveActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+		}
+		if (HellcoreOverheatLevel > 499999 && HellcoreOverheatLevel < 750000) 
+		{
+			TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+			GiveActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+		}
+		if (HellcoreOverheatLevel > 749999 && HellcoreOverheatLevel < 1000000) 
+		{
+			TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+			GiveActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+		}
+		if (HellcoreOverheatLevel > 999999 && HellcoreOverheatLevel < 2500000) 
+		{
+			TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+			GiveActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+		}
+		if (HellcoreOverheatLevel > 2499999) 
+		{
+			TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+			TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+			GiveActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+		}
 	}
 	
 	// Melee Weapon Inv Check
@@ -32314,16 +32322,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		}
 	}
 	
-	int VelX = GetActorVelX(Player1TID);
-	int VelY = GetActorVelY(Player1TID);
-	int VelZ = GetActorVelZ(Player1TID);
 	int IsMoving = 0;
-	if (VelX < -250000) IsMoving++;
-	if (VelX > 250000) IsMoving++;
-	if (VelY < -250000) IsMoving++;
-	if (VelY > 250000) IsMoving++;
-	if (VelZ < -125000) IsMoving++;
-	if (VelZ > 125000) IsMoving++; 
+	if (VelX < -250000 || VelX > 250000) IsMoving++;
+	if (VelY < -250000 || VelY > 250000) IsMoving++;
+	if (VelZ < -125000 || VelZ > 125000) IsMoving++;
 	int OnTheMoveAdd = 0;
 	if (MiscellaneousVars[10045] > 0 && IsMoving > 0) // "On The Move" Perk
 	{
@@ -32906,7 +32908,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (PowerupTimer[20] > 0) FreezePlayer += 1;
 		if (buttons & BT_USE && buttons & BT_SPEED && MiscellaneousVars[186] <= 0 && FreezePlayer == 0)
 		{
-			if (MiscellaneousVars[110002] > 0 && DVDSSpecialArrayValue[0] == 0) // Tension is Enabled & If tPlayer is "Conscious"
+			if (MiscellaneousVars[110002] > 0 && DVDSSpecialArrayValue[0] == 0) // Tension is Enabled & If Player is "Conscious"
 			{
 				MiscellaneousVars[186] = 0;
 				MiscellaneousVars[188] = MiscellaneousVars[186];
@@ -33050,14 +33052,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (PowerupTimer[20] > 0) FreezePlayer += 1;
 		if (FreezePlayer == 0)
 		{
-			if (buttons & BT_FORWARD) C3 = -500;
-			else if (buttons & BT_BACK) C3 = -500;
-			else if (buttons & BT_MOVELEFT) C3 = -500;
-			else if (buttons & BT_MOVERIGHT) C3 = -500;
-			else if (buttons & BT_MOVEUP) C3 = -500;
-			else if (buttons & BT_MOVEDOWN) C3 = -500;
-			else if (buttons & BT_JUMP) C3 = -500;
-			else if (buttons & BT_CROUCH) C3 = -500;
+			buttons = GetPlayerInput(0, INPUT_BUTTONS);
+			if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) C3 = -500;
+			else if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) C3 = -500;
+			else if (buttons & BT_JUMP || buttons & BT_CROUCH) C3 = -500;
 		}
 		
 		FreezePlayer = 0;
@@ -34652,20 +34650,16 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	if (PowerupTimer[16] > 0 && PowerupTimer[4] == 0) // Being invulnerable will prevent poison damage from occuring.
 	{
 		PoisonIncrement = 20;
+		C3 = 100;
 		if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
 		if (PowerupTimer[20] > 0) FreezePlayer += 1;
 		if (FreezePlayer == 0)
 		{
 			buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-			if (buttons & BT_FORWARD) C3 = 125;
-			else if (buttons & BT_BACK) C3 = 125;
-			else if (buttons & BT_MOVELEFT) C3 = 125;
-			else if (buttons & BT_MOVERIGHT) C3 = 125;
-			else if (buttons & BT_MOVEUP) C3 = random(112,113);
-			else if (buttons & BT_MOVEDOWN) C3 = random(112,113);
-			else if (buttons & BT_JUMP) C3 = 125;
-			else if (buttons & BT_CROUCH) C3 = 75;
-			else C3 = 100;
+			if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) C3 = C3 * 125 / 100;
+			if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) C3 = C3 * random(112,113) / 100;
+			if (buttons & BT_JUMP) C3 = C3 * 125 / 100;
+			if (buttons & BT_CROUCH) C3 = C3 * 75 / 100;
 			PoisonIncrement = PoisonIncrement * C3 / 100;
 		}
 		// Check Characters & Armor
@@ -48625,9 +48619,9 @@ script "SceptreHold" (int type)
 }
 
 // Allows DECORATE to check the value of a specfic "MiscellaneousVars[]" value for checks
-script "MiscVarCheckDECORATE" (int perkvalue)
+script "MiscVarCheckDECORATE" (int value)
 {
-	int result = MiscellaneousVars[perkvalue];
+	int result = MiscellaneousVars[value];
 	SetResultValue(result);
 }
 
