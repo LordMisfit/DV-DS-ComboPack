@@ -65,11 +65,48 @@ class AetheriusProjectileZSC : AetheriusBaseZSC
 	const SHARDSPAWN_UP		= 4;
 	const SHARDSPAWN_DOWN	= 8;
 
+	int user_noseektimer, user_seektimer; // For Magic Missiles
+
 	void A_PlayCrisisAtkSound ()
 	{
 		A_PlaySound("crisisattack",6);
 		A_PlaySound("crisisattack2",7);
 	}
+
+	void A_MMSeek(int maxtime = 2)
+	{
+		user_seektimer += 1;
+		if (user_seektimer >= maxtime) 
+		{
+			A_SeekerMissile(90,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64); 
+			user_seektimer = 0;
+		}
+		//A_LogInt(user_seektimer);
+	}
+
+	void A_MMCheckNoSeekTimer(int maxchance = 16)
+	{
+		user_noseektimer -= 1;
+		if (random(1,maxchance) == 1) 
+		{ 
+			A_MMSeek(1);
+			user_noseektimer += 1;
+		}
+		//A_LogInt(user_noseektimer);
+	}
+
+	void A_MMSeekerClearBounce(int timerset = 6, int randomset = 0)
+	{
+		if (user_noseektimer <= 0) 
+		{ 
+			user_noseektimer = timerset + random(-randomset,randomset);
+			A_RearrangePointers(AAPTR_DEFAULT, AAPTR_DEFAULT, AAPTR_NULL);
+			//A_LogInt(user_noseektimer);
+		} 
+	}
+
+
+
 
 	// A_SeekerMissile that will clear its tracer pointer if the tracer is friendly.
 	void A_NFSeekerMissile(int threshold, int maxturnangle, int flags = 0, int chance = 50, int distance = 10)
@@ -1495,12 +1532,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
 	}
     
-	int deathtimer;
 	override void Die(Actor source, Actor inflictor, int dmgflags)
 	{
 		if (self.health <= 0 && CountInv("MonsterHasBuffs") == 1 && !bICECORPSE) { A_AetheriusStats(1); }
 
-		deathtimer++;
 		//This space for rent.
 		Super.Die(source, inflictor, dmgflags);
 	}
@@ -4221,6 +4256,124 @@ class AetheriusPlayerPawn : PlayerPawn
 {
 	int actortimer;
 	int pbuddha1, pbuddha2, pgod1, pgod2, pnoclip1, pnoclip2;
+
+	private class<Inventory> APPackToken, APPackCheck;
+
+	double TotalAirControl;
+	override void MovePlayer()
+	{
+		String nm;
+		int CharacterClass = CallACS("CheckCharacterClass");
+		//double LevelAirControl = level.aircontrol; // Saves a value
+		int PlayerLevel = CallACS("StatCheck",0);
+		int PlayerAGL = CallACS("StatCheck",3);
+
+		double AirControlBase = 0.2375;
+		if (CharacterClass == 0) AirControlBase = 0.2375;
+		if (CharacterClass == 1) AirControlBase = 0.2500;
+		if (CharacterClass == 2) AirControlBase = 0.2625;
+		if (CharacterClass == 8) AirControlBase = 0.2375;
+		if (CharacterClass == 9) AirControlBase = 0.275;
+		
+		// Level Based AirControl
+		double LVLAirControl = 1.00 + (PlayerLevel * 0.00123);
+		if (CharacterClass == 0) LVLAirControl = 1.00 + (PlayerLevel * 0.00113);
+		if (CharacterClass == 1) LVLAirControl = 1.00 + (PlayerLevel * 0.00128);
+		if (CharacterClass == 2) LVLAirControl = 1.00 + (PlayerLevel * 0.00138);
+		if (CharacterClass == 8) LVLAirControl = 1.00 + (PlayerLevel * 0.00108);
+		if (CharacterClass == 9) LVLAirControl = 1.00 + (PlayerLevel * 0.00148);
+
+		// AGLSeed-based multiplier
+		double AGLAirControl = 1.00 + (PlayerAGL * 0.000415);
+		if (CharacterClass == 0) AGLAirControl = 1.00 + (PlayerAGL * 0.000380);
+		if (CharacterClass == 1) AGLAirControl = 1.00 + (PlayerAGL * 0.000430);
+		if (CharacterClass == 2) AGLAirControl = 1.00 + (PlayerAGL * 0.000415);
+		if (CharacterClass == 8) AGLAirControl = 1.00 + (PlayerAGL * 0.000375);
+		if (CharacterClass == 9) AGLAirControl = 1.00 + (PlayerAGL * 0.000400);
+
+		// Armor items
+		double ArmorAirControl = 1.00;
+		if (CharacterClass == 2)
+		{
+			if (CountInv("SafeTeaShoes") > 0) 				ArmorAirControl += 0.20;
+			if (CountInv("PearlyCorset") > 0) 				ArmorAirControl += 0.0125;
+			if (CountInv("WaterFlyingDress") > 0)			ArmorAirControl += 0.0125;
+			if (CountInv("EvenstarNecklace") > 0)			ArmorAirControl += 0.0375;
+			if (CountInv("CloakofEvasion") > 0)				ArmorAirControl += 0.20;
+			if (CountInv("AnubisCufflinks") > 0)			ArmorAirControl += 0.025;
+			if (CountInv("KissaBra") > 0)							ArmorAirControl += 0.0375;
+			if (CountInv("DivineShield") > 0)					ArmorAirControl += 0.05;
+			if (CountInv("BalrogRing") > 0)						ArmorAirControl += 0.0125;
+			if (CountInv("DoveRibbon") > 0)						ArmorAirControl += 0.0375;
+			if (CountInv("FalconKnifeEarrings") > 0)	ArmorAirControl += 0.05;
+		}
+		else
+		if (CharacterClass == 0 || CharacterClass == 1)
+		{
+			if (CountInv("DSGreenArmorClass") > 0)		ArmorAirControl += 0.0667;
+			if (CountInv("DSBlueArmorClass") > 0)			ArmorAirControl += 0.10;
+			if (CountInv("DSStoneArmorClass1") > 0)		ArmorAirControl += 0.1334;
+			if (CountInv("DSDiamondArmorClass1") > 0)	ArmorAirControl += 0.18;
+			if (CountInv("DSStoneArmorClass2") > 0)		ArmorAirControl += 0.1667;
+			if (CountInv("DSDiamondArmorClass2") > 0)	ArmorAirControl += 0.19;
+		}
+	
+		// Sauron Armor items
+		double SauronArmorAirControl = 1.00;
+		if (CountInv("SauronHelmet") > 0)						SauronArmorAirControl -= 0.10;
+		if (CountInv("SauronGauntlets") > 0)				SauronArmorAirControl -= 0.05;
+		if (CountInv("SauronGauntletsIllucia") > 0)	SauronArmorAirControl -= 0.05;
+		if (CountInv("SauronGauntletsFlora") > 0)		SauronArmorAirControl -= 0.05;
+		nm = "SauronGauntletsAilish"; APPackCheck = nm;
+		if (CountInv(APPackCheck) > 0)							SauronArmorAirControl -= 0.05;
+		nm = "SauronGauntletsPetra"; APPackCheck = nm;
+		if (CountInv(APPackCheck) > 0)							SauronArmorAirControl -= 0.05;
+		if (CountInv("TheOneRing") > 0)							SauronArmorAirControl += 0.25;
+
+		// Buffs
+		double BuffAirControl = 1.00;
+		if (CallACS("GetBuffTimer",12) > 0) BuffAirControl += 0.25;
+		if (CallACS("GetBuffTimer",15) > 0) BuffAirControl -= 0.25;
+
+		// Sceptre for AirControl.
+		double SceptreAirControl = 1.00;
+		if (CallACS("MiscVarCheckDECORATE",397) == 1) SceptreAirControl -= 0.20;
+		if (CallACS("MiscVarCheckDECORATE",397) == 2) SceptreAirControl -= 0.10;
+		if (CallACS("MiscVarCheckDECORATE",397) == 3) SceptreAirControl -= 0.05;
+
+		double PerkFactorAirControl = 1.0;
+		PerkFactorAirControl += ((CallACS("MiscVarCheckDECORATE",10009) * 0.05) + (CallACS("MiscVarCheckDECORATE",10010) * 0.125));
+
+		double DashingAirControl = 1.0;
+		if (CallACS("MiscVarCheckDECORATE",166) > 0) DashingAirControl = 0.015625;
+
+		double DivineAvatarAirControl = 1.00;
+		if (CallACS("GetBuffTimer",7) > 0) DivineAvatarAirControl *= 2.00;
+
+		level.aircontrol = AirControlBase
+										 * LVLAirControl
+										 * AGLAirControl
+										 * ArmorAirControl
+										 * SauronArmorAirControl
+										 * BuffAirControl
+										 * SceptreAirControl
+										 * PerkFactorAirControl
+										 * DashingAirControl
+										 * DivineAvatarAirControl;
+		if (GetCVar("dvdsdebug_showmoveinformation") > 0)
+		{
+			Console.Printf("    \cwTotalAirControl:\c- \cw%8f\c-, \cyAirControlBase:\c- \cy%8f\c-, LVLAirControl: %8f, AGLAirControl: %8f, ArmorAirControl: %8f, SauronArmorAirControl: %8f, BuffAirControl: %8f, SceptreAirControl: %8f, PerkFactorAirControl: %8f, DashingAirControl: %8f, DivineAvatarAirControl: %8f", 
+													level.aircontrol, AirControlBase,
+													LVLAirControl, AGLAirControl,
+													ArmorAirControl, SauronArmorAirControl,
+													BuffAirControl, SceptreAirControl,
+													PerkFactorAirControl, DashingAirControl,
+													DivineAvatarAirControl);
+		}
+
+		super.MovePlayer();
+		//level.aircontrol = LevelAirControl; // Reloads the value
+	}
 
 	override void PostBeginPlay()
 	{

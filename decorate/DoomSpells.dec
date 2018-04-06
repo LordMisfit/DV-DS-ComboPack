@@ -1,12 +1,19 @@
 // Start of Magic Missile Stuff
 
 // Minor Magic Missile
-actor MinorMagicMissile : SerpentFX
+actor MinorMagicMissile : AetheriusProjectileZSC // : SerpentFX
 {
+	Speed 16 // **
+	Radius 2 // **
+	Height 2 // **
+	Damage (4 + random(-1,1)) // ** 2-4 (2)
+	Projectile // **
+	+ACTIVATEIMPACT // **
+	+ACTIVATEPCROSS // **
+	RenderStyle Add // **
+
 	DamageType "Magic"
 	+FLOORCLIP
-	+ACTIVATEIMPACT
-	+ACTIVATEPCROSS
 	+FORCERADIUSDMG
 	+MTHRUSPECIES
 	+THRUSPECIES
@@ -14,9 +21,8 @@ actor MinorMagicMissile : SerpentFX
 	+SPECTRAL
 	+DONTREFLECT
 	species "Players"
-	Speed 16
 	seesound "mmissilelaunch"
-	deathsound "mmissileimpact"
+	deathsound "mmissileimpact" // **
 
 	+BOUNCEONWALLS
 	+BOUNCEONFLOORS
@@ -35,10 +41,6 @@ actor MinorMagicMissile : SerpentFX
 	var int user_BaseExplodeDamage;
 	var int user_ExplodeDamageError;
 	var int user_Fuse;
-
-	Radius 2
-	Height 2
-	Damage (4 + random(-1,1)) // 2-4 (2)
 	Scale 0.2 // 0.75
 	Alpha 0.67 
 
@@ -67,8 +69,8 @@ actor MinorMagicMissile : SerpentFX
 actor MinorMagicMissileSeek : MinorMagicMissile
 {
 	+SEEKERMISSILE
+	+USEBOUNCESTATE
 
-	var int user_seektimer;
 	States
 	{
 		Spawn:
@@ -77,16 +79,23 @@ actor MinorMagicMissileSeek : MinorMagicMissile
 			{
 				A_CustomMissile("MMMParticle",0,0,random(0,359),6,random(0,359));
 				user_Fuse += 1;
-				user_seektimer += 1;
-				if (user_seektimer >= 2) 
+				if (user_noseektimer > 0) 
+				{ 
+					A_MMCheckNoSeekTimer(16);
+				}
+				else
 				{
-					A_SeekerMissile(90,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64); 
-					user_seektimer = 0;
-				}	
+					A_MMSeek(2);
+				}
 				if (user_Fuse >= 140) { return state("Death"); }
 				return state("");
 			}
 			goto Spawn+1
+
+		Bounce:
+			UMM1 A 0 Bright { A_MMSeekerClearBounce(6,1); }
+			goto Spawn+1
+
 	}
 }
 
@@ -234,7 +243,7 @@ actor MagicMissile : MinorMagicMissile
 actor MagicMissileSeek : MagicMissile
 {
 	+SEEKERMISSILE
-	var int user_seektimer;
+	+USEBOUNCESTATE
 
 	States
 	{
@@ -245,16 +254,22 @@ actor MagicMissileSeek : MagicMissile
 				A_CustomMissile("NMMParticle",0,0,random(0,359),6,random(0,359));
 				A_CustomMissile("NMMParticle",0,0,random(0,359),6,random(0,359));
 				user_Fuse += 1;
-				user_seektimer += 1;
-				if (user_seektimer >= 1) 
+				if (user_noseektimer > 0) 
+				{ 
+					A_MMCheckNoSeekTimer(16);
+				}
+				else
 				{
-					A_SeekerMissile(90,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64); 
-					user_seektimer = 0;
-				}	
+					A_MMSeek(2);
+				}
 				if (user_Fuse >= 210) { return state("Death"); }
 				return state("");
 			}
 			Goto Spawn+1
+
+		Bounce:
+			UMM1 A 0 Bright { A_MMSeekerClearBounce(6,1); }
+			goto Spawn+1
 	}
 }
 
@@ -353,7 +368,7 @@ actor MajorMagicMissile : MinorMagicMissile
 actor MajorMagicMissileSeek : MajorMagicMissile
 {
 	+SEEKERMISSILE
-	var int user_seektimer;
+	+USEBOUNCESTATE
 
 	States
 	{
@@ -365,16 +380,22 @@ actor MajorMagicMissileSeek : MajorMagicMissile
 				A_CustomMissile("BMMParticle",0,0,random(0,359),6,random(0,359));
 				A_CustomMissile("BMMParticle",0,0,random(0,359),6,random(0,359));
 				user_Fuse += 1;
-				user_seektimer += 1;
-				if (user_seektimer >= 1) 
+				if (user_noseektimer > 0) 
+				{ 
+					A_MMCheckNoSeekTimer(16);
+				}
+				else
 				{
-					A_SeekerMissile(90,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64); 
-					user_seektimer = 0;
-				}	
+					A_MMSeek(1);
+				}
 				if (user_Fuse >= 270) { return state("Death"); }
 				return state("");
 			}
 			Goto Spawn+1
+
+		Bounce:
+			UMM1 A 0 Bright { A_MMSeekerClearBounce(6,1); }
+			goto Spawn+1
 	}
 }
 
@@ -545,6 +566,7 @@ actor UltraMagicMissile : MinorMagicMissile
 actor UltraMagicMissileSeek : UltraMagicMissile
 {
 	+SEEKERMISSILE
+	+USEBOUNCESTATE
 
 	States
 	{
@@ -563,7 +585,14 @@ actor UltraMagicMissileSeek : UltraMagicMissile
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
-				A_SeekerMissile(90,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64);
+				if (user_noseektimer > 0) 
+				{ 
+					A_MMCheckNoSeekTimer(16);
+				}
+				else
+				{
+					A_MMSeek(1);
+				}
 			}
 
 			UMM1 A 0 Bright { user_Fuse += 1; }
@@ -582,7 +611,14 @@ actor UltraMagicMissileSeek : UltraMagicMissile
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
-				A_SeekerMissile(90,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64);
+				if (user_noseektimer > 0) 
+				{ 
+					A_MMCheckNoSeekTimer(16);
+				}
+				else
+				{
+					A_MMSeek(1);
+				}
 			}
 
 			UMM1 B 0 Bright { user_Fuse += 1; }
@@ -600,7 +636,14 @@ actor UltraMagicMissileSeek : UltraMagicMissile
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
-				A_SeekerMissile(90,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64);
+				if (user_noseektimer > 0) 
+				{ 
+					A_MMCheckNoSeekTimer(16);
+				}
+				else
+				{
+					A_MMSeek(1);
+				}
 			}
 
 			UMM1 A 0 Bright { user_Fuse += 1; }
@@ -619,12 +662,23 @@ actor UltraMagicMissileSeek : UltraMagicMissile
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
 				A_CustomMissile("UMMParticle",0,0,random(0,359),6,random(0,359));
-				A_SeekerMissile(90,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64);
+				if (user_noseektimer > 0) 
+				{ 
+					A_MMCheckNoSeekTimer(16);
+				}
+				else
+				{
+					A_MMSeek(1);
+				}
 			}
 
 			UMM1 B 0 Bright { user_Fuse += 1; }
 			UMM1 B 0 Bright A_JumpIf(user_Fuse==ACS_NamedExecuteWithResult("GetUltraMagicMissileFuse"),"Death")
 			Goto Spawn+1
+
+		Bounce:
+			UMM1 A 0 Bright { A_MMSeekerClearBounce(6,1); }
+			goto Spawn+1
 	}
 }
 
