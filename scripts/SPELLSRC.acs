@@ -42255,7 +42255,11 @@ script "DamageDisplays" (void)
 	int dmgind_GFXLevel = GetCVar("dvds_gfxeffectlevel");
 	int dmgind_delay = GetCVAR("dvds_dmgind_delay");
 	if (dmgind_delay < 1) dmgind_delay = 1;
-	if (dmgind_delay > 35) dmgind_delay = 35;
+	if (dmgind_delay > 140) dmgind_delay = 140;
+	int dmgind_monstdivisor = GetCVAR("dvds_dmgind_monstdivisor");
+	if (dmgind_monstdivisor < 1) dmgind_monstdivisor = 1;
+	if (dmgind_monstdivisor > 10240) dmgind_monstdivisor = 10240;
+
 	while (GetCVar("dvds_dmgindicator") == 1)
 	{
 		if (CheckInventory("MonsterDisplayDMG") == 0) terminate;
@@ -42263,12 +42267,13 @@ script "DamageDisplays" (void)
 		int ActorHeight = GetActorProperty(0,APROP_Height);
 		int PreviousHealth = GetActorProperty(0,APROP_Health);
 
-		int totaldelay = ((1 + (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / 160) ) * dmgind_delay);
+		int totaldelay = ((1 + (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / dmgind_monstdivisor) ) * dmgind_delay);
 		if (dmgind_GFXLevel == 0) totaldelay *= 1;
 		else if (dmgind_GFXLevel == 1) totaldelay *= 4;
 		else if (dmgind_GFXLevel == 2) totaldelay *= 16;
-		delay(totaldelay); // 1
-		If (GetActorProperty(0,APROP_Health) != PreviousHealth)
+		delay(totaldelay);
+
+		if (GetActorProperty(0,APROP_Health) != PreviousHealth)
 		{
 			PlayerCrit = 0;
 			if (CheckInventory("TookCriticalHit") > 0) 
@@ -42303,17 +42308,12 @@ script "DamageDisplays" (void)
 				int WidthNeg = ActorWidth * -1 / 2;
 				int x = GetActorX(0) + random(WidthNeg,WidthPos);
 				int y = GetActorY(0) + random(WidthNeg,WidthPos);
-				int z;
-				If (ActorHeight > 0) 
-						z = GetActorZ(0) + ActorHeight + Random(-4.0,4.0);
-				else
-						z = GetActorZ(0) + GetActorProperty(0, APROP_HEIGHT) + Random(-4.0,4.0);
+				int z = GetActorZ(0) + ActorHeight + Random(-4.0,4.0);
 
 				int NumberID = Random(7000, 8000);
 				int NumberID2 = NumberID + 1;
 				str DigitSpawn;
 
-				//DmgIndDisplayType = 1;
 				if (DmgIndDisplayType == 1) // Healing
 				{
 					if (DmgIndDisplayValue >= 0) DigitSpawn = StrParam(s:"HealBurst1");
@@ -42382,8 +42382,14 @@ script "DamageDisplays" (void)
 				if (PlayerCrit > 0)
 				{
 					PlaySound(Player1TID,"player/criticalhit",CHAN_BODY,1.0,0,ATTN_NORM);
-					if (DmgIndDisplayType == 1) { xvel = random(-1.0,1.0); yvel = random(-1.0,1.0); zvel = random(0.25,0.5); } // Healing cannot be critical'd
-					else { xvel = random(-0.5,0.5); yvel = random(-0.5,0.5); zvel = random(-0.50,-0.25); }
+					if (DmgIndDisplayType == 1) 
+					{
+						xvel = random(-1.0,1.0); yvel = random(-1.0,1.0); zvel = random(0.25,0.5); // Healing cannot be critical'd
+					}
+					else 
+					{
+						xvel = random(-0.5,0.5); yvel = random(-0.5,0.5); zvel = random(-0.5,-0.25); 
+					}
 				}
 				else
 				{
@@ -42398,12 +42404,6 @@ script "DamageDisplays" (void)
 			if (CheckInventory("TookCriticalHit") > 0) { TakeInventory("TookCriticalHit",0x7FFFFFFF); PlayerCrit = 0; }
 		}
 	}
-}
-
-// Used by DECORATE to check for the player's crit item
-script "CheckCritRate" (void)
-{
-	if (CheckActorInventory(Player1TID,"DealCriticalHit") > 0) SetResultValue(1); else SetResultValue(0);
 }
 
 // Used for testing SetHudSize customization in-game.
@@ -44643,27 +44643,39 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 					If (GetUserVariable(0, "user_legendaryevolved") > 0) islegendary = " \c[purple](LEGENDARY)";
 					ypos = MiscFixedVars[1] + 0.0;
 					SetActivator(Activator);
+
 					SetHudSize (800,600,0);
-					HudMessage (s:"a"; 0, 201, CR_GREEN, 400.0, 100.0, 0.05);
+					xpos = 400.0; 
+					ypos = 100.0;
+					HudMessage (s:"a"; 0, 201, CR_GREEN, xpos, ypos, 0.05);
+
 					SetFont ("DVDSSMLFONT");
-					SetHudSize (800,600,0);
+					xpos = 400.0; 
+					ypos = 100.0;
 					if (GetCVar("dvds_actorlifebarhp") == 1)
 					{
-						HudMessage (d:actorcurrhp, s:"/", d:actormaxhp; 0, 199, CR_WHITE, 400.0, 100.0, 0.05);
+						HudMessage (d:actorcurrhp, s:"/", d:actormaxhp; 0, 199, CR_WHITE, xpos, ypos, 0.05);
 					}
+
+					xpos = 400.0; 
+					ypos = 116.0;
 					if (GetCVar("dvds_actorlifebarnames") == 1)
 					{
-						if (debuglifebar == 1) HudMessage (s:monstercolor,s:dvds_monsternames[class_index][1],s:stealthcheck2,s:isfriendly,s:willbecomelegendary,s:islegendary,s:" [",d:OldActivator,s:"]"; 0, 198, CR_WHITE, 400.0, 116.0, 0.05);
-																													else HudMessage (s:monstercolor,s:dvds_monsternames[class_index][1],s:stealthcheck2,s:isfriendly,s:islegendary; 0, 198, CR_WHITE, 400.0, 116.0, 0.05); 
+						if (debuglifebar == 1) HudMessage (s:monstercolor,s:dvds_monsternames[class_index][1],s:stealthcheck2,s:isfriendly,s:willbecomelegendary,s:islegendary,s:" [",d:OldActivator,s:"]"; 0, 198, CR_WHITE, xpos, ypos, 0.05);
+															else HudMessage (s:monstercolor,s:dvds_monsternames[class_index][1],s:stealthcheck2,s:isfriendly,s:islegendary; 0, 198, CR_WHITE, xpos, ypos, 0.05); 
 					}
+
+					xpos = 400.0; 
+					ypos = 70.0;
 					if (GetCVar("dvds_actorlifebarstats") == 1)
 					{
 						HudMessage (s:"\c[LightBlue]Speed: ",f:Speed,s:"\n",
-											s:"\c[Olive]Balance: ",d:Balance,s:"\n",
-											s:"\c[Brick]Damage Dealt: ",f:Attack,s:"x\n",
-											s:"\c[Green]Damage Taken: ",f:Defense,s:"x"; 0, 196, CR_WHITE, 400.0, 70.0, 0.05);
+												s:"\c[Olive]Balance: ",d:Balance,s:"\n",
+												s:"\c[Brick]Damage Dealt: ",f:Attack,s:"x\n",
+												s:"\c[Green]Damage Taken: ",f:Defense,s:"x"; 0, 196, CR_WHITE, xpos, ypos, 0.05);
 					}
 					SetFont ("DVDSBIGFONT");
+
 					xpos = 274.2; //400.0;
 					ypos = 100.0; //115.0;
 					str textcolor = "";
@@ -44704,9 +44716,11 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 						SetActivator(Activator);
 						SetHudSize (800,600,0);
 	
+						xpos = 303.0 + bcounter;
+						ypos = 100.0;
 						If(actorcurrhp > 0)
 						{
-							hudmessage(s:"a"; 0, acounter+202, CR_GREEN, 303.0 + bcounter, 100.0, 0.05, 1.0);
+							hudmessage(s:"a"; 0, acounter+202, CR_GREEN, xpos, ypos, 0.05, 1.0);
 						}
 					}
 					bcounter = 0;

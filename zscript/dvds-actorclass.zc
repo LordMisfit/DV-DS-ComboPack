@@ -1468,6 +1468,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int bullet_tracer_mode;
 	int gfxeffectlevel;
 	int AggressionLevelThreshold1, AggressionLevelThreshold2, AggressionLevelThreshold3;
+	int neverbleeds;
 
 	property AggressionLevelThreshold: AggressionLevelThreshold1, AggressionLevelThreshold2, AggressionLevelThreshold3;
 
@@ -1500,6 +1501,18 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			user_presetlevelrand1 = Args[1];
 			user_presetlevelrand2 = Args[2];
 		}
+
+		if (bNOBLOOD == 1) 
+		{
+			if (bNOBLOODDECALS == 0) bNOBLOODDECALS == 1;
+			neverbleeds = 1;
+		}
+		if (bNOBLOODDECALS == 1) 
+		{
+			if (bNOBLOOD == 0) bNOBLOOD == 1;
+			neverbleeds = 1;
+		}
+
 		A_AetheriusStats(0); 
 		if (self.health <= User_MaxHP) self.health = User_MaxHP;
 
@@ -1638,6 +1651,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		if (neverbleeds == 0)
+		{
+			bNOBLOOD = 0;
+			bNOBLOODDECALS = 0;
+		}
 		int maxdmg = self.health;
 		string infl, sour, vict;
 		vict = GetClassName();
@@ -1727,6 +1745,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 		}
 
+		if (ret == 0)
+		{
+			if (neverbleeds == 0)
+			{
+				bNOBLOOD = 1;
+				bNOBLOODDECALS = 1;
+			}
+		}
 		return ret;
 	}
 
@@ -4297,6 +4323,8 @@ class AetheriusPlayerPawn : PlayerPawn
 {
 	int actortimer;
 	int pbuddha1, pbuddha2, pgod1, pgod2, pnoclip1, pnoclip2;
+	
+	int neverbleeds;
 
 	private class<Inventory> APPackToken, APPackCheck;
 
@@ -4420,6 +4448,18 @@ class AetheriusPlayerPawn : PlayerPawn
 	{
 		// VOODOO Doll Protection
 		if (!player || !player.mo || player.mo != self) { return Super.PostBeginPlay(); }
+
+		if (bNOBLOOD == 1) 
+		{
+			if (bNOBLOODDECALS == 0) bNOBLOODDECALS == 1;
+			neverbleeds = 1;
+		}
+		if (bNOBLOODDECALS == 1) 
+		{
+			if (bNOBLOOD == 0) bNOBLOOD == 1;
+			neverbleeds = 1;
+		}
+
 		Super.PostBeginPlay(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO PostBeginPlay() BREAK :V
 	}
 	override void Tick()
@@ -4451,6 +4491,11 @@ class AetheriusPlayerPawn : PlayerPawn
 
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		if (neverbleeds == 0)
+		{
+			bNOBLOOD = 0;
+			bNOBLOODDECALS = 0;
+		}
 		string infl, sour, vict;
 		vict = GetClassName();
 		if (inflictor == null) infl = "NONE";
@@ -4512,7 +4557,8 @@ class AetheriusPlayerPawn : PlayerPawn
 
 		// Space for rent :V	
 		let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
-		if (dvdsdebug_playerdmgdisplays > 0 && ret > 0) Console.Printf("    (\czplayer-damagemobj output\c-: \cydmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", ret, mod, infl, sour);
+		if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\czplayer-damagemobj output\c-: \cydmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", ret, mod, infl, sour);
+
 		if (ret > 0) 
 		{
 			int hpratio = ret * 100 / CallACS("StatCheck",1);
@@ -4524,6 +4570,15 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\czuncurse\c-: \cydmg = \cy%d\c-, \cwcursemulti\c- = \cw%d\c-, \cdhpratio\c- = \cd%d\c-)", ret, cursemulti, hpratio);
 			ACS_NamedExecuteAlways("CursedShieldPain",0,1,cursemulti);
 		}
+		else
+		{
+			if (neverbleeds == 0)
+			{
+				bNOBLOOD = 1;
+				bNOBLOODDECALS = 1;
+			}
+		}
+
 		return ret;
 	}
 }
