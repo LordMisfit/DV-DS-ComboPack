@@ -3361,7 +3361,8 @@ ACTOR CharmShot : CharmMissile
 	+SEEKERMISSILE
 	+STEPMISSILE
 	BounceType Hexen
-	BounceFactor 1.005
+	BounceFactor 1.025
+	WallBounceFactor 1.025
 	RenderStyle Add
 	Scale 0.75
 	Alpha 1
@@ -3369,18 +3370,37 @@ ACTOR CharmShot : CharmMissile
 	DeathSound "null"
 	DamageType "Charm"
 	var int user_fuse;
+	+BOUNCEONWALLS
+	+BOUNCEONFLOORS
+	+BOUNCEONCEILINGS
+	+NOBOUNCESOUND
+	-EXPLODEONWATER
+	+DONTBOUNCEONSHOOTABLES
+	+SKYEXPLODE
+	+USEBOUNCESTATE
 	States
 	{
 		Spawn:
 			MNMU BBBBCCCCDDDDEEEE 1 Bright 
 			{
 				A_ScaleVelocity(1.0025);
-				A_NFSeekerMissile(22,44,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,128,16);
+				user_Fuse += 1;
+				if (user_noseektimer > 0) 
+				{ 
+					A_CharmCheckNoSeekTimer(16,2);
+				}
+				else
+				{
+					A_CharmSeek(2);
+				}
 				user_fuse++;
-				if (user_fuse >= 175) { return state("Death"); }
+				if (user_fuse >= 350) { return state("Death"); }
 				return state("");
 			}
 			Loop
+		Bounce:
+			MNMU A 0 Bright { A_MMSeekerClearBounce(6,1); }
+			goto Spawn
 		Death:
 			TNT1 A 1 Bright
 			Stop
