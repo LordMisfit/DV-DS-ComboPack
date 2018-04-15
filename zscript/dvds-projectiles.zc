@@ -1,0 +1,1646 @@
+// Base Projectile Class
+class AetheriusProjectileZSC : AetheriusBaseZSC
+{
+	const SHARDSPAWN_LEFT	= 1;
+	const SHARDSPAWN_RIGHT	= 2;
+	const SHARDSPAWN_UP		= 4;
+	const SHARDSPAWN_DOWN	= 8;
+
+	int user_noseektimer, user_seektimer; // For Magic Missiles
+
+	void A_PlayCrisisAtkSound ()
+	{
+		A_PlaySound("crisisattack",6);
+		A_PlaySound("crisisattack2",7);
+	}
+
+	// A_SeekerMissile that will clear its tracer pointer if the tracer is friendly.
+	void A_NFSeekerMissile(int threshold, int maxturnangle, int flags = 0, int chance = 50, int distance = 10)
+	{
+		A_SeekerMissile(threshold,maxturnangle,flags,chance,distance);
+		// Clears if the tracer is friendly.
+		if (tracer && tracer.bFRIENDLY == 1) tracer = null;
+	}	
+	
+	void A_CharmSeek(int maxtime = 2)
+	{
+		user_seektimer += 1;
+		if (user_seektimer >= maxtime) 
+		{
+			A_SeekerMissile(90,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64); 
+			user_seektimer = 0;
+		}
+		//A_LogInt(user_seektimer);
+	}
+
+	void A_MMSeek(int maxtime = 2)
+	{
+		user_seektimer += 1;
+		if (user_seektimer >= maxtime) 
+		{
+			A_NFSeekerMissile(22,44,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,128,16);
+			user_seektimer = 0;
+		}
+		//A_LogInt(user_seektimer);
+	}
+
+	void A_CharmCheckNoSeekTimer(int maxchance = 16, int charmseek = 2)
+	{
+		user_noseektimer -= 1;
+		if (random(1,maxchance) == 1) 
+		{ 
+			A_CharmSeek(charmseek);
+			user_noseektimer += 1;
+		}
+		//A_LogInt(user_noseektimer);
+	}
+	
+	void A_MMCheckNoSeekTimer(int maxchance = 16, int mmseek = 2)
+	{
+		user_noseektimer -= 1;
+		if (random(1,maxchance) == 1) 
+		{ 
+			A_MMSeek(mmseek);
+			user_noseektimer += 1;
+		}
+		//A_LogInt(user_noseektimer);
+	}
+
+	void A_MMSeekerClearBounce(int timerset = 6, int randomset = 0)
+	{
+		if (user_noseektimer <= 0) 
+		{ 
+			user_noseektimer = timerset + random(-randomset,randomset);
+			A_RearrangePointers(AAPTR_DEFAULT, AAPTR_DEFAULT, AAPTR_NULL);
+			//A_LogInt(user_noseektimer);
+		} 
+	}
+
+
+
+	// Customizable version of A_Tracer, allowing you to change the puff and smoke, as well as the tracing angle.
+	void A_CustomTracer(double traceang = 16.875, string pufftype = "BulletPuff", string smoketype = "RevenantTracerSmoke")
+	{
+		// killough 1/18/98: this is why some missiles do not have smoke
+		// and some do. Also, internal demos start at random gametics, thus
+		// the bug in which revenants cause internal demos to go out of sync.
+		//
+		// killough 3/6/98: fix revenant internal demo bug by subtracting
+		// levelstarttic from gametic:
+		//
+		// [RH] level.time is always 0-based, so nothing special to do here.
+
+		if (level.time & 3)	return;
+	
+		// spawn a puff of smoke behind the rocket
+		SpawnPuff (pufftype, pos, angle, angle, 3);
+		Actor smoke = Spawn ("RevenantTracerSmoke", Vec3Offset(-Vel.X, -Vel.Y, 0.), ALLOW_REPLACE);
+	
+		if (smoke != null)
+		{
+			smoke.Vel.Z = 1.;
+			smoke.tics -= random[Tracer](0, 3);
+			if (smoke.tics < 1)
+				smoke.tics = 1;
+		}
+
+		// The rest of this function was identical with Strife's version, except for the angle being used.
+		A_Tracer2(traceang);
+	}
+
+	// Red Axe [Heretic]
+	void A_DripBlood (string missiletype = "Blood")
+	{
+		double xo = random2[DripBlood]() / 32.0;
+		double yo = random2[DripBlood]() / 32.0;
+		Actor mo = Spawn (missiletype, Vec3Offset(xo, yo, 0.), ALLOW_REPLACE);
+		if (mo != null)
+		{
+			mo.Vel.X = random2[DripBlood]() / 64.0;
+			mo.Vel.Y = random2[DripBlood]() / 64.0;
+			mo.Gravity = 1./8;
+		}
+	}
+
+	// Ice Ball Splits
+	void A_LichIceImpact(string missiletype = "HeadFX2")
+	{
+		for (int i = 0; i < 8; i++)
+		{
+			Actor shard = Spawn(missiletype, Pos, ALLOW_REPLACE);
+			if (shard != null)
+			{
+				shard.target = target;
+				shard.angle = i*45.;
+				shard.VelFromAngle();
+				shard.Vel.Z = -.6;
+				shard.CheckMissileSpawn (radius);
+			}
+		}
+	}
+
+	// Lich Fire Pillar
+	void A_LichFireGrow ()
+	{
+		health--;
+		AddZ(9.);
+		if (health == 0)
+		{
+			RestoreDamage();
+			SetStateLabel("NoGrow");
+		}
+	}
+
+	// Ice Shards
+	void A_ShedShard()
+	{
+		int spawndir = special1;
+		int spermcount = special2;
+		Actor mo;
+
+		if (spermcount <= 0)
+		{
+			return;				// No sperm left
+		}
+		special2 = 0;
+		spermcount--;
+
+		// every so many calls, spawn a new missile in its set directions
+		if (spawndir & SHARDSPAWN_LEFT)
+		{
+			mo = SpawnMissileAngleZSpeed(pos.z, "FrostMissile", angle + 5, 0, (20. + 2 * spermcount), target);
+			if (mo)
+			{
+				mo.special1 = SHARDSPAWN_LEFT;
+				mo.special2 = spermcount;
+				mo.Vel.Z = Vel.Z;
+				mo.args[0] = (spermcount==3)?2:0;
+			}
+		}
+		if (spawndir & SHARDSPAWN_RIGHT)
+		{
+			mo = SpawnMissileAngleZSpeed(pos.z, "FrostMissile",	angle - 5, 0, (20. + 2 * spermcount), target);
+			if (mo)
+			{
+				mo.special1 = SHARDSPAWN_RIGHT;
+				mo.special2 = spermcount;
+				mo.Vel.Z = Vel.Z;
+				mo.args[0] = (spermcount==3)?2:0;
+			}
+		}
+		if (spawndir & SHARDSPAWN_UP)
+		{
+			mo = SpawnMissileAngleZSpeed(pos.z + 8., "FrostMissile", angle, 0, (15. + 2 * spermcount), target);
+			if (mo)
+			{
+				mo.Vel.Z = Vel.Z;
+				if (spermcount & 1)			// Every other reproduction
+					mo.special1 = SHARDSPAWN_UP | SHARDSPAWN_LEFT | SHARDSPAWN_RIGHT;
+				else
+					mo.special1 = SHARDSPAWN_UP;
+				mo.special2 = spermcount;
+				mo.args[0] = (spermcount==3)?2:0;
+			}
+		}
+		if (spawndir & SHARDSPAWN_DOWN)
+		{
+			mo = SpawnMissileAngleZSpeed(pos.z - 4., "FrostMissile", angle, 0, (15. + 2 * spermcount), target);
+			if (mo)
+			{
+				mo.Vel.Z = Vel.Z;
+				if (spermcount & 1)			// Every other reproduction
+					mo.special1 = SHARDSPAWN_DOWN | SHARDSPAWN_LEFT | SHARDSPAWN_RIGHT;
+				else
+					mo.special1 = SHARDSPAWN_DOWN;
+				mo.special2 = spermcount;
+				mo.target = target;
+				mo.args[0] = (spermcount==3)?2:0;
+			}
+		}
+	}
+
+	// Wendigo/IceLich Balls
+	void A_IceGuyMissileExplode(string missiletype = "IceGuyFX2")
+	{
+		for (int i = 0; i < 8; i++)
+		{
+			Actor mo = SpawnMissileAngleZ (pos.z+3, missiletype, i*45., -0.3);
+			if (mo)
+			{
+				mo.target = target;
+			}
+		}
+	}	
+
+	//
+	void A_MntrFloorFire(string missiletype = "MinotaurFX3")
+	{
+		SetZ(floorz);
+		double x = Random2[MntrFloorFire]() / 64.;
+		double y = Random2[MntrFloorFire]() / 64.;
+		
+		Actor mo = Spawn(missiletype, Vec2OffsetZ(x, y, floorz), ALLOW_REPLACE);
+		if (mo != null)
+		{
+			mo.target = target;
+			mo.Vel.X = MinVel; // Force block checking
+			mo.CheckMissileSpawn (radius);
+		}
+	}
+
+	// DragonFX2
+	void A_DragonFX2(string missiletype = "DragonExplosion")
+	{
+		int delay = 16+(random[DragonFX2]()>>3);
+		for (int i = random[DragonFX2](1, 4); i; i--)
+		{
+			double xo = (random[DragonFX2]() - 128) / 4.;
+			double yo = (random[DragonFX2]() - 128) / 4.;
+			double zo = (random[DragonFX2]() - 128) / 16.;
+
+			Actor mo = Spawn (missiletype, Vec3Offset(xo, yo, zo), ALLOW_REPLACE);
+			if (mo)
+			{
+				mo.tics = delay + (random[DragonFX2](0, 3)) * i*2;
+				mo.target = target;
+			}
+		}
+	}
+
+	// WraithVerge
+	void A_CHolyAttack2(string missiletype = "HolySpirit", int spiritnums = 4, int spiritfuse = 105, int spiritfusedm = 85)
+	{
+		for (int j = 0; j < spiritnums; j++)
+		{
+			Actor mo = Spawn(missiletype, Pos, ALLOW_REPLACE);
+			if (!mo)
+			{
+				continue;
+			}
+			switch (j)
+			{
+				// float bob index
+
+				case 0:
+					mo.WeaveIndexZ = random[HolyAtk2]() & 7; // upper-left
+					break;
+				case 1:
+					mo.WeaveIndexZ = 32 + (random[HolyAtk2]() & 7); // upper-right
+					break;
+				case 2:
+					mo.WeaveIndexXY = 32 + (random[HolyAtk2]() & 7); // lower-left
+					break;
+				case 3:
+					mo.WeaveIndexXY = 32 + (random[HolyAtk2]() & 7);
+					mo.WeaveIndexZ = 32 + (random[HolyAtk2]() & 7);
+					break;
+			}
+			mo.SetZ(pos.z);
+			mo.angle = angle + 67.5 - 45.*j;
+			mo.Thrust();
+			mo.target = target;
+			mo.args[0] = 10; // initial turn value
+			mo.args[1] = 0; // initial look angle
+			if (deathmatch)
+			{
+				// Ghosts last slightly less longer in DeathMatch
+				mo.health = spiritfusedm;
+				if (spiritfusedm <= 0) mo.health = 85;
+			}
+			else
+			{
+				mo.health = spiritfuse;
+				if (spiritfuse <= 0) mo.health = 105;
+			}
+			if (tracer)
+			{
+				mo.tracer = tracer;
+				mo.bNoClip = true;
+				mo.bSkullFly = true;
+				mo.bMissile = false;
+			}
+			HolyTail.SpawnSpiritTail (mo);
+		}
+	}
+
+	// Sigil 1/Programmer Lightning Spawn Spot
+	void A_SpectralLightning (string spawntype1 = "SpectralLightningV1", string spawntype2 = "SpectralLightningV2")
+	{
+		if (threshold != 0)
+			--threshold;
+
+		Vel.X += random2[Zap5](3);
+		Vel.Y += random2[Zap5](3);
+
+		double xo = random2[Zap5](3) * 50.;
+		double yo = random2[Zap5](3) * 50.;
+		
+		class<Actor> cls;
+		if (threshold > 25) cls = spawntype2;
+		else cls = spawntype1;
+
+		Actor flash = Spawn (cls, Vec2OffsetZ(xo, yo, ONCEILINGZ), ALLOW_REPLACE);
+
+		if (flash != null)
+		{
+			flash.target = target;
+			flash.Vel.Z = -18;
+			flash.FriendPlayer = FriendPlayer;
+		}
+
+		flash = Spawn(spawntype2, (pos.xy, ONCEILINGZ), ALLOW_REPLACE);
+
+		if (flash != null)
+		{
+			flash.target = target;
+			flash.Vel.Z = -18;
+			flash.FriendPlayer = FriendPlayer;
+		}
+	}
+
+    // Player Sigil 2 Shots
+	void A_SpectralLightningTail ()
+	{
+		Actor foo = Spawn("SpectralLightningHTail", Vec3Offset(-Vel.X, -Vel.Y, 0.), ALLOW_REPLACE);
+		if (foo != null)
+		{
+			foo.Angle = Angle;
+			foo.FriendPlayer = FriendPlayer;
+		}
+	}
+
+	// Sigil5 Shots
+	void A_SpectralBigBallLightning (string spawntype = "SpectralLightningH3")
+	{
+		Class<Actor> cls = spawntype;
+		if (cls)
+		{
+			angle += 90.;
+			SpawnSubMissile (cls, target);
+			angle += 180.;
+			SpawnSubMissile (cls, target);
+			angle -= 270.;
+			SpawnSubMissile (cls, target);
+		}
+	}
+}
+
+// Base FastProjectile Class
+class AetheriusFastProjectileZSC : AetheriusBaseZSC
+{
+	Default
+	{
+		Projectile;
+		MissileHeight 0;
+	}
+	
+	virtual void Effect()
+	{
+		class<Actor> trail = MissileName;
+		if (trail != null)
+		{
+			double hitz = pos.z - 8;
+
+			if (hitz < floorz)
+			{
+				hitz = floorz;
+			}
+			// Do not clip this offset to the floor.
+			hitz += MissileHeight;
+			
+			Actor act = Spawn (trail, (pos.xy, hitz), ALLOW_REPLACE);
+			if (act != null)
+			{
+				if (bGetOwner && target != null)
+					act.target = target;
+				else
+					act.target = self;
+				
+				act.angle = angle;
+				act.pitch = pitch;
+			}
+		}
+	}
+	
+	//----------------------------------------------------------------------------
+	//
+	// AFastProjectile :: Tick
+	//
+	// Thinker for the ultra-fast projectiles used by Heretic and Hexen
+	//
+	//----------------------------------------------------------------------------
+
+	override void Tick ()
+	{
+		ClearInterpolation();
+		double oldz = pos.Z;
+
+		if (!bNoTimeFreeze)
+		{
+			//Added by MC: Freeze mode.
+			if (globalfreeze || level.Frozen)
+			{
+				return;
+			}
+		}
+
+		// [RH] Ripping is a little different than it was in Hexen
+		FCheckPosition tm;
+		tm.DoRipping = bRipper;
+
+		int count = 8;
+		if (radius > 0)
+		{
+			while (abs(Vel.X) >= radius * count || abs(Vel.Y) >= radius * count)
+			{
+				// we need to take smaller steps.
+				count += count;
+			}
+		}
+
+		if (height > 0)
+		{
+			while (abs(Vel.Z) >= height * count)
+			{
+				count += count;
+			}
+		}
+
+		// Handle movement
+		if (Vel != (0, 0, 0) || (pos.Z != floorz))
+		{
+			// force some lateral movement so that collision detection works as intended.
+			if (bMissile && Vel.X == 0 && Vel.Y == 0 && !IsZeroDamage())
+			{
+				Vel.X = MinVel;
+			}
+
+			Vector3 frac = Vel / count;
+			int changexy = frac.X != 0 || frac.Y != 0;
+			int ripcount = count / 8;
+			for (int i = 0; i < count; i++)
+			{
+				if (changexy)
+				{
+					if (--ripcount <= 0)
+					{
+						tm.ClearLastRipped();	// [RH] Do rip damage each step, like Hexen
+					}
+					
+					if (!TryMove (Pos.XY + frac.XY, true, NULL, tm))
+					{ // Blocked move
+						if (!bSkyExplode)
+						{
+							let l = tm.ceilingline;
+							if (l &&
+								l.backsector &&
+								l.backsector.GetTexture(sector.ceiling) == skyflatnum)
+							{
+								let posr = PosRelative(l.backsector);
+								if (pos.Z >= l.backsector.ceilingplane.ZatPoint(posr.XY))
+								{
+									// Hack to prevent missiles exploding against the sky.
+									// Does not handle sky floors.
+									Destroy ();
+									return;
+								}
+							}
+							// [RH] Don't explode on horizon lines.
+							if (BlockingLine != NULL && BlockingLine.special == Line_Horizon)
+							{
+								Destroy ();
+								return;
+							}
+						}
+
+						ExplodeMissile (BlockingLine, BlockingMobj);
+						return;
+					}
+				}
+				AddZ(frac.Z);
+				UpdateWaterLevel ();
+				oldz = pos.Z;
+				if (oldz <= floorz)
+				{ // Hit the floor
+
+					if (floorpic == skyflatnum && !bSkyExplode)
+					{
+						// [RH] Just remove the missile without exploding it
+						//		if this is a sky floor.
+						Destroy ();
+						return;
+					}
+
+					SetZ(floorz);
+					HitFloor ();
+					ExplodeMissile (NULL, NULL);
+					return;
+				}
+				if (pos.Z + height > ceilingz)
+				{ // Hit the ceiling
+
+					if (ceilingpic == skyflatnum && !bSkyExplode)
+					{
+						Destroy ();
+						return;
+					}
+
+					SetZ(ceilingz - Height);
+					ExplodeMissile (NULL, NULL);
+					return;
+				}
+				CheckPortalTransition();
+				if (changexy && ripcount <= 0) 
+				{
+					ripcount = count >> 3;
+
+					// call the 'Effect' method.
+					Effect();
+				}
+			}
+		}
+		if (!CheckNoDelay())
+			return;		// freed itself
+		// Advance the state
+		if (tics != -1)
+		{
+			if (tics > 0) tics--;
+			while (!tics)
+			{
+				if (!SetState (CurState.NextState))
+				{ // mobj was removed
+					return;
+				}
+			}
+		}
+	}
+}
+
+// Base Crisis Particle
+class AetheriusCrisisParticle : AetheriusBaseZSC
+{
+	double user_basealpha; 
+	double user_basescaleX;
+	double user_basescaleY;
+
+	void A_CrisisParticleInit()
+	{
+		user_basealpha = alpha * 0.10;
+		user_basescaleX = scale.x * 0.10;
+		user_basescaleY = scale.y * 0.10;
+		//Console.Printf("BASEScaleX: %.4f, BASEScaleY: %.4f, BASEALPHAZ: %.4f", user_basescaleX, user_basescaleY, user_basealpha);
+	}
+
+	void A_CrisisParticleDo()
+	{
+		A_FadeOut(user_basealpha);
+		self.scale.x -= user_basescaleX;
+		self.scale.y -= user_basescaleY;
+		//Console.Printf("ScaleX: %.4f, ScaleY: %.4f, ALPHAZ: %.4f", self.scale.x, self.scale.y, self.alpha);
+
+		if (self.scale.x < 0.00 && self.scale.y < 0.00) { A_FadeOut(2); }
+	}
+}
+
+class AetheriusSpawnShotZSC : AetheriusProjectileZSC
+{
+	private void SpawnFlyDS(class<Actor> spawntype, sound snd)
+	{
+		Actor newmobj;
+		Actor fog;
+		Actor eye = master; // The eye is the spawnshot's master, not the target!
+		Actor targ = target; // Unlike other projectiles, the target is the intended destination.
+		int r;
+			
+		// [GZ] Should be more viable than a countdown...
+		if (special2 != 0)
+		{
+			if (special2 > level.maptime)
+				return;		// still flying
+		}
+		else
+		{
+			if (reactiontime == 0 || --reactiontime != 0)
+				return;		// still flying
+		}
+		
+		if (spawntype)
+		{
+			fog = Spawn (spawntype, targ.pos, ALLOW_REPLACE);
+			if (fog) A_PlaySound(snd, CHAN_BODY);
+		}
+
+		class<Actor> SpawnName = null;
+
+		DropItem di;   // di will be our drop item list iterator
+		DropItem drop; // while drop stays as the reference point.
+		int n = 0;
+
+		// First see if this cube has its own actor list
+		drop = GetDropItems();
+
+		// If not, then default back to its master's list
+		if (drop == null && eye != null)
+			drop = eye.GetDropItems();
+
+		if (drop != null)
+		{
+			for (di = drop; di != null; di = di.Next)
+			{
+				if (di.Name != 'None')
+				{
+					if (di.Amount < 0)
+					{
+						//di.Amount = 1; // default value is -1, we need a positive value.
+					}
+					n += di.Amount; // this is how we can weight the list.
+				}
+			}
+			di = drop;
+			n = random[pr_spawnfly](0, n);
+			while (n >= 0)
+			{
+				if (di.Name != 'none')
+				{
+					n -= di.Amount; // logically, none of the -1 values have survived by now.
+				}
+				if ((di.Next != null) && (n >= 0))
+				{
+					di = di.Next;
+				}
+				else
+				{
+					n = -1;
+				}
+			}
+			SpawnName = di.Name;
+		}
+		if (SpawnName == null)
+		{
+			// Randomly select monster to spawn.
+			r = random(1,256); // r = random[pr_spawnfly](0, 255);
+
+			// Probability distribution (kind of :),
+			// decreasing likelihood.
+			if (r < 16)  SpawnName = "Zombieman";		// 16/256
+			else if (r < 32)  SpawnName = "ShotgunGuy";  	// 16/256 
+			else if (r < 48)  SpawnName = "ChaingunGuy";	// 16/256 
+			else if (r < 72)  SpawnName = "DoomImp";  		// 24/256 
+			else if (r < 96)  SpawnName = "Demon";  		// 24/256 
+			else if (r < 108) SpawnName = "PainElemental";	// 12/256
+			else if (r < 132) SpawnName = "Cacodemon";		// 24/256
+			else if (r < 144) SpawnName = "Revenant";		// 12/256
+			else if (r < 168) SpawnName = "Arachnotron";	// 24/256
+			else if (r < 192) SpawnName = "Fatso";			// 24/256
+			else if (r < 216) SpawnName = "HellKnight";		// 24/256
+			else if (r < 228) SpawnName = "BaronOfHell";	// 12/256
+			else if (r < 240) SpawnName = "HellCleric";		// 12/256
+			else if (r < 244) SpawnName = "Archvile";		// 4/256
+			else if (r < 248) SpawnName = "FlyingBalrog";	// 4/256
+			else if (r < 252) SpawnName = "Cyberdemon";		// 4/256
+			else SpawnName = "HadesOverlord";	// 4/256
+		}
+		if (spawnname != null)
+		{
+			newmobj = Spawn (spawnname, targ.pos, ALLOW_REPLACE);
+			if (newmobj != null)
+			{
+				// Make the new monster hate what the boss eye hates
+				if (eye != null)
+				{
+					newmobj.CopyFriendliness (eye, false);
+				}
+				// Make it act as if it was around when the player first made noise
+				// (if the player has made noise).
+				newmobj.LastHeard = newmobj.CurSector.SoundTarget;
+
+				if (newmobj.SeeState != null && newmobj.LookForPlayers (true))
+				{
+					newmobj.SetState (newmobj.SeeState);
+				}
+				if (!newmobj.bDestroyed)
+				{
+					// telefrag anything in this spot
+					newmobj.TeleportMove (newmobj.pos, true);
+				}
+				newmobj.bBossSpawned = true;
+			}
+		}
+
+		// remove self (i.e., cube).
+		Destroy ();
+	}
+
+	void A_SpawnFlyDS(class<Actor> spawntype = null)
+	{
+		sound snd; 
+		if (spawntype != null) 
+		{
+			snd = GetDefaultByType(spawntype).SeeSound;
+		}
+		else
+		{
+			spawntype = "SpawnFire";
+			snd = "brain/spawn";
+		}
+		SpawnFlyDS(spawntype, snd);
+	}
+
+	void A_SpawnSoundDS()
+	{
+		// travelling cube sound
+		A_PlaySound("brain/cube", CHAN_BODY);
+		SpawnFlyDS("SpawnFire", "brain/spawn");
+	}	
+}
+
+class AetheriusEffectProjectile : AetheriusProjectileZSC
+{
+	int user_canafflict;
+	default
+	{
+		+HITMASTER;
+	}
+	
+	void A_StatusEffectChecker(int basechance)
+	{
+		user_ailmentmaxchance = basechance;
+		if (CountInv("EWShieldIdleMode",AAPTR_PLAYER1) > 0) user_ailmentmaxchance * 4;
+		if (CallACS("GetBuffTimer",7) > 0) user_ailmentmaxchance * 4;
+
+		user_canafflict = 1;
+		if (CountInv("InvulnerabilitySpell",AAPTR_MASTER) > 0 || 
+				CountInv("IsInvulnerable",AAPTR_MASTER) > 0 || 
+				CountInv("MenuInvulnerability",AAPTR_MASTER) > 0 ||
+				CountInv("EvadeAnAttack",AAPTR_MASTER) > 0 || 
+				CountInv("PlayerDashing",AAPTR_MASTER) > 0) 
+				{
+					user_canafflict = 0;
+				}
+
+		AetheriusPlayerPawn playpawn;
+		if (master) playpawn = AetheriusPlayerPawn(master);
+		if (playpawn)
+		{
+			if (playpawn.player.cheats & CF_GODMODE2 || playpawn.player.cheats & CF_GODMODE) user_canafflict = 0;
+		}
+	}
+}
+
+class AetheriusWhirlwind : AetheriusProjectileZSC
+{
+	default
+	{
+		Accuracy 8;
+		DamageType "Wind";
+	}
+
+	override int DoSpecialDamage (Actor target, int damage, Name damagetype)
+	{
+		int randVal;
+		if (Accuracy < 1) Accuracy = 1;
+		int whirltimer = level.time & (Accuracy-1);
+		int whirldmg = 3 * randompick(1,1,1,1,1,1,1,1,2,2,2,3);            
+		if (Stamina == 30) whirldmg *= CallACS("CrisisMultiplier");
+
+		if (!target.bDontThrust)
+		{
+			target.angle += Random2[WhirlwindDamage]() * (360 / 4096.);
+			target.Vel.X += Random2[WhirlwindDamage]() / 64.;
+			target.Vel.Y += Random2[WhirlwindDamage]() / 64.;
+		}
+
+		if ((level.time & 16) && !target.bBoss && !target.bDontThrust)
+		{
+			randVal = min(160, random[WhirlwindSeek]());
+			target.Vel.Z += randVal / 32.;
+			if (target.Vel.Z > 12)
+			{
+				target.Vel.Z = 12;
+			}
+		}
+
+		if (whirltimer == 0)
+		{
+			target.DamageMobj (null, target, whirldmg, 'Wind');
+		}
+		return -1;
+	}
+
+	void A_WhirlwindSeek()
+	{
+		health -= 3;
+		if (health < 0)
+		{
+			Vel = (0,0,0);
+			SetStateLabel("Death");
+			bMissile = false;
+			return;
+		}
+		if ((threshold -= 3) < 0)
+		{
+			threshold = 58 + (random[WhirlwindSeek]() & 31);
+			A_PlaySound("ironlich/attack3", CHAN_BODY);
+		}
+		if (tracer && tracer.bShadow)
+		{
+			return;
+		}
+		A_SeekerMissile(10, 30);
+	}
+	
+}
+
+// Holy Spirit --------------------------------------------------------------
+class HolySpiritBase : AetheriusProjectileZSC
+{
+	Default
+	{
+		Health 105;
+		Speed 12;
+		Radius 10;
+		Height 6;
+		Damage 3;
+		Projectile;
+		+RIPPER +SEEKERMISSILE
+		+FOILINVUL +SKYEXPLODE +NOEXPLODEFLOOR +CANBLAST
+		+EXTREMEDEATH +NOSHIELDREFLECT
+		RenderStyle "Translucent";
+		Alpha 0.4;
+		DeathSound "SpiritDie";
+		Obituary "$OB_MPCWEAPWRAITHVERGE";
+	}
+
+	States
+	{
+		Spawn:
+			SPIR AAB 2 A_CHolySeek;
+			SPIR B 2 A_CHolyCheckScream;
+			Loop;
+		Death:
+			SPIR D 4;
+			SPIR E 4 A_Scream;
+			SPIR FGHI 4;
+			Stop;
+	}
+	
+	//============================================================================
+	//
+	//
+	//
+	//============================================================================
+
+	override bool Slam(Actor thing)
+	{
+		if (thing.bShootable && thing != target)
+		{
+			if (multiplayer && !deathmatch && thing.player && target.player)
+			{
+				// don't attack other co-op players
+				return true;
+			}
+			if (thing.bReflective && (thing.player || thing.bBoss))
+			{
+				tracer = target;
+				target = thing;
+				return true;
+			}
+			if (thing.bIsMonster || thing.player)
+			{
+				tracer = thing;
+			}
+			if (random[SpiritSlam]() < 96)
+			{
+				int dam = 12;
+				if (thing.player || thing.bBoss)
+				{
+					dam = 3;
+					// ghost burns out faster when attacking players/bosses
+					health -= 6;
+				}
+				if (Stamina == 30) { dam *= CallACS("CrisisMultiplier"); }
+
+				thing.DamageMobj(self, target, dam, 'Melee');
+				if (random[SpiritSlam]() < 128)
+				{
+					Spawn("HolyPuff", Pos, ALLOW_REPLACE);
+					A_PlaySound("SpiritAttack", CHAN_WEAPON);
+					if (thing.bIsMonster && random[SpiritSlam]() < 128)
+					{
+						thing.Howl();
+					}
+				}
+			}
+			if (thing.health <= 0)
+			{
+				tracer = null;
+			}
+		}
+		return true;
+	}
+
+	override bool SpecialBlastHandling (Actor source, double strength)
+	{
+		if (tracer == source)
+		{
+			tracer = target;
+			target = source;
+		}
+		return true;
+	}
+
+	//============================================================================
+	//
+	// CHolyFindTarget
+	//
+	//============================================================================
+
+	private void CHolyFindTarget ()
+	{
+		Actor target;
+
+		if ( (target = RoughMonsterSearch (6, true)) )
+		{
+			tracer = target;
+			bNoClip = true;
+			bSkullFly = true;
+			bMissile = false;
+		}
+	}
+
+	//============================================================================
+	//
+	// CHolySeekerMissile
+	//
+	// Similar to P_SeekerMissile, but seeks to a random Z on the target
+	//============================================================================
+
+	private void CHolySeekerMissile (double thresh, double turnMax)
+	{
+		Actor target = tracer;
+		if (target == NULL)
+		{
+			return;
+		}
+		if (!target.bShootable || (!target.bIsMonster && !target.player))
+		{
+			// Target died/target isn't a player or creature
+			tracer = null;
+			bNoClip = false;
+			bSkullFly = false;
+			bMissile = true;
+			CHolyFindTarget();
+			return;
+		}
+		double ang = deltaangle(angle, AngleTo(target));
+		double delta = abs(ang);
+		
+		if (delta > thresh)
+		{
+			delta /= 2;
+			if (delta > turnMax)
+			{
+				delta = turnMax;
+			}
+		}
+		if (ang > 0)
+		{
+			// Turn clockwise
+			angle += delta;
+		}
+		else
+		{
+			// Turn counter clockwise
+			angle -= delta;
+		}
+		VelFromAngle();
+
+		if (!(level.time&15) 
+			|| pos.z > target.pos.z + target.height
+			|| pos.z + height < target.pos.z)
+		{
+			double newZ = target.pos.z + ((random[HolySeeker]()*target.Height) / 256.);
+			double deltaZ = newZ - pos.z;
+			if (abs(deltaZ) > 15)
+			{
+				if (deltaZ > 0)
+				{
+					deltaZ = 15;
+				}
+				else
+				{
+					deltaZ = -15;
+				}
+			}
+			Vel.Z = deltaZ / DistanceBySpeed(target, Speed);
+		}
+	}
+
+	//============================================================================
+	//
+	// A_CHolySeek
+	//
+	//============================================================================
+
+	void A_CHolySeek()
+	{
+		health--;
+		if (health <= 0)
+		{
+			Vel.X /= 4;
+			Vel.Y /= 4;
+			Vel.Z = 0;
+			SetStateLabel ("Death");
+			tics -= random[HolySeeker]()&3;
+			return;
+		}
+		if (tracer)
+		{
+			CHolySeekerMissile (args[0], args[0]*2.);
+			if (!((level.time+7)&15))
+			{
+				args[0] = 5+(random[HolySeeker]()/20);
+			}
+		}
+
+		int xyspeed = (random[HolySeeker]() % 5);
+		int zspeed = (random[HolySeeker]() % 5);
+		A_Weave(xyspeed, zspeed, 4., 2.);
+	}
+
+	//============================================================================
+	//
+	// A_CHolyCheckScream
+	//
+	//============================================================================
+
+	void A_CHolyCheckScream()
+	{
+		A_CHolySeek();
+		if (random[HolyScream]() < 20)
+		{
+			A_PlaySound ("SpiritActive", CHAN_VOICE);
+		}
+		if (!tracer)
+		{
+			CHolyFindTarget();
+		}
+	}
+}
+
+// Mage Staff FX2 (Bloodscourge) --------------------------------------------
+class MageStaffFX2Base : AetheriusProjectileZSC
+{
+	Default
+	{
+		Speed 17;
+		Height 8;
+		Damage 4;
+		DamageType "Fire";
+		Projectile;
+		+SEEKERMISSILE
+		+SCREENSEEKER
+		+EXTREMEDEATH
+		DeathSound "MageStaffExplode";
+		Obituary "$OB_MPMWEAPBLOODSCOURGE";
+	}
+
+
+	States
+	{
+		Spawn:
+			MSP2 ABCD 2 Bright A_MStaffTrack;
+			Loop;
+		Death:
+			MSP2 E 4 Bright A_SetTranslucent(1,1);
+			MSP2 F 5 Bright A_Explode (80, 192, 0);
+			MSP2 GH 5 Bright;
+			MSP2 I 4 Bright;
+			Stop;
+	}
+	
+	//============================================================================
+	//
+	//
+	//
+	//============================================================================
+
+	override int SpecialMissileHit (Actor victim)
+	{
+		if (victim != target && !victim.player && !victim.bBoss)
+		{
+			int dam = 10;
+			if (Stamina == 30) { dam *= CallACS("CrisisMultiplier"); }
+
+			victim.DamageMobj (self, target, dam, 'Fire');
+			return 1;	// Keep going
+		}
+		return -1;
+	}
+
+	override bool SpecialBlastHandling (Actor source, double strength)
+	{
+		// Reflect to originator
+		tracer = target;	
+		target = source;
+		return true;
+	}
+
+	//============================================================================
+	//
+	// A_MStaffTrack
+	//
+	//============================================================================
+
+	void A_MStaffTrack()
+	{
+		if (tracer == null && random[MStaffTrack]() < 50)
+		{
+			tracer = RoughMonsterSearch (10, true);
+		}
+		A_SeekerMissile(2, 10);
+	}
+}
+
+class HealMissile : AetheriusProjectileZSC
+{
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		// Non-passive means the one moving into the other is performing the checks.
+		if (!passive)
+		{
+			if (!other.bFRIENDLY)
+				return false;
+		}
+		// We don't really care about others making the check.
+		return true;
+	}
+
+	override int SpecialMissileHit (Actor victim)
+ 	{
+		AetheriusMonsterZSC healee;
+		if (victim) healee = AetheriusMonsterZSC(victim);
+
+ 		if (healee == target) return 1;
+ 		if (healee && healee == tracer && !healee.bFRIENDLY) return 1;
+		if (healee && healee.bFRIENDLY)
+		{
+			if (self.CheckClass("Heal1Shot") == 1)
+			{
+				if (healee.health > 0 && healee.health < healee.User_MaxHP)
+				{
+					healee.health += CallACS("Healing_Actor",0,1); 
+					if (healee.health > healee.User_MaxHP) healee.health = healee.User_MaxHP;
+					return -1;
+				}
+				else { return 1; }
+			}
+
+			if (self.CheckClass("Heal2Shot") == 1) 
+			{
+				if (healee.health > 0 && healee.health < healee.User_MaxHP)
+				{
+					healee.health += CallACS("Healing_Actor",1,1);
+					if (healee.health > healee.User_MaxHP) healee.health = healee.User_MaxHP;
+					return -1;
+				}
+				else { return 1; }
+			}
+
+			if (self.CheckClass("Heal3Shot") == 1) 
+			{
+				if (healee.health > 0 && healee.health < (healee.User_MaxHP*2))
+				{
+					healee.health += CallACS("Healing_Actor",2,1); 
+					if (healee.health > (healee.User_MaxHP*2)) healee.health = (healee.User_MaxHP*2);
+					return -1;
+				}
+				else { return 1; }
+			}
+		}
+
+ 		return -1;
+ 	}
+
+	
+	override void Tick()
+	{
+		//if (tracer.bFRIENDLY) tracer = null;
+		//This space for rent.
+		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
+	}
+}
+
+class CharmMissile : AetheriusProjectileZSC
+{
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		// Non-passive means the one moving into the other is performing the checks.
+		if (!passive)
+		{
+			if (other.bFRIENDLY)
+				return false;
+		}
+		// We don't really care about others making the check.
+		return true;
+	}
+
+	override int SpecialMissileHit (Actor victim)
+ 	{
+ 		if (victim == target) return 1;
+ 		if (victim == tracer && victim.bFRIENDLY) return 1;
+
+ 		return -1;
+ 	}
+
+	
+	override void Tick()
+	{
+		//if (tracer.bFRIENDLY) tracer = null;
+		//This space for rent.
+		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
+	}
+}
+
+class AetheriusBaseLightning : AetheriusBaseZSC
+{
+	Default
+	{
+		MissileType "LightningZap";
+		AttackSound "MageLightningZap";
+		ActiveSound "MageLightningContinuous";
+		Obituary "$OB_MPMWEAPLIGHTNING";
+		Mass 3;
+		Stamina 1;
+		Accuracy 1;
+	}
+	
+	override int SpecialMissileHit (Actor thing)
+	{
+		int dmg = self.mass * random(self.stamina,self.accuracy);
+
+		if (thing.bShootable && thing != target)
+		{
+			if (thing.Mass < LARGE_MASS)
+			{
+				thing.Vel.X += Vel.X / 16;
+				thing.Vel.Y += Vel.Y / 16;
+			}
+			if ((!thing.player && !thing.bBoss) || !(level.time&1))
+			{
+				thing.DamageMobj(self, target, dmg, 'Electric');
+				A_PlaySound(AttackSound, CHAN_WEAPON|CHAN_NOSTOP, 1, false);
+				if (thing.bIsMonster && random[LightningHit]() < 64)
+				{
+					thing.Howl ();
+				}
+			}
+			health--;
+			if (health <= 0 || thing.health <= 0)
+			{
+				return 0;
+			}
+			if (bFloorHugger)
+			{
+				if (lastenemy && ! lastenemy.tracer)
+				{
+					lastenemy.tracer = thing;
+				}
+			}
+			else if (!tracer)
+			{
+				tracer = thing;
+			}
+		}
+		return 1; // lightning zaps through all sprites
+	}
+	
+}
+
+class AetheriusLightningTop : AetheriusBaseLightning
+{
+	const ZAGSPEED = 1;
+
+	Default
+	{
+		Health 144;
+		Speed 25;
+		Radius 16;
+		Height 40;
+		Damage 8;
+		Projectile;
+		+CEILINGHUGGER
+		RenderStyle "Add";
+	}
+
+	States
+	{
+		Spawn:
+			MLFX A 2 Bright A_LightningZap;
+			MLFX BCD 2 Bright A_LightningClip;
+			Loop;
+		Death:
+			MLF2 A 2 Bright A_LightningRemove;
+			MLF2 BCDEKLM 3 Bright;
+			ACLO E 35;
+			MLF2 NO 3 Bright;
+			MLF2 P 4 Bright;
+			MLF2 QP 3 Bright;
+			MLF2 Q 4 Bright;
+			MLF2 P 3 Bright;
+			MLF2 O 3 Bright;
+			MLF2 P 3 Bright;
+			MLF2 P 1 Bright A_HideThing;
+			ACLO E 1050;
+			Stop;
+	}
+	
+	//============================================================================
+	//
+	// A_LightningClip
+	//
+	//============================================================================
+
+	void A_LightningClip()
+	{
+		Actor cMo;
+		Actor target = NULL;
+		int zigZag;
+
+		if (bFloorHugger)
+		{
+			if (lastenemy == NULL)
+			{
+				return;
+			}
+			SetZ(floorz);
+			target = lastenemy.tracer;
+		}
+		else if (bCeilingHugger)
+		{
+			SetZ(ceilingz - Height);
+			target = tracer;
+		}
+		if (bFloorHugger)
+		{
+			// floor lightning zig-zags, and forces the ceiling lightning to mimic
+			cMo = lastenemy;
+			zigZag = random[LightningClip]();
+			if((zigZag > 128 && special1 < 2) || special1 < -2)
+			{
+				Thrust(ZAGSPEED, angle + 90);
+				if(cMo)
+				{
+					cMo.Thrust(ZAGSPEED, angle + 90);
+				}
+				special1++;
+			}
+			else
+			{
+				Thrust(ZAGSPEED,angle - 90);
+				if(cMo)
+				{
+					cMo.Thrust(ZAGSPEED, angle - 90);
+				}
+				special1--;
+			}
+		}
+		if(target)
+		{
+			if(target.health <= 0)
+			{
+				ExplodeMissile();
+			}
+			else
+			{
+				angle = AngleTo(target);
+				VelFromAngle(Speed / 2);
+			}
+		}
+	}
+
+
+	//============================================================================
+	//
+	// A_LightningZap
+	//
+	//============================================================================
+
+	void A_LightningZap(string MissileName = "LightningZap")
+	{
+		Class<Actor> lightning = MissileName;
+		if (lightning == NULL) lightning = "LightningZap";
+
+		A_LightningClip();
+
+		health -= 8;
+		if (health <= 0)
+		{
+			SetStateLabel ("Death");
+			return;
+		}
+		double deltaX = (random[LightningZap]() - 128) * radius / 256;
+		double deltaY = (random[LightningZap]() - 128) * radius / 256;
+		double deltaZ = (bFloorHugger) ? 10 : -10;
+
+		Actor mo = Spawn(lightning, Vec3Offset(deltaX, deltaY, deltaZ), ALLOW_REPLACE);
+		if (mo)
+		{
+			mo.lastenemy = self;
+			mo.Vel.X = Vel.X;
+			mo.Vel.Y = Vel.Y;
+			mo.Vel.Z = (bFloorHugger) ? 20 : -20;
+			mo.target = target;
+		}
+		if (bFloorHugger && random[LightningZap]() < 160)
+		{
+			A_PlaySound (ActiveSound, CHAN_BODY);
+		}
+	}
+
+	//============================================================================
+	//
+	// A_LightningRemove
+	//
+	//============================================================================
+
+	void A_LightningRemove()
+	{
+		Actor mo = lastenemy;
+		if (mo)
+		{
+			bNoTarget = true;	// tell A_ZapMimic that we are dead. The original code did a state pointer compare which is not safe.
+			mo.lastenemy = NULL;
+			mo.ExplodeMissile ();
+		}
+	}
+	
+}
+
+class AetheriusLightningBottom : AetheriusLightningTop
+{
+	Default
+	{
+		-CEILINGHUGGER
+		+FLOORHUGGER
+		RenderStyle "Add";
+	}
+
+	States
+	{
+	Spawn:
+		MLFX E 2 Bright A_LightningZap;
+		MLFX FGH 2 Bright A_LightningClip;
+		Loop;
+	Death:
+		MLF2 F 2 Bright A_LightningRemove;
+		MLF2 GHIJKLM 3 Bright;
+		ACLO E 20;
+		MLF2 NO 3 Bright;
+		MLF2 P 4 Bright;
+		MLF2 QP 3 Bright;
+		MLF2 Q 4 Bright A_LastZap;
+		MLF2 POP 3 Bright;
+		MLF2 P 1 Bright A_HideThing;
+		Goto Super::Death + 19;
+	}
+	
+	//============================================================================
+	//
+	// A_LastZap
+	//
+	//============================================================================
+
+	void A_LastZap(string MissileName = "LightningZap")
+	{
+		Class<Actor> lightning = MissileName;
+		if (lightning == NULL) lightning = "LightningZap";
+		
+		Actor mo = Spawn(lightning, self.Pos, ALLOW_REPLACE);
+		if (mo)
+		{
+			mo.SetStateLabel ("Death");
+			mo.Vel.Z = 40;
+			mo.SetDamage(0);
+		}
+	}
+}
+
+class AetheriusLightningZap : AetheriusBaseZSC
+{
+	Default
+	{
+		Radius 15;
+		Height 35;
+		Damage 2;
+		Projectile;
+		-ACTIVATEIMPACT
+		-ACTIVATEPCROSS
+		RenderStyle "Add";
+		Obituary "$OB_MPMWEAPLIGHTNING";
+	}
+
+	States
+	{
+		Spawn:
+			MLFX IJKLM 2 Bright A_ZapMimic;
+			Loop;
+		Death:
+			MLFX NOPQRSTU 2 Bright;
+			Stop;
+	}
+	
+	override int SpecialMissileHit (Actor thing)
+	{
+		Actor lmo;
+
+		if (thing.bShootable && thing != target)
+		{
+			lmo = lastenemy;
+			if (lmo)
+			{
+				if (lmo.bFloorHugger)
+				{
+					if (lmo.lastenemy && !lmo.lastenemy.tracer)
+					{
+						lmo.lastenemy.tracer = thing;
+					}
+				}
+				else if (!lmo.tracer)
+				{
+					lmo.tracer = thing;
+				}
+				if (!(level.time&3))
+				{
+					lmo.health--;
+				}
+			}
+		}
+		return -1;
+	}
+	
+	//============================================================================
+	//
+	// A_ZapMimic
+	//
+	//============================================================================
+
+	void A_ZapMimic()
+	{
+		Actor mo = lastenemy;
+		if (mo)
+		{
+			if (mo.bNoTarget)
+			{
+				ExplodeMissile ();
+			}
+			else
+			{
+				Vel.X = mo.Vel.X;
+				Vel.Y = mo.Vel.Y;
+			}
+		}
+	}
+}
+
+// Projectiles derived from this class should rip through actors,
+// but not actually hit them more than once.
+class SingleDamageRipper : AetheriusProjectileZSC
+{
+	default
+	{
+			Projectile;
+			+RIPPER;
+	}
+	
+	Array<Actor> ActorsAlreadyHit;
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+			for (let i = 0, size = ActorsAlreadyHit.Size(); i < size; i++)
+					if (other == ActorsAlreadyHit[i])
+							return false;
+			
+			return true;
+	}
+}
+
+class SingleDamageFastRipper : AetheriusFastProjectileZSC
+{
+	default
+	{
+			Projectile;
+			+RIPPER;
+	}
+	
+	Array<Actor> ActorsAlreadyHit;
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+			for (let i = 0, size = ActorsAlreadyHit.Size(); i < size; i++)
+					if (other == ActorsAlreadyHit[i])
+							return false;
+			
+			return true;
+	}
+}
