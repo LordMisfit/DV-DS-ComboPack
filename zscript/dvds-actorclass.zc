@@ -43,7 +43,11 @@ class AetheriusPlayerPawn : PlayerPawn
 {
 	int actortimer;
 	int pbuddha1, pbuddha2, pgod1, pgod2, pnoclip1, pnoclip2;
-	int basexscale, baseyscale;
+	int breathdirection; // 0 = down [size decreases], 1 = up [size increases]
+
+	double basexscale, baseyscale;
+	double scalexmulti, scaleymulti;
+	int breathframe;
 	
 	double neverbleeds;
 
@@ -166,6 +170,11 @@ class AetheriusPlayerPawn : PlayerPawn
 
 	override void PostBeginPlay()
 	{
+		basexscale = scale.x;
+		baseyscale = scale.y;
+		scalexmulti = 1.00;
+		scaleymulti = 1.00;
+
 		// VOODOO Doll Protection
 		if (!player || !player.mo || player.mo != self) { return Super.PostBeginPlay(); }
 
@@ -301,6 +310,56 @@ class AetheriusPlayerPawn : PlayerPawn
 		}
 
 		return ret;
+	}
+	
+	// Reset Breathing Scale
+	void A_APPBreatheReset()
+	{
+		scaleymulti = 1.00;
+		breathdirection = 0;
+		breathframe = 0;
+		A_SetScale(basexscale,baseyscale*scaleymulti);
+	}
+
+	// Breathing Function
+	void A_APPBreathe(double startpoint = 1.00, double endpoint = 0.976, double breathincrementbase = 0.002)
+	{
+		double StaminaBreathSpeed = 1.0;
+		int StaminaLevel;
+		int StaminaMax = 10000;
+		if (CallACS("MiscVarCheckDECORATE",22) > 0) StaminaMax = CallACS("MiscVarCheckDECORATE",22);
+		StaminaLevel = CallACS("MiscVarCheckDECORATE",21) * 10000 / StaminaMax;
+
+		if (StaminaLevel < 157) StaminaBreathSpeed = 1.99;
+		if (StaminaLevel > 156 && StaminaLevel < 626) StaminaBreathSpeed = 1.825;
+		if (StaminaLevel > 625 && StaminaLevel < 1251) StaminaBreathSpeed = 1.66;
+		if (StaminaLevel > 1250 && StaminaLevel < 2501) StaminaBreathSpeed = 1.495;
+		if (StaminaLevel > 2500 && StaminaLevel < 5001) StaminaBreathSpeed = 1.33;
+		if (StaminaLevel > 5000 && StaminaLevel < 7501) StaminaBreathSpeed = 1.165;
+		if (StaminaLevel > 7500 && StaminaLevel < 12501) StaminaBreathSpeed = 1.00;
+		if (StaminaLevel > 12500 && StaminaLevel < 20001) StaminaBreathSpeed = 0.835;
+		if (StaminaLevel > 20000 && StaminaLevel < 27501) StaminaBreathSpeed = 0.67;
+		if (StaminaLevel > 27500 && StaminaLevel < 35001) StaminaBreathSpeed = 0.505;
+		if (StaminaLevel > 35000 && StaminaLevel < 42501) StaminaBreathSpeed = 0.34;
+		if (StaminaLevel > 42500 && StaminaLevel < 48751) StaminaBreathSpeed = 0.175;
+		if (StaminaLevel > 48750) StaminaBreathSpeed = 0.01;
+		breathincrementbase *= StaminaBreathSpeed;
+		
+		if (breathdirection == 0)
+		{
+			breathframe++;
+			scaleymulti -= breathincrementbase;
+			if (scaleymulti <= endpoint) { scaleymulti = endpoint; breathdirection = 1; breathframe = 0; }
+		}
+		else
+		{
+			breathframe++;
+			scaleymulti += breathincrementbase;
+			if (scaleymulti >= startpoint) { scaleymulti = startpoint; breathdirection = 0; breathframe = 0; }
+		}
+		if (GetCVar("dvdsdebug_showstaminausestuff") > 0) Console.Printf("scaleymulti = %8f, breathincrementbase = %8f, breathdirection = %d, breathframe = %d, StaminaBreathSpeed = %8f", 
+																																			scaleymulti, breathincrementbase, breathdirection, breathframe, StaminaBreathSpeed);
+		A_SetScale(basexscale,baseyscale*scaleymulti);
 	}
 }
 
