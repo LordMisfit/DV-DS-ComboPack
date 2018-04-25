@@ -404,9 +404,11 @@ global int 19:HellcoreOverheatLevel; // Every 1% is times 25 tics [1 tics of tim
 
 global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in scripts
 	// [0] is for Base Survival Rate
-	// [1-3] = UNUSED
+	// [1] is for Artificial Map Inflation (EXP) [Percentile] [to increase/decrease the difficulty of levels by a % of maps]
+	// [2] is for Artificial Map Inflation (Stats) [Percentile] [to increase/decrease the difficulty of levels by a % of maps]
+	// [3] is for Artificial Map Inflation (Spawn/Stealth) [Percentile] [to increase/decrease the difficulty of levels by a % of maps]
 	// [4] is for saving health ratio for giving Low or Critical Health Inventory items [for Status Bar Displays and using Crisis attacks with Flora's Hellcore weapons]
-	// [5] = UNUSED
+	// [5] is for Artificial Map Inflation (OVERALL) [Percentile] [to increase/decrease the difficulty of levels by a % of maps]
 	// [6] is the Fygg Drop Identification number (out of [7])
 	// [7] is the highest number for the Fygg chance drop
 	// [8] is for saving the bow proficency level
@@ -446,15 +448,15 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [42] is the # of Aeon Pts Spent on PERKS
 	// [43] is the # of Aeon Pts Spent on STATS
 	// [44] is the # of Pts put into STATS
-	// [45-46] are unused
+		// [45-46] are unused
 	// [47] is for 'stepping' [converted from a global var]
 	// [48] is for "Experience Needed"
 	// [49] is for the Gauntlet Flash Effect
 	// [50] is the Spell-Use Cooldown Timer [possible for future version so spells aren't always tied to how fast you can mash the 'cast spell' buttons :P]
 	// [51] is for GunFlash uses
-	// [52] is for Artificial Map Inflation (EXP) [to increase the difficulty of levels by a number of maps]
-	// [53] is for Artificial Map Inflation (Stats) [to increase the difficulty of levels by a number of maps]
-	// [54] is for Artificial Map Inflation (Spawn/Stealth) [to increase the difficulty of levels by a number of maps]
+	// [52] is for Artificial Map Inflation (EXP) [to increase/decrease the difficulty of levels by a number of maps]
+	// [53] is for Artificial Map Inflation (Stats) [to increase/decrease the difficulty of levels by a number of maps]
+	// [54] is for Artificial Map Inflation (Spawn/Stealth) [to increase/decrease the difficulty of levels by a number of maps]
 	// [55] is the Weapon Page number
 	// [56] is the total number of items so far
 	// [57] is how many Aeon Points are given from items found so far
@@ -569,7 +571,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [166] Dash Timer
 	// [167] Total Monsters Killed by the Player
 	// [168] Whistle Cooldown Timer
-	// [169] is for Artificial Map Inflation (OVERALL) [to increase the difficulty of levels by a number of maps]
+	// [169] is for Artificial Map Inflation (OVERALL) [to increase/decrease the difficulty of levels by a number of maps]
 	// [170] Toggle HUD reference image on or off.
 	// [171] Indicates the player just leveled up [for the new hud] and is the time for the "Level Up!!" and "Stat Up" indicator[s]
 	// [172] Used for the "glow/fade" of the "Level Up" and "Stat Up" indicators
@@ -613,7 +615,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [210] # of Therapeusis Points gained during a level up [for displays]
 	// [211] Current Value of Mana Regen Timer
 	// [212] 'Focus' is in use?
-	// [213] - ?
+		// [213] - [UNUSED]
 	// [214] # of Medicinal Herbs [for death-exit checks]
 	// [215] # of Strong Medicinal Herbs [for death-exit checks]
 	// [216] # of Special Medicinal Herbs [for death-exit checks]
@@ -789,7 +791,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [634] is for the number of Seeds of Sorcery carried by your character [Magic Damage] [for resetting stats]
 	// [635] is for the number of Seeds of Strength carried by your character [Overall Damage] [for resetting stats]
 	// [636] is for the number of Seeds of Therapeusis carried by your character [Magic Defense] [for resetting stats]
-		// [637 to 1998] are undefined so far :P
+		// [637 to 776] are undefined so far :P
+	// [777] - MapCheck [for map number usage in stat/evolve/stealth/EXP calculations]
+		// [778 to 1998] are undefined so far :P
 	// [1999] Save Old HUD Toggle [for times where the HUD needs to be turned off fully]
 	// [2000] HUD mod toggle >.>
 	// [2001] HUD X Size
@@ -2109,6 +2113,7 @@ script "Initializer" OPEN
 		Thing_ChangeTID(0,Player1TID);
 		if (GetLevelInfo(LEVELINFO_LEVELNUM) == 1200) { ModType = 2; } // DVII-DS "MAP00" (Set To Deus Vult II)
 		else if (GetLevelInfo(LEVELINFO_LEVELNUM) == 1100) { ModType = 1; } // DVI-DS "MAP00" // Set To Deus Vult I
+		else if (GetLevelInfo(LEVELINFO_LEVELNUM) == 1039) { ModType = 0; ClassicDoomType = 6; } // "MAPP0" // Set To PSXDoom Mode
 		else if (GetLevelInfo(LEVELINFO_LEVELNUM) >= 1036 && GetLevelInfo(LEVELINFO_LEVELNUM) <= 1038) { ModType = 0; ClassicDoomType = 5; } // "MAPD6"/"MAPD7"/"MAPD8" // Set To Doom64 Mode
 		else if (GetLevelInfo(LEVELINFO_LEVELNUM) == 1030) { ModType = 0; ClassicDoomType = 4; } // "MAPAA" // Set To Strife Mode
 		else if (GetLevelInfo(LEVELINFO_LEVELNUM) == 1021) { ModType = 0; ClassicDoomType = 3; MiscellaneousVars[259] = 1; } // "MAP0A" // Set To Hexen Mode [Deathkings Map]
@@ -12301,8 +12306,10 @@ Script "ArcanaGaugeRegenerationStuff" ENTER
 //------------------------------
 function int GetExpMultiFactor (void)
 {
-	int ExpMultiFactor, Exp1, Exp2;
+	int ExpMultiFactor, MapCheck, Exp2;
 	int deathkingsmapcalcmod = GetCVar("dvds_deathkingsmapcalcmod");
+	int mapcalcfactorexact = 0;
+	int mapcalcfactorpercent = 100;
 
 	// Gets the Experience Multiplication Factor [Part 1]
 	ExpMultiFactor = Random(90,120);
@@ -12322,151 +12329,146 @@ function int GetExpMultiFactor (void)
 	}
 
 	// Gets the Experience Multiplication Factor [Part 2]
-	Exp1 = GetLevelInfo(LEVELINFO_LEVELNUM);
+	MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
 	if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
 	{
 		if (ClassicDoomType == 1 || ClassicDoomType == 2) // Classic Doom 1 or Heretic
 		{
-			if (Exp1 != 1000 || Exp1 != 1010)
+			if (MapCheck != 1000 || MapCheck != 1010)
 			{
-				if (MiscellaneousVars[259] > 0) Exp1 += deathkingsmapcalcmod;
-				Exp1 += MiscellaneousVars[52]; 
-				Exp1 += MiscellaneousVars[169]; 
-				if (Exp1 < 1) Exp1 = 1;
-				if (Exp1 > 50) Exp1 = 50;
+				if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
+				MapCheck += MiscellaneousVars[52]; // Map Inflation [EXP - Exact]
+				MapCheck += MiscellaneousVars[169]; // Map Inflation [Overall - Exact]
+				MapCheck = MapCheck * MiscellaneousVars[1] / 100; // Map Inflation [EXP - Percentile]
+				MapCheck = MapCheck * MiscellaneousVars[5] / 100; // Map Inflation [Overall - Percentile]
+				if (MapCheck < 1) MapCheck = 1;
+				if (MapCheck > 50) MapCheck = 50;
 			}
-			if (Exp1 == 1000) Exp2 = 0; // E1M0 [Classic Doom 1]
-			if (Exp1 == 1010) Exp2 = 0; // E1MA [Heretic]
+			if (MapCheck == 1000) Exp2 = 0; // E1M0 [Classic Doom 1]
+			if (MapCheck == 1010) Exp2 = 0; // E1MA [Heretic]
 			// Episode 1
-			if (Exp1 == 1) Exp2 = Exp1 * 1000 / 1000; // Monster Bonus [100%] [E1M1]
-			if (Exp1 == 2) Exp2 = Exp1 * 1010 / 1000; // Monster Bonus [100%] [E1M2]
-			if (Exp1 == 3) Exp2 = Exp1 * 1020 / 1000; // Monster Bonus [100%] [E1M3]
-			if (Exp1 == 9) Exp2 = Exp1 * 1090 / 1000; // Monster Bonus [100%] [E1M9]
-			if (Exp1 == 10) Exp2 = Exp1 * 1100 / 1000; // Monster Bonus [100%] [E1M10]
-			if (Exp1 == 4) Exp2 = Exp1 * 1030 / 1000; // Monster Bonus [100%] [E1M4]
-			if (Exp1 == 5) Exp2 = Exp1 * 1040 / 1000; // Monster Bonus [100%] [E1M5]
-			if (Exp1 == 6) Exp2 = Exp1 * 1050 / 1000; // Monster Bonus [100%] [E1M6]
-			if (Exp1 == 7) Exp2 = Exp1 * 1060 / 1000; // Monster Bonus [100%] [E1M7]
-			if (Exp1 == 8) Exp2 = Exp1 * 1070 / 1000; // Monster Bonus [100%] [E1M8]
+			if (MapCheck == 1) Exp2 = MapCheck * 1000 / 1000; // Monster Bonus [100%] [E1M1]
+			if (MapCheck == 2) Exp2 = MapCheck * 1010 / 1000; // Monster Bonus [100%] [E1M2]
+			if (MapCheck == 3) Exp2 = MapCheck * 1020 / 1000; // Monster Bonus [100%] [E1M3]
+			if (MapCheck == 9) Exp2 = MapCheck * 1090 / 1000; // Monster Bonus [100%] [E1M9]
+			if (MapCheck == 10) Exp2 = MapCheck * 1100 / 1000; // Monster Bonus [100%] [E1M10]
+			if (MapCheck == 4) Exp2 = MapCheck * 1030 / 1000; // Monster Bonus [100%] [E1M4]
+			if (MapCheck == 5) Exp2 = MapCheck * 1040 / 1000; // Monster Bonus [100%] [E1M5]
+			if (MapCheck == 6) Exp2 = MapCheck * 1050 / 1000; // Monster Bonus [100%] [E1M6]
+			if (MapCheck == 7) Exp2 = MapCheck * 1060 / 1000; // Monster Bonus [100%] [E1M7]
+			if (MapCheck == 8) Exp2 = MapCheck * 1070 / 1000; // Monster Bonus [100%] [E1M8]
 			// Episode 2
-			if (Exp1 == 11) Exp2 = Exp1 * 1112 / 1000; // Monster Bonus [100%] [E2M1]
-			if (Exp1 == 12) Exp2 = Exp1 * 1125 / 1000; // Monster Bonus [100%] [E2M2]
-			if (Exp1 == 13) Exp2 = Exp1 * 1137 / 1000; // Monster Bonus [100%] [E2M3]
-			if (Exp1 == 14) Exp2 = Exp1 * 1150 / 1000; // Monster Bonus [100%] [E2M4]
-			if (Exp1 == 15) Exp2 = Exp1 * 1162 / 1000; // Monster Bonus [100%] [E2M5]
-			if (Exp1 == 19) Exp2 = Exp1 * 1220 / 1000; // Monster Bonus [100%] [E2M9]
-			if (Exp1 == 20) Exp2 = Exp1 * 1240 / 1000; // Monster Bonus [100%] [E2M10]
-			if (Exp1 == 16) Exp2 = Exp1 * 1175 / 1000; // Monster Bonus [100%] [E2M6]
-			if (Exp1 == 17) Exp2 = Exp1 * 1187 / 1000; // Monster Bonus [100%] [E2M7]
-			if (Exp1 == 18) Exp2 = Exp1 * 1200 / 1000; // Monster Bonus [100%] [E2M8]
+			if (MapCheck == 11) Exp2 = MapCheck * 1112 / 1000; // Monster Bonus [100%] [E2M1]
+			if (MapCheck == 12) Exp2 = MapCheck * 1125 / 1000; // Monster Bonus [100%] [E2M2]
+			if (MapCheck == 13) Exp2 = MapCheck * 1137 / 1000; // Monster Bonus [100%] [E2M3]
+			if (MapCheck == 14) Exp2 = MapCheck * 1150 / 1000; // Monster Bonus [100%] [E2M4]
+			if (MapCheck == 15) Exp2 = MapCheck * 1162 / 1000; // Monster Bonus [100%] [E2M5]
+			if (MapCheck == 19) Exp2 = MapCheck * 1220 / 1000; // Monster Bonus [100%] [E2M9]
+			if (MapCheck == 20) Exp2 = MapCheck * 1240 / 1000; // Monster Bonus [100%] [E2M10]
+			if (MapCheck == 16) Exp2 = MapCheck * 1175 / 1000; // Monster Bonus [100%] [E2M6]
+			if (MapCheck == 17) Exp2 = MapCheck * 1187 / 1000; // Monster Bonus [100%] [E2M7]
+			if (MapCheck == 18) Exp2 = MapCheck * 1200 / 1000; // Monster Bonus [100%] [E2M8]
 			// Episode 3
-			if (Exp1 == 21) Exp2 = Exp1 * 1280 / 1000; // Monster Bonus [100%] [E3M1]
-			if (Exp1 == 22) Exp2 = Exp1 * 1320 / 1000; // Monster Bonus [100%] [E3M2]
-			if (Exp1 == 23) Exp2 = Exp1 * 1360 / 1000; // Monster Bonus [100%] [E3M3]
-			if (Exp1 == 24) Exp2 = Exp1 * 1400 / 1000; // Monster Bonus [100%] [E3M4]
-			if (Exp1 == 25) Exp2 = Exp1 * 1440 / 1000; // Monster Bonus [100%] [E3M5]
-			if (Exp1 == 26) Exp2 = Exp1 * 1480 / 1000; // Monster Bonus [100%] [E3M6]
-			if (Exp1 == 29) Exp2 = Exp1 * 1600 / 1000; // Monster Bonus [100%] [E3M9]
-			if (Exp1 == 30) Exp2 = Exp1 * 1680 / 1000; // Monster Bonus [100%] [E3M10]
-			if (Exp1 == 27) Exp2 = Exp1 * 1520 / 1000; // Monster Bonus [100%] [E3M7]
-			if (Exp1 == 28) Exp2 = Exp1 * 1560 / 1000; // Monster Bonus [100%] [E3M8]
+			if (MapCheck == 21) Exp2 = MapCheck * 1280 / 1000; // Monster Bonus [100%] [E3M1]
+			if (MapCheck == 22) Exp2 = MapCheck * 1320 / 1000; // Monster Bonus [100%] [E3M2]
+			if (MapCheck == 23) Exp2 = MapCheck * 1360 / 1000; // Monster Bonus [100%] [E3M3]
+			if (MapCheck == 24) Exp2 = MapCheck * 1400 / 1000; // Monster Bonus [100%] [E3M4]
+			if (MapCheck == 25) Exp2 = MapCheck * 1440 / 1000; // Monster Bonus [100%] [E3M5]
+			if (MapCheck == 26) Exp2 = MapCheck * 1480 / 1000; // Monster Bonus [100%] [E3M6]
+			if (MapCheck == 29) Exp2 = MapCheck * 1600 / 1000; // Monster Bonus [100%] [E3M9]
+			if (MapCheck == 30) Exp2 = MapCheck * 1680 / 1000; // Monster Bonus [100%] [E3M10]
+			if (MapCheck == 27) Exp2 = MapCheck * 1520 / 1000; // Monster Bonus [100%] [E3M7]
+			if (MapCheck == 28) Exp2 = MapCheck * 1560 / 1000; // Monster Bonus [100%] [E3M8]
 			// Episode 4
-			if (Exp1 == 31) Exp2 = Exp1 * 1750 / 1000; // Monster Bonus [100%] [E4M1]
-			if (Exp1 == 32) Exp2 = Exp1 * 1825 / 1000; // Monster Bonus [100%] [E4M2]
-			if (Exp1 == 39) Exp2 = Exp1 * 2600 / 1000; // Monster Bonus [100%] [E4M9]
-			if (Exp1 == 40) Exp2 = Exp1 * 2875 / 1000; // Monster Bonus [100%] [E4M10]
-			if (Exp1 == 33) Exp2 = Exp1 * 1900 / 1000; // Monster Bonus [100%] [E4M3]
-			if (Exp1 == 34) Exp2 = Exp1 * 2000 / 1000; // Monster Bonus [100%] [E4M4]
-			if (Exp1 == 35) Exp2 = Exp1 * 2100 / 1000; // Monster Bonus [100%] [E4M5]
-			if (Exp1 == 36) Exp2 = Exp1 * 2225 / 1000; // Monster Bonus [100%] [E4M6]
-			if (Exp1 == 37) Exp2 = Exp1 * 2350 / 1000; // Monster Bonus [100%] [E4M7]
-			if (Exp1 == 38) Exp2 = Exp1 * 2475 / 1000; // Monster Bonus [100%] [E4M8]
-			// Episode 4
-			if (Exp1 == 31) Exp2 = Exp1 * 1750 / 1000; // Monster Bonus [100%] [E4M1]
-			if (Exp1 == 32) Exp2 = Exp1 * 1825 / 1000; // Monster Bonus [100%] [E4M2]
-			if (Exp1 == 39) Exp2 = Exp1 * 2600 / 1000; // Monster Bonus [100%] [E4M9]
-			if (Exp1 == 40) Exp2 = Exp1 * 2875 / 1000; // Monster Bonus [100%] [E4M10]
-			if (Exp1 == 33) Exp2 = Exp1 * 1900 / 1000; // Monster Bonus [100%] [E4M3]
-			if (Exp1 == 34) Exp2 = Exp1 * 2000 / 1000; // Monster Bonus [100%] [E4M4]
-			if (Exp1 == 35) Exp2 = Exp1 * 2100 / 1000; // Monster Bonus [100%] [E4M5]
-			if (Exp1 == 36) Exp2 = Exp1 * 2225 / 1000; // Monster Bonus [100%] [E4M6]
-			if (Exp1 == 37) Exp2 = Exp1 * 2350 / 1000; // Monster Bonus [100%] [E4M7]
-			if (Exp1 == 38) Exp2 = Exp1 * 2475 / 1000; // Monster Bonus [100%] [E4M8]
+			if (MapCheck == 31) Exp2 = MapCheck * 1750 / 1000; // Monster Bonus [100%] [E4M1]
+			if (MapCheck == 32) Exp2 = MapCheck * 1825 / 1000; // Monster Bonus [100%] [E4M2]
+			if (MapCheck == 39) Exp2 = MapCheck * 2600 / 1000; // Monster Bonus [100%] [E4M9]
+			if (MapCheck == 40) Exp2 = MapCheck * 2875 / 1000; // Monster Bonus [100%] [E4M10]
+			if (MapCheck == 33) Exp2 = MapCheck * 1900 / 1000; // Monster Bonus [100%] [E4M3]
+			if (MapCheck == 34) Exp2 = MapCheck * 2000 / 1000; // Monster Bonus [100%] [E4M4]
+			if (MapCheck == 35) Exp2 = MapCheck * 2100 / 1000; // Monster Bonus [100%] [E4M5]
+			if (MapCheck == 36) Exp2 = MapCheck * 2225 / 1000; // Monster Bonus [100%] [E4M6]
+			if (MapCheck == 37) Exp2 = MapCheck * 2350 / 1000; // Monster Bonus [100%] [E4M7]
+			if (MapCheck == 38) Exp2 = MapCheck * 2475 / 1000; // Monster Bonus [100%] [E4M8]
 			// Episode 5
-			if (Exp1 == 41) Exp2 = Exp1 * 1750 / 1000; // Monster Bonus [100%] [E5M1]
-			if (Exp1 == 42) Exp2 = Exp1 * 1825 / 1000; // Monster Bonus [100%] [E5M2]
-			if (Exp1 == 49) Exp2 = Exp1 * 2600 / 1000; // Monster Bonus [100%] [E5M9]
-			if (Exp1 == 50) Exp2 = Exp1 * 2875 / 1000; // Monster Bonus [100%] [E5M10]
-			if (Exp1 == 43) Exp2 = Exp1 * 1900 / 1000; // Monster Bonus [100%] [E5M3]
-			if (Exp1 == 44) Exp2 = Exp1 * 2000 / 1000; // Monster Bonus [100%] [E5M4]
-			if (Exp1 == 45) Exp2 = Exp1 * 2100 / 1000; // Monster Bonus [100%] [E5M5]
-			if (Exp1 == 46) Exp2 = Exp1 * 2225 / 1000; // Monster Bonus [100%] [E5M6]
-			if (Exp1 == 47) Exp2 = Exp1 * 2350 / 1000; // Monster Bonus [100%] [E5M7]
-			if (Exp1 == 48) Exp2 = Exp1 * 2475 / 1000; // Monster Bonus [100%] [E5M8]
+			if (MapCheck == 41) Exp2 = MapCheck * 2750 / 1000; // Monster Bonus [100%] [E5M1]
+			if (MapCheck == 42) Exp2 = MapCheck * 2825 / 1000; // Monster Bonus [100%] [E5M2]
+			if (MapCheck == 49) Exp2 = MapCheck * 3600 / 1000; // Monster Bonus [100%] [E5M9]
+			if (MapCheck == 50) Exp2 = MapCheck * 3875 / 1000; // Monster Bonus [100%] [E5M10]
+			if (MapCheck == 43) Exp2 = MapCheck * 2900 / 1000; // Monster Bonus [100%] [E5M3]
+			if (MapCheck == 44) Exp2 = MapCheck * 3000 / 1000; // Monster Bonus [100%] [E5M4]
+			if (MapCheck == 45) Exp2 = MapCheck * 3100 / 1000; // Monster Bonus [100%] [E5M5]
+			if (MapCheck == 46) Exp2 = MapCheck * 3225 / 1000; // Monster Bonus [100%] [E5M6]
+			if (MapCheck == 47) Exp2 = MapCheck * 3350 / 1000; // Monster Bonus [100%] [E5M7]
+			if (MapCheck == 48) Exp2 = MapCheck * 3475 / 1000; // Monster Bonus [100%] [E5M8]
 	
-						if (Exp1 == 9) Exp2 = Exp2 * 15 / 4; // [375%]
-			else if (Exp1 == 19) Exp2 = Exp2 * 5;      // [500%]
-			else if (Exp1 == 29) Exp2 = Exp2 * 25 / 4; // [625%]
-			else if (Exp1 == 39) Exp2 = Exp2 * 15 / 2; // [750%]
-			else if (Exp1 == 49) Exp2 = Exp2 * 35 / 4; // [875%]
-											else Exp2 = Exp2 * 5 / 2;  // [250%]
+						if (MapCheck == 9) Exp2 = Exp2 * 15 / 4; // [375%]
+			else if (MapCheck == 19) Exp2 = Exp2 * 5;      // [500%]
+			else if (MapCheck == 29) Exp2 = Exp2 * 25 / 4; // [625%]
+			else if (MapCheck == 39) Exp2 = Exp2 * 15 / 2; // [750%]
+			else if (MapCheck == 49) Exp2 = Exp2 * 35 / 4; // [875%]
+													else Exp2 = Exp2 * 5 / 2;  // [250%]
 		}
-		else // Classic Doom 2 / Hexen / Strife / Doom64
+		else // Classic Doom 2 / Hexen / Strife / Doom64 / PSXDoom
 		{
-			if (Exp1 != 1050 || Exp1 != 1020 || Exp1 != 1030)
+			if (MapCheck != 1050 || MapCheck != 1020 || MapCheck != 1030 || MapCheck != 1036 || MapCheck != 1037 || MapCheck != 1038 || MapCheck != 1039)
 			{
-				if (MiscellaneousVars[259] > 0) Exp1 += deathkingsmapcalcmod;
-				Exp1 += MiscellaneousVars[52];
-				Exp1 += MiscellaneousVars[169]; 
-				if (Exp1 < 1) Exp1 = 1;
-				if (Exp1 > 50) Exp1 = 50;
+				if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
+				MapCheck += MiscellaneousVars[52]; // Map Inflation [EXP - Exact]
+				MapCheck += MiscellaneousVars[169]; // Map Inflation [Overall - Exact]
+				MapCheck = MapCheck * MiscellaneousVars[1] / 100; // Map Inflation [EXP - Percentile]
+				MapCheck = MapCheck * MiscellaneousVars[5] / 100; // Map Inflation [Overall - Percentile]
+				if (MapCheck < 1) MapCheck = 1;
+				if (MapCheck > 50) MapCheck = 50;
 			}
-			if (Exp1 == 1050) Exp2 = 0; // MAP00 [Classic Doom 2]
-			if (Exp1 == 1020) Exp2 = 0; // MAP0A [Hexen]
-			if (Exp1 == 1030) Exp2 = 0; // MAPAA [Strife]
+			if (MapCheck == 1050) Exp2 = 0; // MAP00 [Classic Doom 2]
+			if (MapCheck == 1020) Exp2 = 0; // MAP0A [Hexen]
+			if (MapCheck == 1030) Exp2 = 0; // MAPAA [Strife]
+			if (MapCheck >= 1036 && MapCheck <= 1038) Exp2 = 0; // [Doom64]
+			if (MapCheck == 1039) Exp2 = 0; // MAPP0 [PSXDoom]
 			// Main Game
-			if (Exp1 == 1) Exp2 = Exp1 * 1000 / 1000; // Monster Bonus [100%] [MAP01]
-			if (Exp1 == 2) Exp2 = Exp1 * 10125 / 10000; // Monster Bonus [101.25%] [MAP02]
-			if (Exp1 == 3) Exp2 = Exp1 * 1025 / 1000; // Monster Bonus [102.5%] [MAP03]
-			if (Exp1 == 4) Exp2 = Exp1 * 10375 / 10000; // Monster Bonus [103.75%] [MAP04]
-			if (Exp1 == 5) Exp2 = Exp1 * 1050 / 1000; // Monster Bonus [105%] [MAP05]
+			if (MapCheck == 1) Exp2 = MapCheck * 1000 / 1000; // Monster Bonus [100%] [MAP01]
+			if (MapCheck == 2) Exp2 = MapCheck * 10125 / 10000; // Monster Bonus [101.25%] [MAP02]
+			if (MapCheck == 3) Exp2 = MapCheck * 1025 / 1000; // Monster Bonus [102.5%] [MAP03]
+			if (MapCheck == 4) Exp2 = MapCheck * 10375 / 10000; // Monster Bonus [103.75%] [MAP04]
+			if (MapCheck == 5) Exp2 = MapCheck * 1050 / 1000; // Monster Bonus [105%] [MAP05]
 	
-			if (Exp1 == 6) Exp2 = Exp1 * 1069 / 1000; // Monster Bonus [106.9%] [MAP06]
-			if (Exp1 == 7) Exp2 = Exp1 * 1088 / 1000; // Monster Bonus [108.8%] [MAP07]
-			if (Exp1 == 8) Exp2 = Exp1 * 1107 / 1000; // Monster Bonus [110.7%] [MAP08]
-			if (Exp1 == 9) Exp2 = Exp1 * 1125 / 1000; // Monster Bonus [112.5%] [MAP09]
-			if (Exp1 == 10) Exp2 = Exp1 * 1144 / 1000; // Monster Bonus [114.4%] [MAP10]
+			if (MapCheck == 6) Exp2 = MapCheck * 1069 / 1000; // Monster Bonus [106.9%] [MAP06]
+			if (MapCheck == 7) Exp2 = MapCheck * 1088 / 1000; // Monster Bonus [108.8%] [MAP07]
+			if (MapCheck == 8) Exp2 = MapCheck * 1107 / 1000; // Monster Bonus [110.7%] [MAP08]
+			if (MapCheck == 9) Exp2 = MapCheck * 1125 / 1000; // Monster Bonus [112.5%] [MAP09]
+			if (MapCheck == 10) Exp2 = MapCheck * 1144 / 1000; // Monster Bonus [114.4%] [MAP10]
 	
-			if (Exp1 == 11) Exp2 = Exp1 * 1169 / 1000; // Monster Bonus [116.9%] [MAP11]
-			if (Exp1 == 12) Exp2 = Exp1 * 1194 / 1000; // Monster Bonus [119.4%] [MAP12]
-			if (Exp1 == 13) Exp2 = Exp1 * 1219 / 1000; // Monster Bonus [121.9%] [MAP13]
-			if (Exp1 == 14) Exp2 = Exp1 * 1244 / 1000; // Monster Bonus [124.4%] [MAP14]
-			if (Exp1 == 15) Exp2 = Exp1 * 1269 / 1000; // Monster Bonus [126.9%] [MAP15]
+			if (MapCheck == 11) Exp2 = MapCheck * 1169 / 1000; // Monster Bonus [116.9%] [MAP11]
+			if (MapCheck == 12) Exp2 = MapCheck * 1194 / 1000; // Monster Bonus [119.4%] [MAP12]
+			if (MapCheck == 13) Exp2 = MapCheck * 1219 / 1000; // Monster Bonus [121.9%] [MAP13]
+			if (MapCheck == 14) Exp2 = MapCheck * 1244 / 1000; // Monster Bonus [124.4%] [MAP14]
+			if (MapCheck == 15) Exp2 = MapCheck * 1269 / 1000; // Monster Bonus [126.9%] [MAP15]
 	
-			if (Exp1 == 31) Exp2 = Exp1 * 1519 / 1000; // Monster Bonus [151.9%] [MAP31]
-			if (Exp1 == 32) Exp2 = Exp1 * 2019 / 1000; // Monster Bonus [201.9%] [MAP32]
+			if (MapCheck == 31) Exp2 = MapCheck * 1519 / 1000; // Monster Bonus [151.9%] [MAP31]
+			if (MapCheck == 32) Exp2 = MapCheck * 2019 / 1000; // Monster Bonus [201.9%] [MAP32]
 	
-			if (Exp1 == 16) Exp2 = Exp1 * 1300 / 1000; // Monster Bonus [130.0%] [MAP16]
-			if (Exp1 == 17) Exp2 = Exp1 * 1331 / 1000; // Monster Bonus [133.1%] [MAP17]
-			if (Exp1 == 18) Exp2 = Exp1 * 1363 / 1000; // Monster Bonus [136.3%] [MAP18]
-			if (Exp1 == 19) Exp2 = Exp1 * 1394 / 1000; // Monster Bonus [139.4%] [MAP19]
-			if (Exp1 == 20) Exp2 = Exp1 * 1425 / 1000; // Monster Bonus [142.5%] [MAP20]
+			if (MapCheck == 16) Exp2 = MapCheck * 1300 / 1000; // Monster Bonus [130.0%] [MAP16]
+			if (MapCheck == 17) Exp2 = MapCheck * 1331 / 1000; // Monster Bonus [133.1%] [MAP17]
+			if (MapCheck == 18) Exp2 = MapCheck * 1363 / 1000; // Monster Bonus [136.3%] [MAP18]
+			if (MapCheck == 19) Exp2 = MapCheck * 1394 / 1000; // Monster Bonus [139.4%] [MAP19]
+			if (MapCheck == 20) Exp2 = MapCheck * 1425 / 1000; // Monster Bonus [142.5%] [MAP20]
 	
-			if (Exp1 == 21) Exp2 = Exp1 * 1475 / 1000; // Monster Bonus [147.5%] [MAP21]
-			if (Exp1 == 22) Exp2 = Exp1 * 1525 / 1000; // Monster Bonus [152.5%] [MAP22]
-			if (Exp1 == 23) Exp2 = Exp1 * 1575 / 1000; // Monster Bonus [157.5%] [MAP23]
-			if (Exp1 == 24) Exp2 = Exp1 * 1625 / 1000; // Monster Bonus [162.5%] [MAP24]
-			if (Exp1 == 25) Exp2 = Exp1 * 1675 / 1000; // Monster Bonus [167.5%] [MAP25]
+			if (MapCheck == 21) Exp2 = MapCheck * 1475 / 1000; // Monster Bonus [147.5%] [MAP21]
+			if (MapCheck == 22) Exp2 = MapCheck * 1525 / 1000; // Monster Bonus [152.5%] [MAP22]
+			if (MapCheck == 23) Exp2 = MapCheck * 1575 / 1000; // Monster Bonus [157.5%] [MAP23]
+			if (MapCheck == 24) Exp2 = MapCheck * 1625 / 1000; // Monster Bonus [162.5%] [MAP24]
+			if (MapCheck == 25) Exp2 = MapCheck * 1675 / 1000; // Monster Bonus [167.5%] [MAP25]
 	
-			if (Exp1 == 26) Exp2 = Exp1 * 1743 / 1000; // Monster Bonus [174.3%] [MAP26]
-			if (Exp1 == 27) Exp2 = Exp1 * 1819 / 1000; // Monster Bonus [181.9%] [MAP27]
-			if (Exp1 == 28) Exp2 = Exp1 * 1900 / 1000; // Monster Bonus [190.0%] [MAP28]
-			if (Exp1 == 29) Exp2 = Exp1 * 1998 / 1000; // Monster Bonus [189.0%] [MAP29]
-			if (Exp1 == 30) Exp2 = Exp1 * 2688 / 1000; // Monster Bonus [268.8%] [MAP30]
+			if (MapCheck == 26) Exp2 = MapCheck * 1743 / 1000; // Monster Bonus [174.3%] [MAP26]
+			if (MapCheck == 27) Exp2 = MapCheck * 1819 / 1000; // Monster Bonus [181.9%] [MAP27]
+			if (MapCheck == 28) Exp2 = MapCheck * 1900 / 1000; // Monster Bonus [190.0%] [MAP28]
+			if (MapCheck == 29) Exp2 = MapCheck * 1998 / 1000; // Monster Bonus [189.0%] [MAP29]
+			if (MapCheck == 30) Exp2 = MapCheck * 2688 / 1000; // Monster Bonus [268.8%] [MAP30]
 			//PrintBold(d:Exp2);
 	
-					if (Exp1 == 31) Exp2 = Exp2 * 5; // [500%]
-			else if (Exp1 == 32) Exp2 = Exp2 * 15 / 2; // [750%]
+					if (MapCheck == 31) Exp2 = Exp2 * 5; // [500%]
+			else if (MapCheck == 32) Exp2 = Exp2 * 15 / 2; // [750%]
 											else Exp2 = Exp2 * 5 / 2; // [250%]
 			//PrintBold(d:Exp2);
 		}
@@ -12474,63 +12476,57 @@ function int GetExpMultiFactor (void)
 	else
 	if (ModType == 1) // Deus Vult 1
 	{
-		if (Exp1 != 1100)
+		if (MapCheck != 1100)
 		{
-			if (MiscellaneousVars[259] > 0) Exp1 += deathkingsmapcalcmod;
-			Exp1 += MiscellaneousVars[52];
-			Exp1 += MiscellaneousVars[169]; 
-			if (Exp1 < 1101) Exp1 = 1101;
-			if (Exp1 > 1104) Exp1 = 1104;
+			if (MapCheck < 1101) MapCheck = 1101;
+			if (MapCheck > 1104) MapCheck = 1104;
 		}
-		if (Exp1 == 1100) Exp2 = (Exp1 - 1100) * 26 / 25; // +4% Exp Bonus // DV1M00
-		if (Exp1 == 1101) Exp2 = (Exp1 - 1100) * 100 / 100; // Monster Bonus [100%]
-		if (Exp1 == 1102) Exp2 = (Exp1 - 1100) * 120 / 100; // Monster Bonus [120%]
-		if (Exp1 == 1103) Exp2 = (Exp1 - 1100) * 144 / 100; // Monster Bonus [144%]
-		if (Exp1 == 1104) Exp2 = (Exp1 - 1100) * 192 / 100; // Monster Bonus [192%]
+		if (MapCheck == 1100) Exp2 = (MapCheck - 1100) * 26 / 25; // +4% Exp Bonus // DV1M00
+		if (MapCheck == 1101) Exp2 = (MapCheck - 1100) * 100 / 100; // Monster Bonus [100%]
+		if (MapCheck == 1102) Exp2 = (MapCheck - 1100) * 120 / 100; // Monster Bonus [120%]
+		if (MapCheck == 1103) Exp2 = (MapCheck - 1100) * 144 / 100; // Monster Bonus [144%]
+		if (MapCheck == 1104) Exp2 = (MapCheck - 1100) * 192 / 100; // Monster Bonus [192%]
 	
-					if (Exp1 == 31) Exp2 = Exp2 * 5 / 2; // [250%]
-		else if (Exp1 == 32) Exp2 = Exp2 * 15 / 4; // [375%]
+					if (MapCheck == 31) Exp2 = Exp2 * 5 / 2; // [250%]
+		else if (MapCheck == 32) Exp2 = Exp2 * 15 / 4; // [375%]
 										else Exp2 = Exp2 * 5 / 4; // [125%]
 	}
 	else
 	if (ModType == 2) // Deus Vult 2
 	{
-		if (Exp1 != 1200)
+		if (MapCheck != 1200)
 		{
-			if (MiscellaneousVars[259] > 0) Exp1 += deathkingsmapcalcmod;
-			Exp1 += MiscellaneousVars[52];
-			Exp1 += MiscellaneousVars[169]; 
-			if (Exp1 < 1201) Exp1 = 1201;
-			if (Exp1 > 1212) Exp1 = 1212;
+			if (MapCheck < 1201) MapCheck = 1201;
+			if (MapCheck > 1212) MapCheck = 1212;
 		}
 	
 		// Zendaria Levels
-		if (Exp1 == 1200) Exp2 = (Exp1 - 1200) * 26 / 25; // +4% Exp Bonus // Prolouge - The Mysterious Cave
+		if (MapCheck == 1200) Exp2 = (MapCheck - 1200) * 26 / 25; // +4% Exp Bonus // Prolouge - The Mysterious Cave
 		// Earth-type Levels
-		if (Exp1 == 1201) Exp2 = (Exp1 - 1200) * 100 / 100; // Monster Bonus // MAP01 - Entryway Pass
-		if (Exp1 == 1202) Exp2 = (Exp1 - 1200) * 106 / 100; // Monster Bonus // MAP02 - Mutagen
-		if (Exp1 == 1203) Exp2 = (Exp1 - 1200) * 112 / 100; // Monster Bonus // MAP03 - Crouching Demon, Hidden Archvile
-		if (Exp1 == 1204) Exp2 = (Exp1 - 1200) * 120 / 100; // Monster Bonus // MAP04 - Minas Morgul
-		if (Exp1 == 1205) Exp2 = (Exp1 - 1200) * 126 / 100; // Monster Bonus // MAP05 - Eagle's Nest
-		if (Exp1 == 1206) Exp2 = (Exp1 - 1200) * 134 / 100; // Monster Bonus // MAP05B - The Manliest Level Ever
-		if (Exp1 == 1207) Exp2 = (Exp1 - 1200) * 142 / 100; // Monster Bonus // MAP06 - Stargate
-		if (Exp1 == 1208) Exp2 = (Exp1 - 1200) * 150 / 100; // Monster Bonus // MAP07 - The Desert Temple
+		if (MapCheck == 1201) Exp2 = (MapCheck - 1200) * 100 / 100; // Monster Bonus // MAP01 - Entryway Pass
+		if (MapCheck == 1202) Exp2 = (MapCheck - 1200) * 106 / 100; // Monster Bonus // MAP02 - Mutagen
+		if (MapCheck == 1203) Exp2 = (MapCheck - 1200) * 112 / 100; // Monster Bonus // MAP03 - Crouching Demon, Hidden Archvile
+		if (MapCheck == 1204) Exp2 = (MapCheck - 1200) * 120 / 100; // Monster Bonus // MAP04 - Minas Morgul
+		if (MapCheck == 1205) Exp2 = (MapCheck - 1200) * 126 / 100; // Monster Bonus // MAP05 - Eagle's Nest
+		if (MapCheck == 1206) Exp2 = (MapCheck - 1200) * 134 / 100; // Monster Bonus // MAP05B - The Manliest Level Ever
+		if (MapCheck == 1207) Exp2 = (MapCheck - 1200) * 142 / 100; // Monster Bonus // MAP06 - Stargate
+		if (MapCheck == 1208) Exp2 = (MapCheck - 1200) * 150 / 100; // Monster Bonus // MAP07 - The Desert Temple
 		// Hell Levels
-		if (Exp1 == 1209) Exp2 = (Exp1 - 1200) * 178 / 100; // Monster Bonus // MAP08 - The Unholy Cathedral
-		if (Exp1 == 1210) Exp2 = (Exp1 - 1200) * 210 / 100; // Monster Bonus // MAP09 - You Shall Not Pass!
-		if (Exp1 == 1211) Exp2 = (Exp1 - 1200) * 248 / 100; // Monster Bonus // MAP10 - Hell's Vendetta
-		if (Exp1 == 1212) Exp2 = (Exp1 - 1200) * 292 / 100; // Monster Bonus // MAP10B - attedneV s'lleH
+		if (MapCheck == 1209) Exp2 = (MapCheck - 1200) * 178 / 100; // Monster Bonus // MAP08 - The Unholy Cathedral
+		if (MapCheck == 1210) Exp2 = (MapCheck - 1200) * 210 / 100; // Monster Bonus // MAP09 - You Shall Not Pass!
+		if (MapCheck == 1211) Exp2 = (MapCheck - 1200) * 248 / 100; // Monster Bonus // MAP10 - Hell's Vendetta
+		if (MapCheck == 1212) Exp2 = (MapCheck - 1200) * 292 / 100; // Monster Bonus // MAP10B - attedneV s'lleH
 		// Extra Levels
-		if (Exp1 == 1213) Exp2 = 0; // NO Exp Bonus since it's Heaven, foo. :P // MAP11 - St. Peter's Gate
-		if (Exp1 == 1214) Exp2 = (Exp1 - 1200) * 140 / 100; // MAP12 - "The Wings of The Maiar" [DVI combined level remake]
-		if (Exp1 == 1215) Exp2 = (Exp1 - 1200) * 292 / 100; // MAP10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
+		if (MapCheck == 1213) Exp2 = 0; // NO Exp Bonus since it's Heaven, foo. :P // MAP11 - St. Peter's Gate
+		if (MapCheck == 1214) Exp2 = (MapCheck - 1200) * 140 / 100; // MAP12 - "The Wings of The Maiar" [DVI combined level remake]
+		if (MapCheck == 1215) Exp2 = (MapCheck - 1200) * 292 / 100; // MAP10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
 		// Ending Levels
-		if (Exp1 == 1216) Exp2 = 0; // NO Exp Bonus in ending levels // MAP13 - The Return Home
-		if (Exp1 == 1217) Exp2 = 0; // NO Exp Bonus in ending levels // ENDMAP - Credits and Cast
+		if (MapCheck == 1216) Exp2 = 0; // NO Exp Bonus in ending levels // MAP13 - The Return Home
+		if (MapCheck == 1217) Exp2 = 0; // NO Exp Bonus in ending levels // ENDMAP - Credits and Cast
 	
 	
-					if (Exp1 == 31) Exp2 = Exp2 * 5 / 2; // [250%]
-		else if (Exp1 == 32) Exp2 = Exp2 * 15 / 4; // [375%]
+					if (MapCheck == 31) Exp2 = Exp2 * 5 / 2; // [250%]
+		else if (MapCheck == 32) Exp2 = Exp2 * 15 / 4; // [375%]
 										else Exp2 = Exp2 * 5 / 4; // [125%]
 	}
 
@@ -12538,7 +12534,10 @@ function int GetExpMultiFactor (void)
 
 	if (MiscellaneousVars[100008] == 1)
 	{
-		PrintBold(s:"ModType: ",d:ModType,s:"\nExp1: ",d:Exp1,s:"\nExp2: ",d:Exp2,s:"\nExpMultiFactor: ",d:ExpMultiFactor);
+		PrintBold(s:"ModType: ",d:ModType,
+							s:"\n\czMapCheck: ",d:MapCheck,
+							s:"\n\c-Exp2: ",d:Exp2,
+							s:"\n\c-ExpMultiFactor: ",d:ExpMultiFactor);
 	}
 	return ExpMultiFactor;
 }
@@ -12629,7 +12628,7 @@ function int GetExperience (int RealExpGain, int ExpMultiFactor)
 // Seperated Levelup Code
 script "LevelUpCode" ENTER // (void)
 {
-	int Exp1, Exp2, ExpMultiFactor, RealExpGain, HPBoost, MPBoost, MapCheck;
+	int Exp1, Exp2, ExpMultiFactor, RealExpGain, HPBoost, MPBoost;
 	int RandomizedStatChance, RandomizedStatChance2;
 	int levelmodulo, levelbonustype;
 	int PerkFactor;
@@ -27523,6 +27522,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	if (MiscellaneousVars[197] < 0) MiscellaneousVars[197] = 0;
 	if (MiscellaneousVars[197] > 200) MiscellaneousVars[197] = 200;
 	
+	MiscellaneousVars[777] = GetLevelInfo(LEVELINFO_LEVELNUM);
+
 	MiscellaneousVars[169] = GetCVar("dvds_mapdifficultyinflationOVERALL");
 	if (MiscellaneousVars[169] < -50) MiscellaneousVars[169] = -50;
 	if (MiscellaneousVars[169] > 50) MiscellaneousVars[169] = 50;
@@ -27538,6 +27539,22 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	MiscellaneousVars[54] = GetCVar("dvds_mapdifficultyinflationSpawnStealth");
 	if (MiscellaneousVars[54] < -50) MiscellaneousVars[54] = -50;
 	if (MiscellaneousVars[54] > 50) MiscellaneousVars[54] = 50;
+	
+	MiscellaneousVars[5] = GetCVar("dvds_mapdifficultyinflationOVERALL2");
+	if (MiscellaneousVars[5] < 1) MiscellaneousVars[5] = 1;
+	if (MiscellaneousVars[5] > 5000) MiscellaneousVars[5] = 5000;
+	
+	MiscellaneousVars[1] = GetCVar("dvds_mapdifficultyinflationEXP2");
+	if (MiscellaneousVars[1] < 1) MiscellaneousVars[1] = 1;
+	if (MiscellaneousVars[1] > 5000) MiscellaneousVars[1] = 5000;
+	
+	MiscellaneousVars[2] = GetCVar("dvds_mapdifficultyinflationStats2");
+	if (MiscellaneousVars[2] < 1) MiscellaneousVars[2] = 1;
+	if (MiscellaneousVars[2] > 5000) MiscellaneousVars[2] = 5000;
+	
+	MiscellaneousVars[3] = GetCVar("dvds_mapdifficultyinflationSpawnStealth2");
+	if (MiscellaneousVars[3] < 1) MiscellaneousVars[3] = 1;
+	if (MiscellaneousVars[3] > 5000) MiscellaneousVars[3] = 5000;
 	
 	MiscellaneousVars[86] = GetCVar("dvds_aeonpointmultiplier");
 	if (MiscellaneousVars[86] < 1) MiscellaneousVars[86] = 1;
@@ -28487,6 +28504,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 			if (ClassicDoomType == 3) { GiveActorInventory(Player1TID,"PlayingHexen",1); } // HeXen
 			if (ClassicDoomType == 4) { GiveActorInventory(Player1TID,"PlayingStrife",1); } // Strife
 			if (ClassicDoomType == 5) { GiveActorInventory(Player1TID,"PlayingDoom64",1); } // Doom64
+			if (ClassicDoomType == 6) { GiveActorInventory(Player1TID,"PlayingPSXDoom",1); } // PSXDoom
 		}
 		else if (ModType == 1) { GiveActorInventory(Player1TID,"PlayingDeusVultI",1); } // DVI
 		else if (ModType == 2) { GiveActorInventory(Player1TID,"PlayingDeusVultII",1); } // DVII
@@ -36969,6 +36987,8 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 	int debugstatcalc = GetCVar("dvdsdebug_showstatcalcstuff");
 	int skilllevelcalctype = GetCVar("dvds_skilllevelcalctype");
 	int deathkingsmapcalcmod = GetCVar("dvds_deathkingsmapcalcmod");
+	int mapcalcfactorexact = 0;
+	int mapcalcfactorpercent = 100;
 	
 	if (type < 0) type = 0;
 	if (type > 1) type = 1;
@@ -37338,8 +37358,10 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 				{
 					MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
 					if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-					MapCheck += MiscellaneousVars[53];
-					MapCheck += MiscellaneousVars[169];
+					MapCheck += MiscellaneousVars[53]; // Map Inflation [Stats - Exact]
+					MapCheck += MiscellaneousVars[169]; // Map Inflation [Overall - Exact]
+					MapCheck = MapCheck * MiscellaneousVars[2] / 100; // Map Inflation [Stats - Percentile]
+					MapCheck = MapCheck * MiscellaneousVars[5] / 100; // Map Inflation [Overall - Percentile]
 					if (MapCheck < 1) MapCheck = 1;
 					if (MapCheck > 50) MapCheck = 50;
 			
@@ -37361,12 +37383,14 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 			
 					BalanceFactor = AttackFactor;
 				}
-				else // Doom 2 / Hexen / Strife / Doom64 [MAPxx system]
+				else // Doom 2 / Hexen / Strife / Doom64 / PSXDoom [MAPxx system]
 				{
 					MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
 					if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-					MapCheck += MiscellaneousVars[53];
-					MapCheck += MiscellaneousVars[169];
+					MapCheck += MiscellaneousVars[53]; // Map Inflation [Stats - Exact]
+					MapCheck += MiscellaneousVars[169]; // Map Inflation [Overall - Exact]
+					MapCheck = MapCheck * MiscellaneousVars[2] / 100; // Map Inflation [Stats - Percentile]
+					MapCheck = MapCheck * MiscellaneousVars[5] / 100; // Map Inflation [Overall - Percentile]
 					if (MapCheck < 1) MapCheck = 1;
 					if (MapCheck > 50) MapCheck = 50;
 			
@@ -37401,9 +37425,6 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 			if (ModType == 1 && nonstatmonster == 0) // Deus Vult 1
 			{
 				MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
-				if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-				MapCheck += MiscellaneousVars[53];
-				MapCheck += MiscellaneousVars[169];
 				if (MapCheck < 1101) MapCheck = 1101;
 				if (MapCheck > 1104) MapCheck = 1104;
 		
@@ -37426,9 +37447,6 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 			if (ModType == 2 && (GetActorClass(0) != "PracticeTarget" || GetActorClass(0) != "PracticeTarget2")) // Deus Vult 2
 			{
 				MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
-				if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-				MapCheck += MiscellaneousVars[53];
-				MapCheck += MiscellaneousVars[169];
 				if (MapCheck < 1201) MapCheck = 1201;
 				if (MapCheck > 1212) MapCheck = 1212;
 		
@@ -37563,11 +37581,12 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 		
 			if (debugstatcalc != 0)
 			{
-				PrintBold(s:"\chSpeedFactor [MAP]: ",f:(SpeedFactor),s:"\n\n",
-									s:"\cgAttackFactor [MAP]: ",f:(AttackFactor),s:"\n\n",
-									s:"\cdDefenseFactor [MAP]: ",f:(DefenseFactor),s:"\n\n",
-									s:"\caMaxHPFactor [MAP]: ",f:(MaxHPFactor),s:"\n\n",
-									s:"\cpBalanceFactor [MAP]: ",f:(BalanceFactor));
+				PrintBold(s:"\czMapCheck: ",d:MapCheck,s:"\n\n\n\n",
+									s:"\chSpeedFactor [MAP]: ",f:SpeedFactor,s:"\n\n",
+									s:"\cgAttackFactor [MAP]: ",f:AttackFactor,s:"\n\n",
+									s:"\cdDefenseFactor [MAP]: ",f:DefenseFactor,s:"\n\n",
+									s:"\caMaxHPFactor [MAP]: ",f:MaxHPFactor,s:"\n\n",
+									s:"\cpBalanceFactor [MAP]: ",f:BalanceFactor);
 			}
 		
 			SpeedFactor = FixedMul(SpeedFactor, GetCVar("dvds_monsterspeedratio_maps"));
@@ -38385,6 +38404,9 @@ script "GetEvolveChance" (void)
 {
 	int SpawnChance, G1, LevelCheck, MapCheck;
 	int debugevolvestealth = GetCVar("dvdsdebug_evolvestealthstuff");
+	int deathkingsmapcalcmod = GetCVar("dvds_deathkingsmapcalcmod");
+	int mapcalcfactorexact = 0;
+	int mapcalcfactorpercent = 100;
 	
 	if (GetCVar("dvds_rnd_evolve") == 0) { SpawnChance = 0; SetResultValue(SpawnChance); terminate; }
 	else SpawnChance = GetCVar("dvds_rnd_evolvechance");
@@ -38429,7 +38451,6 @@ script "GetEvolveChance" (void)
 		if (CheckActorInventory(Player1TID,"SauronGauntletsItem") > 0) SpawnChance = SpawnChance * 110 / 100; // Elevates Spawn Chances by 10%
 		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [SauronEquip]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
 	}
-	int deathkingsmapcalcmod = GetCVar("dvds_deathkingsmapcalcmod");
 	if (GetCVar("dvds_rnd_evolve_maps") == 1) 
 	{
 		if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
@@ -38438,8 +38459,10 @@ script "GetEvolveChance" (void)
 			{
 				MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
 				if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-				MapCheck += MiscellaneousVars[54];
-				MapCheck += MiscellaneousVars[169];
+				MapCheck += MiscellaneousVars[54]; // Map Inflation [Evolve/Stealth - Exact]
+				MapCheck += MiscellaneousVars[169]; // Map Inflation [Overall - Exact]
+				MapCheck = MapCheck * MiscellaneousVars[3] / 100; // Map Inflation [Evolve/Stealth - Percentile]
+				MapCheck = MapCheck * MiscellaneousVars[5] / 100; // Map Inflation [Overall - Percentile]
 				if (MapCheck < 1) MapCheck = 1;
 				if (MapCheck > 50) MapCheck = 50;
 		
@@ -38466,15 +38489,15 @@ script "GetEvolveChance" (void)
 				if (MapCheck == 46) G1 = (MapCheck * 104);
 				if (MapCheck == 47) G1 = (MapCheck * 109);
 				if (MapCheck == 48) G1 = (MapCheck * 115);
-				if (MapCheck == 49) G1 = (MapCheck * 121);
-				if (MapCheck == 50) G1 = (MapCheck * 127);
 			}
 			else // Doom 2 / Hexen / Strife / Doom64
 			{
 				MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
 				if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-				MapCheck += MiscellaneousVars[54];
-				MapCheck += MiscellaneousVars[169];
+				MapCheck += MiscellaneousVars[54]; // Map Inflation [Evolve/Stealth - Exact]
+				MapCheck += MiscellaneousVars[169]; // Map Inflation [Overall - Exact]
+				MapCheck = MapCheck * MiscellaneousVars[3] / 100; // Map Inflation [Evolve/Stealth - Percentile]
+				MapCheck = MapCheck * MiscellaneousVars[5] / 100; // Map Inflation [Overall - Percentile]
 				if (MapCheck < 1) MapCheck = 1;
 				if (MapCheck > 50) MapCheck = 50;
 		
@@ -38515,9 +38538,6 @@ script "GetEvolveChance" (void)
 		else if (ModType == 1) // DVI
 		{
 			MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
-			if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-			MapCheck += MiscellaneousVars[54];
-			MapCheck += MiscellaneousVars[169];
 			if (MapCheck < 1101) MapCheck = 1101;
 			if (MapCheck > 1104) MapCheck = 1104;
 		
@@ -38530,9 +38550,6 @@ script "GetEvolveChance" (void)
 		else if (ModType == 2) // DVII
 		{
 			MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
-			if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-			MapCheck += MiscellaneousVars[54];
-			MapCheck += MiscellaneousVars[169];
 			if (MapCheck < 1201) MapCheck = 1201;
 			if (MapCheck > 1212) MapCheck = 1212;
 		
@@ -38553,7 +38570,11 @@ script "GetEvolveChance" (void)
 			else SpawnChance = SpawnChance * 1000 / 1000; // All other Maps
 		}
 		else SpawnChance = SpawnChance * 1000 / 1000;
-		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [Maps]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
+		if (debugevolvestealth == 1)
+		{
+			PrintBold(s:"\czMapCheck: ",d:MapCheck,s:"\n\n",
+								s:"\c-Evolve Chance [Maps]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
+		}
 	}
 	
 	// Check if the actor is one of Strife's Peasents [and if so, sets Evolve Chance to 0]
@@ -38605,6 +38626,8 @@ script "GetStealthChance" (void)
 	int StealthChance, G1, LevelCheck, MapCheck;
 	int debugevolvestealth = GetCVar("dvdsdebug_evolvestealthstuff");
 	int deathkingsmapcalcmod = GetCVar("dvds_deathkingsmapcalcmod");
+	int mapcalcfactorexact = 0;
+	int mapcalcfactorpercent = 100;
 	
 	if(GetCVar("dvds_rnd_stealth") == 0) { StealthChance = 0; SetResultValue(StealthChance); terminate; }
 	else StealthChance = GetCVar("dvds_rnd_stealthchance");
@@ -38651,8 +38674,10 @@ script "GetStealthChance" (void)
 			{
 				MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
 				if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-				MapCheck += MiscellaneousVars[54];
-				MapCheck += MiscellaneousVars[169];
+				MapCheck += MiscellaneousVars[54]; // Map Inflation [Evolve/Stealth - Exact]
+				MapCheck += MiscellaneousVars[169]; // Map Inflation [Overall - Exact]
+				MapCheck = MapCheck * MiscellaneousVars[3] / 100; // Map Inflation [Evolve/Stealth - Percentile]
+				MapCheck = MapCheck * MiscellaneousVars[5] / 100; // Map Inflation [Overall - Percentile]
 				if (MapCheck < 1) MapCheck = 1;
 				if (MapCheck > 50) MapCheck = 50;
 		
@@ -38686,8 +38711,10 @@ script "GetStealthChance" (void)
 			{
 				MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
 				if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-				MapCheck += MiscellaneousVars[54];
-				MapCheck += MiscellaneousVars[169];
+				MapCheck += MiscellaneousVars[54]; // Map Inflation [Evolve/Stealth - Exact]
+				MapCheck += MiscellaneousVars[169]; // Map Inflation [Overall - Exact]
+				MapCheck = MapCheck * MiscellaneousVars[3] / 100; // Map Inflation [Evolve/Stealth - Percentile]
+				MapCheck = MapCheck * MiscellaneousVars[5] / 100; // Map Inflation [Overall - Percentile]
 				if (MapCheck < 1) MapCheck = 1;
 				if (MapCheck > 50) MapCheck = 50;
 		
@@ -38729,9 +38756,6 @@ script "GetStealthChance" (void)
 		else if (ModType == 1) // DVI
 		{
 			MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
-			if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-			MapCheck += MiscellaneousVars[54];
-			MapCheck += MiscellaneousVars[169];
 			if (MapCheck < 1101) MapCheck = 1101;
 			if (MapCheck > 1104) MapCheck = 1104;
 		
@@ -38745,9 +38769,6 @@ script "GetStealthChance" (void)
 		if (ModType == 2) // DVII
 		{
 			MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
-			if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
-			MapCheck += MiscellaneousVars[54];
-			MapCheck += MiscellaneousVars[169];
 			if (MapCheck < 1201) MapCheck = 1201;
 			if (MapCheck > 1212) MapCheck = 1212;
 		
@@ -38768,7 +38789,11 @@ script "GetStealthChance" (void)
 			else StealthChance = StealthChance * 1000 / 1000; // All other Maps
 		}
 		else StealthChance = StealthChance * 1000 / 1000;
-		if (debugevolvestealth == 1) PrintBold(s:"Stealth Chance [Maps]: ",d:StealthChance,s:" - ",s:GetActorClass(0));
+		if (debugevolvestealth == 1)
+		{
+			PrintBold(s:"\czMapCheck: ",d:MapCheck,s:"\n\n",
+								s:"\c-Stealth Chance [Maps]: ",d:StealthChance,s:" - ",s:GetActorClass(0));
+		}
 	}
 	
 	// Check if the actor is one of Strife's Peasents [and if so, sets Stealth Chance to 0]
@@ -47824,8 +47849,8 @@ script "DoomMonsterDeathEmulation" OPEN
 				TotalCount2 += ThingCountName("DSRailArachnotron", 0);
 				if (LevelTime > 2 && TotalCount2 <= 0 && Script2Done == 0) 
 				{
-				Script2Delay++;
-				if (Script2Delay > 34) { Floor_RaiseByTexture(667, 10); Script2Done++; }
+					Script2Delay++;
+					if (Script2Delay > 34) { Floor_RaiseByTexture(667, 10); Script2Done++; }
 				}
 		/*
 				PrintBold(d:LevelTime,s:" \n",
@@ -48388,114 +48413,114 @@ script "SetTensionLevel" (int level, int vimstone)
 		int TensionAuraYScaleExtra = 1.0;
 		if (ClassicDoomType == 5)
 		{
-		TensionAuraXScaleExtra = 1.1;
-		TensionAuraYScaleExtra = 1.375;
+			TensionAuraXScaleExtra = 1.1;
+			TensionAuraYScaleExtra = 1.375;
 		}
 		
 		if (MiscellaneousVars[181] == 1)
 		{
-		TensionAuraLight = "TensionAuraLight5"; 
-		TensionAuraXScale = fixedmul(0.5,TensionAuraXScaleExtra);
-		TensionAuraYScale = fixedmul(0.75,TensionAuraYScaleExtra);
-		TensionAuraAlpha = 0.20;
-		TensionAuraAlphaInvis = 0.02;
-		if (ThingCountName("TensionAuraLight5", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-		if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			TensionAuraLight = "TensionAuraLight5"; 
+			TensionAuraXScale = fixedmul(0.5,TensionAuraXScaleExtra);
+			TensionAuraYScale = fixedmul(0.75,TensionAuraYScaleExtra);
+			TensionAuraAlpha = 0.20;
+			TensionAuraAlphaInvis = 0.02;
+			if (ThingCountName("TensionAuraLight5", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
 		}
 		if (MiscellaneousVars[181] == 2)
 		{
-		TensionAuraLight = "TensionAuraLight20";
-		TensionAuraXScale = fixedmul(0.5555,TensionAuraXScaleExtra);
-		TensionAuraYScale = fixedmul(0.8333,TensionAuraYScaleExtra);
-		TensionAuraAlpha = 0.26;
-		TensionAuraAlphaInvis = 0.026;
-		if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight20", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-		if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			TensionAuraLight = "TensionAuraLight20";
+			TensionAuraXScale = fixedmul(0.5555,TensionAuraXScaleExtra);
+			TensionAuraYScale = fixedmul(0.8333,TensionAuraYScaleExtra);
+			TensionAuraAlpha = 0.26;
+			TensionAuraAlphaInvis = 0.026;
+			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight20", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
 		}
 		if (MiscellaneousVars[181] == 3) 
 		{
-		TensionAuraLight = "TensionAuraLight50"; 
-		TensionAuraXScale = fixedmul(0.6111,TensionAuraXScaleExtra);
-		TensionAuraYScale = fixedmul(0.9116,TensionAuraYScaleExtra);
-		TensionAuraAlpha = 0.32;
-		TensionAuraAlphaInvis = 0.032;
-		if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight50", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-		if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			TensionAuraLight = "TensionAuraLight50"; 
+			TensionAuraXScale = fixedmul(0.6111,TensionAuraXScaleExtra);
+			TensionAuraYScale = fixedmul(0.9116,TensionAuraYScaleExtra);
+			TensionAuraAlpha = 0.32;
+			TensionAuraAlphaInvis = 0.032;
+			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight50", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
 		}
 		if (MiscellaneousVars[181] == 4)
 		{
-		TensionAuraLight = "TensionAuraLight100"; 
-		TensionAuraXScale = fixedmul(0.6667,TensionAuraXScaleExtra);
-		TensionAuraYScale = fixedmul(1.0,TensionAuraYScaleExtra);
-		TensionAuraAlpha = 0.38;
-		TensionAuraAlphaInvis = 0.038;
-		if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight100", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-		if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			TensionAuraLight = "TensionAuraLight100"; 
+			TensionAuraXScale = fixedmul(0.6667,TensionAuraXScaleExtra);
+			TensionAuraYScale = fixedmul(1.0,TensionAuraYScaleExtra);
+			TensionAuraAlpha = 0.38;
+			TensionAuraAlphaInvis = 0.038;
+			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight100", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
 		}
 		if (MiscellaneousVars[181] == 5) 
 		{
-		TensionAuraLight = "TensionAuraLight250";
-		TensionAuraXScale = fixedmul(0.7222,TensionAuraXScaleExtra);
-		TensionAuraYScale = fixedmul(1.0833,TensionAuraYScaleExtra);
-		TensionAuraAlpha = 0.44;
-		TensionAuraAlphaInvis = 0.044;
-		if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight250", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-		if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			TensionAuraLight = "TensionAuraLight250";
+			TensionAuraXScale = fixedmul(0.7222,TensionAuraXScaleExtra);
+			TensionAuraYScale = fixedmul(1.0833,TensionAuraYScaleExtra);
+			TensionAuraAlpha = 0.44;
+			TensionAuraAlphaInvis = 0.044;
+			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight250", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
 		}
 		if (MiscellaneousVars[181] == 6) 
 		{
-		TensionAuraLight = "TensionAuraLight500"; 
-		TensionAuraXScale = fixedmul(0.7777,TensionAuraXScaleExtra);
-		TensionAuraYScale = fixedmul(1.1666,TensionAuraYScaleExtra);
-		TensionAuraAlpha = 0.5;
-		TensionAuraAlphaInvis = 0.05;
-		if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight500", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-		if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			TensionAuraLight = "TensionAuraLight500"; 
+			TensionAuraXScale = fixedmul(0.7777,TensionAuraXScaleExtra);
+			TensionAuraYScale = fixedmul(1.1666,TensionAuraYScaleExtra);
+			TensionAuraAlpha = 0.5;
+			TensionAuraAlphaInvis = 0.05;
+			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight500", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
 		}
 		if (MiscellaneousVars[181] == 7) 
 		{
-		TensionAuraLight = "TensionAuraLight1000";
-		TensionAuraXScale = fixedmul(0.8333,TensionAuraXScaleExtra);
-		TensionAuraYScale = fixedmul(1.25,TensionAuraYScaleExtra);
-		TensionAuraAlpha = 0.36;
-		TensionAuraAlphaInvis = 0.056;
-		if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight1000", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+			TensionAuraLight = "TensionAuraLight1000";
+			TensionAuraXScale = fixedmul(0.8333,TensionAuraXScaleExtra);
+			TensionAuraYScale = fixedmul(1.25,TensionAuraYScaleExtra);
+			TensionAuraAlpha = 0.36;
+			TensionAuraAlphaInvis = 0.056;
+			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight1000", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
 		}
 	
 		if (CharacterClass == 0) { TensionAuraXScale = TensionAuraXScale * 112 / 100;  TensionAuraYScale = TensionAuraYScale * 123 / 100; }
@@ -48507,10 +48532,10 @@ script "SetTensionLevel" (int level, int vimstone)
 		if (ThingCountName("TensionAuraLooper", 1501) < 1) SpawnForced("TensionAuraLooper",SpawnFixedX,SpawnFixedY,SpawnFixedZ,1501,0);
 		if (ThingCountName("TensionAuraLooper", 1501) > 0)
 		{
-		SetActorProperty(1501,APROP_ScaleX,TensionAuraXScale);
-		SetActorProperty(1501,APROP_ScaleY,TensionAuraYScale);
-		if (PowerupTimer[1] > 0) SetActorProperty(1501,APROP_Alpha,TensionAuraAlphaInvis);
-		else SetActorProperty(1501,APROP_Alpha,TensionAuraAlpha);
+			SetActorProperty(1501,APROP_ScaleX,TensionAuraXScale);
+			SetActorProperty(1501,APROP_ScaleY,TensionAuraYScale);
+			if (PowerupTimer[1] > 0) SetActorProperty(1501,APROP_Alpha,TensionAuraAlphaInvis);
+			else SetActorProperty(1501,APROP_Alpha,TensionAuraAlpha);
 		}
 	}
 	else
@@ -48599,8 +48624,8 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 
 	if (flags & 2) fakedeath = 1;
 
-	int MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
-	//PrintBold(s:"MapNumber: ",d:MapCheck);
+	int MapValue = GetLevelInfo(LEVELINFO_LEVELNUM);
+	//PrintBold(s:"MapNumber: ",d:MapValue);
 	int MonsterX = GetActorX(0);
 	int MonsterY = GetActorY(0);
 	int MonsterZ = GetActorZ(0);
@@ -48611,7 +48636,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 	if (ClassicDoomType == 4) // Strife
 	{
 		// Enemies in the Degnin Mines or levels in the factory HUB can sometimes drop Degnin Ore depending on the area
-		if (MapCheck == 14) // Degnin Mines
+		if (MapValue == 14) // Degnin Mines
 		{
 			if (random(1,768) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (random(1,384) == 1) DropItem(0,"DegninOrePickup",1,256);
@@ -48623,7 +48648,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 			if (random(1,12) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (MiscellaneousVars[100008] == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP14]");
 		}
-		if (MapCheck == 20) // Factory: Receiving
+		if (MapValue == 20) // Factory: Receiving
 		{
 			if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
@@ -48631,7 +48656,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 			if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (MiscellaneousVars[100008] == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP20]");
 		}
-		if (MapCheck == 21) // Factory: Manufacturing
+		if (MapValue == 21) // Factory: Manufacturing
 		{
 			if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
@@ -48639,7 +48664,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 			if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (MiscellaneousVars[100008] == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP21]");
 		}
-		if (MapCheck == 22) // Factory: Forge
+		if (MapValue == 22) // Factory: Forge
 		{
 			if (random(1,192) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (random(1,160) == 1) DropItem(0,"DegninOrePickup",1,256);
@@ -48650,7 +48675,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 			if (random(1,16) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (MiscellaneousVars[100008] == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP22]");
 		}
-		if (MapCheck == 24) // Factory: Conversion Chapel
+		if (MapValue == 24) // Factory: Conversion Chapel
 		{
 			if (random(1,4096) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (random(1,1024) == 1) DropItem(0,"DegninOrePickup",1,256);
@@ -48658,7 +48683,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 			if (random(1,64) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (MiscellaneousVars[100008] == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP24]");
 		}
-		if (MapCheck == 26) // Proving Grounds
+		if (MapValue == 26) // Proving Grounds
 		{
 			if (random(1,7168) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (random(1,1536) == 1) DropItem(0,"DegninOrePickup",1,256);
@@ -48666,7 +48691,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 			if (random(1,96) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (MiscellaneousVars[100008] == 1) PrintBold(s:"Degnin Ore Drop Attempt [MAP26]");
 		}
-		if (MapCheck == 27) // The Lab [Loremaster boss]
+		if (MapValue == 27) // The Lab [Loremaster boss]
 		{
 			if (random(1,8192) == 1) DropItem(0,"DegninOrePickup",1,256);
 			if (random(1,2048) == 1) DropItem(0,"DegninOrePickup",1,256);
@@ -48950,7 +48975,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 		if (random(1,256) == 1) DropItem(0,"RockBombShard",1,256);
 		if (ModType == 0) // Classic Mode
 		{
-			if (ClassicDoomType == 0 || ClassicDoomType == 1|| ClassicDoomType == 5) // Doom 2 or Doom 1 or Doom64
+			if (ClassicDoomType == 0 || ClassicDoomType == 1 || ClassicDoomType == 5 || ClassicDoomType == 6) // Doom 2, Doom 1, Doom64 or PSXDoom
 			{
 				if (random(1,16384) == 1) DropItem(0,"Berserk2",1,256);
 				if (random(1,8192) == 1) DropItem(0,"Berserk2",1,256);
