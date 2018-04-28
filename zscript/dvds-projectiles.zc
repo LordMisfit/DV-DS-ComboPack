@@ -174,8 +174,38 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 
 	override void PostBeginPlay()
 	{
+		float basexvel = vel.x;
+		float baseyvel = vel.y;
+		float basezvel = vel.z;
+		float speedmulti;
+		float speedmulti2;
+		float speedmulti3;
+		float monsprojboostfactor = GetCVar("dvds_monsprojboostfactor");
 		let IsPlayer = PlayerPawn(target);
 		if (!IsPlayer) A_ScaleVelocity(GetCVar("dvds_mprojectilevelmulti")); else A_ScaleVelocity(GetCVar("dvds_pprojectilevelmulti"));
+
+		let IsMonster = AetheriusMonsterZSC(target);
+		if (GetCVar("dvds_monsterprojectileboost") == 1)
+		{
+			if (IsMonster)
+			{
+				speedmulti = IsMonster.speed / IsMonster.user_basespeed;
+				speedmulti2 = ((speedmulti - 1.0) * monsprojboostfactor) + 1.0;
+				A_ScaleVelocity(speedmulti2);
+			}
+		}
+		if (IsMonster)
+		{
+			speedmulti3 = 1.0;
+			let IsMonsterLegendary = IsMonster.user_legendaryevolved;
+			if (IsMonsterLegendary) speedmulti3 = GetCVar("LD_projspeedmulti");
+			A_ScaleVelocity(speedmulti3);
+		}
+		float newxvel = vel.x;
+		float newyvel = vel.y;
+		float newzvel = vel.z;
+
+		if (GetCVar("dvdsdebug_showmiscdmginformation") && IsMonster) Console.Printf("PROJECTILE SPEED: \czXVelOld\c-: \cz%.4f\c-, \cyXVelNew\c-: \cy%.4f\c-, \czYVelOld\c-: \cz%.4f\c-, \cyYVelNew\c-: \cy%.4f\c-, \czZVelOld\c-: \cz%.4f\c-, \cyZVelNew\c-: \cy%.4f\c-, \cxSpeedMulti\c-: \cx%.4f\c-, \cwSpeedMulti2\c-: \cw%.4f\c-, \cvSpeedMulti3\c-: \cv%.4f\c-", basexvel, newxvel, baseyvel, newyvel, basezvel, newzvel, speedmulti, speedmulti2, speedmulti3);
 		Super.PostBeginPlay(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO PostBeginPlay() BREAK :V
 	}
 
