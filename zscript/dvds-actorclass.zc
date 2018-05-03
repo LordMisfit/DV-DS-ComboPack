@@ -31,6 +31,7 @@ class AetheriusBaseZSC : Actor
 	int user_random, user_random1, user_ailment1, user_ailmentmaxchance, user_attackpoint;
 	int user_chargechance; 
 	int user_charmchance, user_charmed;
+	int user_summoned;
 	int user_regencycles, user_regencyclemax;
 }
 
@@ -45,11 +46,12 @@ class AetheriusPlayerPawn : PlayerPawn
 	int actortimer;
 	int pbuddha1, pbuddha2, pgod1, pgod2, pnoclip1, pnoclip2;
 	int breathdirection; // 0 = down [size decreases], 1 = up [size increases]
-
+	int mobjdmg;
 	double basexscale, baseyscale;
 	double scalexmulti, scaleymulti;
 	int breathframe;
 	
+	double PlayerDefenseIgnoreFactor, PlayerArmorIgnoreFactor;
 	double neverbleeds;
 
 	private class<Inventory> APPackToken, APPackCheck;
@@ -257,6 +259,19 @@ class AetheriusPlayerPawn : PlayerPawn
 		// Defense Calculation
 		if (damage > 0)
 		{
+			AetheriusMonsterZSC DVDSActor;
+			if (source) DVDSActor = AetheriusMonsterZSC(source);
+			if (DVDSActor)
+			{
+				if (DVDSActor.bFRIENDLY)
+				{
+					damage /= 4;
+					if (DVDSActor.user_summoned > 0) damage /= 4;
+					if (DVDSActor.user_charmed > 0) damage /= 4;
+					if (damage < 1) damage = 1;
+				}
+			}
+
 			int olddmg = damage;
 			int basedef = CallACS("StatCheck",4);
 			defense = basedef * (5 + (CallACS("MiscVarCheckDECORATE",10001) * 1 / 2) + ((CallACS("MiscVarCheckDECORATE",10002) * 5 / 4))) / 50;
@@ -274,8 +289,20 @@ class AetheriusPlayerPawn : PlayerPawn
 				defense += ((armordef * 5) / 4);
 			}
 
-			if (inflictor == null && source == null && (mod == 'Slime' || mod == 'Crush' || mod == 'Fire' || mod == 'Magma')) defense /= 25; // Total Defense is only 4% as effective for damagefloors/slime sectors.
-			if (gameinfo.gametype & GAME_Raven && inflictor == null && source == null && (mod == 'Fire' || mod == 'Magma')) damage = damage * frandom(1.5,2.5);
+			if (inflictor == null && source == null)
+			{
+				if (mod == 'Slime' || mod == 'Crush' || mod == 'Fire' || mod == 'Magma') defense *= 0.04; // Total Defense is only 4% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
+			}
+			if (gameinfo.gametype & GAME_Raven && inflictor == null && source == null) // Intended to work specfically for Raven's Lava/Magma Floors
+			{
+				if (mod == 'Fire' || mod == 'Magma') damage = damage * frandom(1.5,2.5);
+			}
+			if (infl == "DemonFire" || infl == "DemonFireCrisis" || infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis")
+			{
+				damage *= 1.125;
+				defense /= 4;
+			}
+			if (mod == 'Drowning') defense = 0;
 
 			damage -= defense;
 			if (damage < 1)
@@ -283,12 +310,53 @@ class AetheriusPlayerPawn : PlayerPawn
 				if (random(1,256) < (248 - ((CallACS("MiscVarCheckDECORATE",10001) * 2) + (CallACS("MiscVarCheckDECORATE",10002) * 5))) ) damage = 1; else damage = 0;
 			}
 
-			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("    (\czplayer-damagemobj input\c-:  \cyolddmg\c- = \cy%d\c-, basedef = %d, armdef = %d, def = %d, \cynewdmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, basedef, armordef, defense, damage, mod, infl, sour);
+			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("    (\czplayer-damagemobj input [STEP 1]\c-:  \cyolddmg\c- = \cy%d\c-, basedef = %d, armdef = %d, def = %d, \cynewdmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, basedef, armordef, defense, damage, mod, infl, sour);
 		}
 
-		// Space for rent :V	
+		// Tries to determine a factor of much of the total defense calculations to ignore in their PlayerStatItem
+		if (damage > 0) 
+		{
+			PlayerDefenseIgnoreFactor = 0.00;
+			PlayerArmorIgnoreFactor = 0.00;
+
+			if (inflictor == null && source == null && (mod == 'Slime' || mod == 'Crush' || mod == 'Fire' || mod == 'Magma')) PlayerDefenseIgnoreFactor = 0.96;
+			if (infl == "DBTRailPuff") PlayerDefenseIgnoreFactor = frandompick(0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.50,0.50,0.50,0.50,0.75,0.75,0.9875);
+			if (mod == 'Drowning') PlayerDefenseIgnoreFactor = 1.0;
+
+			AetheriusMonsterZSC enemyactor;
+			if (source) enemyactor = AetheriusMonsterZSC(source);
+			if (enemyactor && enemyactor.user_legendaryevolved) 
+			{
+				double LegendaryDefenseIgnoreFactor = 0.5;
+				if (PlayerDefenseIgnoreFactor <= 0.0) PlayerDefenseIgnoreFactor = LegendaryDefenseIgnoreFactor; else PlayerDefenseIgnoreFactor *= (1.0 + LegendaryDefenseIgnoreFactor);
+			}
+
+			if (PlayerDefenseIgnoreFactor <= 0.0) PlayerDefenseIgnoreFactor = 0.0;
+			if (PlayerArmorIgnoreFactor <= 0.0) PlayerArmorIgnoreFactor = 0.0;
+			if (PlayerDefenseIgnoreFactor > 1.0) PlayerDefenseIgnoreFactor = 1.0;
+			if (PlayerArmorIgnoreFactor > 1.0) PlayerArmorIgnoreFactor = 1.0;
+
+			if (dvdsdebug_playerdmgdisplays > 0)
+			{
+				if (PlayerDefenseIgnoreFactor <= 0.00 && PlayerArmorIgnoreFactor <= 0.00)
+				{
+					Console.Printf("    (\czplayer-damagemobj input [STEP 2]\c-: \caSKIPPED\c-)", PlayerDefenseIgnoreFactor);
+				}
+				else
+				{
+					if (PlayerDefenseIgnoreFactor > 0.00) Console.Printf("    (\czplayer-damagemobj input [STEP 2a]\c-: \caDamageIgnoreFactor\c- = \ca%8f\c- (Player Actor)", PlayerDefenseIgnoreFactor);
+					if (PlayerArmorIgnoreFactor > 0.00) Console.Printf("    (\czplayer-damagemobj input [STEP 2b]\c-: \caArmorIgnoreFactor\c- = \ca%8f\c- (Player Actor)", PlayerArmorIgnoreFactor);
+				}
+			}
+		}
+
+		// Space for rent :V
 		let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
-		if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\czplayer-damagemobj output\c-: \cydmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", ret, mod, infl, sour);
+		if (dvdsdebug_playerdmgdisplays > 0) 
+		{
+			if (ret > 0) Console.Printf("    (\czplayer-damagemobj output [STEP 9]\c-: \cydmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", ret, mod, infl, sour);
+							else Console.Printf("    (\czplayer-damagemobj output [STEP 9]\c-: \caSKIPPED\c-)", ret);
+		}
 
 		if (ret > 0) 
 		{
@@ -298,7 +366,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (hpratio >= 51 && hpratio <= 100) cursemulti = 3;
 			if (hpratio >= 26 && hpratio <= 50) cursemulti = 2;
 			if (hpratio <= 25) cursemulti = 1;
-			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\czuncurse\c-: \cydmg = \cy%d\c-, \cwcursemulti\c- = \cw%d\c-, \cdhpratio\c- = \cd%d\c-)", ret, cursemulti, hpratio);
+			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\czplayer-damagemobj uncurse stuff [STEP 10]\c-: \cydmg = \cy%d\c-, \cwcursemulti\c- = \cw%d\c-, \cdhpratio\c- = \cd%d\c-)", ret, cursemulti, hpratio);
 			ACS_NamedExecuteAlways("CursedShieldPain",0,1,cursemulti);
 		}
 		else
