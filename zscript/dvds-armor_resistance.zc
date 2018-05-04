@@ -16,6 +16,8 @@ class PlayerStatItem : Inventory
 	{
 		String nm;
 		let weapon = owner.player.ReadyWeapon;
+		let playeractor = AetheriusPlayerPawn(owner);
+
 		// RadiusDamageFactor
 		currenthealth = owner.health;
 		double TotalRDFactor = 1.00;
@@ -95,7 +97,6 @@ class PlayerStatItem : Inventory
 									* DQBuffRDFactor
 									* SceptreDefenseRDFactor;
 
-		let playeractor = AetheriusPlayerPawn(owner);
 		double BaseIgnoreFactor = 0.0;
 		double DefenseIgnoreFactor = 0.0;
 		playeractor.PlayerDefenseIgnoreFactor = playeractor.PlayerDefenseIgnoreFactor;
@@ -355,8 +356,6 @@ class PlayerStatItem : Inventory
 											* DivineAvatarJumpZ;
 
 		int TrueJumpHeight = ((TotalJumpZ * (TotalJumpZ + 1.0)) / 2) + owner.maxstepheight;
-		//let playeractor = AetheriusPlayerPawn(owner);
-		//if (playeractor) playeractor.JumpZ = TotalJumpZ;
 		PlayerPawn(Owner).JumpZ = TotalJumpZ;
 		CallACS("SetMiscellaneousVar",200,TrueJumpHeight); // Set to the True Jump Height
 		if (GetCVar("dvdsdebug_showmoveinformation") > 0)
@@ -378,6 +377,7 @@ class PlayerStatItem : Inventory
 	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive)
 	{
 		let weapon = owner.player.ReadyWeapon;
+		let playeractor = AetheriusPlayerPawn(owner);
 		int CharacterClass = CallACS("CheckCharacterClass");
 
 		int InvisiblityLevel = 0;
@@ -756,7 +756,7 @@ class PlayerStatItem : Inventory
 			newdamage = max(1, ApplyDamageFactors(GetClass(), damageType, damage, damage * TOTALFactor));
 			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) 
 			{
-				Console.Printf("    (\czOffensive Input\c-: \cwDmgType:\c- \cw%s\c-, input: \cyolddmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, STRfactor [%d] = %8f, SORfactor [%d] = %8f, MusouFactor = %8f, StamUpATKFactor = %8f, MagiUpATKFactor = %8f, WandStaffMasteryFactor = %8f, DeathRageFactor = %8f, StrifeAccuracyFactor = %8f, ClearOfMindFactor = %8f, HellcoreLevelFactor = %8f, SoulMasteryFactor = %8f, SauronGauntletsFactor = %8f, CursedShieldFactor = %8f, DoomSpellFactor = %8f, InvisFactor = %8f, DashingFactor = %8f, UppercutFactor = %8f, LandingFactor = %8f, TensionFactor = %8f, FloraArmorFactor = %8f, RingFactor = %8f, DQBuffFactor = %8f, DivineAvatarFactor = %8f, GoEFactor = %8f)", 
+				Console.Printf("    (\czPlayer Offensive Input\c-: \cwDmgType:\c- \cw%s\c-, input: \cyolddmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-, \caTOTALFactor\c- = \ca%8f\c-, LVLFactor [%d] = %8f, STRfactor [%d] = %8f, SORfactor [%d] = %8f, MusouFactor = %8f, StamUpATKFactor = %8f, MagiUpATKFactor = %8f, WandStaffMasteryFactor = %8f, DeathRageFactor = %8f, StrifeAccuracyFactor = %8f, ClearOfMindFactor = %8f, HellcoreLevelFactor = %8f, SoulMasteryFactor = %8f, SauronGauntletsFactor = %8f, CursedShieldFactor = %8f, DoomSpellFactor = %8f, InvisFactor = %8f, DashingFactor = %8f, UppercutFactor = %8f, LandingFactor = %8f, TensionFactor = %8f, FloraArmorFactor = %8f, RingFactor = %8f, DQBuffFactor = %8f, DivineAvatarFactor = %8f, GoEFactor = %8f)", 
 				damageType, damage, newdamage, TOTALFactor, 
 				PlayerLevel, LVLFactor, PlayerSTR, STRfactor, PlayerSOR, SORfactor, 
 				MusouFactor, StamUpATKFactor, MagiUpATKFactor, 
@@ -776,11 +776,13 @@ class PlayerStatItem : Inventory
 		// ******************
 		if (passive && damage > 0) // If the owner [usually the player] of the item is the DEFENDER
 		{
-			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\czplayer-StatItem input [STEP 3 (\cwsuper.DamageMobj\cz)]\c-: \cadamage\c- = \ca%d\c-)", damage);
+			int predmg = playeractor.mobjdmg;
+			double factorchange = 1.0 * damage / predmg;
+			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\czplayer-StatItem input [STEP 3 (\cwsuper.DamageMobj\cz)]\c-: \cypredmg\c- / \cydamage\c- = \cy%d\c- /  \cy%d\c-, \cafactorchange\c- = \ca%8f\c-)", predmg, damage, factorchange);
 
-			// **************************************
-			// *DEFENSE THAT CAN BE IGNORED GO FIRST*
-			// **************************************
+			// ****************************************
+			// *DEFENSE THAT CAN BE IGNORED GOES FIRST*
+			// ****************************************
 			// Check Level
 			int PlayerLevel = CallACS("StatCheck",0);
 			double LVLfactor = 1.0; double LVLfactorclamp = 0.05;
@@ -833,7 +835,7 @@ class PlayerStatItem : Inventory
 			double StrifeStaminaFactor = 1.0;
 			StrifeStaminaFactor = 1.00 - (CallACS("MiscVarCheckDECORATE",317) * .005);
 			
-			// Invisibility [DEFENSIVE] [if ignored]
+			// Invisibility [DEFENSIVE] [if ignored] (33% Chance)
 			InvisFactor = 1.0;
 			InvisBaseAmt = 0.8;
 			if (InvisIgnored == 3)
@@ -969,7 +971,6 @@ class PlayerStatItem : Inventory
 			// The following allows TOTALFactor to be affected by varying types of (Partial)Defense-Ignoring attacks.
 			double BaseIgnoreFactor = 0.0;
 			double DefenseIgnoreFactor = 0.0;
-			let playeractor = AetheriusPlayerPawn(owner);
 			if (playeractor.PlayerDefenseIgnoreFactor > 0.00 && TOTALFactor <= 1.00)
 			{
 				BaseIgnoreFactor = (1.0 - TOTALFactor);
@@ -1020,7 +1021,7 @@ class PlayerStatItem : Inventory
 			double FocusFactor = 1.00;
 			if (CallACS("MiscVarCheckDECORATE",212) > 0) FocusFactor = 4.00;
 
-			// Invisibility [DEFENSIVE] [if NOT ignored]
+			// Invisibility [DEFENSIVE] [if NOT ignored] (67% Chance)
 			InvisFactor = 1.0;
 			InvisBaseAmt = 0.8;
 			if (InvisIgnored <= 2)
@@ -1105,6 +1106,7 @@ class PlayerStatItem : Inventory
 	override double GetSpeedFactor() 
 	{
 		let weapon = owner.player.ReadyWeapon;
+		let playeractor = AetheriusPlayerPawn(owner);
 		int CharacterClass = CallACS("CheckCharacterClass");
 
 		double CVarAdjustSpeed = 1.00;
@@ -1314,8 +1316,8 @@ class Resistances : Inventory
 		{
 			Console.Printf("    (\czFlora Armor input  [STEP 7]\c-:  \cwDmgType\c- = \cw%s\c-, \cydmg\c- = \cy%d\c-, \cares\c- = \ca%.4f\c-, \cynewdmg1\c- = \cy%d\c-, \caresN\c- = \ca%.4f\c-, \cyfinaldmg\c- = \cy%d\c-)", damageType, damage, resist, newdmg1, resistN, tempdamage);
 
-			if (ShieldBonusOn > 0) Console.Printf("    (\czFlora Omniblock Input [STEP 8]\c-:  \cwDmgType\c- = \cw%s\c-, \cyshieldblockdmg1\c- = \cy%d\c-, \caDivShldBonus\c- = \ca%.4f\c-, \cyfinaldmg\c- = \cy%d\c-)", damageType, shieldblockdmg1, DivShldBonus, tempdamage2);
-												else Console.Printf("    (\czFlora Omniblock Input [STEP 8]\c-:  \caSKIPPED\c-)", damageType);
+			if (ShieldBonusOn > 0) Console.Printf("    (\czFlora Omniblock Input [STEP 8]\c-: \cwDmgType\c- = \cw%s\c-, \cyshieldblockdmg1\c- = \cy%d\c-, \caDivShldBonus\c- = \ca%.4f\c-, \cyfinaldmg\c- = \cy%d\c-)", damageType, shieldblockdmg1, DivShldBonus, tempdamage2);
+												else Console.Printf("    (\czFlora Omniblock Input [STEP 8]\c-: \caSKIPPED\c-)", damageType);
 		}
 	}
 
