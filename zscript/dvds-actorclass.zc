@@ -224,6 +224,8 @@ class AetheriusPlayerPawn : PlayerPawn
 
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		AetheriusMonsterZSC DVDSActor;
+		if (source) DVDSActor = AetheriusMonsterZSC(source);
 		if (neverbleeds == 0)
 		{
 			bNOBLOOD = 0;
@@ -234,10 +236,64 @@ class AetheriusPlayerPawn : PlayerPawn
 		if (inflictor == null) infl = "NONE";
 											else infl = inflictor.GetClassName();
 		if (source == null) sour = "NONE";
-										else sour = source.GetClassName();
+									 else sour = source.GetClassName();
+
+		int bosstype = 0;
+		if (sour == "DSCyberdemon" || sour == "DSCyberdemon64" || sour == "Annihilator" ||
+				sour == "DSSpiderMastermind" || sour == "Demolisher" ||
+				sour == "DeathKnight" || sour == "MaulotaurNew" || 
+				sour == "IronlichNew" || sour == "IceLich" || 
+				sour == "GoldLich" || sour == "BloodLich" ||
+				sour == "Bormereth" || sour == "FireDemonQueen" ||
+				sour == "VampireDVDS" || sour == "EtherealChaosSerpentNew" ||
+				sour == "InquisitorNew" || sour == "DarkInquisitor" ||
+				sour == "TNTSpider")
+		{
+			bosstype = 1; // Miniboss Level
+		}
+		else
+		if (sour == "AvatarNew" || sour == "DSparilMountedNew" || 
+				sour == "ClericBossNew" || sour == "MageBossNew" || sour == "FighterBossNew" || 
+				sour == "ProgrammerNew" || sour == "StrifeBishopNew" || sour == "OracleNew" || 
+				sour == "Macil1New" || sour == "Macil2New" || sour == "LoremasterNew" ||
+				sour == "SourceGuardian" || sour == "DSMotherDemon64" ||
+				sour == "AlienSpectre1New" || sour == "AlienSpectre2New" || sour == "AlienSpectre3New" || 
+				sour == "AlienSpectre4New" || sour == "AlienSpectre5New")
+		{
+			bosstype = 2; // Moderate Boss Level
+		}
+		else
+		if (sour == "DSparilUnmountedNew" || sour == "KoraxNew" || sour == "Zakachi" || 
+				sour == "Benellus1DS" || sour == "Benellus2DS" || sour == "Benellus3DS" ||
+				sour == "ThamuzNew" || sour == "TchernobogNew" ||
+				sour == "SauronEyeWeak" || sour == "SauronEyeStrong1" || sour == "SauronEyeStrong2")
+		{
+			bosstype = 3; // Major/Named Threat [Lv 1]
+		}
+		else
+		if (sour == "EntityBossNew" || sour == "EntitySecondNew" || sour == "EntityAscended" || 
+				sour == "PennywiseBoss" || sour == "TheSource" || sour == "Magmantis" || 
+				sour == "AdolfHitlerDS" || sour == "SauronEyeMain")
+		{
+			bosstype = 4; // Extreme/Named Threat [Lv 2]
+		}
+		else
+		if (sour == "Sauravatar")
+		{
+			bosstype = 5; // Elite/Named Threat [Lv 3]
+		}
+		else
+		if (source.bBOSS)
+		{
+			bosstype = 1; // Miniboss Level
+		}
 
 		// VOODOO Doll Protection
-		if (!player || !player.mo || player.mo != self) { return super.DamageMobj(inflictor, source, damage, mod, flags, angle); }
+		if (!player || !player.mo || player.mo != self) 
+		{ 
+			return super.DamageMobj(inflictor, source, damage, mod, flags, angle); 
+			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\czplayer-damagemobj input [STEP -1]\c-: \cyVOODOO DOLL\c-)", damage);
+		}
 
 		// Makes the HUD show "Missed!" and play a sound if you evade an attack. V:
 		int EvadedTheAttack = 0;
@@ -261,29 +317,25 @@ class AetheriusPlayerPawn : PlayerPawn
 		}
 		if (dvdsdebug_playerdmgdisplays > 0 && EvadedTheAttack) Console.Printf("    (\czplayer-damagemobj input [STEP 0]\c-: \cyATTACKED WAS EVADED/AVOIDED\c-)", damage);
 
-		AetheriusMonsterZSC enemyactor;
-		if (source) enemyactor = AetheriusMonsterZSC(source);
 		double RailRandom = frandompick(0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,
 																		0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,
 																		0.50,0.50,0.50,0.50,0.50,
 																		0.75,0.75,0.75,
 																		0.90,0.90,
 																		0.9875);
+
+		int LegendaryIgnoreDefenseFactor = 0.5 + (CallACS("MiscVarCheckDECORATE",10057) * 0.05) - (CallACS("MiscVarCheckDECORATE",10058) * 0.125);
+		int criticalhit = DVDSActor.CountInv("DealCriticalHit");
 		int defense;
 		// Defense Calculation
 		if (damage > 0)
 		{
-			AetheriusMonsterZSC DVDSActor;
-			if (source) DVDSActor = AetheriusMonsterZSC(source);
-			if (DVDSActor)
+			if (DVDSActor && DVDSActor.bFRIENDLY)
 			{
-				if (DVDSActor.bFRIENDLY)
-				{
-					damage /= 4;
-					if (DVDSActor.user_summoned > 0) damage /= 4;
-					if (DVDSActor.user_charmed > 0) damage /= 4;
-					if (damage < 1) damage = 1;
-				}
+				damage /= 4;
+				if (DVDSActor.user_summoned > 0) damage /= 4;
+				if (DVDSActor.user_charmed > 0) damage /= 4;
+				if (damage < 1) damage = 1;
 			}
 
 			int olddmg = damage;
@@ -331,13 +383,30 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
 					infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
 					infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
-					infl == "FireBreath" || infl == "FireBreathCrisis")
+					infl == "FireBreath" || infl == "FireBreathCrisis" ||
+					infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis")
 			{
 				defense *= 0.25;
 			}
-			if (enemyactor && enemyactor.user_legendaryevolved) 
+			if (DVDSActor && DVDSActor.user_legendaryevolved) 
 			{
 				defense *= 0.5;
+			}
+			//**************************
+			//**Special Boss detection**
+			//**************************
+			if (bosstype == 1) defense *= (1.0 - frandompick(0.125,0.25));
+			if (bosstype == 2) defense *= (1.0 - frandompick(0.25,0.375,0.50));
+			if (bosstype == 3) defense *= (1.0 - frandompick(0.50,0.625,0.75));
+			if (bosstype == 4) defense *= (1.0 - frandompick(0.75,0.875,1.00));
+			if (bosstype == 5) defense *= (1.0 - frandompick(0.875,1.00));
+
+			// Critical Hits?
+			double dmgmulti = 2.0 + (0.01 * random(-10,10));
+			if (criticalhit) 
+			{
+				damage *= dmgmulti;
+				defense = 0;
 			}
 
 			damage -= defense;
@@ -349,51 +418,68 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("    (\czplayer-damagemobj input [STEP 1]\c-:  \cyolddmg\c- = \cy%d\c-, basedef = %d, armdef = %d, def = %d, \cynewdmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", olddmg, basedef, armordef, defense, damage, mod, infl, sour);
 		}
 
-		// Tries to determine a factor of much of the total defense calculations to ignore in their PlayerStatItem
-		if (damage > 0) 
+		// Tries to determine a factor of much of the total defense calculations to ignore in their "PlayerStatItem"
+		if (damage > 0)
 		{
 			PlayerDefenseIgnoreFactor = 0.00;
-			PlayerArmorIgnoreFactor = 0.00;
-
 			if (inflictor == null && source == null)
 			{
-				if (mod == 'Slime' || mod == 'Crush') PlayerDefenseIgnoreFactor = 0.96;
+				if (mod == 'Slime' || mod == 'Crush') PlayerDefenseIgnoreFactor += (0.96 * (1.00 - PlayerDefenseIgnoreFactor));
 				if (gameinfo.gametype & GAME_Raven)
 				{
-					if (mod == 'Fire' || mod == 'Magma') PlayerDefenseIgnoreFactor = 0.96;
+					if (mod == 'Fire' || mod == 'Magma') PlayerDefenseIgnoreFactor += (0.96 * (1.00 - PlayerDefenseIgnoreFactor));
 				}
 			}
-			if (infl == "DBTRailPuff") 
+			else
 			{
-				PlayerDefenseIgnoreFactor = RailRandom;
-			}
-			if (mod == 'Drowning') 
-			{
-				PlayerDefenseIgnoreFactor = 1.0;
-			}
-			if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") 
-			{
-				PlayerDefenseIgnoreFactor = 0.6667;
-			}
-			if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
-					infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
-					infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
-					infl == "FireBreath" || infl == "FireBreathCrisis")
-			{
-				PlayerDefenseIgnoreFactor = 0.75;
+				if (infl == "DBTRailPuff") 
+				{
+					PlayerDefenseIgnoreFactor += (RailRandom * (1.00 - PlayerDefenseIgnoreFactor));
+				}
+				if (mod == 'Drowning') 
+				{
+					PlayerDefenseIgnoreFactor += (1.00 * (1.00 - PlayerDefenseIgnoreFactor));
+				}
+				if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") 
+				{
+					PlayerDefenseIgnoreFactor += (0.6667 * (1.00 - PlayerDefenseIgnoreFactor));
+				}
+				if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
+						infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
+						infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
+						infl == "FireBreath" || infl == "FireBreathCrisis" ||
+						infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis")
+				{
+					PlayerDefenseIgnoreFactor += (0.75 * (1.00 - PlayerDefenseIgnoreFactor));
+				}
+
+				//**************************
+				//**Special Boss detection**
+				//**************************
+				if (bosstype == 1) PlayerDefenseIgnoreFactor += (frandompick(0.125,0.25) * (1.00 - PlayerDefenseIgnoreFactor));
+				if (bosstype == 2) PlayerDefenseIgnoreFactor += (frandompick(0.25,0.375,0.50) * (1.00 - PlayerDefenseIgnoreFactor));
+				if (bosstype == 3) PlayerDefenseIgnoreFactor += (frandompick(0.50,0.625,0.75) * (1.00 - PlayerDefenseIgnoreFactor));
+				if (bosstype == 4) PlayerDefenseIgnoreFactor += (frandompick(0.75,0.875,1.00) * (1.00 - PlayerDefenseIgnoreFactor));
+				if (bosstype == 5) PlayerDefenseIgnoreFactor += (frandompick(0.875,1.00) * (1.00 - PlayerDefenseIgnoreFactor));
 			}
 
-			if (enemyactor && enemyactor.user_legendaryevolved) 
+			LegendaryIgnoreDefenseFactor = 0.50 - (CallACS("MiscVarCheckDECORATE",10057) * 0.05) - (CallACS("MiscVarCheckDECORATE",10058) * 0.125);
+			if (DVDSActor && DVDSActor.user_legendaryevolved) 
 			{
-				double LegendaryDefenseIgnoreFactor = 0.5;
-				if (PlayerDefenseIgnoreFactor <= 0.0) PlayerDefenseIgnoreFactor = LegendaryDefenseIgnoreFactor; else PlayerDefenseIgnoreFactor *= (1.0 + LegendaryDefenseIgnoreFactor);
+				PlayerDefenseIgnoreFactor += (LegendaryIgnoreDefenseFactor * (1.00 - PlayerDefenseIgnoreFactor));
 			}
+			// Critical Hits?
+			if (criticalhit) PlayerDefenseIgnoreFactor = 1.0;
 
 			if (PlayerDefenseIgnoreFactor <= 0.0) PlayerDefenseIgnoreFactor = 0.0;
-			if (PlayerArmorIgnoreFactor <= 0.0) PlayerArmorIgnoreFactor = 0.0;
 			if (PlayerDefenseIgnoreFactor > 1.0) PlayerDefenseIgnoreFactor = 1.0;
+
+			// Intended to ignore aspects of Flora's special armor or Marines' armor items [if any attacks will in the future]
+			PlayerArmorIgnoreFactor = 0.00;
+			if (PlayerArmorIgnoreFactor <= 0.0) PlayerArmorIgnoreFactor = 0.0;
 			if (PlayerArmorIgnoreFactor > 1.0) PlayerArmorIgnoreFactor = 1.0;
 
+			// Final Printouts for Defense/Armor Ignoring Stuff
 			if (dvdsdebug_playerdmgdisplays > 0)
 			{
 				if (PlayerDefenseIgnoreFactor <= 0.00 && PlayerArmorIgnoreFactor <= 0.00)
@@ -415,9 +501,9 @@ class AetheriusPlayerPawn : PlayerPawn
 		//**********************************************
 		//*Post "PlayerStatItem" and "Resistances" Info*
 		//**********************************************
-		if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) 
+		if (dvdsdebug_playerdmgdisplays > 0 && damage > 0)
 		{
-			if (ret > 0) Console.Printf("    (\czplayer-damagemobj output [STEP 9]\c-: \cydmg = \cy%d\c-, \cwdmgtype\c- = \cw%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", ret, mod, infl, sour);
+			if (ret > 0) Console.Printf("    (\czplayer-damagemobj output [STEP 9]\c-: \cxCRIT? = %d\c- \cydmg = %d\c-, \cwdmgtype = %s\c-, \cdinflictor = %s\c-, \cnsource = %s\c-)", criticalhit, ret, mod, infl, sour);
 							else Console.Printf("    (\czplayer-damagemobj output [STEP 9]\c-: \caSKIPPED\c-)", ret);
 		}
 
@@ -425,12 +511,17 @@ class AetheriusPlayerPawn : PlayerPawn
 		{
 			int hpratio = ret * 100 / CallACS("StatCheck",1);
 			int cursemulti = 1;
-			if (hpratio >= 101) cursemulti = 4;
-			if (hpratio >= 51 && hpratio <= 100) cursemulti = 3;
-			if (hpratio >= 26 && hpratio <= 50) cursemulti = 2;
-			if (hpratio <= 25) cursemulti = 1;
+			int cursedivisor = 1;
+			if (hpratio >= 201)										{ cursemulti = 8; cursedivisor = 2; }
+			if (hpratio >= 151 && hpratio <= 200)	{ cursemulti = 7; cursedivisor = 2; }
+			if (hpratio >= 101 && hpratio <= 150)	{ cursemulti = 6; cursedivisor = 2; }
+			if (hpratio >= 81 && hpratio <= 100)	{ cursemulti = 5; cursedivisor = 2; }
+			if (hpratio >= 61 && hpratio <= 80)		{ cursemulti = 4; cursedivisor = 2; }
+			if (hpratio >= 41 && hpratio <= 60)		{ cursemulti = 3; cursedivisor = 2; }
+			if (hpratio >= 21 && hpratio <= 40)		{ cursemulti = 2; cursedivisor = 2; }
+			if (hpratio <= 20)										{ cursemulti = 1; cursedivisor = 2; }
 			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\czplayer-damagemobj uncurse stuff [STEP 10]\c-: \cydmg = \cy%d\c-, \cwcursemulti\c- = \cw%d\c-, \cdhpratio\c- = \cd%d\c-)", ret, cursemulti, hpratio);
-			ACS_NamedExecuteAlways("CursedShieldPain",0,1,cursemulti);
+			ACS_NamedExecuteAlways("CursedShieldPain",0,1,cursemulti,cursedivisor);
 		}
 		else
 		{
