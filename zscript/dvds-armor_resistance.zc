@@ -11,15 +11,22 @@ class PlayerStatItem : Inventory
 		+Inventory.UNTOSSABLE;
 	}
 
-	private class<Inventory> APPackToken, APPackCheck;
+	private class<Inventory> APPackToken, APPackCheck, APPackCheck2, APPackCheck3, APPackCheck4;
 	
 	override void DoEffect()
 	{
-		String nm;
+		String nm, nn, no, np;
 		let weapon = owner.player.ReadyWeapon;
 		let playeractor = AetheriusPlayerPawn(owner);
+		int cheatcheck = owner.player.cheats;
+		int TrueGameSkill = GetCVar("dvds_gendifficultycurve") + Skill;
+		float PlayerVelX = owner.vel.x;
+		float PlayerVelY = owner.vel.y;
+		float PlayerVelZ = owner.vel.z;
 
-		// RadiusDamageFactor
+		//**********************
+		//**RadiusDamageFactor**
+		//**********************
 		currenthealth = owner.health;
 		double TotalRDFactor = 1.00;
 		int CharacterClass = CallACS("CheckCharacterClass");
@@ -124,7 +131,9 @@ class PlayerStatItem : Inventory
 			DQBuffRDFactor, SceptreDefenseRDFactor);
 		}
 
-		// Mass
+		//********
+		//**Mass**
+		//********
 		int TotalMass = 100;
 		if (CharacterClass == 0) // Deggaris
 		{
@@ -242,9 +251,9 @@ class PlayerStatItem : Inventory
 		CallACS("SetMiscellaneousVar",201,TotalMass); // Set to the Total Mass
 		//Console.Printf("    Calculated Mass: %d [Real Mass: %d]", TotalMass, owner.mass);
 
-		
-		// JumpZ
-		// Character
+		//*********
+		//**JumpZ**
+		//*********
 		double CharacterJumpZ = 8.0;
 		if (CharacterClass == 0) CharacterJumpZ = 7.5;
 		if (CharacterClass == 1) CharacterJumpZ = 8.5;
@@ -376,7 +385,739 @@ class PlayerStatItem : Inventory
 													StaminaJumpZ, FistBlockJumpZ, 
 													DivineAvatarJumpZ);
 		}
+
+		//*****************
+		//**Survival Rate**
+		//*****************
+		int debugsurvival = GetCVar("dvdsdebug_showsurvivalstuff");
+		int SurvivalRate = CallACS("MiscVarCheckDECORATE",0);
+		int SkillFactor;
+		// 0.1% for every 2 levels (max of 50 or 5.0% [max of 100 or 10.0% for Flora at Level 200])
+		SurvivalRate += (CallACS("StatCheck",0) / 2);
+		if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 1 - Base]: %d\c-", SurvivalRate);
+
+		SkillFactor = 0;
+		// Every 3/4/5 Points of Defenses = 0.1% increase to Survivability Rate
+		if (TrueGameSkill <= 0) SkillFactor = CallACS("MiscVarCheckDECORATE",32) / 3;
+		if (TrueGameSkill == 1) SkillFactor = CallACS("MiscVarCheckDECORATE",32) / 3;
+		if (TrueGameSkill == 2) SkillFactor = CallACS("MiscVarCheckDECORATE",32) / 4;
+		if (TrueGameSkill == 3) SkillFactor = CallACS("MiscVarCheckDECORATE",32) / 5;
+		if (TrueGameSkill == 4) SkillFactor = CallACS("MiscVarCheckDECORATE",32) / 5;
+		if (TrueGameSkill == 5) SkillFactor = CallACS("MiscVarCheckDECORATE",32) / 6;
+		if (TrueGameSkill == 6) SkillFactor = CallACS("MiscVarCheckDECORATE",32) / 6;
+		if (TrueGameSkill == 7) SkillFactor = CallACS("MiscVarCheckDECORATE",32) / 7;
+		if (TrueGameSkill >= 8) SkillFactor = CallACS("MiscVarCheckDECORATE",32) / 8;
+		SurvivalRate += SkillFactor;
+		if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 2 - DefStat Check]: %d,\c- Added: %d", SurvivalRate, SkillFactor);
+
+		SkillFactor = 0;
+		// Abhorrent's Equipment Set
+		if (Owner.CountInv("SauronHelmet") > 0) SkillFactor += 175; // Helmet = 17.5%
+		if (Owner.CountInv("SauronGauntlets") > 0) SkillFactor += 50; // Gauntlets (Deggaris) = 5.0%
+		if (Owner.CountInv("SauronGauntletsIllucia") > 0) SkillFactor += 60; // Gauntlets (Illucia) = 6.0%
+		if (Owner.CountInv("SauronGauntletsFlora") > 0) SkillFactor += 40; // Gauntlets (Flora) = 4.0%
+		nm = "SauronGauntletsAilish"; APPackCheck = nm;
+		if (Owner.CountInv(APPackCheck) > 0) SkillFactor += 80; // Gauntlets (Ailish) = 8.0%
+		nm = "SauronGauntletsPetra"; APPackCheck = nm;
+		if (Owner.CountInv(APPackCheck) > 0) SkillFactor += 70; // Gauntlets (Petra) = 7.0%
+		if (Owner.CountInv("TheOneRing") > 0) SkillFactor += 333; // The One Ring = 33.3%
+		SurvivalRate += SkillFactor;
+		if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 3 - Abhorrent's Check]: %d,\c- Added: %d", SurvivalRate, SkillFactor);
+
+		SkillFactor = 0;
+		if (CharacterClass != 2) // Deggaris and Illucia take advantage of Doom-equse Armor, however Flora, Ailish, and Petra cannot.
+		{
+			if (Owner.CountInv("DSGreenArmorClass") > 0) SkillFactor += 5; // Green Armor = 0.5% [Deggaris and Illucia Only]
+			if (Owner.CountInv("DSBlueArmorClass") > 0) SkillFactor += 10; // Blue Armor = 1.0% [Deggaris and Illucia Only]
+			if (Owner.CountInv("DSStoneArmorClass1") > 0) SkillFactor += 16; // Stone Skin [1] = 1.6% [Deggaris and Illucia Only]
+			if (Owner.CountInv("DSDiamondArmorClass1") > 0) SkillFactor += 44; // Diamond Skin [1] = 4.4% [Deggaris and Illucia Only]
+			if (Owner.CountInv("DSStoneArmorClass2") > 0) SkillFactor += 66; // Stone Skin [2] = 6.6% [Deggaris and Illucia Only]
+			if (Owner.CountInv("DSDiamondArmorClass2") > 0) SkillFactor += 176; // Diamond Skin [2] = 17.6% [Deggaris and Illucia Only]
+		}
+		if (CharacterClass == 2) // Items only Flora can make use of
+		{
+			if (Owner.CountInv("DSSpiritualExoskin1") > 0) SkillFactor += 32; // Spiritual Exoskin = 3.2% [Flora Only]
+			if (Owner.CountInv("DSSpiritualExoskin2") > 0) SkillFactor += 96; // Greater Spiritual Exoskin = 9.6% [Flora Only]
+			if (Owner.CountInv("DSSpiritualExoskin2") > 0) SkillFactor += 288; // Perfected Spiritual Exoskin = 28.8% [Flora Only]
+			if (Owner.CountInv("AnubisCufflinks") > 0) SkillFactor += 100; // Anubis Cufflinks = 10.0% [Flora Only]
+			if (Owner.CountInv("DoveRibbon") > 0) SkillFactor += 150; // Dove Ribbon = 15.0% [Flora Only]
+		}
+		SurvivalRate += SkillFactor;
+		if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 4 - Armor Item Check]: %d,\c- Added: %d", SurvivalRate, SkillFactor);
+
+		SkillFactor = 0;
+		// Divine Avatar = (25.0% of remaining amount uncovered)
+		if (CallACS("GetBuffTimer",7) > 0)
+		{
+			SkillFactor = (1000 - SurvivalRate) / 4;
+			SurvivalRate += SkillFactor;
+			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 5 - Divine Avatar Check]: %d,\c- Added: %d", SurvivalRate, SkillFactor);
+		}
+
+		SkillFactor = 0;
+		// [STRIFE-Compatibility] Stamina Upgrades
+		if (CallACS("MiscVarCheckDECORATE",317) > 0)
+		{
+			SkillFactor = CallACS("MiscVarCheckDECORATE",317) * 11;
+			SurvivalRate += SkillFactor;
+			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 6 - Strife-Stamina Perk]: %d,\c- Added: %d", SurvivalRate, SkillFactor);
+		}
+
+		SkillFactor = 0;
+		// Buff = (10.0% of remaining amount uncovered)
+		if (CallACS("GetBuffTimer",11) > 0)
+		{
+			SkillFactor = (1000 - SurvivalRate) / 10;
+			SurvivalRate += SkillFactor;
+			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 7a - Buff Check]: %d,\c- Added: %d", SurvivalRate, SkillFactor);
+		}
+		SkillFactor = 0;
+		// Sap = (-10.0% of remaining amount uncovered)
+		if (CallACS("GetBuffTimer",14) > 0)
+		{
+			SkillFactor = (1000 - SurvivalRate) / 10;
+			SurvivalRate -= SkillFactor;
+			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 7b - Sap Check]: %d,\c- Subtracted: %d", SurvivalRate, SkillFactor);
+		}
+	
+		SkillFactor = 0;
+		// Life Up Perks = total of +6% Survival
+		if (CallACS("MiscVarCheckDECORATE",10001) > 0 || CallACS("MiscVarCheckDECORATE",10002) > 0)
+		{
+			SkillFactor = ((CallACS("MiscVarCheckDECORATE",10001) * 6) + (CallACS("MiscVarCheckDECORATE",10002) * 15));
+			SurvivalRate += SkillFactor;
+			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 8 - LifeUp Perk]: %d,\c- Added: %d", SurvivalRate, SkillFactor);
+		}
 		
+		SkillFactor = 0;
+		// Kissa's Armored Brassiere = 25.0%
+		if (Owner.CountInv("KissaBra") > 0)
+		{
+			SkillFactor += 250; 
+			SurvivalRate += SkillFactor;
+			if (SurvivalRate > 938) SurvivalRate = 938;
+			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 9 - Kissa's Brassiere (Yes)]: %d,\c- Added: %d", SurvivalRate, SkillFactor);
+		}
+		else
+		{
+			if (SurvivalRate > 875) SurvivalRate = 875;
+			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 9 - Kissa's Brassiere (No)]: %d,\c- Added: %d", SurvivalRate, SkillFactor);
+		}
+		
+		SkillFactor = 0;
+		// Ruinous Shield
+		if (Owner.CountInv("RuinousShield") > 0)
+		{
+			SkillFactor = SurvivalRate - (SurvivalRate / 5); // Ruinous Shield divides Survival Rate by 5
+			SurvivalRate /= 5;
+			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 10 - Ruinous Shield]: %d,\c- Subtracted: %d", SurvivalRate, SkillFactor);
+		}
+
+		SkillFactor = SurvivalRate;
+		int survivecalcfactor = GetCVar("dvds_survivecalcfactor");
+		if (survivecalcfactor < 10) survivecalcfactor = 10;
+		if (survivecalcfactor > 1000) survivecalcfactor = 1000;
+		SurvivalRate = SurvivalRate * survivecalcfactor / 100;
+		if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 11 - Survive-Factor Calc]: %d,\c- Previous: %d, SurvivalCalcFactor: %d", SurvivalRate, SkillFactor, survivecalcfactor);
+
+		SkillFactor = SurvivalRate;
+		// Invulnerability
+		if (CallACS("GetBuffTimer",4) > 0)
+		{
+			SurvivalRate = 1000;
+			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 12 - Invulnerability Check]: %d,\c- Previous: %d", SurvivalRate, SkillFactor);
+		}
+
+		SkillFactor = SurvivalRate;
+		// Death Rage's Invulnerability
+		if (CallACS("MiscVarCheckDECORATE",9043) > 0) 
+		{
+			SurvivalRate = 1000;
+			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 12 - Death Rage Invulnerability Check]: %d,\c- Previous: %d", SurvivalRate, SkillFactor);
+		}
+		int SurviveRNGVal = random(1,1000); // Based on 0.1% to 100.0% [though the displays only show full %]
+
+		// Transplants back to ACS for HUD displays/etc
+		CallACS("MiscVarSetDECORATE",213,SurviveRNGVal);
+		CallACS("MiscVarSetDECORATE",232,SurvivalRate);
+		
+		if (SurviveRNGVal <= SurvivalRate) owner.player.cheats |= CF_BUDDHA; else owner.player.cheats &= ~CF_BUDDHA;
+		
+		if (debugsurvival > 0)
+		{
+			if (SurviveRNGVal <= SurvivalRate) Console.Printf("    \cdSurvival Rate % Roll / Rate: %d / %d, [%d]", SurviveRNGVal, SurvivalRate, cheatcheck);
+																		else Console.Printf("    \cgSurvival Rate % Roll / Rate: %d / %d, [%d]", SurviveRNGVal, SurvivalRate, cheatcheck);
+		}
+		
+		
+		
+		
+		
+		//*****************
+		//**Critical Hits**
+		//*****************
+		int debugcrithits = GetCVar("dvdsdebug_showcriticalhitstuff");
+		int CriticalHitRate = CallACS("MiscVarCheckDECORATE",0);
+
+		SkillFactor = 0;
+		if (TrueGameSkill <= 0) CriticalHitRate /= 3;
+		if (TrueGameSkill == 1) CriticalHitRate /= 4;
+		if (TrueGameSkill == 2) CriticalHitRate /= 5; 
+		if (TrueGameSkill == 3) CriticalHitRate /= 6; 
+		if (TrueGameSkill == 4) CriticalHitRate /= 7;
+		if (TrueGameSkill == 5) CriticalHitRate /= 7;
+		if (TrueGameSkill == 6) CriticalHitRate /= 8;
+		if (TrueGameSkill == 7) CriticalHitRate /= 8;
+		if (TrueGameSkill >= 8) CriticalHitRate /= 9;
+		if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 1 - Base]: %d\c-", CriticalHitRate);
+
+		// Level + Stat Calculations
+		SkillFactor = (CallACS("StatCheck",0) * 5) / 8; // Each level is +0.0625% crit rate
+		CriticalHitRate += SkillFactor;
+		if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 2a - Stats: Level]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		
+		SkillFactor = (CallACS("StatCheck",3) * 3) / 8; // 1 pt of Agility is +0.0375% crit rate
+		CriticalHitRate += SkillFactor;
+		if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 2b - Stats: Agility]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		
+		SkillFactor = (CallACS("StatCheck",4) * 3) / 16; // 1 pt of Defense is +0.01875% crit rate
+		CriticalHitRate += SkillFactor;
+		if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 2c - Stats: Defense]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		
+		SkillFactor = (CallACS("StatCheck",5) * 7) / 8; // 1 pt of Deftness is +0.0875% crit rate
+		CriticalHitRate += SkillFactor;
+		if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 2d - Stats: Deftness]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		
+		SkillFactor = (CallACS("StatCheck",6) * 1) / 16; // 1 pt of Sorcery is +0.00625% crit rate
+		CriticalHitRate += SkillFactor;
+		if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 2e - Stats: Sorcery]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		
+		SkillFactor = (CallACS("StatCheck",7) * 1) / 4; // 1 pt of Strength is +0.025% crit rate
+		CriticalHitRate += SkillFactor;
+		if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 2f - Stats: Strength]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		
+		SkillFactor = (CallACS("StatCheck",8) * 1) / 16; // 1 pt of Therapeusis is +0.00625% crit rate
+		CriticalHitRate += SkillFactor;
+		if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 2g - Stats: Therapeusis]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+
+		// Oomph/Blunt
+		SkillFactor = 0;
+		// Oomph = (6.25% of remaining amount uncovered)
+		if (CallACS("GetBuffTimer",10) > 0)
+		{
+			SkillFactor = (1000 - CriticalHitRate) / 16;
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 3a - Oomph Check]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		}
+		SkillFactor = 0;
+		// Blunt = (-6.25% of remaining amount uncovered)
+		if (CallACS("GetBuffTimer",13) > 0)
+		{
+			SkillFactor = (1000 - CriticalHitRate) / 16;
+			CriticalHitRate -= SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 3b - Blunt Check]: %d,\c- Subtracted: %d", CriticalHitRate, SkillFactor);
+		}
+		
+		// Acceleratle/Deceleratle
+		SkillFactor = 0;
+		// Acceleratle (12.5% of remaining amount uncovered)
+		if (CallACS("GetBuffTimer",12) > 0)
+		{
+			SkillFactor = (1000 - CriticalHitRate) / 8;
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 4a - Acceleratle Check]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		}
+		SkillFactor = 0;
+		// Deceleratle (-12.5% of remaining amount uncovered)
+		if (CallACS("GetBuffTimer",15) > 0)
+		{
+			SkillFactor = (1000 - CriticalHitRate) / 8;
+			CriticalHitRate -= SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 4b - Deceleratle Check]: %d,\c- Subtracted: %d", CriticalHitRate, SkillFactor);
+		}
+		
+		SkillFactor = 0;
+		// Divine Avatar (12.5% of remaining amount uncovered)
+		if (CallACS("GetBuffTimer",7) > 0)
+		{
+			SkillFactor = (1000 - CriticalHitRate) / 8;
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 5 - Divine Avatar Check]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		}
+		
+		SkillFactor = 0;
+		// [STRIFE-Compatibility] Stamina Upgrades [up to 6.25% more Crit]
+		if (CallACS("MiscVarCheckDECORATE",317) > 0)
+		{
+			SkillFactor = (CallACS("MiscVarCheckDECORATE",317) * 25) / 4;
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 6 - Strife-Stamina Perk]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		}
+		
+		SkillFactor = 0;
+		// [STRIFE-Compatibility] Accuracy Upgrades [up to 3.75% more Crit]
+		if (CallACS("MiscVarCheckDECORATE",318) > 0)
+		{
+			SkillFactor = (CallACS("MiscVarCheckDECORATE",318) * 15) / 4;
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 6 - Strife-Accuracy Perk]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		}
+
+		// Uppercut Bonuses
+		SkillFactor = 0;
+		if (Owner.CountInv("UppercutCritBonus1") > 0) // up to +5% more Crit
+		{
+			SkillFactor = (1000 - CriticalHitRate) / 20;
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 7 - Uppercut Bonus (1)]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		}
+		SkillFactor = 0;
+		if (Owner.CountInv("UppercutCritBonus2") > 0) // up to +10% more Crit
+		{
+			SkillFactor = (1000 - CriticalHitRate) / 10;
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 7 - Uppercut Bonus (2)]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		}
+		
+		// Kick Bonus
+		SkillFactor = 0;
+		if (Owner.CountInv("KickCritBonus1") > 0) // up to +4% more Crit
+		{
+			SkillFactor = (1000 - CriticalHitRate) / 25;
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 8 - Kicking Bonus (1)]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		}
+		if (Owner.CountInv("KickCritBonus2") > 0) // up to +10% more Crit
+		{
+			SkillFactor = (1000 - CriticalHitRate) / 10;
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 8 - Kicking Bonus (2)]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		}
+
+		int MeleeWeaponCritCheck = 0;
+		nm = "FistAilish"; APPackCheck = nm;
+		nn = "FistPetra"; APPackCheck2 = nn;
+		no = "SauronGauntletsAilish"; APPackCheck3 = no;
+		np = "SauronGauntletsPetra"; APPackCheck4 = np;
+		If (weapon is "FistDeggaris" || weapon is "FistIllucia" || weapon is "FistFlora" || 
+				weapon is APPackCheck || weapon is APPackCheck2 ||
+				weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora" || 
+				weapon is APPackCheck3 || weapon is APPackCheck4 ||
+				weapon is "Chainsaw2" || weapon is "DoubleBladedChainsaw" || 
+				weapon is "SceptreOfEmpyrea") MeleeWeaponCritCheck = 1;
+
+		// Dashing
+		SkillFactor = 0;
+		if (Owner.CountInv("PlayerDashing") > 0) // +4% more Crit [with most melee weapons], +1% with other weapons
+		{
+			If (MeleeWeaponCritCheck == 1) SkillFactor = (1000 - CriticalHitRate) / 25;
+																else SkillFactor = (1000 - CriticalHitRate) / 100;
+
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) 
+			{
+				If (MeleeWeaponCritCheck == 1) Console.Printf("    \cwCrit Rate % [STEP 9 - Dashing Bonus (Melee)]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+																	else Console.Printf("    \cwCrit Rate % [STEP 9 - Dashing Bonus (NON-Melee)]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+			}
+		}
+
+		// Berserker Fit = total of +2% Crit
+		SkillFactor = 0;
+		if (CallACS("MiscVarCheckDECORATE",10051) > 0)
+		{
+			If (MeleeWeaponCritCheck == 1)
+			{
+				SkillFactor = (CallACS("MiscVarCheckDECORATE",10051) * 20) + (CallACS("MiscVarCheckDECORATE",10052) * 50);
+				CriticalHitRate += SkillFactor;
+				if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 10 - Berserker Fit Perk]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+			}
+		}
+
+		// Stam Up Perks = total of +8% Crit
+		SkillFactor = 0;
+		if (CallACS("MiscVarCheckDECORATE",10005) > 0)
+		{
+			SkillFactor = (CallACS("MiscVarCheckDECORATE",10005) * 8) + (CallACS("MiscVarCheckDECORATE",10006) * 20);
+			CriticalHitRate += SkillFactor;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 11 - Stam Up Perk]: %d,\c- Added: %d", CriticalHitRate, SkillFactor);
+		}
+
+		SkillFactor = CriticalHitRate;
+		int criticalcalcfactor = GetCVar("dvds_criticalcalcfactor");
+		if (criticalcalcfactor < 10) criticalcalcfactor = 10;
+		if (criticalcalcfactor > 1000) criticalcalcfactor = 1000;
+		CriticalHitRate = CriticalHitRate * criticalcalcfactor / 100;
+		if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 12 - Factor Check]: %d,\c- Previous: %d, Factor: %d", CriticalHitRate, SkillFactor, criticalcalcfactor);
+
+		// High-Cap Crit at 100.0%, Low-Cap it at 0.1%
+		if (CriticalHitRate < 1) CriticalHitRate = 1;
+		if (CriticalHitRate > 1000) CriticalHitRate = 1000;
+
+		// Cheat for ALWAYS-CRIT
+		if (Owner.CountInv("CheatCrit") > 0) 
+		{
+			CriticalHitRate = 2000;
+			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 13 - CRIT CHEAT IS ON]: %d", CriticalHitRate);
+		}
+
+		int CritRNGVal = random(1,1000); // Based on 0.1% to 100.0% [though the displays only show full %]
+		if (CritRNGVal <= CriticalHitRate) { if (owner.CountInv("DealCriticalHit") <= 0) owner.A_GiveInventory("DealCriticalHit",1); }
+																	else { if (owner.CountInv("DealCriticalHit") >= 1) owner.A_TakeInventory("DealCriticalHit",9999); }
+
+		// Transplants back to ACS for HUD displays/etc
+		CallACS("MiscVarSetDECORATE",235,CriticalHitRate);
+
+		if (debugcrithits > 0)
+		{
+			if (CritRNGVal <= CriticalHitRate) Console.Printf("    \cdCrit Rate % Roll / Rate: %d / %d", CritRNGVal, CriticalHitRate);
+																		else Console.Printf("    \cgCrit Rate % Roll / Rate: %d / %d", CritRNGVal, CriticalHitRate);
+		}
+		
+		
+		
+		
+		
+		//***********
+		//**Evasion**
+		//***********
+		int debugevasion = GetCVar("dvdsdebug_showevadestuff");
+		int EvasionRate; // Based on 0.1% to 100.0% [though the displays only show full %]
+		int AglEvadeCheck, DftEvadeCheck;
+
+		// Set's The Base increase from each point of Agility
+		if (CharacterClass == 0) { AglEvadeCheck = 9;  DftEvadeCheck = 0; } // Deggaris
+		if (CharacterClass == 1) { AglEvadeCheck = 10; DftEvadeCheck = 0; } // Illucia
+		if (CharacterClass == 2) { AglEvadeCheck = 11; DftEvadeCheck = 0; } // Flora
+		if (CharacterClass == 8) { AglEvadeCheck = 8;  DftEvadeCheck = 0; } // Ailish
+		if (CharacterClass == 9) { AglEvadeCheck = 22; DftEvadeCheck = 0; } // Petra (Has double of Flora's)
+
+		if (Owner.CountInv("SauronHelmet") > 0) { AglEvadeCheck += 1; DftEvadeCheck += 1; }
+		if (CharacterClass == 0 && Owner.CountInv("SauronGauntlets") > 0) { AglEvadeCheck += 2; DftEvadeCheck += 2; }
+		if (CharacterClass == 1 && Owner.CountInv("SauronGauntletsIllucia") > 0) { AglEvadeCheck += 2; DftEvadeCheck += 2; }
+		if (CharacterClass == 2 && Owner.CountInv("SauronGauntletsFlora") > 0) { AglEvadeCheck += 2; DftEvadeCheck += 2; }
+		nm = "SauronGauntletsAilish"; APPackCheck = nm;
+		if (CharacterClass == 8 && Owner.CountInv(APPackCheck) > 0) { AglEvadeCheck += 2; DftEvadeCheck += 2; }
+		nm = "SauronGauntletsPetra"; APPackCheck = nm;
+		if (CharacterClass == 9 && Owner.CountInv(APPackCheck) > 0) { AglEvadeCheck += 2; DftEvadeCheck += 2; }
+		if (Owner.CountInv("TheOneRing") > 0) { AglEvadeCheck += 6; DftEvadeCheck += 6; }
+		if (debugevasion > 0) Console.Printf("    \cwEvasion Rate [STEP 0 - Agl/Def Evade Check]: %d / %d\c-", AglEvadeCheck, DftEvadeCheck);
+
+		SkillFactor = 0;
+		SkillFactor = ((CallACS("StatCheck",3) * AglEvadeCheck) + (CallACS("StatCheck",5) * DftEvadeCheck)) / 2;
+		EvasionRate += SkillFactor;
+		if (debugevasion > 0) Console.Printf("    \cwEvasion Rate [STEP 1 - Base (Agl/Evade)]: %d\c-", EvasionRate);
+
+		// Divine Avatar
+		SkillFactor = 0;
+		if (CallACS("GetBuffTimer",7) > 0)
+		{
+			SkillFactor = EvasionRate * 3 / 4;
+			EvasionRate += SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate [STEP 2 - Divine Avatar]: %d\c-, Added: %d", EvasionRate, SkillFactor);
+		}
+		
+		SkillFactor = 0;
+		// DodgeMore perks
+		if (CallACS("MiscVarCheckDECORATE",10007) > 0 || CallACS("MiscVarCheckDECORATE",10008) > 0)
+		{
+			SkillFactor = ((CallACS("MiscVarCheckDECORATE",10007) * 250) + (CallACS("MiscVarCheckDECORATE",10008) * 625));
+			EvasionRate += SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate [STEP 3 - DodgeMore Perks]: %d\c-, Added: %d", EvasionRate, SkillFactor);
+		}
+
+		SkillFactor = 0;
+		// [STRIFE-Compatibility] Stamina Upgrades
+		if (CallACS("MiscVarCheckDECORATE",317) > 0)
+		{
+			SkillFactor = CallACS("MiscVarCheckDECORATE",317) * 111;
+			EvasionRate += SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 4 - Strife-Stamina Perk]: %d,\c- Added: %d", EvasionRate, SkillFactor);
+		}
+		
+		SkillFactor = 0;
+		// Checks Evasion Based on Level
+		SkillFactor = CallACS("StatCheck",0) * 5;
+		if (CallACS("GetBuffTimer",7) > 0) SkillFactor = SkillFactor * 7 / 5;
+		EvasionRate += SkillFactor;
+		if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 5a - Level Check]: %d,\c- Added: %d", EvasionRate, SkillFactor);
+
+		SkillFactor = 0;
+		// Flora Armor Checks
+		if (CharacterClass == 2)
+		{
+			// Flora has Safe Tea Shoes? [+3.75% Chance to totally "Evade" damage even from a direct hit.]
+			if (Owner.CountInv("SafeTeaShoes") > 0) SkillFactor += 375;
+			
+			// Flora has Pearly Corset? [+0.75% Chance to totally "Evade" damage even from a direct hit.]
+			if (Owner.CountInv("PearlyCorset") > 0) SkillFactor += 75;
+			
+			// Flora has Water Flying Dress? [+1.25% Chance to totally "Evade" damage even from a direct hit.]
+			if (Owner.CountInv("WaterFlyingDress") > 0) SkillFactor += 125;
+			
+			// Flora has Evenstar Necklace? [+2.5% Chance to totally "Evade" damage even from a direct hit.]
+			if (Owner.CountInv("EvenstarNecklace") > 0) SkillFactor += 250;
+			
+			// Flora has Cloak of Evasion? [+12.50% Chance to totally "Evade" damage even from a direct hit.]
+			if (Owner.CountInv("CloakOfEvasion") > 0) SkillFactor += 1250;
+			
+			// Flora has Falcon Knife Earrings? [+1.25% Chance to totally "Evade" damage even from a direct hit.]
+			if (Owner.CountInv("FalconKnifeEarrings") > 0) SkillFactor += 125;
+			
+			// Flora has Anubis Cufflinks? [+0.5% Chance to totally "Evade" damage even from a direct hit.]
+			if (Owner.CountInv("AnubisCufflinks") > 0) SkillFactor += 50;
+			
+			// Flora has Kissa's Brasseire? [+1% Chance to totally "Evade" damage even from a direct hit.]
+			if (Owner.CountInv("KissaBra") > 0) SkillFactor += 100;
+			
+			// Flora has Balrog Ring? [+0.5% Chance to totally "Evade" damage even from a direct hit.]
+			if (Owner.CountInv("BalrogRing") > 0) SkillFactor += 50;
+			
+			// Flora has Dove Ribbon? [+1.75% Chance to totally "Evade" damage even from a direct hit.]
+			if (Owner.CountInv("DoveRibbon") > 0) SkillFactor += 175;
+		}
+		EvasionRate += SkillFactor;
+		if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 6 - Flora Armor Check]: %d,\c- Added: %d", EvasionRate, SkillFactor);
+
+		SkillFactor = 0;
+		// Someone has Sauron's Helmet [-1.56% Chance]
+		if (Owner.CountInv("SauronHelmet") > 0) 
+		{
+			SkillFactor = 156;
+			EvasionRate -= SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 7a - Sauron Helm Check]: %d,\c- Subtracted: %d", EvasionRate, SkillFactor);
+		}
+		
+		SkillFactor = 0;
+		// Someone has The One Ring [+6.25% Chance]
+		if (Owner.CountInv("TheOneRing") > 0) 
+		{
+			SkillFactor = 625;
+			EvasionRate += SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 7b - One Ring Check]: %d,\c- Added: %d", EvasionRate, SkillFactor);
+		}
+
+		SkillFactor = 0;
+		// Haste Buff [150% Evade]
+		if (Owner.CountInv("HasteBuff") > 0)
+		{
+			SkillFactor = EvasionRate / 2;
+			EvasionRate += SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 8a - Haste Check]: %d,\c- Added: %d", EvasionRate, SkillFactor);
+		}
+		
+		SkillFactor = 0;
+		// Slow Ailment [66.7% Evade]
+		if (Owner.CountInv("SlowAilment") > 0)
+		{
+			SkillFactor = EvasionRate * 1 / 3;
+			EvasionRate -= SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 8b - Slow Check]: %d,\c- Subtracted: %d", EvasionRate, SkillFactor);
+		}
+		
+		SkillFactor = 0;
+		if (CharacterClass == 2)
+		{
+			// Ruinous Shield [Evade reduced by 5/8ths]
+			if (Owner.CountInv("RuinousShield") > 0)
+			{
+				SkillFactor = EvasionRate * 5 / 8;
+				EvasionRate -= SkillFactor;
+				if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 9 - Ruinous Shield Check]: %d,\c- Subtracted: %d", EvasionRate, SkillFactor);
+			}
+			
+			// Divine Shield [Evade Increased by 1/4ths]
+			if (Owner.CountInv("DivineShield") > 0)
+			{
+				SkillFactor = EvasionRate * 1 / 4;
+				EvasionRate += SkillFactor;
+				if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 9 - Divine Shield Check]: %d,\c- Added: %d", EvasionRate, SkillFactor);
+			}
+		}
+		
+		SkillFactor = 0;
+		// On The Move Perk
+		int IsMoving = 0;
+		if (PlayerVelX < -3.814697266 || PlayerVelX > 3.814697266) IsMoving++;
+		if (PlayerVelY < -3.814697266 || PlayerVelY > 3.814697266) IsMoving++;
+		if (PlayerVelZ < -1.907348633 || PlayerVelZ > 1.907348633) IsMoving++;
+		if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP ? - Vel Checks]: IsMoving?: %d, x%8f / y%8f / z%8f", IsMoving, PlayerVelX, PlayerVelY, PlayerVelZ);
+		if (CallACS("MiscVarCheckDECORATE",10045) > 0 && IsMoving > 0) // "On The Move" Perk
+		{
+			if (CallACS("MiscVarCheckDECORATE",10045) == 1) { SkillFactor = 250 + ((CallACS("StatCheck",3) * 100) / 40); }
+			if (CallACS("MiscVarCheckDECORATE",10045) == 2) { SkillFactor = 400 + ((CallACS("StatCheck",3) * 100) / 32); }
+			if (CallACS("MiscVarCheckDECORATE",10045) == 3) { SkillFactor = 550 + ((CallACS("StatCheck",3) * 100) / 24); }
+			if (CallACS("MiscVarCheckDECORATE",10045) == 4) { SkillFactor = 700 + ((CallACS("StatCheck",3) * 100) / 16); }
+			if (CallACS("MiscVarCheckDECORATE",10045) >= 5) { SkillFactor = 850 + ((CallACS("StatCheck",3) * 100) / 8); }
+	
+			EvasionRate += SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 10 - On The Move]: %d,\c- Added: %d", EvasionRate, SkillFactor);
+		}
+
+		// Caps Evasion Chances out at 75% [unless you have the Dove's Ribbon, which it caps at 92.5%]
+		int EvasionMin;
+		int EvasionMax;
+		if (Owner.CountInv("DoveRibbon") > 0)
+		{
+			EvasionMin = 175;
+			EvasionMax = 9250;
+			EvasionMin += ((CallACS("MiscVarCheckDECORATE",10007) * 25) + (CallACS("MiscVarCheckDECORATE",10008) * 63) + (CallACS("MiscVarCheckDECORATE",10045) * 16) + (CallACS("MiscVarCheckDECORATE",10046) * 42));
+			EvasionMax += ((CallACS("MiscVarCheckDECORATE",10007) * 50) + (CallACS("MiscVarCheckDECORATE",10008) * 125) + (CallACS("MiscVarCheckDECORATE",10045) * 33) + (CallACS("MiscVarCheckDECORATE",10046) * 84));
+		}
+		else
+		{
+			EvasionMin = 0;
+			EvasionMax = 7500;
+			EvasionMin += ((CallACS("MiscVarCheckDECORATE",10007) * 20) + (CallACS("MiscVarCheckDECORATE",10008) * 50) + (CallACS("MiscVarCheckDECORATE",10045) * 13) + (CallACS("MiscVarCheckDECORATE",10046) * 33));
+			EvasionMax += ((CallACS("MiscVarCheckDECORATE",10007) * 30) + (CallACS("MiscVarCheckDECORATE",10008) * 75) + (CallACS("MiscVarCheckDECORATE",10045) * 20) + (CallACS("MiscVarCheckDECORATE",10046) * 50));
+		}
+		if (EvasionRate < EvasionMin) EvasionRate = EvasionMin;
+		if (EvasionRate > EvasionMax) EvasionRate = EvasionMax;
+		if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 11 - Dove Ribbon Check]: %d,\c- EvadeMin: %d, EvadeMax: %d", EvasionRate, EvasionMin, EvasionMax);
+		
+		
+		int WeapEvadeAdd;
+		int BasePerkFactor = 0;
+		int PerkFactor = 0;
+		// Check for Equipped Weapon
+		If (weapon is "BFG90002") BasePerkFactor = -625;
+		If (weapon is "RocketLauncher2") BasePerkFactor = -313;
+		If (weapon is "Railgun2" || weapon is "Karasawa2" ||
+				weapon is "Repeater2" || weapon is "PlasmaRifle2")
+		{
+			BasePerkFactor = -156;
+		}
+
+		nm = "SauronGauntletsAilish"; APPackCheck = nm;
+		nn = "SauronGauntletsPetra"; APPackCheck2 = nn;
+		If (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora" || 
+				weapon is APPackCheck || weapon is APPackCheck2)
+		{
+			BasePerkFactor = -156;
+		}
+
+		no = "FistAilish"; APPackCheck3 = no;
+		np = "FistPetra"; APPackCheck4 = np;
+		If (weapon is "Chainsaw2" || weapon is "DoubleBladedChainsaw") BasePerkFactor = -78;
+		If (weapon is "Minigun") BasePerkFactor = -78;
+		If (weapon is "EvilWarriorShield") BasePerkFactor = -63;
+		If (weapon is "Chaingun2") BasePerkFactor = -39;
+		If (weapon is "FistDeggaris" || 
+				weapon is "FistIllucia" || 
+				weapon is "FistFlora" || 
+				weapon is APPackCheck3 || weapon is APPackCheck4)
+		{
+			BasePerkFactor = 625;
+		}
+		If (weapon is "SceptreOfEmpyrea") BasePerkFactor = 1250;
+		
+		If (weapon is "Shotgun2") BasePerkFactor = 63;
+		If (weapon is "Pistol2") BasePerkFactor = 125;
+		If (weapon is "DualPistols") BasePerkFactor = (125 * 3) / 2;
+		
+		// Hellcore Weapons
+		int EvadeCurrHellcoreLevel = 0;
+		If (weapon is "ImpClaw") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",96); }
+		If (weapon is "DarkImpClaw") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",97); }
+		If (weapon is "CacodemonEye") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",98); }
+		If (weapon is "CacolanternEye") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",99); }
+		If (weapon is "AbaddonEye") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",100); }
+		If (weapon is "KnightFist") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",101); }
+		If (weapon is "BaronFist") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",102); }
+		If (weapon is "BelphegorFist") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",103); }
+		If (weapon is "BruiserFist") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",104); }
+		If (weapon is "ArchonFist") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",105); }
+		If (weapon is "PyroFist") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",106); }
+		If (weapon is "IncarnateSkull") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",107); }
+		If (weapon is "ArchvileHand") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",108); }
+		If (weapon is "DiabloistHand") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",109); }
+		If (weapon is "BalrogFist") { EvadeCurrHellcoreLevel = CallACS("MiscVarCheckDECORATE",110); }
+		if (EvadeCurrHellcoreLevel > 0) BasePerkFactor = (1250 * EvadeCurrHellcoreLevel) / 8;
+		
+		If (weapon is "SapphireWandNew") BasePerkFactor = 125;
+		If (weapon is "DualSapphireWandsNew") BasePerkFactor = (125 * 3) / 2;
+		nm = "GoldWandNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = 187;
+		nm = "DualGoldWandNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = (187 * 3) / 2;
+		nm = "CrossbowNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = 325;
+		nm = "DualCrossbowNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = (325 * 3) / 2;
+		nm = "SuperCrossbowNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = 468;
+		nm = "DualSuperCrossbowNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = (468 * 3) / 2;
+		nm = "DragonClawNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = 250;
+		nm = "DualDragonClawNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = (250 * 3) / 2;
+		nm = "HellStaffNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = 250;
+		nm = "DualHellStaffNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = (250 * 3) / 2;
+		nm = "PhoenixRodNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = 187;
+		nm = "DualPhoenixRodNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = (187 * 3) / 2;
+		nm = "FiremaceNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = 125;
+		nm = "DualFiremaceNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = (125 * 3) / 2;
+		nm = "StrifeCrossbowNew"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = 325;
+		nm = "StrifeCrossbow2New"; APPackCheck = nm; If (weapon is APPackCheck) BasePerkFactor = 325;
+
+		if (BasePerkFactor != 0)
+		{
+			PerkFactor = BasePerkFactor;
+			PerkFactor += ((CallACS("MiscVarCheckDECORATE",10007) * (BasePerkFactor / 20)) + (CallACS("MiscVarCheckDECORATE",10008) * (BasePerkFactor / 8)));
+			SkillFactor = (10000 - EvasionRate) * PerkFactor / 10000;
+			EvasionRate += SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 12 - Weapon Check]: %d,\c- Change: %d, PerkFactor: %d", EvasionRate, SkillFactor, PerkFactor);
+		}
+		
+		SkillFactor = 0;
+		// Acceleratle = +1/5 of remaining % Evasion added (done after caps are normally calculated)
+		if (CallACS("GetBuffTimer",12) > 0)
+		{
+			PerkFactor = 2000;
+			PerkFactor += ((CallACS("MiscVarCheckDECORATE",10007) * 200) + (CallACS("MiscVarCheckDECORATE",10008) * 500));
+			SkillFactor = (10000 - EvasionRate) * PerkFactor / 10000;
+			EvasionRate += SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 13a - Acceleratle Check]: %d,\c- Add: %d, PerkFactor: %d", EvasionRate, SkillFactor, PerkFactor);
+		}
+		// Deceleratle = -1/5 of remaining % Current Evasion removed (done after caps are normally calculated)
+		if (CallACS("GetBuffTimer",15) > 0)
+		{
+			PerkFactor = 2000;
+			PerkFactor -= ((CallACS("MiscVarCheckDECORATE",10007) * 100) + (CallACS("MiscVarCheckDECORATE",10008) * 250));
+			SkillFactor = (10000 - EvasionRate) * PerkFactor / 10000;
+			EvasionRate -= SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 13b - Deceleratle Check]: %d,\c- Subtracted: %d, PerkFactor: %d", EvasionRate, SkillFactor, PerkFactor);
+		}
+
+		SkillFactor = 0;
+		// BlurSphere = +1/3 of remaining % Evasion added (done after caps are normally calculated) [in other words, make the Blur Sphere & Invisibility Spells actually USEFUL >__>;]
+		if (Owner.CountInv("PowerInvisibility") > 0 || Owner.CountInv("InvisiblitySpell") > 0)
+		{
+			PerkFactor = 3334;
+			PerkFactor += ((CallACS("MiscVarCheckDECORATE",10007) * 125) + (CallACS("MiscVarCheckDECORATE",10008) * 313));
+			SkillFactor = (10000 - EvasionRate) * PerkFactor / 10000;
+			EvasionRate += SkillFactor;
+			if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 14 - Invisibility Check]: %d,\c- Added: %d, PerkFactor: %d", EvasionRate, SkillFactor, PerkFactor);
+		}
+
+		SkillFactor = EvasionRate;
+		int evadecalcfactor = GetCVar("dvds_evadecalcfactor");
+		if (evadecalcfactor < 10) evadecalcfactor = 10;
+		if (evadecalcfactor > 1000) evadecalcfactor = 1000;
+		EvasionRate = EvasionRate * evadecalcfactor / 100;
+		if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 15 - Factor Check]: %d,\c- Previous: %d, Factor: %d", EvasionRate, SkillFactor, evadecalcfactor);
+		
+		int ultmaxevasionrate = 9875;
+		if (EvasionRate < 0) EvasionRate = 0;
+		if (EvasionRate > ultmaxevasionrate) EvasionRate = ultmaxevasionrate;
+		if (debugevasion > 0) Console.Printf("    \cwEvasion Rate % [STEP 16 - Final Check]: %d / %d\c-", EvasionRate, ultmaxevasionrate);
+		// Transplants back to ACS for HUD displays/etc
+		CallACS("MiscVarSetDECORATE",23,EvasionRate);
+
+		int EvasionRNGVal = random(1,10000); // Based on 0.1% to 100.0% [though the displays only show full %]
+		if (EvasionRNGVal <= EvasionRate) 
+		{
+			if (owner.CountInv("EvadeAnAttack") <= 0) owner.A_GiveInventory("EvadeAnAttack",1); 
+			if (debugevasion > 0) Console.Printf("    \cdEvasion % Roll / Rate: %d / %d", EvasionRNGVal, EvasionRate);
+		}
+		else 
+		{ 
+			if (owner.CountInv("EvadeAnAttack") >= 1) owner.A_TakeInventory("EvadeAnAttack",9999); 
+			if (debugevasion > 0) Console.Printf("    \cgEvasion % Roll / Rate: %d / %d", EvasionRNGVal, EvasionRate);
+		}
+
 		previoushealth = owner.health;
 		super.DoEffect();
 	}
