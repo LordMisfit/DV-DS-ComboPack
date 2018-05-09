@@ -11801,476 +11801,11 @@ script "HUDDisplay" ENTER
 
 script "ManaRegenerationStuff" ENTER
 {
-	int C1, I1, C2, I2, RegenedMana, G2, ManaReDelay, ExtraManaRegen, G4, DoveManaTimer, G5, MaxRegenableMana, EquippedRegenCap, SkillLevelManaDelay, OverallDelay;
-	int MaxManaLimit, buttons, delaycount;
-	int FocusHumTimer, PerkFactor;
-	int StamUpgradeDelay;
-	int debugregenmana = GetCVar("dvdsdebug_showmanaregenstuff");
-	int powertripmode = GetCVar("dvds_musou_powertripmode");
-
+	int G2;
 	if (FirstRun == 0)
 	{
 		FirstRun = 1;
 		Thing_ChangeTID(0,Player1TID);
-	}
-
-	str weapon = GetWeapon();
-
-	// Base Delay Count
-	delaycount = 20; // 20 = 1 tic
-
-	// Stamina Upgrades [Strife]
-	StamUpgradeDelay = (MiscellaneousVars[317] * 2) / 3;
-	delaycount += StamUpgradeDelay;
-
-	// Accelerates MP Regen when Tension is Boosted
-	if (MiscellaneousVars[181] >= 1) delaycount += 1; // "5" = +1 [+5%]
-	if (MiscellaneousVars[181] >= 2) delaycount += 1; // "20" = +2 [+10%]
-	if (MiscellaneousVars[181] >= 3) delaycount += 2; // "50" = +4 [+20%]
-	if (MiscellaneousVars[181] >= 4) delaycount += 2; // "100" = +6 [+30%]
-	if (MiscellaneousVars[181] >= 5) delaycount += 3; // "250" = +9 [+45%]
-	if (MiscellaneousVars[181] >= 6) delaycount += 4; // "500" = +13 [+65%]
-	if (MiscellaneousVars[181] >= 7) delaycount += 5; // "1000" = +18 [+90%]
-	if (MiscellaneousVars[181] >= 5 && MiscellaneousVars[184] == 0) delaycount = delaycount * random(40,50) / 40; // +~25%
-	// PowerTrip Mode
-	if (powertripmode == 1) delaycount = delaycount * 5 / 2; // 250%
-	if (powertripmode == 2) delaycount = delaycount * 5; // 500%
-
-	if (PowerupTimer[12] > 0) delaycount = delaycount * 6 / 5; // Acceleratle = 1.2x regen speed
-	if (PowerupTimer[15] > 0) delaycount = delaycount * 4 / 5; // Deceleratle = 0.8x regen speed
-	if (PowerupTimer[18] > 0) delaycount /= 5; // Fatigue = 0.2x regen speed
-	if (PowerupTimer[20] > 0)
-	{
-		delaycount *= 5; // Sleep = 5x regen speed
-		PerkFactor = ((MiscellaneousVars[10015] * 2000) + (MiscellaneousVars[10016] * 5000)) + 10000;
-		delaycount = delaycount * PerkFactor / 10000; // "RegenMPFast" and "RegenMPFast EX" perks.
-	}
-	// Ruinous Shield - greatly reduces MP regeneration speed
-	if (CharacterClass == 2 && CheckActorInventory(Player1TID,"RuinousShield") > 0) delaycount = delaycount * 3 / 8; // 37.5%
-
-	// RegenMPFast perks
-	if (MiscellaneousVars[10015] > 0)
-	{
-		PerkFactor = ((MiscellaneousVars[10015] * 2) + (MiscellaneousVars[10016] * 5)) + 10;
-		delaycount = delaycount * PerkFactor / 10; // "RegenMPFast" and "RegenMPFast EX" perks.
-	}
-
-	// "Cleared of Mind" Perks
-	if (MiscellaneousVars[10055] > 0)
-	{
-		perkfactor = ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5)) + 80;
-		delaycount = delaycount * perkfactor / 80;
-	}
-
-	// Checks Mana Regen Rate Menu Option
-	delaycount = delaycount * GetCVar("dvds_manaregenratemultiplier") / 100;
-	if (MiscellaneousVars[212] > 0) // Focusing
-	{
-		// Slowly increases the speed of regen as focus lasts longer
-		if (MiscellaneousVars[231] >= 140) delaycount += 1; // [4 seconds]
-		if (MiscellaneousVars[231] >= 245) delaycount += 1; // [7 seconds]
-		if (MiscellaneousVars[231] >= 350) delaycount += 2; // [10 seconds]
-		if (MiscellaneousVars[231] >= 490) delaycount += 2; // [14 seconds]
-		if (MiscellaneousVars[231] >= 630) delaycount += 3; // [18 seconds]
-		if (MiscellaneousVars[231] >= 770) delaycount += 3; // [22 seconds]
-		if (MiscellaneousVars[231] >= 980) delaycount += 4; // [28 seconds]
-		if (MiscellaneousVars[231] >= 1190) delaycount += 4; // [34 seconds]
-		if (MiscellaneousVars[231] >= 1470) delaycount += 5; // [42 seconds]
-		if (MiscellaneousVars[231] >= 1750) delaycount += 5; // [50 seconds]
-		if (MiscellaneousVars[231] >= 2100) delaycount += 6; // [60 seconds]
-		if (MiscellaneousVars[231] >= 2450) delaycount += 6; // [70 seconds]
-		if (MiscellaneousVars[231] >= 2870) delaycount += 7; // [82 seconds]
-		if (MiscellaneousVars[231] >= 3290) delaycount += 7; // [94 seconds]
-		if (MiscellaneousVars[231] >= 3780) delaycount += 8; // [108 seconds]
-		if (MiscellaneousVars[231] >= 4270) delaycount += 8; // [122 seconds]
-		if (MiscellaneousVars[231] >= 2100) delaycount = (delaycount * 3) / 2; // [60 seconds]
-		if (MiscellaneousVars[231] >= 4200) delaycount = (delaycount * 3) / 2; // [60 seconds]
-
-		if (MiscellaneousVars[317] > 0)
-		{
-			if (MiscellaneousVars[231] >= 350) delaycount += (MiscellaneousVars[317] * 1) / 4;
-			if (MiscellaneousVars[231] >= 700 && MiscellaneousVars[317] >= 2) delaycount += (MiscellaneousVars[317] * 1) / 4;
-			if (MiscellaneousVars[231] >= 1050 && MiscellaneousVars[317] >= 4) delaycount += (MiscellaneousVars[317] * 1) / 3;
-			if (MiscellaneousVars[231] >= 1400 && MiscellaneousVars[317] >= 6) delaycount += (MiscellaneousVars[317] * 1) / 3;
-			if (MiscellaneousVars[231] >= 1750 && MiscellaneousVars[317] >= 8) delaycount += (MiscellaneousVars[317] * 1) / 2;
-			if (MiscellaneousVars[231] >= 2100 && MiscellaneousVars[317] >= 10) delaycount += (MiscellaneousVars[317] * 1) / 2;
-		}
-
-		if (random(1,25) == 1) delaycount *= 8; else delaycount *= 4;
-
-		FocusHumTimer = MiscellaneousVars[231] % 25;
-		if (MiscellaneousVars[231] >= 140) FocusHumTimer = MiscellaneousVars[231] % 24;
-		if (MiscellaneousVars[231] >= 245) FocusHumTimer = MiscellaneousVars[231] % 23;
-		if (MiscellaneousVars[231] >= 315) FocusHumTimer = MiscellaneousVars[231] % 22;
-		if (MiscellaneousVars[231] >= 350) FocusHumTimer = MiscellaneousVars[231] % 21;
-		if (MiscellaneousVars[231] >= 490) FocusHumTimer = MiscellaneousVars[231] % 19;
-		if (MiscellaneousVars[231] >= 630) FocusHumTimer = MiscellaneousVars[231] % 17;
-		if (MiscellaneousVars[231] >= 910) FocusHumTimer = MiscellaneousVars[231] % 15;
-		if (MiscellaneousVars[231] >= 2100) FocusHumTimer = MiscellaneousVars[231] % 12;
-		if (FocusHumTimer == 1)
-		{
-			ActivatorSound("focushum",127);
-		}
-	}
-
-	If(StrIcmp(weapon, "SapphireWandNew") == 0)
-	{
-		if (MiscellaneousVars[10053] == 1) delaycount = delaycount * 21 / 20;
-		if (MiscellaneousVars[10053] == 2) delaycount = delaycount * 23 / 20;
-		if (MiscellaneousVars[10053] == 3) delaycount = delaycount * 26 / 20;
-		if (MiscellaneousVars[10053] == 4) delaycount = delaycount * 30 / 20;
-		if (MiscellaneousVars[10053] == 5) delaycount = delaycount * 35 / 20;
-	}
-	If(StrIcmp(weapon, "DualSapphireWandsNew") == 0)
-	{
-		if (MiscellaneousVars[10053] == 1) delaycount = delaycount * 22 / 20;
-		if (MiscellaneousVars[10053] == 2) delaycount = delaycount * 26 / 20;
-		if (MiscellaneousVars[10053] == 3) delaycount = delaycount * 32 / 20;
-		if (MiscellaneousVars[10053] == 4) delaycount = delaycount * 40 / 20;
-		if (MiscellaneousVars[10053] == 5) delaycount = delaycount * 50 / 20;
-	}
-
-	if (delaycount < 1) delaycount = 1;
-	if (MenuSystemVars[0] != 0) delaycount = 0; // In-Game Menus are On
-	if (DVDSSpecialArrayValue[0] == 0 && CurrentMana < MaxMana) MiscellaneousVars[211] -= delaycount; // If Player is "Conscious" and Mana is below Max
-
-	RegenedMana = 0;
-	if (MiscellaneousVars[211] < 1)
-	{
-		// Main Regeneration
-		if (CurrentMana < MaxMana)
-		{
-			C2 = GetActorProperty(Player1TID,APROP_HEALTH);
-			if (C2 > 0)
-			{
-				// A combined total of 12-20 points of Sorcery/Theraphesuis are needed for an extra point of MP regen.
-				int regenedmanabasereq = 16;
-				if (TrueGameSkill <= SKILL_VERY_EASY)
-				{
-					RegenedMana = 3;
-					regenedmanabasereq = 12;
-				}
-				if (TrueGameSkill == SKILL_EASY) 
-				{
-					RegenedMana = random(2,3);
-					regenedmanabasereq = 14;
-				}
-				if (TrueGameSkill == SKILL_NORMAL)
-				{
-					RegenedMana = 2;
-					regenedmanabasereq = 16;
-				}
-				if (TrueGameSkill == SKILL_HARD) 
-				{
-					RegenedMana = random(1,2);
-					regenedmanabasereq = 18;
-				}
-				if (TrueGameSkill == SKILL_VERY_HARD) 
-				{
-					RegenedMana = 1;
-					regenedmanabasereq = 20;
-				}
-				if (TrueGameSkill == SKILL_EXTREME) 
-				{
-					RegenedMana = 1;
-					regenedmanabasereq = 22;
-				}
-				if (TrueGameSkill == SKILL_HORRIBLE) 
-				{
-					RegenedMana = 1;
-					regenedmanabasereq = 24;
-				}
-				if (TrueGameSkill == SKILL_IMPOSSIBLE) 
-				{
-					RegenedMana = 1;
-					regenedmanabasereq = 26;
-				}
-				if (TrueGameSkill == SKILL_OMEGA) 
-				{
-					RegenedMana = 1;
-					regenedmanabasereq = 28;
-				}
-				RegenedMana += ((MiscellaneousVars[34] + MiscellaneousVars[36]) / regenedmanabasereq);
-			}
-
-			if (PowerupTimer[7] > 0) // Divine Avatar
-			{
-				ExtraManaRegen = PlayerLevel / 10;
-				RegenedMana += ExtraManaRegen;
-				if (random(0,100) < 26)
-				{
-					RegenedMana = RegenedMana * 5 / 4;
-				}
-				else
-				{
-					if (random(0,100) < 51)
-					{
-						RegenedMana = RegenedMana * 9 / 8;
-					}
-				}
-			}
-			else
-			{
-				ExtraManaRegen = PlayerLevel / 25;
-				RegenedMana += ExtraManaRegen;
-				if (random(0,100) < 26)
-				{
-					RegenedMana = RegenedMana * 17 / 16;
-				}
-				else
-				{
-					if (random(0,100) < 51)
-					{
-						RegenedMana = RegenedMana * 33 / 32;
-					}
-				}
-			}
-
-			// Character-Based regen factors
-			if (CharacterClass == 0) RegenedMana = RegenedMana * random(15,17) / 16; // Deggaris (93.75% - 106.25%)
-			if (CharacterClass == 1) RegenedMana = RegenedMana * random(19,21) / 16; // Illucia (118.75% - 131.25%)
-			if (CharacterClass == 2) RegenedMana = RegenedMana * random(23,25) / 16; // Flora (143.75% - 156.25%)
-			if (CharacterClass == 8) RegenedMana = RegenedMana * random(23,25) / 16; // Ailish (143.75% - 156.25%)
-			if (CharacterClass == 9) RegenedMana = RegenedMana * random(17,19) / 16; // Petra (106.25% - 118.75%)
-
-			// Sauron's Helmet
-			if (CharacterClass == 0 && CheckActorInventory(Player1TID,"SauronHelmet") > 0) RegenedMana = RegenedMana * 11 / 8; // Deggaris w/ Helmet (137.5%)
-			if (CharacterClass == 1 && CheckActorInventory(Player1TID,"SauronHelmet") > 0) RegenedMana = RegenedMana * 10 / 8; // Illucia w/ Helmet (125%)
-			if (CharacterClass == 2 && CheckActorInventory(Player1TID,"SauronHelmet") > 0) RegenedMana = RegenedMana * 9 / 8; // Flora w/ Helmet (112.5%)
-			if (CharacterClass == 8 && CheckActorInventory(Player1TID,"SauronHelmet") > 0) RegenedMana = RegenedMana * 9 / 8; // Flora w/ Helmet (112.5%)
-			if (CharacterClass == 9 && CheckActorInventory(Player1TID,"SauronHelmet") > 0) RegenedMana = RegenedMana * 12 / 8; // Petra w/ Helmet (150%)
-			// Sauron's Gauntlets
-			if (CharacterClass == 0 && CheckActorInventory(Player1TID,"SauronGauntlets") > 0) RegenedMana = RegenedMana * 5 / 4; // Deggaris w/ Gauntlets (125%)
-			if (CharacterClass == 1 && CheckActorInventory(Player1TID,"SauronGauntletsIllucia") > 0) RegenedMana = RegenedMana * 5 / 4; // Illucia w/ Gauntlets (125%)
-			if (CharacterClass == 2 && CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0) RegenedMana = RegenedMana * 5 / 4; // Flora w/ Gauntlets (125%)
-			if (CharacterClass == 8 && CheckActorInventory(Player1TID,"SauronGauntletsAilish") > 0) RegenedMana = RegenedMana * 5 / 4; // Ailish w/ Gauntlets (125%)
-			if (CharacterClass == 9 && CheckActorInventory(Player1TID,"SauronGauntletsPetra") > 0) RegenedMana = RegenedMana * 5 / 4; // Petra w/ Gauntlets (125%)
-			// The One Ring
-			if (CharacterClass == 0 && CheckActorInventory(Player1TID,"TheOneRing") > 0) RegenedMana = RegenedMana * 5 / 8; // Deggaris w/ Ring (62.5%)
-			if (CharacterClass == 1 && CheckActorInventory(Player1TID,"TheOneRing") > 0) RegenedMana = RegenedMana * 6 / 8; // Illucia w/ Ring (75%)
-			if (CharacterClass == 2 && CheckActorInventory(Player1TID,"TheOneRing") > 0) RegenedMana = RegenedMana * 7 / 8; // Flora w/ Ring (87.5%)
-			if (CharacterClass == 8 && CheckActorInventory(Player1TID,"TheOneRing") > 0) RegenedMana = RegenedMana * 6 / 8; // Ailish w/ Ring (87.5%)
-			if (CharacterClass == 9 && CheckActorInventory(Player1TID,"TheOneRing") > 0) RegenedMana = RegenedMana * 5 / 8; // Petra w/ Ring (62.5%)
-
-			if (PowerupTimer[12] > 0) RegenedMana = RegenedMana * 6 / 5; // Acceleratle = +20% Regen
-			if (PowerupTimer[15] > 0) RegenedMana = RegenedMana * 4 / 5; // Deceleratle = -20% Regen
-
-			// Poison = +8.334% Regen
-			if (PowerupTimer[16] > 0 && PowerupTimer[4] == 0) RegenedMana = RegenedMana * 13 / 12;
-
-			// Checks Mana Regen Rate Menu Option
-			RegenedMana = RegenedMana * GetCVar("dvds_manaregenmultiplier") / 100;
-
-			If(StrIcmp(weapon, "SapphireWandNew") == 0)
-			{
-				if (MiscellaneousVars[10053] == 1) RegenedMana = RegenedMana * 41 / 40;
-				if (MiscellaneousVars[10053] == 2) RegenedMana = RegenedMana * 43 / 40;
-				if (MiscellaneousVars[10053] == 3) RegenedMana = RegenedMana * 45 / 40;
-				if (MiscellaneousVars[10053] == 4) RegenedMana = RegenedMana * 48 / 40;
-				if (MiscellaneousVars[10053] == 5) RegenedMana = RegenedMana * 51 / 40;
-			}
-			If(StrIcmp(weapon, "DualSapphireWandsNew") == 0)
-			{
-				if (MiscellaneousVars[10053] == 1) RegenedMana = RegenedMana * 42 / 40;
-				if (MiscellaneousVars[10053] == 2) RegenedMana = RegenedMana * 46 / 40;
-				if (MiscellaneousVars[10053] == 3) RegenedMana = RegenedMana * 50 / 40;
-				if (MiscellaneousVars[10053] == 4) RegenedMana = RegenedMana * 56 / 40;
-				if (MiscellaneousVars[10053] == 5) RegenedMana = RegenedMana * 62 / 40;
-			}
-
-			if (RegenedMana < 1) RegenedMana = 1;
-
-			// New Addition = Caps Maximum Mana Regeneration to a certain amount based on Difficulty and armor-type items.
-			MaxRegenableMana = MaxMana * 50 / 100;
-			if (TrueGameSkill <= SKILL_VERY_EASY) MaxRegenableMana = MaxMana * 61 / 100; 	// (61% of Max)
-			if (TrueGameSkill == SKILL_EASY) MaxRegenableMana = MaxMana * 55 / 100; 				// (55% of Max)
-			if (TrueGameSkill == SKILL_NORMAL) MaxRegenableMana = MaxMana * 50 / 100; 			// (50% of Max)
-			if (TrueGameSkill == SKILL_HARD) MaxRegenableMana = MaxMana * 45 / 100; 				// (45% of Max)
-			if (TrueGameSkill == SKILL_VERY_HARD) MaxRegenableMana = MaxMana * 39 / 100; 	// (39% of Max)
-			if (TrueGameSkill == SKILL_EXTREME) MaxRegenableMana = MaxMana * 36 / 100; 		// (36% of Max)
-			if (TrueGameSkill == SKILL_HORRIBLE) MaxRegenableMana = MaxMana * 33 / 100; 		// (33% of Max)
-			if (TrueGameSkill == SKILL_IMPOSSIBLE) MaxRegenableMana = MaxMana * 30 / 100; 	// (30% of Max)
-			if (TrueGameSkill >= SKILL_OMEGA) MaxRegenableMana = MaxMana * 27 / 100; 			// (27% of Max)
-
-			EquippedRegenCap = 100; // in percent
-			// All-Character Specfic Items
-			if (CheckActorInventory(Player1TID,"SauronHelmet") > 0) EquippedRegenCap -= 25;  // (-25% extension if Sauron's Helmet is equipped)
-			if (CheckActorInventory(Player1TID,"SauronGauntlets") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
-			if (CheckActorInventory(Player1TID,"SauronGauntletsIllucia") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
-			if (CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
-			if (CheckActorInventory(Player1TID,"SauronGauntletsAilish") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
-			if (CheckActorInventory(Player1TID,"SauronGauntletsPetra") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
-			if (CheckActorInventory(Player1TID,"TheOneRing") > 0) EquippedRegenCap += 50;  // (+50% extension if The One Ring is equipped)
-
-			// Marine Specfic Items (between -4% and -16%, since only one can be equipped at once
-			if (CheckActorInventory(Player1TID,"DSGreenArmorClass") > 0) EquippedRegenCap -= 4; // (-4% for Green Armor)
-			if (CheckActorInventory(Player1TID,"DSBlueArmorClass") > 0) EquippedRegenCap -= 8; // (-8% for Blue Armor)
-			if (CheckActorInventory(Player1TID,"DSStoneArmorClass1") > 0) EquippedRegenCap -= 10; // (-10% for Stone Armor 1)
-			if (CheckActorInventory(Player1TID,"DSDiamondArmorClass1") > 0) EquippedRegenCap -= 14; // (-14% for Diamond Armor 1)
-			if (CheckActorInventory(Player1TID,"DSStoneArmorClass2") > 0) EquippedRegenCap -= 12; // (-12% for Stone Armor 2)
-			if (CheckActorInventory(Player1TID,"DSDiamondArmorClass2") > 0) EquippedRegenCap -= 16; // (-16% for Diamond Armor 2)
-
-			// Flora Specfic Items (up to +150%)
-			if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) EquippedRegenCap += 25;  // (+25% extension if Evenstar Necklace is equipped)
-			if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) EquippedRegenCap += 62;  // (+62% extension if Anubis Cufflinks are equipped)
-			if (CheckActorInventory(Player1TID,"KissaBra") > 0) EquippedRegenCap += 38; // (+38% extension if Kissa's Armor Brassiere is equipped)
-			if (CheckActorInventory(Player1TID,"BalrogRing") > 0) EquippedRegenCap += 25; // (+25% extension if Balrog's Ring is equipped)
-
-			if (EquippedRegenCap < 20) EquippedRegenCap = 20;
-			if (EquippedRegenCap > 640) EquippedRegenCap = 640;
-			MaxRegenableMana = MaxRegenableMana * EquippedRegenCap / 100;
-
-			// Caps Mana Regeneration to a certain % of the maximum based on difficulty level
-			if (RegenedMana > MaxRegenableMana) RegenedMana = MaxRegenableMana;
-
-			// Dove's Ribbon [Increases MP Regeneration]
-			if (CharacterClass == 2)
-			{
-				if (CheckActorInventory(Player1TID,"DoveRibbon") > 0)
-				{
-					RegenedMana += random(2,4); // Only Flora can use the Dove's Ribbon (100% Chance of Extra 2-4 Mana)
-					if (random(1,4) == 1) RegenedMana += random(1,2); // Only Flora can use the Dove's Ribbon (25% Chance of extra 1-2 Mana)
-					if (random(1,16) == 1) RegenedMana += random(1,2); // Only Flora can use the Dove's Ribbon (6.25% Chance of extra 1-2 Mana)
-					if (random(1,64) == 1) RegenedMana += random(1,2); // Only Flora can use the Dove's Ribbon (1.5625% Chance of extra 1-2 Mana)
-				}
-			}
-
-			int FocusStrFactor = 36;
-			// Focus = 12.5% more mana per interval
-			if (MiscellaneousVars[212] > 0)
-			{
-				if (CharacterClass == 2)
-				{
-					if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) FocusStrFactor += 2;
-					if (CheckActorInventory(Player1TID,"BalrogRing") > 0) FocusStrFactor += 2;
-					if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) FocusStrFactor += 2;
-				}
-				else
-				{
-					if (CheckActorInventory(Player1TID,"DSGreenArmorClass") > 0) FocusStrFactor += 1;
-					if (CheckActorInventory(Player1TID,"DSBlueArmorClass") > 0) FocusStrFactor += 2;
-					if (CheckActorInventory(Player1TID,"DSStoneArmorClass1") > 0) FocusStrFactor += 3;
-					if (CheckActorInventory(Player1TID,"DSDiamondArmorClass1") > 0) FocusStrFactor += 4;
-					if (CheckActorInventory(Player1TID,"DSStoneArmorClass2") > 0) FocusStrFactor += 5;
-					if (CheckActorInventory(Player1TID,"DSDiamondArmorClass2") > 0) FocusStrFactor += 6;
-				}
-				RegenedMana = RegenedMana * FocusStrFactor / 20;
-			}
-
-			// Prevents 0 MP regeneration periods
-			if (RegenedMana < 1) RegenedMana = 1;
-
-			// The actual Regeneration Part
-			if (GetActorProperty(Player1TID,APROP_HEALTH) > 0 && CurrentMana < MaxMana)
-			{
-				CurrentMana += RegenedMana;
-				if (CurrentMana > MaxMana) CurrentMana = MaxMana;
-			}
-
-			MaxManaLimit = MaxMana * 2;
-
-			if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
-			MiscellaneousVars[243] = CurrentMana;
-			MiscellaneousVars[238] = CurrentMana;
-		}
-
-
-		// Reset Regen Delay
-		if (TrueGameSkill <= SKILL_VERY_EASY) SkillLevelManaDelay = 600; // 30 tics
-		if (TrueGameSkill == SKILL_EASY) SkillLevelManaDelay = 660; // 33 tics
-		if (TrueGameSkill == SKILL_NORMAL) SkillLevelManaDelay = 740; // 37 tics
-		if (TrueGameSkill == SKILL_HARD) SkillLevelManaDelay = 840; // 42 tics
-		if (TrueGameSkill == SKILL_VERY_HARD) SkillLevelManaDelay = 960; // 48 tics
-		if (TrueGameSkill == SKILL_EXTREME) SkillLevelManaDelay = 1020; // 51 tics
-		if (TrueGameSkill == SKILL_HORRIBLE) SkillLevelManaDelay = 1080; // 54 tics
-		if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillLevelManaDelay = 1140; // 57 tics
-		if (TrueGameSkill >= SKILL_OMEGA) SkillLevelManaDelay = 1260; // 63 tics
-		if (debugregenmana > 0) PrintBold(d:SkillLevelManaDelay);
-		if (CharacterClass == 0) SkillLevelManaDelay += (20 * random(-3,5)); 
-		if (CharacterClass == 1) SkillLevelManaDelay += (20 * random(-4,4));
-		if (CharacterClass == 2) SkillLevelManaDelay += (20 * random(-5,3));
-		if (CharacterClass == 8) SkillLevelManaDelay += (20 * random(-5,3));
-		if (CharacterClass == 9) SkillLevelManaDelay += (20 * random(-4,4));
-		if (debugregenmana > 0) PrintBold(d:SkillLevelManaDelay);
-
-		if (CharacterClass == 0) ManaReDelay = PlayerLevel / 30; // Deggaris (up to 3/6)
-		else if (CharacterClass == 1) ManaReDelay = PlayerLevel / 25; // Illucia (up to 4/8)
-		else if (CharacterClass == 2) ManaReDelay = PlayerLevel / 20; // Flora (up to 5/10) 
-		else if (CharacterClass == 8) ManaReDelay = PlayerLevel / 21; // Ailish 
-		else if (CharacterClass == 9) ManaReDelay = PlayerLevel / 25; // Petra (up to 4/8)
-		OverallDelay = SkillLevelManaDelay - ManaReDelay;
-		if (debugregenmana > 0) PrintBold(d:OverallDelay);
-
-		// A combined total of 15 points of Sorcery/Theraphesuis are needed for a tic-point of faster regen time.
-		ManaReDelay = (MiscellaneousVars[34] + MiscellaneousVars[36]) / 300;
-		OverallDelay -= ManaReDelay;
-		if (debugregenmana > 0) PrintBold(d:OverallDelay);
-
-		if (TrueGameSkill <= SKILL_VERY_EASY) if (OverallDelay < 20) OverallDelay = 20;
-		if (TrueGameSkill == SKILL_EASY) if (OverallDelay < 40) OverallDelay = 40;
-		if (TrueGameSkill == SKILL_NORMAL) if (OverallDelay < 80) OverallDelay = 80;
-		if (TrueGameSkill == SKILL_HARD) if (OverallDelay < 140) OverallDelay = 140;
-		if (TrueGameSkill == SKILL_VERY_HARD) if (OverallDelay < 220) OverallDelay = 220;
-		if (TrueGameSkill == SKILL_EXTREME) if (OverallDelay < 240) OverallDelay = 240;
-		if (TrueGameSkill == SKILL_HORRIBLE) if (OverallDelay < 260) OverallDelay = 260;
-		if (TrueGameSkill == SKILL_IMPOSSIBLE) if (OverallDelay < 280) OverallDelay = 280;
-		if (TrueGameSkill >= SKILL_OMEGA) if (OverallDelay < 300) OverallDelay = 300;
-		if (debugregenmana > 0) PrintBold(d:OverallDelay);
-		MiscellaneousVars[211] = OverallDelay;
-	}
-
-	if (debugregenmana > 0)
-	{
-		PrintBold	(
-								s:"Focus?: ",d:MiscellaneousVars[212],s:"\n",
-								s:"FocusTimer: ",d:MiscellaneousVars[231],s:"\n",
-								s:"HumTimer: ",d:FocusHumTimer,s:"\n\n",
-								s:"Timer: ",d:MiscellaneousVars[211],s:"\n",
-								s:"ManaRedelay: ",d:ManaReDelay,s:"\n",
-								s:"DelayCount: ",d:delaycount,s:"\n",
-								s:"PerkFactor: ",d:perkfactor,s:"\n\n",
-								s:"Current/Max Mana: ",d:CurrentMana,s:" / ",d:MaxMana,s:"\n",
-								s:"RegenedMana: ",d:RegenedMana,s:"\n"
-							);
-	}
-
-
-	// Gets Values for Accquired Kills & Secrets [will move this to a different ENTER script later :P]
-	if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
-	{
-		G2 = GetLevelInfo(LEVELINFO_LEVELNUM);
-		MonstersAlive[G2] = GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) - GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-		MonstersKilled[G2] = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-		SecretsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
-		ItemsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
-		//PrintBold(s:"MAP: ",d:G2,s:"\n Alive: ",d:MonstersAlive[G2],s:"\n Dead: ",d:MonstersKilled[G2],s:"\n Secrets: ",d:SecretsFound[G2],s:"\n Items: ",d:ItemsFound[G2]);
-	}
-	if (ModType == 1) // Deus Vult 1 only
-	{
-		if (SpecialGameFlags[10000] != 1)
-		{
-			G2 = GetLevelInfo(LEVELINFO_LEVELNUM);
-			if (G2 >= 1100 && G2 <= 1199)
-			{
-				MonstersAlive[G2] = GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) - GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-				MonstersKilled[G2] = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-				SecretsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
-				ItemsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
-				//PrintBold(s:"MAP: ",d:G2,s:"\n Alive: ",d:MonstersAlive[G2],s:"\n Dead: ",d:MonstersKilled[G2],s:"\n Secrets: ",d:SecretsFound[G2],s:"\n Items: ",d:ItemsFound[G2]);
-			}
-		}
-	}
-	if (ModType == 2) // Deus Vult 2 only
-	{
-		G2 = GetLevelInfo(LEVELINFO_LEVELNUM);
-		if (G2 >= 1200 && G2 <= 1299)
-		{
-			MonstersAlive[G2] = GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) - GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-			MonstersKilled[G2] = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-			SecretsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
-			ItemsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
-			//PrintBold(s:"MAP: ",d:G2,s:"\n Alive: ",d:MonstersAlive[G2],s:"\n Dead: ",d:MonstersKilled[G2],s:"\n Secrets: ",d:SecretsFound[G2],s:"\n Items: ",d:ItemsFound[G2]);
-		}
 	}
 	Delay(1);
 	Restart;
@@ -29245,54 +28780,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		MiscellaneousVars[160] = 0; // Set EXP Combo Amount back to 0
 	}
 	
-	
-	int DivineRegenTimer;
-	if (PowerupTimer[7] > 0)
-	{
-		DivineRegenTimer -= 1;
-		if (DivineRegenTimer < 1)
-		{
-			DivineRegenTimer = random(30,35);
-			C3 = MaxHealthLimit / random(67,100);
-			if (CharacterClass == 0 && CheckActorInventory(Player1TID, "SauronGauntlets") > 0) C3 = C3 * 17 / 16;
-			if (CharacterClass == 1 && CheckActorInventory(Player1TID, "SauronGauntletsIllucia") > 0) C3 = C3 * 17 / 16;
-			if (CharacterClass == 2 && CheckActorInventory(Player1TID, "SauronGauntletsFlora") > 0) C3 = C3 * 17 / 16;
-			if (CharacterClass == 8 && CheckActorInventory(Player1TID, "SauronGauntletsAilish") > 0) C3 = C3 * 17 / 16;
-			if (CharacterClass == 9 && CheckActorInventory(Player1TID, "SauronGauntletsPetra") > 0) C3 = C3 * 17 / 16;
-			if (CheckActorInventory(Player1TID, "TheOneRing") > 0) C3 = C3 * 9 / 8;
-			I3 = GetActorProperty(Player1TID,APROP_HEALTH);
-			if (I3 > 0 && I3 < MaxHealthLimit)
-			{
-				I3 += C3;
-				if (I3 >= MaxHealthLimit) I3 = MaxHealthLimit;
-				SetActorProperty(Player1TID,APROP_HEALTH,I3);
-				MiscellaneousVars[241] = GetActorProperty(Player1TID,APROP_Health);
-				MiscellaneousVars[175] = GetActorProperty(Player1TID,APROP_Health);
-			}
-		}
-	}
-	
-	int DoveRegenTimer;
-	DoveRegenTimer -= 1;
-	if (DoveRegenTimer < 1)
-	{
-		DoveRegenTimer = random(27,32);
-		if (CharacterClass == 2 && CheckActorInventory(Player1TID,"DoveRibbon") > 0) // Flora
-		{
-			C3 = PlayerLevel / 50 + 1;
-			I3 = GetActorProperty(Player1TID,APROP_HEALTH);
-			if (I3 > 0 && I3 < MaxHealthLimit)
-			{
-				I3 += C3;
-				if (I3 >= MaxHealthLimit) I3 = MaxHealthLimit;
-				SetActorProperty(Player1TID,APROP_HEALTH,I3);
-				MiscellaneousVars[241] = GetActorProperty(Player1TID,APROP_Health);
-				MiscellaneousVars[175] = GetActorProperty(Player1TID,APROP_Health);
-			}
-		}
-	}
-	
-	
 	//*******************************************************************************
 	//*Attempting to Interpolate Health Values for the player to show damage values.*
 	//*******************************************************************************
@@ -29851,460 +29338,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		GiveActorInventory(Player1TID,"DodgeGhostOff",1);
 	}
 	
-	//*********************************************************************
-	//*Cursed Shield Degeneration Effect [will NOT kill the player though]*
-	//*********************************************************************
-	int DegenMinimumHPFactor = 10; int DegenMinimumManaFactor = 80;
-	if (TrueGameSkill <= SKILL_VERY_EASY) { DegenMinimumHPFactor = 8; DegenMinimumManaFactor = 64; }
-	if (TrueGameSkill == SKILL_EASY) { DegenMinimumHPFactor = 9; DegenMinimumManaFactor = 72; }
-	if (TrueGameSkill == SKILL_NORMAL) { DegenMinimumHPFactor = 10; DegenMinimumManaFactor = 80; }
-	if (TrueGameSkill == SKILL_HARD) { DegenMinimumHPFactor = 11; DegenMinimumManaFactor = 88; }
-	if (TrueGameSkill == SKILL_VERY_HARD) { DegenMinimumHPFactor = 12; DegenMinimumManaFactor = 96; }
-	if (TrueGameSkill == SKILL_EXTREME) { DegenMinimumHPFactor = 13; DegenMinimumManaFactor = 104; }
-	if (TrueGameSkill == SKILL_HORRIBLE) { DegenMinimumHPFactor = 14; DegenMinimumManaFactor = 112; }
-	if (TrueGameSkill == SKILL_IMPOSSIBLE) { DegenMinimumHPFactor = 15; DegenMinimumManaFactor = 120; }
-	if (TrueGameSkill >= SKILL_OMEGA) { DegenMinimumHPFactor = 16; DegenMinimumManaFactor = 128; }
-	DegenMinimumHPFactor = DegenMinimumHPFactor * 3 / 4;
-	DegenMinimumManaFactor = DegenMinimumManaFactor * 3 / 4;
-	int DegenMinimumHP = MaxHealthTrue / DegenMinimumHPFactor;
-	int DegenMinimumMana = MaxMana / DegenMinimumManaFactor;
-	
-	int CursedShieldDegenInterval;
-	int CursedShieldDegenTimer;
-	
-	if (CheckActorInventory(Player1TID,"RuinousShield") > 0)
-	{
-		// Set Curse Degeneration Intervals
-		CursedShieldDegenInterval = 5;
-		FreezePlayer = 0;
-		if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
-		if (PowerupTimer[20] > 0) FreezePlayer += 1;
-		if (FreezePlayer == 0)
-		{
-			buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-			if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) CursedShieldDegenInterval = CursedShieldDegenInterval * 6 / 5;
-			if (buttons & BT_ATTACK || buttons & BT_ALTATTACK) CursedShieldDegenInterval = CursedShieldDegenInterval * random(6,7) / 5;
-			if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) CursedShieldDegenInterval = CursedShieldDegenInterval * 7 / 5;
-			if (buttons & BT_JUMP) CursedShieldDegenInterval = CursedShieldDegenInterval * 6 / 5;
-			if (buttons & BT_CROUCH) CursedShieldDegenInterval = CursedShieldDegenInterval * 2 / 5;
-		}
-		if (random(1,16) == 1) CursedShieldDegenInterval *= 2;
-		
-		// Checks Armor Items and other types for Degen speed.
-		C2 = 200;
-		if (CharacterClass == 2)
-		{
-			if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) C2 -= 20;
-			if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) C2 -= 10;
-			if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) C2 -= 15;
-			if (CheckActorInventory(Player1TID,"BalrogRing") > 0) C2 -= 25;
-			// total of -34 = 66% speed with all four items
-		}
-		CursedShieldDegenInterval = CursedShieldDegenInterval * C2 / 200;
-		
-		if (MenuSystemVars[0] != 0) CursedShieldDegenInterval = 0;
-		MiscellaneousVars[15] += CursedShieldDegenInterval;
-		if (MiscellaneousVars[15] >= CursedShieldDegenTimer)
-		{
-			if(GetActorProperty(Player1TID,APROP_Health) > DegenMinimumHP)
-			{
-				// HP Degeneration
-				C2 = random(1,8);
-				switch(C2)
-				{
-					case 1: C3 = MaxHealthTrue / 67; break;
-					case 2: case 3: C3 = MaxHealthTrue / 133; break;
-					case 4: case 5: C3 = MaxHealthTrue / 200; break;
-					case 6: case 7: C3 = MaxHealthTrue / 266; break;
-					case 8: C3 = MaxHealthTrue / 334; break;
-				}
-		
-				if (C3 < 1) C3 = 1;
-				C1 = GetActorProperty(Player1TID,APROP_Health);
-				C1 -= C3;
-				if (C1 < DegenMinimumHP) C1 = DegenMinimumHP;
-				SetActorProperty(Player1TID,APROP_HEALTH,C1);
-				MiscellaneousVars[241] = GetActorProperty(Player1TID,APROP_Health);
-				MiscellaneousVars[175] = GetActorProperty(Player1TID,APROP_Health);
-			}
-		
-			if (CurrentMana > DegenMinimumMana)
-			{
-				// MP Degeneration
-				C2 = random(1,8);
-				switch(C2)
-				{
-					case 1: C3 = MaxMana / 67; break;
-					case 2: case 3: C3 = MaxMana / 133; break;
-					case 4: case 5: C3 = MaxMana / 200; break;
-					case 6: case 7: C3 = MaxMana / 266; break;
-					case 8: C3 = MaxMana / 334; break;
-				}
-			
-				if (C3 < 1) C3 = 1;
-				C1 = CurrentMana;
-				C1 -= C3;
-				if (C1 < DegenMinimumMana) C1 = DegenMinimumMana;
-				CurrentMana = C1;
-				MiscellaneousVars[243] = CurrentMana;
-				MiscellaneousVars[238] = CurrentMana;
-			}
-		
-			MiscellaneousVars[15] = 0;
-			CursedShieldDegenTimer = 175 + random(-10,10);
-		}
-		
-		// PrintBold(s:"CurseDegen: [",d:MaxHealthTrue,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[15],s:"/",d:CursedShieldDegenTimer,s:"]");
-	}
-	else
-	{
-		C1 = 0;
-		C2 = 0;
-		C3 = 0;
-		MiscellaneousVars[15] = 0;
-		CursedShieldDegenTimer = 175 + random(-10,10);
-	}
-	
-	int StaminaInputFactor = 100;
-	int StaminaRegenRate = 0;
-	int StaminaDegenRate = 0;
-	//***********************
-	//**Health-Regen Checks**
-	//***********************
-	if (CharacterClass == 0) MiscellaneousVars[14] = 118; // Deggaris Regenerates the second Fastest [3.54 seconds]
-	if (CharacterClass == 1) MiscellaneousVars[14] = 140; // Illucia has an even speed of Regeneration [4 seconds]
-	if (CharacterClass == 2) MiscellaneousVars[14] = 162; // Flora Regenerates slower than Illucia [4.46 seconds]
-	if (CharacterClass == 8) MiscellaneousVars[14] = 175; // Ailish Regenerates the slowest [5 seconds]
-	if (CharacterClass == 9) MiscellaneousVars[14] = 81; // Petra Regenerates the fastest [2.314285714 seconds]
-	
-	if (TrueGameSkill <= SKILL_VERY_EASY) MiscellaneousVars[14] -= 6;
-	if (TrueGameSkill == SKILL_EASY) MiscellaneousVars[14] -= 2;
-	if (TrueGameSkill == SKILL_NORMAL) MiscellaneousVars[14] += 0;
-	if (TrueGameSkill == SKILL_HARD) MiscellaneousVars[14] += 2;
-	if (TrueGameSkill == SKILL_VERY_HARD) MiscellaneousVars[14] += 6;
-	if (TrueGameSkill == SKILL_EXTREME) MiscellaneousVars[14] += 8;
-	if (TrueGameSkill == SKILL_HORRIBLE) MiscellaneousVars[14] += 12;
-	if (TrueGameSkill == SKILL_IMPOSSIBLE) MiscellaneousVars[14] += 14;
-	if (TrueGameSkill >= SKILL_OMEGA) MiscellaneousVars[14] += 16;
-	C3 = PlayerLevel / 7; // up to -28
-	MiscellaneousVars[14] -= C3; 
-	MiscellaneousVars[14] *= 20;
-	
-	int RegenMaxHealth;
-	int CurrHealth = GetActorProperty(Player1TID,APROP_HEALTH);
-	if (CharacterClass == 2 && CheckActorInventory(Player1TID,"DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = MaxHealthTrue;
-	
-	int delaycount;
-	int StamUpgradeDelay;
-	delaycount = 20;
-	
-	if (CharacterClass == 0) delaycount += (MiscellaneousVars[32] / 8); // 8pts of Defense will decrease regen wait by 1 tic each [Deggaris]
-	if (CharacterClass == 1) delaycount += (MiscellaneousVars[32] / 10); // 10pts of Defense will decrease regen wait by 1 tic each [Illucia]
-	if (CharacterClass == 2) delaycount += (MiscellaneousVars[32] / 12); // 12pts of Defense will decrease regen wait by 1 tic each [Flora]
-	if (CharacterClass == 8) delaycount += (MiscellaneousVars[32] / 12); // 12pts of Defense will decrease regen wait by 1 tic each [Ailish]
-	if (CharacterClass == 9) delaycount += (MiscellaneousVars[32] / 6); // 6pts of Defense will decrease regen wait by 1 tic each [Petra]
-	
-	// Stamina Upgrades [Strife]
-	StamUpgradeDelay = (MiscellaneousVars[317] * 4) / 3;
-	delaycount += StamUpgradeDelay;
-	
-	// Accelerates HP Regen when Tension is Boosted
-	if (MiscellaneousVars[181] >= 1) delaycount += 1; // "5" = +1 [+5%]
-	if (MiscellaneousVars[181] >= 2) delaycount += 1; // "20" = +2 [+10%]
-	if (MiscellaneousVars[181] >= 3) delaycount += 2; // "50" = +4 [+20%]
-	if (MiscellaneousVars[181] >= 4) delaycount += 2; // "100" = +6 [+30%]
-	if (MiscellaneousVars[181] >= 5) delaycount += 3; // "250" = +9 [+45%]
-	if (MiscellaneousVars[181] >= 6) delaycount += 4; // "500" = +13 [+65%]
-	if (MiscellaneousVars[181] >= 7) delaycount += 5; // "500" = +18 [+90%]
-	
-	// Focusing will slightly accelerate HP regeneration on Strife Mode
-	if (MiscellaneousVars[212] > 0 && MiscellaneousVars[317] > 0)
-	{
-		if (MiscellaneousVars[231] >= 105 && MiscellaneousVars[317] >= 1) delaycount += (MiscellaneousVars[317] * 1) / 5;
-		if (MiscellaneousVars[231] >= 210 && MiscellaneousVars[317] >= 1) delaycount += (MiscellaneousVars[317] * 1) / 5;
-		if (MiscellaneousVars[231] >= 315 && MiscellaneousVars[317] >= 2) delaycount += (MiscellaneousVars[317] * 2) / 5;
-		if (MiscellaneousVars[231] >= 420 && MiscellaneousVars[317] >= 2) delaycount += (MiscellaneousVars[317] * 2) / 5;
-		if (MiscellaneousVars[231] >= 525 && MiscellaneousVars[317] >= 3) delaycount += (MiscellaneousVars[317] * 3) / 5;
-		if (MiscellaneousVars[231] >= 630 && MiscellaneousVars[317] >= 3) delaycount += (MiscellaneousVars[317] * 3) / 5;
-		if (MiscellaneousVars[231] >= 735 && MiscellaneousVars[317] >= 4) delaycount += (MiscellaneousVars[317] * 4) / 5;
-		if (MiscellaneousVars[231] >= 840 && MiscellaneousVars[317] >= 4) delaycount += (MiscellaneousVars[317] * 4) / 5;
-		if (MiscellaneousVars[231] >= 945 && MiscellaneousVars[317] >= 5) delaycount += (MiscellaneousVars[317] * 5) / 5;
-		if (MiscellaneousVars[231] >= 1050 && MiscellaneousVars[317] >= 5) delaycount += (MiscellaneousVars[317] * 5) / 5;
-		if (MiscellaneousVars[231] >= 1155 && MiscellaneousVars[317] >= 6) delaycount += (MiscellaneousVars[317] * 6) / 5;
-		if (MiscellaneousVars[231] >= 1260 && MiscellaneousVars[317] >= 6) delaycount += (MiscellaneousVars[317] * 6) / 5;
-		if (MiscellaneousVars[231] >= 1365 && MiscellaneousVars[317] >= 7) delaycount += (MiscellaneousVars[317] * 7) / 5;
-		if (MiscellaneousVars[231] >= 1470 && MiscellaneousVars[317] >= 7) delaycount += (MiscellaneousVars[317] * 7) / 5;
-		if (MiscellaneousVars[231] >= 1575 && MiscellaneousVars[317] >= 8) delaycount += (MiscellaneousVars[317] * 8) / 5;
-		if (MiscellaneousVars[231] >= 1680 && MiscellaneousVars[317] >= 8) delaycount += (MiscellaneousVars[317] * 8) / 5;
-		if (MiscellaneousVars[231] >= 1785 && MiscellaneousVars[317] >= 9) delaycount += (MiscellaneousVars[317] * 9) / 5;
-		if (MiscellaneousVars[231] >= 1890 && MiscellaneousVars[317] >= 9) delaycount += (MiscellaneousVars[317] * 9) / 5;
-		if (MiscellaneousVars[231] >= 1995 && MiscellaneousVars[317] >= 10) delaycount += (MiscellaneousVars[317] * 10) / 5;
-		if (MiscellaneousVars[231] >= 2100 && MiscellaneousVars[317] >= 10) delaycount += (MiscellaneousVars[317] * 10) / 5;
-	}
-	
-	// Check Musou Power Trip Mode
-	if (powertripmode == 1) delaycount = delaycount * 5 / 2; // 250%
-	if (powertripmode == 2) delaycount = delaycount * 5; // 500%
-	
-	StaminaInputFactor = 100;
-	if (CurrHealth < RegenMaxHealth)
-	{
-		buttons = GetPlayerInput(0, INPUT_BUTTONS);
-		if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) StaminaInputFactor = StaminaInputFactor * 40 / 100;
-		if (buttons & BT_ATTACK || buttons & BT_ALTATTACK) StaminaInputFactor = StaminaInputFactor * 50 / 100;
-		if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) StaminaInputFactor = StaminaInputFactor * 60 / 100;
-		if (buttons & BT_JUMP) StaminaInputFactor = StaminaInputFactor * 40 / 100;
-		if (buttons & BT_CROUCH) StaminaInputFactor = StaminaInputFactor * 180 / 100;
-		
-		delaycount = (delaycount * StaminaInputFactor) / 100;
-		
-		// Checks Armor Items and other types for regen speed.
-		C2 = 100;
-		if (CharacterClass == 2)
-		{
-			if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) C2 += 20;
-			if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) C2 += 10;
-			if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) C2 += 15;
-			if (CheckActorInventory(Player1TID,"BalrogRing") > 0) C2 += 25;
-			// total of 70 = 170% speed with all four items
-		}
-		delaycount = delaycount * C2 / 100;
-		
-		// Divine Avatar = 150% Total Regeneration Speed
-		if (PowerupTimer[7] > 0) delaycount = delaycount * 3 / 2;
-		
-		if (PowerupTimer[12] > 0) delaycount = delaycount * 6 / 5; // Acceleratle = 120% regen speed
-		if (PowerupTimer[15] > 0) delaycount = delaycount * 4 / 5; // Deceleratle = 80% regen speed
-		
-		// Poison = random 0.25/0.375.0.5/0.625/0.75x regen speed
-		if (PowerupTimer[16] > 0) delaycount = (delaycount * random(2,6)) / 8;
-		
-		// Fatigue = 0.2x regen speed
-		if (PowerupTimer[18] > 0) delaycount = delaycount / 5;
-		
-		// Sleep = x5 regen speed
-		if (PowerupTimer[20] > 0)
-		{
-			delaycount *= 5;
-			PerkFactor = ((MiscellaneousVars[10013] * 2000) + (MiscellaneousVars[10014] * 5000)) + 10000;
-			delaycount = delaycount * PerkFactor / 10000; // "RegenHPFast" and "RegenHPFast EX" perks.
-		}
-		
-		// Flora's Regeneration Speed is reduced by 5/8s [62.5%] when holding the Ruinous Shield [curse effect]
-		if (CharacterClass == 2 && CheckActorInventory(Player1TID,"RuinousShield") > 0) delaycount = delaycount * 3 / 8;
-		
-		// RegenHPFast perks
-		if (MiscellaneousVars[10013] > 0)
-		{
-			PerkFactor = ((MiscellaneousVars[10013] * 2) + (MiscellaneousVars[10014] * 5)) + 10;
-			delaycount = delaycount * PerkFactor / 10; // "RegenHPFast" and "RegenHPFast EX" perks.
-		}
-		
-		// "Cleared of Mind" Perks
-		if (MiscellaneousVars[10055] > 0)
-		{
-			perkfactor = ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5)) + 80;
-			delaycount = delaycount * perkfactor / 80;
-		}
-		
-		// If Defending via Fists
-		if (CheckActorInventory(Player1TID,"FistPlayerBlockItem") > 0) delaycount = delaycount * random(28,32) / 20;
-		
-		// Checks Health Regen Rate Menu Option
-		delaycount = delaycount * GetCVar("dvds_healthregenmultiplier") / 100;
-		
-		// Low Cap to 1 Tics
-		if (delaycount < 1) delaycount = 1;
-		
-		if (MenuSystemVars[0] != 0) delaycount = 0; // If using In-Game Menus
-		if (DVDSSpecialArrayValue[0] == 0) // If Player is "Conscious"
-		{
-			StaminaRegenRate = delaycount;
-			MiscellaneousVars[13] -= delaycount;
-		}
-	}
-	else MiscellaneousVars[13] = MiscellaneousVars[14] + random(-20,20);
-	
-	int HPRegenAmount;
-	if (MiscellaneousVars[13] < 1)
-	{
-		// Base of 1 HP regen
-		HPRegenAmount = 1;
-		// Every 50 Levels = +1 HP Regen
-		HPRegenAmount += (PlayerLevel / 50);
-		// Every 15 Pts of Strength = +1 HP Regen
-		HPRegenAmount += (MiscellaneousVars[35] / 15);
-		
-		// Makes having the Dove Ribbon allow HP Regen up to 200% maximum
-		if (CharacterClass == 2 && CheckActorInventory(Player1TID,"DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = MaxHealthTrue;
-		
-		if (CurrHealth > 0 && CurrHealth < RegenMaxHealth)
-		{
-			CurrHealth += HPRegenAmount;
-			if (CurrHealth > RegenMaxHealth) CurrHealth = RegenMaxHealth;
-			SetActorProperty(Player1TID,APROP_HEALTH,CurrHealth);
-			MiscellaneousVars[241] = CurrHealth;
-			MiscellaneousVars[175] = CurrHealth;
-		}
-		MiscellaneousVars[13] = MiscellaneousVars[14] + random(-20,20);
-	}
-	
-	//***********************
-	//**Health-Degen Checks**
-	//***********************
-	if (GetCVar("dvds_healthdegenmode") == 1)
-	{
-		if (CharacterClass == 0) MiscellaneousVars[144] = 41; // Deggaris Degenerates the Slowest [1.17 seconds]
-		if (CharacterClass == 1) MiscellaneousVars[144] = 35; // Illucia has an even speed of Degeneration [1 second]
-		if (CharacterClass == 2) MiscellaneousVars[144] = 29; // Flora Degenerates the second fastest [0.83 seconds]
-		if (CharacterClass == 8) MiscellaneousVars[144] = 25; // Ailish Degenerates the fastest
-		if (CharacterClass == 9) MiscellaneousVars[144] = 52; // Petra Degenerates even slower than Deggaris
-		
-		if (TrueGameSkill <= SKILL_VERY_EASY) MiscellaneousVars[144] += 3;
-		if (TrueGameSkill == SKILL_EASY) MiscellaneousVars[144] += 1;
-		if (TrueGameSkill == SKILL_NORMAL) MiscellaneousVars[144] += 0;
-		if (TrueGameSkill == SKILL_HARD) MiscellaneousVars[144] -= 1;
-		if (TrueGameSkill == SKILL_VERY_HARD) MiscellaneousVars[144] -= 3;
-		if (TrueGameSkill == SKILL_EXTREME) MiscellaneousVars[144] -= 4;
-		if (TrueGameSkill == SKILL_HORRIBLE) MiscellaneousVars[144] -= 6;
-		if (TrueGameSkill == SKILL_IMPOSSIBLE) MiscellaneousVars[144] -= 7;
-		if (TrueGameSkill >= SKILL_OMEGA) MiscellaneousVars[144] -= 8;
-		C3 = MiscellaneousVars[32] / 24; // 24pts of Defense will increase degen wait by 1 tic each
-		MiscellaneousVars[144] += C3; 
-		C3 = PlayerLevel / 14; // up to +14
-		MiscellaneousVars[144] += C3; 
-		MiscellaneousVars[144] *= 20;
-		
-		buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-		if (CharacterClass == 2 && CheckActorInventory(Player1TID,"DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = MaxHealthTrue;
-		
-		delaycount = 20;
-		
-		// Stamina Upgrades [Strife]
-		StamUpgradeDelay = (MiscellaneousVars[317] * 3) / 4;
-		delaycount -= StamUpgradeDelay;
-		
-		// Decelerates HP Degen when Tension is Boosted
-		if (MiscellaneousVars[181] >= 1) delaycount -= 0; // "5" = -0 [-0%]
-		if (MiscellaneousVars[181] >= 2) delaycount -= 1; // "20" = -1 [-5%]
-		if (MiscellaneousVars[181] >= 3) delaycount -= 1; // "50" = -2 [-10%]
-		if (MiscellaneousVars[181] >= 4) delaycount -= 1; // "100" = -3 [-15%]
-		if (MiscellaneousVars[181] >= 5) delaycount -= 1; // "250" = -4 [-20%]
-		if (MiscellaneousVars[181] >= 6) delaycount -= 2; // "500" = -6 [-30%]
-		if (MiscellaneousVars[181] >= 7) delaycount -= 3; // "500" = -9 [-45%]
-		// Check Musou Power Trip Mode
-		if (powertripmode == 1) delaycount = delaycount * 2 / 5; // 40%
-		if (powertripmode == 2) delaycount = delaycount / 5; // 20%
-		
-		StaminaInputFactor = 100;
-		if (CurrHealth > RegenMaxHealth)
-		{
-			buttons = GetPlayerInput(0, INPUT_BUTTONS);
-			if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) StaminaInputFactor = StaminaInputFactor * 100 / 40;
-			if (buttons & BT_ATTACK || buttons & BT_ALTATTACK) StaminaInputFactor = StaminaInputFactor * 100 / 50;
-			if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) StaminaInputFactor = StaminaInputFactor * 100 / 60;
-			if (buttons & BT_JUMP) StaminaInputFactor = StaminaInputFactor * 100 / 40;
-			if (buttons & BT_CROUCH) StaminaInputFactor = StaminaInputFactor * 100 / 180;
-		
-			delaycount = (delaycount * StaminaInputFactor) / 100;
-		
-			// Checks Armor Items and other types for Degen speed.
-			C2 = 200;
-			if (CharacterClass == 2)
-			{
-				if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) C2 -= 20;
-				if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) C2 -= 10;
-				if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) C2 -= 15;
-				if (CheckActorInventory(Player1TID,"BalrogRing") > 0) C2 -= 25;
-				// total of -34 = 66% speed with all four items
-			}
-			delaycount = delaycount * C2 / 200;
-		
-			// Divine Avatar = 62.5% Total Degeneration Speed
-			if (PowerupTimer[7] > 0) delaycount = delaycount * 5 / 8;
-		
-			if (PowerupTimer[12] > 0) delaycount = delaycount * 6 / 5; // Acceleratle
-			if (PowerupTimer[15] > 0) delaycount = delaycount * 4 / 5; // Deceleratle
-		
-			// Fatigue = 5x degen speed
-			if (PowerupTimer[18] > 0) delaycount *= 5;
-		
-			// Sleep = 0.2x degen speed
-			if (PowerupTimer[20] > 0)
-			{
-				delaycount /= 5;
-				PerkFactor = 10000 - ((MiscellaneousVars[10013] * 2000) + (MiscellaneousVars[10014] * 5000));
-				delaycount = delaycount * PerkFactor / 10000; // "RegenHPFast" and "RegenHPFast EX" perks.
-			}
-		
-			// Flora's Degeneration Speed is multiplied by 2.667 when holding the Ruinous Shield [curse effect]
-			if (CharacterClass == 2) if (CheckActorInventory(Player1TID,"RuinousShield") > 0) delaycount = delaycount * 8 / 3;
-		
-			// RegenHPFast perks
-			if (MiscellaneousVars[10013] > 0)
-			{
-				PerkFactor = 10 - ((MiscellaneousVars[10013] * 2) + (MiscellaneousVars[10014] * 5));
-				delaycount = delaycount * PerkFactor / 10; // "RegenHPFast" and "RegenHPFast EX" perks.
-			}
-		
-			// "Cleared of Mind" Perks
-			if (MiscellaneousVars[10055] > 0)
-			{
-				perkfactor = 80 - ((MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5));
-				delaycount = delaycount * perkfactor / 80;
-			}
-		
-			// If Defending via Fists
-			if (CheckActorInventory(Player1TID,"FistPlayerBlockItem") > 0) delaycount = delaycount * 20 / random(28,32);
-		
-			// Checks Health DeRegen Rate Menu Option
-			delaycount = delaycount * GetCVar("dvds_healthdegenmultiplier") / 100;
-		
-			// Low Cap to 1 Tics
-			if (delaycount < 1) delaycount = 1;
-		
-			if (MenuSystemVars[0] != 0) delaycount = 0; // If using In-Game Menus
-			if (DVDSSpecialArrayValue[0] == 0) // If Player is "Conscious"
-			{
-				StaminaDegenRate = delaycount;
-				MiscellaneousVars[143] -= delaycount;
-			}
-		}
-		else MiscellaneousVars[143] = MiscellaneousVars[144] + random(-20,20);
-		
-		int HPDegenAmount;
-		if (MiscellaneousVars[143] < 1)
-		{
-			// Base of 1 HP degen
-			HPDegenAmount = 1;
-		
-			// Makes having the Dove Ribbon allow HP Regen up to 200% maximum
-			if (CharacterClass == 2) // Flora
-			{
-				if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = MaxHealthTrue;
-			}
-			else RegenMaxHealth = MaxHealthTrue;
-		
-			if (CurrHealth > RegenMaxHealth)
-			{
-				CurrHealth -= HPDegenAmount;
-				if (CurrHealth < RegenMaxHealth) CurrHealth = RegenMaxHealth;
-				SetActorProperty(Player1TID,APROP_HEALTH,CurrHealth);
-				MiscellaneousVars[241] = CurrHealth;
-				MiscellaneousVars[175] = CurrHealth;
-			}
-		
-			MiscellaneousVars[143] = MiscellaneousVars[144] + random(-20,20);
-		}
-		
-		if (GetCVar("dvdsdebug_showhpregenstuff") == 1)
-		{
-			PrintBold(
-								s:"Regen: [",d:CurrHealth,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[13],s:"/",d:MiscellaneousVars[14],s:"] & [",d:StaminaRegenRate,s:"]\n",
-								s:"Degen: [",d:CurrHealth,s:"/",d:MaxHealthTrue,s:"] & ",d:buttons,s:"   [",d:MiscellaneousVars[143],s:"/",d:MiscellaneousVars[144],s:"] & [",d:StaminaDegenRate,s:"]"
-							);
-		}
-	}
+	// Health Regen/Degen wuz here V:
 	
 	//********************
 	//*Skill Level Checks*
@@ -33000,10 +32034,50 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	if (CheckActorInventory(Player1TID,"PhosphorusGrenadeRounds") > MiscellaneousVars[327]) TakeActorInventory(Player1TID,"PhosphorusGrenadeRounds", (CheckActorInventory(Player1TID,"PhosphorusGrenadeRounds") - MiscellaneousVars[327]) ); 
 	if (CheckActorInventory(Player1TID,"RifleAmmo") > MiscellaneousVars[328]) TakeActorInventory(Player1TID,"RifleAmmo", (CheckActorInventory(Player1TID,"RifleAmmo") - MiscellaneousVars[328]) ); 
 	
+	//*******************************************
+	// Gets Values for Accquired Kills & Secrets*
+	//*******************************************
+	if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
+	{
+		G2 = GetLevelInfo(LEVELINFO_LEVELNUM);
+		MonstersAlive[G2] = GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) - GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
+		MonstersKilled[G2] = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
+		SecretsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
+		ItemsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
+		//PrintBold(s:"MAP: ",d:G2,s:"\n Alive: ",d:MonstersAlive[G2],s:"\n Dead: ",d:MonstersKilled[G2],s:"\n Secrets: ",d:SecretsFound[G2],s:"\n Items: ",d:ItemsFound[G2]);
+	}
+	if (ModType == 1) // Deus Vult 1 only
+	{
+		if (SpecialGameFlags[10000] != 1)
+		{
+			G2 = GetLevelInfo(LEVELINFO_LEVELNUM);
+			if (G2 >= 1100 && G2 <= 1199)
+			{
+				MonstersAlive[G2] = GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) - GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
+				MonstersKilled[G2] = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
+				SecretsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
+				ItemsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
+				//PrintBold(s:"MAP: ",d:G2,s:"\n Alive: ",d:MonstersAlive[G2],s:"\n Dead: ",d:MonstersKilled[G2],s:"\n Secrets: ",d:SecretsFound[G2],s:"\n Items: ",d:ItemsFound[G2]);
+			}
+		}
+	}
+	if (ModType == 2) // Deus Vult 2 only
+	{
+		G2 = GetLevelInfo(LEVELINFO_LEVELNUM);
+		if (G2 >= 1200 && G2 <= 1299)
+		{
+			MonstersAlive[G2] = GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) - GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
+			MonstersKilled[G2] = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
+			SecretsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
+			ItemsFound[G2] = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
+			//PrintBold(s:"MAP: ",d:G2,s:"\n Alive: ",d:MonstersAlive[G2],s:"\n Dead: ",d:MonstersKilled[G2],s:"\n Secrets: ",d:SecretsFound[G2],s:"\n Items: ",d:ItemsFound[G2]);
+		}
+	}
+	
 	//***************************
 	//***Check DVII Game Flags***
 	//***************************
-	
+
 	if (CharacterClass == 2 && ModType == 2)
 	{
 		if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) != 0) KilledMonsterFactor = GetLevelInfo(LEVELINFO_KILLED_MONSTERS) * 1000 / GetLevelInfo(LEVELINFO_TOTAL_MONSTERS);
@@ -47167,11 +46241,65 @@ script "MenuVarCheckDECORATE" (int value)
 	SetResultValue(result);
 }
 
+// Allows DECORATE to check the value of a specfic "SpecialGameFlags[]" value for checks
+script "SpecialGameFlagsCheckDECORATE" (int value)
+{
+	int result = SpecialGameFlags[value];
+	SetResultValue(result);
+}
+
 // Allows DECORATE to check the value of a specfic "DVDSSpecialArrayValue[]" value for checks
 script "DVDSSpecialArrayCheckDECORATE" (int value)
 {
 	int result = DVDSSpecialArrayValue[value];
 	SetResultValue(result);
+}
+
+// Allows DECORATE to SET the value of a specfic "MiscellaneousVars[]" value
+script "OtherVarSetDECORATE" (int value, int perkvalue, int type)
+{
+	if (value == 0) // MaxHealthTrue
+	{
+		if (type <= 0) MaxHealthTrue = perkvalue; // Set
+		if (type == 1) MaxHealthTrue += perkvalue; // Add
+		if (type == 2) MaxHealthTrue -= perkvalue; // Subtract
+		if (type == 3) MaxHealthTrue *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) MaxHealthTrue /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) MaxHealthTrue %= perkvalue; // Modulo
+		if (type == 6) MaxHealthTrue &= perkvalue; // AND
+		if (type == 7) MaxHealthTrue |= perkvalue; // OR
+		if (type == 8) MaxHealthTrue ^= perkvalue; // XOR
+		if (type == 9) MaxHealthTrue <<= perkvalue; // Shift Left
+		if (type == 10) MaxHealthTrue >>= perkvalue; // Shift Right
+	}
+	if (value == 1) // MaxMana
+	{
+		if (type <= 0) MaxMana = perkvalue; // Set
+		if (type == 1) MaxMana += perkvalue; // Add
+		if (type == 2) MaxMana -= perkvalue; // Subtract
+		if (type == 3) MaxMana *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) MaxMana /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) MaxMana %= perkvalue; // Modulo
+		if (type == 6) MaxMana &= perkvalue; // AND
+		if (type == 7) MaxMana |= perkvalue; // OR
+		if (type == 8) MaxMana ^= perkvalue; // XOR
+		if (type == 9) MaxMana <<= perkvalue; // Shift Left
+		if (type == 10) MaxMana >>= perkvalue; // Shift Right
+	}
+	if (value == 2) // CurrentMana
+	{
+		if (type <= 0) CurrentMana = perkvalue; // Set
+		if (type == 1) CurrentMana += perkvalue; // Add
+		if (type == 2) CurrentMana -= perkvalue; // Subtract
+		if (type == 3) CurrentMana *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) CurrentMana /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) CurrentMana %= perkvalue; // Modulo
+		if (type == 6) CurrentMana &= perkvalue; // AND
+		if (type == 7) CurrentMana |= perkvalue; // OR
+		if (type == 8) CurrentMana ^= perkvalue; // XOR
+		if (type == 9) CurrentMana <<= perkvalue; // Shift Left
+		if (type == 10) CurrentMana >>= perkvalue; // Shift Right
+	}
 }
 
 // Allows DECORATE to SET the value of a specfic "MiscellaneousVars[]" value
