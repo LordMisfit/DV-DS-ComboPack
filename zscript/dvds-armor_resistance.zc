@@ -10,6 +10,11 @@ class PlayerStatItem : Inventory
 	float RuinousShieldDegenTimer, CursedShieldDegenTimer;
 	float DivineRegenTimer, DivineRegenInterval;
 	float DoveRegenTimer, DoveRegenInterval;
+	float PoisonTimer, PoisonMaxInterval;
+	int landdmgbonus;
+	int heldtime;
+	int PrevHealthRatio;
+	int PoisonHits;
 
 	default 
 	{
@@ -23,9 +28,11 @@ class PlayerStatItem : Inventory
 	
 	override void DoEffect()
 	{
+		let playeractor = AetheriusPlayerPawn(owner);
+		if (!playeractor) { owner.A_TakeInventory("PlayerStatItem",9999); super.DoEffect(); } // Removes itself if given to a non-Aetherius Player Class
+
 		String nm, nn, no, np;
 		let weapon = owner.player.ReadyWeapon;
-		let playeractor = AetheriusPlayerPawn(owner);
 		int cheatcheck = owner.player.cheats;
 		int TrueGameSkill = dvds_gendifficultycurve + Skill;
 		double PlayerVelX = owner.vel.x;
@@ -41,6 +48,8 @@ class PlayerStatItem : Inventory
 		int debugregenmana = dvdsdebug_showmanaregenstuff;
 		int debuguncurse = dvdsdebug_shielduncursedisplay;
 		int debugregenhealth = dvdsdebug_showhpregenstuff;
+		int debugatkinfo = dvdsdebug_showplayeratkinformation;
+		int debugpoisoninfo = dvdsdebug_poisonailmentdisplays;
 
 		int TensionLevel = CallACS("MiscVarCheckDECORATE",181);
 		int PlayerLevel = CallACS("StatCheck",0);
@@ -72,7 +81,104 @@ class PlayerStatItem : Inventory
 		int PerkFactor = 0;
 		int TotalMass = 100;
 		int delaycount;
+		int HealthRatio;
 
+		//******************
+		//*Get Health Ratio*
+		//******************
+		if (playeractor && PlayerMaxHP > 0)
+		{
+			HealthRatio = (PlayerCurrentHealth * 1000) / PlayerMaxHP;
+			if (HealthRatio < 0) HealthRatio = 0;
+			if (HealthRatio > 2000) HealthRatio = 2000;
+		}
+		
+		
+		
+		
+		
+		//*********************
+		//*Health Level Checks*
+		//*********************
+		if (playeractor)
+		{
+			if (PlayerCurrentHealth <= 0) { Owner.A_GiveInventory("PlayerIsDead", 1); }
+			else
+			{
+				Owner.A_TakeInventory("PlayerIsDead", 1);
+				if (HealthRatio != PrevHealthRatio)
+				{
+					if (HealthRatio < 167)
+					{
+						if (HealthRatio < 21)
+						{
+							Owner.A_GiveInventory("CriticalHealth", 1);
+							Owner.A_TakeInventory("LowHealth", 9999);
+						}
+						else 
+						{
+							Owner.A_GiveInventory("LowHealth", 1);
+							Owner.A_TakeInventory("CriticalHealth", 9999);
+						}
+						Owner.A_TakeInventory("NormalHealth", 9999);
+					}
+					else 
+					{
+						Owner.A_GiveInventory("NormalHealth", 1);
+						Owner.A_TakeInventory("LowHealth", 9999);
+						Owner.A_TakeInventory("CriticalHealth", 9999);
+					}
+					if (PlayerCurrentHealth >= PlayerMaxHP) Owner.A_GiveInventory("FullHealth", 1); else Owner.A_TakeInventory("FullHealth", 1);
+					
+					PrevHealthRatio = HealthRatio;
+				}
+			}
+		}
+		
+		
+		
+		
+		
+		//********************
+		//*Skill Level Checks*
+		//********************
+		if (playeractor)
+		{
+			if (Skill <= 0)
+			{
+				if (Owner.CountInv("IsSkill1") == 0) Owner.A_GiveInventory("IsSkill1", 1);
+				if (Owner.CountInv("IsEasySkill") == 0) Owner.A_GiveInventory("IsEasySkill", 1);
+			}
+			if (Skill == 1)
+			{
+				if (Owner.CountInv("IsSkill2") == 0) Owner.A_GiveInventory("IsSkill2", 1);
+				if (Owner.CountInv("IsEasySkill") == 0) Owner.A_GiveInventory("IsEasySkill", 1);
+			}
+			if (Skill == 2)
+			{
+				if (Owner.CountInv("IsSkill3") == 0) Owner.A_GiveInventory("IsSkill3", 1);
+			}
+			if (Skill == 3)
+			{
+				if (Owner.CountInv("IsSkill4") == 0) Owner.A_GiveInventory("IsSkill4", 1);
+				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_GiveInventory("IsHardSkill", 1);
+			}
+			if (Skill == 4)
+			{
+				if (Owner.CountInv("IsSkill5") == 0) Owner.A_GiveInventory("IsSkill5", 1);
+				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_GiveInventory("IsHardSkill", 1);
+			}
+			if (Skill >= 5)
+			{
+				if (Owner.CountInv("IsSkill6") == 0) Owner.A_GiveInventory("IsSkill6", 1);
+				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_GiveInventory("IsHardSkill", 1);
+			}
+		}
+		
+		
+		
+		
+		
 		//**********************
 		//**RadiusDamageFactor**
 		//**********************
@@ -622,6 +728,23 @@ class PlayerStatItem : Inventory
 		
 		
 		
+		//*******************
+		//*RUINOUS SHIELD D:*
+		//*******************
+		// To be transplanted from ACS :V
+		
+		
+		
+		
+		
+		//******************************************************
+		//*Hellcore Cooldown Process [25 tics = 1% of cooldown]*
+		//******************************************************
+		// To be transplanted from ACS :V
+		
+		
+		
+		
 		//*****************
 		//**Critical Hits**
 		//*****************
@@ -840,6 +963,86 @@ class PlayerStatItem : Inventory
 			{
 				if (CritRNGVal <= CriticalHitRate) Console.Printf("    \cdCrit Rate % Roll / Rate: %d / %d", CritRNGVal, CriticalHitRate);
 																			else Console.Printf("    \cgCrit Rate % Roll / Rate: %d / %d", CritRNGVal, CriticalHitRate);
+			}
+		}
+		
+		
+		
+		
+		
+		//*************************************
+		//*Inventory Items Check [death-exits]*
+		//*************************************
+		// To possibly be transplanted from ACS :V
+		
+		
+		
+		
+		
+		//*****************************
+		//*Weapons Check [death-exits]*
+		//*****************************
+		// To possibly be transplanted from ACS :V
+		
+		
+		
+		
+		
+		//***************************
+		//*Armor Check [death-exits]*
+		//***************************
+		// To possibly be transplanted from ACS :V
+		
+		
+		
+		
+		
+		//************* Armor Stuff for DVII-DS's armor items :P ********************
+		//** Note: ONLY FLORA [(CharacterClass == 2)] CAN USE THESE ITEMS LEGALLY. **
+		//***************************************************************************
+		// To possibly be transplanted from ACS :V
+		
+		
+		
+		
+		
+		//*********************************
+		//*Check Sauron Equipment Directly*
+		//*********************************
+		// To possibly be transplanted from ACS :V
+		
+		
+		
+		
+		
+		//***********************
+		//*Infinite Ammo Chances*
+		//***********************
+		// To possibly be transplanted from ACS :V
+		
+		
+		
+		
+		
+		//****************************************
+		//**IronFeet/Mask Implementation Effects**
+		//****************************************
+		if (playeractor)
+		{
+			if (Owner.CountInv("PowerIronFeet") > 0)
+			{
+				if (Owner.CountInv("IronFeetNoPoison") == 0) Owner.A_GiveInventory("IronFeetNoPoison",1);
+				if (Owner.CountInv("MaskNoFire") > 0) Owner.A_TakeInventory("MaskNoFire",0x7FFFFFFF);
+			}
+			else if (Owner.CountInv("PowerMask") > 0)
+			{
+				if (Owner.CountInv("IronFeetNoPoison") == 0) Owner.A_GiveInventory("IronFeetNoPoison",1);
+				if (Owner.CountInv("MaskNoFire") == 0) Owner.A_GiveInventory("MaskNoFire",1);
+			}
+			else
+			{
+				if (Owner.CountInv("IronFeetNoPoison") > 0) Owner.A_TakeInventory("IronFeetNoPoison",0x7FFFFFFF);
+				if (Owner.CountInv("MaskNoFire") > 0) Owner.A_TakeInventory("MaskNoFire",0x7FFFFFFF);
 			}
 		}
 		
@@ -1188,6 +1391,24 @@ class PlayerStatItem : Inventory
 		
 		
 		
+		//*********************************
+		//*Check Sauron Equipment Directly*
+		//*********************************
+		// To possibly be transplanted from ACS :V
+		
+		
+		
+		
+		
+		//**************************
+		//*Character Checks Misc #1*
+		//**************************
+		// To possibly be transplanted from ACS :V
+		
+		
+		
+		
+		
 		//************************************************************************
 		//**Ruinous Shield Degeneration Effect [will NOT kill the player though]**
 		//************************************************************************
@@ -1318,6 +1539,10 @@ class PlayerStatItem : Inventory
 			}
 		}
 		
+		
+		
+		
+		
 		//***************************
 		//** Divine Avatar HP Regen**
 		//***************************
@@ -1426,6 +1651,7 @@ class PlayerStatItem : Inventory
 		int HPRegenAmount;
 		int HPDegenAmount;
 		HPDelayInterval = 140;
+		if (CharacterClass == 2 && Owner.CountInv("DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = PlayerMaxHP;
 		if (playeractor)
 		{
 			// Base Character Interval Max
@@ -1687,6 +1913,7 @@ class PlayerStatItem : Inventory
 		//****************
 		//**Health Degen**
 		//****************
+		if (CharacterClass == 2 && Owner.CountInv("DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = PlayerMaxHP;
 		if (playeractor && dvds_healthdegenmode == 1)
 		{
 			// Base Character Interval Max
@@ -1911,6 +2138,196 @@ class PlayerStatItem : Inventory
 				HPDegenTimer = 0 - random(-20,20); // HPDelayInterval2 + random(-20,20);
 			}
 		}
+		
+		
+		
+		
+		
+		//****************
+		//*POISON AILMENT*
+		//****************
+		int PoisonIncrement;
+		int PoisonHealth;
+		int PoisonHealthThreshold;
+		int PoisonDmg;
+		int PoisonFlashColor;
+
+		// Base Max Increment
+		PoisonMaxInterval = 12;
+		PoisonMaxInterval += (PlayerDEF / 8);
+		PoisonMaxInterval += (PlayerSTR / 16);
+		PoisonMaxInterval *= 20;
+		if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 1 - Max Interval Base]: %d\c-, DEF: %d, STR: %d", PoisonMaxInterval, PlayerDEF, PlayerSTR);
+
+		// Difficulty Level
+		previousdelaycount = PoisonMaxInterval;
+		if (TrueGameSkill <= 0) PoisonMaxInterval = PoisonMaxInterval * 22 / 20;
+		if (TrueGameSkill == 1) PoisonMaxInterval = PoisonMaxInterval * 21 / 20;
+		if (TrueGameSkill == 2) PoisonMaxInterval = PoisonMaxInterval * 20 / 20;
+		if (TrueGameSkill == 3) PoisonMaxInterval = PoisonMaxInterval * 19 / 20;
+		if (TrueGameSkill == 4) PoisonMaxInterval = PoisonMaxInterval * 18 / 20;
+		if (TrueGameSkill == 5) PoisonMaxInterval = PoisonMaxInterval * 17 / 20;
+		if (TrueGameSkill == 6) PoisonMaxInterval = PoisonMaxInterval * 16 / 20;
+		if (TrueGameSkill == 7) PoisonMaxInterval = PoisonMaxInterval * 15 / 20;
+		if (TrueGameSkill >= 8) PoisonMaxInterval = PoisonMaxInterval * 14 / 20;
+		if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 2 - Max Interval (Difficulty)]: %d\c-, Previous: %d", PoisonMaxInterval, previousdelaycount);
+
+		// Check for Poison [-Invuln]
+		if (CallACS("GetBuffTimer",16) > 0 && CallACS("GetBuffTimer",4) == 0) // Being invulnerable will prevent poison damage from occuring.
+		{
+			// Base Increment
+			PoisonIncrement = 20;
+			if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 3 - Count Interval Base]: %d\c-", PoisonIncrement);
+	
+			// Input Alterations
+			previousdelaycount = PoisonIncrement;
+			SkillFactor = 100;
+			if (CallACS("MiscVarCheckDECORATE",2500) > 0) FreezePlayer += 1;
+			if (CallACS("GetBuffTimer",20) > 0) FreezePlayer += 1;
+			if (FreezePlayer == 0)
+			{
+				if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) SkillFactor = SkillFactor * 125 / 100;
+				if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) SkillFactor = SkillFactor * random(112,113) / 100;
+				if (buttons & BT_JUMP) SkillFactor = SkillFactor * 125 / 100;
+				if (buttons & BT_CROUCH) SkillFactor = SkillFactor * 75 / 100;
+				PoisonIncrement = PoisonIncrement * SkillFactor / 100;
+			}
+			if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (\cyInput: %d\cu)]: %d\c-, Previous: %d, InputFactor: %d / 100, Frozen?: %d", buttons, PoisonIncrement, previousdelaycount, SkillFactor, FreezePlayer);
+	
+			// Check Characters & Armor
+			previousdelaycount = PoisonIncrement;
+			if (CharacterClass == 2)
+			{
+				SkillFactor = 1000;
+				if (Owner.CountInv("PearlyCorset") > 0) SkillFactor -= 83;
+				if (Owner.CountInv("DoveRibbon") > 0) SkillFactor -= 334;
+				if (Owner.CountInv("DivineShield") > 0) SkillFactor -= 83;
+				PoisonIncrement = PoisonIncrement * SkillFactor / 1000;
+				if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (Armor, Flora)]: %d\c-, Previous: %d, InputFactor: %d / 1000", PoisonIncrement, previousdelaycount, SkillFactor);
+			}
+			else
+			if (CharacterClass == 0 || CharacterClass == 1)
+			{
+				SkillFactor = 100;
+				if (Owner.CountInv("DSGreenArmorClass") > 0) SkillFactor -= 2; // (-2% for Green Armor)
+				if (Owner.CountInv("DSBlueArmorClass") > 0) SkillFactor -= 4; // (-4% for Blue Armor)
+				if (Owner.CountInv("DSStoneArmorClass1") > 0) SkillFactor -= 5; // (-5% for Stone Armor 1)
+				if (Owner.CountInv("DSDiamondArmorClass1") > 0) SkillFactor -= 7; // (-7% for Diamond Armor 1)
+				if (Owner.CountInv("DSStoneArmorClass2") > 0) SkillFactor -= 6; // (-6% for Stone Armor 2)
+				if (Owner.CountInv("DSDiamondArmorClass2") > 0) SkillFactor -= 8; // (-8% for Diamond Armor 2)
+				PoisonIncrement = PoisonIncrement * SkillFactor / 100;
+				if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (Armor, Marines)]: %d\c-, Previous: %d, InputFactor: %d / 100", PoisonIncrement, previousdelaycount, SkillFactor);
+			}
+			
+			// Buffs
+			previousdelaycount = PoisonIncrement;
+			if (CallACS("GetBuffTimer",12) > 0) PoisonIncrement = PoisonIncrement * 6 / 5; // Acceleratle = 120% Speed
+			if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 5a - Count Interval (Acceleratle)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+
+			previousdelaycount = PoisonIncrement;
+			if (CallACS("GetBuffTimer",15) > 0) PoisonIncrement = PoisonIncrement * 4 / 5; // Deceleratle = 80% Speed
+			if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 5b - Count Interval (Deceleratle)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+
+			previousdelaycount = PoisonIncrement;
+			if (CallACS("GetBuffTimer",18) > 0) PoisonIncrement = PoisonIncrement * 9 / 5; // Fatigue = 180% Speed
+			if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 6 - Count Interval (Fatigue)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+			
+			previousdelaycount = PoisonIncrement;
+			if (CallACS("GetBuffTimer",20) > 0) PoisonIncrement = PoisonIncrement * 1 / 5; // Sleep = 20% Speed
+			if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 7 - Count Interval (Sleep)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+
+			PoisonTimer += PoisonIncrement;
+			if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 8 - Timer]: %d / %d\c-, Increment: %d", PoisonTimer, PoisonMaxInterval, PoisonIncrement);
+
+			// Poison Damage
+			if (PoisonTimer >= PoisonMaxInterval)
+			{
+				PoisonTimer = 0;
+
+				PoisonHealth = PlayerCurrentHealth;
+				PoisonHealthThreshold = PlayerMaxHP / 50;
+				if (PoisonHealthThreshold < 2) PoisonHealthThreshold = 2;
+				if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 9 - Get Poison LowCap]: %d\c-, Health: %d", PoisonHealthThreshold, PoisonHealth);
+				if (PoisonHealth > PoisonHealthThreshold)
+				{
+					PoisonDmg = PlayerMaxHP / 200;
+					if (PoisonDmg < 1) PoisonDmg = 1;
+					if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 10 - Base Poison Dmg]: %d\c-", PoisonDmg);
+
+					previousdelaycount = PoisonDmg;
+					if (random(1,8) == 8)
+					{
+						if (random(1,8) == 8) PoisonDmg *= 3; else PoisonDmg *= 2;
+					}
+					if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 11 - Random 2/3x Multi]: %d\c-, Previous: %d", PoisonDmg, previousdelaycount);
+					
+					// Flash Screen and Deal damage
+					int PoisonFlash = random(1,5);
+					string PoisonFlashClr = "00 DF 00";
+					if (PoisonFlash == 1) PoisonFlashClr = "00 BF 00";
+					if (PoisonFlash == 2) PoisonFlashClr = "00 CF 00";
+					if (PoisonFlash == 3) PoisonFlashClr = "00 DF 00";
+					if (PoisonFlash == 4) PoisonFlashClr = "00 EF 00";
+					if (PoisonFlash == 5) PoisonFlashClr = "00 FF 00";
+					owner.A_SetBlend(PoisonFlashClr,0.125,17);
+					PoisonHealth -= PoisonDmg;
+					if (PoisonHealth < PoisonHealthThreshold) PoisonHealth = PoisonHealthThreshold;
+					owner.health = PoisonHealth; PlayerCurrentHealth = owner.health;
+					if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 12 - Deal Damage]: Health %d\c-, Damage Dealt: %d", PoisonHealth, PoisonDmg);
+					
+					// Pain Sounds
+					PoisonHits++;
+					if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 13 - Hit Count], Hits: %d", PoisonHits);
+					if (PoisonHits >= 3)
+					{
+						PoisonHits = 0;
+						if (random(1,16) == 16)
+						{
+							if (debugpoisoninfo) Console.Printf("    \cyPoison Damage [Step 14 - Play Voice]", PoisonHits);
+							owner.A_StopSound(CHAN_VOICE);
+							if (CharacterClass == 9)
+							{
+								if (HealthRatio >= 667) owner.A_PlaySound("PetraPainSet1",CHAN_VOICE,1.0,0,ATTN_NORM); 
+								if (HealthRatio >= 334 && HealthRatio <= 666) owner.A_PlaySound("PetraPainSet2",CHAN_VOICE,1.0,0,ATTN_NORM);
+								if (HealthRatio <= 333 && PoisonHealth > 0) owner.A_PlaySound("PetraPainSet3",CHAN_VOICE,1.0,0,ATTN_NORM);
+							}
+							else
+							if (CharacterClass == 8)
+							{
+								if (HealthRatio >= 667) owner.A_PlaySound("AilishPainSet1",CHAN_VOICE,1.0,0,ATTN_NORM); 
+								if (HealthRatio >= 334 && HealthRatio <= 666) owner.A_PlaySound("AilishPainSet2",CHAN_VOICE,1.0,0,ATTN_NORM);
+								if (HealthRatio <= 333 && PoisonHealth > 0) owner.A_PlaySound("AilishPainSet3",CHAN_VOICE,1.0,0,ATTN_NORM);
+							}
+							else
+							if (CharacterClass == 2)
+							{
+								if (HealthRatio >= 667) owner.A_PlaySound("FloraPainSet1",CHAN_VOICE,1.0,0,ATTN_NORM); 
+								if (HealthRatio >= 334 && HealthRatio <= 666) owner.A_PlaySound("FloraPainSet2",CHAN_VOICE,1.0,0,ATTN_NORM);
+								if (HealthRatio <= 333 && PoisonHealth > 0) owner.A_PlaySound("FloraPainSet3",CHAN_VOICE,1.0,0,ATTN_NORM);
+							}
+							else
+							if (CharacterClass == 1)
+							{
+								if (PoisonHealth > 0) owner.A_PlaySound("illucia/pain",CHAN_VOICE,1.0,0,ATTN_NORM);
+							}
+							else
+							if (CharacterClass == 0)
+							{
+								if (PoisonHealth > 0) owner.A_PlaySound("deggaris/pain",CHAN_VOICE,1.0,0,ATTN_NORM);
+							}
+						}
+					}
+					
+				}
+			}
+		}
+		else
+		{
+			PoisonDmg = 0;
+			PoisonTimer = 0;
+			PoisonHits = 0;
+		}
+		// To be Transplanted From ACS :V
 		
 		
 		
@@ -2957,7 +3374,62 @@ class PlayerStatItem : Inventory
 		
 		
 		
+		//*********************
+		//*Check Aerial Damage*
+		//*********************
+		if (playeractor)
+		{
+			landdmgbonus = 0;
+			if (CallACS("GetBuffTimer",2) < 1) // && buttons & BT_JUMP) // [not Flight]
+			{
+				if (PlayerVelZ < -128.0)
+				{
+					landdmgbonus = 4;
+					if (debugatkinfo == 1) Console.Printf("    \ceLanding Damage [Lvl 4 - 13.9453125x Melee Dmg]: ZVel: %8f", PlayerVelZ);
+					
+				}
+				else
+				if (PlayerVelZ < -32.0)
+				{
+					landdmgbonus = 3;
+					if (debugatkinfo == 1) Console.Printf("    \ceLanding Damage [Lvl 3 - 6.5625x Melee Dmg]: ZVel: %8f", PlayerVelZ);
+				}
+				else
+				if (PlayerVelZ < -8.0)
+				{
+					landdmgbonus = 2;
+					if (debugatkinfo == 1) Console.Printf("    \ceLanding Damage [Lvl 2 - 3.5x Melee Dmg]: ZVel: %8f", PlayerVelZ);
+				}
+				else
+				if (PlayerVelZ < -0.0625)
+				{
+					landdmgbonus = 1;
+					if (debugatkinfo == 1) Console.Printf("    \ceLanding Damage [Lvl 1 - 2x Melee Dmg]: ZVel: %8f", PlayerVelZ);
+				}
+			}
+
+			float SceptreJumpDmgMulti;
+			SceptreJumpDmgMulti = PlayerVelZ / -0.1;
+			SceptreJumpDmgMulti += 100;
+			if (SceptreJumpDmgMulti < 100) SceptreJumpDmgMulti = 100;
+			if (debugatkinfo == 1) Console.Printf("    \ceSceptre Landing Dmg Multiplier: ZVel: %8f%", SceptreJumpDmgMulti);
+		}
+		
+		
+		
+		
+		
+		//************************************************************************
+		//***Determines Maximum Ammo Ammounts Based on Strength Seeds and Level***
+		//************************************************************************
+		// To be Transplanted From ACS :V
+		
+		
+		
+		
+		
 		previoushealth = owner.health;
+		if (!playeractor) owner.A_TakeInventory("PlayerStatItem",9999); // Removes itself if given to a non-Aetherius Player Class
 		super.DoEffect();
 	}
 
@@ -3252,10 +3724,10 @@ class PlayerStatItem : Inventory
 			double LandingFactor = 1.0;
 			if (damageType == 'Melee' || damageType == 'Trample' || damageType == 'Stomp' || damageType == 'Sceptre' || damageType == 'Gauntlets' || damageType == 'Fist' || damageType == 'Kick' || damageType == 'Chainsaw')
 			{
-				if (Owner.CountInv("LandingDMGBonus") > 0) LandingFactor = 2.0;
-				if (Owner.CountInv("LandingDMGBonus2") > 0) LandingFactor = 3.5;
-				if (Owner.CountInv("LandingDMGBonus3") > 0) LandingFactor = 6.5625;
-				if (Owner.CountInv("LandingDMGBonus4") > 0) LandingFactor = 13.9453125;
+				if (landdmgbonus == 1) LandingFactor = 2.0;
+				if (landdmgbonus == 2) LandingFactor = 3.5;
+				if (landdmgbonus == 3) LandingFactor = 6.5625;
+				if (landdmgbonus == 4) LandingFactor = 13.9453125;
 			}
 
 			// Tension Level [OFFENSIVE]

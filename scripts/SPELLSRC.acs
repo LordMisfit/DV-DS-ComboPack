@@ -21923,19 +21923,19 @@ script "EmulateGiveArmorBonus" (int C5)
 	
 		if (Z1 == 0) // No Armor
 		{
-		C1 = 1; // Base Increase to Armor and make it Green class
-		C1 = C1 * C5;
-		Z1 += C1;
-		GiveActorInventory(Player1TID,"ArmorBonusDSGreen", Z1);
-		CurrentArmorClass = 1;
-		CurrentMaxArmor = 100;
-		GiveActorInventory(Player1TID,"DSGreenArmorClass", 1);
-		TakeActorInventory(Player1TID,"DSNoArmorClass", 9999);
-		TakeActorInventory(Player1TID,"DSBlueArmorClass", 9999);
-		TakeActorInventory(Player1TID,"DSStoneArmorClass1", 9999);
-		TakeActorInventory(Player1TID,"DSDiamondArmorClass1", 9999);
-		TakeActorInventory(Player1TID,"DSStoneArmorClass2", 9999);
-		TakeActorInventory(Player1TID,"DSDiamondArmorClass2", 9999);
+			C1 = 1; // Base Increase to Armor and make it Green class
+			C1 = C1 * C5;
+			Z1 += C1;
+			GiveActorInventory(Player1TID,"ArmorBonusDSGreen", Z1);
+			CurrentArmorClass = 1;
+			CurrentMaxArmor = 100;
+			GiveActorInventory(Player1TID,"DSGreenArmorClass", 1);
+			TakeActorInventory(Player1TID,"DSNoArmorClass", 9999);
+			TakeActorInventory(Player1TID,"DSBlueArmorClass", 9999);
+			TakeActorInventory(Player1TID,"DSStoneArmorClass1", 9999);
+			TakeActorInventory(Player1TID,"DSDiamondArmorClass1", 9999);
+			TakeActorInventory(Player1TID,"DSStoneArmorClass2", 9999);
+			TakeActorInventory(Player1TID,"DSDiamondArmorClass2", 9999);
 		}
 		else // Have some kind of existing Armor
 		{
@@ -27056,13 +27056,12 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 // ************************
 script "CENTRALSCRIPTOFEVERYTHING" ENTER
 {
+	int playactor = 1;
+
 	int G1, G2, G3, C1, C2, C3, C4, I1, I2, I3, H1;
-	int Mas1;
-	int BuddhaRNGVal, DivineAvatarBuffValue;
-	int ArmorBits, Armor2Bits, Armor3Bits, LevelChecker, LevelChecker2, RuinousPtsNeeded, AmmoCheck, HellcoreCoolRatio, IronFeetChance, FearChance;
+	int ArmorBits, LevelChecker, RuinousPtsNeeded, AmmoCheck, HellcoreCoolRatio, IronFeetChance, FearChance;
 	int BaseSceptreEXP;
 	int SceptreEXPRatio;
-	int HealthRatio;
 	int checkmeleeweapons;
 	int staminaregenbase;
 	int staminaregenfinal;
@@ -27081,10 +27080,20 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	int powertripmode = GetCVar("dvds_musou_powertripmode");
 	int tensionspeedmulti = GetCVar("dvds_tensionspeed");
 	int DVIIArmorSpawn = GetCVAR("dvds_dviiarmorspawn");
+	int HealthRatio;
+
+	//******************
+	//*Get Health Ratio*
+	//******************
+	if (MaxHealthTrue > 0)
+	{
+		HealthRatio = GetActorProperty(Player1TID,APROP_Health) * 1000 / MaxHealthTrue;
+		if (HealthRatio < 0) HealthRatio = 0;
+		if (HealthRatio > 2000) HealthRatio = 2000;
+	}
 	
-	SetActivator(Player1TID);
-	str weapon = GetWeapon();
-	SetActivator(0);
+	SetActivator(Player1TID); str weapon = GetWeapon(); SetActivator(0);
+
 	if (GetActorProperty(Player1TID,APROP_Health) <= 0) // Sets a special flag to check for a "pistol reset" like in resurgance
 	{
 		if (MiscellaneousVars[149] != 1) MiscellaneousVars[149] = 1;
@@ -28162,6 +28171,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		MiscellaneousVars[241] = MaxHealthTrue;
 		MiscellaneousVars[298] = MaxHealthTrue;
 	}
+	if (ClassCheck == 2)
+	{
+	}
 	if (ClassCheck == 3)
 	{
 	}
@@ -28964,7 +28976,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	// [194] Mercy Invincibility "Flag"
 	// [195] Mercy Invincibility Timer
 	// [196] Mercy Invincibility 'Modulus/Remainder'
-	
 	// Death Rage Countdown Checks
 	if (MiscellaneousVars[9043] > 0)
 	{
@@ -29202,62 +29213,14 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (GetActorProperty(Player1TID,APROP_Health) > 0) FadeRange(0, 0, 48, 0.9375, 0, 0, 0, 0.0, 0.05);
 	}
 	
-	//*********************
-	//*Check Aerial Damage*
-	//*********************
-	buttons = GetPlayerInput(0, INPUT_BUTTONS);
-	if (CheckActorInventory(Player1TID,"LandingDMGBonus4") > 0) TakeActorInventory(Player1TID,"LandingDMGBonus4", 9999);
-	if (CheckActorInventory(Player1TID,"LandingDMGBonus3") > 0) TakeActorInventory(Player1TID,"LandingDMGBonus3", 9999);
-	if (CheckActorInventory(Player1TID,"LandingDMGBonus2") > 0) TakeActorInventory(Player1TID,"LandingDMGBonus2", 9999);
-	if (CheckActorInventory(Player1TID,"LandingDMGBonus") > 0) TakeActorInventory(Player1TID,"LandingDMGBonus", 9999);
-	if (PowerupTimer[2] < 1) // && buttons & BT_JUMP)
-	{
-		if (GetActorVelZ(Player1TID) < -8388608)
-		{
-			if (MiscellaneousVars[100004] == 1) PrintBold(s:"Landing Damage Lvl 4 [13.9453125x Melee Dmg] \n[VelZ: ",d:GetActorVelZ(Player1TID),s:"]");
-			if (CheckActorInventory(Player1TID,"LandingDMGBonus4") < 1) GiveActorInventory(Player1TID,"LandingDMGBonus4", 1);
-		}
-		else
-		if (GetActorVelZ(Player1TID) < -2097152)
-		{
-			if (MiscellaneousVars[100004] == 1) PrintBold(s:"Landing Damage Lvl 3 [6.5625x Melee Dmg] \n[VelZ: ",d:GetActorVelZ(Player1TID),s:"]");
-			if (CheckActorInventory(Player1TID,"LandingDMGBonus3") < 1) GiveActorInventory(Player1TID,"LandingDMGBonus3", 1);
-		}
-		else
-		if (GetActorVelZ(Player1TID) < -524288)
-		{
-			if (MiscellaneousVars[100004] == 1) PrintBold(s:"Landing Damage Lvl 2 [3.5x Melee Dmg] \n[VelZ: ",d:GetActorVelZ(Player1TID),s:"]");
-			if (CheckActorInventory(Player1TID,"LandingDMGBonus2") < 1) GiveActorInventory(Player1TID,"LandingDMGBonus2", 1);
-		}
-		else
-		if (GetActorVelZ(Player1TID) < -1024)
-		{
-			if (MiscellaneousVars[100004] == 1) PrintBold(s:"Landing Damage Lvl 1 [2x Melee Dmg] \n[VelZ: ",d:GetActorVelZ(Player1TID),s:"]");
-			if (CheckActorInventory(Player1TID,"LandingDMGBonus") < 1) GiveActorInventory(Player1TID,"LandingDMGBonus", 1);
-		}
-	}
-	
-	//**************************
-	//*Sceptre Aireal Dmg Check*
-	//**************************
-	int SceptreJumpDmgMulti;
-	SceptreJumpDmgMulti = GetActorVelZ(Player1TID) / -6553;
-	SceptreJumpDmgMulti += 100;
-	if (SceptreJumpDmgMulti < 100) SceptreJumpDmgMulti = 100;
-	// PrintBold(d:GetActorVelZ(Player1TID),s:"\n",d:SceptreJumpDmgMulti,s:"%");
-	
 	//***************************
 	//*Calculate Stamina for HUD*
 	//***************************
 	StaminaPercent = MiscellaneousVars[21] * 100 / MiscellaneousVars[22];
 	MiscellaneousVars[41] = MiscellaneousVars[21] * 10000 / MiscellaneousVars[22];
-
-	//************************************************************************************************************************
-	//**From here on, this script will run the remaining code constantly in order to keep tabs on Survivability ratings, etc**
-	//************************************************************************************************************************
 	
 	//**************************
-	//*Character Checks Misc #1*
+	//*Character Checks Misc #1* // To be Transplanted to "PlayerStatItem" (ZScript)
 	//**************************
 	if (CharacterClass == 0 && CheckActorInventory(Player1TID,"DeggarisInPlay") < 1) GiveActorInventory(Player1TID,"DeggarisInPlay", 1);
 	if (CharacterClass == 1 && CheckActorInventory(Player1TID,"IlluciaInPlay") < 1) GiveActorInventory(Player1TID,"IlluciaInPlay", 1);
@@ -29323,7 +29286,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	}
 	
 	//******************
-	//*Check Dash Timer*
+	//*Check Dash Timer* //?
 	//******************
 	if (MiscellaneousVars[166] > 0) 
 	{
@@ -29340,40 +29303,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	
 	// Health Regen/Degen wuz here V:
 	
-	//********************
-	//*Skill Level Checks*
-	//********************
-	if (CheckActorInventory(Player1TID,"IsSkill1") == 0) TakeActorInventory(Player1TID,"IsSkill1", 1);
-	if (CheckActorInventory(Player1TID,"IsSkill2") == 0) TakeActorInventory(Player1TID,"IsSkill2", 1);
-	if (CheckActorInventory(Player1TID,"IsEasySkill") == 0) TakeActorInventory(Player1TID,"IsEasySkill", 1);
-	if (CheckActorInventory(Player1TID,"IsSkill3") == 0) TakeActorInventory(Player1TID,"IsSkill3", 1);
-	if (CheckActorInventory(Player1TID,"IsSkill4") == 0) TakeActorInventory(Player1TID,"IsSkill4", 1);
-	if (CheckActorInventory(Player1TID,"IsSkill5") == 0) TakeActorInventory(Player1TID,"IsSkill5", 1);
-	if (CheckActorInventory(Player1TID,"IsHardSkill") == 0) TakeActorInventory(Player1TID,"IsHardSkill", 1);
-	if (TrueGameSkill <= SKILL_VERY_EASY)
-	{
-		if (CheckActorInventory(Player1TID,"IsSkill1") == 0) GiveActorInventory(Player1TID,"IsSkill1", 1);
-		if (CheckActorInventory(Player1TID,"IsEasySkill") == 0) GiveActorInventory(Player1TID,"IsEasySkill", 1);
-	}
-	if (TrueGameSkill == SKILL_EASY)
-	{
-		if (CheckActorInventory(Player1TID,"IsSkill2") == 0) GiveActorInventory(Player1TID,"IsSkill2", 1);
-		if (CheckActorInventory(Player1TID,"IsEasySkill") == 0) GiveActorInventory(Player1TID,"IsEasySkill", 1);
-	}
-	if (TrueGameSkill == SKILL_NORMAL)
-	{
-		if (CheckActorInventory(Player1TID,"IsSkill3") == 0) GiveActorInventory(Player1TID,"IsSkill3", 1);
-	}
-	if (TrueGameSkill == SKILL_HARD)
-	{
-		if (CheckActorInventory(Player1TID,"IsSkill4") == 0) GiveActorInventory(Player1TID,"IsSkill4", 1);
-		if (CheckActorInventory(Player1TID,"IsHardSkill") == 0) GiveActorInventory(Player1TID,"IsHardSkill", 1);
-	}
-	if (TrueGameSkill >= SKILL_VERY_HARD)
-	{
-		if (CheckActorInventory(Player1TID,"IsSkill5") == 0) GiveActorInventory(Player1TID,"IsSkill5", 1);
-		if (CheckActorInventory(Player1TID,"IsHardSkill") == 0) GiveActorInventory(Player1TID,"IsHardSkill", 1);
-	}
+	// Skill Level Checks wuz here V:
 	
 	//************************
 	//**Flora Specfic Checks**
@@ -29419,218 +29349,221 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	}
 	
 	//*******************
-	//*RUINOUS SHIELD D:*
+	//*RUINOUS SHIELD D:* // To Be Transplanted to "PlayerStatItem" (ZScript)
 	//*******************
-	int DebugUncurse = GetCVar("dvdsdebug_shielduncursedisplay");
-	int UncurseInterval;
-	UncurseInterval = 7000; // 70 [*100] tics [up to -17 tics with all items]
-	if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) UncurseInterval -= 500;
-	if (CheckActorInventory(Player1TID,"BalrogRing") > 0) UncurseInterval -= 400;
-	if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) UncurseInterval -= 300;
-	if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) UncurseInterval -= 200;
-	if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) UncurseInterval -= 200;
-	if (CheckActorInventory(Player1TID,"KissaBra") > 0) UncurseInterval -= 100;
-	
-	int UncurseIntervalChance;
-	UncurseIntervalChance = 40;
-	if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) UncurseIntervalChance += 1;
-	if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) UncurseIntervalChance += 1;
-	if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) UncurseIntervalChance += 1;
-	if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) UncurseIntervalChance += 2;
-	if (CheckActorInventory(Player1TID,"CloakofEvasion") > 0) UncurseIntervalChance += 1;
-	if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) UncurseIntervalChance += 3;
-	if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) UncurseIntervalChance += 2;
-	if (CheckActorInventory(Player1TID,"KissaBra") > 0) UncurseIntervalChance += 1;
-	if (CheckActorInventory(Player1TID,"BalrogRing") > 0) UncurseIntervalChance += 2;
-	if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) UncurseIntervalChance += 1;
-	if (CheckActorInventory(Player1TID,"SauronHelmet") > 0) UncurseIntervalChance -= 2;
-	if (CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0) UncurseIntervalChance -= 3;
-	if (CheckActorInventory(Player1TID,"TheOneRing") > 0) UncurseIntervalChance += 11;
-	
-	
-	int UncurseIntervalChance2;
-	UncurseIntervalChance2 = 8;
-	if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) UncurseIntervalChance2 += random(0,1);
-	if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) UncurseIntervalChance2 += random(1,3);
-	if (CheckActorInventory(Player1TID,"CloakOfEvasion") > 0) UncurseIntervalChance2 += random(2,5);
-	if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) UncurseIntervalChance2 += 2;
-	if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) UncurseIntervalChance2 += 4;
-	if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) UncurseIntervalChance2 += 6;
-	
-	// Checks to determine how many points the Ruinous Shield has gathered towards becoming an uncursed Divine Shield
-	if (CharacterClass == 2 && CheckActorInventory(Player1TID,"RuinousShield") > 0) // Flora
+	if (playactor)
 	{
-		// Amount of Points is determined by Difficulty level
-		if (TrueGameSkill <= SKILL_VERY_EASY) RuinousPtsNeeded = 384;
-		if (TrueGameSkill == SKILL_EASY) RuinousPtsNeeded = 448;
-		if (TrueGameSkill == SKILL_NORMAL) RuinousPtsNeeded = 576;
-		if (TrueGameSkill == SKILL_HARD) RuinousPtsNeeded = 768;
-		if (TrueGameSkill == SKILL_VERY_HARD) RuinousPtsNeeded = 1024;
-		if (TrueGameSkill == SKILL_EXTREME) RuinousPtsNeeded = 1152;
-		if (TrueGameSkill == SKILL_HORRIBLE) RuinousPtsNeeded = 1280;
-		if (TrueGameSkill == SKILL_IMPOSSIBLE) RuinousPtsNeeded = 1408;
-		if (TrueGameSkill >= SKILL_OMEGA) RuinousPtsNeeded = 1536;
+		int DebugUncurse = GetCVar("dvdsdebug_shielduncursedisplay");
+		int UncurseInterval;
+		UncurseInterval = 7000; // 70 [*100] tics [up to -17 tics with all items]
+		if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) UncurseInterval -= 500;
+		if (CheckActorInventory(Player1TID,"BalrogRing") > 0) UncurseInterval -= 400;
+		if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) UncurseInterval -= 300;
+		if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) UncurseInterval -= 200;
+		if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) UncurseInterval -= 200;
+		if (CheckActorInventory(Player1TID,"KissaBra") > 0) UncurseInterval -= 100;
 		
-		RuinousShieldPercent = MiscellaneousVars[202] * 100 / RuinousPtsNeeded;
-		RuinousShieldPercentF = MiscellaneousVars[202] * 1000 / RuinousPtsNeeded;
+		int UncurseIntervalChance;
+		UncurseIntervalChance = 40;
+		if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) UncurseIntervalChance += 1;
+		if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) UncurseIntervalChance += 1;
+		if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) UncurseIntervalChance += 1;
+		if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) UncurseIntervalChance += 2;
+		if (CheckActorInventory(Player1TID,"CloakofEvasion") > 0) UncurseIntervalChance += 1;
+		if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) UncurseIntervalChance += 3;
+		if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) UncurseIntervalChance += 2;
+		if (CheckActorInventory(Player1TID,"KissaBra") > 0) UncurseIntervalChance += 1;
+		if (CheckActorInventory(Player1TID,"BalrogRing") > 0) UncurseIntervalChance += 2;
+		if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) UncurseIntervalChance += 1;
+		if (CheckActorInventory(Player1TID,"SauronHelmet") > 0) UncurseIntervalChance -= 2;
+		if (CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0) UncurseIntervalChance -= 3;
+		if (CheckActorInventory(Player1TID,"TheOneRing") > 0) UncurseIntervalChance += 11;
 		
-		int UncursePtsTotalAdded = 0;
-		int UncursePtsAdd1 = 0;
-		int uncursetimerincrease = 100 * GetCVar("dvds_uncurserate") / 100;
-
-		if (MenuSystemVars[0] == 0) MiscellaneousVars[11] += uncursetimerincrease;
-		if (MiscellaneousVars[11] >= UncurseInterval)
+		
+		int UncurseIntervalChance2;
+		UncurseIntervalChance2 = 8;
+		if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) UncurseIntervalChance2 += random(0,1);
+		if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) UncurseIntervalChance2 += random(1,3);
+		if (CheckActorInventory(Player1TID,"CloakOfEvasion") > 0) UncurseIntervalChance2 += random(2,5);
+		if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) UncurseIntervalChance2 += 2;
+		if (CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) UncurseIntervalChance2 += 4;
+		if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) UncurseIntervalChance2 += 6;
+		
+		// Checks to determine how many points the Ruinous Shield has gathered towards becoming an uncursed Divine Shield
+		if (CharacterClass == 2 && CheckActorInventory(Player1TID,"RuinousShield") > 0) // Flora
 		{
-			MiscellaneousVars[11] -= UncurseInterval;
+			// Amount of Points is determined by Difficulty level
+			if (TrueGameSkill <= SKILL_VERY_EASY) RuinousPtsNeeded = 384;
+			if (TrueGameSkill == SKILL_EASY) RuinousPtsNeeded = 448;
+			if (TrueGameSkill == SKILL_NORMAL) RuinousPtsNeeded = 576;
+			if (TrueGameSkill == SKILL_HARD) RuinousPtsNeeded = 768;
+			if (TrueGameSkill == SKILL_VERY_HARD) RuinousPtsNeeded = 1024;
+			if (TrueGameSkill == SKILL_EXTREME) RuinousPtsNeeded = 1152;
+			if (TrueGameSkill == SKILL_HORRIBLE) RuinousPtsNeeded = 1280;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) RuinousPtsNeeded = 1408;
+			if (TrueGameSkill >= SKILL_OMEGA) RuinousPtsNeeded = 1536;
 			
-			// Base Chance
-			if (random(1,100) <= UncurseIntervalChance) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 2;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
+			RuinousShieldPercent = MiscellaneousVars[202] * 100 / RuinousPtsNeeded;
+			RuinousShieldPercentF = MiscellaneousVars[202] * 1000 / RuinousPtsNeeded;
+			
+			int UncursePtsTotalAdded = 0;
+			int UncursePtsAdd1 = 0;
+			int uncursetimerincrease = 100 * GetCVar("dvds_uncurserate") / 100;
 
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Base Chance]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+			if (MenuSystemVars[0] == 0) MiscellaneousVars[11] += uncursetimerincrease;
+			if (MiscellaneousVars[11] >= UncurseInterval)
+			{
+				MiscellaneousVars[11] -= UncurseInterval;
+				
+				// Base Chance
+				if (random(1,100) <= UncurseIntervalChance) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 2;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Base Chance]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				// Safe Tea Shoes
+				if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 3;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Safe Tea Shoes]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				// Pearly Corset
+				if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"PearlyCorset") > 0) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 6;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Pearly Corset]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				// Water Flying Dress
+				if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 4;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Water Flying Dress]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				// Evenstar Necklace
+				if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 1;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Evenstar Necklace]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				// Cloak of Evasion
+				if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"CloakofEvasion") > 0) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 2;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Cloak of Evasion]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				// Anubis Cufflinks
+				if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 2;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Anubis Cufflinks]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				// Kissa's Bra
+				if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"KissaBra") > 0) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 5;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Kissa's Bra]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				// Balrog Ring
+				if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"BalrogRing") > 0) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 1;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Balrog Ring]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				// Dove Ribbon
+				if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"DoveRibbon") > 0) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 10;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Dove Ribbon]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				// Falcon Knife Earrings
+				if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) // 35-66% chance of increase
+				{
+					UncursePtsAdd1 = 3;
+					if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+					UncursePtsTotalAdded += UncursePtsAdd1;
+
+					if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Falcon Knife Earrings]\n",
+																					s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
+				}
+
+				MiscellaneousVars[202] += UncursePtsTotalAdded;
+				MiscellaneousVars[269] = UncursePtsTotalAdded; // [269] Last Held Uncurse Points Increment
+			}
+			
+			// Once You Exceed the Amount, the Shield Automatically Uncurses!
+			if (MiscellaneousVars[202] > RuinousPtsNeeded)
+			{
+				GiveActorInventory(Player1TID,"DivineShield", 1);
+				if (CheckActorInventory(Player1TID,"RuinousShield") > 0) TakeActorInventory(Player1TID,"RuinousShield", 1);
+				PrintBold(s:"CONGRADULATIONS!!\n\nTHE RUINOUS SHIELD IS NO LONGER CURSED!\n\nYOU NOW POSSESS AND WIELD THE MIGHTY 'DIVINE SHIELD'!!");
+				AmbientSound("Uncursed",127);
+				MiscellaneousVars[11] = 0;
 			}
 
-			// Safe Tea Shoes
-			if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 3;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
+			int RuinousShieldWhole = RuinousShieldPercentF / 10;
+			int RuinousShieldDecimal = RuinousShieldPercentF % 10;
+			if (DebugUncurse > 0) PrintBold(s:"UncurseTimerIncrease: ",d:uncursetimerincrease,s:"\n",
+																			s:"Uncurse Timer: ",d:MiscellaneousVars[11],s:" / ",d:UncurseInterval,s:"\n\n",
 
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Safe Tea Shoes]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
-			}
+																			s:"UncurseIntervalChance: ",d:UncurseIntervalChance,s:"%\n",
+																			s:"UncurseIntervalChance2: ",d:UncurseIntervalChance2,s:"%\n\n",
 
-			// Pearly Corset
-			if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"PearlyCorset") > 0) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 6;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
-
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Pearly Corset]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
-			}
-
-			// Water Flying Dress
-			if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 4;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
-
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Water Flying Dress]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
-			}
-
-			// Evenstar Necklace
-			if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 1;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
-
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Evenstar Necklace]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
-			}
-
-			// Cloak of Evasion
-			if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"CloakofEvasion") > 0) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 2;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
-
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Cloak of Evasion]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
-			}
-
-			// Anubis Cufflinks
-			if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"AnubisCufflinks") > 0) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 2;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
-
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Anubis Cufflinks]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
-			}
-
-			// Kissa's Bra
-			if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"KissaBra") > 0) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 5;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
-
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Kissa's Bra]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
-			}
-
-			// Balrog Ring
-			if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"BalrogRing") > 0) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 1;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
-
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Balrog Ring]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
-			}
-
-			// Dove Ribbon
-			if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"DoveRibbon") > 0) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 10;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
-
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Dove Ribbon]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
-			}
-
-			// Falcon Knife Earrings
-			if (random(1,100) <= UncurseIntervalChance && CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) // 35-66% chance of increase
-			{
-				UncursePtsAdd1 = 3;
-				if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
-				UncursePtsTotalAdded += UncursePtsAdd1;
-
-				if (DebugUncurse > 0) PrintBold(s:"UncursePtsAdd1: ",d:UncursePtsAdd1,s:" [Falcon Knife Earrings]\n",
-																				s:"UncursePtsTotalAdded: ",d:UncursePtsTotalAdded);
-			}
-
-			MiscellaneousVars[202] += UncursePtsTotalAdded;
-			MiscellaneousVars[269] = UncursePtsTotalAdded; // [269] Last Held Uncurse Points Increment
+																			s:"Uncurse Points Added: ",d:MiscellaneousVars[269],s:"\n",
+																			s:"Total Uncurse Points: ",d:MiscellaneousVars[202],s:" / ",d:RuinousPtsNeeded,s:" [",d:RuinousShieldWhole,s:".",d:RuinousShieldDecimal,s:"%]");
 		}
-		
-		// Once You Exceed the Amount, the Shield Automatically Uncurses!
-		if (MiscellaneousVars[202] > RuinousPtsNeeded)
-		{
-			GiveActorInventory(Player1TID,"DivineShield", 1);
-			if (CheckActorInventory(Player1TID,"RuinousShield") > 0) TakeActorInventory(Player1TID,"RuinousShield", 1);
-			PrintBold(s:"CONGRADULATIONS!!\n\nTHE RUINOUS SHIELD IS NO LONGER CURSED!\n\nYOU NOW POSSESS AND WIELD THE MIGHTY 'DIVINE SHIELD'!!");
-			AmbientSound("Uncursed",127);
-			MiscellaneousVars[11] = 0;
-		}
-
-		int RuinousShieldWhole = RuinousShieldPercentF / 10;
-		int RuinousShieldDecimal = RuinousShieldPercentF % 10;
-		if (DebugUncurse > 0) PrintBold(s:"UncurseTimerIncrease: ",d:uncursetimerincrease,s:"\n",
-																		s:"Uncurse Timer: ",d:MiscellaneousVars[11],s:" / ",d:UncurseInterval,s:"\n\n",
-
-																		s:"UncurseIntervalChance: ",d:UncurseIntervalChance,s:"%\n",
-																		s:"UncurseIntervalChance2: ",d:UncurseIntervalChance2,s:"%\n\n",
-
-																		s:"Uncurse Points Added: ",d:MiscellaneousVars[269],s:"\n",
-																		s:"Total Uncurse Points: ",d:MiscellaneousVars[202],s:" / ",d:RuinousPtsNeeded,s:" [",d:RuinousShieldWhole,s:".",d:RuinousShieldDecimal,s:"%]");
+		// Checks to make sure you cannot hold the Ruinous Shield if you already have a Divine Shield (the latter is the uncursed version of the former).
+		if (CharacterClass == 2 && CheckActorInventory(Player1TID,"DivineShield") > 0 && CheckActorInventory(Player1TID,"RuinousShield") > 0) TakeActorInventory(Player1TID,"RuinousShield", 1); // Flora
 	}
-	// Checks to make sure you cannot hold the Ruinous Shield if you already have a Divine Shield (the latter is the uncursed version of the former).
-	if (CharacterClass == 2 && CheckActorInventory(Player1TID,"DivineShield") > 0 && CheckActorInventory(Player1TID,"RuinousShield") > 0) TakeActorInventory(Player1TID,"RuinousShield", 1); // Flora
 	
 	
 	//*********************
@@ -29638,120 +29571,123 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	//*********************
 	int deathmusic = GetCVar("dvds_deathmusic");
 	int DY1 = MaxHealthTrue * -1;
-	// [12] is for the death time counter, to fade the screen to blackish-red when the player dies.
-	if (GetActorProperty(Player1TID,APROP_Health) < 1)
+	if (playactor)
 	{
-		MiscellaneousVars[12] += 1;
-		// Game Over Music
-		if (deathmusic != 0)
+		// [12] is for the death time counter, to fade the screen to blackish-red when the player dies.
+		if (GetActorProperty(Player1TID,APROP_Health) < 1)
 		{
-			if (MiscellaneousVars[12] == 1) SetMusic("",0);
-			if (deathmusic == 1 && MiscellaneousVars[12] == 8) SetMusic("RoReDead",0);
-			if (deathmusic == 2 && MiscellaneousVars[12] == 35) SetMusic("GaOvYe",0);
-			if (deathmusic == 3 && MiscellaneousVars[12] == 35) SetMusic("DRQUDEAD",0);
-			if (deathmusic == 4 && MiscellaneousVars[12] == 4) SetMusic("MiRiBuTi",0);
-			if (deathmusic == 5 && MiscellaneousVars[12] == 14) SetMusic("ToDiYoAD",0);
-			if (deathmusic == 6 && MiscellaneousVars[12] == 4) SetMusic("MGS2GMOV",0);
-			if (deathmusic == 7 && MiscellaneousVars[12] == 35) SetMusic("ShGYaheh",0);
-			if (deathmusic == 8 && MiscellaneousVars[12] == 4) SetMusic("AH3GMOVR",0);
-			if (deathmusic == 9 && MiscellaneousVars[12] == 50) SetMusic("JURPRKP2",0);
+			MiscellaneousVars[12] += 1;
+			// Game Over Music
+			if (deathmusic != 0)
+			{
+				if (MiscellaneousVars[12] == 1) SetMusic("",0);
+				if (deathmusic == 1 && MiscellaneousVars[12] == 8) SetMusic("RoReDead",0);
+				if (deathmusic == 2 && MiscellaneousVars[12] == 35) SetMusic("GaOvYe",0);
+				if (deathmusic == 3 && MiscellaneousVars[12] == 35) SetMusic("DRQUDEAD",0);
+				if (deathmusic == 4 && MiscellaneousVars[12] == 4) SetMusic("MiRiBuTi",0);
+				if (deathmusic == 5 && MiscellaneousVars[12] == 14) SetMusic("ToDiYoAD",0);
+				if (deathmusic == 6 && MiscellaneousVars[12] == 4) SetMusic("MGS2GMOV",0);
+				if (deathmusic == 7 && MiscellaneousVars[12] == 35) SetMusic("ShGYaheh",0);
+				if (deathmusic == 8 && MiscellaneousVars[12] == 4) SetMusic("AH3GMOVR",0);
+				if (deathmusic == 9 && MiscellaneousVars[12] == 50) SetMusic("JURPRKP2",0);
+				
+				if (deathmusic == 1 && MiscellaneousVars[12] >= 2220) SetMusic("",0);
+				if (deathmusic == 2 && MiscellaneousVars[12] >= 367) SetMusic("",0);
+				if (deathmusic == 3 && MiscellaneousVars[12] >= 255) SetMusic("",0);
+				if (deathmusic == 4 && MiscellaneousVars[12] >= 290) SetMusic("",0);
+				if (deathmusic == 5 && MiscellaneousVars[12] >= 3970) SetMusic("",0);
+				if (deathmusic == 6 && MiscellaneousVars[12] == 284) SetMusic("",0);
+				if (deathmusic == 7 && MiscellaneousVars[12] == 1365) SetMusic("",0);
+				if (deathmusic == 8 && MiscellaneousVars[12] == 350) SetMusic("",0);
+				if (deathmusic == 9 && MiscellaneousVars[12] == 273) SetMusic("",0);
+			}
 			
-			if (deathmusic == 1 && MiscellaneousVars[12] >= 2220) SetMusic("",0);
-			if (deathmusic == 2 && MiscellaneousVars[12] >= 367) SetMusic("",0);
-			if (deathmusic == 3 && MiscellaneousVars[12] >= 255) SetMusic("",0);
-			if (deathmusic == 4 && MiscellaneousVars[12] >= 290) SetMusic("",0);
-			if (deathmusic == 5 && MiscellaneousVars[12] >= 3970) SetMusic("",0);
-			if (deathmusic == 6 && MiscellaneousVars[12] == 284) SetMusic("",0);
-			if (deathmusic == 7 && MiscellaneousVars[12] == 1365) SetMusic("",0);
-			if (deathmusic == 8 && MiscellaneousVars[12] == 350) SetMusic("",0);
-			if (deathmusic == 9 && MiscellaneousVars[12] == 273) SetMusic("",0);
-		}
-		
-		// "YOU DIED!" msg [HudMessage id 2] :V
-		if (MiscellaneousVars[12] >= 4)
-		{
-			MiscellaneousVars[179] += 1;
-			if (MiscellaneousVars[179] >= 20) MiscellaneousVars[179] = 1;
-			SetHudSize(1280, 960, 0);
-			if (MiscellaneousVars[179] >= 1 && MiscellaneousVars[179] <= 4) Setfont("UDED1");
-			if (MiscellaneousVars[179] >= 5 && MiscellaneousVars[179] <= 8) Setfont("UDED2");
-			if (MiscellaneousVars[179] >= 9 && MiscellaneousVars[179] <= 12) Setfont("UDED3");
-			if (MiscellaneousVars[179] >= 13 && MiscellaneousVars[179] <= 16) Setfont("UDED4");
-			if (MiscellaneousVars[179] >= 17 && MiscellaneousVars[179] <= 20) Setfont("UDED5");
-			HudmessageBold(s:"A"; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 1.0, 1.0);
-			SetHudSize(0,0,0);
-			SetFont("DVDSSMLFONT");
+			// "YOU DIED!" msg [HudMessage id 2] :V
+			if (MiscellaneousVars[12] >= 4)
+			{
+				MiscellaneousVars[179] += 1;
+				if (MiscellaneousVars[179] >= 20) MiscellaneousVars[179] = 1;
+				SetHudSize(1280, 960, 0);
+				if (MiscellaneousVars[179] >= 1 && MiscellaneousVars[179] <= 4) Setfont("UDED1");
+				if (MiscellaneousVars[179] >= 5 && MiscellaneousVars[179] <= 8) Setfont("UDED2");
+				if (MiscellaneousVars[179] >= 9 && MiscellaneousVars[179] <= 12) Setfont("UDED3");
+				if (MiscellaneousVars[179] >= 13 && MiscellaneousVars[179] <= 16) Setfont("UDED4");
+				if (MiscellaneousVars[179] >= 17 && MiscellaneousVars[179] <= 20) Setfont("UDED5");
+				HudmessageBold(s:"A"; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 1.0, 1.0);
+				SetHudSize(0,0,0);
+				SetFont("DVDSSMLFONT");
+			}
+			else
+			{
+				HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
+				MiscellaneousVars[179] = 0;
+			}
+			
+			// Fading Death Heart Beats, if not gibbed
+			if (GetActorProperty(Player1TID,APROP_Health) > DY1)
+			{
+				SetActivator(Player1TID); // Set to Player's ID
+				if (MiscellaneousVars[12] == 18) localambientsound("heartb2", 120); // +20
+				if (MiscellaneousVars[12] == 20) localambientsound("heartb2", 120); // +20
+				
+				if (MiscellaneousVars[12] == 42) localambientsound("heartb2", 103); // +22
+				if (MiscellaneousVars[12] == 44) localambientsound("heartb2", 103); // +22
+				
+				if (MiscellaneousVars[12] == 68) localambientsound("heartb2", 86); // +26
+				if (MiscellaneousVars[12] == 70) localambientsound("heartb2", 86); // +26
+				
+				if (MiscellaneousVars[12] == 100) localambientsound("heartb2", 69); // +32
+				if (MiscellaneousVars[12] == 102) localambientsound("heartb2", 69); // +32
+				
+				if (MiscellaneousVars[12] == 140) localambientsound("heartb2", 52); // +40
+				if (MiscellaneousVars[12] == 142) localambientsound("heartb2", 52); // +40
+				
+				if (MiscellaneousVars[12] == 188) localambientsound("heartb2", 35); // +62
+				if (MiscellaneousVars[12] == 190) localambientsound("heartb2", 35); // +50
+				
+				if (MiscellaneousVars[12] == 250) localambientsound("heartb2", 18); // +62
+				if (MiscellaneousVars[12] == 252) localambientsound("heartb2", 18); // +62
+				SetActivator(0); // Set back to worldly activator
+			}
+			
+			if (GetActorProperty(Player1TID,APROP_Health) > DY1) // Not Gibbed
+			{
+				if (MiscellaneousVars[12] == 115)
+				{
+					if (CheckActorInventory(Player1TID,"PlayerDeathFadeOut") < 1) GiveActorInventory(Player1TID,"PlayerDeathFadeOut", 1);
+					SetActivator(Player1TID); // Set to Player's ID
+					FadeRange(16, 0, 0, 0.0, 16, 0, 0, 1.0, 4.0);
+					SetActivator(0); // Set back to worldly activator
+				}
+				if (MiscellaneousVars[12] == 260) FadeRange(16, 0, 0, 1.0, 255, 0, 0, 1.0, 1.0); // Intended to show a "Game Over" Euqse Screen
+			}
+			else // Gibbed
+			{
+				if (MiscellaneousVars[12] == 4)
+				{
+					if (CheckActorInventory(Player1TID,"PlayerDeathFadeOut") < 1) GiveActorInventory(Player1TID,"PlayerDeathFadeOut", 1);
+					SetActivator(Player1TID); // Set to Player's ID
+					FadeRange(0, 0, 0, 0.0, 255, 0, 0, 1.0, 0.8);
+					SetActivator(0); // Set back to worldly activator
+				}
+			}
 		}
 		else
 		{
+			if (MiscellaneousVars[12] > 114)
+			{
+				SetActivator(Player1TID); // Set to Player's ID to check for weapons from this actor.
+				FadeRange(0, 0, 0, 0.0, 0, 0, 0, 0.0, 0.0);
+				SetActivator(0); // Set back to worldly activator at the end of weapon checking.
+			}
 			HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
-			MiscellaneousVars[179] = 0;
-		}
-		
-		// Fading Death Heart Beats, if not gibbed
-		if (GetActorProperty(Player1TID,APROP_Health) > DY1)
-		{
-			SetActivator(Player1TID); // Set to Player's ID
-			if (MiscellaneousVars[12] == 18) localambientsound("heartb2", 120); // +20
-			if (MiscellaneousVars[12] == 20) localambientsound("heartb2", 120); // +20
-			
-			if (MiscellaneousVars[12] == 42) localambientsound("heartb2", 103); // +22
-			if (MiscellaneousVars[12] == 44) localambientsound("heartb2", 103); // +22
-			
-			if (MiscellaneousVars[12] == 68) localambientsound("heartb2", 86); // +26
-			if (MiscellaneousVars[12] == 70) localambientsound("heartb2", 86); // +26
-			
-			if (MiscellaneousVars[12] == 100) localambientsound("heartb2", 69); // +32
-			if (MiscellaneousVars[12] == 102) localambientsound("heartb2", 69); // +32
-			
-			if (MiscellaneousVars[12] == 140) localambientsound("heartb2", 52); // +40
-			if (MiscellaneousVars[12] == 142) localambientsound("heartb2", 52); // +40
-			
-			if (MiscellaneousVars[12] == 188) localambientsound("heartb2", 35); // +62
-			if (MiscellaneousVars[12] == 190) localambientsound("heartb2", 35); // +50
-			
-			if (MiscellaneousVars[12] == 250) localambientsound("heartb2", 18); // +62
-			if (MiscellaneousVars[12] == 252) localambientsound("heartb2", 18); // +62
-			SetActivator(0); // Set back to worldly activator
-		}
-		
-		if (GetActorProperty(Player1TID,APROP_Health) > DY1) // Not Gibbed
-		{
-			if (MiscellaneousVars[12] == 115)
+			if (CheckActorInventory(Player1TID,"PlayerDeathFadeOut") > 0) TakeActorInventory(Player1TID,"PlayerDeathFadeOut", 1);
+			if (deathmusic != 0)
 			{
-				if (CheckActorInventory(Player1TID,"PlayerDeathFadeOut") < 1) GiveActorInventory(Player1TID,"PlayerDeathFadeOut", 1);
-				SetActivator(Player1TID); // Set to Player's ID
-				FadeRange(16, 0, 0, 0.0, 16, 0, 0, 1.0, 4.0);
-				SetActivator(0); // Set back to worldly activator
+				if (MiscellaneousVars[12] > 0) SetMusic("*", 0);
 			}
-			if (MiscellaneousVars[12] == 260) FadeRange(16, 0, 0, 1.0, 255, 0, 0, 1.0, 1.0); // Intended to show a "Game Over" Euqse Screen
+			MiscellaneousVars[12] = 0;
 		}
-		else // Gibbed
-		{
-			if (MiscellaneousVars[12] == 4)
-			{
-				if (CheckActorInventory(Player1TID,"PlayerDeathFadeOut") < 1) GiveActorInventory(Player1TID,"PlayerDeathFadeOut", 1);
-				SetActivator(Player1TID); // Set to Player's ID
-				FadeRange(0, 0, 0, 0.0, 255, 0, 0, 1.0, 0.8);
-				SetActivator(0); // Set back to worldly activator
-			}
-		}
-	}
-	else
-	{
-		if (MiscellaneousVars[12] > 114)
-		{
-			SetActivator(Player1TID); // Set to Player's ID to check for weapons from this actor.
-			FadeRange(0, 0, 0, 0.0, 0, 0, 0, 0.0, 0.0);
-			SetActivator(0); // Set back to worldly activator at the end of weapon checking.
-		}
-		HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
-		if (CheckActorInventory(Player1TID,"PlayerDeathFadeOut") > 0) TakeActorInventory(Player1TID,"PlayerDeathFadeOut", 1);
-		if (deathmusic != 0)
-		{
-			if (MiscellaneousVars[12] > 0) SetMusic("*", 0);
-		}
-		MiscellaneousVars[12] = 0;
 	}
 	
 	//*******************
@@ -29820,157 +29756,160 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	
 	
 	//******************************************************
-	//*Hellcore Cooldown Process [25 tics = 1% of cooldown]*
+	//*Hellcore Cooldown Process [25 tics = 1% of cooldown]* // To Be Transplanted to "PlayerStatItem" (ZScript)
 	//******************************************************
-	if (HellcoreOverheatLevel > 0 && GetActorProperty(Player1TID,APROP_HEALTH) > 0)
+	if (playactor)
 	{
-		HellcoreCoolRatio = 400; // 25 tics = 10000 units [or 1% cooldown], so 1 tic = 400 units (or 0.04% cooldown)
-		if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Base]: ",d:HellcoreCoolRatio);
-		
-		// Dove Ribbon quickly cools down Hellcore meter.
-		if (CheckActorInventory(Player1TID,"DoveRibbon") > 0)
+		if (HellcoreOverheatLevel > 0 && GetActorProperty(Player1TID,APROP_HEALTH) > 0)
 		{
-			HellcoreCoolRatio *= 3;
-			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [DoveRibbon]: ",d:HellcoreCoolRatio);
+			HellcoreCoolRatio = 400; // 25 tics = 10000 units [or 1% cooldown], so 1 tic = 400 units (or 0.04% cooldown)
+			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Base]: ",d:HellcoreCoolRatio);
+			
+			// Dove Ribbon quickly cools down Hellcore meter.
+			if (CheckActorInventory(Player1TID,"DoveRibbon") > 0)
+			{
+				HellcoreCoolRatio *= 3;
+				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [DoveRibbon]: ",d:HellcoreCoolRatio);
+			}
+			
+			// Divine Avatar speeds up cooldown by 50%
+			if (PowerupTimer[7] > 0) 
+			{
+				HellcoreCoolRatio = HellcoreCoolRatio * 3 / 2;
+				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [DivineAvatar]: ",d:HellcoreCoolRatio);
+			}
+			
+			// Fatigue = 0.2x cooldown speed
+			if (PowerupTimer[18] > 0)
+			{
+				HellcoreCoolRatio /= 5;
+				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Fatigue]: ",d:HellcoreCoolRatio);
+			}
+			
+			// Sleep VERY quickly cools down Hellcore meter.
+			if (PowerupTimer[20] > 0) 
+			{
+				HellcoreCoolRatio *= 5; 
+				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Sleep]: ",d:HellcoreCoolRatio);
+			}
+			
+			// "Cleared of Mind: Perk
+			if (MiscellaneousVars[10055] > 0)
+			{
+				PerkFactor = ((MiscellaneousVars[10055] * 6) + (MiscellaneousVars[10056] * 15)) + 80;
+				HellcoreCoolRatio = HellcoreCoolRatio * PerkFactor / 80;
+				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [CoM-Perk]: ",d:HellcoreCoolRatio);
+			}
+			
+			// Check Hellcore Cooldown Multiplier in Options
+			HellcoreCoolRatio = (HellcoreCoolRatio * GetCVar("dvds_heatcoolmultiplier")) / 100;
+			if (HellcoreCoolRatio < 1) HellcoreCoolRatio = 1;
+			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [HCC-Multiplier]: ",d:HellcoreCoolRatio);
+			
+			if (CheckActorInventory(Player1TID,"IsHaSatanNow") > 0)
+			{
+				HellcoreCoolRatio = HellcoreCoolRatio * 16;
+				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [HS-Check]: ",d:HellcoreCoolRatio);
+			}
+			
+			if (DVDSSpecialArrayValue[3] > 0) // Playing Unloved [2x Cooldown Speed]
+			{
+				HellcoreCoolRatio = HellcoreCoolRatio * 2;
+				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Unloved-Check]: ",d:HellcoreCoolRatio);
+			}
+			
+			HellcoreOverheatLevel -= HellcoreCoolRatio;
+			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Final]: ",d:HellcoreCoolRatio);
+		}
+		if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+		
+		// Converts Hellcore Timer to % format for HUD display
+		HellcorePercentFull = HellcoreOverheatLevel / 100;
+		if (HellcorePercentFull < 0) HellcorePercentFull = 0;
+		if (HellcorePercentFull > 1000) HellcorePercentFull = 1000;
+		
+		H1 = 0;
+		SetActivator(Player1TID); // Set to Player's ID to check for weapons from this actor.
+		if (CheckWeapon("ImpClaw") == 1 || CheckWeapon("DarkImpClaw") == 1 ||
+				CheckWeapon("CacodemonEye") == 1 || CheckWeapon("CacolanternEye") == 1 || CheckWeapon("AbaddonEye") == 1) H1 += 1; 
+		if (CheckWeapon("KnightFist") == 1 || CheckWeapon("BaronFist") == 1 || CheckWeapon("BelphegorFist") == 1 ||
+				CheckWeapon("BruiserFist") == 1 || CheckWeapon("ArchonFist") == 1 || CheckWeapon("PyroFist") == 1) H1 += 1; 
+		if (CheckWeapon("IncarnateSkull") == 1 || CheckWeapon("ArchvileHand") == 1 || 
+				CheckWeapon("DiabloistHand") == 1 || CheckWeapon("BalrogFist") == 1) H1 += 1; 
+		if (H1 > 0) { GiveActorInventory(Player1TID,"FloraUsingHellcoreWeapon", 1); } else { TakeActorInventory(Player1TID,"FloraUsingHellcoreWeapon", 1); }
+		SetActivator(0); // Set back to worldly activator at the end of weapon checking.
+		
+		
+		if (CharacterClass == 2) 
+		{
+			if (HellcoreOverheatLevel < 250000) 
+			{
+				GiveActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+			}
+			if (HellcoreOverheatLevel > 249999 && HellcoreOverheatLevel < 500000) 
+			{
+				TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+				GiveActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+			}
+			if (HellcoreOverheatLevel > 499999 && HellcoreOverheatLevel < 750000) 
+			{
+				TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+				GiveActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+			}
+			if (HellcoreOverheatLevel > 749999 && HellcoreOverheatLevel < 1000000) 
+			{
+				TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+				GiveActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+			}
+			if (HellcoreOverheatLevel > 999999 && HellcoreOverheatLevel < 2500000) 
+			{
+				TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+				GiveActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+			}
+			if (HellcoreOverheatLevel > 2499999) 
+			{
+				TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
+				TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
+				GiveActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
+			}
 		}
 		
-		// Divine Avatar speeds up cooldown by 50%
-		if (PowerupTimer[7] > 0) 
-		{
-			HellcoreCoolRatio = HellcoreCoolRatio * 3 / 2;
-			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [DivineAvatar]: ",d:HellcoreCoolRatio);
-		}
-		
-		// Fatigue = 0.2x cooldown speed
-		if (PowerupTimer[18] > 0)
-		{
-			HellcoreCoolRatio /= 5;
-			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Fatigue]: ",d:HellcoreCoolRatio);
-		}
-		
-		// Sleep VERY quickly cools down Hellcore meter.
-		if (PowerupTimer[20] > 0) 
-		{
-			HellcoreCoolRatio *= 5; 
-			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Sleep]: ",d:HellcoreCoolRatio);
-		}
-		
-		// "Cleared of Mind: Perk
-		if (MiscellaneousVars[10055] > 0)
-		{
-			PerkFactor = ((MiscellaneousVars[10055] * 6) + (MiscellaneousVars[10056] * 15)) + 80;
-			HellcoreCoolRatio = HellcoreCoolRatio * PerkFactor / 80;
-			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [CoM-Perk]: ",d:HellcoreCoolRatio);
-		}
-		
-		// Check Hellcore Cooldown Multiplier in Options
-		HellcoreCoolRatio = (HellcoreCoolRatio * GetCVar("dvds_heatcoolmultiplier")) / 100;
-		if (HellcoreCoolRatio < 1) HellcoreCoolRatio = 1;
-		if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [HCC-Multiplier]: ",d:HellcoreCoolRatio);
-		
-		if (CheckActorInventory(Player1TID,"IsHaSatanNow") > 0)
-		{
-			HellcoreCoolRatio = HellcoreCoolRatio * 16;
-			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [HS-Check]: ",d:HellcoreCoolRatio);
-		}
-		
-		if (DVDSSpecialArrayValue[3] > 0) // Playing Unloved [2x Cooldown Speed]
-		{
-			HellcoreCoolRatio = HellcoreCoolRatio * 2;
-			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Unloved-Check]: ",d:HellcoreCoolRatio);
-		}
-		
-		HellcoreOverheatLevel -= HellcoreCoolRatio;
-		if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Final]: ",d:HellcoreCoolRatio);
+		// Melee Weapon Inv Check
+		H1 = 0;
+		SetActivator(Player1TID); // Set to Player's ID to check for weapons from this actor.
+		if (CheckWeapon("Fist") == 1 || CheckWeapon("FistDeggaris") == 1 || 
+				CheckWeapon("FistIllucia" || CheckWeapon("FistFlora") == 1) == 1) H1 += 1;
+		if (CheckWeapon("SauronGauntlets") == 1 || CheckWeapon("SauronGauntletsIllucia") == 1 || 
+				CheckWeapon("SauronGauntletsFlora") == 1 || CheckWeapon("SauronGauntletsAilish") == 1 || 
+				CheckWeapon("SauronGauntletsPetra") == 1 || CheckWeapon("SceptreOfEmpyrea") == 1) H1 += 1; 
+		if (CheckWeapon("Chainsaw") == 1 || CheckWeapon("Chainsaw2") == 1 || CheckWeapon("DoubleBladedChainsaw") == 1) H1 += 1; 
+		if (H1 > 0) { GiveActorInventory(Player1TID,"UsingMeleeWeapon", 1); } else { TakeActorInventory(Player1TID,"UsingMeleeWeapon", 1); }
+		SetActivator(0); // Set back to worldly activator at the end of weapon checking.
 	}
-	if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
-	
-	// Converts Hellcore Timer to % format for HUD display
-	HellcorePercentFull = HellcoreOverheatLevel / 100;
-	if (HellcorePercentFull < 0) HellcorePercentFull = 0;
-	if (HellcorePercentFull > 1000) HellcorePercentFull = 1000;
-	
-	H1 = 0;
-	SetActivator(Player1TID); // Set to Player's ID to check for weapons from this actor.
-	if (CheckWeapon("ImpClaw") == 1 || CheckWeapon("DarkImpClaw") == 1 ||
-			CheckWeapon("CacodemonEye") == 1 || CheckWeapon("CacolanternEye") == 1 || CheckWeapon("AbaddonEye") == 1) H1 += 1; 
-	if (CheckWeapon("KnightFist") == 1 || CheckWeapon("BaronFist") == 1 || CheckWeapon("BelphegorFist") == 1 ||
-			CheckWeapon("BruiserFist") == 1 || CheckWeapon("ArchonFist") == 1 || CheckWeapon("PyroFist") == 1) H1 += 1; 
-	if (CheckWeapon("IncarnateSkull") == 1 || CheckWeapon("ArchvileHand") == 1 || 
-			CheckWeapon("DiabloistHand") == 1 || CheckWeapon("BalrogFist") == 1) H1 += 1; 
-	if (H1 > 0) { GiveActorInventory(Player1TID,"FloraUsingHellcoreWeapon", 1); } else { TakeActorInventory(Player1TID,"FloraUsingHellcoreWeapon", 1); }
-	SetActivator(0); // Set back to worldly activator at the end of weapon checking.
-	
-	
-	if (CharacterClass == 2) 
-	{
-		if (HellcoreOverheatLevel < 250000) 
-		{
-			GiveActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-		}
-		if (HellcoreOverheatLevel > 249999 && HellcoreOverheatLevel < 500000) 
-		{
-			TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-			GiveActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-		}
-		if (HellcoreOverheatLevel > 499999 && HellcoreOverheatLevel < 750000) 
-		{
-			TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-			GiveActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-		}
-		if (HellcoreOverheatLevel > 749999 && HellcoreOverheatLevel < 1000000) 
-		{
-			TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-			GiveActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-		}
-		if (HellcoreOverheatLevel > 999999 && HellcoreOverheatLevel < 2500000) 
-		{
-			TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-			GiveActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-		}
-		if (HellcoreOverheatLevel > 2499999) 
-		{
-			TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-			TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-			GiveActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-		}
-	}
-	
-	// Melee Weapon Inv Check
-	H1 = 0;
-	SetActivator(Player1TID); // Set to Player's ID to check for weapons from this actor.
-	if (CheckWeapon("Fist") == 1 || CheckWeapon("FistDeggaris") == 1 || 
-			CheckWeapon("FistIllucia" || CheckWeapon("FistFlora") == 1) == 1) H1 += 1;
-	if (CheckWeapon("SauronGauntlets") == 1 || CheckWeapon("SauronGauntletsIllucia") == 1 || 
-			CheckWeapon("SauronGauntletsFlora") == 1 || CheckWeapon("SauronGauntletsAilish") == 1 || 
-			CheckWeapon("SauronGauntletsPetra") == 1 || CheckWeapon("SceptreOfEmpyrea") == 1) H1 += 1; 
-	if (CheckWeapon("Chainsaw") == 1 || CheckWeapon("Chainsaw2") == 1 || CheckWeapon("DoubleBladedChainsaw") == 1) H1 += 1; 
-	if (H1 > 0) { GiveActorInventory(Player1TID,"UsingMeleeWeapon", 1); } else { TakeActorInventory(Player1TID,"UsingMeleeWeapon", 1); }
-	SetActivator(0); // Set back to worldly activator at the end of weapon checking.
 	
 	
 	
@@ -30052,7 +29991,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	
 	
 	//*************************************
-	//*Inventory Items Check [death-exits]*
+	//*Inventory Items Check [death-exits]* // To Possibly Be Transplanted to "PlayerStatItem" (ZScript)
 	//*************************************
 	if (MiscellaneousVars[149] != 1) // If the check is not on, accumulate the ArmorBits as per the norm.
 	{
@@ -30115,10 +30054,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		}
 	}
 	
-	
-	
 	//*****************************
-	//*Weapons Check [death-exits]*
+	//*Weapons Check [death-exits]* // To Possibly Be Transplanted to "PlayerStatItem" (ZScript)
 	//*****************************
 	int WeaponBits = 0;
 	if (MiscellaneousVars[149] != 1) // If the check is not on, acculmate the ArmorBits as per the norm.
@@ -30264,7 +30201,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	}
 	
 	//***************************
-	//*Armor Check [death-exits]*
+	//*Armor Check [death-exits]* // To Possibly Be Transplanted to "PlayerStatItem" (ZScript)
 	//***************************
 	ArmorBits = 0;
 	if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9)
@@ -30295,15 +30232,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		}
 	}
 	
-	//**********************
-	//*Perk BitField Checks*
-	//**********************
-	int PerkBitfield = 0;
-	
 	//***************************************************************************
 	//***************************************************************************
 	//************* Armor Stuff for DVII-DS's armor items :P ********************
-	//** Note: ONLY FLORA [(CharacterClass == 2)] CAN USE THESE ITEMS LEGALLY. **
+	//** Note: ONLY FLORA [(CharacterClass == 2)] CAN USE THESE ITEMS LEGALLY. **  // To be Transplanted to "PlayerStatItem" (ZScript)
 	//***************************************************************************
 	//***************************************************************************
 	ArmorBits = 0;
@@ -30405,19 +30337,14 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	}
 	
 	
-	//****************************************************************************************************************************************************
-	//*Evasion Rate (it actually sets the character's damagefactor to 0.0% to null all damage and makes them all but invulnerable to simulate the effect)*
-	//****************************************************************************************************************************************************
+	//*******************************
+	//*Evasion Rate Calc Wuz Here :V*
+	//*******************************
 	// For the Status Bar (Only shows an int value, not a floating point amount)
 	EvadeWhole = MiscellaneousVars[23] / 100;
 	
-	//*****************************
-	//**End DVII-DS Armor Testing**
-	//*****************************
-	
-	
 	//*********************************
-	//*Check Sauron Equipment Directly*
+	//*Check Sauron Equipment Directly* // To be Transplanted to "PlayerStatItem" (ZScript)
 	//*********************************
 	if (CharacterClass == 0) // Deggaris's Gauntlets
 	{
@@ -30475,7 +30402,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		TakeActorInventory(Player1TID,"RingShadow", 1);
 	}
 	
-	// Infinite Ammo Chances
+	//***********************
+	//*Infinite Ammo Chances* // To be Transplanted to "PlayerStatItem" (ZScript)
+	//***********************
 	int infammoreqremaining;
 	int infammoneeded = 0;
 	int infammoneeded2 = 0;
@@ -30546,7 +30475,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		}
 	}
 	
-	// DQ-Style Seed System [DROPPED Versions only, naturally added Seeds/etc do not get despawned via this system]
+	//**************************************************************************************************************
+	//*DQ-Style Seed System [DROPPED Versions only, naturally added Seeds/etc do not get despawned via this system]*
+	//**************************************************************************************************************
 	// "MiscellaneousVars[29]" is for the Seed limit amount [to be used in more than one script]
 	if (TrueGameSkill <= SKILL_VERY_EASY) MiscellaneousVars[29] = 128;
 	if (TrueGameSkill == SKILL_EASY) MiscellaneousVars[29] = 120;
@@ -30584,23 +30515,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	if (ModType == 0) MiscellaneousVars[26] = MiscellaneousVars[26] * 4; // 4x the usual limits on Classic Doom 1/2 / Heretic / Hexen / Strife
 	
 	
-	if (CheckActorInventory(Player1TID,"PowerIronFeet") > 0)
-	{
-		if (CheckActorInventory(Player1TID,"IronFeetNoPoison") == 0) GiveActorInventory(Player1TID,"IronFeetNoPoison",1);
-		if (CheckActorInventory(Player1TID,"MaskNoFire") > 0) TakeActorInventory(Player1TID,"MaskNoFire",0x7FFFFFFF);
-	}
-	else if (CheckActorInventory(Player1TID,"PowerMask") > 0)
-	{
-		if (CheckActorInventory(Player1TID,"IronFeetNoPoison") == 0) GiveActorInventory(Player1TID,"IronFeetNoPoison",1);
-		if (CheckActorInventory(Player1TID,"MaskNoFire") == 0) GiveActorInventory(Player1TID,"MaskNoFire",1);
-	}
-	else
-	{
-		if (CheckActorInventory(Player1TID,"IronFeetNoPoison") > 0) TakeActorInventory(Player1TID,"IronFeetNoPoison",0x7FFFFFFF);
-		if (CheckActorInventory(Player1TID,"MaskNoFire") > 0) TakeActorInventory(Player1TID,"MaskNoFire",0x7FFFFFFF);
-	}
-	
-	
 	//*********************
 	//*Check Tension Level*
 	//*********************
@@ -30617,10 +30531,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	// [193] Tension Aura Appearance Frame
 	// [250] Tension Duration Timer
 	// [251] Tension OverCharge Timer
-	str TensionPlaceholderItem;
-	str TensionAttackItem;
-	str TensionDefenseItem;
-	
 	int TensionChargeFailRate;
 	int TensionChargeTimeMax;
 	int TensionStaminaPerTic;
@@ -30630,251 +30540,385 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	int randompulseinterval4;
 	int pulsevolume;
 	int maxpulseinterval;
-	
-	if (MiscellaneousVars[181] == 0)  // 0 to 5 Tension [4 Seconds, 20% Total Stamina Use, 0% Fail Rate]
+	if (playactor)
 	{
-		TensionChargeFailRate = 0;
-		TensionChargeTimeMax = 14000;
-		TensionStaminaPerTic = 2000;
-		MiscellaneousVars[262] = 99999999;
-		MiscellaneousVars[261] = 99999999;
-		MiscellaneousVars[250] = 0;
-		MiscellaneousVars[251] = 0;
-	}
-	
-	if (MiscellaneousVars[181] == 1)  // 5 to 20 Tension [4.25~ Seconds, 22.5% Total Stamina Use, 2.5% Fail Rate]
-	{
-		TensionChargeFailRate = 25;
-		TensionChargeTimeMax = 14880;
-		TensionStaminaPerTic = 2250;
-		MiscellaneousVars[262] = 21000; // 600 Seconds [10 minutes]
-		MiscellaneousVars[261] = 130; // 3.71 seconds
-	}
-	
-	if (MiscellaneousVars[181] == 2)  // 20 to 50 Tension [4.5~ Seconds, 25% Total Stamina Use, 10% Fail Rate]
-	{
-		TensionChargeFailRate = 100;
-		TensionChargeTimeMax = 15750;
-		TensionStaminaPerTic = 2500;
-		MiscellaneousVars[262] = 15750; // 450 Seconds [7.5 minutes]
-		MiscellaneousVars[261] = 110; // 3.14 seconds
-	}
-	
-	if (MiscellaneousVars[181] == 3)  // 50 to 100 Tension [5 Seconds, 30% Total Stamina Use, 50% Fail Rate]
-	{
-		TensionChargeFailRate = 500;
-		TensionChargeTimeMax = 17500;
-		TensionStaminaPerTic = 3000;
-		MiscellaneousVars[262] = 10500; // 300 Seconds [5 minutes]
-		MiscellaneousVars[261] = 90; // 2.57 seconds
-	}
-	
-	if (MiscellaneousVars[181] == 4)  // 100 to 250 Tension [5.5 Seconds, 35% Total Stamina Use, 70% Fail Rate]
-	{
-		TensionChargeFailRate = 700;
-		TensionChargeTimeMax = 19250;
-		TensionStaminaPerTic = 3500;
-		MiscellaneousVars[262] = 5250; // 150 Seconds [2.5 minutes]
-		MiscellaneousVars[261] = 70; // 2 seconds
-	}
-	
-	if (MiscellaneousVars[181] == 5)  // 250 to 500 Tension [6 Seconds, 40% Total Stamina Use, 85% Fail Rate]
-	{
-		TensionChargeFailRate = 850;
-		TensionChargeTimeMax = 21000;
-		TensionStaminaPerTic = 4000;
-		MiscellaneousVars[262] = 2100; // 60 Seconds
-		MiscellaneousVars[261] = 60; // 1.71 seconds
-	}
-	
-	if (MiscellaneousVars[181] == 6)  // 500 to 1000 Tension [7.5 Seconds, 50% Total Stamina Use, 92.5% Fail Rate]
-	{
-		TensionChargeFailRate = 950;
-		TensionChargeTimeMax = 26250;
-		TensionStaminaPerTic = 5000;
-		MiscellaneousVars[262] = 1575; // 45 Seconds
-		MiscellaneousVars[261] = 50; // 1.42 seconds
-	}
-	if (MiscellaneousVars[181] == 7)
-	{
-		TensionChargeFailRate = 1000;
-		TensionChargeTimeMax = 26250;
-		TensionStaminaPerTic = 5000;
-		MiscellaneousVars[262] = 1050; // 30 Seconds
-		MiscellaneousVars[261] = 40; // 1.14 seconds
-	}
-	
-	MiscellaneousVars[262] *= 20;
-	MiscellaneousVars[261] *= 20;
-	
-	if (PowerupTimer[7] > 0)
-	{
-		MiscellaneousVars[262] *= 4;
-		MiscellaneousVars[261] *= 4;
-	}
-	
-	TensionStaminaPerTic = TensionStaminaPerTic / (TensionChargeTimeMax / 190);
-	// Check Tension Speed Option [also affects Stamina]
-	TensionStaminaPerTic = TensionStaminaPerTic * MiscellaneousVars[193] / 4;
-	// Falcon Knife Earrings [-10% Consumption]
-	if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) TensionStaminaPerTic = TensionStaminaPerTic * 9 / 10;
-	
-	if (CheckActorInventory(Player1TID,"PowerStrength") > 0) TensionChargeFailRate -= 125; // -12.5% Fail Rate When Berserked
-	if (PowerupTimer[7] > 0) TensionChargeFailRate -= 250; // -25% Fail Rate When In Divine Avatar
-	if (PowerupTimer[129] > 0) TensionChargeFailRate = TensionChargeFailRate / 2; // 0.5x Fail Rate When In GoE
-	
-	int TensionChargeFailRatio = GetCVar("dvds_tension_failrateratio");
-	if (TensionChargeFailRatio < 0) TensionChargeFailRatio = 0;
-	if (TensionChargeFailRatio > 200) TensionChargeFailRatio = 200;
-	
-	TensionChargeFailRate = TensionChargeFailRate * TensionChargeFailRatio / 100;
-	PerkFactor = ((MiscellaneousVars[10011] * 125) + (MiscellaneousVars[10012] * random(312,313))) + 10000;
-	TensionChargeFailRate = TensionChargeFailRate * PerkFactor / 10000;
-	if (powertripmode == 1) TensionChargeFailRate = TensionChargeFailRate / 5; // Check "Power Trip" mode Cheat
-	if (powertripmode == 2) TensionChargeFailRate = TensionChargeFailRate / 10; // Check "Power Trip" mode Cheat
-	if (TensionChargeFailRate <= 0) TensionChargeFailRate = 0;
-	
-	int TensionChargeAmount;
-	int TensionCoolDownRatio = 200;
-	PerkFactor = ((MiscellaneousVars[10011] * 500) + (MiscellaneousVars[10012] * 1250)) + 10000;
-	TensionCoolDownRatio = TensionCoolDownRatio * PerkFactor / 10000; // "PsycheMore" and "PsycheMore EX" perks.
-	
-	TensionCoolDownRatio = TensionCoolDownRatio * GetCVar("dvds_tension_cooldownmultiplier") / 100;
-	
-	// Kill Combo
-	if (MiscellaneousVars[158] > 1)
-	{
-		if (MiscellaneousVars[158] > 10 && MiscellaneousVars[158] < 21) { TensionCoolDownRatio = (TensionCoolDownRatio * 1010) / 1000; }
-		else if (MiscellaneousVars[158] > 20 && MiscellaneousVars[158] < 36) { TensionCoolDownRatio = (TensionCoolDownRatio * 1030) / 1000; }
-		else if (MiscellaneousVars[158] > 35 && MiscellaneousVars[158] < 61) { TensionCoolDownRatio = (TensionCoolDownRatio * 1060) / 1000; }
-		else if (MiscellaneousVars[158] > 60 && MiscellaneousVars[158] < 101) { TensionCoolDownRatio = (TensionCoolDownRatio * 1100) / 1000; }
-		else if (MiscellaneousVars[158] > 100 && MiscellaneousVars[158] < 201) { TensionCoolDownRatio = (TensionCoolDownRatio * 1200) / 1000; }
-		else if (MiscellaneousVars[158] > 200 && MiscellaneousVars[158] < 501) { TensionCoolDownRatio = (TensionCoolDownRatio * 1500) / 1000; }
-		else if (MiscellaneousVars[158] > 500) { TensionCoolDownRatio = (TensionCoolDownRatio * 1950) / 1000; }
-	}
-	
-	
-	if (MiscellaneousVars[166] <= 0 && MenuSystemVars[0] == 0) MiscellaneousVars[186] -= TensionCoolDownRatio;
-	
-	if (MiscellaneousVars[186] <= 0) { MiscellaneousVars[186] = 0; MiscellaneousVars[188] = MiscellaneousVars[186]; }
-	buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-	if (GetActorProperty(Player1TID,APROP_Health) > 0)
-	{
-		TensionChargeAmount = 0;
-		FreezePlayer = 0;
-		if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
-		if (PowerupTimer[18] > 0 && random(1,20) == 1) FreezePlayer += 1;
-		if (PowerupTimer[20] > 0) FreezePlayer += 1;
-		if (buttons & BT_USE && buttons & BT_SPEED && MiscellaneousVars[186] <= 0 && FreezePlayer == 0)
+		if (MiscellaneousVars[181] == 0)  // 0 to 5 Tension [4 Seconds, 20% Total Stamina Use, 0% Fail Rate]
 		{
-			if (MiscellaneousVars[110002] > 0 && DVDSSpecialArrayValue[0] == 0) // Tension is Enabled & If Player is "Conscious"
+			TensionChargeFailRate = 0;
+			TensionChargeTimeMax = 14000;
+			TensionStaminaPerTic = 2000;
+			MiscellaneousVars[262] = 99999999;
+			MiscellaneousVars[261] = 99999999;
+			MiscellaneousVars[250] = 0;
+			MiscellaneousVars[251] = 0;
+		}
+		
+		if (MiscellaneousVars[181] == 1)  // 5 to 20 Tension [4.25~ Seconds, 22.5% Total Stamina Use, 2.5% Fail Rate]
+		{
+			TensionChargeFailRate = 25;
+			TensionChargeTimeMax = 14880;
+			TensionStaminaPerTic = 2250;
+			MiscellaneousVars[262] = 21000; // 600 Seconds [10 minutes]
+			MiscellaneousVars[261] = 130; // 3.71 seconds
+		}
+		
+		if (MiscellaneousVars[181] == 2)  // 20 to 50 Tension [4.5~ Seconds, 25% Total Stamina Use, 10% Fail Rate]
+		{
+			TensionChargeFailRate = 100;
+			TensionChargeTimeMax = 15750;
+			TensionStaminaPerTic = 2500;
+			MiscellaneousVars[262] = 15750; // 450 Seconds [7.5 minutes]
+			MiscellaneousVars[261] = 110; // 3.14 seconds
+		}
+		
+		if (MiscellaneousVars[181] == 3)  // 50 to 100 Tension [5 Seconds, 30% Total Stamina Use, 50% Fail Rate]
+		{
+			TensionChargeFailRate = 500;
+			TensionChargeTimeMax = 17500;
+			TensionStaminaPerTic = 3000;
+			MiscellaneousVars[262] = 10500; // 300 Seconds [5 minutes]
+			MiscellaneousVars[261] = 90; // 2.57 seconds
+		}
+		
+		if (MiscellaneousVars[181] == 4)  // 100 to 250 Tension [5.5 Seconds, 35% Total Stamina Use, 70% Fail Rate]
+		{
+			TensionChargeFailRate = 700;
+			TensionChargeTimeMax = 19250;
+			TensionStaminaPerTic = 3500;
+			MiscellaneousVars[262] = 5250; // 150 Seconds [2.5 minutes]
+			MiscellaneousVars[261] = 70; // 2 seconds
+		}
+		
+		if (MiscellaneousVars[181] == 5)  // 250 to 500 Tension [6 Seconds, 40% Total Stamina Use, 85% Fail Rate]
+		{
+			TensionChargeFailRate = 850;
+			TensionChargeTimeMax = 21000;
+			TensionStaminaPerTic = 4000;
+			MiscellaneousVars[262] = 2100; // 60 Seconds
+			MiscellaneousVars[261] = 60; // 1.71 seconds
+		}
+		
+		if (MiscellaneousVars[181] == 6)  // 500 to 1000 Tension [7.5 Seconds, 50% Total Stamina Use, 92.5% Fail Rate]
+		{
+			TensionChargeFailRate = 950;
+			TensionChargeTimeMax = 26250;
+			TensionStaminaPerTic = 5000;
+			MiscellaneousVars[262] = 1575; // 45 Seconds
+			MiscellaneousVars[261] = 50; // 1.42 seconds
+		}
+		if (MiscellaneousVars[181] == 7)
+		{
+			TensionChargeFailRate = 1000;
+			TensionChargeTimeMax = 26250;
+			TensionStaminaPerTic = 5000;
+			MiscellaneousVars[262] = 1050; // 30 Seconds
+			MiscellaneousVars[261] = 40; // 1.14 seconds
+		}
+		
+		MiscellaneousVars[262] *= 20;
+		MiscellaneousVars[261] *= 20;
+		
+		if (PowerupTimer[7] > 0)
+		{
+			MiscellaneousVars[262] *= 4;
+			MiscellaneousVars[261] *= 4;
+		}
+		
+		TensionStaminaPerTic = TensionStaminaPerTic / (TensionChargeTimeMax / 190);
+		// Check Tension Speed Option [also affects Stamina]
+		TensionStaminaPerTic = TensionStaminaPerTic * MiscellaneousVars[193] / 4;
+		// Falcon Knife Earrings [-10% Consumption]
+		if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) TensionStaminaPerTic = TensionStaminaPerTic * 9 / 10;
+		
+		if (CheckActorInventory(Player1TID,"PowerStrength") > 0) TensionChargeFailRate -= 125; // -12.5% Fail Rate When Berserked
+		if (PowerupTimer[7] > 0) TensionChargeFailRate -= 250; // -25% Fail Rate When In Divine Avatar
+		if (PowerupTimer[129] > 0) TensionChargeFailRate = TensionChargeFailRate / 2; // 0.5x Fail Rate When In GoE
+		
+		int TensionChargeFailRatio = GetCVar("dvds_tension_failrateratio");
+		if (TensionChargeFailRatio < 0) TensionChargeFailRatio = 0;
+		if (TensionChargeFailRatio > 200) TensionChargeFailRatio = 200;
+		
+		TensionChargeFailRate = TensionChargeFailRate * TensionChargeFailRatio / 100;
+		PerkFactor = ((MiscellaneousVars[10011] * 125) + (MiscellaneousVars[10012] * random(312,313))) + 10000;
+		TensionChargeFailRate = TensionChargeFailRate * PerkFactor / 10000;
+		if (powertripmode == 1) TensionChargeFailRate = TensionChargeFailRate / 5; // Check "Power Trip" mode Cheat
+		if (powertripmode == 2) TensionChargeFailRate = TensionChargeFailRate / 10; // Check "Power Trip" mode Cheat
+		if (TensionChargeFailRate <= 0) TensionChargeFailRate = 0;
+		
+		int TensionChargeAmount;
+		int TensionCoolDownRatio = 200;
+		PerkFactor = ((MiscellaneousVars[10011] * 500) + (MiscellaneousVars[10012] * 1250)) + 10000;
+		TensionCoolDownRatio = TensionCoolDownRatio * PerkFactor / 10000; // "PsycheMore" and "PsycheMore EX" perks.
+		
+		TensionCoolDownRatio = TensionCoolDownRatio * GetCVar("dvds_tension_cooldownmultiplier") / 100;
+		
+		// Kill Combo
+		if (MiscellaneousVars[158] > 1)
+		{
+			if (MiscellaneousVars[158] > 10 && MiscellaneousVars[158] < 21) { TensionCoolDownRatio = (TensionCoolDownRatio * 1010) / 1000; }
+			else if (MiscellaneousVars[158] > 20 && MiscellaneousVars[158] < 36) { TensionCoolDownRatio = (TensionCoolDownRatio * 1030) / 1000; }
+			else if (MiscellaneousVars[158] > 35 && MiscellaneousVars[158] < 61) { TensionCoolDownRatio = (TensionCoolDownRatio * 1060) / 1000; }
+			else if (MiscellaneousVars[158] > 60 && MiscellaneousVars[158] < 101) { TensionCoolDownRatio = (TensionCoolDownRatio * 1100) / 1000; }
+			else if (MiscellaneousVars[158] > 100 && MiscellaneousVars[158] < 201) { TensionCoolDownRatio = (TensionCoolDownRatio * 1200) / 1000; }
+			else if (MiscellaneousVars[158] > 200 && MiscellaneousVars[158] < 501) { TensionCoolDownRatio = (TensionCoolDownRatio * 1500) / 1000; }
+			else if (MiscellaneousVars[158] > 500) { TensionCoolDownRatio = (TensionCoolDownRatio * 1950) / 1000; }
+		}
+		
+		
+		if (MiscellaneousVars[166] <= 0 && MenuSystemVars[0] == 0) MiscellaneousVars[186] -= TensionCoolDownRatio;
+		
+		if (MiscellaneousVars[186] <= 0) { MiscellaneousVars[186] = 0; MiscellaneousVars[188] = MiscellaneousVars[186]; }
+		buttons = GetPlayerInput(0, INPUT_BUTTONS); 
+		if (GetActorProperty(Player1TID,APROP_Health) > 0)
+		{
+			TensionChargeAmount = 0;
+			FreezePlayer = 0;
+			if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+			if (PowerupTimer[18] > 0 && random(1,20) == 1) FreezePlayer += 1;
+			if (PowerupTimer[20] > 0) FreezePlayer += 1;
+			if (buttons & BT_USE && buttons & BT_SPEED && MiscellaneousVars[186] <= 0 && FreezePlayer == 0)
 			{
-				MiscellaneousVars[186] = 0;
-				MiscellaneousVars[188] = MiscellaneousVars[186];
-				if (MiscellaneousVars[181] <= 7 && MiscellaneousVars[184] <= 0)
+				if (MiscellaneousVars[110002] > 0 && DVDSSpecialArrayValue[0] == 0) // Tension is Enabled & If Player is "Conscious"
 				{
-					if (MiscellaneousVars[21] >= TensionStaminaPerTic)
+					MiscellaneousVars[186] = 0;
+					MiscellaneousVars[188] = MiscellaneousVars[186];
+					if (MiscellaneousVars[181] <= 7 && MiscellaneousVars[184] <= 0)
 					{
-						if (MiscellaneousVars[181] < 7)
+						if (MiscellaneousVars[21] >= TensionStaminaPerTic)
 						{
-							MiscellaneousVars[189] ++; // Increase Charge-Up Sound Loop Timer
-							if (MiscellaneousVars[189] == 1) // 4
+							if (MiscellaneousVars[181] < 7)
+							{
+								MiscellaneousVars[189]++; // Increase Charge-Up Sound Loop Timer
+								if (MiscellaneousVars[189] == 1) // 4
+								{
+									SetActivator(Player1TID);
+									ActivatorSound("tensioncharge",127);
+									SetActivator(0);
+								}
+								if (MiscellaneousVars[189] >= 63) MiscellaneousVars[189] = 0;
+						
+								if (MiscellaneousVars[185] == 0 && CharacterClass == 2) PlaySound(Player1TID,"FloraChargeTension",CHAN_VOICE,1.0,0,ATTN_NORM);
+								SpawnFixedX = GetActorX(Player1TID);
+								SpawnFixedY = GetActorY(Player1TID);
+								SpawnFixedZ = GetActorZ(Player1TID);
+								SpawnForced("TensionParticleGenerator",SpawnFixedX,SpawnFixedY,SpawnFixedZ+(1*65536),0,0);
+								if (MiscellaneousVars[181] > 3) // "100"+ Tension
+								{
+									if (random(1,100) > 50) SpawnForced("TensionParticleGenerator",SpawnFixedX,SpawnFixedY,SpawnFixedZ+(1*65536),0,0);
+								}
+								if (MiscellaneousVars[181] > 4) // "250"+ Tension
+								{
+									if (random(1,100) > 80) SpawnForced("TensionParticleGenerator",SpawnFixedX,SpawnFixedY,SpawnFixedZ+(1*65536),0,0);
+								}
+								if (MiscellaneousVars[181] > 5) // "500"+ Tension
+								{
+									if (random(1,100) > 86) SpawnForced("TensionParticleGenerator",SpawnFixedX,SpawnFixedY,SpawnFixedZ+(1*65536),0,0);
+								}
+								if (MiscellaneousVars[181] > 6) // "1000"+ Tension
+								{
+									if (random(1,100) > 91) SpawnForced("TensionParticleGenerator",SpawnFixedX,SpawnFixedY,SpawnFixedZ+(1*65536),0,0);
+								}
+							}
+							else MiscellaneousVars[189] = 0;
+					
+							if (MiscellaneousVars[181] == 0) Radius_Quake2(Player1TID,1,4,0,512,"null");
+							if (MiscellaneousVars[181] == 1) Radius_Quake2(Player1TID,2,4,0,512,"null");
+							if (MiscellaneousVars[181] == 2) Radius_Quake2(Player1TID,3,4,0,512,"null");
+							if (MiscellaneousVars[181] == 3) Radius_Quake2(Player1TID,4,4,0,512,"null");
+							if (MiscellaneousVars[181] == 4) Radius_Quake2(Player1TID,5,4,0,512,"null");
+							if (MiscellaneousVars[181] == 5) Radius_Quake2(Player1TID,7,4,0,512,"null");
+							if (MiscellaneousVars[181] == 6) Radius_Quake2(Player1TID,9,4,0,512,"null");
+							if (MiscellaneousVars[181] < 7) MiscellaneousVars[21] -= TensionStaminaPerTic;
+					
+							// 100 = 1 tic
+							TensionChargeAmount = 100;
+					
+							// -37.5% Charge Speed When Fatigued
+							if (PowerupTimer[18] > 0) TensionChargeAmount = TensionChargeAmount * 5 / 8;
+							// -25% Charge Speed When Berserked
+							if (CheckActorInventory(Player1TID,"PowerStrength") > 0) TensionChargeAmount = TensionChargeAmount * 3 / 4;
+							// -12.5% Charge Speed When in Divine Avatar
+							if (PowerupTimer[7] > 0) TensionChargeAmount = TensionChargeAmount * 7 / 8;
+							// +12.5% Charge Speed When Low on Health
+							if (CheckActorInventory(Player1TID,"LowHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1125 / 1000;
+							// +33.4% Charge Speed When Critically Low on Health
+							if (CheckActorInventory(Player1TID,"CriticalHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
+							// +33.4% Charge Speed for Flora
+							if (CharacterClass == 2) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
+							// +50% Charge Speed for Flora when Low on Health
+							if (CharacterClass == 2 && CheckActorInventory(Player1TID,"LowHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1500 / 1000;
+							// +125% Charge Speed for Flora when Critically low on Health
+							if (CharacterClass == 2 && CheckActorInventory(Player1TID,"CriticalHealth") > 0) TensionChargeAmount = TensionChargeAmount * 2250 / 1000;
+							// Check Tension Charge Multiplier Option
+							TensionChargeAmount = TensionChargeAmount * GetCVar("dvds_tension_chargemultiplier") / 100;
+							// Check Tension Speed Option [also affects Stamina]
+							TensionChargeAmount = TensionChargeAmount * MiscellaneousVars[193] / 4;
+							// Check "Power Trip" mode Cheat
+							if (powertripmode == 1) TensionChargeAmount *= 5;
+							if (powertripmode == 2) TensionChargeAmount *= 10;
+					
+							// Kill Combo
+							if (MiscellaneousVars[158] > 1)
+							{
+								if (MiscellaneousVars[158] > 10 && MiscellaneousVars[158] < 21) { TensionChargeAmount = (TensionChargeAmount * 1005) / 1000; }
+								else if (MiscellaneousVars[158] > 20 && MiscellaneousVars[158] < 36) { TensionChargeAmount = (TensionChargeAmount * 1015) / 1000; }
+								else if (MiscellaneousVars[158] > 35 && MiscellaneousVars[158] < 61) { TensionChargeAmount = (TensionChargeAmount * 1030) / 1000; }
+								else if (MiscellaneousVars[158] > 60 && MiscellaneousVars[158] < 101) { TensionChargeAmount = (TensionChargeAmount * 1050) / 1000; }
+								else if (MiscellaneousVars[158] > 100 && MiscellaneousVars[158] < 201) { TensionChargeAmount = (TensionChargeAmount * 1100) / 1000; }
+								else if (MiscellaneousVars[158] > 200 && MiscellaneousVars[158] < 501) { TensionChargeAmount = (TensionChargeAmount * 1250) / 1000; }
+								else if (MiscellaneousVars[158] > 500) { TensionChargeAmount = (TensionChargeAmount * 1475) / 1000; }
+							}
+						
+							// PsycheMore perks
+							PerkFactor = ((MiscellaneousVars[10011] * 750) + (MiscellaneousVars[10012] * 1875)) + 10000;
+							TensionChargeAmount = TensionChargeAmount * PerkFactor / 10000; // "PsycheMore" and "PsycheMore EX" perks.
+							TensionChargeAmount += (MiscellaneousVars[10011] / 2);
+							TensionChargeAmount += MiscellaneousVars[10012];
+					
+							// Kill-Combo Bonus
+							int TensionChargeKillBonus = ((MiscellaneousVars[158] * 3) / 4) + 100;
+							if (MiscellaneousVars[158] > 0) TensionChargeAmount = (TensionChargeAmount * TensionChargeKillBonus) / 100;
+					
+							// Up-Clamp to 1 Tic
+							if (TensionChargeAmount < 1) TensionChargeAmount = 1;
+						}
+						else
+						{
+							if (MiscellaneousVars[189] > 0) MiscellaneousVars[189] = 0;
+					
+							if (MiscellaneousVars[181] == 0) MiscellaneousVars[186] = 3500;
+							else if (MiscellaneousVars[181] == 1) MiscellaneousVars[186] = 3720;
+							else if (MiscellaneousVars[181] == 2) MiscellaneousVars[186] = 3940;
+							else if (MiscellaneousVars[181] == 3) MiscellaneousVars[186] = 4380;
+							else if (MiscellaneousVars[181] == 4) MiscellaneousVars[186] = 4810;
+							else if (MiscellaneousVars[181] == 5) MiscellaneousVars[186] = 5250;
+							else if (MiscellaneousVars[181] == 6) MiscellaneousVars[186] = 6560;
+							MiscellaneousVars[186] = MiscellaneousVars[186] * 3 / 2;
+							MiscellaneousVars[188] = MiscellaneousVars[186];
+					
+							if (MiscellaneousVars[181] < 7)
 							{
 								SetActivator(Player1TID);
-								ActivatorSound("tensioncharge",127);
+								ActivatorSound("tensionfailed",127);
 								SetActivator(0);
 							}
-							if (MiscellaneousVars[189] >= 63) MiscellaneousVars[189] = 0;
 					
-							if (MiscellaneousVars[185] == 0 && CharacterClass == 2) PlaySound(Player1TID,"FloraChargeTension",CHAN_VOICE,1.0,0,ATTN_NORM);
-							SpawnFixedX = GetActorX(Player1TID);
-							SpawnFixedY = GetActorY(Player1TID);
-							SpawnFixedZ = GetActorZ(Player1TID);
-							SpawnForced("TensionParticleGenerator",SpawnFixedX,SpawnFixedY,SpawnFixedZ+(1*65536),0,0);
-							if (MiscellaneousVars[181] > 3) // "100"+ Tension
-							{
-								if (random(1,100) > 50) SpawnForced("TensionParticleGenerator",SpawnFixedX,SpawnFixedY,SpawnFixedZ+(1*65536),0,0);
-							}
-							if (MiscellaneousVars[181] > 4) // "250"+ Tension
-							{
-								if (random(1,100) > 80) SpawnForced("TensionParticleGenerator",SpawnFixedX,SpawnFixedY,SpawnFixedZ+(1*65536),0,0);
-							}
-							if (MiscellaneousVars[181] > 5) // "500"+ Tension
-							{
-								if (random(1,100) > 86) SpawnForced("TensionParticleGenerator",SpawnFixedX,SpawnFixedY,SpawnFixedZ+(1*65536),0,0);
-							}
-							if (MiscellaneousVars[181] > 6) // "1000"+ Tension
-							{
-								if (random(1,100) > 91) SpawnForced("TensionParticleGenerator",SpawnFixedX,SpawnFixedY,SpawnFixedZ+(1*65536),0,0);
-							}
+							MiscellaneousVars[21] = 0;
+							TensionChargeAmount -= 250;
 						}
-						else MiscellaneousVars[189] = 0;
-				
-						if (MiscellaneousVars[181] == 0) Radius_Quake2(Player1TID,1,4,0,512,"null");
-						if (MiscellaneousVars[181] == 1) Radius_Quake2(Player1TID,2,4,0,512,"null");
-						if (MiscellaneousVars[181] == 2) Radius_Quake2(Player1TID,3,4,0,512,"null");
-						if (MiscellaneousVars[181] == 3) Radius_Quake2(Player1TID,4,4,0,512,"null");
-						if (MiscellaneousVars[181] == 4) Radius_Quake2(Player1TID,5,4,0,512,"null");
-						if (MiscellaneousVars[181] == 5) Radius_Quake2(Player1TID,7,4,0,512,"null");
-						if (MiscellaneousVars[181] == 6) Radius_Quake2(Player1TID,9,4,0,512,"null");
-						if (MiscellaneousVars[181] < 7) MiscellaneousVars[21] -= TensionStaminaPerTic;
-				
-						// 100 = 1 tic
-						TensionChargeAmount = 100;
-				
-						// -37.5% Charge Speed When Fatigued
-						if (PowerupTimer[18] > 0) TensionChargeAmount = TensionChargeAmount * 5 / 8;
-						// -25% Charge Speed When Berserked
-						if (CheckActorInventory(Player1TID,"PowerStrength") > 0) TensionChargeAmount = TensionChargeAmount * 3 / 4;
-						// -12.5% Charge Speed When in Divine Avatar
-						if (PowerupTimer[7] > 0) TensionChargeAmount = TensionChargeAmount * 7 / 8;
-						// +12.5% Charge Speed When Low on Health
-						if (CheckActorInventory(Player1TID,"LowHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1125 / 1000;
-						// +33.4% Charge Speed When Critically Low on Health
-						if (CheckActorInventory(Player1TID,"CriticalHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
-						// +33.4% Charge Speed for Flora
-						if (CharacterClass == 2) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
-						// +50% Charge Speed for Flora when Low on Health
-						if (CharacterClass == 2 && CheckActorInventory(Player1TID,"LowHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1500 / 1000;
-						// +125% Charge Speed for Flora when Critically low on Health
-						if (CharacterClass == 2 && CheckActorInventory(Player1TID,"CriticalHealth") > 0) TensionChargeAmount = TensionChargeAmount * 2250 / 1000;
-						// Check Tension Charge Multiplier Option
-						TensionChargeAmount = TensionChargeAmount * GetCVar("dvds_tension_chargemultiplier") / 100;
-						// Check Tension Speed Option [also affects Stamina]
-						TensionChargeAmount = TensionChargeAmount * MiscellaneousVars[193] / 4;
-						// Check "Power Trip" mode Cheat
-						if (powertripmode == 1) TensionChargeAmount *= 5;
-						if (powertripmode == 2) TensionChargeAmount *= 10;
-				
-						// Kill Combo
-						if (MiscellaneousVars[158] > 1)
-						{
-							if (MiscellaneousVars[158] > 10 && MiscellaneousVars[158] < 21) { TensionChargeAmount = (TensionChargeAmount * 1005) / 1000; }
-							else if (MiscellaneousVars[158] > 20 && MiscellaneousVars[158] < 36) { TensionChargeAmount = (TensionChargeAmount * 1015) / 1000; }
-							else if (MiscellaneousVars[158] > 35 && MiscellaneousVars[158] < 61) { TensionChargeAmount = (TensionChargeAmount * 1030) / 1000; }
-							else if (MiscellaneousVars[158] > 60 && MiscellaneousVars[158] < 101) { TensionChargeAmount = (TensionChargeAmount * 1050) / 1000; }
-							else if (MiscellaneousVars[158] > 100 && MiscellaneousVars[158] < 201) { TensionChargeAmount = (TensionChargeAmount * 1100) / 1000; }
-							else if (MiscellaneousVars[158] > 200 && MiscellaneousVars[158] < 501) { TensionChargeAmount = (TensionChargeAmount * 1250) / 1000; }
-							else if (MiscellaneousVars[158] > 500) { TensionChargeAmount = (TensionChargeAmount * 1475) / 1000; }
-						}
-					
-						// PsycheMore perks
-						PerkFactor = ((MiscellaneousVars[10011] * 750) + (MiscellaneousVars[10012] * 1875)) + 10000;
-						TensionChargeAmount = TensionChargeAmount * PerkFactor / 10000; // "PsycheMore" and "PsycheMore EX" perks.
-						TensionChargeAmount += (MiscellaneousVars[10011] / 2);
-						TensionChargeAmount += MiscellaneousVars[10012];
-				
-						// Kill-Combo Bonus
-						int TensionChargeKillBonus = ((MiscellaneousVars[158] * 3) / 4) + 100;
-						if (MiscellaneousVars[158] > 0) TensionChargeAmount = (TensionChargeAmount * TensionChargeKillBonus) / 100;
-				
-						// Up-Clamp to 1 Tic
-						if (TensionChargeAmount < 1) TensionChargeAmount = 1;
 					}
-					else
-					{
-						if (MiscellaneousVars[189] > 0) MiscellaneousVars[189] = 0;
+				}
+			}
+			else
+			{
+				if (MiscellaneousVars[189] > 0) MiscellaneousVars[189] = 0;
+				TensionChargeAmount -= 250;
+			}
+			
+			// Movement to decrease Tension charge.
+			C3 = 0;
+			FreezePlayer = 0;
+			if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+			if (PowerupTimer[20] > 0) FreezePlayer += 1;
+			if (FreezePlayer == 0)
+			{
+				buttons = GetPlayerInput(0, INPUT_BUTTONS);
+				if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) C3 = -500;
+				else if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) C3 = -500;
+				else if (buttons & BT_JUMP || buttons & BT_CROUCH) C3 = -500;
+			}
+			
+			FreezePlayer = 0;
+			if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+			if (PowerupTimer[20] > 0) FreezePlayer += 1;
+			if (C3 != 0 && MiscellaneousVars[186] < 7000 && FreezePlayer == 0)
+			{
+				if (MiscellaneousVars[110002] > 0) // Tension is Enabled
+				{
+					MiscellaneousVars[186] = 7000; // 1 Sec
+					MiscellaneousVars[188] = MiscellaneousVars[186];
+				}
+			}
+			TensionChargeAmount += C3;
+			int TensionTimerMax;
+			
+			if (MiscellaneousVars[184] <= 0 && MenuSystemVars[0] == 0) MiscellaneousVars[185] += TensionChargeAmount;
+			
+			if (MiscellaneousVars[185] <= 0) MiscellaneousVars[185] = 0;
+			if (MiscellaneousVars[185] >= TensionChargeTimeMax)
+			{
+				if (random(1,1000) > TensionChargeFailRate)
+				{
+					MiscellaneousVars[184] = 0;
 				
+					if (MiscellaneousVars[181] == 0) { MiscellaneousVars[186] = 3500; FadeRange(254,104,253,0.33,254,104,253,0,1.25); }
+					else if (MiscellaneousVars[181] == 1) { MiscellaneousVars[186] = 3720; FadeRange(254,104,253,0.44,254,104,253,0,1.375); }
+					else if (MiscellaneousVars[181] == 2) { MiscellaneousVars[186] = 3940; FadeRange(254,104,253,0.55,254,104,253,0,1.5); }
+					else if (MiscellaneousVars[181] == 3) { MiscellaneousVars[186] = 4380; FadeRange(254,104,253,0.66,254,104,253,0,1.625); }
+					else if (MiscellaneousVars[181] == 4) { MiscellaneousVars[186] = 4810; FadeRange(254,104,253,0.77,254,104,253,0,1.75); }
+					else if (MiscellaneousVars[181] == 5) { MiscellaneousVars[186] = 5250; FadeRange(254,104,253,0.88,254,104,253,0,1.875); }
+					else if (MiscellaneousVars[181] == 6) { MiscellaneousVars[186] = 6560; FadeRange(254,104,253,0.99,254,104,253,0,2.0); }
+					MiscellaneousVars[186] *= 2;
+					MiscellaneousVars[188] = MiscellaneousVars[186];
+					MiscellaneousVars[250] = 0;
+					MiscellaneousVars[251] = 0;
+				
+					SetActivator(Player1TID);
+					if (MiscellaneousVars[181] >= 0 && MiscellaneousVars[181] <= 2) // to 5,20,50
+					{
+						//ActivatorSound("tensionincrease",127);
+						PlaySound(Player1TID,"tensionincrease",CHAN_7,1.0,0,ATTN_NORM);
+					}
+					if (MiscellaneousVars[181] >= 3 && MiscellaneousVars[181] <= 4)  // to 100,250 [Super High Tension]
+					{
+						//ActivatorSound("tensionhigh1",127);
+						PlaySound(Player1TID,"tensionhigh1",CHAN_7,1.0,0,ATTN_NORM);
+						if (CharacterClass == 2 && MiscellaneousVars[181] == 3 && random(1,3) == 1) PlaySound(Player1TID,"FloraEnterHighTension1",CHAN_VOICE,1.0,0,ATTN_NORM);
+						if (CharacterClass == 2 && MiscellaneousVars[181] == 4 && random(1,2) == 1) PlaySound(Player1TID,"FloraEnterHighTension2",CHAN_VOICE,1.0,0,ATTN_NORM);
+					}
+					if (MiscellaneousVars[181] == 5) // to 500
+					{
+						//ActivatorSound("tensionhigh2",127);
+						PlaySound(Player1TID,"tensionhigh2",CHAN_7,1.0,0,ATTN_NORM);
+						if (CharacterClass == 2) PlaySound(Player1TID,"FloraEnterHighTension2",CHAN_VOICE,1.0,0,ATTN_NORM);
+					}
+					if (MiscellaneousVars[181] == 6) // to 1000
+					{
+						//ActivatorSound("tensionhigh3",127);
+						PlaySound(Player1TID,"tensionhigh3",CHAN_7,1.0,0,ATTN_NORM);
+						if (CharacterClass == 2) PlaySound(Player1TID,"FloraEnterHighTension3",CHAN_VOICE,1.0,0,ATTN_NORM);
+					}
+				
+					if (MiscellaneousVars[181] == 0) SpawnProjectile(0, "PlayerTension5BlastRadius", 0, 0, 0, 0, 2102);
+					if (MiscellaneousVars[181] == 1) SpawnProjectile(0, "PlayerTension20BlastRadius", 0, 0, 0, 0, 2102);
+					if (MiscellaneousVars[181] == 2) SpawnProjectile(0, "PlayerTension50BlastRadius", 0, 0, 0, 0, 2102);
+					if (MiscellaneousVars[181] == 3) SpawnProjectile(0, "PlayerTension100BlastRadius", 0, 0, 0, 0, 2102);
+					if (MiscellaneousVars[181] == 4) SpawnProjectile(0, "PlayerTension250BlastRadius", 0, 0, 0, 0, 2102);
+					if (MiscellaneousVars[181] == 5) SpawnProjectile(0, "PlayerTension500BlastRadius", 0, 0, 0, 0, 2102);
+					if (MiscellaneousVars[181] == 6) SpawnProjectile(0, "PlayerTension1000BlastRadius", 0, 0, 0, 0, 2102);
+					project_RealZ = GetActorZ(Player1TID) + (GetActorViewHeight(Player1TID) * 39 / 50) + 8.0;
+					SetActorVelocity(2102, 0, 0, 0, 0, 0);
+					SetActorAngle(2102, 0.0);
+					SetActorPosition(2102, GetActorX(Player1TID), GetActorY(Player1TID), project_RealZ, 0);
+					Thing_ChangeTID(2102,4443);
+				
+					SetActivator(0);
+					MiscellaneousVars[181] += 1;
+				
+					if (MiscellaneousVars[181] == 1) MiscellaneousVars[183] = 3600;
+					if (MiscellaneousVars[181] == 2) MiscellaneousVars[183] = 4320;
+					if (MiscellaneousVars[181] == 3) MiscellaneousVars[183] = 5184;
+					if (MiscellaneousVars[181] == 4) MiscellaneousVars[183] = 6221;
+					if (MiscellaneousVars[181] == 5) MiscellaneousVars[183] = 7465;
+					if (MiscellaneousVars[181] == 6) MiscellaneousVars[183] = 8958;
+					if (MiscellaneousVars[181] == 7) MiscellaneousVars[183] = 10750;
+				}
+				else // Psyche Up Fails D:
+				{
+					MiscellaneousVars[184] = 0;
+				
+					if (MiscellaneousVars[110002] > 0) // Tension is Enabled
+					{
 						if (MiscellaneousVars[181] == 0) MiscellaneousVars[186] = 3500;
 						else if (MiscellaneousVars[181] == 1) MiscellaneousVars[186] = 3720;
 						else if (MiscellaneousVars[181] == 2) MiscellaneousVars[186] = 3940;
@@ -30884,629 +30928,492 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 						else if (MiscellaneousVars[181] == 6) MiscellaneousVars[186] = 6560;
 						MiscellaneousVars[186] = MiscellaneousVars[186] * 3 / 2;
 						MiscellaneousVars[188] = MiscellaneousVars[186];
-				
+					
 						if (MiscellaneousVars[181] < 7)
 						{
 							SetActivator(Player1TID);
 							ActivatorSound("tensionfailed",127);
 							SetActivator(0);
 						}
-				
-						MiscellaneousVars[21] = 0;
-						TensionChargeAmount -= 250;
 					}
+				
+					if (MiscellaneousVars[181] == 1) MiscellaneousVars[183] = 3600;
+					if (MiscellaneousVars[181] == 2) MiscellaneousVars[183] = 4320;
+					if (MiscellaneousVars[181] == 3) MiscellaneousVars[183] = 5184;
+					if (MiscellaneousVars[181] == 4) MiscellaneousVars[183] = 6221;
+					if (MiscellaneousVars[181] == 5) MiscellaneousVars[183] = 7465;
+					if (MiscellaneousVars[181] == 6) MiscellaneousVars[183] = 8958;
+					if (MiscellaneousVars[181] == 7) MiscellaneousVars[183] = 10750;
 				}
+				MiscellaneousVars[185] = 0; // Warmup Timer
 			}
 		}
 		else
 		{
+			if (MiscellaneousVars[181] > 0) { PlaySound(Player1TID,"tensionrevert",CHAN_BODY,1.0,0,ATTN_NORM); MiscellaneousVars[181] = 0; } // Level
+			if (MiscellaneousVars[182] > 0) MiscellaneousVars[182] = 0; // Compare
+			if (MiscellaneousVars[183] > 0) MiscellaneousVars[183] = 0; // Timer
+			if (MiscellaneousVars[184] > 0) MiscellaneousVars[184] = 0; // Timer Counts Down?
+			if (MiscellaneousVars[185] > 0) MiscellaneousVars[185] = 0;
+			if (MiscellaneousVars[186] > 0) MiscellaneousVars[186] = 0;
+			if (MiscellaneousVars[188] > 0) MiscellaneousVars[188] = 0;
 			if (MiscellaneousVars[189] > 0) MiscellaneousVars[189] = 0;
-			TensionChargeAmount -= 250;
+			if (MiscellaneousVars[190] > 0) MiscellaneousVars[190] = 0;
 		}
 		
-		// Movement to decrease Tension charge.
-		C3 = 0;
-		FreezePlayer = 0;
-		if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
-		if (PowerupTimer[20] > 0) FreezePlayer += 1;
-		if (FreezePlayer == 0)
+		if (GetActorProperty(Player1TID,APROP_Health) > 0)
 		{
-			buttons = GetPlayerInput(0, INPUT_BUTTONS);
-			if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) C3 = -500;
-			else if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) C3 = -500;
-			else if (buttons & BT_JUMP || buttons & BT_CROUCH) C3 = -500;
-		}
-		
-		FreezePlayer = 0;
-		if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
-		if (PowerupTimer[20] > 0) FreezePlayer += 1;
-		if (C3 != 0 && MiscellaneousVars[186] < 7000 && FreezePlayer == 0)
-		{
-			if (MiscellaneousVars[110002] > 0) // Tension is Enabled
-			{
-				MiscellaneousVars[186] = 7000; // 1 Sec
-				MiscellaneousVars[188] = MiscellaneousVars[186];
-			}
-		}
-		TensionChargeAmount += C3;
-		int TensionTimerMax;
-		
-		if (MiscellaneousVars[184] <= 0 && MenuSystemVars[0] == 0) MiscellaneousVars[185] += TensionChargeAmount;
-		
-		if (MiscellaneousVars[185] <= 0) MiscellaneousVars[185] = 0;
-		if (MiscellaneousVars[185] >= TensionChargeTimeMax)
-		{
-			if (random(1,1000) > TensionChargeFailRate)
-			{
-				MiscellaneousVars[184] = 0;
-			
-				if (MiscellaneousVars[181] == 0) { MiscellaneousVars[186] = 3500; FadeRange(254,104,253,0.33,254,104,253,0,1.25); }
-				else if (MiscellaneousVars[181] == 1) { MiscellaneousVars[186] = 3720; FadeRange(254,104,253,0.44,254,104,253,0,1.375); }
-				else if (MiscellaneousVars[181] == 2) { MiscellaneousVars[186] = 3940; FadeRange(254,104,253,0.55,254,104,253,0,1.5); }
-				else if (MiscellaneousVars[181] == 3) { MiscellaneousVars[186] = 4380; FadeRange(254,104,253,0.66,254,104,253,0,1.625); }
-				else if (MiscellaneousVars[181] == 4) { MiscellaneousVars[186] = 4810; FadeRange(254,104,253,0.77,254,104,253,0,1.75); }
-				else if (MiscellaneousVars[181] == 5) { MiscellaneousVars[186] = 5250; FadeRange(254,104,253,0.88,254,104,253,0,1.875); }
-				else if (MiscellaneousVars[181] == 6) { MiscellaneousVars[186] = 6560; FadeRange(254,104,253,0.99,254,104,253,0,2.0); }
-				MiscellaneousVars[186] *= 2;
-				MiscellaneousVars[188] = MiscellaneousVars[186];
-				MiscellaneousVars[250] = 0;
-				MiscellaneousVars[251] = 0;
-			
-				SetActivator(Player1TID);
-				if (MiscellaneousVars[181] >= 0 && MiscellaneousVars[181] <= 2) // to 5,20,50
-				{
-					//ActivatorSound("tensionincrease",127);
-					PlaySound(Player1TID,"tensionincrease",CHAN_7,1.0,0,ATTN_NORM);
-				}
-				if (MiscellaneousVars[181] >= 3 && MiscellaneousVars[181] <= 4)  // to 100,250 [Super High Tension]
-				{
-					//ActivatorSound("tensionhigh1",127);
-					PlaySound(Player1TID,"tensionhigh1",CHAN_7,1.0,0,ATTN_NORM);
-					if (CharacterClass == 2 && MiscellaneousVars[181] == 3 && random(1,3) == 1) PlaySound(Player1TID,"FloraEnterHighTension1",CHAN_VOICE,1.0,0,ATTN_NORM);
-					if (CharacterClass == 2 && MiscellaneousVars[181] == 4 && random(1,2) == 1) PlaySound(Player1TID,"FloraEnterHighTension2",CHAN_VOICE,1.0,0,ATTN_NORM);
-				}
-				if (MiscellaneousVars[181] == 5) // to 500
-				{
-					//ActivatorSound("tensionhigh2",127);
-					PlaySound(Player1TID,"tensionhigh2",CHAN_7,1.0,0,ATTN_NORM);
-					if (CharacterClass == 2) PlaySound(Player1TID,"FloraEnterHighTension2",CHAN_VOICE,1.0,0,ATTN_NORM);
-				}
-				if (MiscellaneousVars[181] == 6) // to 1000
-				{
-					//ActivatorSound("tensionhigh3",127);
-					PlaySound(Player1TID,"tensionhigh3",CHAN_7,1.0,0,ATTN_NORM);
-					if (CharacterClass == 2) PlaySound(Player1TID,"FloraEnterHighTension3",CHAN_VOICE,1.0,0,ATTN_NORM);
-				}
-			
-				if (MiscellaneousVars[181] == 0) SpawnProjectile(0, "PlayerTension5BlastRadius", 0, 0, 0, 0, 2102);
-				if (MiscellaneousVars[181] == 1) SpawnProjectile(0, "PlayerTension20BlastRadius", 0, 0, 0, 0, 2102);
-				if (MiscellaneousVars[181] == 2) SpawnProjectile(0, "PlayerTension50BlastRadius", 0, 0, 0, 0, 2102);
-				if (MiscellaneousVars[181] == 3) SpawnProjectile(0, "PlayerTension100BlastRadius", 0, 0, 0, 0, 2102);
-				if (MiscellaneousVars[181] == 4) SpawnProjectile(0, "PlayerTension250BlastRadius", 0, 0, 0, 0, 2102);
-				if (MiscellaneousVars[181] == 5) SpawnProjectile(0, "PlayerTension500BlastRadius", 0, 0, 0, 0, 2102);
-				if (MiscellaneousVars[181] == 6) SpawnProjectile(0, "PlayerTension1000BlastRadius", 0, 0, 0, 0, 2102);
-				project_RealZ = GetActorZ(Player1TID) + (GetActorViewHeight(Player1TID) * 39 / 50) + 8.0;
-				SetActorVelocity(2102, 0, 0, 0, 0, 0);
-				SetActorAngle(2102, 0.0);
-				SetActorPosition(2102, GetActorX(Player1TID), GetActorY(Player1TID), project_RealZ, 0);
-				Thing_ChangeTID(2102,4443);
-			
-				SetActivator(0);
-				MiscellaneousVars[181] += 1;
-			
-				if (MiscellaneousVars[181] == 1) MiscellaneousVars[183] = 3600;
-				if (MiscellaneousVars[181] == 2) MiscellaneousVars[183] = 4320;
-				if (MiscellaneousVars[181] == 3) MiscellaneousVars[183] = 5184;
-				if (MiscellaneousVars[181] == 4) MiscellaneousVars[183] = 6221;
-				if (MiscellaneousVars[181] == 5) MiscellaneousVars[183] = 7465;
-				if (MiscellaneousVars[181] == 6) MiscellaneousVars[183] = 8958;
-				if (MiscellaneousVars[181] == 7) MiscellaneousVars[183] = 10750;
-			}
-			else // Psyche Up Fails D:
-			{
-				MiscellaneousVars[184] = 0;
-			
-				if (MiscellaneousVars[110002] > 0) // Tension is Enabled
-				{
-					if (MiscellaneousVars[181] == 0) MiscellaneousVars[186] = 3500;
-					else if (MiscellaneousVars[181] == 1) MiscellaneousVars[186] = 3720;
-					else if (MiscellaneousVars[181] == 2) MiscellaneousVars[186] = 3940;
-					else if (MiscellaneousVars[181] == 3) MiscellaneousVars[186] = 4380;
-					else if (MiscellaneousVars[181] == 4) MiscellaneousVars[186] = 4810;
-					else if (MiscellaneousVars[181] == 5) MiscellaneousVars[186] = 5250;
-					else if (MiscellaneousVars[181] == 6) MiscellaneousVars[186] = 6560;
-					MiscellaneousVars[186] = MiscellaneousVars[186] * 3 / 2;
-					MiscellaneousVars[188] = MiscellaneousVars[186];
-				
-					if (MiscellaneousVars[181] < 7)
-					{
-						SetActivator(Player1TID);
-						ActivatorSound("tensionfailed",127);
-						SetActivator(0);
-					}
-				}
-			
-				if (MiscellaneousVars[181] == 1) MiscellaneousVars[183] = 3600;
-				if (MiscellaneousVars[181] == 2) MiscellaneousVars[183] = 4320;
-				if (MiscellaneousVars[181] == 3) MiscellaneousVars[183] = 5184;
-				if (MiscellaneousVars[181] == 4) MiscellaneousVars[183] = 6221;
-				if (MiscellaneousVars[181] == 5) MiscellaneousVars[183] = 7465;
-				if (MiscellaneousVars[181] == 6) MiscellaneousVars[183] = 8958;
-				if (MiscellaneousVars[181] == 7) MiscellaneousVars[183] = 10750;
-			}
-			MiscellaneousVars[185] = 0; // Warmup Timer
-		}
-	}
-	else
-	{
-		if (MiscellaneousVars[181] > 0) { PlaySound(Player1TID,"tensionrevert",CHAN_BODY,1.0,0,ATTN_NORM); MiscellaneousVars[181] = 0; } // Level
-		if (MiscellaneousVars[182] > 0) MiscellaneousVars[182] = 0; // Compare
-		if (MiscellaneousVars[183] > 0) MiscellaneousVars[183] = 0; // Timer
-		if (MiscellaneousVars[184] > 0) MiscellaneousVars[184] = 0; // Timer Counts Down?
-		if (MiscellaneousVars[185] > 0) MiscellaneousVars[185] = 0;
-		if (MiscellaneousVars[186] > 0) MiscellaneousVars[186] = 0;
-		if (MiscellaneousVars[188] > 0) MiscellaneousVars[188] = 0;
-		if (MiscellaneousVars[189] > 0) MiscellaneousVars[189] = 0;
-		if (MiscellaneousVars[190] > 0) MiscellaneousVars[190] = 0;
-	}
-	
-	if (GetActorProperty(Player1TID,APROP_Health) > 0)
-	{
 
-		if (MiscellaneousVars[181] != 0)
-		{
-			if (MiscellaneousVars[181] == 1) { pulsevolume = random(15,31); maxpulseinterval = random(21,23); }
-			if (MiscellaneousVars[181] == 2) { pulsevolume = random(18,47); maxpulseinterval = random(19,21); }
-			if (MiscellaneousVars[181] == 3) { pulsevolume = random(21,63); maxpulseinterval = random(17,19); }
-			if (MiscellaneousVars[181] == 4) { pulsevolume = random(24,79); maxpulseinterval = random(15,17); }
-			if (MiscellaneousVars[181] == 5) { pulsevolume = random(27,95); maxpulseinterval = random(13,15); }
-			if (MiscellaneousVars[181] == 6) { pulsevolume = random(30,111); maxpulseinterval = random(12,14); }
-			if (MiscellaneousVars[181] == 7) { pulsevolume = random(33,127); maxpulseinterval = random(11,13); }
-			maxpulseinterval *= 2;
-			if (random(1,4) == 1) randompulseinterval1 = maxpulseinterval * 2; else randompulseinterval1 = random(1,maxpulseinterval);
-			if (random(1,4) == 1) randompulseinterval2 = maxpulseinterval * 2; else randompulseinterval2 = random(1,maxpulseinterval);
-			if (random(1,4) == 1) randompulseinterval3 = maxpulseinterval * 2; else randompulseinterval3 = random(1,maxpulseinterval);
-			if (random(1,4) == 1) randompulseinterval4 = maxpulseinterval * 2; else randompulseinterval4 = random(1,maxpulseinterval);
-			MiscellaneousVars[190] ++; // Increase Charge-Up Sound Loop Timer
-			
-			if (MiscellaneousVars[190] == randompulseinterval1 && MiscellaneousVars[181] >= 1)
+			if (MiscellaneousVars[181] != 0)
 			{
-				SetActivator(Player1TID); 
-				ActivatorSound("tensionpulserand",pulsevolume); 
-				SetActivator(0);
-				randompulseinterval1 = random(1,maxpulseinterval);
-			}
-			if (MiscellaneousVars[190] == randompulseinterval2 && MiscellaneousVars[181] >= 3)
-			{
-				SetActivator(Player1TID); 
-				ActivatorSound("tensionpulserand",pulsevolume); 
-				SetActivator(0);
-				randompulseinterval2 = random(1,maxpulseinterval);
-			}
-			if (MiscellaneousVars[190] == randompulseinterval3 && MiscellaneousVars[181] >= 5)
-			{
-				SetActivator(Player1TID); 
-				ActivatorSound("tensionpulserand",pulsevolume); 
-				SetActivator(0);
-				randompulseinterval3 = random(1,maxpulseinterval);
-			}
-			if (MiscellaneousVars[190] == randompulseinterval4 && MiscellaneousVars[181] >= 7)
-			{
-				SetActivator(Player1TID); 
-				ActivatorSound("tensionpulserand",pulsevolume); 
-				SetActivator(0);
-				randompulseinterval4 = random(1,maxpulseinterval);
-			}
-			
-			
-			if (MiscellaneousVars[190] >= maxpulseinterval) MiscellaneousVars[190] = 0;
-			
-			// Background Sound for the humming of tension.
-			MiscellaneousVars[246]++;
-			if (MiscellaneousVars[246] == 1)
-			{
-				StopSound(Player1TID,CHAN_6);
-				if (MiscellaneousVars[181] == 1) PlaySound(Player1TID,"tensionaura5",CHAN_6,1.0,0,ATTN_NORM);
-				if (MiscellaneousVars[181] == 2) PlaySound(Player1TID,"tensionaura20",CHAN_6,1.0,0,ATTN_NORM);
-				if (MiscellaneousVars[181] == 3) PlaySound(Player1TID,"tensionaura50",CHAN_6,1.0,0,ATTN_NORM);
-				if (MiscellaneousVars[181] == 4) PlaySound(Player1TID,"tensionaura100",CHAN_6,1.0,0,ATTN_NORM);
-				if (MiscellaneousVars[181] == 5) PlaySound(Player1TID,"tensionaura250",CHAN_6,1.0,0,ATTN_NORM);
-				if (MiscellaneousVars[181] == 6) PlaySound(Player1TID,"tensionaura500",CHAN_6,1.0,0,ATTN_NORM);
-				if (MiscellaneousVars[181] == 7) PlaySound(Player1TID,"tensionaura1000",CHAN_6,1.0,0,ATTN_NORM);
-			}
-			if (MiscellaneousVars[246] >= 68) MiscellaneousVars[246] = 0;
-			
-			int TensionOverchargeDmgFactor;
-			int TensionOverchargeDmgBase;
-			int TensionOverchargeDmgFinal;
-			int TensionOverchargeDmgThreshold = GetActorProperty(Player1TID,APROP_HEALTH) / 256;
-			if (TensionOverchargeDmgThreshold < 1) TensionOverchargeDmgThreshold = 1;
-			
-			// Overcharge Tracking
-			int TensionOCTimer1Amount = 20;
-			int TensionOCTimer2Amount = 20;
-			if (PowerupTimer[4] > 0) // Invulnerability stops the Overcharge timers while in effect
-			{
-				TensionOCTimer1Amount *= 0;
-				TensionOCTimer2Amount *= 0;
-			}
-			if (PowerupTimer[10] > 0) // Oomph Slows it down
-			{
-				TensionOCTimer1Amount = TensionOCTimer1Amount * 3 / 4;
-				TensionOCTimer2Amount = TensionOCTimer2Amount * 3 / 4;
-			}
-			if (PowerupTimer[11] > 0) // Buff Slows it down
-			{
-				TensionOCTimer1Amount = TensionOCTimer1Amount * 3 / 4;
-				TensionOCTimer2Amount = TensionOCTimer2Amount * 3 / 4;
-			}
-			if (PowerupTimer[12] > 0) // Accelerate Speeds it up
-			{
-				TensionOCTimer1Amount = TensionOCTimer1Amount * 6 / 5;
-				TensionOCTimer2Amount = TensionOCTimer2Amount * 6 / 5;
-			}
-			if (PowerupTimer[15] > 0) // Decelerate Slows it down
-			{
-				TensionOCTimer1Amount = TensionOCTimer1Amount * 4 / 5;
-				TensionOCTimer2Amount = TensionOCTimer2Amount * 4 / 5;
-			}
-			if (PowerupTimer[16] > 0) // Poison Really Speeds it Up
-			{
-				TensionOCTimer1Amount = TensionOCTimer1Amount * 7 / 4;
-				TensionOCTimer2Amount = TensionOCTimer2Amount * 7 / 4;
-			}
-			if (PowerupTimer[23] > 0) // Berserk Speeds it up
-			{
-				TensionOCTimer1Amount = TensionOCTimer1Amount * 5 / 4;
-				TensionOCTimer2Amount = TensionOCTimer2Amount * 5 / 4;
-			}
-			if (MiscellaneousVars[184] == 1)
-			{
-				TensionOCTimer1Amount = TensionOCTimer1Amount / 3;
-				TensionOCTimer2Amount = TensionOCTimer2Amount / 3;
-			}
-			
-			if (MiscellaneousVars[110003] > 0) MiscellaneousVars[250] += TensionOCTimer1Amount; else MiscellaneousVars[250] = 0;
-			if (MiscellaneousVars[250] >= MiscellaneousVars[262] && MiscellaneousVars[110003] > 0)
-			{
-				MiscellaneousVars[250] = MiscellaneousVars[262];
-				if (MiscellaneousVars[110003] > 0) MiscellaneousVars[251] += TensionOCTimer2Amount; else MiscellaneousVars[251] = 0;
-				if (MiscellaneousVars[251] >= MiscellaneousVars[261] && MiscellaneousVars[110003] > 0)
+				if (MiscellaneousVars[181] == 1) { pulsevolume = random(15,31); maxpulseinterval = random(21,23); }
+				if (MiscellaneousVars[181] == 2) { pulsevolume = random(18,47); maxpulseinterval = random(19,21); }
+				if (MiscellaneousVars[181] == 3) { pulsevolume = random(21,63); maxpulseinterval = random(17,19); }
+				if (MiscellaneousVars[181] == 4) { pulsevolume = random(24,79); maxpulseinterval = random(15,17); }
+				if (MiscellaneousVars[181] == 5) { pulsevolume = random(27,95); maxpulseinterval = random(13,15); }
+				if (MiscellaneousVars[181] == 6) { pulsevolume = random(30,111); maxpulseinterval = random(12,14); }
+				if (MiscellaneousVars[181] == 7) { pulsevolume = random(33,127); maxpulseinterval = random(11,13); }
+				maxpulseinterval *= 2;
+				if (random(1,4) == 1) randompulseinterval1 = maxpulseinterval * 2; else randompulseinterval1 = random(1,maxpulseinterval);
+				if (random(1,4) == 1) randompulseinterval2 = maxpulseinterval * 2; else randompulseinterval2 = random(1,maxpulseinterval);
+				if (random(1,4) == 1) randompulseinterval3 = maxpulseinterval * 2; else randompulseinterval3 = random(1,maxpulseinterval);
+				if (random(1,4) == 1) randompulseinterval4 = maxpulseinterval * 2; else randompulseinterval4 = random(1,maxpulseinterval);
+				MiscellaneousVars[190] ++; // Increase Charge-Up Sound Loop Timer
+				
+				if (MiscellaneousVars[190] == randompulseinterval1 && MiscellaneousVars[181] >= 1)
 				{
-					MiscellaneousVars[251] = 0;
-					MiscellaneousVars[261] = 0;
-					TensionOverchargeDmgFactor = random(6,10) * ((6 + ((MiscellaneousVars[181] * 9) / 4)) / 7);
-					TensionOverchargeDmgBase = (random(2,3) * TensionOverchargeDmgFactor) / 8;
-					if (TensionOverchargeDmgBase < 2 && MiscellaneousVars[181] > 4) TensionOverchargeDmgBase = 2;
-					if (TensionOverchargeDmgBase < 1) TensionOverchargeDmgBase = 1;
-					TensionOverchargeDmgFinal = GetActorProperty(Player1TID,APROP_HEALTH) - TensionOverchargeDmgBase;
-					if (TensionOverchargeDmgFinal < TensionOverchargeDmgThreshold) TensionOverchargeDmgFinal = TensionOverchargeDmgThreshold;
-					if (TensionOverchargeDmgFinal > TensionOverchargeDmgThreshold)
+					SetActivator(Player1TID); 
+					ActivatorSound("tensionpulserand",pulsevolume); 
+					SetActivator(0);
+					randompulseinterval1 = random(1,maxpulseinterval);
+				}
+				if (MiscellaneousVars[190] == randompulseinterval2 && MiscellaneousVars[181] >= 3)
+				{
+					SetActivator(Player1TID); 
+					ActivatorSound("tensionpulserand",pulsevolume); 
+					SetActivator(0);
+					randompulseinterval2 = random(1,maxpulseinterval);
+				}
+				if (MiscellaneousVars[190] == randompulseinterval3 && MiscellaneousVars[181] >= 5)
+				{
+					SetActivator(Player1TID); 
+					ActivatorSound("tensionpulserand",pulsevolume); 
+					SetActivator(0);
+					randompulseinterval3 = random(1,maxpulseinterval);
+				}
+				if (MiscellaneousVars[190] == randompulseinterval4 && MiscellaneousVars[181] >= 7)
+				{
+					SetActivator(Player1TID); 
+					ActivatorSound("tensionpulserand",pulsevolume); 
+					SetActivator(0);
+					randompulseinterval4 = random(1,maxpulseinterval);
+				}
+				
+				
+				if (MiscellaneousVars[190] >= maxpulseinterval) MiscellaneousVars[190] = 0;
+				
+				// Background Sound for the humming of tension.
+				MiscellaneousVars[246]++;
+				if (MiscellaneousVars[246] == 1)
+				{
+					StopSound(Player1TID,CHAN_6);
+					if (MiscellaneousVars[181] == 1) PlaySound(Player1TID,"tensionaura5",CHAN_6,1.0,0,ATTN_NORM);
+					if (MiscellaneousVars[181] == 2) PlaySound(Player1TID,"tensionaura20",CHAN_6,1.0,0,ATTN_NORM);
+					if (MiscellaneousVars[181] == 3) PlaySound(Player1TID,"tensionaura50",CHAN_6,1.0,0,ATTN_NORM);
+					if (MiscellaneousVars[181] == 4) PlaySound(Player1TID,"tensionaura100",CHAN_6,1.0,0,ATTN_NORM);
+					if (MiscellaneousVars[181] == 5) PlaySound(Player1TID,"tensionaura250",CHAN_6,1.0,0,ATTN_NORM);
+					if (MiscellaneousVars[181] == 6) PlaySound(Player1TID,"tensionaura500",CHAN_6,1.0,0,ATTN_NORM);
+					if (MiscellaneousVars[181] == 7) PlaySound(Player1TID,"tensionaura1000",CHAN_6,1.0,0,ATTN_NORM);
+				}
+				if (MiscellaneousVars[246] >= 68) MiscellaneousVars[246] = 0;
+				
+				int TensionOverchargeDmgFactor;
+				int TensionOverchargeDmgBase;
+				int TensionOverchargeDmgFinal;
+				int TensionOverchargeDmgThreshold = GetActorProperty(Player1TID,APROP_HEALTH) / 256;
+				if (TensionOverchargeDmgThreshold < 1) TensionOverchargeDmgThreshold = 1;
+				
+				// Overcharge Tracking
+				int TensionOCTimer1Amount = 20;
+				int TensionOCTimer2Amount = 20;
+				if (PowerupTimer[4] > 0) // Invulnerability stops the Overcharge timers while in effect
+				{
+					TensionOCTimer1Amount *= 0;
+					TensionOCTimer2Amount *= 0;
+				}
+				if (PowerupTimer[10] > 0) // Oomph Slows it down
+				{
+					TensionOCTimer1Amount = TensionOCTimer1Amount * 3 / 4;
+					TensionOCTimer2Amount = TensionOCTimer2Amount * 3 / 4;
+				}
+				if (PowerupTimer[11] > 0) // Buff Slows it down
+				{
+					TensionOCTimer1Amount = TensionOCTimer1Amount * 3 / 4;
+					TensionOCTimer2Amount = TensionOCTimer2Amount * 3 / 4;
+				}
+				if (PowerupTimer[12] > 0) // Accelerate Speeds it up
+				{
+					TensionOCTimer1Amount = TensionOCTimer1Amount * 6 / 5;
+					TensionOCTimer2Amount = TensionOCTimer2Amount * 6 / 5;
+				}
+				if (PowerupTimer[15] > 0) // Decelerate Slows it down
+				{
+					TensionOCTimer1Amount = TensionOCTimer1Amount * 4 / 5;
+					TensionOCTimer2Amount = TensionOCTimer2Amount * 4 / 5;
+				}
+				if (PowerupTimer[16] > 0) // Poison Really Speeds it Up
+				{
+					TensionOCTimer1Amount = TensionOCTimer1Amount * 7 / 4;
+					TensionOCTimer2Amount = TensionOCTimer2Amount * 7 / 4;
+				}
+				if (PowerupTimer[23] > 0) // Berserk Speeds it up
+				{
+					TensionOCTimer1Amount = TensionOCTimer1Amount * 5 / 4;
+					TensionOCTimer2Amount = TensionOCTimer2Amount * 5 / 4;
+				}
+				if (MiscellaneousVars[184] == 1)
+				{
+					TensionOCTimer1Amount = TensionOCTimer1Amount / 3;
+					TensionOCTimer2Amount = TensionOCTimer2Amount / 3;
+				}
+				
+				if (MiscellaneousVars[110003] > 0) MiscellaneousVars[250] += TensionOCTimer1Amount; else MiscellaneousVars[250] = 0;
+				if (MiscellaneousVars[250] >= MiscellaneousVars[262] && MiscellaneousVars[110003] > 0)
+				{
+					MiscellaneousVars[250] = MiscellaneousVars[262];
+					if (MiscellaneousVars[110003] > 0) MiscellaneousVars[251] += TensionOCTimer2Amount; else MiscellaneousVars[251] = 0;
+					if (MiscellaneousVars[251] >= MiscellaneousVars[261] && MiscellaneousVars[110003] > 0)
 					{
-						if (PowerupTimer[4] == 0)
+						MiscellaneousVars[251] = 0;
+						MiscellaneousVars[261] = 0;
+						TensionOverchargeDmgFactor = random(6,10) * ((6 + ((MiscellaneousVars[181] * 9) / 4)) / 7);
+						TensionOverchargeDmgBase = (random(2,3) * TensionOverchargeDmgFactor) / 8;
+						if (TensionOverchargeDmgBase < 2 && MiscellaneousVars[181] > 4) TensionOverchargeDmgBase = 2;
+						if (TensionOverchargeDmgBase < 1) TensionOverchargeDmgBase = 1;
+						TensionOverchargeDmgFinal = GetActorProperty(Player1TID,APROP_HEALTH) - TensionOverchargeDmgBase;
+						if (TensionOverchargeDmgFinal < TensionOverchargeDmgThreshold) TensionOverchargeDmgFinal = TensionOverchargeDmgThreshold;
+						if (TensionOverchargeDmgFinal > TensionOverchargeDmgThreshold)
 						{
-						if (CharacterClass == 2 && random(1,5) == 1) ACS_NamedExecuteAlways("FloraPainScreams",0,0,0,0);
-						if (CharacterClass == 8 && random(1,5) == 1) ACS_NamedExecuteAlways("AilishPainScreams",0,0,0,0);
-						if (CharacterClass == 9 && random(1,5) == 1) ACS_NamedExecuteAlways("PetraPainScreams",0,0,0,0);
-						SetActorProperty(Player1TID,APROP_HEALTH,TensionOverchargeDmgFinal);
+							if (PowerupTimer[4] == 0)
+							{
+							if (CharacterClass == 2 && random(1,5) == 1) ACS_NamedExecuteAlways("FloraPainScreams",0,0,0,0);
+							if (CharacterClass == 8 && random(1,5) == 1) ACS_NamedExecuteAlways("AilishPainScreams",0,0,0,0);
+							if (CharacterClass == 9 && random(1,5) == 1) ACS_NamedExecuteAlways("PetraPainScreams",0,0,0,0);
+							SetActorProperty(Player1TID,APROP_HEALTH,TensionOverchargeDmgFinal);
+							}
 						}
 					}
 				}
+				else
+				{
+					MiscellaneousVars[251] = 0;
+				}
+				
+				int tensiontimerdecrease;
+				if (MiscellaneousVars[184] > 0 && MiscellaneousVars[183] >= 0)
+				{
+					tensiontimerdecrease = 20;
+					tensiontimerdecrease = tensiontimerdecrease * GetCVar("dvds_tension_countdownmultiplier") / 100;
+					if (powertripmode == 1) tensiontimerdecrease = tensiontimerdecrease / 5; // 'Power Trip' mode cheat
+					if (powertripmode == 2) tensiontimerdecrease = tensiontimerdecrease / 10; // 'Power Trip' mode cheat
+					if (CheckActorInventory(Player1TID,"MartArtsMaster1") > 0) tensiontimerdecrease = (tensiontimerdecrease * random(800,900)) / 1000;
+					if (CheckActorInventory(Player1TID,"MartArtsMaster2") > 0) tensiontimerdecrease = (tensiontimerdecrease * random(400,600)) / 1000;
+					PerkFactor = 10000 - ((MiscellaneousVars[10011] * 250) + (MiscellaneousVars[10012] * 625));
+					tensiontimerdecrease = (tensiontimerdecrease * PerkFactor) / 10000;
+					If (MenuSystemVars[0] == 0) MiscellaneousVars[183] -= tensiontimerdecrease;
+				}
+				if (MiscellaneousVars[183] <= 0) 
+				{
+					if (MiscellaneousVars[110002] > 0) // Tension is Enabled
+					{
+						if (MiscellaneousVars[181] == 1) MiscellaneousVars[186] = 14000; // Cooldown Timer set to 4 seconds
+						if (MiscellaneousVars[181] == 2) MiscellaneousVars[186] = 14880; // Cooldown Timer set to 4.25 seconds
+						if (MiscellaneousVars[181] == 3) MiscellaneousVars[186] = 15750; // Cooldown Timer set to 4.5 seconds
+						if (MiscellaneousVars[181] == 4) MiscellaneousVars[186] = 17500; // Cooldown Timer set to 5 seconds
+						if (MiscellaneousVars[181] == 5) MiscellaneousVars[186] = 19250; // Cooldown Timer set to 5.5 seconds
+						if (MiscellaneousVars[181] == 6) MiscellaneousVars[186] = 21000; // Cooldown Timer set to 6 seconds
+						if (MiscellaneousVars[181] == 7) MiscellaneousVars[186] = 26250; // Cooldown Timer set to 7.5 seconds
+						MiscellaneousVars[186] *= 2;
+						MiscellaneousVars[188] = MiscellaneousVars[186];
+					}
+				
+					MiscellaneousVars[185] = 0; // Warmup Timer
+					MiscellaneousVars[184] = 0; // Tension Timer
+					MiscellaneousVars[181] = 0; // Tension Level
+					MiscellaneousVars[246] = 0; // Tension Aura-Sound Timer
+					StopSound(Player1TID,CHAN_6);
+					StopSound(Player1TID,CHAN_7);
+				
+					PlaySound(Player1TID,"tensionrevert",CHAN_6,1.0,0,ATTN_NORM);
+				}
+			}
+			if (MiscellaneousVars[110002] > 0) // Tension is Enabled
+			{
+				if (MiscellaneousVars[181] < 0) MiscellaneousVars[181] = 0;
+				if (MiscellaneousVars[181] > 7) MiscellaneousVars[181] = 7;
 			}
 			else
 			{
-				MiscellaneousVars[251] = 0;
+				if (MiscellaneousVars[181] != 0) { MiscellaneousVars[181] = 0; PlaySound(Player1TID,"tensionrevert",CHAN_BODY,1.0,0,ATTN_NORM); }
+				if (MiscellaneousVars[183] != 0) MiscellaneousVars[183] = 0; // Timer
+				if (MiscellaneousVars[184] != 0) MiscellaneousVars[184] = 0; // Timer Counts Down?
+				if (MiscellaneousVars[185] != 0) MiscellaneousVars[185] = 0;
+				if (MiscellaneousVars[186] != 0) MiscellaneousVars[186] = 0;
+				if (GetCVar("dvds_tension_chargemultiplier") != 0) MiscellaneousVars[189] = 0;
+				if (MiscellaneousVars[188] != 0) MiscellaneousVars[190] = 0;   
 			}
-			
-			int tensiontimerdecrease;
-			if (MiscellaneousVars[184] > 0 && MiscellaneousVars[183] >= 0)
-			{
-				tensiontimerdecrease = 20;
-				tensiontimerdecrease = tensiontimerdecrease * GetCVar("dvds_tension_countdownmultiplier") / 100;
-				if (powertripmode == 1) tensiontimerdecrease = tensiontimerdecrease / 5; // 'Power Trip' mode cheat
-				if (powertripmode == 2) tensiontimerdecrease = tensiontimerdecrease / 10; // 'Power Trip' mode cheat
-				if (CheckActorInventory(Player1TID,"MartArtsMaster1") > 0) tensiontimerdecrease = (tensiontimerdecrease * random(800,900)) / 1000;
-				if (CheckActorInventory(Player1TID,"MartArtsMaster2") > 0) tensiontimerdecrease = (tensiontimerdecrease * random(400,600)) / 1000;
-				PerkFactor = 10000 - ((MiscellaneousVars[10011] * 250) + (MiscellaneousVars[10012] * 625));
-				tensiontimerdecrease = (tensiontimerdecrease * PerkFactor) / 10000;
-				If (MenuSystemVars[0] == 0) MiscellaneousVars[183] -= tensiontimerdecrease;
-			}
-			if (MiscellaneousVars[183] <= 0) 
-			{
-				if (MiscellaneousVars[110002] > 0) // Tension is Enabled
-				{
-					if (MiscellaneousVars[181] == 1) MiscellaneousVars[186] = 14000; // Cooldown Timer set to 4 seconds
-					if (MiscellaneousVars[181] == 2) MiscellaneousVars[186] = 14880; // Cooldown Timer set to 4.25 seconds
-					if (MiscellaneousVars[181] == 3) MiscellaneousVars[186] = 15750; // Cooldown Timer set to 4.5 seconds
-					if (MiscellaneousVars[181] == 4) MiscellaneousVars[186] = 17500; // Cooldown Timer set to 5 seconds
-					if (MiscellaneousVars[181] == 5) MiscellaneousVars[186] = 19250; // Cooldown Timer set to 5.5 seconds
-					if (MiscellaneousVars[181] == 6) MiscellaneousVars[186] = 21000; // Cooldown Timer set to 6 seconds
-					if (MiscellaneousVars[181] == 7) MiscellaneousVars[186] = 26250; // Cooldown Timer set to 7.5 seconds
-					MiscellaneousVars[186] *= 2;
-					MiscellaneousVars[188] = MiscellaneousVars[186];
-				}
-			
-				MiscellaneousVars[185] = 0; // Warmup Timer
-				MiscellaneousVars[184] = 0; // Tension Timer
-				MiscellaneousVars[181] = 0; // Tension Level
-				MiscellaneousVars[246] = 0; // Tension Aura-Sound Timer
-				StopSound(Player1TID,CHAN_6);
-				StopSound(Player1TID,CHAN_7);
-			
-				PlaySound(Player1TID,"tensionrevert",CHAN_6,1.0,0,ATTN_NORM);
-			}
-		}
-		if (MiscellaneousVars[110002] > 0) // Tension is Enabled
-		{
-			if (MiscellaneousVars[181] < 0) MiscellaneousVars[181] = 0;
-			if (MiscellaneousVars[181] > 7) MiscellaneousVars[181] = 7;
-		}
-		else
-		{
-			if (MiscellaneousVars[181] != 0) { MiscellaneousVars[181] = 0; PlaySound(Player1TID,"tensionrevert",CHAN_BODY,1.0,0,ATTN_NORM); }
-			if (MiscellaneousVars[183] != 0) MiscellaneousVars[183] = 0; // Timer
-			if (MiscellaneousVars[184] != 0) MiscellaneousVars[184] = 0; // Timer Counts Down?
-			if (MiscellaneousVars[185] != 0) MiscellaneousVars[185] = 0;
-			if (MiscellaneousVars[186] != 0) MiscellaneousVars[186] = 0;
-			if (GetCVar("dvds_tension_chargemultiplier") != 0) MiscellaneousVars[189] = 0;
-			if (MiscellaneousVars[188] != 0) MiscellaneousVars[190] = 0;   
-		}
 
-		if (MiscellaneousVars[181] >= 4) { GiveActorInventory(Player1TID,"TensionTrail", 1); } else { TakeActorInventory(Player1TID,"TensionTrail", 9999); } // Tension is "100" or higher
-	}
-	
-	// Tension Aura Actor Control
-	// TID 1501 - Aura
-	// TID 1502 - Aura Lights
-	str TensionAuraLight;
-	int TensionAuraSpawnHeight;
-	int TensionAuraXScale;
-	int TensionAuraYScale;
-	int TensionAuraAlpha;
-	int TensionAuraAlphaInvis;
-	if (MiscellaneousVars[181] > 0)
-	{
-		SpawnFixedX = GetActorX(Player1TID);
-		SpawnFixedY = GetActorY(Player1TID);
-		SpawnFixedZ = GetActorZ(Player1TID);
-		if (CharacterClass == 0) TensionAuraSpawnHeight = 28 * 65536;
-		if (CharacterClass == 1) TensionAuraSpawnHeight = 26 * 65536;
-		if (CharacterClass == 2) TensionAuraSpawnHeight = 25 * 65536;
-		TensionAuraSpawnHeight += SpawnFixedZ;
-		
-		int TensionAuraXScaleExtra = 1.0;
-		int TensionAuraYScaleExtra = 1.0;
-		if (ClassicDoomType == 5) // Doom 64
-		{
-			TensionAuraXScaleExtra = 1.1;
-			TensionAuraYScaleExtra = 1.375;
+			if (MiscellaneousVars[181] >= 4) { GiveActorInventory(Player1TID,"TensionTrail", 1); } else { TakeActorInventory(Player1TID,"TensionTrail", 9999); } // Tension is "100" or higher
 		}
 		
-		if (MiscellaneousVars[181] == 1)
+		// Tension Aura Actor Control
+		// TID 1501 - Aura
+		// TID 1502 - Aura Lights
+		str TensionAuraLight;
+		int TensionAuraSpawnHeight;
+		int TensionAuraXScale;
+		int TensionAuraYScale;
+		int TensionAuraAlpha;
+		int TensionAuraAlphaInvis;
+		if (MiscellaneousVars[181] > 0)
 		{
-			TensionAuraLight = "TensionAuraLight5"; 
-			TensionAuraXScale = fixedmul(0.5,TensionAuraXScaleExtra);
-			TensionAuraYScale = fixedmul(0.75,TensionAuraYScaleExtra);
-			TensionAuraAlpha = 0.20;
-			TensionAuraAlphaInvis = 0.02;
-			if (ThingCountName("TensionAuraLight5", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
-		}
-		if (MiscellaneousVars[181] == 2)
-		{
-			TensionAuraLight = "TensionAuraLight20";
-			TensionAuraXScale = fixedmul(0.5555,TensionAuraXScaleExtra);
-			TensionAuraYScale = fixedmul(0.8333,TensionAuraYScaleExtra);
-			TensionAuraAlpha = 0.26;
-			TensionAuraAlphaInvis = 0.026;
-			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight20", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
-		}
-		if (MiscellaneousVars[181] == 3) 
-		{
-			TensionAuraLight = "TensionAuraLight50"; 
-			TensionAuraXScale = fixedmul(0.6111,TensionAuraXScaleExtra);
-			TensionAuraYScale = fixedmul(0.9116,TensionAuraYScaleExtra);
-			TensionAuraAlpha = 0.32;
-			TensionAuraAlphaInvis = 0.032;
-			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight50", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
-		}
-		if (MiscellaneousVars[181] == 4)
-		{
-			TensionAuraLight = "TensionAuraLight100"; 
-			TensionAuraXScale = fixedmul(0.6667,TensionAuraXScaleExtra);
-			TensionAuraYScale = fixedmul(1.0,TensionAuraYScaleExtra);
-			TensionAuraAlpha = 0.38;
-			TensionAuraAlphaInvis = 0.038;
-			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight100", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
-		}
-		if (MiscellaneousVars[181] == 5) 
-		{
-			TensionAuraLight = "TensionAuraLight250";
-			TensionAuraXScale = fixedmul(0.7222,TensionAuraXScaleExtra);
-			TensionAuraYScale = fixedmul(1.0833,TensionAuraYScaleExtra);
-			TensionAuraAlpha = 0.44;
-			TensionAuraAlphaInvis = 0.044;
-			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight250", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
-		}
-		if (MiscellaneousVars[181] == 6) 
-		{
-			TensionAuraLight = "TensionAuraLight500"; 
-			TensionAuraXScale = fixedmul(0.7777,TensionAuraXScaleExtra);
-			TensionAuraYScale = fixedmul(1.1666,TensionAuraYScaleExtra);
-			TensionAuraAlpha = 0.5;
-			TensionAuraAlphaInvis = 0.05;
-			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight500", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
-		}
-		if (MiscellaneousVars[181] == 7) 
-		{
-			TensionAuraLight = "TensionAuraLight1000";
-			TensionAuraXScale = fixedmul(0.8333,TensionAuraXScaleExtra);
-			TensionAuraYScale = fixedmul(1.25,TensionAuraYScaleExtra);
-			TensionAuraAlpha = 0.56;
-			TensionAuraAlphaInvis = 0.056;
-			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-			if (ThingCountName("TensionAuraLight1000", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
-		}
-		
-		// Misc Rescaling
-		if (GetCVar("dvds_tensionauratype") == 0) // Classic Tension Aura Sprites
-		{
-			TensionAuraXScale = fixedmul(TensionAuraXScale,1.0);
-			TensionAuraYScale = fixedmul(TensionAuraYScale,1.0);
-		}
-		if (GetCVar("dvds_tensionauratype") == 1) // Updated Tension Aura Sprites
-		{
-			TensionAuraXScale = fixedmul(TensionAuraXScale,0.575);
-			TensionAuraYScale = fixedmul(TensionAuraYScale,0.425);
-		}
-		
-		if (CharacterClass == 0) { TensionAuraXScale = fixedmul(TensionAuraXScale,1.12);  TensionAuraYScale = fixedmul(TensionAuraYScale,1.23); }
-		if (CharacterClass == 1) { TensionAuraXScale = fixedmul(TensionAuraXScale,1.04);  TensionAuraYScale = fixedmul(TensionAuraYScale,1.08); }
-		if (CharacterClass == 2) { TensionAuraXScale = fixedmul(TensionAuraXScale,1.0);   TensionAuraYScale = fixedmul(TensionAuraYScale,1.0); }
-		if (CharacterClass == 8) { TensionAuraXScale = fixedmul(TensionAuraXScale,0.98);  TensionAuraYScale = fixedmul(TensionAuraYScale,0.98); }
-		if (CharacterClass == 9) { TensionAuraXScale = fixedmul(TensionAuraXScale,0.96);  TensionAuraYScale = fixedmul(TensionAuraYScale,0.96); }
-		
-		if (ThingCountName("TensionAuraLooper", 1501) < 1) SpawnForced("TensionAuraLooper",SpawnFixedX,SpawnFixedY,SpawnFixedZ,1501,0);
-		if (ThingCountName("TensionAuraLooper", 1501) > 0)
-		{
-			SetActorProperty(1501,APROP_ScaleX,TensionAuraXScale);
-			SetActorProperty(1501,APROP_ScaleY,TensionAuraYScale);
-			if (PowerupTimer[1] > 0) SetActorProperty(1501,APROP_Alpha,TensionAuraAlphaInvis);
-			else SetActorProperty(1501,APROP_Alpha,TensionAuraAlpha);
-		}
-	}
-	else
-	{
-		if (ThingCountName("TensionAuraLooper", 1501) > 0) Thing_Remove(1501);
-		if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
-		if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
-	}
-	
-	// Debug Displays
-	if (GetCVar("dvdsdebug_showtensioninformation") > 0)
-	{
-		if (MiscellaneousVars[181] < 7)
-		{
-			PrintBold(s:"Fail-Rate: ",d:TensionChargeFailRate,s:"\n",
-								s:"Stamina-Per-Tic: ",d:TensionStaminaPerTic,s:"\n",
-								s:"Charge-Timer: ",d:MiscellaneousVars[185],s:" / ",d:TensionChargeTimeMax,s:"\n",
-								s:"ChargePulseTimer: ",d:MiscellaneousVars[189],s:"\n",
-								s:"ChargeIncreaseAmount: ",d:TensionChargeAmount,s:"\n",
-								s:"Timer-Count?: ",d:MiscellaneousVars[184],s:"\n",
-								s:"Tension-Timer: ",d:MiscellaneousVars[183],s:"\n",
-								s:"Tension-Timer-Decrease Amt: ",d:tensiontimerdecrease,s:"\n",
-								s:"Cooldown-Ratio: ",d:TensionCoolDownRatio,s:"\n",
-								s:"Cooldown-Timer: ",d:MiscellaneousVars[186],s:"\n",
-								s:"PulseTimer: ",d:MiscellaneousVars[190],s:" / ",d:maxpulseinterval,s:"\n",
-								s:"Interval1: ",d:randompulseinterval1,s:"\n",
-								s:"Interval2: ",d:randompulseinterval2,s:"\n",
-								s:"Interval3: ",d:randompulseinterval3,s:"\n",
-								s:"Interval4: ",d:randompulseinterval4,s:"\n",
-								s:"AuraXPos: ",f:SpawnFixedX,s:"\n",
-								s:"AuraYPos: ",f:SpawnFixedY,s:"\n",
-								s:"AuraZPos: ",f:SpawnFixedZ,s:"\n",
-								s:"AuraXScale: ",f:TensionAuraXScale,s:"\n",
-								s:"AuraYScale: ",f:TensionAuraYScale,s:"\n",
-								s:"AuraZAlpha: ",f:TensionAuraAlpha,s:"\n",
-								s:"AuraSoundTimer: ",d:MiscellaneousVars[246],s:"\n",
-								s:"TensionLevel: ",d:MiscellaneousVars[181],s:"\n",
-								s:"TensionLevelLastTic: ",d:MiscellaneousVars[182],s:"\n",
-								s:"TensionOverchargeDmgFactor: ",d:TensionOverchargeDmgFactor,s:" / 8\n",
-								s:"TensionOverchargeDmgBase: ",d:TensionOverchargeDmgBase,s:"\n",
-								s:"TensionOverchargeDmgFinal: ",d:TensionOverchargeDmgFinal,s:"\n",
-								s:"TensionOverchargeBuffer: ",d:MiscellaneousVars[250],s:" / ",d:MiscellaneousVars[262],s:" [",d:TensionOCTimer1Amount,s:"]\n",
-								s:"TensionOverchargeTimeInterval: ",d:MiscellaneousVars[251],s:" / ",d:MiscellaneousVars[261],s:" [",d:TensionOCTimer2Amount,s:"]\n",
-								s:"\n");
+			SpawnFixedX = GetActorX(Player1TID);
+			SpawnFixedY = GetActorY(Player1TID);
+			SpawnFixedZ = GetActorZ(Player1TID);
+			if (CharacterClass == 0) TensionAuraSpawnHeight = 28 * 65536;
+			if (CharacterClass == 1) TensionAuraSpawnHeight = 26 * 65536;
+			if (CharacterClass == 2) TensionAuraSpawnHeight = 25 * 65536;
+			TensionAuraSpawnHeight += SpawnFixedZ;
+			
+			int TensionAuraXScaleExtra = 1.0;
+			int TensionAuraYScaleExtra = 1.0;
+			if (ClassicDoomType == 5) // Doom 64
+			{
+				TensionAuraXScaleExtra = 1.1;
+				TensionAuraYScaleExtra = 1.375;
+			}
+			
+			if (MiscellaneousVars[181] == 1)
+			{
+				TensionAuraLight = "TensionAuraLight5"; 
+				TensionAuraXScale = fixedmul(0.5,TensionAuraXScaleExtra);
+				TensionAuraYScale = fixedmul(0.75,TensionAuraYScaleExtra);
+				TensionAuraAlpha = 0.20;
+				TensionAuraAlphaInvis = 0.02;
+				if (ThingCountName("TensionAuraLight5", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+				if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			}
+			if (MiscellaneousVars[181] == 2)
+			{
+				TensionAuraLight = "TensionAuraLight20";
+				TensionAuraXScale = fixedmul(0.5555,TensionAuraXScaleExtra);
+				TensionAuraYScale = fixedmul(0.8333,TensionAuraYScaleExtra);
+				TensionAuraAlpha = 0.26;
+				TensionAuraAlphaInvis = 0.026;
+				if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight20", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+				if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			}
+			if (MiscellaneousVars[181] == 3) 
+			{
+				TensionAuraLight = "TensionAuraLight50"; 
+				TensionAuraXScale = fixedmul(0.6111,TensionAuraXScaleExtra);
+				TensionAuraYScale = fixedmul(0.9116,TensionAuraYScaleExtra);
+				TensionAuraAlpha = 0.32;
+				TensionAuraAlphaInvis = 0.032;
+				if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight50", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+				if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			}
+			if (MiscellaneousVars[181] == 4)
+			{
+				TensionAuraLight = "TensionAuraLight100"; 
+				TensionAuraXScale = fixedmul(0.6667,TensionAuraXScaleExtra);
+				TensionAuraYScale = fixedmul(1.0,TensionAuraYScaleExtra);
+				TensionAuraAlpha = 0.38;
+				TensionAuraAlphaInvis = 0.038;
+				if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight100", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+				if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			}
+			if (MiscellaneousVars[181] == 5) 
+			{
+				TensionAuraLight = "TensionAuraLight250";
+				TensionAuraXScale = fixedmul(0.7222,TensionAuraXScaleExtra);
+				TensionAuraYScale = fixedmul(1.0833,TensionAuraYScaleExtra);
+				TensionAuraAlpha = 0.44;
+				TensionAuraAlphaInvis = 0.044;
+				if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight250", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+				if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			}
+			if (MiscellaneousVars[181] == 6) 
+			{
+				TensionAuraLight = "TensionAuraLight500"; 
+				TensionAuraXScale = fixedmul(0.7777,TensionAuraXScaleExtra);
+				TensionAuraYScale = fixedmul(1.1666,TensionAuraYScaleExtra);
+				TensionAuraAlpha = 0.5;
+				TensionAuraAlphaInvis = 0.05;
+				if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight500", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+				if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+			}
+			if (MiscellaneousVars[181] == 7) 
+			{
+				TensionAuraLight = "TensionAuraLight1000";
+				TensionAuraXScale = fixedmul(0.8333,TensionAuraXScaleExtra);
+				TensionAuraYScale = fixedmul(1.25,TensionAuraYScaleExtra);
+				TensionAuraAlpha = 0.56;
+				TensionAuraAlphaInvis = 0.056;
+				if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+				if (ThingCountName("TensionAuraLight1000", 1502) < 1) SpawnForced(TensionAuraLight,SpawnFixedX,SpawnFixedY,TensionAuraSpawnHeight,1502,0);
+			}
+			
+			// Misc Rescaling
+			if (GetCVar("dvds_tensionauratype") == 0) // Classic Tension Aura Sprites
+			{
+				TensionAuraXScale = fixedmul(TensionAuraXScale,1.0);
+				TensionAuraYScale = fixedmul(TensionAuraYScale,1.0);
+			}
+			if (GetCVar("dvds_tensionauratype") == 1) // Updated Tension Aura Sprites
+			{
+				TensionAuraXScale = fixedmul(TensionAuraXScale,0.575);
+				TensionAuraYScale = fixedmul(TensionAuraYScale,0.425);
+			}
+			
+			if (CharacterClass == 0) { TensionAuraXScale = fixedmul(TensionAuraXScale,1.12);  TensionAuraYScale = fixedmul(TensionAuraYScale,1.23); }
+			if (CharacterClass == 1) { TensionAuraXScale = fixedmul(TensionAuraXScale,1.04);  TensionAuraYScale = fixedmul(TensionAuraYScale,1.08); }
+			if (CharacterClass == 2) { TensionAuraXScale = fixedmul(TensionAuraXScale,1.0);   TensionAuraYScale = fixedmul(TensionAuraYScale,1.0); }
+			if (CharacterClass == 8) { TensionAuraXScale = fixedmul(TensionAuraXScale,0.98);  TensionAuraYScale = fixedmul(TensionAuraYScale,0.98); }
+			if (CharacterClass == 9) { TensionAuraXScale = fixedmul(TensionAuraXScale,0.96);  TensionAuraYScale = fixedmul(TensionAuraYScale,0.96); }
+			
+			if (ThingCountName("TensionAuraLooper", 1501) < 1) SpawnForced("TensionAuraLooper",SpawnFixedX,SpawnFixedY,SpawnFixedZ,1501,0);
+			if (ThingCountName("TensionAuraLooper", 1501) > 0)
+			{
+				SetActorProperty(1501,APROP_ScaleX,TensionAuraXScale);
+				SetActorProperty(1501,APROP_ScaleY,TensionAuraYScale);
+				if (PowerupTimer[1] > 0) SetActorProperty(1501,APROP_Alpha,TensionAuraAlphaInvis);
+				else SetActorProperty(1501,APROP_Alpha,TensionAuraAlpha);
+			}
 		}
 		else
 		{
-			PrintBold(s:"Charge-Timer: ",d:MiscellaneousVars[185],s:" / ",d:TensionChargeTimeMax,s:"\n",
-								s:"ChargePulseTimer: ",d:MiscellaneousVars[189],s:"\n",
-								s:"ChargeIncreaseAmount: ",d:TensionChargeAmount,s:"\n",
-								s:"Timer-Count?: ",d:MiscellaneousVars[184],s:"\n",
-								s:"Tension-Timer: ",d:MiscellaneousVars[183],s:"\n",
-								s:"Tension-Timer-Decrease Amt: ",d:tensiontimerdecrease,s:"\n",
-								s:"Cooldown-Ratio: ",d:TensionCoolDownRatio,s:"\n",
-								s:"Cooldown-Timer: ",d:MiscellaneousVars[186],s:"\n",
-								s:"PulseTimer: ",d:MiscellaneousVars[190],s:" / ",d:maxpulseinterval,s:"\n",
-								s:"Interval1: ",d:randompulseinterval1,s:"\n",
-								s:"Interval2: ",d:randompulseinterval2,s:"\n",
-								s:"Interval3: ",d:randompulseinterval3,s:"\n",
-								s:"Interval4: ",d:randompulseinterval4,s:"\n",
-								s:"AuraXPos: ",f:SpawnFixedX,s:"\n",
-								s:"AuraYPos: ",f:SpawnFixedY,s:"\n",
-								s:"AuraZPos: ",f:SpawnFixedZ,s:"\n",
-								s:"AuraXScale: ",f:TensionAuraXScale,s:"\n",
-								s:"AuraYScale: ",f:TensionAuraYScale,s:"\n",
-								s:"AuraZAlpha: ",f:TensionAuraAlpha,s:"\n",
-								s:"AuraSoundTimer: ",d:MiscellaneousVars[246],s:"\n",
-								s:"TensionLevel: ",d:MiscellaneousVars[181],s:"\n",
-								s:"TensionLevelLastTic: ",d:MiscellaneousVars[182],s:"\n",
-								s:"TensionOverchargeDmgFactor: ",d:TensionOverchargeDmgFactor,s:" / 8\n",
-								s:"TensionOverchargeDmgBase: ",d:TensionOverchargeDmgBase,s:"\n",
-								s:"TensionOverchargeDmgFinal: ",d:TensionOverchargeDmgFinal,s:"\n",
-								s:"TensionOverchargeBuffer: ",d:MiscellaneousVars[250],s:" / ",d:MiscellaneousVars[262],s:" [",d:TensionOCTimer1Amount,s:"]\n",
-								s:"TensionOverchargeTimeInterval: ",d:MiscellaneousVars[251],s:" / ",d:MiscellaneousVars[261],s:" [",d:TensionOCTimer2Amount,s:"]\n",
-								s:"\n");
+			if (ThingCountName("TensionAuraLooper", 1501) > 0) Thing_Remove(1501);
+			if (ThingCountName("TensionAuraLight5", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight20", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight50", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight100", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight250", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight500", 1502) > 0) Thing_Remove(1502);
+			if (ThingCountName("TensionAuraLight1000", 1502) > 0) Thing_Remove(1502);
+		}
+		
+		// Debug Displays
+		if (GetCVar("dvdsdebug_showtensioninformation") > 0)
+		{
+			if (MiscellaneousVars[181] < 7)
+			{
+				PrintBold(s:"Fail-Rate: ",d:TensionChargeFailRate,s:"\n",
+									s:"Stamina-Per-Tic: ",d:TensionStaminaPerTic,s:"\n",
+									s:"Charge-Timer: ",d:MiscellaneousVars[185],s:" / ",d:TensionChargeTimeMax,s:"\n",
+									s:"ChargePulseTimer: ",d:MiscellaneousVars[189],s:"\n",
+									s:"ChargeIncreaseAmount: ",d:TensionChargeAmount,s:"\n",
+									s:"Timer-Count?: ",d:MiscellaneousVars[184],s:"\n",
+									s:"Tension-Timer: ",d:MiscellaneousVars[183],s:"\n",
+									s:"Tension-Timer-Decrease Amt: ",d:tensiontimerdecrease,s:"\n",
+									s:"Cooldown-Ratio: ",d:TensionCoolDownRatio,s:"\n",
+									s:"Cooldown-Timer: ",d:MiscellaneousVars[186],s:"\n",
+									s:"PulseTimer: ",d:MiscellaneousVars[190],s:" / ",d:maxpulseinterval,s:"\n",
+									s:"Interval1: ",d:randompulseinterval1,s:"\n",
+									s:"Interval2: ",d:randompulseinterval2,s:"\n",
+									s:"Interval3: ",d:randompulseinterval3,s:"\n",
+									s:"Interval4: ",d:randompulseinterval4,s:"\n",
+									s:"AuraXPos: ",f:SpawnFixedX,s:"\n",
+									s:"AuraYPos: ",f:SpawnFixedY,s:"\n",
+									s:"AuraZPos: ",f:SpawnFixedZ,s:"\n",
+									s:"AuraXScale: ",f:TensionAuraXScale,s:"\n",
+									s:"AuraYScale: ",f:TensionAuraYScale,s:"\n",
+									s:"AuraZAlpha: ",f:TensionAuraAlpha,s:"\n",
+									s:"AuraSoundTimer: ",d:MiscellaneousVars[246],s:"\n",
+									s:"TensionLevel: ",d:MiscellaneousVars[181],s:"\n",
+									s:"TensionLevelLastTic: ",d:MiscellaneousVars[182],s:"\n",
+									s:"TensionOverchargeDmgFactor: ",d:TensionOverchargeDmgFactor,s:" / 8\n",
+									s:"TensionOverchargeDmgBase: ",d:TensionOverchargeDmgBase,s:"\n",
+									s:"TensionOverchargeDmgFinal: ",d:TensionOverchargeDmgFinal,s:"\n",
+									s:"TensionOverchargeBuffer: ",d:MiscellaneousVars[250],s:" / ",d:MiscellaneousVars[262],s:" [",d:TensionOCTimer1Amount,s:"]\n",
+									s:"TensionOverchargeTimeInterval: ",d:MiscellaneousVars[251],s:" / ",d:MiscellaneousVars[261],s:" [",d:TensionOCTimer2Amount,s:"]\n",
+									s:"\n");
+			}
+			else
+			{
+				PrintBold(s:"Charge-Timer: ",d:MiscellaneousVars[185],s:" / ",d:TensionChargeTimeMax,s:"\n",
+									s:"ChargePulseTimer: ",d:MiscellaneousVars[189],s:"\n",
+									s:"ChargeIncreaseAmount: ",d:TensionChargeAmount,s:"\n",
+									s:"Timer-Count?: ",d:MiscellaneousVars[184],s:"\n",
+									s:"Tension-Timer: ",d:MiscellaneousVars[183],s:"\n",
+									s:"Tension-Timer-Decrease Amt: ",d:tensiontimerdecrease,s:"\n",
+									s:"Cooldown-Ratio: ",d:TensionCoolDownRatio,s:"\n",
+									s:"Cooldown-Timer: ",d:MiscellaneousVars[186],s:"\n",
+									s:"PulseTimer: ",d:MiscellaneousVars[190],s:" / ",d:maxpulseinterval,s:"\n",
+									s:"Interval1: ",d:randompulseinterval1,s:"\n",
+									s:"Interval2: ",d:randompulseinterval2,s:"\n",
+									s:"Interval3: ",d:randompulseinterval3,s:"\n",
+									s:"Interval4: ",d:randompulseinterval4,s:"\n",
+									s:"AuraXPos: ",f:SpawnFixedX,s:"\n",
+									s:"AuraYPos: ",f:SpawnFixedY,s:"\n",
+									s:"AuraZPos: ",f:SpawnFixedZ,s:"\n",
+									s:"AuraXScale: ",f:TensionAuraXScale,s:"\n",
+									s:"AuraYScale: ",f:TensionAuraYScale,s:"\n",
+									s:"AuraZAlpha: ",f:TensionAuraAlpha,s:"\n",
+									s:"AuraSoundTimer: ",d:MiscellaneousVars[246],s:"\n",
+									s:"TensionLevel: ",d:MiscellaneousVars[181],s:"\n",
+									s:"TensionLevelLastTic: ",d:MiscellaneousVars[182],s:"\n",
+									s:"TensionOverchargeDmgFactor: ",d:TensionOverchargeDmgFactor,s:" / 8\n",
+									s:"TensionOverchargeDmgBase: ",d:TensionOverchargeDmgBase,s:"\n",
+									s:"TensionOverchargeDmgFinal: ",d:TensionOverchargeDmgFinal,s:"\n",
+									s:"TensionOverchargeBuffer: ",d:MiscellaneousVars[250],s:" / ",d:MiscellaneousVars[262],s:" [",d:TensionOCTimer1Amount,s:"]\n",
+									s:"TensionOverchargeTimeInterval: ",d:MiscellaneousVars[251],s:" / ",d:MiscellaneousVars[261],s:" [",d:TensionOCTimer2Amount,s:"]\n",
+									s:"\n");
+			}
 		}
 	}
 	
 	
-	//********************
-	//**Level Up Bonuses**
-	//********************
-	// REVISED: Changed If statements info a for block for the Level Items Bitfield (7/3/12)
-	
+	//******************************
+	//*Check Hellcore Weapon Levels*
+	//******************************
 	if (GetActorProperty(Player1TID,APROP_Health) > 0)
 	{
-		//******************************
-		//*Check Hellcore Weapon Levels*
-		//******************************
 		str HellcoreItemName;
 		// Imp's Claw
 		// "MiscellaneousVars[96]" Current Imp Claw Level
@@ -31820,7 +31727,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	}
 	
 	//************************************************************************
-	//***Determines Maximum Ammo Ammounts Based on Strength Seeds and Level***
+	//***Determines Maximum Ammo Ammounts Based on Strength Seeds and Level*** // To be Transplanted to "PlayerStatItem" (ZScript)
 	//************************************************************************
 	// "80" is the number of backpacks grabbed.
 	// "81" is storage for the current Clip maximum. 						// 1 STRSeed = 5 Bullets, 1 STRLevel = 10 Bullets [(Base) + 2560 + 2000 = 4560+]
@@ -32077,7 +31984,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	//***************************
 	//***Check DVII Game Flags***
 	//***************************
-
 	if (CharacterClass == 2 && ModType == 2)
 	{
 		if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) != 0) KilledMonsterFactor = GetLevelInfo(LEVELINFO_KILLED_MONSTERS) * 1000 / GetLevelInfo(LEVELINFO_TOTAL_MONSTERS);
@@ -32211,193 +32117,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 			SpecialGameFlags[10] = 1;
 		}
 	}
-	
-	if (MaxHealthTrue > 0)
-	{
-		HealthRatio = GetActorProperty(Player1TID,APROP_Health) * 1000 / MaxHealthTrue;
-		if (HealthRatio < 0) HealthRatio = 0;
-		if (HealthRatio > 2000) HealthRatio = 2000;
-	}
-	
-	//****************
-	//*POISON AILMENT*
-	//****************
-	int PoisonIncrement;
-	int PoisonHealth;
-	int PoisonHealthThreshold;
-	int PoisonDamage;
-	int PoisonTimer;
-	int PoisonHits;
-	int PoisonFlashColor;
-	int PoisonMaxInterval = 12;
-	PoisonMaxInterval += (MiscellaneousVars[32] / 8);
-	PoisonMaxInterval += (MiscellaneousVars[35] / 16);
-	PoisonMaxInterval *= 20;
-	if (TrueGameSkill <= SKILL_VERY_EASY)	PoisonMaxInterval = PoisonMaxInterval * 22 / 20;
-	if (TrueGameSkill == SKILL_EASY)				PoisonMaxInterval = PoisonMaxInterval * 21 / 20;
-	if (TrueGameSkill == SKILL_NORMAL) 		PoisonMaxInterval = PoisonMaxInterval * 20 / 20;
-	if (TrueGameSkill == SKILL_HARD) 			PoisonMaxInterval = PoisonMaxInterval * 19 / 20;
-	if (TrueGameSkill == SKILL_VERY_HARD)	PoisonMaxInterval = PoisonMaxInterval * 18 / 20;
-	if (TrueGameSkill == SKILL_EXTREME)		PoisonMaxInterval = PoisonMaxInterval * 17 / 20;
-	if (TrueGameSkill == SKILL_HORRIBLE)		PoisonMaxInterval = PoisonMaxInterval * 16 / 20;
-	if (TrueGameSkill == SKILL_IMPOSSIBLE)	PoisonMaxInterval = PoisonMaxInterval * 15 / 20;
-	if (TrueGameSkill >= SKILL_OMEGA)			PoisonMaxInterval = PoisonMaxInterval * 14 / 20;
-	if (PowerupTimer[16] > 0 && PowerupTimer[4] == 0) // Being invulnerable will prevent poison damage from occuring.
-	{
-		PoisonIncrement = 20;
-		C3 = 100;
-		if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
-		if (PowerupTimer[20] > 0) FreezePlayer += 1;
-		if (FreezePlayer == 0)
-		{
-			buttons = GetPlayerInput(0, INPUT_BUTTONS); 
-			if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) C3 = C3 * 125 / 100;
-			if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) C3 = C3 * random(112,113) / 100;
-			if (buttons & BT_JUMP) C3 = C3 * 125 / 100;
-			if (buttons & BT_CROUCH) C3 = C3 * 75 / 100;
-			PoisonIncrement = PoisonIncrement * C3 / 100;
-		}
-		// Check Characters & Armor
-		if (CharacterClass == 2)
-		{
-			C3 = 1000;
-			if (CheckActorInventory(Player1TID,"PearlyCorset") > 0) C3 -= 83;
-			if (CheckActorInventory(Player1TID,"DoveRibbon") > 0) C3 -= 334;
-			if (CheckActorInventory(Player1TID,"DivineShield") > 0) C3 -= 83;
-			PoisonIncrement = PoisonIncrement * C3 / 1000;
-		}
-		else
-		if (CharacterClass == 0 || CharacterClass == 1)
-		{
-			C3 = 100;
-			if (CheckActorInventory(Player1TID,"DSGreenArmorClass") > 0) C3 -= 2; // (-2% for Green Armor)
-			if (CheckActorInventory(Player1TID,"DSBlueArmorClass") > 0) C3 -= 4; // (-4% for Blue Armor)
-			if (CheckActorInventory(Player1TID,"DSStoneArmorClass1") > 0) C3 -= 5; // (-5% for Stone Armor 1)
-			if (CheckActorInventory(Player1TID,"DSDiamondArmorClass1") > 0) C3 -= 7; // (-7% for Diamond Armor 1)
-			if (CheckActorInventory(Player1TID,"DSStoneArmorClass2") > 0) C3 -= 6; // (-6% for Stone Armor 2)
-			if (CheckActorInventory(Player1TID,"DSDiamondArmorClass2") > 0) C3 -= 8; // (-8% for Diamond Armor 2)
-			PoisonIncrement = PoisonIncrement * C3 / 100;
-		}
 		
-		// Buffs
-		if (PowerupTimer[12] > 0) PoisonIncrement = PoisonIncrement * 6 / 5; // Acceleratle = 120% Speed
-		if (PowerupTimer[15] > 0) PoisonIncrement = PoisonIncrement * 4 / 5; // Deceleratle = 80% Speed
-		if (PowerupTimer[17] > 0) PoisonIncrement = PoisonIncrement * 1 / 5; // Sleep = 20% Speed
-		if (PowerupTimer[18] > 0) PoisonIncrement = PoisonIncrement * 9 / 5; // Fatigue = 180% Speed
-		
-		PoisonTimer += PoisonIncrement;
-		if (PoisonTimer >= PoisonMaxInterval)
-		{
-			PoisonTimer = 0;
-			PoisonHealth = GetActorProperty(Player1TID,APROP_Health);
-			PoisonHealthThreshold = MaxHealthTrue / 50;
-			if (PoisonHealthThreshold < 2) PoisonHealthThreshold = 2;
-			if (PoisonHealth > PoisonHealthThreshold)
-			{
-				PoisonDamage = MaxHealthTrue / 200;
-				if (PoisonDamage < 1) PoisonDamage = 1;
-				if (random(1,8) == 8)
-				{
-					if (random(1,8) == 8) PoisonDamage *= 3; else PoisonDamage *= 2;
-				}
-			
-				PoisonFlashColor = random(191,255);
-				FadeRange(0,PoisonFlashColor,0,0.125, 0,PoisonFlashColor,0,0, 0.50);
-				PoisonHealth -= PoisonDamage;
-				if (PoisonHealth < PoisonHealthThreshold) PoisonHealth = PoisonHealthThreshold;
-				SetActorProperty(Player1TID,APROP_Health,PoisonHealth);
-			
-				// Pain Sounds
-				PoisonHits++;
-				if (PoisonHits >= 3)
-				{
-					PoisonHits = 0;
-					if (random(1,16) == 16)
-					{
-						StopSound(Player1TID,CHAN_VOICE);
-						if (CharacterClass == 9)
-						{
-							if (HealthRatio >= 667) PlaySound(Player1TID,"PetraPainSet1",CHAN_VOICE,1.0,0,ATTN_NORM); 
-							if (HealthRatio >= 334 && HealthRatio <= 666) PlaySound(Player1TID,"PetraPainSet2",CHAN_VOICE,1.0,0,ATTN_NORM);
-							if (HealthRatio <= 333 && PoisonHealth > 0) PlaySound(Player1TID,"PetraPainSet3",CHAN_VOICE,1.0,0,ATTN_NORM);
-						}
-						else
-						if (CharacterClass == 8)
-						{
-							if (HealthRatio >= 667) PlaySound(Player1TID,"AilishPainSet1",CHAN_VOICE,1.0,0,ATTN_NORM); 
-							if (HealthRatio >= 334 && HealthRatio <= 666) PlaySound(Player1TID,"AilishPainSet2",CHAN_VOICE,1.0,0,ATTN_NORM);
-							if (HealthRatio <= 333 && PoisonHealth > 0) PlaySound(Player1TID,"AilishPainSet3",CHAN_VOICE,1.0,0,ATTN_NORM);
-						}
-						else
-						if (CharacterClass == 2)
-						{
-							if (HealthRatio >= 667) PlaySound(Player1TID,"FloraPainSet1",CHAN_VOICE,1.0,0,ATTN_NORM); 
-							if (HealthRatio >= 334 && HealthRatio <= 666) PlaySound(Player1TID,"FloraPainSet2",CHAN_VOICE,1.0,0,ATTN_NORM);
-							if (HealthRatio <= 333 && PoisonHealth > 0) PlaySound(Player1TID,"FloraPainSet3",CHAN_VOICE,1.0,0,ATTN_NORM);
-						}
-						else
-						if (CharacterClass == 1)
-						{
-							if (PoisonHealth > 0) PlaySound(Player1TID,"illucia/pain",CHAN_VOICE,1.0,0,ATTN_NORM);
-						}
-						else
-						if (CharacterClass == 0)
-						{
-							if (PoisonHealth > 0) PlaySound(Player1TID,"deggaris/pain",CHAN_VOICE,1.0,0,ATTN_NORM);
-						}
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		PoisonDamage = 0;
-		PoisonTimer = 0;
-		PoisonHits = 0;
-	}
-	if (GetCVar("dvdsdebug_poisonailmentdisplays") > 0)
-	{
-		PrintBold(s:"Poison: ",d:PowerupTimer[16],
-					s:"\nPoisonIncrement: ",d:PoisonIncrement,
-					s:"\nPoisonTimer: ",d:PoisonTimer,s:" / ",d:PoisonMaxInterval,
-						s:"\nPoisonDamage: ",d:PoisonDamage);
-	}
-	
-	if (GetActorProperty(Player1TID,APROP_Health) <= 0) { GiveActorInventory(Player1TID,"PlayerIsDead", 1); }
-	else
-	{
-		TakeActorInventory(Player1TID,"PlayerIsDead", 1);
-		
-		if (HealthRatio != MiscellaneousVars[4]); // "4" is for saving health ratio for giving Low or Critical Health Inventory items [for Status Bar Displays and using "Nova" with Flora's Hellcore weapons]
-		{
-			if (HealthRatio < 167)
-			{
-				if (HealthRatio < 21)
-				{
-					GiveActorInventory(Player1TID,"CriticalHealth", 1);
-					TakeActorInventory(Player1TID,"LowHealth", 9999);
-				}
-				else 
-				{
-					GiveActorInventory(Player1TID,"LowHealth", 1);
-					TakeActorInventory(Player1TID,"CriticalHealth", 9999);
-				}
-				TakeActorInventory(Player1TID,"NormalHealth", 9999);
-			}
-			else 
-			{
-				GiveActorInventory(Player1TID,"NormalHealth", 1);
-				TakeActorInventory(Player1TID,"LowHealth", 9999);
-				TakeActorInventory(Player1TID,"CriticalHealth", 9999);
-			}
-			if (GetActorProperty(Player1TID,APROP_Health) >= MaxHealthTrue) GiveActorInventory(Player1TID,"FullHealth", 1); else TakeActorInventory(Player1TID,"FullHealth", 1);
-			
-			MiscellaneousVars[4] = HealthRatio;
-		}
-	}
-	
-	
+	//***********************
+	//*Marine's Armor Checks*
+	//***********************
 	if (CurrentArmorClass == 6)
 	{
 		GiveActorInventory(Player1TID,"DSDiamondArmorClass2", 1);
@@ -32490,7 +32213,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 			}
 		}
 	}
-	
 	if (CheckActorInventory(Player1TID,"Armor") <= 0)
 	{
 		CurrentArmorClass = 0;
@@ -32511,7 +32233,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	//***************************************
 	//**Scripted Events for Individual Maps**
 	//***************************************
-	
 	if (ModType == 2) // DVII
 	{
 		if (GetLevelInfo(LEVELINFO_LEVELNUM) == 1204) // MAP04 - Minas Morgul
@@ -32719,6 +32440,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 							s:"\nVelZ: ",d:VelZ,
 							s:"");
 	}
+	
+	
+	
+	
 	
 	if (GetActorProperty(Player1TID,APROP_Health) > 0) 
 	{
@@ -46227,40 +45952,25 @@ script "SceptreHold" (int type)
 	else SetResultValue(0);
 }
 
-// Allows DECORATE to check the value of a specfic "MiscellaneousVars[]" value for checks
-script "MiscVarCheckDECORATE" (int value)
+// Allows DECORATE to check the value of a specfic "Other" value for checks
+script "OtherVarCheckDECORATE" (int value, int type)
 {
-	int result = MiscellaneousVars[value];
+	int result; 
+	if (value == 0) result = MaxHealthTrue;
+	if (value == 1) result = MaxMana;
+	if (value == 2) result = CurrentMana;
+	if (value == 3) result = TrueGameSkill;
+	if (value == 4) result = ClassCheck;
 	SetResultValue(result);
 }
 
-// Allows DECORATE to check the value of a specfic "MenuSystemVars[]" value for checks
-script "MenuVarCheckDECORATE" (int value)
-{
-	int result = MenuSystemVars[value];
-	SetResultValue(result);
-}
-
-// Allows DECORATE to check the value of a specfic "SpecialGameFlags[]" value for checks
-script "SpecialGameFlagsCheckDECORATE" (int value)
-{
-	int result = SpecialGameFlags[value];
-	SetResultValue(result);
-}
-
-// Allows DECORATE to check the value of a specfic "DVDSSpecialArrayValue[]" value for checks
-script "DVDSSpecialArrayCheckDECORATE" (int value)
-{
-	int result = DVDSSpecialArrayValue[value];
-	SetResultValue(result);
-}
-
-// Allows DECORATE to SET the value of a specfic "MiscellaneousVars[]" value
+// Allows DECORATE to SET the value of a specfic Other value
 script "OtherVarSetDECORATE" (int value, int perkvalue, int type)
 {
 	if (value == 0) // MaxHealthTrue
 	{
-		if (type <= 0) MaxHealthTrue = perkvalue; // Set
+		if (type <= -1) SetResultValue(MaxHealthTrue);
+		if (type == 0) MaxHealthTrue = perkvalue; // Set
 		if (type == 1) MaxHealthTrue += perkvalue; // Add
 		if (type == 2) MaxHealthTrue -= perkvalue; // Subtract
 		if (type == 3) MaxHealthTrue *= perkvalue; // Multiply
@@ -46274,7 +45984,8 @@ script "OtherVarSetDECORATE" (int value, int perkvalue, int type)
 	}
 	if (value == 1) // MaxMana
 	{
-		if (type <= 0) MaxMana = perkvalue; // Set
+		if (type <= -1) SetResultValue(MaxMana);
+		if (type == 0) MaxMana = perkvalue; // Set
 		if (type == 1) MaxMana += perkvalue; // Add
 		if (type == 2) MaxMana -= perkvalue; // Subtract
 		if (type == 3) MaxMana *= perkvalue; // Multiply
@@ -46288,7 +45999,8 @@ script "OtherVarSetDECORATE" (int value, int perkvalue, int type)
 	}
 	if (value == 2) // CurrentMana
 	{
-		if (type <= 0) CurrentMana = perkvalue; // Set
+		if (type <= -1) SetResultValue(CurrentMana);
+		if (type == 0) CurrentMana = perkvalue; // Set
 		if (type == 1) CurrentMana += perkvalue; // Add
 		if (type == 2) CurrentMana -= perkvalue; // Subtract
 		if (type == 3) CurrentMana *= perkvalue; // Multiply
@@ -46300,12 +46012,50 @@ script "OtherVarSetDECORATE" (int value, int perkvalue, int type)
 		if (type == 9) CurrentMana <<= perkvalue; // Shift Left
 		if (type == 10) CurrentMana >>= perkvalue; // Shift Right
 	}
+	if (value == 3) // TrueGameSkill
+	{
+		if (type <= -1) SetResultValue(TrueGameSkill);
+		if (type == 0) TrueGameSkill = perkvalue; // Set
+		if (type == 1) TrueGameSkill += perkvalue; // Add
+		if (type == 2) TrueGameSkill -= perkvalue; // Subtract
+		if (type == 3) TrueGameSkill *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) TrueGameSkill /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) TrueGameSkill %= perkvalue; // Modulo
+		if (type == 6) TrueGameSkill &= perkvalue; // AND
+		if (type == 7) TrueGameSkill |= perkvalue; // OR
+		if (type == 8) TrueGameSkill ^= perkvalue; // XOR
+		if (type == 9) TrueGameSkill <<= perkvalue; // Shift Left
+		if (type == 10) TrueGameSkill >>= perkvalue; // Shift Right
+	}
+	if (value == 4) // ClassCheck
+	{
+		if (type <= -1) SetResultValue(ClassCheck);
+		if (type == 0) ClassCheck = perkvalue; // Set
+		if (type == 1) ClassCheck += perkvalue; // Add
+		if (type == 2) ClassCheck -= perkvalue; // Subtract
+		if (type == 3) ClassCheck *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) ClassCheck /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) ClassCheck %= perkvalue; // Modulo
+		if (type == 6) ClassCheck &= perkvalue; // AND
+		if (type == 7) ClassCheck |= perkvalue; // OR
+		if (type == 8) ClassCheck ^= perkvalue; // XOR
+		if (type == 9) ClassCheck <<= perkvalue; // Shift Left
+		if (type == 10) ClassCheck >>= perkvalue; // Shift Right
+	}
+}
+
+// Allows DECORATE to check the value of a specfic "MiscellaneousVars[]" value for checks
+script "MiscVarCheckDECORATE" (int value)
+{
+	int result = MiscellaneousVars[value];
+	SetResultValue(result);
 }
 
 // Allows DECORATE to SET the value of a specfic "MiscellaneousVars[]" value
 script "MiscVarSetDECORATE" (int value, int perkvalue, int type)
 {
-	if (type <= 0) MiscellaneousVars[value] = perkvalue; // Set
+	if (type <= -1) SetResultValue(MiscellaneousVars[value]);
+	if (type == 0) MiscellaneousVars[value] = perkvalue; // Set
 	if (type == 1) MiscellaneousVars[value] += perkvalue; // Add
 	if (type == 2) MiscellaneousVars[value] -= perkvalue; // Subtract
 	if (type == 3) MiscellaneousVars[value] *= perkvalue; // Multiply
@@ -46318,10 +46068,18 @@ script "MiscVarSetDECORATE" (int value, int perkvalue, int type)
 	if (type == 10) MiscellaneousVars[value] >>= perkvalue; // Shift Right
 }
 
+// Allows DECORATE to check the value of a specfic "MenuSystemVars[]" value for checks
+script "MenuVarCheckDECORATE" (int value)
+{
+	int result = MenuSystemVars[value];
+	SetResultValue(result);
+}
+
 // Allows DECORATE to SET the value of a specfic "MiscellaneousVars[]" value
 script "MenuVarSetDECORATE" (int value, int perkvalue, int type)
 {
-	if (type <= 0) MenuSystemVars[value] = perkvalue; // Set
+	if (type <= -1) SetResultValue(MenuSystemVars[value]);
+	if (type == 0) MenuSystemVars[value] = perkvalue; // Set
 	if (type == 1) MenuSystemVars[value] += perkvalue; // Add
 	if (type == 2) MenuSystemVars[value] -= perkvalue; // Subtract
 	if (type == 3) MenuSystemVars[value] *= perkvalue; // Multiply
@@ -46333,6 +46091,56 @@ script "MenuVarSetDECORATE" (int value, int perkvalue, int type)
 	if (type == 9) MenuSystemVars[value] <<= perkvalue; // Shift Left
 	if (type == 10) MenuSystemVars[value] >>= perkvalue; // Shift Right
 }
+
+// Allows DECORATE to check the value of a specfic "DVDSSpecialArrayValue[]" value for checks
+script "DVDSSpecialArrayCheckDECORATE" (int value)
+{
+	int result = DVDSSpecialArrayValue[value];
+	SetResultValue(result);
+}
+
+// Allows DECORATE to SET the value of a specfic "DVDSSpecialArrayValue[]" value
+script "DVDSSpecialArraySetDECORATE" (int value, int perkvalue, int type)
+{
+	if (type <= -1) SetResultValue(DVDSSpecialArrayValue[value]);
+	if (type == 0) DVDSSpecialArrayValue[value] = perkvalue; // Set
+	if (type == 1) DVDSSpecialArrayValue[value] += perkvalue; // Add
+	if (type == 2) DVDSSpecialArrayValue[value] -= perkvalue; // Subtract
+	if (type == 3) DVDSSpecialArrayValue[value] *= perkvalue; // Multiply
+	if (type == 4 && perkvalue != 0) DVDSSpecialArrayValue[value] /= perkvalue; // Divide
+	if (type == 5 && perkvalue != 0) DVDSSpecialArrayValue[value] %= perkvalue; // Modulo
+	if (type == 6) DVDSSpecialArrayValue[value] &= perkvalue; // AND
+	if (type == 7) DVDSSpecialArrayValue[value] |= perkvalue; // OR
+	if (type == 8) DVDSSpecialArrayValue[value] ^= perkvalue; // XOR
+	if (type == 9) DVDSSpecialArrayValue[value] <<= perkvalue; // Shift Left
+	if (type == 10) DVDSSpecialArrayValue[value] >>= perkvalue; // Shift Right
+}
+
+// Allows DECORATE to check the value of a specfic "SpecialGameFlags[]" value for checks
+script "SpecialGameFlagsCheckDECORATE" (int value)
+{
+	int result = SpecialGameFlags[value];
+	SetResultValue(result);
+}
+
+// Allows DECORATE to SET the value of a specfic "SpecialGameFlags[]" value
+script "SpecialGameFlagsSetDECORATE" (int value, int perkvalue, int type)
+{
+	if (type <= -1) SetResultValue(SpecialGameFlags[value]);
+	if (type == 0) SpecialGameFlags[value] = perkvalue; // Set
+	if (type == 1) SpecialGameFlags[value] += perkvalue; // Add
+	if (type == 2) SpecialGameFlags[value] -= perkvalue; // Subtract
+	if (type == 3) SpecialGameFlags[value] *= perkvalue; // Multiply
+	if (type == 4 && perkvalue != 0) SpecialGameFlags[value] /= perkvalue; // Divide
+	if (type == 5 && perkvalue != 0) SpecialGameFlags[value] %= perkvalue; // Modulo
+	if (type == 6) SpecialGameFlags[value] &= perkvalue; // AND
+	if (type == 7) SpecialGameFlags[value] |= perkvalue; // OR
+	if (type == 8) SpecialGameFlags[value] ^= perkvalue; // XOR
+	if (type == 9) SpecialGameFlags[value] <<= perkvalue; // Shift Left
+	if (type == 10) SpecialGameFlags[value] >>= perkvalue; // Shift Right
+}
+
+//********************
 
 // Checks the option to see if Flora uses MP outright instead of ammo for Heretic's weapons
 script "CheckManaAmmoHeretic" (void)
@@ -48187,6 +47995,22 @@ script "ManaDrain" (int baseamount, int draintype, int ignoredefense, int exceed
 								s:"\nMana [After]: ",d:CurrentMana,
 								s:"\n");
 	}
+}
+
+// Pain Sound Check [Deggaris]
+script "DeggarisPainScreams" (void)
+{
+	int CurrentHealth = GetActorProperty(Player1TID,APROP_Health);
+	int HealthRatio = CurrentHealth * 1000 / MaxHealthTrue;
+	//StopSound(Player1TID,CHAN_VOICE); 
+}
+
+// Pain Sound Check [Illucia]
+script "IlluciaPainScreams" (void)
+{
+	int CurrentHealth = GetActorProperty(Player1TID,APROP_Health);
+	int HealthRatio = CurrentHealth * 1000 / MaxHealthTrue;
+	//StopSound(Player1TID,CHAN_VOICE); 
 }
 
 // Pain Sound Check [Flora]
