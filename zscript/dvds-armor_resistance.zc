@@ -1609,7 +1609,6 @@ class PlayerStatItem : Inventory
 
 			if (debuginfiniteammo) Console.Printf("    \cwInfinite Ammo [STEP ? - Minigun Heat]: %d / %d\c-", minigunheat, minigunheatmax);
 		}
-		// To possibly be transplanted from ACS :V
 		
 		
 		
@@ -1982,6 +1981,80 @@ class PlayerStatItem : Inventory
 		
 		
 		
+		//*************************************
+		//*Blacken Screen if Blinded or Asleep*
+		//*************************************
+		if (playeractor)
+		{
+			if (CallACS("GetBuffTimer",19) > 0) owner.A_SetBlend("00 00 00",0.975,3);
+			if (CallACS("GetBuffTimer",20) > 0) owner.A_SetBlend("00 00 00",0.9875,3);
+		}
+		
+		
+		
+		
+		
+		//*******************
+		//*Whistle Countdown*
+		//*******************
+		if (playeractor && PlayerCurrentHealth > 0 && CallACS("MiscVarCheckDECORATE",168) > 0) CallACS("MiscVarSetDECORATE",168,-1,1);
+		
+		
+		
+		
+		
+		//**************************************************************************************************************
+		//*DQ-Style Seed System [DROPPED Versions only, naturally added Seeds/etc do not get despawned via this system]*
+		//**************************************************************************************************************
+		if (playeractor)
+		{
+			int SeedLimit = CallACS("MiscVarCheckDECORATE",29);
+			// for the Seed limit amount [to be used in more than one script]
+			if (TrueGameSkill <= 0) SeedLimit = 128;
+			if (TrueGameSkill == 1) SeedLimit = 120;
+			if (TrueGameSkill == 2) SeedLimit = 112;
+			if (TrueGameSkill == 3) SeedLimit = 104;
+			if (TrueGameSkill == 4) SeedLimit = 96;
+			if (TrueGameSkill == 5) SeedLimit = 88;
+			if (TrueGameSkill == 6) SeedLimit = 80;
+			if (TrueGameSkill == 7) SeedLimit = 72;
+			if (TrueGameSkill >= 8) SeedLimit = 64;
+			if (CallACS("OtherVarCheckDECORATE",8) == 0) SeedLimit *= 4; // 4x the usual limits on Classic Doom 1/2 / Heretic / Hexen / Strife
+			CallACS("MiscVarSetDECORATE",29,SeedLimit);
+			
+			int SeedLimit2 = CallACS("MiscVarCheckDECORATE",28);
+			// for the Seed of Skill limit amount [to be used in more than one script]
+			if (TrueGameSkill <= 0) SeedLimit2 = 32;
+			if (TrueGameSkill == 1) SeedLimit2 = 30;
+			if (TrueGameSkill == 2) SeedLimit2 = 28;
+			if (TrueGameSkill == 3) SeedLimit2 = 26;
+			if (TrueGameSkill == 4) SeedLimit2 = 24;
+			if (TrueGameSkill == 5) SeedLimit2 = 22;
+			if (TrueGameSkill == 6) SeedLimit2 = 20;
+			if (TrueGameSkill == 7) SeedLimit2 = 16;
+			if (TrueGameSkill >= 8) SeedLimit2 = 14;
+			if (CallACS("OtherVarCheckDECORATE",8) == 0) SeedLimit2 *= 4; // 4x the usual limits on Classic Doom 1/2 / Heretic / Hexen / Strife
+			CallACS("MiscVarSetDECORATE",28,SeedLimit2);
+			
+			int FyggLimit = CallACS("MiscVarCheckDECORATE",26);
+			// for the Fygg limit amount [to be used in more than one script]
+			if (TrueGameSkill <= 0) FyggLimit = 3;
+			if (TrueGameSkill == 1) FyggLimit = 3;
+			if (TrueGameSkill == 2) FyggLimit = 3;
+			if (TrueGameSkill == 3) FyggLimit = 2;
+			if (TrueGameSkill == 4) FyggLimit = 2;
+			if (TrueGameSkill == 5) FyggLimit = 2;
+			if (TrueGameSkill == 6) FyggLimit = 1;
+			if (TrueGameSkill == 7) FyggLimit = 1;
+			if (TrueGameSkill >= 8) FyggLimit = 1;
+			if (CallACS("OtherVarCheckDECORATE",8) == 0) FyggLimit *= 4; // 4x the usual limits on Classic Doom 1/2 / Heretic / Hexen / Strife
+			CallACS("MiscVarSetDECORATE",26,FyggLimit);
+		}
+		
+		
+		
+		
+		
 		//**************************
 		//*Character Checks Misc #1*
 		//**************************
@@ -2048,6 +2121,66 @@ class PlayerStatItem : Inventory
 				if (Owner.CountInv("ArchvileHand") > 0) Owner.A_TakeInventory("ArchvileHand", 1);
 				if (Owner.CountInv("DiabloistHand") > 0) Owner.A_TakeInventory("DiabloistHand", 1);
 				if (Owner.CountInv("BalrogFist") > 0) Owner.A_TakeInventory("BalrogFist", 1);
+			}
+		}
+		
+		
+		
+		
+		
+		//***********************
+		//*Check for Magic Focus*
+		//***********************
+		int FocusDrain;
+		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+		if (playeractor)
+		{
+			FreezePlayer = 0;
+			if (CallACS("MiscVarCheckDECORATE",2500) > 0) FreezePlayer += 1;
+			if (CallACS("GetBuffTimer",18) > 0 && random(1,5) > 2) FreezePlayer += 1;
+			if (CallACS("GetBuffTimer",20) > 0) FreezePlayer += 1;
+			if (CallACS("GetBuffTimer",21) > 0 && random(1,5) > 2) FreezePlayer += 1;
+			if (buttons & BT_ZOOM && buttons & BT_SPEED && CurrentStamina >= FocusDrain && FreezePlayer == 0)
+			{
+				if (random(1,25) == 1) FocusDrain = (random(1,2) * 4);
+													else FocusDrain = (random(4,8) * 5);
+				if (CallACS("MiscVarCheckDECORATE",317) > 0) FocusDrain = FocusDrain * (100 - (CallACS("MiscVarCheckDECORATE",317) * 3)) / 100;
+				if (Owner.CountInv("FalconKnifeEarrings") > 0) FocusDrain = FocusDrain * 9 / 10;
+				// if (debugfocusdrain) Console.Printf("    \cnFocusing [Step 1 - Base Drain]: %d\c-", FocusDrain);
+				
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0)
+				{
+					previousdelaycount = CurrentStamina;
+					CurrentStamina -= FocusDrain;
+					if (CurrentStamina < 0) CurrentStamina = 0;
+					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+					// if (debugfocusdrain) Console.Printf("    \cnFocusing [Step 2 - Reduce Stamina]: Current: %d\c-, Previous: %d, DrainAmt: %d", CurrentStamina, previousdelaycount, FocusDrain);
+				
+					CallACS("MiscVarSetDECORATE",212,1); // "Focus" on
+					CallACS("MiscVarSetDECORATE",231,1,1); // Increment Focus Timer
+
+					// Focus Generator
+					if (CallACS("MiscVarCheckDECORATE",231) == 1)
+					{
+						owner.A_SpawnItemEx("FocusParticleSource",0,0,0,0.0,0.0,0.0,0,SXF_SETMASTER);
+					}
+				}
+				else
+				{
+					CallACS("MiscVarSetDECORATE",212,0); // "Focus" off
+					CallACS("MiscVarSetDECORATE",231,0);
+					owner.A_RemoveChildren(true,RMVF_MISC,"FocusParticleSource");
+				}
+			}
+			else
+			{
+				CallACS("MiscVarSetDECORATE",212,0); // "Focus" off
+				CallACS("MiscVarSetDECORATE",231,0);
+				owner.A_RemoveChildren(true,RMVF_MISC,"FocusParticleSource");
+			}
+			if (CallACS("MiscVarCheckDECORATE",212) > 0) // Focusing
+			{
+				if (PlayerCurrentHealth > 0) owner.A_SetBlend("00 00 30", 0.9375, 1);
 			}
 		}
 		
