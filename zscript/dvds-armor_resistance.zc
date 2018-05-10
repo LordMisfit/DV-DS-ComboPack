@@ -11,6 +11,9 @@ class PlayerStatItem : Inventory
 	float DivineRegenTimer, DivineRegenInterval;
 	float DoveRegenTimer, DoveRegenInterval;
 	float PoisonTimer, PoisonMaxInterval;
+	float RuinousPtsCurrent, RuinousPtsNeeded;
+	float UncurseInterval, UncurseMaxInterval;
+
 	int landdmgbonus;
 	int heldtime;
 	int PrevHealthRatio;
@@ -47,6 +50,7 @@ class PlayerStatItem : Inventory
 		int debugstaminaregen = dvdsdebug_showstaminaregenstuff;
 		int debugregenmana = dvdsdebug_showmanaregenstuff;
 		int debuguncurse = dvdsdebug_shielduncursedisplay;
+		int debugcursedmg = dvdsdebug_cursedmgdisplay;
 		int debugregenhealth = dvdsdebug_showhpregenstuff;
 		int debugatkinfo = dvdsdebug_showplayeratkinformation;
 		int debugpoisoninfo = dvdsdebug_poisonailmentdisplays;
@@ -82,6 +86,7 @@ class PlayerStatItem : Inventory
 		int TotalMass = 100;
 		int delaycount;
 		int HealthRatio;
+		int previousdelaycount = 0;
 
 		//******************
 		//*Get Health Ratio*
@@ -413,6 +418,7 @@ class PlayerStatItem : Inventory
 			owner.mass = TotalMass;
 			CallACS("SetMiscellaneousVar",201,TotalMass); // Set to the Total Mass
 			//Console.Printf("    Calculated Mass: %d [Real Mass: %d]", TotalMass, owner.mass);
+			PlayerMASS = CallACS("StatCheck",10);
 		}
 		
 		
@@ -731,6 +737,218 @@ class PlayerStatItem : Inventory
 		//*******************
 		//*RUINOUS SHIELD D:*
 		//*******************
+		int UncurseIntervalChance;
+		int UncurseIntervalChance2;
+		int RuinousShieldPercent, RuinousShieldPercentF;
+		int UncursePtsTotalAdded = 0;
+		int UncursePtsAdd1 = 0;
+		int uncursetimerincrease = 100;
+		int uncurselevel = CallACS("MiscVarCheckDECORATE",202);
+		if (playeractor)
+		{
+			RuinousPtsCurrent = CallACS("MiscVarCheckDECORATE",202);
+			if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 0]: %d\c-, %d / %d", uncurselevel, RuinousPtsCurrent, RuinousPtsNeeded);
+			// Base Max Interval
+			UncurseMaxInterval = 7000; // 70 [*100] tics [up to -17 tics with all items]
+			if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 1 - Interval Max (Base)]: %d\c-", UncurseMaxInterval);
+
+			previousdelaycount = UncurseMaxInterval;
+			if (Owner.CountInv("FalconKnifeEarrings") > 0) UncurseMaxInterval -= 500;
+			if (Owner.CountInv("BalrogRing") > 0) UncurseMaxInterval -= 400;
+			if (Owner.CountInv("EvenstarNecklace") > 0) UncurseMaxInterval -= 300;
+			if (Owner.CountInv("AnubisCufflinks") > 0) UncurseMaxInterval -= 200;
+			if (Owner.CountInv("DoveRibbon") > 0) UncurseMaxInterval -= 200;
+			if (Owner.CountInv("KissaBra") > 0) UncurseMaxInterval -= 100;
+			if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 2 - Interval Max (Armor)]: %d\c-, Previous: %d", UncurseMaxInterval, previousdelaycount);
+			
+			// Base Interval Chance
+			UncurseIntervalChance = 40;
+			if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 3 - Interval Chance (Armor)]: %d\c-", UncurseIntervalChance);
+			
+			previousdelaycount = UncurseIntervalChance;
+			if (Owner.CountInv("SafeTeaShoes") > 0) UncurseIntervalChance += 1;
+			if (Owner.CountInv("PearlyCorset") > 0) UncurseIntervalChance += 1;
+			if (Owner.CountInv("WaterFlyingDress") > 0) UncurseIntervalChance += 1;
+			if (Owner.CountInv("EvenstarNecklace") > 0) UncurseIntervalChance += 2;
+			if (Owner.CountInv("CloakofEvasion") > 0) UncurseIntervalChance += 1;
+			if (Owner.CountInv("FalconKnifeEarrings") > 0) UncurseIntervalChance += 3;
+			if (Owner.CountInv("AnubisCufflinks") > 0) UncurseIntervalChance += 2;
+			if (Owner.CountInv("KissaBra") > 0) UncurseIntervalChance += 1;
+			if (Owner.CountInv("BalrogRing") > 0) UncurseIntervalChance += 2;
+			if (Owner.CountInv("DoveRibbon") > 0) UncurseIntervalChance += 1;
+			if (Owner.CountInv("SauronHelmet") > 0) UncurseIntervalChance -= 2;
+			if (Owner.CountInv("SauronGauntletsFlora") > 0) UncurseIntervalChance -= 3;
+			if (Owner.CountInv("TheOneRing") > 0) UncurseIntervalChance += 11;
+			if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 4 - Interval Chance (Armor)]: %d\c-, Previous: %d", UncurseIntervalChance, previousdelaycount);
+			
+			UncurseIntervalChance2 = 8;
+			if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 5 - Interval Chance 2 (Armor)]: %d\c-", UncurseIntervalChance2);
+
+			previousdelaycount = UncurseIntervalChance2;
+			if (Owner.CountInv("PearlyCorset") > 0) UncurseIntervalChance2 += random(0,1);
+			if (Owner.CountInv("DoveRibbon") > 0) UncurseIntervalChance2 += random(1,3);
+			if (Owner.CountInv("CloakOfEvasion") > 0) UncurseIntervalChance2 += random(2,5);
+			if (Owner.CountInv("WaterFlyingDress") > 0) UncurseIntervalChance2 += 2;
+			if (Owner.CountInv("AnubisCufflinks") > 0) UncurseIntervalChance2 += 4;
+			if (Owner.CountInv("FalconKnifeEarrings") > 0) UncurseIntervalChance2 += 6;
+			if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 6 - Interval Chance 2 (Armor)]: %d\c-, Previous: %d", UncurseIntervalChance2, previousdelaycount);
+			
+			// Amount of Points for Full Uncurse is determined by Difficulty level
+			if (TrueGameSkill <= 0) RuinousPtsNeeded = 384;
+			if (TrueGameSkill == 1) RuinousPtsNeeded = 448;
+			if (TrueGameSkill == 2) RuinousPtsNeeded = 576;
+			if (TrueGameSkill == 3) RuinousPtsNeeded = 768;
+			if (TrueGameSkill == 4) RuinousPtsNeeded = 1024;
+			if (TrueGameSkill == 5) RuinousPtsNeeded = 1152;
+			if (TrueGameSkill == 6) RuinousPtsNeeded = 1280;
+			if (TrueGameSkill == 7) RuinousPtsNeeded = 1408;
+			if (TrueGameSkill >= 8) RuinousPtsNeeded = 1536;
+			CallACS("MiscVarSetDECORATE",269,RuinousPtsNeeded); // Set
+			if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 7 - Get Max Uncurse Pts Needed]: %d\c-", RuinousPtsNeeded);
+			
+			// Checks to determine how many points the Ruinous Shield has gathered towards becoming an uncursed Divine Shield
+			if (CharacterClass == 2 && Owner.CountInv("RuinousShield") > 0) // Flora
+			{
+				uncursetimerincrease = 100;
+				if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 8 - Uncurse Interval (Base)]: %d\c-", uncursetimerincrease);
+
+				previousdelaycount = uncursetimerincrease;
+				uncursetimerincrease = (uncursetimerincrease * dvds_uncurserate) / 100;
+				if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 9 - Uncurse Interval (MenuFactor)]: %d\c-, Previous: %d, Uncurse Factor: %d%", uncursetimerincrease, dvds_uncurserate, previousdelaycount);
+
+				if (CallACS("MenuVarCheckDECORATE",0) == 0) UncurseInterval += uncursetimerincrease;
+				if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 10 - Uncurse Interval Increment]: %d / %d\c-, Increment: %d%, Uncurse Pts: (%d) %d / %d", UncurseInterval, UncurseMaxInterval, uncursetimerincrease, uncurselevel, RuinousPtsCurrent, RuinousPtsNeeded);
+				if (UncurseInterval >= UncurseMaxInterval)
+				{
+					UncurseInterval -= UncurseMaxInterval;
+					
+					// Base Chance
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 2;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11a - Uncurse Pts (Base)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+					
+					// Safe Tea Shoes
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance && Owner.CountInv("SafeTeaShoes") > 0) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 3;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11b - Uncurse Pts (Safe Tea Shoes)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+					
+					// Pearly Corset
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance && Owner.CountInv("PearlyCorset") > 0) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 6;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11c - Uncurse Pts (Pearly Corset)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+					
+					// Water Flying Dress
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance && Owner.CountInv("WaterFlyingDress") > 0) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 4;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11d - Uncurse Pts (Water Flying Dress)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+					
+					// Evenstar Necklace
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance && Owner.CountInv("EvenstarNecklace") > 0) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 1;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11e - Uncurse Pts (Evenstar Necklace)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+					
+					// Cloak of Evasion
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance && Owner.CountInv("EvenstarNecklace") > 0) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 2;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11f - Uncurse Pts (Cloak of Evasion)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+					
+					// Anubis Cufflinks
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance && Owner.CountInv("AnubisCufflinks") > 0) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 2;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11g - Uncurse Pts (Anubis Cufflinks)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+					
+					// Kissa's Bra
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance && Owner.CountInv("KissaBra") > 0) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 5;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11h - Uncurse Pts (Kissa's Bra)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+					
+					// Balrog Ring
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance && Owner.CountInv("BalrogRing") > 0) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 1;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11i - Uncurse Pts (Balrog Ring)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+					
+					// Dove Ribbon
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance && Owner.CountInv("DoveRibbon") > 0) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 10;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11j - Uncurse Pts (Dove Ribbon)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+					
+					// Falcon Knife Earrings
+					UncursePtsAdd1 = 0;
+					if (random(1,100) <= UncurseIntervalChance && Owner.CountInv("FalconKnifeEarrings") > 0) // 35-66% chance of increase
+					{
+						UncursePtsAdd1 = 3;
+						if (random(1,100) <= UncurseIntervalChance2) UncursePtsAdd1 *= 2;
+						UncursePtsTotalAdded += UncursePtsAdd1;
+					}
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 11k - Uncurse Pts (Falcon Knife Earrings)]: %d\c-, Increment: %d%", UncursePtsTotalAdded, UncursePtsAdd1);
+
+					RuinousPtsCurrent += UncursePtsTotalAdded;
+					if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 12 - Increment Uncurse Pts]: %d / %d\c-, Total Increment: %d%", RuinousPtsCurrent, RuinousPtsNeeded, UncursePtsTotalAdded);
+					CallACS("MiscVarSetDECORATE",202,UncursePtsTotalAdded,1); // Add
+					
+					if (RuinousPtsCurrent >= RuinousPtsNeeded)
+					{
+						Owner.A_GiveInventory("DivineShield", 1);
+						if (Owner.CountInv("RuinousShield") > 0) Owner.A_TakeInventory("RuinousShield", 1);
+						owner.A_PrintBold("\cfCONGRADULATIONS!!\n\n\cfTHE RUINOUS SHIELD IS NO LONGER CURSED!\n\n\cfYOU NOW POSSESS AND WIELD THE MIGHTY 'DIVINE SHIELD'!!");
+						owner.A_PlaySound("Uncursed",7,1.0,0,ATTN_NONE);
+						UncurseInterval = 0;
+					}
+				}
+			}
+			// Checks to make sure you cannot hold the Ruinous Shield if you already have a Divine Shield (the latter is the uncursed version of the former).
+			if (CharacterClass == 2 && Owner.CountInv("DivineShield") > 0 && Owner.CountInv("RuinousShield") > 0) Owner.A_TakeInventory("RuinousShield",9999); // Flora
+		}
 		// To be transplanted from ACS :V
 		
 		
@@ -1434,7 +1652,7 @@ class PlayerStatItem : Inventory
 			DegenMinimumManaFactor = DegenMinimumManaFactor * 3 / 4;
 			DegenMinimumHP = PlayerMaxHP / DegenMinimumHPFactor;
 			DegenMinimumMana = PlayerMaxMP / DegenMinimumManaFactor;
-			if (debuguncurse) Console.Printf("    \cnCurse Degeneration [Step 1 - Base Divisors]: HP %d, MP: %d\c-, LowHP: %d, LowMP: %d", DegenMinimumHPFactor, DegenMinimumManaFactor, DegenMinimumHP, DegenMinimumMana);
+			if (debugcursedmg) Console.Printf("    \cnCurse Degeneration [Step 1 - Base Divisors]: HP %d, MP: %d\c-, LowHP: %d, LowMP: %d", DegenMinimumHPFactor, DegenMinimumManaFactor, DegenMinimumHP, DegenMinimumMana);
 			
 			if (Owner.CountInv("RuinousShield") > 0)
 			{
@@ -1452,7 +1670,7 @@ class PlayerStatItem : Inventory
 					if (buttons & BT_CROUCH) CursedShieldDegenInterval = CursedShieldDegenInterval * 2 / 5;
 				}
 				if (random(1,16) == 1) CursedShieldDegenInterval *= 2;
-				if (debuguncurse) Console.Printf("    \cnCurse Degeneration [Step 2 - Base Degen Intervals (\cyInput: %d\cn)]: Interval: %d, Frozen?: %d", buttons, CursedShieldDegenInterval, FreezePlayer);
+				if (debugcursedmg) Console.Printf("    \cnCurse Degeneration [Step 2 - Base Degen Intervals (\cyInput: %d\cn)]: Interval: %d, Frozen?: %d", buttons, CursedShieldDegenInterval, FreezePlayer);
 				
 				// Checks Armor Items and other types for Degen speed.
 				SkillFactor = 200;
@@ -1465,15 +1683,15 @@ class PlayerStatItem : Inventory
 					// total of -34 = 66% speed with all four items
 				}
 				CursedShieldDegenInterval = CursedShieldDegenInterval * SkillFactor / 200;
-				if (debuguncurse) Console.Printf("    \cnCurse Degeneration [Step 3 - Degen Intervals (Post-Armor)]: %d, Factor: %d / 200", CursedShieldDegenInterval, SkillFactor);
+				if (debugcursedmg) Console.Printf("    \cnCurse Degeneration [Step 3 - Degen Intervals (Post-Armor)]: %d, Factor: %d / 200", CursedShieldDegenInterval, SkillFactor);
 				
 				// Final Degen Interval
 				if (CallACS("MenuVarCheckDECORATE",0) != 0) CursedShieldDegenInterval = 0;
-				if (debuguncurse) Console.Printf("    \cnCurse Degeneration [Step 4 - Degen Intervals (MenuCheck)]: %d", CursedShieldDegenInterval);
+				if (debugcursedmg) Console.Printf("    \cnCurse Degeneration [Step 4 - Degen Intervals (MenuCheck)]: %d", CursedShieldDegenInterval);
 
 				RuinousShieldDegenTimer += CursedShieldDegenInterval;
 				// Curse Effect Execution
-				if (debuguncurse) Console.Printf("    \cnCurse Degeneration [Step 5 - Degen Intervals Timer]: %d / %d", RuinousShieldDegenTimer, CursedShieldDegenTimer);
+				if (debugcursedmg) Console.Printf("    \cnCurse Degeneration [Step 5 - Degen Intervals Timer]: %d / %d", RuinousShieldDegenTimer, CursedShieldDegenTimer);
 				if (RuinousShieldDegenTimer >= CursedShieldDegenTimer)
 				{
 					PlayerCurrentHealth = owner.health;
@@ -1498,7 +1716,7 @@ class PlayerStatItem : Inventory
 						owner.health = PlayerCurrentHealth;
 						CallACS("MiscVarSetDECORATE",241,PlayerCurrentHealth);
 						CallACS("MiscVarSetDECORATE",175,PlayerCurrentHealth);
-						if (debuguncurse) Console.Printf("    \cnCurse Degeneration [Step 6a - HP Degen]: %d", DegenValue);
+						if (debugcursedmg) Console.Printf("    \cnCurse Degeneration [Step 6a - HP Degen]: %d", DegenValue);
 					}
 				
 					PlayerCurrentMP = CallACS("StatCheck",14);
@@ -1523,7 +1741,7 @@ class PlayerStatItem : Inventory
 						CallACS("OtherVarSetDECORATE",2,PlayerCurrentMP);
 						CallACS("MiscVarSetDECORATE",243,PlayerCurrentMP);
 						CallACS("MiscVarSetDECORATE",238,PlayerCurrentMP);
-						if (debuguncurse) Console.Printf("    \cnCurse Degeneration [Step 6b - MP Degen]: %d", DegenValue);
+						if (debugcursedmg) Console.Printf("    \cnCurse Degeneration [Step 6b - MP Degen]: %d", DegenValue);
 					}
 				
 					RuinousShieldDegenTimer = 0;
@@ -1546,7 +1764,6 @@ class PlayerStatItem : Inventory
 		//***************************
 		//** Divine Avatar HP Regen**
 		//***************************
-		int previousdelaycount = 0;
 		int DivineRegenAmount;
 		if (playeractor)
 		{
