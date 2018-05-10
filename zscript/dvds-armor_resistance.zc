@@ -54,6 +54,7 @@ class PlayerStatItem : Inventory
 		int debugregenhealth = dvdsdebug_showhpregenstuff;
 		int debugatkinfo = dvdsdebug_showplayeratkinformation;
 		int debugpoisoninfo = dvdsdebug_poisonailmentdisplays;
+		int debughellcorecldn = dvdsdebug_hellcoreheatdisplay;
 
 		int TensionLevel = CallACS("MiscVarCheckDECORATE",181);
 		int PlayerLevel = CallACS("StatCheck",0);
@@ -77,6 +78,7 @@ class PlayerStatItem : Inventory
 		int IsFocusOn = CallACS("MiscVarCheckDECORATE",212);
 		int FocusTimer = CallACS("MiscVarCheckDECORATE",231);
 		int FocusHumTimer;
+		int HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
 
 		int EvasionRate; // Based on 0.1% to 100.0% [though the displays only show full %]
 		int AglEvadeCheck, DftEvadeCheck;
@@ -949,7 +951,6 @@ class PlayerStatItem : Inventory
 			// Checks to make sure you cannot hold the Ruinous Shield if you already have a Divine Shield (the latter is the uncursed version of the former).
 			if (CharacterClass == 2 && Owner.CountInv("DivineShield") > 0 && Owner.CountInv("RuinousShield") > 0) Owner.A_TakeInventory("RuinousShield",9999); // Flora
 		}
-		// To be transplanted from ACS :V
 		
 		
 		
@@ -958,7 +959,198 @@ class PlayerStatItem : Inventory
 		//******************************************************
 		//*Hellcore Cooldown Process [25 tics = 1% of cooldown]*
 		//******************************************************
-		// To be transplanted from ACS :V
+		HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
+		int HellcoreCoolRatio = 400;
+		if (playeractor)
+		{
+			if (HellcoreOverheatLevel > 0 && PlayerCurrentHealth)
+			{
+				HellcoreCoolRatio = 400;
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 1 - Cooldown Increment (Base)]: %d\c-, Heat Level:", HellcoreCoolRatio, HellcoreOverheatLevel);
+
+				// Dove Ribbon quickly cools down Hellcore meter.
+				previousdelaycount = HellcoreCoolRatio;
+				if (Owner.CountInv("DoveRibbon") > 0)
+				{
+					HellcoreCoolRatio *= 3;
+				}
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 2 - Cooldown Increment (Dove Ribbon)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				
+				// Divine Avatar speeds up cooldown by 50%
+				previousdelaycount = HellcoreCoolRatio;
+				if (CallACS("GetBuffTimer",7) > 0) 
+				{
+					HellcoreCoolRatio = HellcoreCoolRatio * 3 / 2;
+				}
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 3 - Cooldown Increment (Divine Avatar)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				
+				// Fatigue = 0.2x cooldown speed
+				previousdelaycount = HellcoreCoolRatio;
+				if (CallACS("GetBuffTimer",18) > 0)
+				{
+					HellcoreCoolRatio /= 5;
+				}
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 4 - Cooldown Increment (Fatigue)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				
+				// Sleep VERY quickly cools down Hellcore meter.
+				previousdelaycount = HellcoreCoolRatio;
+				if (CallACS("GetBuffTimer",20) > 0) 
+				{
+					HellcoreCoolRatio *= 5; 
+				}
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 5 - Cooldown Increment (Sleep)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				
+				// Soul Mastery
+				PerkFactor = 200;
+				previousdelaycount = HellcoreCoolRatio;
+				if (CallACS("MiscVarCheckDECORATE",10033) > 0)
+				{
+					PerkFactor = 200 + ((CallACS("MiscVarCheckDECORATE",10033) * 6) + (CallACS("MiscVarCheckDECORATE",10034) * 15));
+					HellcoreCoolRatio = HellcoreCoolRatio * PerkFactor / 200;
+				}
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 6 - Cooldown Increment (Soul Mastery)]: %d\c-, Previous: %d, PerkFactor %d / 200", HellcoreCoolRatio, previousdelaycount, PerkFactor);
+				
+				// "Cleared of Mind: Perk
+				PerkFactor = 80;
+				previousdelaycount = HellcoreCoolRatio;
+				if (CallACS("MiscVarCheckDECORATE",10055) > 0)
+				{
+					PerkFactor = 80 + ((CallACS("MiscVarCheckDECORATE",10055) * 6) + (CallACS("MiscVarCheckDECORATE",10056) * 15));
+					HellcoreCoolRatio = HellcoreCoolRatio * PerkFactor / 80;
+				}
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 7 - Cooldown Increment (Cleared of Mind)]: %d\c-, Previous: %d, PerkFactor %d / 80", HellcoreCoolRatio, previousdelaycount, PerkFactor);
+				
+				// Check Hellcore Cooldown Multiplier in Options
+				previousdelaycount = HellcoreCoolRatio;
+				HellcoreCoolRatio = (HellcoreCoolRatio * dvds_heatcoolmultiplier) / 100;
+				if (HellcoreCoolRatio < 1) HellcoreCoolRatio = 1;
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 8 - Cooldown Increment (Menu Option)]: %d\c-, Previous: %d, Multiplier %d%", HellcoreCoolRatio, previousdelaycount, dvds_heatcoolmultiplier);
+				
+				// ???????
+				previousdelaycount = HellcoreCoolRatio;
+				if (Owner.CountInv("IsHaSatanNow") > 0)
+				{
+					HellcoreCoolRatio = HellcoreCoolRatio * 16;
+				}
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 9 - Cooldown Increment (???????)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				
+				// Playing Unloved [2x Cooldown Speed]
+				previousdelaycount = HellcoreCoolRatio;
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",3) > 0)
+				{
+					HellcoreCoolRatio = HellcoreCoolRatio * 2;
+				}
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 10a - Cooldown Increment (Playing Unloved)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+
+				// Playing The City of the Damned: Apocalypse [1.25x Cooldown Speed]
+				previousdelaycount = HellcoreCoolRatio;
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",4) > 0)
+				{
+					HellcoreCoolRatio = (HellcoreCoolRatio * 5) / 4;
+				}
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 10b - Cooldown Increment (Playing TCOTD:A)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+
+				// Playing Happy Time Circus 2 [1.5x Cooldown Speed]
+				previousdelaycount = HellcoreCoolRatio;
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",5) > 0)
+				{
+					HellcoreCoolRatio = (HellcoreCoolRatio * 3) / 2;
+				}
+				if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 10c - Cooldown Increment (Playing Happy Time Circus 2)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				
+				
+				if (CallACS("MenuVarCheckDECORATE",0) != 0) HellcoreCoolRatio = 0; // If using In-Game Menus
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious"
+				{
+					previousdelaycount = HellcoreOverheatLevel;
+					HellcoreOverheatLevel -= HellcoreCoolRatio;
+					if (debughellcorecldn) Console.Printf("    \crHellcore Cooldown [Step 11 - Cooldown Increments]: New Heat Level: %d\c-, Old Heat Level: %d", HellcoreOverheatLevel, previousdelaycount);
+				}
+			}
+			if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+			
+			// Check For If Using Hellcore Weapon
+			SkillFactor = 0;
+			if (weapon is "ImpClaw" || weapon is "DarkImpClaw" ||
+					weapon is "CacodemonEye" || weapon is "CacolanternEye" || weapon is "AbaddonEye") SkillFactor += 1; 
+			if (weapon is "KnightFist" || weapon is "BaronFist" || weapon is "BelphegorFist" ||
+					weapon is "BruiserFist" || weapon is "ArchonFist" || weapon is "PyroFist") SkillFactor += 1; 
+			if (weapon is "IncarnateSkull" || weapon is "ArchvileHand" || 
+					weapon is "DiabloistHand" || weapon is "BalrogFist") SkillFactor += 1; 
+			if (SkillFactor > 0) { Owner.A_GiveInventory("FloraUsingHellcoreWeapon",1); } else { Owner.A_TakeInventory("FloraUsingHellcoreWeapon",9999); }
+			
+			if (CharacterClass == 2) 
+			{
+				if (HellcoreOverheatLevel < 250000) 
+				{
+					Owner.A_GiveInventory("FloraHellcoreNotOverheated",1);
+					Owner.A_TakeInventory("FloraHellcore25PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore50PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore75PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore100PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore250PercentOverheated",9999);
+				}
+				if (HellcoreOverheatLevel > 249999 && HellcoreOverheatLevel < 500000) 
+				{
+					Owner.A_TakeInventory("FloraHellcoreNotOverheated",9999);
+					Owner.A_GiveInventory("FloraHellcore25PercentOverheated",1);
+					Owner.A_TakeInventory("FloraHellcore50PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore75PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore100PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore250PercentOverheated",9999);
+				}
+				if (HellcoreOverheatLevel > 499999 && HellcoreOverheatLevel < 750000) 
+				{
+					Owner.A_TakeInventory("FloraHellcoreNotOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore25PercentOverheated",9999);
+					Owner.A_GiveInventory("FloraHellcore50PercentOverheated",1);
+					Owner.A_TakeInventory("FloraHellcore75PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore100PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore250PercentOverheated",9999);
+				}
+				if (HellcoreOverheatLevel > 749999 && HellcoreOverheatLevel < 1000000) 
+				{
+					Owner.A_TakeInventory("FloraHellcoreNotOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore25PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore50PercentOverheated",9999);
+					Owner.A_GiveInventory("FloraHellcore75PercentOverheated",1);
+					Owner.A_TakeInventory("FloraHellcore100PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore250PercentOverheated",9999);
+				}
+				if (HellcoreOverheatLevel > 999999 && HellcoreOverheatLevel < 2500000) 
+				{
+					Owner.A_TakeInventory("FloraHellcoreNotOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore25PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore50PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore75PercentOverheated",9999);
+					Owner.A_GiveInventory("FloraHellcore100PercentOverheated",1);
+					Owner.A_TakeInventory("FloraHellcore250PercentOverheated",9999);
+				}
+				if (HellcoreOverheatLevel > 2499999) 
+				{
+					Owner.A_TakeInventory("FloraHellcoreNotOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore25PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore50PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore75PercentOverheated",9999);
+					Owner.A_TakeInventory("FloraHellcore100PercentOverheated",9999);
+					Owner.A_GiveInventory("FloraHellcore250PercentOverheated",1);
+				}
+			}
+			
+			// Melee Weapon Inv Check
+			nm = "SauronGauntletsAilish"; APPackCheck = nm;
+			nn = "SauronGauntletsPetra"; APPackCheck2 = nn;
+			SkillFactor = 0;
+			if (weapon is "Fist" || weapon is "FistDeggaris" || 
+					weapon is "FistIllucia" || weapon is "FistFlora") SkillFactor += 1;
+			if (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || 
+					weapon is "SauronGauntletsFlora" || weapon is APPackCheck || 
+					weapon is APPackCheck2 || weapon is "SceptreOfEmpyrea") SkillFactor += 1;
+			if (weapon is "Chainsaw" || weapon is "Chainsaw2" || weapon is "DoubleBladedChainsaw") SkillFactor += 1; 
+			if (SkillFactor > 0) { Owner.A_GiveInventory("UsingMeleeWeapon",1); } else { Owner.A_TakeInventory("UsingMeleeWeapon",9999); }
+		}
+		CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+		
 		
 		
 		
@@ -1820,7 +2012,6 @@ class PlayerStatItem : Inventory
 		//** Dove's Ribbon HP Regen**
 		//***************************
 		int DoveRegenAmount;
-		// To be Transplanted From ACS :V
 		if (playeractor)
 		{
 			if (CharacterClass == 2 && Owner.CountInv("DoveRibbon") > 0) // Flora
@@ -2544,7 +2735,6 @@ class PlayerStatItem : Inventory
 			PoisonTimer = 0;
 			PoisonHits = 0;
 		}
-		// To be Transplanted From ACS :V
 		
 		
 		
@@ -3574,7 +3764,6 @@ class PlayerStatItem : Inventory
 				if (staminaregenfinal > -1) staminaregenfinal = -1;
 				if (debugstaminaregen) Console.Printf("    \cdStamina Degeneration [Step 20: LowCap/FINAL]: %d\c-, Previous: %d", staminaregenfinal, staminaregenbase);
 
-				// To possibly be transplanted from ACS. :V
 				if (CallACS("MenuVarCheckDECORATE",0) != 0) staminaregenfinal = 0; // If using In-Game Menus
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious"
 				{

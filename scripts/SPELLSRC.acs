@@ -2720,14 +2720,14 @@ script "DVSV" (int index, int type, int value)
 		}
 		else
 		{
+			if (type == 1) 
+			{
+				DVDSSpecialArrayValue[index] = value; // sets the value
+				SetUserArray(Player1TID,"user_PlayerDVDSSpecial",index,value);
+			}
 			PrintBold(s:"Index: ",d:index,
 								s:"\nOldValue: ",d:oldvalue,
 								s:"\nNewValue: ",d:newvalue);
-		}
-		if (type == 1) 
-		{
-			DVDSSpecialArrayValue[index] = value; // sets the value
-			SetUserArray(Player1TID,"user_PlayerDVDSSpecial",index,value);
 		}
 	}
 }
@@ -28392,9 +28392,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	// DVDSSpecialArrayValue[1] = Sets MP/Mana to 0 then unsets itself
 	if (DVDSSpecialArrayValue[1] > 0)
 	{
-	CurrentMana = 0;
-	DVDSSpecialArrayValue[1] = 0;
-	SetUserArray(Player1TID,"user_PlayerDVDSSpecial",1,0);
+		CurrentMana = 0;
+		DVDSSpecialArrayValue[1] = 0;
+		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",1,0);
 	}
 	// DVDSSpecialArrayValue[2] = Sets Stamina to 0 then unsets itself
 	if (DVDSSpecialArrayValue[2] > 0)
@@ -28403,24 +28403,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		DVDSSpecialArrayValue[2] = 0;
 		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",2,0);
 	}
+
 	// DVDSSpecialArrayValue[3] = Unloved Specfic - Makes Hellcore Weapons drop 4x more often, etc :o
-	if (DVDSSpecialArrayValue[3] > 0) 
-	{
-		DVDSSpecialArrayValue[3] = 0;
-		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",3,0);
-	}
 	// DVDSSpecialArrayValue[4] = TCOTD:A Specfic
-	if (DVDSSpecialArrayValue[4] > 0) 
-	{
-		DVDSSpecialArrayValue[4] = 0;
-		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",4,0);
-	}
 	// DVDSSpecialArrayValue[5] = Circus2 Specfic
-	if (DVDSSpecialArrayValue[5] > 0) 
-	{
-		DVDSSpecialArrayValue[5] = 0;
-		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",5,0);
-	}
+
 	// DVDSSpecialArrayValue[6] = Make HUD invisible [for TITLEMAP usage]
 	if (DVDSSpecialArrayValue[6] > 0) 
 	{
@@ -28453,6 +28440,18 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		DVDSSpecialArrayValue[8] = 0;
 		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",8,0);
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	// Check for Sceptre Abilities
@@ -29550,162 +29549,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	SurvivalWhole = MiscellaneousVars[232] / 10;
 	
 	
-	//******************************************************
-	//*Hellcore Cooldown Process [25 tics = 1% of cooldown]* // To Be Transplanted to "PlayerStatItem" (ZScript)
-	//******************************************************
-	if (playeractor)
-	{
-		if (HellcoreOverheatLevel > 0 && GetActorProperty(Player1TID,APROP_HEALTH) > 0)
-		{
-			HellcoreCoolRatio = 400; // 25 tics = 10000 units [or 1% cooldown], so 1 tic = 400 units (or 0.04% cooldown)
-			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Base]: ",d:HellcoreCoolRatio);
-			
-			// Dove Ribbon quickly cools down Hellcore meter.
-			if (CheckActorInventory(Player1TID,"DoveRibbon") > 0)
-			{
-				HellcoreCoolRatio *= 3;
-				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [DoveRibbon]: ",d:HellcoreCoolRatio);
-			}
-			
-			// Divine Avatar speeds up cooldown by 50%
-			if (PowerupTimer[7] > 0) 
-			{
-				HellcoreCoolRatio = HellcoreCoolRatio * 3 / 2;
-				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [DivineAvatar]: ",d:HellcoreCoolRatio);
-			}
-			
-			// Fatigue = 0.2x cooldown speed
-			if (PowerupTimer[18] > 0)
-			{
-				HellcoreCoolRatio /= 5;
-				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Fatigue]: ",d:HellcoreCoolRatio);
-			}
-			
-			// Sleep VERY quickly cools down Hellcore meter.
-			if (PowerupTimer[20] > 0) 
-			{
-				HellcoreCoolRatio *= 5; 
-				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Sleep]: ",d:HellcoreCoolRatio);
-			}
-			
-			// "Cleared of Mind: Perk
-			if (MiscellaneousVars[10055] > 0)
-			{
-				PerkFactor = ((MiscellaneousVars[10055] * 6) + (MiscellaneousVars[10056] * 15)) + 80;
-				HellcoreCoolRatio = HellcoreCoolRatio * PerkFactor / 80;
-				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [CoM-Perk]: ",d:HellcoreCoolRatio);
-			}
-			
-			// Check Hellcore Cooldown Multiplier in Options
-			HellcoreCoolRatio = (HellcoreCoolRatio * GetCVar("dvds_heatcoolmultiplier")) / 100;
-			if (HellcoreCoolRatio < 1) HellcoreCoolRatio = 1;
-			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [HCC-Multiplier]: ",d:HellcoreCoolRatio);
-			
-			if (CheckActorInventory(Player1TID,"IsHaSatanNow") > 0)
-			{
-				HellcoreCoolRatio = HellcoreCoolRatio * 16;
-				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [HS-Check]: ",d:HellcoreCoolRatio);
-			}
-			
-			if (DVDSSpecialArrayValue[3] > 0) // Playing Unloved [2x Cooldown Speed]
-			{
-				HellcoreCoolRatio = HellcoreCoolRatio * 2;
-				if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Unloved-Check]: ",d:HellcoreCoolRatio);
-			}
-			
-			HellcoreOverheatLevel -= HellcoreCoolRatio;
-			if (MiscellaneousVars[100003] > 0) PrintBold(s:"CoolDown Amt [Final]: ",d:HellcoreCoolRatio);
-		}
-		if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
-		
-		// Converts Hellcore Timer to % format for HUD display
-		HellcorePercentFull = HellcoreOverheatLevel / 100;
-		if (HellcorePercentFull < 0) HellcorePercentFull = 0;
-		if (HellcorePercentFull > 1000) HellcorePercentFull = 1000;
-		
-		H1 = 0;
-		SetActivator(Player1TID); // Set to Player's ID to check for weapons from this actor.
-		if (CheckWeapon("ImpClaw") == 1 || CheckWeapon("DarkImpClaw") == 1 ||
-				CheckWeapon("CacodemonEye") == 1 || CheckWeapon("CacolanternEye") == 1 || CheckWeapon("AbaddonEye") == 1) H1 += 1; 
-		if (CheckWeapon("KnightFist") == 1 || CheckWeapon("BaronFist") == 1 || CheckWeapon("BelphegorFist") == 1 ||
-				CheckWeapon("BruiserFist") == 1 || CheckWeapon("ArchonFist") == 1 || CheckWeapon("PyroFist") == 1) H1 += 1; 
-		if (CheckWeapon("IncarnateSkull") == 1 || CheckWeapon("ArchvileHand") == 1 || 
-				CheckWeapon("DiabloistHand") == 1 || CheckWeapon("BalrogFist") == 1) H1 += 1; 
-		if (H1 > 0) { GiveActorInventory(Player1TID,"FloraUsingHellcoreWeapon", 1); } else { TakeActorInventory(Player1TID,"FloraUsingHellcoreWeapon", 1); }
-		SetActivator(0); // Set back to worldly activator at the end of weapon checking.
-		
-		
-		if (CharacterClass == 2) 
-		{
-			if (HellcoreOverheatLevel < 250000) 
-			{
-				GiveActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-			}
-			if (HellcoreOverheatLevel > 249999 && HellcoreOverheatLevel < 500000) 
-			{
-				TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-				GiveActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-			}
-			if (HellcoreOverheatLevel > 499999 && HellcoreOverheatLevel < 750000) 
-			{
-				TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-				GiveActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-			}
-			if (HellcoreOverheatLevel > 749999 && HellcoreOverheatLevel < 1000000) 
-			{
-				TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-				GiveActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-			}
-			if (HellcoreOverheatLevel > 999999 && HellcoreOverheatLevel < 2500000) 
-			{
-				TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-				GiveActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-			}
-			if (HellcoreOverheatLevel > 2499999) 
-			{
-				TakeActorInventory(Player1TID,"FloraHellcoreNotOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore25PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore50PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore75PercentOverheated", 1);
-				TakeActorInventory(Player1TID,"FloraHellcore100PercentOverheated", 1);
-				GiveActorInventory(Player1TID,"FloraHellcore250PercentOverheated", 1);
-			}
-		}
-		
-		// Melee Weapon Inv Check
-		H1 = 0;
-		SetActivator(Player1TID); // Set to Player's ID to check for weapons from this actor.
-		if (CheckWeapon("Fist") == 1 || CheckWeapon("FistDeggaris") == 1 || 
-				CheckWeapon("FistIllucia" || CheckWeapon("FistFlora") == 1) == 1) H1 += 1;
-		if (CheckWeapon("SauronGauntlets") == 1 || CheckWeapon("SauronGauntletsIllucia") == 1 || 
-				CheckWeapon("SauronGauntletsFlora") == 1 || CheckWeapon("SauronGauntletsAilish") == 1 || 
-				CheckWeapon("SauronGauntletsPetra") == 1 || CheckWeapon("SceptreOfEmpyrea") == 1) H1 += 1; 
-		if (CheckWeapon("Chainsaw") == 1 || CheckWeapon("Chainsaw2") == 1 || CheckWeapon("DoubleBladedChainsaw") == 1) H1 += 1; 
-		if (H1 > 0) { GiveActorInventory(Player1TID,"UsingMeleeWeapon", 1); } else { TakeActorInventory(Player1TID,"UsingMeleeWeapon", 1); }
-		SetActivator(0); // Set back to worldly activator at the end of weapon checking.
-	}
-	
+	// Converts Hellcore Timer to % format for HUD display
+	HellcorePercentFull = HellcoreOverheatLevel / 100;
+	if (HellcorePercentFull < 0) HellcorePercentFull = 0;
+	if (HellcorePercentFull > 1000) HellcorePercentFull = 1000;
 	
 	
 	//*************************
@@ -45757,6 +45604,7 @@ script "OtherVarCheckDECORATE" (int value, int type)
 	if (value == 3) result = TrueGameSkill;
 	if (value == 4) result = ClassCheck;
 	if (value == 5) result = CurrentArmorClass;
+	if (value == 6) result = HellcoreOverheatLevel;
 	SetResultValue(result);
 }
 
@@ -45852,6 +45700,21 @@ script "OtherVarSetDECORATE" (int value, int perkvalue, int type)
 		if (type == 8) CurrentArmorClass ^= perkvalue; // XOR
 		if (type == 9) CurrentArmorClass <<= perkvalue; // Shift Left
 		if (type == 10) CurrentArmorClass >>= perkvalue; // Shift Right
+	}
+	if (value == 6) // HellcoreOverheatLevel
+	{
+		if (type <= -1) SetResultValue(HellcoreOverheatLevel);
+		if (type == 0) HellcoreOverheatLevel = perkvalue; // Set
+		if (type == 1) HellcoreOverheatLevel += perkvalue; // Add
+		if (type == 2) HellcoreOverheatLevel -= perkvalue; // Subtract
+		if (type == 3) HellcoreOverheatLevel *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) HellcoreOverheatLevel /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) HellcoreOverheatLevel %= perkvalue; // Modulo
+		if (type == 6) HellcoreOverheatLevel &= perkvalue; // AND
+		if (type == 7) HellcoreOverheatLevel |= perkvalue; // OR
+		if (type == 8) HellcoreOverheatLevel ^= perkvalue; // XOR
+		if (type == 9) HellcoreOverheatLevel <<= perkvalue; // Shift Left
+		if (type == 10) HellcoreOverheatLevel >>= perkvalue; // Shift Right
 	}
 }
 
