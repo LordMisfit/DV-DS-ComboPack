@@ -1,0 +1,614 @@
+class AetheriusPlayerPawn : PlayerPawn
+{
+	int actortimer;
+	int pbuddha1, pbuddha2, pgod1, pgod2, pnoclip1, pnoclip2;
+	int breathdirection; // 0 = down [size decreases], 1 = up [size increases]
+	int mobjdmg;
+	int playoutputdmg;
+	int playtookdamage;
+	double basexscale, baseyscale;
+	double scalexmulti, scaleymulti;
+	int breathframe;
+	
+	double PlayerDefenseIgnoreFactor, PlayerArmorIgnoreFactor, PlayerArmorIgnoreFactorGeneral;
+	double neverbleeds;
+
+	private class<Inventory> APPackToken, APPackCheck;
+
+	double TotalAirControl;
+	override void MovePlayer()
+	{
+		String nm;
+		int CharacterClass = CallACS("CheckCharacterClass");
+		//double LevelAirControl = level.aircontrol; // Saves a value
+		int PlayerLevel = CallACS("StatCheck",0);
+		int PlayerAGL = CallACS("StatCheck",3);
+
+		double AirControlBase = 0.2375;
+		if (CharacterClass == 0) AirControlBase = 0.2375;
+		if (CharacterClass == 1) AirControlBase = 0.2500;
+		if (CharacterClass == 2) AirControlBase = 0.2625;
+		if (CharacterClass == 8) AirControlBase = 0.2375;
+		if (CharacterClass == 9) AirControlBase = 0.275;
+		
+		// Level Based AirControl
+		double LVLAirControl = 1.00 + (PlayerLevel * 0.00123);
+		if (CharacterClass == 0) LVLAirControl = 1.00 + (PlayerLevel * 0.00113);
+		if (CharacterClass == 1) LVLAirControl = 1.00 + (PlayerLevel * 0.00128);
+		if (CharacterClass == 2) LVLAirControl = 1.00 + (PlayerLevel * 0.00138);
+		if (CharacterClass == 8) LVLAirControl = 1.00 + (PlayerLevel * 0.00108);
+		if (CharacterClass == 9) LVLAirControl = 1.00 + (PlayerLevel * 0.00148);
+
+		// AGLSeed-based multiplier
+		double AGLAirControl = 1.00 + (PlayerAGL * 0.000415);
+		if (CharacterClass == 0) AGLAirControl = 1.00 + (PlayerAGL * 0.000380);
+		if (CharacterClass == 1) AGLAirControl = 1.00 + (PlayerAGL * 0.000430);
+		if (CharacterClass == 2) AGLAirControl = 1.00 + (PlayerAGL * 0.000415);
+		if (CharacterClass == 8) AGLAirControl = 1.00 + (PlayerAGL * 0.000375);
+		if (CharacterClass == 9) AGLAirControl = 1.00 + (PlayerAGL * 0.000400);
+
+		// Armor items
+		double ArmorAirControl = 1.00;
+		if (CharacterClass == 2)
+		{
+			if (CountInv("SafeTeaShoes") > 0) 				ArmorAirControl += 0.20;
+			if (CountInv("PearlyCorset") > 0) 				ArmorAirControl += 0.0125;
+			if (CountInv("WaterFlyingDress") > 0)			ArmorAirControl += 0.0125;
+			if (CountInv("EvenstarNecklace") > 0)			ArmorAirControl += 0.0375;
+			if (CountInv("CloakofEvasion") > 0)				ArmorAirControl += 0.20;
+			if (CountInv("AnubisCufflinks") > 0)			ArmorAirControl += 0.025;
+			if (CountInv("KissaBra") > 0)							ArmorAirControl += 0.0375;
+			if (CountInv("DivineShield") > 0)					ArmorAirControl += 0.05;
+			if (CountInv("BalrogRing") > 0)						ArmorAirControl += 0.0125;
+			if (CountInv("DoveRibbon") > 0)						ArmorAirControl += 0.0375;
+			if (CountInv("FalconKnifeEarrings") > 0)	ArmorAirControl += 0.05;
+		}
+		else
+		if (CharacterClass == 0 || CharacterClass == 1)
+		{
+			if (CountInv("DSGreenArmorClass") > 0)		ArmorAirControl += 0.0667;
+			if (CountInv("DSBlueArmorClass") > 0)			ArmorAirControl += 0.10;
+			if (CountInv("DSStoneArmorClass1") > 0)		ArmorAirControl += 0.1334;
+			if (CountInv("DSDiamondArmorClass1") > 0)	ArmorAirControl += 0.18;
+			if (CountInv("DSStoneArmorClass2") > 0)		ArmorAirControl += 0.1667;
+			if (CountInv("DSDiamondArmorClass2") > 0)	ArmorAirControl += 0.19;
+		}
+	
+		// Sauron Armor items
+		double SauronArmorAirControl = 1.00;
+		if (CountInv("SauronHelmet") > 0)						SauronArmorAirControl -= 0.10;
+		if (CountInv("SauronGauntlets") > 0)				SauronArmorAirControl -= 0.05;
+		if (CountInv("SauronGauntletsIllucia") > 0)	SauronArmorAirControl -= 0.05;
+		if (CountInv("SauronGauntletsFlora") > 0)		SauronArmorAirControl -= 0.05;
+		nm = "SauronGauntletsAilish"; APPackCheck = nm;
+		if (CountInv(APPackCheck) > 0)							SauronArmorAirControl -= 0.05;
+		nm = "SauronGauntletsPetra"; APPackCheck = nm;
+		if (CountInv(APPackCheck) > 0)							SauronArmorAirControl -= 0.05;
+		if (CountInv("TheOneRing") > 0)							SauronArmorAirControl += 0.25;
+
+		// Buffs
+		double BuffAirControl = 1.00;
+		if (CallACS("GetBuffTimer",12) > 0) BuffAirControl += 0.25;
+		if (CallACS("GetBuffTimer",15) > 0) BuffAirControl -= 0.25;
+
+		// Sceptre for AirControl.
+		double SceptreAirControl = 1.00;
+		if (CallACS("MiscVarCheckDECORATE",397) == 1) SceptreAirControl -= 0.20;
+		if (CallACS("MiscVarCheckDECORATE",397) == 2) SceptreAirControl -= 0.10;
+		if (CallACS("MiscVarCheckDECORATE",397) == 3) SceptreAirControl -= 0.05;
+
+		double PerkFactorAirControl = 1.0;
+		PerkFactorAirControl += ((CallACS("MiscVarCheckDECORATE",10009) * 0.05) + (CallACS("MiscVarCheckDECORATE",10010) * 0.125));
+
+		double DashingAirControl = 1.0;
+		if (CallACS("MiscVarCheckDECORATE",166) > 0) DashingAirControl = 0.015625;
+
+		double DivineAvatarAirControl = 1.00;
+		if (CallACS("GetBuffTimer",7) > 0) DivineAvatarAirControl *= 2.00;
+
+		level.aircontrol = AirControlBase
+										 * LVLAirControl
+										 * AGLAirControl
+										 * ArmorAirControl
+										 * SauronArmorAirControl
+										 * BuffAirControl
+										 * SceptreAirControl
+										 * PerkFactorAirControl
+										 * DashingAirControl
+										 * DivineAvatarAirControl;
+		if (dvdsdebug_showmoveinformation > 0)
+		{
+			Console.Printf("    \cwTotalAirControl:\c- \cw%8f\c-, \cyAirControlBase:\c- \cy%8f\c-, LVLAirControl: %8f, AGLAirControl: %8f, ArmorAirControl: %8f, SauronArmorAirControl: %8f, BuffAirControl: %8f, SceptreAirControl: %8f, PerkFactorAirControl: %8f, DashingAirControl: %8f, DivineAvatarAirControl: %8f", 
+													level.aircontrol, AirControlBase,
+													LVLAirControl, AGLAirControl,
+													ArmorAirControl, SauronArmorAirControl,
+													BuffAirControl, SceptreAirControl,
+													PerkFactorAirControl, DashingAirControl,
+													DivineAvatarAirControl);
+		}
+
+		super.MovePlayer();
+	}
+
+	override void PostBeginPlay()
+	{
+		basexscale = scale.x;
+		baseyscale = scale.y;
+		scalexmulti = 1.00;
+		scaleymulti = 1.00;
+
+		// VOODOO Doll Protection
+		if (!player || !player.mo || player.mo != self) { return Super.PostBeginPlay(); }
+
+		if (bNOBLOOD == 1) 
+		{
+			if (bNOBLOODDECALS == 0) bNOBLOODDECALS == 1;
+			neverbleeds = 1;
+		}
+		if (bNOBLOODDECALS == 1) 
+		{
+			if (bNOBLOOD == 0) bNOBLOOD == 1;
+			neverbleeds = 1;
+		}
+		
+		Super.PostBeginPlay(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO PostBeginPlay() BREAK :V
+	}
+	override void Tick()
+	{
+		// VOODOO Doll Protection
+		if (!player || !player.mo || player.mo != self) { return Super.Tick(); }
+
+		if (player.cheats & CF_BUDDHA) pbuddha1 = 1; else pbuddha1 = 0;
+		if (player.cheats & CF_BUDDHA2) pbuddha2 = 1; else pbuddha2 = 0;
+		if (player.cheats & CF_GODMODE) pgod1 = 1; else pgod1 = 0;
+		if (player.cheats & CF_GODMODE2) pgod2 = 1; else pgod2 = 0;
+		if (player.cheats & CF_NOCLIP) pnoclip1 = 1; else pnoclip1 = 0;
+		if (player.cheats & CF_NOCLIP2) pnoclip2 = 1; else pnoclip2 = 0;
+
+		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
+	}
+
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		// Non-passive means the one moving into the other is performing the checks.
+		if (!passive)
+		{
+			// Pass through different species of select types.
+			if (other.bFRIENDLY == 1)
+				return false;
+		}
+		// We don't really care about others making the check.
+		return true;
+	}
+
+	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	{
+		AetheriusMonsterZSC DVDSActor;
+		if (source) DVDSActor = AetheriusMonsterZSC(source);
+		if (neverbleeds == 0)
+		{
+			bNOBLOOD = 0;
+			bNOBLOODDECALS = 0;
+		}
+		string infl, sour, vict;
+		vict = GetClassName();
+		if (inflictor == null) infl = "NONE";
+											else infl = inflictor.GetClassName();
+		if (source == null) sour = "NONE";
+									 else sour = source.GetClassName();
+
+		int bosstype = 0;
+		if (source)
+		{
+			if (sour == "NetherDarkImp" || sour == "Abaddon" || sour == "Daedabus" || sour == "Diabloist" ||
+					sour == "DSHellKnight" || sour == "DSHellKnight64" || sour == "DSBaronofHell" || sour == "DSBaronofHell64" || 
+					sour == "HellWarrior" || sour == "Belphegor" || sour == "BruiserDemon" || sour == "ArchonofHell" || 
+					sour == "Cybruiser" || sour == "PyroDemon" || sour == "FlyingBalrog" || sour == "Hierophant" || 
+					sour == "HadesElemental" || sour == "HadesOverlord" || 
+					sour == "DSCyberdemon" || sour == "DSCyberdemon64" || sour == "Annihilator" || sour == "DSSpiderMastermind" || sour == "Demolisher" ||
+					sour == "DeathKnight" || sour == "ShadowBeast" || sour == "MaulotaurNew" || sour == "HellGuard" || 
+					sour == "IronlichNew" || sour == "IceLich" || sour == "GoldLich" || sour == "BloodLich" ||
+					sour == "Bormereth" || sour == "FireDemonQueen" || sour == "VampireDVDS" || sour == "EtherealChaosSerpentNew" ||
+					sour == "InquisitorNew" || sour == "DarkInquisitor" ||
+					sour == "TNTSpider")
+			{
+				bosstype = 1; // Miniboss Level
+			}
+			else
+			if (sour == "AvatarNew" || sour == "DSparilMountedNew" || 
+					sour == "ClericBossNew" || sour == "MageBossNew" || sour == "FighterBossNew" || 
+					sour == "ProgrammerNew" || sour == "StrifeBishopNew" || sour == "OracleNew" || 
+					sour == "Macil1New" || sour == "Macil2New" || sour == "LoremasterNew" ||
+					sour == "SourceGuardian" || sour == "DSMotherDemon64" ||
+					sour == "AlienSpectre1New" || sour == "AlienSpectre2New" || sour == "AlienSpectre3New" || 
+					sour == "AlienSpectre4New" || sour == "AlienSpectre5New")
+			{
+				bosstype = 2; // Moderate Boss Level
+			}
+			else
+			if (sour == "DSparilUnmountedNew" || sour == "KoraxNew" || sour == "Zakachi" || 
+					sour == "Benellus1DS" || sour == "Benellus2DS" || sour == "Benellus3DS" ||
+					sour == "ThamuzNew" || sour == "TchernobogNew" ||
+					sour == "SauronEyeWeak" || sour == "SauronEyeStrong1" || sour == "SauronEyeStrong2")
+			{
+				bosstype = 3; // Major/Named Threat [Lv 1]
+			}
+			else
+			if (sour == "EntityBossNew" || sour == "EntitySecondNew" || sour == "EntityAscended" || 
+					sour == "PennywiseBoss" || sour == "TheSource" || sour == "Magmantis" || 
+					sour == "AdolfHitlerDS" || sour == "SauronEyeMain")
+			{
+				bosstype = 4; // Extreme/Named Threat [Lv 2]
+			}
+			else
+			if (sour == "Sauravatar")
+			{
+				bosstype = 5; // Elite/Named Threat [Lv 3]
+			}
+			else
+			if (source.bBOSS)
+			{
+				bosstype = 1; // Miniboss Level
+			}
+		}
+
+		// VOODOO Doll Protection
+		if (!player || !player.mo || player.mo != self) 
+		{ 
+			//*********************************************************************
+			return super.DamageMobj(inflictor, source, damage, mod, flags, angle); 
+			//*********************************************************************
+			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\cz[STEP -1] player-damagemobj input\c-: \cyVOODOO DOLL\c-)", damage);
+		}
+
+		// Makes the HUD show "Missed!" and play a sound if you evade an attack. V:
+		int EvadedTheAttack = 0;
+		if (self.health <= 0 || !bSHOOTABLE || bINVULNERABLE || player.cheats & CF_GODMODE2 || player.cheats & CF_GODMODE || CountInv("InvulnerabilitySpell",AAPTR_PLAYER1) > 0 || CountInv("IsInvulnerable",AAPTR_PLAYER1) > 0 || CountInv("MenuInvulnerability",AAPTR_PLAYER1) > 0 || (CountInv("IronFeetNoPoison",AAPTR_PLAYER1) > 0 && (mod == "PoisonElemental" || mod == "Poison")) )
+		{
+			damage = 0;
+		}
+		else
+		{
+			if (mod != "Falling" || mod != "Drowning")
+			{
+				if (CountInv("EvadeAnAttack",AAPTR_DEFAULT) > 0 || CountInv("PlayerDashing",AAPTR_DEFAULT) > 0)
+				{
+					A_Playsound("DraQue/miss");
+					A_Playsound("DraQue/miss");
+					A_GiveInventory("Missed",1);
+					damage = 0;
+					EvadedTheAttack = 1;
+				}
+			}
+		}
+		if (dvdsdebug_playerdmgdisplays > 0) 
+		{
+			if (EvadedTheAttack) Console.Printf("    (\cz[STEP 1] player-damagemobj input\c-: \cyATTACKED WAS EVADED/AVOIDED\c-)", damage);
+											else Console.Printf("    (\cz[STEP 1] player-damagemobj input [Base Dmg]\c-: \cydmg = %d\c-)", damage);
+		}
+
+		double RailRandom = frandompick(0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,
+																		0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,
+																		0.50,0.50,0.50,0.50,0.50,
+																		0.75,0.75,0.75,
+																		0.90,0.90,
+																		0.9875);
+
+		double MonsterLevelIgnoreFactor;
+		if (DVDSActor) MonsterLevelIgnoreFactor = (DVDSActor.user_monsterlevel * 0.00022223);
+		int LegendaryIgnoreDefenseFactor = 0.5 - (CallACS("MiscVarCheckDECORATE",10057) * 0.05) - (CallACS("MiscVarCheckDECORATE",10058) * 0.125);
+		int criticalhit = 0;
+		if (DVDSActor) criticalhit = DVDSActor.CountInv("DealCriticalHit");
+		int defense;
+		// Defense Calculation
+		int prefriendlydmg = damage;
+		if (damage > 0)
+		{
+			if (DVDSActor)
+			{
+				if (DVDSActor.bFRIENDLY)
+				{
+					damage /= 4;
+					if (DVDSActor.user_summoned > 0) damage /= 4;
+					if (DVDSActor.user_charmed > 0) damage /= 4;
+					if (damage < 1) damage = 1;
+					if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("    (\cz[STEP 2] player-damagemobj input [Hit By Friendly]\c-: \cypredmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-)", prefriendlydmg, damage);
+				}
+				else
+				{
+					if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("    (\cz[STEP 2] player-damagemobj input [Hit By Defined Enemy]\c-: \caSKIPPED\c-, \cydmg = %d\c-)", damage);
+				}
+			}
+			else
+			{
+				if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("    (\cz[STEP 2] player-damagemobj input [Hit By Undefined Enemy]\c-: \caSKIPPED\c-, \cydmg = %d\c-)", damage);
+			}
+
+			int olddmg = damage;
+			int basedef = CallACS("StatCheck",4);
+			defense = basedef * (5 + (CallACS("MiscVarCheckDECORATE",10001) * 1 / 2) + ((CallACS("MiscVarCheckDECORATE",10002) * 5 / 4))) / 50;
+
+			int armordef = 0;
+			if (CountInv("DSGreenArmorClass",AAPTR_DEFAULT) > 0) armordef = 1;
+			if (CountInv("DSBlueArmorClass",AAPTR_DEFAULT) > 0) armordef = 2;
+			if (CountInv("DSStoneArmorClass1",AAPTR_DEFAULT) > 0) armordef = 2;
+			if (CountInv("DSDiamondArmorClass1",AAPTR_DEFAULT) > 0) armordef = 3;
+			if (CountInv("DSStoneArmorClass2",AAPTR_DEFAULT) > 0) armordef = 3;
+			if (CountInv("DSDiamondArmorClass2",AAPTR_DEFAULT) > 0) armordef = 4;
+			if (armordef > 0)
+			{
+				armordef = armordef * (25 + CallACS("MiscVarCheckDECORATE",10001) + (CallACS("MiscVarCheckDECORATE",10002) * 5 / 4)) / 25;
+				defense += ((armordef * 5) / 4);
+			}
+
+			// Defense-Stat (Partial) Ignoring Checks
+			if (inflictor == null && source == null)
+			{
+				if (mod == 'Slime' || mod == 'Crush') defense *= 0.04; // Total Defense is only 4% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
+				if (gameinfo.gametype & GAME_Raven)
+				{
+					if (mod == 'Fire' || mod == 'Magma') 
+					{
+						defense *= 0.04;
+						damage = damage * frandom(1.5,2.5);
+					}
+				}
+			}
+			if (infl == "DBTRailPuff") 
+			{
+				defense *= (1.0 - RailRandom);
+			}
+			if (mod == 'Drowning') 
+			{
+				defense = 0;
+			}
+			if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") 
+			{
+				defense *= 0.334;
+			}
+			if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
+					infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
+					infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
+					infl == "FireBreath" || infl == "FireBreathCrisis" ||
+					infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis")
+			{
+				defense *= 0.25;
+			}
+			if (DVDSActor && DVDSActor.user_legendaryevolved) 
+			{
+				defense *= 0.5;
+			}
+			//**************************
+			//**Special Boss detection**
+			//**************************
+			if (bosstype == 1) defense *= (1.0 - frandompick(0.125,0.25));
+			if (bosstype == 2) defense *= (1.0 - frandompick(0.25,0.375,0.50));
+			if (bosstype == 3) defense *= (1.0 - frandompick(0.50,0.625,0.75));
+			if (bosstype == 4) defense *= (1.0 - frandompick(0.75,0.875,1.00));
+			if (bosstype == 5) defense *= (1.0 - frandompick(0.875,1.00));
+
+			// Level Check
+			if (DVDSActor) defense *= (1.0 - MonsterLevelIgnoreFactor);
+
+			// Critical Hits?
+			double dmgmulti = 2.0 + (0.01 * random(-10,10));
+			if (criticalhit) 
+			{
+				damage *= dmgmulti;
+				defense = 0;
+			}
+
+			damage -= defense;
+			if (damage < 1)
+			{
+				if (random(1,256) < (248 - ((CallACS("MiscVarCheckDECORATE",10001) * 2) + (CallACS("MiscVarCheckDECORATE",10002) * 5))) ) damage = 1; else damage = 0;
+			}
+
+			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("    (\cz[STEP 3] player-damagemobj input\c-: \cyolddmg = %d\c-, \cdbasedef = %d, \cdarmdef = %d\c-, \cddef = %d\c=, \cynewdmg = %d\c-, \cwdmgtype = %s\c-, \cdinflictor = %s\c-, \cnsource = %s\c-, \cvbosstype = %d\c-)", olddmg, basedef, armordef, defense, damage, mod, infl, sour, bosstype);
+		}
+
+		// Tries to determine a factor of much of the total defense calculations to ignore in their "PlayerStatItem"
+		if (damage > 0)
+		{
+			PlayerDefenseIgnoreFactor = 0.00;
+			if (inflictor == null && source == null)
+			{
+				if (mod == 'Slime' || mod == 'Crush') PlayerDefenseIgnoreFactor += (0.96 * (1.00 - PlayerDefenseIgnoreFactor));
+				if (gameinfo.gametype & GAME_Raven)
+				{
+					if (mod == 'Fire' || mod == 'Magma') PlayerDefenseIgnoreFactor += (0.96 * (1.00 - PlayerDefenseIgnoreFactor));
+				}
+			}
+			else
+			{
+				if (infl == "DBTRailPuff") 
+				{
+					PlayerDefenseIgnoreFactor += (RailRandom * (1.00 - PlayerDefenseIgnoreFactor));
+				}
+				if (mod == 'Drowning') 
+				{
+					PlayerDefenseIgnoreFactor += (1.00 * (1.00 - PlayerDefenseIgnoreFactor));
+				}
+				if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") 
+				{
+					PlayerDefenseIgnoreFactor += (0.6667 * (1.00 - PlayerDefenseIgnoreFactor));
+				}
+				if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
+						infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
+						infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
+						infl == "FireBreath" || infl == "FireBreathCrisis" ||
+						infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis")
+				{
+					PlayerDefenseIgnoreFactor += (0.75 * (1.00 - PlayerDefenseIgnoreFactor));
+				}
+
+				//**************************
+				//**Special Boss detection**
+				//**************************
+				if (bosstype == 1) PlayerDefenseIgnoreFactor += (frandompick(0.125,0.25) * (1.00 - PlayerDefenseIgnoreFactor));
+				if (bosstype == 2) PlayerDefenseIgnoreFactor += (frandompick(0.25,0.375,0.50) * (1.00 - PlayerDefenseIgnoreFactor));
+				if (bosstype == 3) PlayerDefenseIgnoreFactor += (frandompick(0.50,0.625,0.75) * (1.00 - PlayerDefenseIgnoreFactor));
+				if (bosstype == 4) PlayerDefenseIgnoreFactor += (frandompick(0.75,0.875,1.00) * (1.00 - PlayerDefenseIgnoreFactor));
+				if (bosstype == 5) PlayerDefenseIgnoreFactor += (frandompick(0.875,1.00) * (1.00 - PlayerDefenseIgnoreFactor));
+			}
+			// Level Check
+			if (DVDSActor) 
+			{
+				PlayerDefenseIgnoreFactor += ((DVDSActor.user_monsterlevel * 0.00022223) * (1.00 - PlayerDefenseIgnoreFactor));
+			}
+
+			LegendaryIgnoreDefenseFactor = 0.50 - (CallACS("MiscVarCheckDECORATE",10057) * 0.05) - (CallACS("MiscVarCheckDECORATE",10058) * 0.125);
+			if (DVDSActor && DVDSActor.user_legendaryevolved) 
+			{
+				PlayerDefenseIgnoreFactor += (LegendaryIgnoreDefenseFactor * (1.00 - PlayerDefenseIgnoreFactor));
+			}
+			// Critical Hits?
+			if (criticalhit) 
+			{
+				PlayerDefenseIgnoreFactor += (1.00 * (1.00 - PlayerDefenseIgnoreFactor));
+			}
+
+			if (PlayerDefenseIgnoreFactor <= 0.0) PlayerDefenseIgnoreFactor = 0.0;
+			if (PlayerDefenseIgnoreFactor > 1.0) PlayerDefenseIgnoreFactor = 1.0;
+
+			// Intended to ignore aspects of Flora's special armor or Marines' armor items [if any attacks will in the future]
+			PlayerArmorIgnoreFactor = 0.00;
+
+			if (criticalhit)  PlayerArmorIgnoreFactor += (0.25 * (1.00 - PlayerArmorIgnoreFactor));
+	
+			if (PlayerArmorIgnoreFactor <= 0.0) PlayerArmorIgnoreFactor = 0.0;
+			if (PlayerArmorIgnoreFactor > 1.0) PlayerArmorIgnoreFactor = 1.0;
+
+			PlayerArmorIgnoreFactorGeneral = 0.00;
+
+			if (bosstype == 2 || bosstype == 3) PlayerArmorIgnoreFactorGeneral += (frandompick(0.0625,0.125,0.1875) * (1.00 - PlayerArmorIgnoreFactorGeneral));
+			if (bosstype == 4 || bosstype == 5) PlayerArmorIgnoreFactorGeneral += (frandompick(0.1875,0.25,0.3125) * (1.00 - PlayerArmorIgnoreFactorGeneral));
+			if (criticalhit) PlayerArmorIgnoreFactorGeneral += (0.25 * (1.00 - PlayerArmorIgnoreFactorGeneral));
+
+			if (PlayerArmorIgnoreFactorGeneral <= 0.0) PlayerArmorIgnoreFactorGeneral = 0.0;
+			if (PlayerArmorIgnoreFactorGeneral > 1.0) PlayerArmorIgnoreFactorGeneral = 1.0;
+
+			// Final Printouts for Defense/Armor Ignoring Stuff
+			if (dvdsdebug_playerdmgdisplays > 0)
+			{
+				if (PlayerDefenseIgnoreFactor <= 0.00 && PlayerArmorIgnoreFactor <= 0.00 && PlayerArmorIgnoreFactorGeneral <= 0.00)
+				{
+					Console.Printf("    (\cz[STEP 4] player-damagemobj input\c-: \caSKIPPED\c-, \cydmg = %d\c-)", damage);
+				}
+				else
+				{
+					if (PlayerDefenseIgnoreFactor > 0.00) Console.Printf("    (\cz[STEP 4a] player-damagemobj input\c-: \caDamageIgnoreFactor = %8f\c-, \cydmg = %d\c- (Player Actor))", PlayerDefenseIgnoreFactor, damage);
+					if (PlayerArmorIgnoreFactor > 0.00) Console.Printf("    (\cz[STEP 4b] player-damagemobj input\c-: \caArmorIgnoreFactor = %8f\c-, \cydmg = %d\c- (Player Actor))", PlayerArmorIgnoreFactor, damage);
+					if (PlayerArmorIgnoreFactorGeneral > 0.00) Console.Printf("    (\cz[STEP 4c] player-damagemobj input\c-: \caArmorIgnoreFactorGeneral = %8f\c-, \cydmg = %d\c- (Player Actor))", PlayerArmorIgnoreFactorGeneral, damage);
+				}
+			}
+		}
+
+		// Space for rent :V
+		mobjdmg = damage;
+
+		//************************************************************************
+		let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+		//************************************************************************
+		
+		//**********************************************
+		//*Post "PlayerStatItem" and "Resistances" Info*
+		//**********************************************
+		if (dvdsdebug_playerdmgdisplays > 0 && damage > 0)
+		{
+			if (ret > 0) Console.Printf("    (\cz[STEP 11] player-damagemobj output\c-: \cxCRIT? = %d\c-, \cydmg = %d\c-, \cwdmgtype = %s\c-, \cdinflictor = %s\c-, \cnsource = %s\c-)", criticalhit, ret, mod, infl, sour);
+							else Console.Printf("    (\cz[STEP 11] player-damagemobj output\c-: \caSKIPPED\c-, \cydmg = %d\c-)", ret);
+		}
+
+		if (ret > 0) 
+		{
+			int hpratio = ret * 100 / CallACS("StatCheck",1);
+			int cursemulti = 1;
+			int cursedivisor = 1;
+			if (hpratio >= 201)										{ cursemulti = 8; cursedivisor = 2; }
+			if (hpratio >= 151 && hpratio <= 200)	{ cursemulti = 7; cursedivisor = 2; }
+			if (hpratio >= 101 && hpratio <= 150)	{ cursemulti = 6; cursedivisor = 2; }
+			if (hpratio >= 81 && hpratio <= 100)	{ cursemulti = 5; cursedivisor = 2; }
+			if (hpratio >= 61 && hpratio <= 80)		{ cursemulti = 4; cursedivisor = 2; }
+			if (hpratio >= 41 && hpratio <= 60)		{ cursemulti = 3; cursedivisor = 2; }
+			if (hpratio >= 21 && hpratio <= 40)		{ cursemulti = 2; cursedivisor = 2; }
+			if (hpratio <= 20)										{ cursemulti = 1; cursedivisor = 2; }
+			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\cz[STEP 12] player-damagemobj uncurse stuff\c-: \cydmg = %d\c-, \cwcursemulti = %d\c-, \cxcursedivisor = %d\c-, \cdhpratio = %d\c-)", ret, cursemulti, cursedivisor, hpratio);
+			ACS_NamedExecuteAlways("CursedShieldPain",0,1,cursemulti,cursedivisor);
+		}
+		else
+		{
+			if (neverbleeds == 0)
+			{
+				bNOBLOOD = 1;
+				bNOBLOODDECALS = 1;
+			}
+			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\cz[STEP 10] player-damagemobj uncurse stuff\c-: \caSKIPPED\c-)", ret);
+		}
+
+		// End
+		return ret;
+	}
+	
+	// Reset Breathing Scale
+	void A_APPBreatheReset()
+	{
+		scaleymulti = 1.00;
+		breathdirection = 0;
+		breathframe = 0;
+		A_SetScale(basexscale,baseyscale*scaleymulti);
+	}
+
+	// Breathing Function
+	void A_APPBreathe(double startpoint = 1.00, double endpoint = 0.976, double breathincrementbase = 0.002, double basetics = 4)
+	{
+		double StaminaBreathSpeed = 1.0;
+		int StaminaLevel;
+		int StaminaMax = 10000;
+		if (CallACS("MiscVarCheckDECORATE",22) > 0) StaminaMax = CallACS("MiscVarCheckDECORATE",22);
+		StaminaLevel = CallACS("MiscVarCheckDECORATE",21) * 10000 / StaminaMax;
+
+		if (StaminaLevel < 157) StaminaBreathSpeed = 1.99;
+		if (StaminaLevel > 156 && StaminaLevel < 626) StaminaBreathSpeed = 1.825;
+		if (StaminaLevel > 625 && StaminaLevel < 1251) StaminaBreathSpeed = 1.66;
+		if (StaminaLevel > 1250 && StaminaLevel < 2501) StaminaBreathSpeed = 1.495;
+		if (StaminaLevel > 2500 && StaminaLevel < 5001) StaminaBreathSpeed = 1.33;
+		if (StaminaLevel > 5000 && StaminaLevel < 7501) StaminaBreathSpeed = 1.165;
+		if (StaminaLevel > 7500 && StaminaLevel < 12501) StaminaBreathSpeed = 1.00;
+		if (StaminaLevel > 12500 && StaminaLevel < 20001) StaminaBreathSpeed = 0.835;
+		if (StaminaLevel > 20000 && StaminaLevel < 27501) StaminaBreathSpeed = 0.67;
+		if (StaminaLevel > 27500 && StaminaLevel < 35001) StaminaBreathSpeed = 0.505;
+		if (StaminaLevel > 35000 && StaminaLevel < 42501) StaminaBreathSpeed = 0.34;
+		if (StaminaLevel > 42500 && StaminaLevel < 48751) StaminaBreathSpeed = 0.175;
+		if (StaminaLevel > 48750) StaminaBreathSpeed = 0.01;
+		breathincrementbase *= StaminaBreathSpeed;
+		
+		double ticmulti = 1.00 * (tics / basetics);
+		breathincrementbase *= ticmulti;
+
+		if (breathdirection == 0)
+		{
+			breathframe++;
+			scaleymulti -= breathincrementbase;
+			if (scaleymulti <= endpoint) { scaleymulti = endpoint; breathdirection = 1; breathframe = 0; }
+		}
+		else
+		{
+			breathframe++;
+			scaleymulti += breathincrementbase;
+			if (scaleymulti >= startpoint) { scaleymulti = startpoint; breathdirection = 0; breathframe = 0; }
+		}
+		/*
+		if (dvdsdebug_showstaminaregenstuff > 0) Console.Printf("scaleymulti = %8f, breathincrementbase = %8f, breathdirection = %d, breathframe = %d, StaminaBreathSpeed = %8f, ticmulti = %8f, actualtics = %d, basetics = %d", 
+																														scaleymulti, 
+																														breathincrementbase, 
+																														breathdirection, 
+																														breathframe, 
+																														StaminaBreathSpeed, 
+																														ticmulti, 
+																														tics, 
+																														basetics);
+		*/
+		A_SetScale(basexscale,baseyscale*scaleymulti);
+	}
+}

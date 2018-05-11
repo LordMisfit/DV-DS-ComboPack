@@ -1,5 +1,16 @@
 class PlayerStatItem : Inventory 
 {
+	const SKILL_VERY_EASY = 0;
+	const SKILL_EASY = 1;
+	const SKILL_NORMAL = 2;
+	const SKILL_HARD = 3;
+	const SKILL_VERY_HARD = 4;
+	const SKILL_EXTREME = 5;
+	const SKILL_HORRIBLE = 6;
+	const SKILL_IMPOSSIBLE = 7;
+	const SKILL_OMEGA = 8;
+
+	int ClassCheck;
 	int previoushealth;
 	int currenthealth;
 	int outputdamage;
@@ -28,17 +39,19 @@ class PlayerStatItem : Inventory
 		+Inventory.UNTOSSABLE;
 	}
 
-	private class<Inventory> APPackToken, APPackCheck, APPackCheck2, APPackCheck3, APPackCheck4;
+	private class<Inventory> APPackToken, APPackCheck, APPackCheck2, APPackCheck3, APPackCheck4, iDTech1Check, iDTech1Check2, iDTech1Check3, iDTech1Check4;
 	
 	override void DoEffect()
 	{
+		string playername;
 		let playeractor = AetheriusPlayerPawn(owner);
+		if (playeractor) { playername = playeractor.GetClassName(); }
 		if (!playeractor) { owner.A_TakeInventory("PlayerStatItem",9999); super.DoEffect(); } // Removes itself if given to a non-Aetherius Player Class
 
 		String nm, nn, no, np;
+		String pm, pn, po, pp;
 		let weapon = owner.player.ReadyWeapon;
 		int cheatcheck = owner.player.cheats;
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
 		double PlayerVelX = owner.vel.x;
 		double PlayerVelY = owner.vel.y;
 		double PlayerVelZ = owner.vel.z;
@@ -58,6 +71,7 @@ class PlayerStatItem : Inventory
 		int debughellcorecldn = dvdsdebug_hellcoreheatdisplay;
 		int debuginfiniteammo = dvdsdebug_infiniteammostuff;
 
+		CharacterClass = CallACS("CheckCharacterClass");
 		int TensionLevel = CallACS("MiscVarCheckDECORATE",181);
 		int PlayerLevel = CallACS("StatCheck",0);
 		int PlayerMaxHP = CallACS("StatCheck",1);
@@ -76,11 +90,16 @@ class PlayerStatItem : Inventory
 		int PlayerMaxStamina = CallACS("StatCheck",13);
 		int PlayerCurrentMP = CallACS("StatCheck",14);
 		int PlayerCurrentHealth = owner.health;
-		CharacterClass = CallACS("CheckCharacterClass");
 		int IsFocusOn = CallACS("MiscVarCheckDECORATE",212);
 		int FocusTimer = CallACS("MiscVarCheckDECORATE",231);
 		int FocusHumTimer;
+
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		ClassCheck = CallACS("OtherVarCheckDECORATE",4);
+		int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
 		int HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
+		int ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
 
 		int EvasionRate; // Based on 0.1% to 100.0% [though the displays only show full %]
 		int AglEvadeCheck, DftEvadeCheck;
@@ -96,6 +115,148 @@ class PlayerStatItem : Inventory
 		int minigunheat = Owner.CountInv("MinigunHeat");
 		int minigunheatmax = 100;
 
+		//**********************
+		//*Initialization Stuff*
+		//**********************
+		if (ClassCheck == 1) // Will run the check only once at the beginning of a new game
+		{
+			owner.A_GiveInventory("GreaterVimstone",1);  owner.A_TakeInventory("GreaterVimstone",1);
+			owner.A_GiveInventory("LesserVimstone",1);  owner.A_TakeInventory("LesserVimstone",1);
+			owner.A_GiveInventory("MonsterMunchies",1);  owner.A_TakeInventory("MonsterMunchies",1);
+			owner.A_GiveInventory("MercuryBandana",1);  owner.A_TakeInventory("MercuryBandana",1);
+			owner.A_GiveInventory("PaxaPunch",1);  owner.A_TakeInventory("PaxaPunch",1);
+			owner.A_GiveInventory("RockbombShard",1);  owner.A_TakeInventory("RockbombShard",1);
+			owner.A_GiveInventory("YggdrasilDew",1);  owner.A_TakeInventory("YggdrasilDew",1);
+			owner.A_GiveInventory("MiraclePotion",1);  owner.A_TakeInventory("MiraclePotion",1);
+			owner.A_GiveInventory("ElfinElixir",1);  owner.A_TakeInventory("ElfinElixir",1);
+			owner.A_GiveInventory("SageElixir",1);  owner.A_TakeInventory("SageElixir",1);
+			owner.A_GiveInventory("MagicWater",1);  owner.A_TakeInventory("MagicWater",1);
+			owner.A_GiveInventory("SpecialMedicine",1);  owner.A_TakeInventory("SpecialMedicine",1);
+			owner.A_GiveInventory("StrongMedicine",1);  owner.A_TakeInventory("StrongMedicine",1);
+			owner.A_GiveInventory("MedicinalHerb",1);  owner.A_TakeInventory("MedicinalHerb",1);
+			if (ClassicDoomType == 2) // Heretic
+			{
+				pm = "ArtiInvulnerabilityNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiInvisibilityNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiEggNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiTeleportNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiSuperHealthNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiHealthNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+			}
+			if (ClassicDoomType == 3) // Hexen
+			{
+				pm = "ArtiInvulnerability2New"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiPorkNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiDarkServantNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiTeleportOtherNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiTeleportNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiBoostManaNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiSuperHealthNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiHealingRadiusNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ArtiHealthNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+			}
+			if (ClassicDoomType == 4) // Strife
+			{
+				pm = "DegninOreNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "TeleporterBeaconNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ShadowArmorNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "EnvironmentalSuitNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "TargeterNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "ScannerNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "SurgeryKitNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "MedicalKitNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "MedPatchNew"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				pm = "Coin"; iDTech1Check = pm; owner.A_GiveInventory(iDTech1Check,1);  owner.A_TakeInventory(iDTech1Check,1);
+				
+				if (TrueGameSkill <= SKILL_VERY_EASY) owner.A_GiveInventory(iDTech1Check,random(175,225));
+				if (TrueGameSkill == SKILL_EASY) owner.A_GiveInventory(iDTech1Check,random(150,200));
+				if (TrueGameSkill == SKILL_NORMAL) owner.A_GiveInventory(iDTech1Check,random(125,175));
+				if (TrueGameSkill == SKILL_HARD) owner.A_GiveInventory(iDTech1Check,random(100,150));
+				if (TrueGameSkill == SKILL_VERY_HARD) owner.A_GiveInventory(iDTech1Check,random(50,100));
+				if (TrueGameSkill == SKILL_EXTREME) owner.A_GiveInventory(iDTech1Check,random(40,80));
+				if (TrueGameSkill == SKILL_HORRIBLE) owner.A_GiveInventory(iDTech1Check,random(30,60));
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) owner.A_GiveInventory(iDTech1Check,random(20,40));
+				if (TrueGameSkill >= SKILL_OMEGA) owner.A_GiveInventory(iDTech1Check,random(10,20));
+			}
+
+			// Checks initial actorname of the player's PlayerPawn actor in order to assess the right class #. If you want to try to define extra characters, make sure you use the character's Player-class name.
+			if (playeractor) 
+			{ 
+				playername = playeractor.GetClassName(); 
+				if (playername == "DeggarisMontegger") CharacterClass = 0;
+				else if (playername == "IlluciaHendershot") CharacterClass = 1;
+				else if (playername == "FloraBriscoletti") CharacterClass = 2;
+				//else if (playername == "Corvus") CharacterClass = 3;
+				//else if (playername == "Baratus") CharacterClass = 4;
+				//else if (playername == "Parias") CharacterClass = 5;
+				//else if (playername == "Daedolon") CharacterClass = 6;
+				//else if (playername == "StrifeGuy") CharacterClass = 7;
+				else if (playername == "Ailish") CharacterClass = 8;
+				else if (playername == "PetraLagerkvist") CharacterClass = 9;
+				else { CharacterClass = -1; PlayerMaxHP = 100; }
+				Console.Printf("Class Init: %s, %d", playername, CharacterClass);
+				CallACS("CheckCharacterClass",1,CharacterClass); // Sets CharacterClass directly
+			}
+			
+			// Mod Type Checks
+			if (ModType == 0) // Classic Mode
+			{
+				// Individual Game Checks
+				if (ClassicDoomType == 0) { owner.A_GiveInventory("PlayingDoom2",1); } // Doom 2
+				if (ClassicDoomType == 1) { owner.A_GiveInventory("PlayingDoom1",1); } // Doom 1
+				if (ClassicDoomType == 2) { owner.A_GiveInventory("PlayingHeretic",1); } // Heretic
+				if (ClassicDoomType == 3) { owner.A_GiveInventory("PlayingHexen",1); } // HeXen
+				if (ClassicDoomType == 4) { owner.A_GiveInventory("PlayingStrife",1); } // Strife
+				if (ClassicDoomType == 5) { owner.A_GiveInventory("PlayingDoom64",1); } // Doom64
+				if (ClassicDoomType == 6) { owner.A_GiveInventory("PlayingPSXDoom",1); } // PSXDoom
+			}
+			else if (ModType == 1) { owner.A_GiveInventory("PlayingDeusVultI",1); } // DVI
+			else if (ModType == 2) { owner.A_GiveInventory("PlayingDeusVultII",1); } // DVII
+			
+			
+			// Initial Stat Calculations
+			if (CharacterClass == 0) // Deggaris
+			{
+			}
+			if (CharacterClass == 1) // Illucia
+			{
+			}
+			if (CharacterClass == 2) // Flora
+			{
+			}
+			if (CharacterClass == 8) // Ailish
+			{
+			}
+			if (CharacterClass == 9) // Petra
+			{
+			}
+			
+			// Post Initial Stat Calculations
+		}
+		if (ClassCheck == 2)
+		{
+			CallACS("MiscVarSetDECORATE",241,PlayerCurrentHealth);
+			CallACS("MiscVarSetDECORATE",298,PlayerMaxHP);
+		}
+		if (ClassCheck == 3){}
+		if (ClassCheck == 4){}
+		if (ClassCheck == 5){}
+		if (ClassCheck < 6)
+		{
+			if (CallACS("MiscVarCheckDECORATE",31) < 0) CallACS("MiscVarSetDECORATE",31,0);
+			if (CallACS("MiscVarCheckDECORATE",32) < 0) CallACS("MiscVarSetDECORATE",32,0);
+			if (CallACS("MiscVarCheckDECORATE",33) < 0) CallACS("MiscVarSetDECORATE",33,0);
+			if (CallACS("MiscVarCheckDECORATE",34) < 0) CallACS("MiscVarSetDECORATE",34,0);
+			if (CallACS("MiscVarCheckDECORATE",35) < 0) CallACS("MiscVarSetDECORATE",35,0);
+			if (CallACS("MiscVarCheckDECORATE",36) < 0) CallACS("MiscVarSetDECORATE",36,0);
+			CallACS("MiscVarSetDECORATE",21,CallACS("MiscVarCheckDECORATE",22));
+			ClassCheck++; // Class Check is done six times for randomization purposes.
+		}
+		
+		
+		
+		
+		
 		//******************
 		//*Get Health Ratio*
 		//******************
@@ -157,31 +318,31 @@ class PlayerStatItem : Inventory
 		//********************
 		if (playeractor)
 		{
-			if (Skill <= 0)
+			if (Skill <= SKILL_VERY_EASY)
 			{
 				if (Owner.CountInv("IsSkill1") == 0) Owner.A_GiveInventory("IsSkill1", 1);
 				if (Owner.CountInv("IsEasySkill") == 0) Owner.A_GiveInventory("IsEasySkill", 1);
 			}
-			if (Skill == 1)
+			if (Skill == SKILL_EASY)
 			{
 				if (Owner.CountInv("IsSkill2") == 0) Owner.A_GiveInventory("IsSkill2", 1);
 				if (Owner.CountInv("IsEasySkill") == 0) Owner.A_GiveInventory("IsEasySkill", 1);
 			}
-			if (Skill == 2)
+			if (Skill == SKILL_NORMAL)
 			{
 				if (Owner.CountInv("IsSkill3") == 0) Owner.A_GiveInventory("IsSkill3", 1);
 			}
-			if (Skill == 3)
+			if (Skill == SKILL_HARD)
 			{
 				if (Owner.CountInv("IsSkill4") == 0) Owner.A_GiveInventory("IsSkill4", 1);
 				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_GiveInventory("IsHardSkill", 1);
 			}
-			if (Skill == 4)
+			if (Skill == SKILL_VERY_HARD)
 			{
 				if (Owner.CountInv("IsSkill5") == 0) Owner.A_GiveInventory("IsSkill5", 1);
 				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_GiveInventory("IsHardSkill", 1);
 			}
-			if (Skill >= 5)
+			if (Skill >= SKILL_EXTREME)
 			{
 				if (Owner.CountInv("IsSkill6") == 0) Owner.A_GiveInventory("IsSkill6", 1);
 				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_GiveInventory("IsHardSkill", 1);
@@ -586,15 +747,15 @@ class PlayerStatItem : Inventory
 
 			SkillFactor = 0;
 			// Every 3/4/5 Points of Defenses = 0.1% increase to Survivability Rate
-			if (TrueGameSkill <= 0) SkillFactor = PlayerDEF / 3;
-			if (TrueGameSkill == 1) SkillFactor = PlayerDEF / 3;
-			if (TrueGameSkill == 2) SkillFactor = PlayerDEF / 4;
-			if (TrueGameSkill == 3) SkillFactor = PlayerDEF / 5;
-			if (TrueGameSkill == 4) SkillFactor = PlayerDEF / 5;
-			if (TrueGameSkill == 5) SkillFactor = PlayerDEF / 6;
-			if (TrueGameSkill == 6) SkillFactor = PlayerDEF / 6;
-			if (TrueGameSkill == 7) SkillFactor = PlayerDEF / 7;
-			if (TrueGameSkill >= 8) SkillFactor = PlayerDEF / 8;
+			if (TrueGameSkill <= SKILL_VERY_EASY) SkillFactor = PlayerDEF / 3;
+			if (TrueGameSkill == SKILL_EASY) SkillFactor = PlayerDEF / 3;
+			if (TrueGameSkill == SKILL_NORMAL) SkillFactor = PlayerDEF / 4;
+			if (TrueGameSkill == SKILL_HARD) SkillFactor = PlayerDEF / 5;
+			if (TrueGameSkill == SKILL_VERY_HARD) SkillFactor = PlayerDEF / 5;
+			if (TrueGameSkill == SKILL_EXTREME) SkillFactor = PlayerDEF / 6;
+			if (TrueGameSkill == SKILL_HORRIBLE) SkillFactor = PlayerDEF / 6;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillFactor = PlayerDEF / 7;
+			if (TrueGameSkill >= SKILL_OMEGA) SkillFactor = PlayerDEF / 8;
 			SurvivalRate += SkillFactor;
 			if (debugsurvival > 0) Console.Printf("    \cwSurvival Rate % [STEP 2 - DefStat Check]: %d,\c- Added: %d, Difficulty Level", SurvivalRate, SkillFactor, TrueGameSkill);
 
@@ -742,6 +903,15 @@ class PlayerStatItem : Inventory
 		
 		
 		
+		//****************************
+		//*Check EXP Kill Combo Timer*
+		//****************************
+		// To possibly be transplanted from ACS :V
+		
+		
+		
+		
+		
 		//*******************
 		//*RUINOUS SHIELD D:*
 		//*******************
@@ -802,15 +972,15 @@ class PlayerStatItem : Inventory
 			if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 6 - Interval Chance 2 (Armor)]: %d\c-, Previous: %d", UncurseIntervalChance2, previousdelaycount);
 			
 			// Amount of Points for Full Uncurse is determined by Difficulty level
-			if (TrueGameSkill <= 0) RuinousPtsNeeded = 384;
-			if (TrueGameSkill == 1) RuinousPtsNeeded = 448;
-			if (TrueGameSkill == 2) RuinousPtsNeeded = 576;
-			if (TrueGameSkill == 3) RuinousPtsNeeded = 768;
-			if (TrueGameSkill == 4) RuinousPtsNeeded = 1024;
-			if (TrueGameSkill == 5) RuinousPtsNeeded = 1152;
-			if (TrueGameSkill == 6) RuinousPtsNeeded = 1280;
-			if (TrueGameSkill == 7) RuinousPtsNeeded = 1408;
-			if (TrueGameSkill >= 8) RuinousPtsNeeded = 1536;
+			if (TrueGameSkill <= SKILL_VERY_EASY) RuinousPtsNeeded = 384;
+			if (TrueGameSkill == SKILL_EASY) RuinousPtsNeeded = 448;
+			if (TrueGameSkill == SKILL_NORMAL) RuinousPtsNeeded = 576;
+			if (TrueGameSkill == SKILL_HARD) RuinousPtsNeeded = 768;
+			if (TrueGameSkill == SKILL_VERY_HARD) RuinousPtsNeeded = 1024;
+			if (TrueGameSkill == SKILL_EXTREME) RuinousPtsNeeded = 1152;
+			if (TrueGameSkill == SKILL_HORRIBLE) RuinousPtsNeeded = 1280;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) RuinousPtsNeeded = 1408;
+			if (TrueGameSkill >= SKILL_OMEGA) RuinousPtsNeeded = 1536;
 			CallACS("MiscVarSetDECORATE",269,RuinousPtsNeeded); // Set
 			if (debuguncurse) Console.Printf("    \cnShield Uncursing [Step 7 - Get Max Uncurse Pts Needed]: %d\c-", RuinousPtsNeeded);
 			
@@ -1168,15 +1338,15 @@ class PlayerStatItem : Inventory
 		if (playeractor)
 		{
 			SkillFactor = 0;
-			if (TrueGameSkill <= 0) CriticalHitRate /= 3;
-			if (TrueGameSkill == 1) CriticalHitRate /= 4;
-			if (TrueGameSkill == 2) CriticalHitRate /= 5; 
-			if (TrueGameSkill == 3) CriticalHitRate /= 6; 
-			if (TrueGameSkill == 4) CriticalHitRate /= 7;
-			if (TrueGameSkill == 5) CriticalHitRate /= 7;
-			if (TrueGameSkill == 6) CriticalHitRate /= 8;
-			if (TrueGameSkill == 7) CriticalHitRate /= 8;
-			if (TrueGameSkill >= 8) CriticalHitRate /= 9;
+			if (TrueGameSkill <= SKILL_VERY_EASY) CriticalHitRate /= 3;
+			if (TrueGameSkill == SKILL_EASY) CriticalHitRate /= 4;
+			if (TrueGameSkill == SKILL_NORMAL) CriticalHitRate /= 5; 
+			if (TrueGameSkill == SKILL_HARD) CriticalHitRate /= 6; 
+			if (TrueGameSkill == SKILL_VERY_HARD) CriticalHitRate /= 7;
+			if (TrueGameSkill == SKILL_EXTREME) CriticalHitRate /= 7;
+			if (TrueGameSkill == SKILL_HORRIBLE) CriticalHitRate /= 8;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) CriticalHitRate /= 8;
+			if (TrueGameSkill >= SKILL_OMEGA) CriticalHitRate /= 9;
 			if (debugcrithits > 0) Console.Printf("    \cwCrit Rate % [STEP 1 - Base]: %d\c-, Difficulty Level", CriticalHitRate, TrueGameSkill);
 
 			// Level + Stat Calculations
@@ -2010,43 +2180,43 @@ class PlayerStatItem : Inventory
 		{
 			int SeedLimit = CallACS("MiscVarCheckDECORATE",29);
 			// for the Seed limit amount [to be used in more than one script]
-			if (TrueGameSkill <= 0) SeedLimit = 128;
-			if (TrueGameSkill == 1) SeedLimit = 120;
-			if (TrueGameSkill == 2) SeedLimit = 112;
-			if (TrueGameSkill == 3) SeedLimit = 104;
-			if (TrueGameSkill == 4) SeedLimit = 96;
-			if (TrueGameSkill == 5) SeedLimit = 88;
-			if (TrueGameSkill == 6) SeedLimit = 80;
-			if (TrueGameSkill == 7) SeedLimit = 72;
-			if (TrueGameSkill >= 8) SeedLimit = 64;
+			if (TrueGameSkill <= SKILL_VERY_EASY) SeedLimit = 128;
+			if (TrueGameSkill == SKILL_EASY) SeedLimit = 120;
+			if (TrueGameSkill == SKILL_NORMAL) SeedLimit = 112;
+			if (TrueGameSkill == SKILL_HARD) SeedLimit = 104;
+			if (TrueGameSkill == SKILL_VERY_HARD) SeedLimit = 96;
+			if (TrueGameSkill == SKILL_EXTREME) SeedLimit = 88;
+			if (TrueGameSkill == SKILL_HORRIBLE) SeedLimit = 80;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) SeedLimit = 72;
+			if (TrueGameSkill >= SKILL_OMEGA) SeedLimit = 64;
 			if (CallACS("OtherVarCheckDECORATE",8) == 0) SeedLimit *= 4; // 4x the usual limits on Classic Doom 1/2 / Heretic / Hexen / Strife
 			CallACS("MiscVarSetDECORATE",29,SeedLimit);
 			
 			int SeedLimit2 = CallACS("MiscVarCheckDECORATE",28);
 			// for the Seed of Skill limit amount [to be used in more than one script]
-			if (TrueGameSkill <= 0) SeedLimit2 = 32;
-			if (TrueGameSkill == 1) SeedLimit2 = 30;
-			if (TrueGameSkill == 2) SeedLimit2 = 28;
-			if (TrueGameSkill == 3) SeedLimit2 = 26;
-			if (TrueGameSkill == 4) SeedLimit2 = 24;
-			if (TrueGameSkill == 5) SeedLimit2 = 22;
-			if (TrueGameSkill == 6) SeedLimit2 = 20;
-			if (TrueGameSkill == 7) SeedLimit2 = 16;
-			if (TrueGameSkill >= 8) SeedLimit2 = 14;
+			if (TrueGameSkill <= SKILL_VERY_EASY) SeedLimit2 = 32;
+			if (TrueGameSkill == SKILL_EASY) SeedLimit2 = 30;
+			if (TrueGameSkill == SKILL_NORMAL) SeedLimit2 = 28;
+			if (TrueGameSkill == SKILL_HARD) SeedLimit2 = 26;
+			if (TrueGameSkill == SKILL_VERY_HARD) SeedLimit2 = 24;
+			if (TrueGameSkill == SKILL_EXTREME) SeedLimit2 = 22;
+			if (TrueGameSkill == SKILL_HORRIBLE) SeedLimit2 = 20;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) SeedLimit2 = 16;
+			if (TrueGameSkill >= SKILL_OMEGA) SeedLimit2 = 14;
 			if (CallACS("OtherVarCheckDECORATE",8) == 0) SeedLimit2 *= 4; // 4x the usual limits on Classic Doom 1/2 / Heretic / Hexen / Strife
 			CallACS("MiscVarSetDECORATE",28,SeedLimit2);
 			
 			int FyggLimit = CallACS("MiscVarCheckDECORATE",26);
 			// for the Fygg limit amount [to be used in more than one script]
-			if (TrueGameSkill <= 0) FyggLimit = 3;
-			if (TrueGameSkill == 1) FyggLimit = 3;
-			if (TrueGameSkill == 2) FyggLimit = 3;
-			if (TrueGameSkill == 3) FyggLimit = 2;
-			if (TrueGameSkill == 4) FyggLimit = 2;
-			if (TrueGameSkill == 5) FyggLimit = 2;
-			if (TrueGameSkill == 6) FyggLimit = 1;
-			if (TrueGameSkill == 7) FyggLimit = 1;
-			if (TrueGameSkill >= 8) FyggLimit = 1;
+			if (TrueGameSkill <= SKILL_VERY_EASY) FyggLimit = 3;
+			if (TrueGameSkill == SKILL_EASY) FyggLimit = 3;
+			if (TrueGameSkill == SKILL_NORMAL) FyggLimit = 3;
+			if (TrueGameSkill == SKILL_HARD) FyggLimit = 2;
+			if (TrueGameSkill == SKILL_VERY_HARD) FyggLimit = 2;
+			if (TrueGameSkill == SKILL_EXTREME) FyggLimit = 2;
+			if (TrueGameSkill == SKILL_HORRIBLE) FyggLimit = 1;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) FyggLimit = 1;
+			if (TrueGameSkill >= SKILL_OMEGA) FyggLimit = 1;
 			if (CallACS("OtherVarCheckDECORATE",8) == 0) FyggLimit *= 4; // 4x the usual limits on Classic Doom 1/2 / Heretic / Hexen / Strife
 			CallACS("MiscVarSetDECORATE",26,FyggLimit);
 		}
@@ -2200,15 +2370,15 @@ class PlayerStatItem : Inventory
 		if (playeractor)
 		{
 			// Determines how low HP/MP can degenerate to when the Ruinous Shield is equipped. [used as Divisors]
-			if (TrueGameSkill <= 0) { DegenMinimumHPFactor = 8; DegenMinimumManaFactor = 64; }
-			if (TrueGameSkill == 1) { DegenMinimumHPFactor = 9; DegenMinimumManaFactor = 72; }
-			if (TrueGameSkill == 2) { DegenMinimumHPFactor = 10; DegenMinimumManaFactor = 80; }
-			if (TrueGameSkill == 3) { DegenMinimumHPFactor = 11; DegenMinimumManaFactor = 88; }
-			if (TrueGameSkill == 4) { DegenMinimumHPFactor = 12; DegenMinimumManaFactor = 96; }
-			if (TrueGameSkill == 5) { DegenMinimumHPFactor = 13; DegenMinimumManaFactor = 104; }
-			if (TrueGameSkill == 6) { DegenMinimumHPFactor = 14; DegenMinimumManaFactor = 112; }
-			if (TrueGameSkill == 7) { DegenMinimumHPFactor = 15; DegenMinimumManaFactor = 120; }
-			if (TrueGameSkill >= 8) { DegenMinimumHPFactor = 16; DegenMinimumManaFactor = 128; }
+			if (TrueGameSkill <= SKILL_VERY_EASY) { DegenMinimumHPFactor = 8; DegenMinimumManaFactor = 64; }
+			if (TrueGameSkill == SKILL_EASY) { DegenMinimumHPFactor = 9; DegenMinimumManaFactor = 72; }
+			if (TrueGameSkill == SKILL_NORMAL) { DegenMinimumHPFactor = 10; DegenMinimumManaFactor = 80; }
+			if (TrueGameSkill == SKILL_HARD) { DegenMinimumHPFactor = 11; DegenMinimumManaFactor = 88; }
+			if (TrueGameSkill == SKILL_VERY_HARD) { DegenMinimumHPFactor = 12; DegenMinimumManaFactor = 96; }
+			if (TrueGameSkill == SKILL_EXTREME) { DegenMinimumHPFactor = 13; DegenMinimumManaFactor = 104; }
+			if (TrueGameSkill == SKILL_HORRIBLE) { DegenMinimumHPFactor = 14; DegenMinimumManaFactor = 112; }
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) { DegenMinimumHPFactor = 15; DegenMinimumManaFactor = 120; }
+			if (TrueGameSkill >= SKILL_OMEGA) { DegenMinimumHPFactor = 16; DegenMinimumManaFactor = 128; }
 			DegenMinimumHPFactor = DegenMinimumHPFactor * 3 / 4;
 			DegenMinimumManaFactor = DegenMinimumManaFactor * 3 / 4;
 			DegenMinimumHP = PlayerMaxHP / DegenMinimumHPFactor;
@@ -2441,15 +2611,15 @@ class PlayerStatItem : Inventory
 			
 			// Level Check [Interval Delay]
 			previousdelaycount = HPDelayInterval;
-			if (TrueGameSkill <= 0) HPDelayInterval -= 6;
-			if (TrueGameSkill == 1) HPDelayInterval -= 2;
-			if (TrueGameSkill == 2) HPDelayInterval += 0;
-			if (TrueGameSkill == 3) HPDelayInterval += 2;
-			if (TrueGameSkill == 4) HPDelayInterval += 6;
-			if (TrueGameSkill == 5) HPDelayInterval += 8;
-			if (TrueGameSkill == 6) HPDelayInterval += 12;
-			if (TrueGameSkill == 7) HPDelayInterval += 14;
-			if (TrueGameSkill >= 8) HPDelayInterval += 16;
+			if (TrueGameSkill <= SKILL_VERY_EASY) HPDelayInterval -= 6;
+			if (TrueGameSkill == SKILL_EASY) HPDelayInterval -= 2;
+			if (TrueGameSkill == SKILL_NORMAL) HPDelayInterval += 0;
+			if (TrueGameSkill == SKILL_HARD) HPDelayInterval += 2;
+			if (TrueGameSkill == SKILL_VERY_HARD) HPDelayInterval += 6;
+			if (TrueGameSkill == SKILL_EXTREME) HPDelayInterval += 8;
+			if (TrueGameSkill == SKILL_HORRIBLE) HPDelayInterval += 12;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) HPDelayInterval += 14;
+			if (TrueGameSkill >= SKILL_OMEGA) HPDelayInterval += 16;
 			if (debugregenhealth) Console.Printf("    \caHP Regen [Step 2 - Interval Delay (Difficulty)]: %d\c-, Previous: %d", HPDelayInterval, previousdelaycount);
 			
 			previousdelaycount = HPDelayInterval;
@@ -2703,15 +2873,15 @@ class PlayerStatItem : Inventory
 			
 			// Level Check [Interval Delay]
 			previousdelaycount = HPDelayInterval2;
-			if (TrueGameSkill <= 0) HPDelayInterval2 += 3;
-			if (TrueGameSkill == 1) HPDelayInterval2 += 1;
-			if (TrueGameSkill == 2) HPDelayInterval2 += 0;
-			if (TrueGameSkill == 3) HPDelayInterval2 -= 1;
-			if (TrueGameSkill == 4) HPDelayInterval2 -= 3;
-			if (TrueGameSkill == 5) HPDelayInterval2 -= 4;
-			if (TrueGameSkill == 6) HPDelayInterval2 -= 6;
-			if (TrueGameSkill == 7) HPDelayInterval2 -= 7;
-			if (TrueGameSkill >= 8) HPDelayInterval2 -= 8;
+			if (TrueGameSkill <= SKILL_VERY_EASY) HPDelayInterval2 += 3;
+			if (TrueGameSkill == SKILL_EASY) HPDelayInterval2 += 1;
+			if (TrueGameSkill == SKILL_NORMAL) HPDelayInterval2 += 0;
+			if (TrueGameSkill == SKILL_HARD) HPDelayInterval2 -= 1;
+			if (TrueGameSkill == SKILL_VERY_HARD) HPDelayInterval2 -= 3;
+			if (TrueGameSkill == SKILL_EXTREME) HPDelayInterval2 -= 4;
+			if (TrueGameSkill == SKILL_HORRIBLE) HPDelayInterval2 -= 6;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) HPDelayInterval2 -= 7;
+			if (TrueGameSkill >= SKILL_OMEGA) HPDelayInterval2 -= 8;
 			if (debugregenhealth) Console.Printf("    \caHP Degen [Step 2 - Interval Delay (Difficulty)]: %d\c-, Previous: %d", HPDelayInterval2, previousdelaycount);
 			
 			// Level
@@ -2939,15 +3109,15 @@ class PlayerStatItem : Inventory
 
 			// Difficulty Level
 			previousdelaycount = PoisonMaxInterval;
-			if (TrueGameSkill <= 0) PoisonMaxInterval = PoisonMaxInterval * 22 / 20;
-			if (TrueGameSkill == 1) PoisonMaxInterval = PoisonMaxInterval * 21 / 20;
-			if (TrueGameSkill == 2) PoisonMaxInterval = PoisonMaxInterval * 20 / 20;
-			if (TrueGameSkill == 3) PoisonMaxInterval = PoisonMaxInterval * 19 / 20;
-			if (TrueGameSkill == 4) PoisonMaxInterval = PoisonMaxInterval * 18 / 20;
-			if (TrueGameSkill == 5) PoisonMaxInterval = PoisonMaxInterval * 17 / 20;
-			if (TrueGameSkill == 6) PoisonMaxInterval = PoisonMaxInterval * 16 / 20;
-			if (TrueGameSkill == 7) PoisonMaxInterval = PoisonMaxInterval * 15 / 20;
-			if (TrueGameSkill >= 8) PoisonMaxInterval = PoisonMaxInterval * 14 / 20;
+			if (TrueGameSkill <= SKILL_VERY_EASY) PoisonMaxInterval = PoisonMaxInterval * 22 / 20;
+			if (TrueGameSkill == SKILL_EASY) PoisonMaxInterval = PoisonMaxInterval * 21 / 20;
+			if (TrueGameSkill == SKILL_NORMAL) PoisonMaxInterval = PoisonMaxInterval * 20 / 20;
+			if (TrueGameSkill == SKILL_HARD) PoisonMaxInterval = PoisonMaxInterval * 19 / 20;
+			if (TrueGameSkill == SKILL_VERY_HARD) PoisonMaxInterval = PoisonMaxInterval * 18 / 20;
+			if (TrueGameSkill == SKILL_EXTREME) PoisonMaxInterval = PoisonMaxInterval * 17 / 20;
+			if (TrueGameSkill == SKILL_HORRIBLE) PoisonMaxInterval = PoisonMaxInterval * 16 / 20;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) PoisonMaxInterval = PoisonMaxInterval * 15 / 20;
+			if (TrueGameSkill >= SKILL_OMEGA) PoisonMaxInterval = PoisonMaxInterval * 14 / 20;
 			if (debugpoisoninfo) Console.Printf("    \cuPoison Damage [Step 2 - Max Interval (Difficulty)]: %d\c-, Previous: %d", PoisonMaxInterval, previousdelaycount);
 
 			// Check for Poison [-Invuln]
@@ -3286,42 +3456,42 @@ class PlayerStatItem : Inventory
 				if (PlayerCurrentMP < PlayerMaxMP && PlayerCurrentHealth > 0)
 				{
 					// A combined total of 12-20 points of Sorcery/Theraphesuis are needed for an extra point of MP regen.
-					if (TrueGameSkill <= 0)
+					if (TrueGameSkill <= SKILL_VERY_EASY)
 					{
 						RegenedMana = 3;
 						regenedmanabasereq = 12;
 					}
-					if (TrueGameSkill == 1) 
+					if (TrueGameSkill == SKILL_EASY) 
 					{
 						RegenedMana = random(2,3);
 						regenedmanabasereq = 14;
 					}
-					if (TrueGameSkill == 2)
+					if (TrueGameSkill == SKILL_NORMAL)
 					{
 						RegenedMana = 2;
 						regenedmanabasereq = 16;
 					}
-					if (TrueGameSkill == 3) 
+					if (TrueGameSkill == SKILL_HARD) 
 					{
 						RegenedMana = random(1,2);
 						regenedmanabasereq = 18;
 					}
-					if (TrueGameSkill == 4) 
+					if (TrueGameSkill == SKILL_VERY_HARD) 
 					{
 						RegenedMana = 1;
 						regenedmanabasereq = 20;
 					}
-					if (TrueGameSkill == 5) 
+					if (TrueGameSkill == SKILL_EXTREME) 
 					{
 						RegenedMana = 1;
 						regenedmanabasereq = 22;
 					}
-					if (TrueGameSkill == 6) 
+					if (TrueGameSkill == SKILL_HORRIBLE) 
 					{
 						RegenedMana = 1;
 						regenedmanabasereq = 24;
 					}
-					if (TrueGameSkill == 7) 
+					if (TrueGameSkill == SKILL_IMPOSSIBLE) 
 					{
 						RegenedMana = 1;
 						regenedmanabasereq = 26;
@@ -3452,15 +3622,15 @@ class PlayerStatItem : Inventory
 	
 				// New Addition = Caps Maximum Mana Regeneration to a certain amount based on Difficulty and armor-type items.
 				MaxRegenableMana = PlayerMaxMP * 50 / 100;
-				if (TrueGameSkill <= 0) MaxRegenableMana = PlayerMaxMP * 61 / 100; 	// (61% of Max)
-				if (TrueGameSkill == 1) MaxRegenableMana = PlayerMaxMP * 55 / 100; 				// (55% of Max)
-				if (TrueGameSkill == 2) MaxRegenableMana = PlayerMaxMP * 50 / 100; 			// (50% of Max)
-				if (TrueGameSkill == 3) MaxRegenableMana = PlayerMaxMP * 45 / 100; 				// (45% of Max)
-				if (TrueGameSkill == 4) MaxRegenableMana = PlayerMaxMP * 39 / 100; 	// (39% of Max)
-				if (TrueGameSkill == 5) MaxRegenableMana = PlayerMaxMP * 36 / 100; 		// (36% of Max)
-				if (TrueGameSkill == 6) MaxRegenableMana = PlayerMaxMP * 33 / 100; 		// (33% of Max)
-				if (TrueGameSkill == 7) MaxRegenableMana = PlayerMaxMP * 30 / 100; 	// (30% of Max)
-				if (TrueGameSkill >= 8) MaxRegenableMana = PlayerMaxMP * 27 / 100; 			// (27% of Max)
+				if (TrueGameSkill <= SKILL_VERY_EASY) MaxRegenableMana = PlayerMaxMP * 61 / 100; 	// (61% of Max)
+				if (TrueGameSkill == SKILL_EASY) MaxRegenableMana = PlayerMaxMP * 55 / 100; 				// (55% of Max)
+				if (TrueGameSkill == SKILL_NORMAL) MaxRegenableMana = PlayerMaxMP * 50 / 100; 			// (50% of Max)
+				if (TrueGameSkill == SKILL_HARD) MaxRegenableMana = PlayerMaxMP * 45 / 100; 				// (45% of Max)
+				if (TrueGameSkill == SKILL_VERY_HARD) MaxRegenableMana = PlayerMaxMP * 39 / 100; 	// (39% of Max)
+				if (TrueGameSkill == SKILL_EXTREME) MaxRegenableMana = PlayerMaxMP * 36 / 100; 		// (36% of Max)
+				if (TrueGameSkill == SKILL_HORRIBLE) MaxRegenableMana = PlayerMaxMP * 33 / 100; 		// (33% of Max)
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) MaxRegenableMana = PlayerMaxMP * 30 / 100; 	// (30% of Max)
+				if (TrueGameSkill >= SKILL_OMEGA) MaxRegenableMana = PlayerMaxMP * 27 / 100; 			// (27% of Max)
 				if (debugregenmana) Console.Printf("    \cnMP Regen [Step x10 - Get Max Regen]: %d\c-, MaxRegen: %d", RegenedMana, MaxRegenableMana);
 	
 				EquippedRegenCap = 100; // in percent
@@ -3551,15 +3721,15 @@ class PlayerStatItem : Inventory
 				CallACS("MiscVarSetDECORATE",238,PlayerCurrentMP); // Sets "NewManaValue" in ACS
 
 				// Reset Regen Delay
-				if (TrueGameSkill <= 0) SkillLevelManaDelay = 600; // 30 tics
-				if (TrueGameSkill == 1) SkillLevelManaDelay = 660; // 33 tics
-				if (TrueGameSkill == 2) SkillLevelManaDelay = 740; // 37 tics
-				if (TrueGameSkill == 3) SkillLevelManaDelay = 840; // 42 tics
-				if (TrueGameSkill == 4) SkillLevelManaDelay = 960; // 48 tics
-				if (TrueGameSkill == 5) SkillLevelManaDelay = 1020; // 51 tics
-				if (TrueGameSkill == 6) SkillLevelManaDelay = 1080; // 54 tics
-				if (TrueGameSkill == 7) SkillLevelManaDelay = 1140; // 57 tics
-				if (TrueGameSkill >= 8) SkillLevelManaDelay = 1260; // 63 tics
+				if (TrueGameSkill <= SKILL_VERY_EASY) SkillLevelManaDelay = 600; // 30 tics
+				if (TrueGameSkill == SKILL_EASY) SkillLevelManaDelay = 660; // 33 tics
+				if (TrueGameSkill == SKILL_NORMAL) SkillLevelManaDelay = 740; // 37 tics
+				if (TrueGameSkill == SKILL_HARD) SkillLevelManaDelay = 840; // 42 tics
+				if (TrueGameSkill == SKILL_VERY_HARD) SkillLevelManaDelay = 960; // 48 tics
+				if (TrueGameSkill == SKILL_EXTREME) SkillLevelManaDelay = 1020; // 51 tics
+				if (TrueGameSkill == SKILL_HORRIBLE) SkillLevelManaDelay = 1080; // 54 tics
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillLevelManaDelay = 1140; // 57 tics
+				if (TrueGameSkill >= SKILL_OMEGA) SkillLevelManaDelay = 1260; // 63 tics
 
 				if (CharacterClass == 0) SkillLevelManaDelay += (20 * random(-3,5)); 
 				if (CharacterClass == 1) SkillLevelManaDelay += (20 * random(-4,4));
@@ -3578,15 +3748,15 @@ class PlayerStatItem : Inventory
 				ManaReDelay = (PlayerSOR + PlayerTHE) / 300;
 				MPDelayInterval -= ManaReDelay;
 
-				if (TrueGameSkill <= 0) if (MPDelayInterval < 20) MPDelayInterval = 20;
-				if (TrueGameSkill == 1) if (MPDelayInterval < 40) MPDelayInterval = 40;
-				if (TrueGameSkill == 2) if (MPDelayInterval < 80) MPDelayInterval = 80;
-				if (TrueGameSkill == 3) if (MPDelayInterval < 140) MPDelayInterval = 140;
-				if (TrueGameSkill == 4) if (MPDelayInterval < 220) MPDelayInterval = 220;
-				if (TrueGameSkill == 5) if (MPDelayInterval < 240) MPDelayInterval = 240;
-				if (TrueGameSkill == 6) if (MPDelayInterval < 260) MPDelayInterval = 260;
-				if (TrueGameSkill == 7) if (MPDelayInterval < 280) MPDelayInterval = 280;
-				if (TrueGameSkill >= 8) if (MPDelayInterval < 300) MPDelayInterval = 300;
+				if (TrueGameSkill <= SKILL_VERY_EASY) if (MPDelayInterval < 20) MPDelayInterval = 20;
+				if (TrueGameSkill == SKILL_EASY) if (MPDelayInterval < 40) MPDelayInterval = 40;
+				if (TrueGameSkill == SKILL_NORMAL) if (MPDelayInterval < 80) MPDelayInterval = 80;
+				if (TrueGameSkill == SKILL_HARD) if (MPDelayInterval < 140) MPDelayInterval = 140;
+				if (TrueGameSkill == SKILL_VERY_HARD) if (MPDelayInterval < 220) MPDelayInterval = 220;
+				if (TrueGameSkill == SKILL_EXTREME) if (MPDelayInterval < 240) MPDelayInterval = 240;
+				if (TrueGameSkill == SKILL_HORRIBLE) if (MPDelayInterval < 260) MPDelayInterval = 260;
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) if (MPDelayInterval < 280) MPDelayInterval = 280;
+				if (TrueGameSkill >= SKILL_OMEGA) if (MPDelayInterval < 300) MPDelayInterval = 300;
 
 				MPRegenTimer = 0;
 			}
@@ -3685,15 +3855,15 @@ class PlayerStatItem : Inventory
 			SkillFactor = 0;
 			PreviousStaminaMax = MaximumStamina;
 			// Final Calc
-			if (TrueGameSkill <= 0) SkillFactor = 10000;
-			if (TrueGameSkill == 1) SkillFactor = 11250;
-			if (TrueGameSkill == 2) SkillFactor = 12500;
-			if (TrueGameSkill == 3) SkillFactor = 15000;
-			if (TrueGameSkill == 4) SkillFactor = 20000;
-			if (TrueGameSkill == 5) SkillFactor = 21250;
-			if (TrueGameSkill == 6) SkillFactor = 22500;
-			if (TrueGameSkill == 7) SkillFactor = 23750;
-			if (TrueGameSkill >= 8) SkillFactor = 25000;
+			if (TrueGameSkill <= SKILL_VERY_EASY) SkillFactor = 10000;
+			if (TrueGameSkill == SKILL_EASY) SkillFactor = 11250;
+			if (TrueGameSkill == SKILL_NORMAL) SkillFactor = 12500;
+			if (TrueGameSkill == SKILL_HARD) SkillFactor = 15000;
+			if (TrueGameSkill == SKILL_VERY_HARD) SkillFactor = 20000;
+			if (TrueGameSkill == SKILL_EXTREME) SkillFactor = 21250;
+			if (TrueGameSkill == SKILL_HORRIBLE) SkillFactor = 22500;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillFactor = 23750;
+			if (TrueGameSkill >= SKILL_OMEGA) SkillFactor = 25000;
 			staminastatfactor += SkillFactor;
 			MaximumStamina = MaximumStamina * staminastatfactor / SkillFactor;
 			if (debugstaminaregen) Console.Printf("    \cfStamina Maximum [Step 2X - Stam - Stat Gain]: %d, Previously: %d", MaximumStamina, PreviousStaminaMax);
