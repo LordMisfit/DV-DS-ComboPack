@@ -669,12 +669,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [271] Saves player's XVel when using the menus
 	// [272] Saves player's YVel when using the menus
 	// [273] Saves player's ZVel when using the menus
-	// [274] hold the "jump" var
-	// [275] hold the "crouch" var
-	// [276] hold the "jiggle left" var
-	// [277] hold the "jiggle right" var
-	// [278] hold the "jiggle up" var
-	// [279] hold the "jiggle down" var
+		// [274-279] ????
 	// [280] is storage for Base Perk Cost Multiplier [Menu CVar]
 	// [281] is storage for the current GoldWandAmmo maximum.
 	// [282] is storage for the current CrossbowAmmo maximum.
@@ -27063,18 +27058,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	int playeractor = 1;
 
 	int G1, G2, G3, C1, C2, C3, C4, I1, I2, I3, H1;
-	int ArmorBits, LevelChecker, AmmoCheck, HellcoreCoolRatio, IronFeetChance, FearChance;
+	int ArmorBits, LevelChecker, AmmoCheck, IronFeetChance, FearChance;
 	int BaseSceptreEXP;
-	int SceptreEXPRatio;
-	int checkmeleeweapons;
-	int staminaregenbase;
-	int staminaregenfinal;
-	int haveruinousshield;
-	int SpawnFixedX, SpawnFixedY, SpawnFixedZ, KilledMonsterFactor, Randomizer1;
+	int haveruinousshield, SpawnFixedX, SpawnFixedY, SpawnFixedZ, KilledMonsterFactor, Randomizer1;
 	int MaxHealthLimit = MaxHealthTrue * 2;
-	int FreezePlayer;
-	int PerkFactor, BasePerkFactor;
-	int project_RealZ;
+	int FreezePlayer, PerkFactor, BasePerkFactor, project_RealZ;
 
 	int VelX = GetActorVelX(Player1TID);
 	int VelY = GetActorVelY(Player1TID);
@@ -27082,7 +27070,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	
 	int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 	int powertripmode = GetCVar("dvds_musou_powertripmode");
-	int tensionspeedmulti = GetCVar("dvds_tensionspeed");
 	int DVIIArmorSpawn = GetCVAR("dvds_dviiarmorspawn");
 	int HealthRatio;
 
@@ -27107,19 +27094,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	//******************
 	//*Initial Six Tics*
 	//******************
-	/*
-	if (ClassCheck == 0) // Will run the check only once at the beginning of a new game
-	{
-		MiscellaneousVars[1999] = -1;
-	}
-	// Check for HUD type settings
-	if (MiscellaneousVars[1999] == -1)
-	{
-		MiscellaneousVars[2000] = GetCVAR("dvds_newhud"); // 0 = Old HUD, 1 = DQH-ish Style
-		if (MiscellaneousVars[2000] == 0) GiveActorInventory(Player1TID,"DVDSOldHud",1); else TakeActorInventory(Player1TID,"DVDSOldHud",0x7FFFFFFF); 
-	}
-	*/
-	
 	MiscellaneousVars[100001] = GetCVar("dvdsdebug_showmeleeinformation");
 	MiscellaneousVars[100002] = GetCVar("dvdsdebug_showevadestuff");
 	MiscellaneousVars[100003] = GetCVar("dvdsdebug_hellcoreheatdisplay");
@@ -27187,20 +27161,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	
 	MiscellaneousVars[148] = GetCVar("dvds_startotherstatsfactor");
 	
-	if (tensionspeedmulti <= 0) MiscellaneousVars[193] = 1;
-	if (tensionspeedmulti == 1) MiscellaneousVars[193] = 2;
-	if (tensionspeedmulti == 2) MiscellaneousVars[193] = 4;
-	if (tensionspeedmulti == 3) MiscellaneousVars[193] = 8;
-	if (tensionspeedmulti == 4) MiscellaneousVars[193] = 16;
-	if (tensionspeedmulti == 5) MiscellaneousVars[193] = 32;
-	if (tensionspeedmulti >= 6) MiscellaneousVars[193] = 64;
-	
 	if (MiscellaneousVars[110007] == 0) TakeActorInventory(Player1TID,"PlayerCanUseCrisisAttacks",0x7FFFFFFF);
 	
-	if (ClassCheck < 6)
-	{
-		ClassCheck += 1; // Class Check is done six times for randomization purposes.
-	}
+	if (ClassCheck < 6) ClassCheck += 1; // Class Check is done six times for randomization purposes.
 	
 	if (MiscellaneousVars[171] > 0) MiscellaneousVars[171] --; // Ticks down the "Level Up" and "Stat Up" indicators on the new HUD after a level up occurs
 	if (MiscellaneousVars[2031] > 0) MiscellaneousVars[2031] --; // Ticks down the "MaxHP" gain timer
@@ -27263,129 +27226,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	if (MenuSystemVars[0] == 1) // If the in-game menus are on, half velocity
 	{
 		SetActorVelocity(Player1TID, 0, 0, 0, 0, 0);
-	}
-	
-	//********************************************************************************
-	//*Allows the player to "jiggle" out of sleep faster by pressing movement keys :V*
-	//********************************************************************************
-	int jiggledecrease = random(4,6);
-	if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) jiggledecrease += random(2,3);
-	if (CheckActorInventory(Player1TID,"BalrogRing") > 0) jiggledecrease += random(0,1);
-	int jigglecooldown = random(2,3);
-	int jigglewarmup = 5;
-	// [274] hold the "jump" var
-	// [275] hold the "crouch" var
-	// [276] hold the "jiggle left" var
-	// [277] hold the "jiggle right" var
-	// [278] hold the "jiggle up" var
-	// [279] hold the "jiggle down" var
-	if (MiscellaneousVars[274] > 0) MiscellaneousVars[274] -= 1;
-	if (MiscellaneousVars[275] > 0) MiscellaneousVars[275] -= 1;
-	if (MiscellaneousVars[276] > 0) MiscellaneousVars[276] -= 1;
-	if (MiscellaneousVars[277] > 0) MiscellaneousVars[277] -= 1;
-	if (MiscellaneousVars[278] > 0) MiscellaneousVars[278] -= 1;
-	if (MiscellaneousVars[279] > 0) MiscellaneousVars[279] -= 1;
-	if (MiscellaneousVars[274] < 0) MiscellaneousVars[274] = 0;
-	if (MiscellaneousVars[275] < 0) MiscellaneousVars[275] = 0;
-	if (MiscellaneousVars[276] < 0) MiscellaneousVars[276] = 0;
-	if (MiscellaneousVars[277] < 0) MiscellaneousVars[277] = 0;
-	if (MiscellaneousVars[278] < 0) MiscellaneousVars[278] = 0;
-	if (MiscellaneousVars[279] < 0) MiscellaneousVars[279] = 0;
-	if (PowerupTimer[20] > 0) // ... put to sleep.
-	{
-		if (buttons & BT_JUMP | buttons & BT_MOVEUP) // "Crouch"
-		{
-			if (MiscellaneousVars[274] < 1)
-			{
-				PowerupTimer[20] -= jiggledecrease;
-				MiscellaneousVars[274] += jigglewarmup;
-				MiscellaneousVars[275] -= jigglecooldown;
-				MiscellaneousVars[276] -= jigglecooldown;
-				MiscellaneousVars[277] -= jigglecooldown;
-				MiscellaneousVars[278] -= jigglecooldown;
-				MiscellaneousVars[279] -= jigglecooldown;
-			}
-		}
-		else
-		if (buttons & BT_CROUCH | buttons & BT_MOVEDOWN) // "Crouch"
-		{
-			if (MiscellaneousVars[275] < 1)
-			{
-				PowerupTimer[20] -= jiggledecrease;
-				MiscellaneousVars[274] -= jigglecooldown;
-				MiscellaneousVars[275] += jigglewarmup;
-				MiscellaneousVars[276] -= jigglecooldown;
-				MiscellaneousVars[277] -= jigglecooldown;
-				MiscellaneousVars[278] -= jigglecooldown;
-				MiscellaneousVars[279] -= jigglecooldown;
-			}
-		}
-		else
-		if (buttons & BT_LEFT | buttons & BT_MOVELEFT) // Move "Left"
-		{
-			if (MiscellaneousVars[276] < 1)
-			{
-				PowerupTimer[20] -= jiggledecrease;
-				MiscellaneousVars[274] -= jigglecooldown;
-				MiscellaneousVars[275] -= jigglecooldown;
-				MiscellaneousVars[276] += jigglewarmup;
-				MiscellaneousVars[277] -= jigglecooldown;
-				MiscellaneousVars[278] -= jigglecooldown;
-				MiscellaneousVars[279] -= jigglecooldown;
-			}
-		}
-		else
-		if (buttons & BT_RIGHT | buttons & BT_MOVERIGHT) // Move "Right"
-		{
-			if (MiscellaneousVars[277] < 1)
-			{
-				PowerupTimer[20] -= jiggledecrease;
-				MiscellaneousVars[274] -= jigglecooldown;
-				MiscellaneousVars[275] -= jigglecooldown;
-				MiscellaneousVars[276] -= jigglecooldown;
-				MiscellaneousVars[277] += jigglewarmup;
-				MiscellaneousVars[278] -= jigglecooldown;
-				MiscellaneousVars[279] -= jigglecooldown;
-			}
-		}
-		else
-		if (buttons & BT_FORWARD | buttons & BT_LOOKUP) // Move "Forward/Up"
-		{
-			if (MiscellaneousVars[278] < 1)
-			{
-				PowerupTimer[20] -= jiggledecrease;
-				MiscellaneousVars[274] -= jigglecooldown;
-				MiscellaneousVars[275] -= jigglecooldown;
-				MiscellaneousVars[276] -= jigglecooldown;
-				MiscellaneousVars[277] -= jigglecooldown;
-				MiscellaneousVars[278] += jigglewarmup;
-				MiscellaneousVars[279] -= jigglecooldown;
-			}
-		}
-		else
-		if (buttons & BT_BACK | buttons & BT_LOOKDOWN) // Move "Backwards/Down"
-		{
-			if (MiscellaneousVars[279] < 1)
-			{
-				PowerupTimer[20] -= jiggledecrease;
-				MiscellaneousVars[274] -= jigglecooldown;
-				MiscellaneousVars[275] -= jigglecooldown;
-				MiscellaneousVars[276] -= jigglecooldown;
-				MiscellaneousVars[277] -= jigglecooldown;
-				MiscellaneousVars[278] -= jigglecooldown;
-				MiscellaneousVars[279] += jigglewarmup;
-			}
-		}
-		/*
-		PrintBold(s:"Sleep Timer: ",d:PowerupTimer[20],s:"\n",s:"\n",
-							s:"Jump: ",d:MiscellaneousVars[274],s:"\n",
-							s:"Crouch: ",d:MiscellaneousVars[275],s:"\n",
-							s:"Left: ",d:MiscellaneousVars[276],s:"\n",
-							s:"Right: ",d:MiscellaneousVars[277],s:"\n",
-							s:"Up: ",d:MiscellaneousVars[278],s:"\n",
-							s:"Down: ",d:MiscellaneousVars[279],s:"\n");
-		*/
-		if (PowerupTimer[20] < 0) PowerupTimer[20] = 0;
 	}
 	
 	//****************************************************************************************************************************************************************
@@ -27511,209 +27351,11 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		}
 	}
 
-	//*********************
-	// Grand-Mastery Perks
-	//*********************
-	int perks3mastered;
-	perks3mastered = 0;
-	if (MiscellaneousVars[10001] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10003] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10005] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10007] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10009] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10011] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10013] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10015] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10017] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10019] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10021] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10023] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10025] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10031] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10033] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10035] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10037] >= 7) perks3mastered++;
-	if (MiscellaneousVars[10043] >= 3) perks3mastered++;
-	if (MiscellaneousVars[10045] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10047] >= 5) perks3mastered++;
-	if (CharacterClass == 1)
-	{
-		if (MiscellaneousVars[10049] >= 4) perks3mastered++;
-	}
-	else
-	{
-		if (MiscellaneousVars[10049] >= 5) perks3mastered++;
-	}
-	if (MiscellaneousVars[10050] >= 4) perks3mastered++;
-	if (MiscellaneousVars[10051] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10053] >= 5) perks3mastered++;
-	if (MiscellaneousVars[10055] >= 5) perks3mastered++;
-	
-	if (perks3mastered >= 15) { MiscellaneousVars[11001] = 2; } // Higher Learning Lvl 2 Enabled
-	else if (perks3mastered >= 5) { MiscellaneousVars[11001] = 1; } // Higher Learning Enabled
-	else { MiscellaneousVars[11001] = 0; } // Higher Learning Disabled
-	
-	
-	int TempMaxHealth = MaxHealthTrue;
-	int TempMaxMana = MaxMana;
-	int TempPerkFactor = 0;
-	int TempCombinedLevels = 0;
-	int TempStartValue;
-	int TempEndValue;
-	//****************
-	//*HP Perk Checks*
-	//****************
-	if (playeractor)
-	{
-		// "LifeUp [EX]" perks
-		TempCombinedLevels = MiscellaneousVars[10001] + MiscellaneousVars[10002];
-		// [9901] = LifeUp Perk ComboLevel Check
-		// [9902] = LifeUp Perk PerkFactor
-		// [9903] = LifeUp Perk Base PerkFactor
-		if (MiscellaneousVars[9901] != TempCombinedLevels)
-		{
-			if (MiscellaneousVars[9901] != 0)
-			{
-				MiscellaneousVars[9903] = MiscellaneousVars[9902];
-				TempStartValue = MaxHealthTrue;
-				TempEndValue = MaxHealthTrue;
-				TempEndValue = TempEndValue * ((1000000 / MiscellaneousVars[9902])) / 1000;
-				TempEndValue += random(0,1);
-				//PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9902],s:") / ",d:TempEndValue);
-			}
-			else
-			{
-				MiscellaneousVars[9903] = 1000;
-				TempStartValue = MaxHealthTrue;
-				TempEndValue = MaxHealthTrue;
-			}
-			MiscellaneousVars[9902] = (MiscellaneousVars[10001] * 50) + (MiscellaneousVars[10002] * 125) + 1000;
-			
-			TempStartValue = TempEndValue;
-			TempEndValue = TempEndValue * MiscellaneousVars[9902] / 1000;
-			TempEndValue += random(0,1);
-			//PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9902],s:") / ",d:TempEndValue);
-			
-			MaxHealthTrue = TempEndValue;
-			SetActorProperty(Player1TID,APROP_SPAWNHEALTH,MaxHealthTrue);
-			
-			MiscellaneousVars[9901] = TempCombinedLevels;
-		}
-		
-		// [STRIFE-Compatibility] Stamina Upgrades [HP side]
-		TempCombinedLevels = MiscellaneousVars[317];
-		// [9907] = Stamina Upgrade [HP] ComboLevel Check
-		// [9908] = Stamina Upgrade [HP] PerkFactor
-		// [9909] = Stamina Upgrade [HP] Base PerkFactor
-		if (MiscellaneousVars[9907] != TempCombinedLevels)
-		{
-			if (MiscellaneousVars[9907] != 0)
-			{
-				MiscellaneousVars[9909] = MiscellaneousVars[9908];
-				TempStartValue = MaxHealthTrue;
-				TempEndValue = MaxHealthTrue;
-				TempEndValue = TempEndValue * ((1000000 / MiscellaneousVars[9908])) / 1000;
-				TempEndValue += random(0,1);
-				//PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9908],s:") / ",d:TempEndValue);
-			}
-			else
-			{
-				MiscellaneousVars[9909] = 1000;
-				TempStartValue = MaxHealthTrue;
-				TempEndValue = MaxHealthTrue;
-			}
-			MiscellaneousVars[9908] = (MiscellaneousVars[317] * 125) + 1000;
-			
-			TempStartValue = TempEndValue;
-			TempEndValue = TempEndValue * MiscellaneousVars[9908] / 1000;
-			TempEndValue += random(0,1);
-			//PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9908],s:") / ",d:TempEndValue);
-			
-			MaxHealthTrue = TempEndValue;
-			SetActorProperty(Player1TID,APROP_SPAWNHEALTH,MaxHealthTrue);
-			
-			MiscellaneousVars[9907] = TempCombinedLevels;
-		}
-	}
-	
-	//****************
-	//*MP Perk Checks*
-	//****************
-	if (playeractor)
-	{
-		// "MagiUp [EX]" perks
-		TempCombinedLevels = MiscellaneousVars[10003] + MiscellaneousVars[10004];
-		// [9904] = MagiUp Perk ComboLevel Check
-		// [9905] = MagiUp Perk PerkFactor
-		// [9906] = MagiUp Perk Base PerkFactor
-		if (MiscellaneousVars[9904] != TempCombinedLevels)
-		{
-			if (MiscellaneousVars[9904] != 0)
-			{
-				MiscellaneousVars[9906] = MiscellaneousVars[9905];
-				TempStartValue = MaxMana;
-				TempEndValue = MaxMana;
-				TempEndValue = TempEndValue * ((1000000 / MiscellaneousVars[9905])) / 1000;
-				TempEndValue += random(0,1);
-				//PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9905],s:") / ",d:TempEndValue);
-			}
-			else
-			{
-				MiscellaneousVars[9906] = 1000;
-				TempStartValue = MaxMana;
-				TempEndValue = MaxMana;
-			}
-			MiscellaneousVars[9905] = (MiscellaneousVars[10003] * 50) + (MiscellaneousVars[10004] * 125) + 1000;
-			
-			TempStartValue = TempEndValue;
-			TempEndValue = TempEndValue * MiscellaneousVars[9905] / 1000;
-			TempEndValue += random(0,1);
-			//PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9905],s:") / ",d:TempEndValue);
-			
-			MaxMana = TempEndValue;
-			
-			MiscellaneousVars[9904] = TempCombinedLevels;
-		}
-		
-		// [STRIFE-Compatibility] Stamina Upgrades [MP side]
-		TempCombinedLevels = MiscellaneousVars[317];
-		// [9910] = Stamina Upgrade [MP] ComboLevel Check
-		// [9911] = Stamina Upgrade [MP] PerkFactor
-		// [9912] = Stamina Upgrade [MP] Base PerkFactor
-		if (MiscellaneousVars[9910] != TempCombinedLevels)
-		{
-			if (MiscellaneousVars[9910] != 0)
-			{
-				MiscellaneousVars[9912] = MiscellaneousVars[9911];
-				TempStartValue = MaxMana;
-				TempEndValue = MaxMana;
-				TempEndValue = TempEndValue * ((1000000 / MiscellaneousVars[9911])) / 1000;
-				TempEndValue += random(0,1);
-				//PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9911],s:") / ",d:TempEndValue);
-			}
-			else
-			{
-				MiscellaneousVars[9912] = 1000;
-				TempStartValue = MaxMana;
-				TempEndValue = MaxMana;
-			}
-			MiscellaneousVars[9911] = (MiscellaneousVars[317] * 125) + 1000;
-			
-			TempStartValue = TempEndValue;
-			TempEndValue = TempEndValue * MiscellaneousVars[9911] / 1000;
-			TempEndValue += random(0,1);
-			//PrintBold(d:TempStartValue,s:" / (",d:MiscellaneousVars[9911],s:") / ",d:TempEndValue);
-			
-			MaxMana = TempEndValue;
-			
-			MiscellaneousVars[9910] = TempCombinedLevels;
-		}
-	}
-	
-	int TimerMulti, TimerPart1, tempaeonpts;
+	int TempStartValue, TempEndValue;
 	//****************************
 	//*Check EXP Kill Combo Timer* // To be Transplanted to "PlayerStatItem"
 	//****************************
+	int TimerMulti, TimerPart1, tempaeonpts;
 	if (MiscellaneousVars[157] > 0)
 	{
 		TimerMulti = 20 * GetCVar("dvds_expcombotimermultiplier") / 100;
@@ -28372,9 +28014,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		}
 	}
 	
-	
+/*
 	//*****************************************************
-	//*Checks Flora's EXP for using the Sceptre of Empyrea*
+	//*Checks Flora's EXP for using the Sceptre of Empyrea* // To be Transplanted to "PlayerStatItem"
 	//*****************************************************
 	if (CharacterClass == 2) // Flora
 	{
@@ -28423,9 +28065,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (SceptreLevelEXP < MiscellaneousVars[303]) SceptreActualLevel = 2;
 		if (SceptreLevelEXP < MiscellaneousVars[302]) SceptreActualLevel = 1;
 		if (SceptreLevelEXP < MiscellaneousVars[301]) SceptreActualLevel = 0;
-		int i = 0;
 	}
-	
+*/
 	
 	// Gets the Survival Rate For the Status Bar (Only shows an int value, not a floating point amount)
 	SurvivalWhole = MiscellaneousVars[232] / 10;
@@ -28437,6 +28078,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	if (HellcorePercentFull > 1000) HellcorePercentFull = 1000;
 	
 	
+	int i = 0;
 	//*************************
 	//*Aeon Point Distribution*
 	//*************************
@@ -31616,7 +31258,7 @@ script "CheckStat" (int stattype)
 	SetResultValue(result);
 }
 
-script "GetBuffTimer" (int bufftype)
+script "GetBuffTimer" (int bufftype, int type, int perkvalue)
 {
 	// [0] - Light
 	// [1] - Invisibility
@@ -31646,7 +31288,18 @@ script "GetBuffTimer" (int bufftype)
 	
 	// [129] - ??????
 	
-	SetResultValue(PowerupTimer[bufftype]);
+	if (type <= 0) SetResultValue(PowerupTimer[bufftype]);
+	if (type == 1) PowerupTimer[bufftype] = perkvalue; // Set
+	if (type == 2) PowerupTimer[bufftype] += perkvalue; // Add
+	if (type == 3) PowerupTimer[bufftype] -= perkvalue; // Subtract
+	if (type == 4) PowerupTimer[bufftype] *= perkvalue; // Multiply
+	if (type == 5 && perkvalue != 0) PowerupTimer[bufftype] /= perkvalue; // Divide
+	if (type == 6 && perkvalue != 0) PowerupTimer[bufftype] %= perkvalue; // Modulo
+	if (type == 7) PowerupTimer[bufftype] &= perkvalue; // AND
+	if (type == 8) PowerupTimer[bufftype] |= perkvalue; // OR
+	if (type == 9) PowerupTimer[bufftype] ^= perkvalue; // XOR
+	if (type == 10) PowerupTimer[bufftype] <<= perkvalue; // Shift Left
+	if (type == 11) PowerupTimer[bufftype] >>= perkvalue; // Shift Right
 }
 
 // Redone Buff Checker (allows additive buff timers from spells and powerup items) [must use the "DoomSpellACS" actor on a map to make this work!]
@@ -44320,6 +43973,7 @@ script "OtherVarCheckDECORATE" (int value, int type)
 	if (value == 8) result = ModType;
 	if (value == 9) result = CurrentMaxArmor;
 	if (value == 10) result = SceptreLevelEXP;
+	if (value == 11) result = SceptreActualLevel;
 	SetResultValue(result);
 }
 
@@ -44490,6 +44144,21 @@ script "OtherVarSetDECORATE" (int value, int perkvalue, int type)
 		if (type == 8) SceptreLevelEXP ^= perkvalue; // XOR
 		if (type == 9) SceptreLevelEXP <<= perkvalue; // Shift Left
 		if (type == 10) SceptreLevelEXP >>= perkvalue; // Shift Right
+	}
+	if (value == 11) // SceptreActualLevel
+	{
+		if (type <= -1) SetResultValue(SceptreActualLevel);
+		if (type == 0) SceptreActualLevel = perkvalue; // Set
+		if (type == 1) SceptreActualLevel += perkvalue; // Add
+		if (type == 2) SceptreActualLevel -= perkvalue; // Subtract
+		if (type == 3) SceptreActualLevel *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) SceptreActualLevel /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) SceptreActualLevel %= perkvalue; // Modulo
+		if (type == 6) SceptreActualLevel &= perkvalue; // AND
+		if (type == 7) SceptreActualLevel |= perkvalue; // OR
+		if (type == 8) SceptreActualLevel ^= perkvalue; // XOR
+		if (type == 9) SceptreActualLevel <<= perkvalue; // Shift Left
+		if (type == 10) SceptreActualLevel >>= perkvalue; // Shift Right
 	}
 }
 
