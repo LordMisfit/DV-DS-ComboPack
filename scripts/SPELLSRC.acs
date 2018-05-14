@@ -1039,7 +1039,7 @@ global int 51:SpiritStrikePoints; // Ailish specific points for Spirit Strike us
 
 // 0 = Normal, 1 = Other
 
-int FirstRun, KillBonusApplied, ItemBonusApplied, SecretBonusApplied;
+int FirstRun, KillBonusApplied, ItemBonusApplied, SecretBonusApplied, CompletionBonusApplied;
 
 
 str FriendIDHeretic[15] = 
@@ -10458,9 +10458,9 @@ script "HUDDisplay" ENTER
 				if (MiscellaneousVars[2045] == 15) buffmsg1 = "\c[cream]ASLEEP!!";
 				if (MiscellaneousVars[2045] == 16) buffmsg1 = "\c[green]SPELLS SEALED!!";
 				if (MiscellaneousVars[2045] == 17) buffmsg1 = "\c[brick]YOU'RE EXHAUSTED!!";
-				//if (MiscellaneousVars[2045] == 18 buffmsg1 = "\[gold]ARCANA FORCE!";
-				xpos = 540.0; // MiscFixedVars[1]; [1440]
-				ypos = 696.0; // MiscFixedVars[2]; [1080]
+				if (MiscellaneousVars[2045] == 18) buffmsg1 = "\c[gold]ARCANA FORCE!";
+				xpos = 540.0; // MiscFixedVars[1]; [1080]
+				ypos = 652.0; // 696 // MiscFixedVars[2]; [810]
 				SetFont("DQHUDFONTSML"); // DQHUDFONTSML // DQHUDFONTSTATUS
 				msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 				HudMessage(s:buffmsg1;HUDMSG_ALPHA,5808,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
@@ -11810,35 +11810,6 @@ script "ManaRegenerationStuff" ENTER
 	Restart;
 }
 
-Script "ArcanaGaugeRegenerationStuff" ENTER
-{
-	int ArcanaRegenDelay, ArcanaRegenDelaySkill, ArcanaRegenAmount;
-	if (CharacterClass != 9) Terminate;
-	if (TrueGameSkill <= SKILL_VERY_EASY) { ArcanaRegenDelaySkill = 8; }
-	if (TrueGameSkill == SKILL_EASY) { ArcanaRegenDelaySkill = 16; }
-	if (TrueGameSkill == SKILL_NORMAL) { ArcanaRegenDelaySkill = 24; }
-	if (TrueGameSkill == SKILL_HARD) { ArcanaRegenDelaySkill = 32; }
-	if (TrueGameSkill == SKILL_VERY_HARD) { ArcanaRegenDelaySkill = 40; }
-	if (TrueGameSkill == SKILL_EXTREME) { ArcanaRegenDelaySkill = 44; }
-	if (TrueGameSkill == SKILL_HORRIBLE) { ArcanaRegenDelaySkill = 48; }
-	if (TrueGameSkill == SKILL_IMPOSSIBLE) { ArcanaRegenDelaySkill = 52; }
-	if (TrueGameSkill >= SKILL_OMEGA) { ArcanaRegenDelaySkill = 56; }
-	if (ArcanaRegenDelay == ArcanaRegenDelaySkill && MiscellaneousVars[5001] < 900)
-	{
-		MiscellaneousVars[5001] += 1;
-		ArcanaRegenDelay = 0;
-		if (MiscellaneousVars[5001] == 100 || MiscellaneousVars[5001] == 200 || MiscellaneousVars[5001] == 300 || MiscellaneousVars[5001] == 400 || MiscellaneousVars[5001] == 500 || MiscellaneousVars[5001] == 600 || MiscellaneousVars[5001] == 700 || MiscellaneousVars[5001] == 800 || MiscellaneousVars[5001] == 900 )
-		{
-			PlaySound(0,"ArcanaGaugeLevelup",CHAN_7);
-		}
-	}
-	else
-	{
-		ArcanaRegenDelay += 1;
-	}
-	Delay(1);
-	Restart;
-}
 //------------------------------
 // FUNCTION: Get ExpMultiFactor
 //------------------------------
@@ -12954,20 +12925,6 @@ script "LevelUpCode" ENTER // (void)
 		else break;
 	}
 
-/* 
-	PrintBold(s:"PlayerLevel: ",d:PlayerLevel,
-						s:"\nCurrentMana: ",d:CurrentMana,
-						s:"\nMaxMana: ",d:MaxMana,
-						s:"\nExperience: ",d:Experience,
-						s:"\nExpToNext: ",d:ExpTable[PlayerLevel],
-						s:"\nBaseEXPRequirement: ",d:BaseEXPRequirement,
-						s:"\nMiscellaneousVars[157]: ",d:MiscellaneousVars[157],
-						s:"\nMiscellaneousVars[185]: ",d:MiscellaneousVars[185],
-						s:"\nMiscellaneousVars[183]: ",d:MiscellaneousVars[183],
-						s:"\nMiscellaneousVars[186]: ",d:MiscellaneousVars[186],
-						s:"\nMiscellaneousVars[188]: ",d:MiscellaneousVars[188]);
-*/
-
 	Delay(1);
 	Restart;
 }
@@ -13030,6 +12987,9 @@ script "OldDoomSpellCompletion" ENTER
 	str KillBonusText1;
 	int KillBonusText2;
 	str KillBonusText3;
+	str CompletionBonusText1;
+	int CompletionBonusText2;
+	str CompletionBonusText3;
 
 	int ItemsForMultiplier = GetCVar("dvds_itemsfoundformulti");
 	int SecretsForMultiplier = GetCVar("dvds_secretsfoundformulti");
@@ -13043,8 +13003,11 @@ script "OldDoomSpellCompletion" ENTER
 	int SecretsFoundBonus = GetCVar("dvds_secretsfoundbonus");
 	int MonstersKilledBonus = GetCVar("dvds_monsterskilledbonus");
 
-	int XSize = 800;
-	int YSize = 600;
+	int CompletionistBonusAllowed = GetCVar("dvds_getcompletionbonus");
+	int CompletionistBonus = GetCVar("dvds_completionistbonus");
+
+	int XSize = 1024;
+	int YSize = 768;
 	int XPos = 0;
 	int XPosF = 0.0;
 	int YPos = 0;
@@ -13058,16 +13021,18 @@ script "OldDoomSpellCompletion" ENTER
 	if (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) <= 0) SecretBonusApplied = 1;
 	if (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) <= 0) ItemBonusApplied = 1;
 	if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) <= 0) KillBonusApplied = 1;
+	if (SecretBonusApplied != 0 && ItemBonusApplied != 0 && KillBonusApplied != 0 && CompletionistBonusAllowed != 0) CompletionBonusApplied = 1;
  
 	if (GetCVar("dvds_oldcompletionbonuses") > 0)
 	{
+		// 100% Secrets Bonus
 		if (SecretBonusApplied == 0)
 		{
 			if (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) == GetLevelInfo(LEVELINFO_FOUND_SECRETS))
 			{
 				ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_SECRETS) / SecretsForMultiplier) + 1;
 				SecretBonusApplied = 1;
-				SecretBonusText1 = "100% secrets found bonus:\n\n";
+				SecretBonusText1 = "100% secrets found bonus:\n";
 				if (SecretsFoundBonus == 0)
 				{
 					BaseEXPGain *= SecretsFoundMulti;
@@ -13097,7 +13062,7 @@ script "OldDoomSpellCompletion" ENTER
 				SetHudSize(XSize,YSize,0);
 				XPos = XSize / 2;
 				XPosF = XPos * 1.0 + 0.4;
-				YPos = YSize * 6 / 9;
+				YPos = YSize * 26 / 40;
 				YPosF = YPos * 1.0;
 				HudMessage(s:SecretBonusText1,d:SecretBonusText2,s:SecretBonusText3;
 										HUDMSG_TYPEON,106,CR_BLUE,XPosF,YPosF,2.5,0.025,0.125,0.75);
@@ -13105,13 +13070,15 @@ script "OldDoomSpellCompletion" ENTER
 				SetFont("SMALLFONT");
 			}
 		}
+
+		// 100% Items Bonus
 		if (ItemBonusApplied == 0)
 		{
 			if (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) == GetLevelInfo(LEVELINFO_FOUND_ITEMS))
 			{
 				ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_ITEMS) / ItemsForMultiplier) + 1;
 				ItemBonusApplied = 1;
-				ItemBonusText1 = "100% items found bonus:\n\n";
+				ItemBonusText1 = "100% items found bonus:\n";
 				if (ItemsFoundBonus == 0)
 				{
 					BaseEXPGain *= ItemsFoundMulti;
@@ -13141,7 +13108,7 @@ script "OldDoomSpellCompletion" ENTER
 				SetHudSize(XSize,YSize,0);
 				XPos = XSize / 2;
 				XPosF = XPos * 1.0 + 0.4;
-				YPos = YSize * 7 / 9;
+				YPos = YSize * 28 / 40;
 				YPosF = YPos * 1.0;
 				HudMessage(s:ItemBonusText1,d:ItemBonusText2,s:ItemBonusText3;
 										HUDMSG_TYPEON,107,CR_GREEN,XPosF,YPosF,2.5,0.025,0.125,0.75);
@@ -13149,13 +13116,15 @@ script "OldDoomSpellCompletion" ENTER
 				SetFont("SMALLFONT");
 			}
 		}
+
+		// 100% Kills Bonus
 		if (KillBonusApplied == 0)
 		{
 			if (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) == GetLevelInfo(LEVELINFO_KILLED_MONSTERS))
 			{
 				ExtraMultiplier = (GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / KillsForMultiplier) + 1;
 				KillBonusApplied = 1;
-				KillBonusText1 = "100% monsters killed bonus:\n\n";
+				KillBonusText1 = "100% monsters killed bonus:\n";
 				if (MonstersKilledBonus == 0)
 				{
 					BaseEXPGain *= MonstersKilledMulti;
@@ -13185,13 +13154,56 @@ script "OldDoomSpellCompletion" ENTER
 				SetHudSize(XSize,YSize,0);
 				XPos = XSize / 2;
 				XPosF = XPos * 1.0 + 0.4;
-				YPos = YSize * 8 / 9;
+				YPos = YSize * 30 / 40;
 				YPosF = YPos * 1.0;
 				HudMessage(s:KillBonusText1,d:KillBonusText2,s:KillBonusText3;
 										HUDMSG_TYPEON,108,CR_RED,XPosF,YPosF,2.5,0.025,0.125,0.75);
 				SetHudSize(0,0,0);
 				SetFont("SMALLFONT");
 			}
+		}
+		
+		// Full 100% Completion Bonus
+		if (CompletionBonusApplied == 0 && SecretBonusApplied != 0 && ItemBonusApplied != 0 && KillBonusApplied != 0 && CompletionistBonusAllowed != 0)
+		{
+			ExtraMultiplier = ((GetLevelInfo(LEVELINFO_TOTAL_SECRETS) / SecretsForMultiplier) + 1);
+			ExtraMultiplier += ((GetLevelInfo(LEVELINFO_TOTAL_ITEMS) / ItemsForMultiplier) + 1);
+			ExtraMultiplier += ((GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) / KillsForMultiplier) + 1);
+			CompletionBonusApplied = 1;
+			CompletionBonusText1 = "100% Level Completion Bonus:\n";
+			if (CompletionistBonus == 0)
+			{
+				BaseEXPGain *= 2;
+				//BaseEXPGain *= ExtraMultiplier;
+				if (PlayerLevel == 0) { Experience += (ExpTable[PlayerLevel] * BaseEXPGain) / 100; }
+				else if (PlayerLevel >= 1) { Experience += ((ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1]) * BaseEXPGain) / 100; }
+					
+				CompletionBonusText2 = BaseEXPGain;
+				CompletionBonusText3 = "% of the experience required to reach the next level.";
+			}
+			if (CompletionistBonus == 1)
+			{
+				BaseAeonPoints = 2;
+				//BaseAeonPoints *= ExtraMultiplier;
+				if (BaseAeonPoints < 1) BaseAeonPoints = 1;
+				MiscellaneousVars[25] += BaseAeonPoints;
+				MiscellaneousVars[224] += BaseAeonPoints; 
+				MiscellaneousVars[2033] = 105;
+	
+				CompletionBonusText2 = BaseAeonPoints;
+				if (BaseAeonPoints > 1) { CompletionBonusText3 = " Aeon Points."; } else { CompletionBonusText3 = " Aeon Point."; }
+			}
+
+			SetFont("DVDSBIGFONT");
+			SetHudSize(XSize,YSize,0);
+			XPos = XSize / 2;
+			XPosF = XPos * 1.0 + 0.4;
+			YPos = YSize * 32 / 40;
+			YPosF = YPos * 1.0;
+			HudMessage(s:CompletionBonusText1,d:CompletionBonusText2,s:CompletionBonusText3;
+									HUDMSG_TYPEON,109,CR_ICE,XPosF,YPosF,2.5,0.025,0.125,0.75);
+			SetHudSize(0,0,0);
+			SetFont("SMALLFONT");
 		}
 	}
 
@@ -14043,7 +14055,8 @@ script "MagicEffects" (int Type, int Strength)
 								s:"\nZSpeed: ",d:project_ZSpeed); 
 	}
 
-
+	int BuffTimeGive;
+	int BuffTimeMulti = GetCVar("dvds_spellbufftimemultiplier");
 
 	if (Type == 0) // Straight Ahead Fireball Shooter
 	{
@@ -19897,28 +19910,36 @@ script "MagicEffects" (int Type, int Strength)
 	if (Type == 2) // Light
 	{
 		ActivatorSound("CastLightRoom",127);
-		PowerupTimer[0] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[0] += BuffTimeGive;
 		if (PowerupTimer[0] > 0) GiveActorInventory(Player1TID,"NightVisionSpell",1);
 	}
 
 	if (Type == 3) // Invisibility
 	{
 		ActivatorSound("CastInvisiblity",127);
-		PowerupTimer[1] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[1] += BuffTimeGive;
 		if (PowerupTimer[1] > 0) GiveActorInventory(Player1TID,"InvisiblitySpell",1);
 	}
 
 	if (Type == 4) // Flight
 	{
 		ActivatorSound("CastFlight",127);
-		PowerupTimer[2] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[2] += BuffTimeGive;
 		if (PowerupTimer[2] > 0) GiveActorInventory(Player1TID,"FlightSpell",1);
 	}
 
 	if (Type == 5) // Berserk
 	{
 		ActivatorSound("CastBerserk",127);
-		PowerupTimer[23] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[23] += BuffTimeGive;
 		if (PowerupTimer[23] > 0) GiveActorInventory(Player1TID, "PowerStrength", 1);
 	}
 
@@ -20431,14 +20452,18 @@ script "MagicEffects" (int Type, int Strength)
 	if (Type == 8) // Stealth
 	{
 		ActivatorSound("CastStealth",127);
-		PowerupTimer[3] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[3] += BuffTimeGive;
 		if (PowerupTimer[3] > 0) SetPlayerProperty(1,1,PROP_NOTARGET);
 	}
 
 	if (Type == 9) // Invulnerability
 	{
 		ActivatorSound("CastInvuln",127);
-		PowerupTimer[4] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[4] += BuffTimeGive;
 		if (PowerupTimer[4] > 0) GiveActorInventory(Player1TID, "InvulnerabilitySpell", 1); // SetPlayerProperty(1,1,PROP_INVULNERABILITY);
 	}
 
@@ -20805,14 +20830,18 @@ script "MagicEffects" (int Type, int Strength)
 	if (Type == 13) // Freeze Time
 	{
 		ActivatorSound("CastTimeFreeze",127);
-		PowerupTimer[5] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[5] += BuffTimeGive;
 		if (PowerupTimer[5] > 0) GiveActorInventory(Player1TID, "AetheriusTimeFreezer", 1);
 	}
 
 	if (Type == 14) // Terrorization Aura
 	{
 		ActivatorSound("CastTerrorAura",127);
-		PowerupTimer[6] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[6] += BuffTimeGive;
 		if (PowerupTimer[6] > 0) GiveActorInventory(Player1TID, "PowerFrightener", 1);
 	}
 
@@ -20848,7 +20877,9 @@ script "MagicEffects" (int Type, int Strength)
 	{
 		ActivatorSound("CastDivineAvatar",127);
 		if (CharacterClass == 2 && random(1,16) == 4) PlaySound(Player1TID,"FloraChantDivineAvatar",CHAN_VOICE,1.0,0,ATTN_NORM);
-		PowerupTimer[7] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[7] += BuffTimeGive;
 		if (PowerupTimer[7] > 0)
 		{
 			GiveActorInventory(Player1TID, "PowerDoubleFiringSpeed", 1);
@@ -20859,37 +20890,47 @@ script "MagicEffects" (int Type, int Strength)
 	if (Type == 17) // Spreader Aura Lv. 1
 	{
 		ActivatorSound("CastSpreaderAura1",127);
-		PowerupTimer[8] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[8] += BuffTimeGive;
 	}
 
 	if (Type == 18) // Spreader Aura Lv. 2
 	{
 		ActivatorSound("CastSpreaderAura1",127);
 		ActivatorSound("CastSpreaderAura2",127);
-		PowerupTimer[9] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[9] += BuffTimeGive;
 	}
 
 	if (Type == 19) // Oomph
 	{
 		//ActivatorSound("CastSpreaderAura2",127);
-		PowerupTimer[10] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[10] += BuffTimeGive;
 	}
 
 	if (Type == 20) // Buff
 	{
-		//ActivatorSound("CastSpreaderAura2",127);
-		PowerupTimer[11] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[11] += BuffTimeGive;
 	}
 
 	if (Type == 21) // Accelerate
 	{
-		//ActivatorSound("CastSpreaderAura2",127);
-		PowerupTimer[12] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[12] += BuffTimeGive;
 	}
 
 	if (Type == 22) // Desperado Damsel
 	{
-		PowerUpTimer[13] += (Strength*35);
+		BuffTimeGive = Strength * 35;
+		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
+		PowerupTimer[13] += BuffTimeGive;
 		if (PowerupTimer[13] > 0)
 		{
 			GiveActorInventory(Player1TID, "PowerHitscanBoost", 1);
@@ -27163,7 +27204,8 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	
 	if (MiscellaneousVars[110007] == 0) TakeActorInventory(Player1TID,"PlayerCanUseCrisisAttacks",0x7FFFFFFF);
 	
-	if (ClassCheck < 6) ClassCheck += 1; // Class Check is done six times for randomization purposes.
+	// Class Check is done six times for randomization purposes.
+	if (ClassCheck < 6) ClassCheck += 1;
 	
 	if (MiscellaneousVars[171] > 0) MiscellaneousVars[171] --; // Ticks down the "Level Up" and "Stat Up" indicators on the new HUD after a level up occurs
 	if (MiscellaneousVars[2031] > 0) MiscellaneousVars[2031] --; // Ticks down the "MaxHP" gain timer
@@ -29820,13 +29862,13 @@ script "MegaSphereArmor" (void)
 // DEBUG SCRIPT: Sets Mana to the Current Amount
 script "SetManaAmount" (int C5)
 {
- CurrentMana = C5;
- int MaxManaLimit;
- if (CurrentMana < 1) CurrentMana = 0;
-
- MaxManaLimit = MaxMana * 2;
-
- if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
+	CurrentMana = C5;
+	int MaxManaLimit;
+	if (CurrentMana < 1) CurrentMana = 0;
+	
+	MaxManaLimit = MaxMana * 2;
+	
+	if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
 }
 
 // Checks the Player's level to determine how much drawing the Diaris Longbow will slow you down while aiming
@@ -29863,26 +29905,11 @@ script "DrawBow" (int isbowdrawn)
 // Checks Sauron's Gauntlets to see if the item is removed from the map or not.
 script "GauntletsCheckCharacter" (void)
 {
-	if (CharacterClass == 0) 
-	{
-		if (CheckActorInventory(Player1TID,"SauronGauntlets") > 0) Thing_Remove(0);
-	}
-	if (CharacterClass == 1) 
-	{
-		if (CheckActorInventory(Player1TID,"SauronGauntletsIllucia") > 0) Thing_Remove(0);
-	}
-	if (CharacterClass == 2) 
-	{
-		if (CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0) Thing_Remove(0); 
-	}
-	if (CharacterClass == 8) 
-	{
-		if (CheckActorInventory(Player1TID,"SauronGauntletsAilish") > 0) Thing_Remove(0); 
-	}
-	if (CharacterClass == 9) 
-	{
-		if (CheckActorInventory(Player1TID,"SauronGauntletsPetra") > 0) Thing_Remove(0); 
-	}
+	if (CharacterClass == 0 && CheckActorInventory(Player1TID,"SauronGauntlets") > 0) Thing_Remove(0);
+	if (CharacterClass == 1 && CheckActorInventory(Player1TID,"SauronGauntletsIllucia") > 0) Thing_Remove(0);
+	if (CharacterClass == 2 && CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0) Thing_Remove(0); 
+	if (CharacterClass == 8 && CheckActorInventory(Player1TID,"SauronGauntletsAilish") > 0) Thing_Remove(0); 
+	if (CharacterClass == 9 && CheckActorInventory(Player1TID,"SauronGauntletsPetra") > 0) Thing_Remove(0); 
 }
 
 // Sets the "glowing eyes" in the "Armor Bonus" items to a specfic color based on the current Armor Class of Deggaris or Illucia [does not apply to Flora as she can't use Armor Bonuses and they aren't supposed to "appear" when she is in play]
@@ -30965,8 +30992,11 @@ script "GiveBuffsPowerup" (int powertype, int powertimeadd)
 	// powertimeadd = Powerup Timer Additive
 	int G1, G2, G3, C1, C2, C3, I1, I2, I3;
 	
+	powertimeadd = (powertimeadd * GetCVar("dvds_poweruptimemultiplier")) / 100; // Checks Powerup Time Multiplier
+
 	powertimeadd *= 35;
 	powertimeadd = powertimeadd * (MiscellaneousVars[10050] + 4) / 4;
+
 	if (powertype == 0) // Light/Infared
 	{
 		PowerupTimer[0] += powertimeadd;
@@ -36383,7 +36413,13 @@ script "EnemyRailgunDamage" (int base)
 	int chargefactor = ( ( (CheckInventory("RailgunCharge") * 2) + (CheckInventory("RailgunCharge") / 3) ) * 10 );
 	damage = damage * chargefactor / 100;
 	if (damage < 1) damage = 1;
-	if (MiscellaneousVars[100006] > 0) PrintBold(s:"Damage: ",d:damage,s:" [Base: ",d:base,s:"] [Charge: ",d:charge,s:"% / ",d:chargefactor,s:"]");
+
+	if (MiscellaneousVars[100006] > 0) 
+	{
+		PrintBold(s:"Damage: ",d:damage,s:"\n",
+							s:"[Base: ",d:base,s:"]\n",
+							s:"[Charge: ",d:charge,s:"% / ",d:chargefactor,s:"]");
+	}
 	SetResultValue(damage);
 }
 
@@ -39895,10 +39931,12 @@ script "UseCustomInventoryItem" (int type)
 	int CurrentHealth = GetActorProperty(Player1TID,APROP_HEALTH);
 	int perkbasemulti = 16;
 	int MaxHealthLimit = MaxHealthTrue * 2;
+	int PowerupTimeMulti = GetCVar("dvds_invpoweruptimemultiplier");
 	
 	if (type == -7 && CheckActorInventory(Player1TID,"ArtiInvisibilityNew") > 0) // Icon of the Defender
 	{
 		perktemp4 = (35 * 90);
+		perktemp4 = (perktemp4 * PowerupTimeMulti) / 100;
 		perktemp4 = perktemp4 * (MiscellaneousVars[10050] + 4) / 4;
 		PowerupTimer[1] += perktemp4;
 		check1 += 1;
@@ -39916,6 +39954,7 @@ script "UseCustomInventoryItem" (int type)
 	if (type == -6 && CheckActorInventory(Player1TID,"ArtiInvulnerabilityNew") > 0) // Ring of Invincibility
 	{
 		perktemp4 = (35 * 45);
+		perktemp4 = (perktemp4 * PowerupTimeMulti) / 100;
 		perktemp4 = perktemp4 * (MiscellaneousVars[10050] + 4) / 4;
 		PowerupTimer[4] += perktemp4;
 		check1 += 1;
@@ -39933,6 +39972,7 @@ script "UseCustomInventoryItem" (int type)
 	if (type == -5 && CheckActorInventory(Player1TID,"ArtiInvulnerability2New") > 0) // Icon of the Defender
 	{
 		perktemp4 = (35 * 45);
+		perktemp4 = (perktemp4 * PowerupTimeMulti) / 100;
 		perktemp4 = perktemp4 * (MiscellaneousVars[10050] + 4) / 4;
 		PowerupTimer[4] += perktemp4;
 		check1 += 1;
@@ -40408,6 +40448,7 @@ script "UseCustomInventoryItem" (int type)
 		{
 			// Oomph and Buff for a full minute
 			perktemp4 = (35 * 60);
+			perktemp4 = (perktemp4 * PowerupTimeMulti) / 100;
 			perktemp4 = perktemp4 * (MiscellaneousVars[10050] + 4) / 4;
 			PowerupTimer[10] += perktemp4;
 			PowerupTimer[11] += perktemp4;
@@ -40460,6 +40501,7 @@ script "UseCustomInventoryItem" (int type)
 		{
 			// Acceleratle for a full minute
 			perktemp4 = (35 * 60);
+			perktemp4 = (perktemp4 * PowerupTimeMulti) / 100;
 			perktemp4 = perktemp4 * (MiscellaneousVars[10050] + 4) / 4;
 			PowerupTimer[12] += perktemp4;
 			PlaySound(Player1TID,"use_mercurybandana",CHAN_BODY,1.0,0,ATTN_NORM);
@@ -45268,35 +45310,6 @@ script "KD-ReactivateSideDodge" respawn
 	ACS_NamedExecuteAlways("KD-SideDodge", 0);
 }
 
-// Crisis Attack Damage Multiplier
-script "CrisisMultiplierMonsters" (void)
-{
-	int canusecrisisatk = 0;
-	if (MiscellaneousVars[110007] == 1)
-	{
-		if(GetActorProperty(0,APROP_Health) <= GetUserVariable(0,"user_HPLowRange"))
-		{
-			if(GetActorProperty(0,APROP_Health) <= GetUserVariable(0,"user_HPCritRange"))
-			{
-				canusecrisisatk = 1;
-			}
-			else
-			{
-				if (random(1,4) == 4) { canusecrisisatk = 1; }
-			}
-		}
-	}
-	
-	if (canusecrisisatk > 0)
-	{
-		SetResultValue(GetCVar("dvds_monstercrisismulti"));
-	}
-	else
-	{
-		SetResultValue(1);
-	}
-}
-
 script "CrisisMultiplier" (int type)
 {
 	int base = 1;
@@ -45307,6 +45320,8 @@ script "CrisisMultiplier" (int type)
 		base /= type;
 		if (base <= 1) base = 1;
 	}
+	
+	// Debug Information
 	if (MiscellaneousVars[100006] > 0) 
 	{
 		PrintBold(s:"Crisis Multiplier: ",d:GetCVar("dvds_monstercrisismulti"),
