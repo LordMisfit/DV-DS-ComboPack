@@ -46,6 +46,17 @@ class PlayerStatItem : Inventory
 	int PoisonHits;
 	int SceptreStartLevel;
 	int SceptreEXPRatio;
+	
+	int TensionLevel; // [181]
+	int TensionTimer; // [183]
+	int TensionWarmupTimer; // [185]
+	int TensionCooldownTimer; // [186]
+	int TensionChargeLoopTimer; // [189]
+	int TensionActivePulseTimer; // [190]
+	int TensionOverPsycheTimer; // [250]
+	int TensionOverchargeTimer; // [251]
+	int TensionMaxOverchargeTimer; // [261]
+	int TensionMaxOverPsycheTimer; // [262]
 
 	default 
 	{
@@ -86,9 +97,11 @@ class PlayerStatItem : Inventory
 		int debugpoisoninfo = dvdsdebug_poisonailmentdisplays;
 		int debughellcorecldn = dvdsdebug_hellcoreheatdisplay;
 		int debuginfiniteammo = dvdsdebug_infiniteammostuff;
+		int debugtensioninfo = dvdsdebug_showtensioninformation;
 
+		int AllowTension = dvds_allowtension;
 		CharacterClass = CallACS("CheckCharacterClass");
-		int TensionLevel = CallACS("MiscVarCheckDECORATE",181);
+		TensionLevel = CallACS("MiscVarCheckDECORATE",181);
 		int PlayerLevel = CallACS("StatCheck",0);
 		int PlayerMaxHP = CallACS("StatCheck",1);
 		int MaxHealthLimit = PlayerMaxHP * 2;
@@ -103,6 +116,7 @@ class PlayerStatItem : Inventory
 		int PlayerMASS = CallACS("StatCheck",10);
 		int PlayerAeonPts = CallACS("StatCheck",11);
 		int PlayerCurrentStamina = CallACS("StatCheck",12);
+		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
 		int PlayerMaxStamina = CallACS("StatCheck",13);
 		int PlayerCurrentMP = CallACS("StatCheck",14);
 		int PlayerCurrentHealth = owner.health;
@@ -139,15 +153,12 @@ class PlayerStatItem : Inventory
 		//*Tension Speed*
 		//***************
 		int tensionspeedmulti = GetCVar("dvds_tensionspeed");
-		if (tensionspeedmulti <= 0) CallACS("MiscVarSetDECORATE",193,1);
-		if (tensionspeedmulti == 1) CallACS("MiscVarSetDECORATE",193,2);
-		if (tensionspeedmulti == 2) CallACS("MiscVarSetDECORATE",193,4);
-		if (tensionspeedmulti == 3) CallACS("MiscVarSetDECORATE",193,8);
-		if (tensionspeedmulti == 4) CallACS("MiscVarSetDECORATE",193,16);
-		if (tensionspeedmulti == 5) CallACS("MiscVarSetDECORATE",193,32);
-		if (tensionspeedmulti >= 6) CallACS("MiscVarSetDECORATE",193,64);
+		if (tensionspeedmulti <= 0) tensionspeedmulti = 0;
+		if (tensionspeedmulti >= 1000) tensionspeedmulti = 1000;
+		CallACS("MiscVarSetDECORATE",193,tensionspeedmulti);
 		
 		
+
 		
 		
 		//**********************
@@ -1082,7 +1093,7 @@ class PlayerStatItem : Inventory
 				{
 					if (jiggle_jump < 1)
 					{
-						CallACS("GetBuffTimer",20,3,jiggledecrease); // PowerupTimer[20] -= jiggledecrease;
+						CallACS("GetBuffTimer",20,3,jiggledecrease);
 						jiggle_jump += jigglewarmup;
 						jiggle_crouch -= jigglecooldown;
 						jiggle_left -= jigglecooldown;
@@ -1096,7 +1107,7 @@ class PlayerStatItem : Inventory
 				{
 					if (jiggle_crouch < 1)
 					{
-						CallACS("GetBuffTimer",20,3,jiggledecrease); // PowerupTimer[20] -= jiggledecrease;
+						CallACS("GetBuffTimer",20,3,jiggledecrease);
 						jiggle_jump -= jigglecooldown;
 						jiggle_crouch += jigglewarmup;
 						jiggle_left -= jigglecooldown;
@@ -1110,7 +1121,7 @@ class PlayerStatItem : Inventory
 				{
 					if (jiggle_left < 1)
 					{
-						CallACS("GetBuffTimer",20,3,jiggledecrease); // PowerupTimer[20] -= jiggledecrease;
+						CallACS("GetBuffTimer",20,3,jiggledecrease);
 						jiggle_jump -= jigglecooldown;
 						jiggle_crouch -= jigglecooldown;
 						jiggle_left += jigglewarmup;
@@ -1124,7 +1135,7 @@ class PlayerStatItem : Inventory
 				{
 					if (jiggle_right < 1)
 					{
-						CallACS("GetBuffTimer",20,3,jiggledecrease); // PowerupTimer[20] -= jiggledecrease;
+						CallACS("GetBuffTimer",20,3,jiggledecrease);
 						jiggle_jump -= jigglecooldown;
 						jiggle_crouch -= jigglecooldown;
 						jiggle_left -= jigglecooldown;
@@ -1138,7 +1149,7 @@ class PlayerStatItem : Inventory
 				{
 					if (jiggle_up < 1)
 					{
-						CallACS("GetBuffTimer",20,3,jiggledecrease); // PowerupTimer[20] -= jiggledecrease;
+						CallACS("GetBuffTimer",20,3,jiggledecrease);
 						jiggle_jump -= jigglecooldown;
 						jiggle_crouch -= jigglecooldown;
 						jiggle_left -= jigglecooldown;
@@ -1152,7 +1163,7 @@ class PlayerStatItem : Inventory
 				{
 					if (jiggle_down < 1)
 					{
-						CallACS("GetBuffTimer",20,3,jiggledecrease); // PowerupTimer[20] -= jiggledecrease;
+						CallACS("GetBuffTimer",20,3,jiggledecrease);
 						jiggle_jump -= jigglecooldown;
 						jiggle_crouch -= jigglecooldown;
 						jiggle_left -= jigglecooldown;
@@ -3306,6 +3317,772 @@ class PlayerStatItem : Inventory
 		
 		
 		
+		//*********************
+		//*Check Tension Level*
+		//*********************
+		// [181] Tension Level
+		// [182] Tension Level Compare
+		// [183] Tension Timer
+		// [184] Tension Timer Counts Down
+		// [185] Tension Warmup Meter [you must hold down for this long for tension to go up a level]
+		// [186] Tension Cooldown Timer [when Tension levels change, or run out, this decides how long to wait before you can do so again]
+		// [188] Tension Max Cooldown Timer [for bar displays]
+		// [189] Tension Sound Charge Loop Timer
+		// [190] Active-Tension Pulse Timer
+		// [246] Tension Background Aura Timer
+		// [250] Tension Duration Timer
+		// [251] Tension OverCharge Timer
+		int TensionChargeFailRate;
+		int TensionChargeTimeMax;
+		int TensionStaminaPerTic;
+		int randompulseinterval1;
+		int randompulseinterval2;
+		int randompulseinterval3;
+		int randompulseinterval4;
+		float pulsevolume;
+		int maxpulseinterval;
+		int TensionChargeAmount;
+		int TensionCoolDownRatio;
+		int TensionStaminaDivisor;
+		int TensionChargeFailRatio = dvds_tension_failrateratio;
+		int KillCounter = CallACS("MiscVarCheckDECORATE",158);
+		int TensionOverChargeAllowed = dvds_allowtensionocdmg;
+
+		TensionLevel = CallACS("MiscVarCheckDECORATE",181);
+		int TensionLevelLastTic = CallACS("MiscVarCheckDECORATE",182);
+		TensionTimer = CallACS("MiscVarCheckDECORATE",183);
+		int TensionCountingDown = CallACS("MiscVarCheckDECORATE",184);
+		TensionWarmupTimer = CallACS("MiscVarCheckDECORATE",185);
+		TensionCooldownTimer = CallACS("MiscVarCheckDECORATE",186);
+		int TensionMaxCooldownTimer = CallACS("MiscVarCheckDECORATE",188);
+		TensionChargeLoopTimer = CallACS("MiscVarCheckDECORATE",189);
+		TensionActivePulseTimer = CallACS("MiscVarCheckDECORATE",190);
+		int TensionBackgroundAuraTimer = CallACS("MiscVarCheckDECORATE",246);
+		TensionOverPsycheTimer = CallACS("MiscVarCheckDECORATE",250);
+		TensionOverchargeTimer = CallACS("MiscVarCheckDECORATE",251);
+		TensionMaxOverchargeTimer = CallACS("MiscVarCheckDECORATE",261);
+		TensionMaxOverPsycheTimer = CallACS("MiscVarCheckDECORATE",262);
+		if (playeractor)
+		{
+			if (TensionLevel == 0)  // 0 to 5 Tension [4 Seconds, 20% Total Stamina Use, 0% Fail Rate]
+			{
+				TensionChargeFailRate = 0;
+				TensionChargeTimeMax = 14000;
+				TensionStaminaPerTic = 2000;
+				TensionMaxOverPsycheTimer = 99999999;
+				TensionMaxOverchargeTimer = 99999999;
+				TensionOverPsycheTimer = 0;
+				TensionOverchargeTimer = 0;
+			}
+			
+			if (TensionLevel == 1)  // 5 to 20 Tension [4.25~ Seconds, 22.5% Total Stamina Use, 2.5% Fail Rate]
+			{
+				TensionChargeFailRate = 25;
+				TensionChargeTimeMax = 14880;
+				TensionStaminaPerTic = 2250;
+				TensionMaxOverPsycheTimer = 21000; // 600 Seconds [10 minutes]
+				TensionMaxOverchargeTimer = 130; // 3.71 seconds
+			}
+			
+			if (TensionLevel == 2)  // 20 to 50 Tension [4.5~ Seconds, 25% Total Stamina Use, 10% Fail Rate]
+			{
+				TensionChargeFailRate = 100;
+				TensionChargeTimeMax = 15750;
+				TensionStaminaPerTic = 2500;
+				TensionMaxOverPsycheTimer = 15750; // 450 Seconds [7.5 minutes]
+				TensionMaxOverchargeTimer = 110; // 3.14 seconds
+			}
+			
+			if (TensionLevel == 3)  // 50 to 100 Tension [5 Seconds, 30% Total Stamina Use, 50% Fail Rate]
+			{
+				TensionChargeFailRate = 500;
+				TensionChargeTimeMax = 17500;
+				TensionStaminaPerTic = 3000;
+				TensionMaxOverPsycheTimer = 10500; // 300 Seconds [5 minutes]
+				TensionMaxOverchargeTimer = 90; // 2.57 seconds
+			}
+			
+			if (TensionLevel == 4)  // 100 to 250 Tension [5.5 Seconds, 35% Total Stamina Use, 70% Fail Rate]
+			{
+				TensionChargeFailRate = 700;
+				TensionChargeTimeMax = 19250;
+				TensionStaminaPerTic = 3500;
+				TensionMaxOverPsycheTimer = 5250; // 150 Seconds [2.5 minutes]
+				TensionMaxOverchargeTimer = 70; // 2 seconds
+			}
+			
+			if (TensionLevel == 5)  // 250 to 500 Tension [6 Seconds, 40% Total Stamina Use, 85% Fail Rate]
+			{
+				TensionChargeFailRate = 850;
+				TensionChargeTimeMax = 21000;
+				TensionStaminaPerTic = 4000;
+				TensionMaxOverPsycheTimer = 2100; // 60 Seconds
+				TensionMaxOverchargeTimer = 60; // 1.71 seconds
+			}
+			
+			if (TensionLevel == 6)  // 500 to 1000 Tension [7.5 Seconds, 50% Total Stamina Use, 92.5% Fail Rate]
+			{
+				TensionChargeFailRate = 950;
+				TensionChargeTimeMax = 26250;
+				TensionStaminaPerTic = 5000;
+				TensionMaxOverPsycheTimer = 1575; // 45 Seconds
+				TensionMaxOverchargeTimer = 50; // 1.42 seconds
+			}
+			if (TensionLevel == 7)
+			{
+				TensionChargeFailRate = 1000;
+				TensionChargeTimeMax = 26250;
+				TensionStaminaPerTic = 5000;
+				TensionMaxOverPsycheTimer = 1050; // 30 Seconds
+				TensionMaxOverchargeTimer = 40; // 1.14 seconds
+			}
+			
+			TensionMaxOverPsycheTimer *= 20;
+			TensionMaxOverchargeTimer *= 20;
+			
+			if (CallACS("GetBuffTimer",7) > 0)
+			{
+				TensionMaxOverPsycheTimer *= 4;
+				TensionMaxOverchargeTimer *= 4;
+			}
+			if (debugtensioninfo) 
+			{
+				Console.Printf("Tension [Step 1 - Get Initial Values]: TensionLevel: %d, FailRate: %d, MaxChargeTime: %d, StamPerTic: %d, OverpsychTimer: %d / %d, OverchargeTimer: %d / %d", 
+												TensionLevel, TensionChargeFailRate, TensionChargeTimeMax, TensionStaminaPerTic, TensionOverPsycheTimer, TensionMaxOverPsycheTimer, TensionOverchargeTimer, TensionMaxOverchargeTimer);
+			}
+			
+			// Tension Per Tic Calcs
+			TensionStaminaDivisor = TensionChargeTimeMax / 190;
+			TensionStaminaPerTic = TensionStaminaPerTic / TensionStaminaDivisor;
+			if (debugtensioninfo) Console.Printf("Tension [Step 2 - Stam Use Calc P1]: StamPerTic: %d, MaxChargeTime: %d, Divisor: %d", TensionStaminaPerTic, TensionChargeTimeMax, TensionStaminaDivisor);
+			// Check Tension Speed Option [also affects Stamina]
+			TensionStaminaPerTic = (TensionStaminaPerTic * tensionspeedmulti) / 100;
+			if (debugtensioninfo) Console.Printf("Tension [Step 3 - Stam Use Calc P2 - Tension Speed/Stam Multi]: StamPerTic: %d, Multiplier: %d%", TensionStaminaPerTic, tensionspeedmulti);
+			// Falcon Knife Earrings [-10% Consumption]
+			if (Owner.CountInv("FalconKnifeEarrings") > 0) TensionStaminaPerTic = TensionStaminaPerTic * 9 / 10;
+			if (debugtensioninfo) Console.Printf("Tension [Step 4 - Stam Use Calc P3 - Falcon Knife Earrings]: StamPerTic: %d", TensionStaminaPerTic);
+			
+			// Fail Rate Calcs
+			if (Owner.CountInv("PowerStrength") > 0) TensionChargeFailRate -= 125; // -12.5% Fail Rate When Berserked
+			if (debugtensioninfo) Console.Printf("Tension [Step 5 - Fail Rate Calc P1 - Berserk]: %d", TensionChargeFailRate);
+			if (CallACS("GetBuffTimer",7) > 0) TensionChargeFailRate -= 250; // -25% Fail Rate When In Divine Avatar
+			if (debugtensioninfo) Console.Printf("Tension [Step 6 - Fail Rate Calc P2 - Divine Avatar]: %d", TensionChargeFailRate);
+			if (CallACS("GetBuffTimer",129) > 0) TensionChargeFailRate /= 2; // 0.5x Fail Rate When In GoE
+			if (debugtensioninfo) Console.Printf("Tension [Step 7 - Fail Rate Calc P3 - ?????]: %d", TensionChargeFailRate);
+			
+			if (TensionChargeFailRatio < 0) TensionChargeFailRatio = 0;
+			if (TensionChargeFailRatio > 1000) TensionChargeFailRatio = 1000;
+			if (debugtensioninfo) Console.Printf("Tension [Step 8 - Fail Rate Calc P4 - Caps]: %d", TensionChargeFailRate);
+			
+			TensionChargeFailRate = (TensionChargeFailRate * TensionChargeFailRatio) / 100;
+			if (debugtensioninfo) Console.Printf("Tension [Step 9 - Fail Rate Calc P5 - Failure Ratio Multi]: %d, Multiplier: %d%", TensionChargeFailRate, TensionChargeFailRatio);
+
+			PerkFactor = 10000 - ((CallACS("MiscVarCheckDECORATE",10011) * 125) + (CallACS("MiscVarCheckDECORATE",10012) * random(312,313)));
+			TensionChargeFailRate = (TensionChargeFailRate * PerkFactor) / 10000;
+			if (debugtensioninfo) Console.Printf("Tension [Step 10 - Fail Rate Calc P6 - PsycheFast]: %d, PerkFactor: %d / 10000", TensionChargeFailRate, PerkFactor);
+
+			if (dvds_musou_powertripmode == 1) TensionChargeFailRate = TensionChargeFailRate / 5; // Check "Power Trip" mode Cheat
+			if (dvds_musou_powertripmode == 2) TensionChargeFailRate = TensionChargeFailRate / 10; // Check "Power Trip" mode Cheat
+			if (debugtensioninfo) Console.Printf("Tension [Step 11 - Fail Rate Calc P7 - Power Trip Mode]: %d", TensionChargeFailRate);
+			if (TensionChargeFailRate <= 0) TensionChargeFailRate = 0;
+			if (debugtensioninfo) Console.Printf("Tension [Step 12 - Fail Rate Calc P8 - LowCap]: %d", TensionChargeFailRate);
+			
+			// Cooldown Base
+			TensionCoolDownRatio = 200;
+			if (debugtensioninfo) Console.Printf("Tension [Step 13 - Cooldown Calc P1 - Base]: %d", TensionCoolDownRatio);
+			// PsycheFast Cooldown
+			PerkFactor = ((CallACS("MiscVarCheckDECORATE",10011) * 500) + (CallACS("MiscVarCheckDECORATE",10012) * 1250)) + 10000;
+			TensionCoolDownRatio = TensionCoolDownRatio * PerkFactor / 10000; // "PsycheMore" and "PsycheMore EX" perks.
+			if (debugtensioninfo) Console.Printf("Tension [Step 14 - Cooldown Calc P2 - PsychFast]: %d, PerkFactor: %d / 10000", TensionCoolDownRatio, PerkFactor);
+			// Cooldown Multiplier
+			TensionCoolDownRatio = TensionCoolDownRatio * dvds_tension_cooldownmultiplier / 100;
+			if (debugtensioninfo) Console.Printf("Tension [Step 15 - Cooldown Calc P3 - Cooldown Multiplier]: %d, Multiplier: %d%", TensionCoolDownRatio, dvds_tension_cooldownmultiplier);
+			
+			// Kill Combo
+			if (KillCounter > 1)
+			{
+				if (KillCounter > 10 && KillCounter < 21) { TensionCoolDownRatio = (TensionCoolDownRatio * 1010) / 1000; }
+				else if (KillCounter > 20 && KillCounter < 36) { TensionCoolDownRatio = (TensionCoolDownRatio * 1030) / 1000; }
+				else if (KillCounter > 35 && KillCounter < 61) { TensionCoolDownRatio = (TensionCoolDownRatio * 1060) / 1000; }
+				else if (KillCounter > 60 && KillCounter < 101) { TensionCoolDownRatio = (TensionCoolDownRatio * 1100) / 1000; }
+				else if (KillCounter > 100 && KillCounter < 201) { TensionCoolDownRatio = (TensionCoolDownRatio * 1200) / 1000; }
+				else if (KillCounter > 200 && KillCounter < 501) { TensionCoolDownRatio = (TensionCoolDownRatio * 1500) / 1000; }
+				else if (KillCounter > 500) { TensionCoolDownRatio = (TensionCoolDownRatio * 1950) / 1000; }
+			}
+			if (debugtensioninfo) Console.Printf("Tension [Step 16 - Cooldown Calc P4 - Kill Counter]: %d, KillCount: %d", TensionCoolDownRatio, KillCounter);
+			
+			int DashTimer = CallACS("MiscVarCheckDECORATE",166);
+			if (DashTimer <= 0 && CallACS("MenuVarCheckDECORATE",0) == 0) TensionCooldownTimer -= TensionCoolDownRatio;
+			if (TensionCooldownTimer <= 0) { TensionCooldownTimer = 0; TensionMaxCooldownTimer = TensionCooldownTimer; }
+			if (debugtensioninfo) Console.Printf("Tension [Step 17 - Cooldown Calc P5 - Final Countdown]: Timer: %d / %d, Decrease: %d", TensionCooldownTimer, TensionMaxCooldownTimer, TensionCoolDownRatio);
+			
+			if (PlayerCurrentHealth > 0)
+			{
+				TensionChargeAmount = 0;
+				FreezePlayer = 0;
+				if (CallACS("MiscVarCheckDECORATE",2500) > 0) FreezePlayer += 1;
+				if (CallACS("GetBuffTimer",18) > 0 && random(1,20) == 1) FreezePlayer += 1;
+				if (CallACS("GetBuffTimer",20) > 0) FreezePlayer += 1;
+				if (buttons & BT_USE && buttons & BT_SPEED && TensionCooldownTimer <= 0 && FreezePlayer == 0)
+				{
+					if (AllowTension > 0 && CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // Tension is Enabled & If Player is "Conscious"
+					{
+						TensionCooldownTimer = 0;
+						TensionMaxCooldownTimer = TensionCooldownTimer;
+						
+						if (TensionLevel <= 7 && TensionCountingDown <= 0)
+						{
+							CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+							if (CurrentStamina >= TensionStaminaPerTic)
+							{
+								if (TensionLevel < 7)
+								{
+									TensionChargeLoopTimer++; // Increase Charge-Up Sound Loop Timer
+									if (TensionChargeLoopTimer == 1) owner.A_PlaySound("tensioncharge",6,1.0);
+									if (TensionChargeLoopTimer >= 63) TensionChargeLoopTimer = 0;
+									
+									if (TensionWarmupTimer == 0 && CharacterClass == 2) owner.A_PlaySound("FloraChargeTension",CHAN_VOICE,1.0,0,ATTN_NORM);
+									owner.A_SpawnItemEx("TensionParticleGenerator",0,0,1,0.0,0.0,0.0,0,SXF_NOCHECKPOSITION);
+									if (TensionLevel > 3 && random(1,100) > 50) owner.A_SpawnItemEx("TensionParticleGenerator",0,0,1,0.0,0.0,0.0,0,SXF_NOCHECKPOSITION); // "100"+ Tension
+									if (TensionLevel > 4 && random(1,100) > 80) owner.A_SpawnItemEx("TensionParticleGenerator",0,0,1,0.0,0.0,0.0,0,SXF_NOCHECKPOSITION); // "250"+ Tension
+									if (TensionLevel > 5 && random(1,100) > 86) owner.A_SpawnItemEx("TensionParticleGenerator",0,0,1,0.0,0.0,0.0,0,SXF_NOCHECKPOSITION); // "500"+ Tension
+									if (TensionLevel > 6 && random(1,100) > 91) owner.A_SpawnItemEx("TensionParticleGenerator",0,0,1,0.0,0.0,0.0,0,SXF_NOCHECKPOSITION); // "1000"+ Tension
+								}
+								else
+								{
+									TensionChargeLoopTimer = 0;
+								}
+								
+								// Quaking
+								if (TensionLevel == 0) owner.A_Quake(1,4,0,512,"null");
+								if (TensionLevel == 1) owner.A_Quake(2,4,0,512,"null");
+								if (TensionLevel == 2) owner.A_Quake(3,4,0,512,"null");
+								if (TensionLevel == 3) owner.A_Quake(4,4,0,512,"null");
+								if (TensionLevel == 4) owner.A_Quake(5,4,0,512,"null");
+								if (TensionLevel == 5) owner.A_Quake(7,4,0,512,"null");
+								if (TensionLevel == 6) owner.A_Quake(9,4,0,512,"null");
+								if (TensionLevel < 7) 
+								{
+									CallACS("MiscVarSetDECORATE",21,TensionStaminaPerTic,2); // Subtract
+								}
+								
+								// 100 = 1 tic
+								TensionChargeAmount = 100;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18a - Charge Up P1]: %d", TensionChargeAmount);
+								
+								// -37.5% Charge Speed When Fatigued
+								if (CallACS("GetBuffTimer",18) > 0) TensionChargeAmount = TensionChargeAmount * 5 / 8;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18b - Charge Up P2 - Fatigue]: %d", TensionChargeAmount);
+
+								// -25% Charge Speed When Berserked
+								if (Owner.CountInv("PowerStrength") > 0) TensionChargeAmount = TensionChargeAmount * 3 / 4;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18c - Charge Up P3 - Berserk]: %d", TensionChargeAmount);
+
+								// -12.5% Charge Speed When in Divine Avatar
+								if (CallACS("GetBuffTimer",7) > 0) TensionChargeAmount = TensionChargeAmount * 7 / 8;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18d - Charge Up P4 - Divine Avatar]: %d", TensionChargeAmount);
+
+								// +12.5% Charge Speed When Low on Health
+								if (Owner.CountInv("LowHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1125 / 1000;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18e - Charge Up P5 - Low Health]: %d", TensionChargeAmount);
+
+								// +33.4% Charge Speed When Critically Low on Health
+								if (Owner.CountInv("CriticalHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18f - Charge Up P6 - Critically-Low Health]: %d", TensionChargeAmount);
+
+								// +33.4% Charge Speed for Flora
+								if (CharacterClass == 2) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18g - Charge Up P7 - Flora Check]: %d", TensionChargeAmount);
+
+								// +50% Charge Speed for Flora when Low on Health
+								if (CharacterClass == 2 && Owner.CountInv("LowHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1500 / 1000;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18h - Charge Up P8 - Flora - Low Health]: %d", TensionChargeAmount);
+
+								// +125% Charge Speed for Flora when Critically low on Health
+								if (CharacterClass == 2 && Owner.CountInv("CriticalHealth") > 0) TensionChargeAmount = TensionChargeAmount * 2250 / 1000;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18i - Charge Up P9 - Flora - Critically-Low Health]: %d", TensionChargeAmount);
+
+								// Check Tension Charge Multiplier Option
+								TensionChargeAmount = TensionChargeAmount * dvds_tension_chargemultiplier / 100;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18j - Charge Up P10 - Charge Multiplier]: %d, Multiplier: %d%", TensionChargeAmount, dvds_tension_chargemultiplier);
+
+								// Check Tension Speed Option [also affects Stamina]
+								TensionChargeAmount = (TensionChargeAmount * tensionspeedmulti) / 100;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18k - Charge Up P11 - Tension Speed Multi]: %d, Multiplier: %d%", TensionChargeAmount, tensionspeedmulti);
+
+								// Check "Power Trip" mode Cheat
+								if (dvds_musou_powertripmode == 1) TensionChargeAmount *= 5;
+								if (dvds_musou_powertripmode == 2) TensionChargeAmount *= 10;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18l - Charge Up P12 - Power Trip Mode]: %d", TensionChargeAmount);
+								
+								// Kill Combo
+								if (KillCounter > 1)
+								{
+									if (KillCounter > 10 && KillCounter < 21) { TensionChargeAmount = (TensionChargeAmount * 1005) / 1000; }
+									else if (KillCounter > 20 && KillCounter < 36) { TensionChargeAmount = (TensionChargeAmount * 1015) / 1000; }
+									else if (KillCounter > 35 && KillCounter < 61) { TensionChargeAmount = (TensionChargeAmount * 1030) / 1000; }
+									else if (KillCounter > 60 && KillCounter < 101) { TensionChargeAmount = (TensionChargeAmount * 1050) / 1000; }
+									else if (KillCounter > 100 && KillCounter < 201) { TensionChargeAmount = (TensionChargeAmount * 1100) / 1000; }
+									else if (KillCounter > 200 && KillCounter < 501) { TensionChargeAmount = (TensionChargeAmount * 1250) / 1000; }
+									else if (KillCounter > 500) { TensionChargeAmount = (TensionChargeAmount * 1475) / 1000; }
+								}
+								if (debugtensioninfo) Console.Printf("Tension [Step 18m - Charge Up P13 - Kill Counter]: %d, KillCount: %d", TensionChargeAmount, KillCounter);
+								
+								// PsycheMore perks
+								PerkFactor = ((CallACS("MiscVarCheckDECORATE",10011) * 750) + (CallACS("MiscVarCheckDECORATE",10012) * 1875)) + 10000;
+								TensionChargeAmount = TensionChargeAmount * PerkFactor / 10000; // "PsycheMore" and "PsycheMore EX" perks.
+								TensionChargeAmount += (CallACS("MiscVarCheckDECORATE",10011) / 2);
+								TensionChargeAmount += CallACS("MiscVarCheckDECORATE",10012);
+								if (debugtensioninfo) Console.Printf("Tension [Step 18n - Charge Up P14 - PsycheFast]: %d", TensionChargeAmount);
+								
+								// Kill-Combo Bonus
+								int TensionChargeKillBonus = ((KillCounter * 3) / 4) + 100;
+								if (KillCounter > 0) TensionChargeAmount = (TensionChargeAmount * TensionChargeKillBonus) / 100;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18o - Charge Up P15 - Kill Bonus]: %d, KillBonus: %d%", TensionChargeAmount, TensionChargeKillBonus);
+								
+								// Up-Clamp to 1 Tic
+								if (TensionChargeAmount < 1) TensionChargeAmount = 1;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18p - Charge Up P16 - Clamp]: %d", TensionChargeAmount);
+							}
+							else
+							{
+								if (TensionChargeLoopTimer > 0) TensionChargeLoopTimer = 0;
+						
+								if (TensionLevel == 0) TensionCooldownTimer = 3500;
+								else if (TensionLevel == 1) TensionCooldownTimer = 3720;
+								else if (TensionLevel == 2) TensionCooldownTimer = 3940;
+								else if (TensionLevel == 3) TensionCooldownTimer = 4380;
+								else if (TensionLevel == 4) TensionCooldownTimer = 4810;
+								else if (TensionLevel == 5) TensionCooldownTimer = 5250;
+								else if (TensionLevel == 6) TensionCooldownTimer = 6560;
+								TensionCooldownTimer = TensionCooldownTimer * 3 / 2;
+								TensionMaxCooldownTimer = TensionCooldownTimer;
+						
+								if (TensionLevel < 7)
+								{
+									owner.A_PlaySound("tensionfailed",7,1.0);
+								}
+						
+								CallACS("MiscVarSetDECORATE",21,0);
+								TensionChargeAmount -= 250;
+								if (debugtensioninfo) Console.Printf("Tension [Step 18 - Charge Up P1]: %d", TensionChargeAmount);
+							}
+						}
+
+					}
+				}
+				else
+				{
+					if (TensionChargeLoopTimer > 0) TensionChargeLoopTimer = 0;
+					TensionChargeAmount -= 250;
+					if (debugtensioninfo) Console.Printf("Tension [Step 18 - Charge Up P1]: %d", TensionChargeAmount);
+				}
+				// Movement to decrease Tension charge.
+				int C3 = 0;
+				FreezePlayer = 0;
+				if (CallACS("MiscVarCheckDECORATE",2500) > 0) FreezePlayer += 1;
+				if (CallACS("GetBuffTimer",20) > 0) FreezePlayer += 1;
+				if (FreezePlayer == 0)
+				{
+					buttons = owner.GetPlayerInput(INPUT_BUTTONS);
+					if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) C3 = -500;
+					else if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) C3 = -500;
+					else if (buttons & BT_JUMP || buttons & BT_CROUCH) C3 = -500;
+				}
+				if (C3 != 0 && TensionCooldownTimer < 7000 && FreezePlayer == 0)
+				{
+					if (AllowTension > 0) // Tension is Enabled
+					{
+						TensionCooldownTimer = 7000; // 1 Sec
+						TensionMaxCooldownTimer = TensionCooldownTimer;
+					}
+				}
+				TensionChargeAmount += C3;
+				if (debugtensioninfo) Console.Printf("Tension [Step 19 - Charge Up Input]: %d, input-change: %d", TensionChargeAmount, C3);
+				
+				if (TensionCountingDown <= 0 && CallACS("MenuVarCheckDECORATE",0) == 0) TensionWarmupTimer += TensionChargeAmount;
+				if (debugtensioninfo) Console.Printf("Tension [Step 20 - Increase Warmup/Charge]:  %d / %d, Charge: %d", TensionWarmupTimer, TensionChargeTimeMax, TensionChargeAmount);
+
+				if (TensionWarmupTimer <= 0) TensionWarmupTimer = 0;
+				
+				if (TensionWarmupTimer >= TensionChargeTimeMax)
+				{
+					
+					if (random(1,1000) > TensionChargeFailRate)
+					{
+						TensionCountingDown = 0;
+						
+						if (TensionLevel == 0) { TensionCooldownTimer = 3500; owner.A_SetBlend("FE 68 FD",0.33,43); }
+						else if (TensionLevel == 1) { TensionCooldownTimer = 3720; owner.A_SetBlend("FE 68 FD",0.33,48); }
+						else if (TensionLevel == 2) { TensionCooldownTimer = 3940; owner.A_SetBlend("FE 68 FD",0.33,53); }
+						else if (TensionLevel == 3) { TensionCooldownTimer = 4380; owner.A_SetBlend("FE 68 FD",0.33,56); }
+						else if (TensionLevel == 4) { TensionCooldownTimer = 4810; owner.A_SetBlend("FE 68 FD",0.33,61); }
+						else if (TensionLevel == 5) { TensionCooldownTimer = 5250; owner.A_SetBlend("FE 68 FD",0.33,66); }
+						else if (TensionLevel == 6) { TensionCooldownTimer = 6560; owner.A_SetBlend("FE 68 FD",0.33,70); }
+						TensionCooldownTimer *= 2;
+						TensionMaxCooldownTimer = TensionCooldownTimer;
+						TensionOverPsycheTimer = 0;
+						TensionOverchargeTimer = 0;
+						
+						if (TensionLevel >= 0 && TensionLevel <= 2) // to 5,20,50
+						{
+							owner.A_PlaySound("tensionincrease",CHAN_7,1.0,0,ATTN_NORM);
+						}
+						if (TensionLevel >= 3 && TensionLevel <= 4)  // to 100,250 [Super High Tension]
+						{
+							owner.A_PlaySound("tensionhigh1",CHAN_7,1.0,0,ATTN_NORM);
+							if (CharacterClass == 2 && TensionLevel == 3 && random(1,3) == 1) owner.A_PlaySound("FloraEnterHighTension1",CHAN_VOICE,1.0,0,ATTN_NORM);
+							if (CharacterClass == 2 && TensionLevel == 4 && random(1,2) == 1) owner.A_PlaySound("FloraEnterHighTension2",CHAN_VOICE,1.0,0,ATTN_NORM);
+						}
+						if (TensionLevel == 5) // to 500
+						{
+							owner.A_PlaySound("tensionhigh2",CHAN_7,1.0,0,ATTN_NORM);
+							if (CharacterClass == 2) owner.A_PlaySound("FloraEnterHighTension2",CHAN_VOICE,1.0,0,ATTN_NORM);
+						}
+						if (TensionLevel == 6) // to 1000
+						{
+							owner.A_PlaySound("tensionhigh3",CHAN_7,1.0,0,ATTN_NORM);
+							if (CharacterClass == 2) owner.A_PlaySound("FloraEnterHighTension3",CHAN_VOICE,1.0,0,ATTN_NORM);
+						}
+						
+						double project_RealZ = (owner.player.viewHeight * 39 / 50) + 8.0;
+						string blastwavetype;
+						if (TensionLevel == 0) blastwavetype = "PlayerTension5BlastRadius";
+						if (TensionLevel == 1) blastwavetype = "PlayerTension20BlastRadius";
+						if (TensionLevel == 2) blastwavetype = "PlayerTension50BlastRadius";
+						if (TensionLevel == 3) blastwavetype = "PlayerTension100BlastRadius";
+						if (TensionLevel == 4) blastwavetype = "PlayerTension250BlastRadius";
+						if (TensionLevel == 5) blastwavetype = "PlayerTension500BlastRadius";
+						if (TensionLevel == 6) blastwavetype = "PlayerTension1000BlastRadius";
+						owner.A_SpawnProjectile(blastwavetype,project_RealZ,0,0,CMF_TRACKOWNER,0);
+						if (debugtensioninfo) Console.Printf("Tension [Step 21 - BlastWave SpawnZ]: %8f", project_RealZ);
+
+						TensionLevel += 1;
+						
+						if (TensionLevel == 1) TensionTimer = 3600;
+						if (TensionLevel == 2) TensionTimer = 4320;
+						if (TensionLevel == 3) TensionTimer = 5184;
+						if (TensionLevel == 4) TensionTimer = 6221;
+						if (TensionLevel == 5) TensionTimer = 7465;
+						if (TensionLevel == 6) TensionTimer = 8958;
+						if (TensionLevel == 7) TensionTimer = 10750;
+					}
+					else // Psyche Up Fails D:
+					{
+						TensionCountingDown = 0;
+						
+						if (AllowTension > 0) // Tension is Enabled
+						{
+							if (TensionLevel == 0) TensionCooldownTimer = 3500;
+							else if (TensionLevel == 1) TensionCooldownTimer = 3720;
+							else if (TensionLevel == 2) TensionCooldownTimer = 3940;
+							else if (TensionLevel == 3) TensionCooldownTimer = 4380;
+							else if (TensionLevel == 4) TensionCooldownTimer = 4810;
+							else if (TensionLevel == 5) TensionCooldownTimer = 5250;
+							else if (TensionLevel == 6) TensionCooldownTimer = 6560;
+							TensionCooldownTimer = TensionCooldownTimer * 3 / 2;
+							TensionMaxCooldownTimer = TensionCooldownTimer;
+						
+							if (TensionLevel < 7)
+							{
+								owner.A_PlaySound("tensionfailed",7,1.0);
+							}
+						}
+						
+						if (TensionLevel == 1) TensionTimer = 3600;
+						if (TensionLevel == 2) TensionTimer = 4320;
+						if (TensionLevel == 3) TensionTimer = 5184;
+						if (TensionLevel == 4) TensionTimer = 6221;
+						if (TensionLevel == 5) TensionTimer = 7465;
+						if (TensionLevel == 6) TensionTimer = 8958;
+						if (TensionLevel == 7) TensionTimer = 10750;
+					}
+					TensionWarmupTimer = 0; // Reset Warmup Timer
+				}
+			}
+			else
+			{
+				if (TensionLevel > 0) // Level
+				{ 
+					owner.A_PlaySound("tensionrevert",CHAN_BODY,1.0,0,ATTN_NORM); TensionLevel = 0; 
+				}
+				if (TensionLevelLastTic > 0) TensionLevelLastTic = 0; // Compare
+				if (TensionTimer > 0) TensionTimer = 0; // Timer
+				if (TensionCountingDown != 0) TensionCountingDown = 0; // Timer Counts Down?
+				if (TensionWarmupTimer > 0) TensionWarmupTimer = 0;
+				if (TensionCooldownTimer > 0) TensionCooldownTimer = 0;
+				if (TensionMaxCooldownTimer > 0) TensionMaxCooldownTimer = 0;
+				if (TensionChargeLoopTimer > 0) TensionChargeLoopTimer = 0;
+				if (TensionActivePulseTimer > 0) TensionActivePulseTimer = 0;
+			}
+
+			// Tension Effects
+			if (PlayerCurrentHealth > 0)
+			{
+				if (TensionLevel != 0)
+				{
+					if (TensionLevel == 1) { pulsevolume = frandom(0.118110236,0.244094488); maxpulseinterval = random(21,23); }
+					if (TensionLevel == 2) { pulsevolume = frandom(0.141732283,0.37007874); maxpulseinterval = random(19,21); }
+					if (TensionLevel == 3) { pulsevolume = frandom(0.165354331,0.496062992); maxpulseinterval = random(17,19); }
+					if (TensionLevel == 4) { pulsevolume = frandom(0.188976378,0.622047244); maxpulseinterval = random(15,17); }
+					if (TensionLevel == 5) { pulsevolume = frandom(0.212598425,0.748031496); maxpulseinterval = random(13,15); }
+					if (TensionLevel == 6) { pulsevolume = frandom(0.236220472,0.874015748); maxpulseinterval = random(12,14); }
+					if (TensionLevel == 7) { pulsevolume = frandom(0.25984252,1.0); maxpulseinterval = random(11,13); }
+					maxpulseinterval *= 2;
+					if (random(1,4) == 1) randompulseinterval1 = maxpulseinterval * 2; else randompulseinterval1 = random(1,maxpulseinterval);
+					if (random(1,4) == 1) randompulseinterval2 = maxpulseinterval * 2; else randompulseinterval2 = random(1,maxpulseinterval);
+					if (random(1,4) == 1) randompulseinterval3 = maxpulseinterval * 2; else randompulseinterval3 = random(1,maxpulseinterval);
+					if (random(1,4) == 1) randompulseinterval4 = maxpulseinterval * 2; else randompulseinterval4 = random(1,maxpulseinterval);
+					TensionActivePulseTimer++; // Increase Charge-Up Sound Loop Timer
+					if (debugtensioninfo) Console.Printf("Tension [Step 22 - PulseTimer]: %d", TensionActivePulseTimer);
+					
+					if (TensionActivePulseTimer == randompulseinterval1 && TensionLevel >= 1)
+					{
+						owner.A_PlaySound("tensionpulserand",CHAN_BODY,pulsevolume,0,ATTN_NORM); 
+						randompulseinterval1 = random(1,maxpulseinterval);
+					}
+					if (TensionActivePulseTimer == randompulseinterval2 && TensionLevel >= 3)
+					{
+						owner.A_PlaySound("tensionpulserand",CHAN_BODY,pulsevolume,0,ATTN_NORM); 
+						randompulseinterval2 = random(1,maxpulseinterval);
+					}
+					if (TensionActivePulseTimer == randompulseinterval3 && TensionLevel >= 5)
+					{
+						owner.A_PlaySound("tensionpulserand",CHAN_BODY,pulsevolume,0,ATTN_NORM); 
+						randompulseinterval3 = random(1,maxpulseinterval);
+					}
+					if (TensionActivePulseTimer == randompulseinterval4 && TensionLevel >= 7)
+					{
+						owner.A_PlaySound("tensionpulserand",CHAN_BODY,pulsevolume,0,ATTN_NORM); 
+						randompulseinterval4 = random(1,maxpulseinterval);
+					}
+					if (TensionActivePulseTimer >= maxpulseinterval) TensionActivePulseTimer = 0;
+					
+					// Background Sound for the humming of tension.
+					TensionBackgroundAuraTimer++;
+					if (TensionBackgroundAuraTimer == 1)
+					{
+						owner.A_StopSound(CHAN_6);
+						if (TensionLevel == 1) owner.A_PlaySound("tensionaura5",CHAN_6,1.0,0,ATTN_NORM);
+						if (TensionLevel == 2) owner.A_PlaySound("tensionaura20",CHAN_6,1.0,0,ATTN_NORM);
+						if (TensionLevel == 3) owner.A_PlaySound("tensionaura50",CHAN_6,1.0,0,ATTN_NORM);
+						if (TensionLevel == 4) owner.A_PlaySound("tensionaura100",CHAN_6,1.0,0,ATTN_NORM);
+						if (TensionLevel == 5) owner.A_PlaySound("tensionaura250",CHAN_6,1.0,0,ATTN_NORM);
+						if (TensionLevel == 6) owner.A_PlaySound("tensionaura500",CHAN_6,1.0,0,ATTN_NORM);
+						if (TensionLevel == 7) owner.A_PlaySound("tensionaura1000",CHAN_6,1.0,0,ATTN_NORM);
+					}
+					if (TensionBackgroundAuraTimer >= 68) TensionBackgroundAuraTimer = 0;
+					
+					int TensionOverchargeDmgFactor;
+					int TensionOverchargeDmgBase;
+					int TensionOverchargeDmgFinal;
+					int TensionOverchargeDmgThreshold = PlayerCurrentHealth / 256;
+					if (TensionOverchargeDmgThreshold < 1) TensionOverchargeDmgThreshold = 1;
+					if (debugtensioninfo) Console.Printf("Tension [Step 23 - Set Overcharge DMG Threshold]: %d", TensionOverchargeDmgThreshold);
+					
+					// Overcharge Tracking
+					int TensionOCTimer1Amount = 20;
+					int TensionOCTimer2Amount = 20;
+					if (debugtensioninfo) Console.Printf("Tension [Step 24 - Set Overcharge Increment Amts]: OverPsyche: %d, OverCharge: %d", TensionOCTimer1Amount, TensionOCTimer2Amount);
+					
+					if (CallACS("GetBuffTimer",4) > 0) // Invulnerability stops the Overcharge timers while in effect
+					{
+						TensionOCTimer1Amount *= 0;
+						TensionOCTimer2Amount *= 0;
+					}
+					if (debugtensioninfo) Console.Printf("Tension [Step 24b - Set Overcharge Increment (Invuln)]: OverPsyche: %d, OverCharge: %d", TensionOCTimer1Amount, TensionOCTimer2Amount);
+
+					if (CallACS("GetBuffTimer",10) > 0) // Oomph Slows it down
+					{
+						TensionOCTimer1Amount = TensionOCTimer1Amount * 3 / 4;
+						TensionOCTimer2Amount = TensionOCTimer2Amount * 3 / 4;
+					}
+					if (debugtensioninfo) Console.Printf("Tension [Step 24c - Set Overcharge Increment (Oomph)]: OverPsyche: %d, OverCharge: %d", TensionOCTimer1Amount, TensionOCTimer2Amount);
+
+					if (CallACS("GetBuffTimer",11) > 0) // Buff Slows it down
+					{
+						TensionOCTimer1Amount = TensionOCTimer1Amount * 3 / 4;
+						TensionOCTimer2Amount = TensionOCTimer2Amount * 3 / 4;
+					}
+					if (debugtensioninfo) Console.Printf("Tension [Step 24d - Set Overcharge Increment (Buff)]: OverPsyche: %d, OverCharge: %d", TensionOCTimer1Amount, TensionOCTimer2Amount);
+
+					if (CallACS("GetBuffTimer",12) > 0) // Accelerate Speeds it up
+					{
+						TensionOCTimer1Amount = TensionOCTimer1Amount * 6 / 5;
+						TensionOCTimer2Amount = TensionOCTimer2Amount * 6 / 5;
+					}
+					if (debugtensioninfo) Console.Printf("Tension [Step 24e - Set Overcharge Increment (Accelerate)]: OverPsyche: %d, OverCharge: %d", TensionOCTimer1Amount, TensionOCTimer2Amount);
+
+					if (CallACS("GetBuffTimer",15) > 0) // Decelerate Slows it down
+					{
+						TensionOCTimer1Amount = TensionOCTimer1Amount * 4 / 5;
+						TensionOCTimer2Amount = TensionOCTimer2Amount * 4 / 5;
+					}
+					if (debugtensioninfo) Console.Printf("Tension [Step 24f - Set Overcharge Increment (Decelerate)]: OverPsyche: %d, OverCharge: %d", TensionOCTimer1Amount, TensionOCTimer2Amount);
+
+					if (CallACS("GetBuffTimer",16) > 0) // Poison Really Speeds it Up
+					{
+						TensionOCTimer1Amount = TensionOCTimer1Amount * 7 / 4;
+						TensionOCTimer2Amount = TensionOCTimer2Amount * 7 / 4;
+					}
+					if (debugtensioninfo) Console.Printf("Tension [Step 24g - Set Overcharge Increment (Poison)]: OverPsyche: %d, OverCharge: %d", TensionOCTimer1Amount, TensionOCTimer2Amount);
+
+					if (CallACS("GetBuffTimer",23) > 0) // Berserk Speeds it up
+					{
+						TensionOCTimer1Amount = TensionOCTimer1Amount * 5 / 4;
+						TensionOCTimer2Amount = TensionOCTimer2Amount * 5 / 4;
+					}
+					if (debugtensioninfo) Console.Printf("Tension [Step 24h - Set Overcharge Increment (Berserk)]: OverPsyche: %d, OverCharge: %d", TensionOCTimer1Amount, TensionOCTimer2Amount);
+
+					if (TensionCountingDown == 1) // If Tension is draining
+					{
+						TensionOCTimer1Amount = TensionOCTimer1Amount / 3;
+						TensionOCTimer2Amount = TensionOCTimer2Amount / 3;
+					}
+					if (debugtensioninfo) Console.Printf("Tension [Step 24i - Set OverPsyche/Overcharge Increment (Tension CountDown)]: OverPsyche: %d, OverCharge: %d", TensionOCTimer1Amount, TensionOCTimer2Amount);
+
+					// TensionOverCharge Allowed?
+					if (TensionOverChargeAllowed > 0)
+					{
+						if (CallACS("MiscVarCheckDECORATE",2500) == 0) TensionOverPsycheTimer += TensionOCTimer1Amount; 
+					}
+					else
+					{
+						TensionOverPsycheTimer = 0;
+					}
+					if (debugtensioninfo) Console.Printf("Tension [Step 25 - OverPsyche Increment]: OverPsycheTimer: %d / %d, OverPsyche: %d", TensionOverPsycheTimer, TensionMaxOverPsycheTimer, TensionOCTimer1Amount);
+					
+					if (TensionOverPsycheTimer >= TensionMaxOverPsycheTimer && TensionOverChargeAllowed > 0)
+					{
+						TensionOverPsycheTimer = TensionMaxOverPsycheTimer;
+						if (TensionOverChargeAllowed > 0) 
+						{
+							if (CallACS("MiscVarCheckDECORATE",2500) == 0) TensionOverchargeTimer += TensionOCTimer2Amount;
+						}
+						else 
+						{
+							TensionOverchargeTimer = 0;
+						}
+						if (debugtensioninfo) Console.Printf("Tension [Step 26 - OverCharge Increment]: OverChargeTimer: %d / %d, OverPsyche: %d", TensionOverchargeTimer, TensionMaxOverchargeTimer, TensionOCTimer2Amount);
+						
+						if (TensionOverchargeTimer >= TensionMaxOverchargeTimer && TensionOverChargeAllowed > 0)
+						{
+							TensionOverchargeTimer = 0;
+							TensionMaxOverchargeTimer = 0;
+							TensionOverchargeDmgFactor = random(6,10) * ((6 + ((TensionLevel * 9) / 4)) / 7);
+							TensionOverchargeDmgBase = (random(2,3) * TensionOverchargeDmgFactor) / 8;
+							if (TensionOverchargeDmgBase < 2 && TensionLevel > 4) TensionOverchargeDmgBase = 2;
+							if (TensionOverchargeDmgBase < 1) TensionOverchargeDmgBase = 1;
+							TensionOverchargeDmgFinal = PlayerCurrentHealth - TensionOverchargeDmgBase;
+							if (TensionOverchargeDmgFinal < TensionOverchargeDmgThreshold) TensionOverchargeDmgFinal = TensionOverchargeDmgThreshold;
+							if (TensionOverchargeDmgFinal > TensionOverchargeDmgThreshold)
+							{
+								if (CallACS("GetBuffTimer",4) == 0) // If not Invulnerable
+								{
+									if (CharacterClass == 2 && random(1,5) == 1) ACS_NamedExecuteAlways("FloraPainScreams",0,0,0,0);
+									if (CharacterClass == 8 && random(1,5) == 1) ACS_NamedExecuteAlways("AilishPainScreams",0,0,0,0);
+									if (CharacterClass == 9 && random(1,5) == 1) ACS_NamedExecuteAlways("PetraPainScreams",0,0,0,0);
+									owner.health = TensionOverchargeDmgFinal;
+									PlayerCurrentHealth = owner.health;
+								}
+							}
+						}
+					}
+					else
+					{
+						TensionOverchargeTimer = 0;
+					}
+					
+					int tensiontimerdecrease;
+					if (TensionCountingDown != 0 && TensionTimer >= 0)
+					{
+						tensiontimerdecrease = 20;
+						if (debugtensioninfo) Console.Printf("Tension [Step 27 - TensionDecrease Increment]: %d", tensiontimerdecrease);
+
+						tensiontimerdecrease = tensiontimerdecrease * dvds_tension_countdownmultiplier / 100;
+						if (debugtensioninfo) Console.Printf("Tension [Step 27b - TensionDecrease Multiplier]: %d, Multiplier: %d%", tensiontimerdecrease, dvds_tension_countdownmultiplier);
+
+						if (dvds_musou_powertripmode == 1) tensiontimerdecrease = tensiontimerdecrease / 5; // 'Power Trip' mode cheat
+						if (dvds_musou_powertripmode == 2) tensiontimerdecrease = tensiontimerdecrease / 10; // 'Power Trip' mode cheat
+						if (debugtensioninfo) Console.Printf("Tension [Step 27c - TensionDecrease - Power Trip]: %d", tensiontimerdecrease);
+
+						if (owner.CountInv("MartArtsMaster1") > 0) tensiontimerdecrease = (tensiontimerdecrease * random(800,900)) / 1000;
+						if (owner.CountInv("MartArtsMaster2") > 0) tensiontimerdecrease = (tensiontimerdecrease * random(400,600)) / 1000;
+						if (debugtensioninfo) Console.Printf("Tension [Step 27d - TensionDecrease - MartArts Mastery]: %d", tensiontimerdecrease);
+
+						PerkFactor = 10000 - ((CallACS("MiscVarCheckDECORATE",10011) * 250) + (CallACS("MiscVarCheckDECORATE",10012) * 625));
+						tensiontimerdecrease = (tensiontimerdecrease * PerkFactor) / 10000;
+						if (debugtensioninfo) Console.Printf("Tension [Step 27e - TensionDecrease - PsycheFast]: %d, PerkFactor: %d / 10000", tensiontimerdecrease, PerkFactor);
+
+						If (CallACS("MenuVarCheckDECORATE",0) == 0) TensionTimer -= tensiontimerdecrease;
+						if (debugtensioninfo) Console.Printf("Tension [Step 28 - TensionDecrease - Decrement]: %d, Decrease: %d", TensionTimer, tensiontimerdecrease);
+					}
+					
+					if (TensionTimer <= 0) 
+					{
+						if (AllowTension > 0) // Tension is Enabled
+						{
+							if (TensionLevel == 1) TensionCooldownTimer = 14000; // Cooldown Timer set to 4 seconds
+							if (TensionLevel == 2) TensionCooldownTimer = 14880; // Cooldown Timer set to 4.25 seconds
+							if (TensionLevel == 3) TensionCooldownTimer = 15750; // Cooldown Timer set to 4.5 seconds
+							if (TensionLevel == 4) TensionCooldownTimer = 17500; // Cooldown Timer set to 5 seconds
+							if (TensionLevel == 5) TensionCooldownTimer = 19250; // Cooldown Timer set to 5.5 seconds
+							if (TensionLevel == 6) TensionCooldownTimer = 21000; // Cooldown Timer set to 6 seconds
+							if (TensionLevel == 7) TensionCooldownTimer = 26250; // Cooldown Timer set to 7.5 seconds
+							TensionCooldownTimer *= 2;
+							TensionMaxCooldownTimer = TensionCooldownTimer;
+						}
+					
+						TensionWarmupTimer = 0; // Warmup Timer
+						TensionCountingDown = 0; // Tension Timer
+						TensionLevel = 0; // Tension Level
+						TensionBackgroundAuraTimer = 0; // Tension Aura-Sound Timer
+						owner.A_StopSound(CHAN_6);
+						owner.A_StopSound(CHAN_7);
+						owner.A_PlaySound("tensionrevert",CHAN_6,1.0,0,ATTN_NORM);
+					}
+				}
+				
+				if (AllowTension > 0) // Tension is Enabled
+				{
+					if (TensionLevel < 0) TensionLevel = 0;
+					if (TensionLevel > 7) TensionLevel = 7;
+				}
+				else
+				{
+					if (TensionLevel != 0) { TensionLevel = 0; owner.A_PlaySound("tensionrevert",CHAN_6,1.0,0,ATTN_NORM); }
+					if (TensionTimer != 0) TensionTimer = 0; // Timer
+					if (TensionCountingDown != 0) TensionCountingDown = 0; // Timer Counts Down?
+					if (TensionWarmupTimer != 0) TensionWarmupTimer = 0;
+					if (TensionCooldownTimer != 0) TensionCooldownTimer = 0;
+					if (dvds_tension_chargemultiplier != 0) TensionChargeLoopTimer = 0;
+					if (TensionMaxCooldownTimer != 0) TensionActivePulseTimer = 0;   
+				}
+	
+				if (TensionLevel >= 4) { owner.A_GiveInventory("TensionTrail", 1); } else { owner.A_TakeInventory("TensionTrail", 9999); } // Tension is "100" or higher
+			}
+			// Tension Aura Actor Control
+		}
+		CallACS("MiscVarSetDECORATE",181,TensionLevel);
+		CallACS("MiscVarSetDECORATE",182,TensionLevelLastTic);
+		CallACS("MiscVarSetDECORATE",183,TensionTimer);
+		CallACS("MiscVarSetDECORATE",184,TensionCountingDown);
+		CallACS("MiscVarSetDECORATE",185,TensionWarmupTimer);
+		CallACS("MiscVarSetDECORATE",186,TensionCooldownTimer);
+		CallACS("MiscVarSetDECORATE",188,TensionMaxCooldownTimer);
+		CallACS("MiscVarSetDECORATE",189,TensionChargeLoopTimer);
+		CallACS("MiscVarSetDECORATE",190,TensionActivePulseTimer);
+		CallACS("MiscVarSetDECORATE",246,TensionBackgroundAuraTimer);
+		CallACS("MiscVarSetDECORATE",250,TensionOverPsycheTimer);
+		CallACS("MiscVarSetDECORATE",251,TensionOverchargeTimer);
+		CallACS("MiscVarSetDECORATE",261,TensionMaxOverchargeTimer);
+		CallACS("MiscVarSetDECORATE",262,TensionMaxOverPsycheTimer);
+		// To be Transplanted from ACS :V
+		
+		
+		
+		
+		
 		//*************************************
 		//*Blacken Screen if Blinded or Asleep*
 		//*************************************
@@ -3457,7 +4234,7 @@ class PlayerStatItem : Inventory
 		//*Check for Magic Focus*
 		//***********************
 		int FocusDrain;
-		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+		CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
 		if (playeractor)
 		{
 			FreezePlayer = 0;
@@ -3465,13 +4242,15 @@ class PlayerStatItem : Inventory
 			if (CallACS("GetBuffTimer",18) > 0 && random(1,5) > 2) FreezePlayer += 1;
 			if (CallACS("GetBuffTimer",20) > 0) FreezePlayer += 1;
 			if (CallACS("GetBuffTimer",21) > 0 && random(1,5) > 2) FreezePlayer += 1;
+			buttons = owner.GetPlayerInput(INPUT_BUTTONS);
+			//Console.Printf("    \cnFocusing [Step 0 - Input]: %d\c-", buttons);
 			if (buttons & BT_ZOOM && buttons & BT_SPEED && CurrentStamina >= FocusDrain && FreezePlayer == 0)
 			{
 				if (random(1,25) == 1) FocusDrain = (random(1,2) * 4);
 													else FocusDrain = (random(4,8) * 5);
 				if (CallACS("MiscVarCheckDECORATE",317) > 0) FocusDrain = FocusDrain * (100 - (CallACS("MiscVarCheckDECORATE",317) * 3)) / 100;
 				if (Owner.CountInv("FalconKnifeEarrings") > 0) FocusDrain = FocusDrain * 9 / 10;
-				// if (debugfocusdrain) Console.Printf("    \cnFocusing [Step 1 - Base Drain]: %d\c-", FocusDrain);
+				//Console.Printf("    \cnFocusing [Step 1 - Base Drain]: %d\c-", FocusDrain);
 				
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0)
 				{
@@ -3479,7 +4258,7 @@ class PlayerStatItem : Inventory
 					CurrentStamina -= FocusDrain;
 					if (CurrentStamina < 0) CurrentStamina = 0;
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
-					// if (debugfocusdrain) Console.Printf("    \cnFocusing [Step 2 - Reduce Stamina]: Current: %d\c-, Previous: %d, DrainAmt: %d", CurrentStamina, previousdelaycount, FocusDrain);
+					//Console.Printf("    \cnFocusing [Step 2 - Reduce Stamina]: Current: %d\c-, Previous: %d, DrainAmt: %d", CurrentStamina, previousdelaycount, FocusDrain);
 				
 					CallACS("MiscVarSetDECORATE",212,1); // "Focus" on
 					CallACS("MiscVarSetDECORATE",231,1,1); // Increment Focus Timer
