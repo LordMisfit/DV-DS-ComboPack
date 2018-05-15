@@ -11,13 +11,20 @@ class PlayerStatItem : Inventory
 	const SKILL_OMEGA = 8;
 
 	int ClassCheck;
-	int previoushealth;
-	int currenthealth;
+	int previoushealth, currenthealth;
 	int outputdamage;
 	int CharacterClass;
 	int jiggle_jump, jiggle_crouch, jiggle_left, jiggle_right, jiggle_up, jiggle_down;
 	
-	int Herb1s, Herb2s, Herb3s, YggdrasilDews, PPunches, LVimstones, GVimstones, MBandanas, MagicWaters, SageElixirs, ElfinElixirs, Munchies, BombShards;
+	int LevelupSpeechTimer1, LevelupSpeechTimer2;
+
+	// Strife Flag Checks
+	int StrifeQuestFlag1, StrifeQuestFlag2, StrifeQuestFlag3, StrifeQuestFlag4, StrifeQuestFlag5, StrifeQuestFlag6, StrifeQuestFlag7, StrifeQuestFlag8, StrifeQuestFlag9, StrifeQuestFlag10; 
+	int StrifeQuestFlag11, StrifeQuestFlag12, StrifeQuestFlag13, StrifeQuestFlag14, StrifeQuestFlag15, StrifeQuestFlag16, StrifeQuestFlag17, StrifeQuestFlag18, StrifeQuestFlag19, StrifeQuestFlag20; 
+	int StrifeQuestFlag21, StrifeQuestFlag22, StrifeQuestFlag23, StrifeQuestFlag24, StrifeQuestFlag25, StrifeQuestFlag26, StrifeQuestFlag27, StrifeQuestFlag28, StrifeQuestFlag29, StrifeQuestFlag30; 
+	int StrifeQuestFlag31, StrifeQuestFlag32;
+	
+	int EXPComboTimer, MaxEXPCombotimer;
 
 	float HPRegenTimer, HPDelayInterval;
 	float HPDegenTimer, HPDelayInterval2;
@@ -102,6 +109,7 @@ class PlayerStatItem : Inventory
 		int debughellcorecldn = dvdsdebug_hellcoreheatdisplay;
 		int debuginfiniteammo = dvdsdebug_infiniteammostuff;
 		int debugtensioninfo = dvdsdebug_showtensioninformation;
+		int debugexpcomboinfo = dvdsdebug_showexpdebugstuff;
 
 		int AllowTension = dvds_allowtension;
 		CharacterClass = CallACS("CheckCharacterClass");
@@ -1014,6 +1022,85 @@ class PlayerStatItem : Inventory
 		
 		
 		
+		//*******************************************
+		//*Delays the levelup speech for a character*
+		//*******************************************
+		int LevelupSpeechTimer = CallACS("MiscVarCheckDECORATE",247);
+		if (LevelupSpeechTimer > 0)
+		{
+			LevelupSpeechTimer2++;
+			//Console.Printf("Level Up Dialouge Timer: %d / 105", LevelupSpeechTimer2);
+			if (LevelupSpeechTimer2 >= 105)
+			{
+				if (random(1,100) <= dvds_levelspeechchance && PlayerCurrentHealth > 0)
+				{
+					if (CharacterClass == 2) 
+					{
+						owner.A_PlaySound("FloraLevelSpeech",CHAN_VOICE,1.0,0,ATTN_NORM);
+					}
+				}
+				CallACS("MiscVarSetDECORATE",247,0);
+				LevelupSpeechTimer2 = 0;
+			}
+		}
+		
+		
+		
+		
+		
+		//****************************
+		//*Strife Sigil & Flag Checks*
+		//****************************
+		if (playeractor)
+		{
+			int sigil_pieces;
+			let sigl = owner.FindInventory("Sigil");
+			if (sigl != null) sigil_pieces = sigl.health;
+			//Console.Printf("Sigil Pieces: %d", sigil_pieces);
+			if (sigil_pieces == 1) owner.A_GiveInventory("SigilPhase1", 1); else owner.A_TakeInventory("SigilPhase1",9999);
+			if (sigil_pieces == 2) owner.A_GiveInventory("SigilPhase2", 1); else owner.A_TakeInventory("SigilPhase2",9999);
+			if (sigil_pieces == 3) owner.A_GiveInventory("SigilPhase3", 1); else owner.A_TakeInventory("SigilPhase3",9999);
+			if (sigil_pieces == 4) owner.A_GiveInventory("SigilPhase4", 1); else owner.A_TakeInventory("SigilPhase4",9999);
+			if (sigil_pieces == 5) owner.A_GiveInventory("SigilComplete", 1); else owner.A_TakeInventory("SigilComplete",9999);
+
+			nm = "BestEndingFlag"; iDTech1Check = nm;
+			if (owner.CountInv("QuestItem27") > 0 && owner.CountInv("QuestItem25") > 0) 
+			{
+				owner.A_GiveInventory(iDTech1Check,1);
+			}
+			else
+			{
+				owner.A_TakeInventory(iDTech1Check,9999);
+			}
+			
+			// Checks if you've destroyed the Acolyte Converter in Strife MAP24 [Conversion Chapel] (Flag 25)
+			if (StrifeQuestFlag25 == 0)
+			{
+				if (owner.CountInv("QuestItem25") == 1)
+				{
+					owner.Stamina -= 10;
+					owner.Accuracy -= 10;
+					ACS_NamedExecuteAlways("StrifeComboUpgrade",0,1);
+					StrifeQuestFlag25++;
+				}
+			}
+			// Checks if you've destroyed the Drone Transmitter in Strife MAP14 [The Mines] (Flag 29)
+			if (StrifeQuestFlag29 == 0) 
+			{
+				if (owner.CountInv("QuestItem29") == 1)
+				{
+					owner.Stamina -= 10;
+					owner.Accuracy -= 10;
+					ACS_NamedExecuteAlways("StrifeComboUpgrade",0,1);
+					StrifeQuestFlag29++;
+				}
+			}
+		}
+		
+		
+		
+		
+		
 		//*********************
 		// Grand-Mastery Perks
 		//*********************
@@ -1183,8 +1270,7 @@ class PlayerStatItem : Inventory
 		int TempMaxHealth = CallACS("StatCheck",1);
 		int TempMaxMana = CallACS("StatCheck",2);
 		int TempCombinedLevels = 0;
-		int TempStartValue;
-		int TempEndValue;
+		int TempStartValue, TempEndValue;
 		//****************
 		//*HP Perk Checks*
 		//****************
@@ -1344,7 +1430,82 @@ class PlayerStatItem : Inventory
 		//****************************
 		//*Check EXP Kill Combo Timer*
 		//****************************
-		// To possibly be transplanted from ACS :V
+		if (playeractor)
+		{
+			int TimerMulti, TimerPart1, tempaeonpts;
+			EXPComboTimer = CallACS("MiscVarCheckDECORATE",157);
+			if (EXPComboTimer > 0)
+			{
+				TimerMulti = (20 * dvds_expcombotimermultiplier) / 100;
+				if (debugexpcomboinfo) Console.Printf("Combo Timer Decrement [Step 1 - Base]: %d", TimerMulti);
+				TimerPart1 = 100;
+				
+				if (CharacterClass == 2)
+				{
+					if (owner.CountInv("SafeTeaShoes") > 0) TimerPart1 -= 10; // Item 1
+					if (owner.CountInv("CloakofEvasion") > 0) TimerPart1 -= 5; // Item 5
+					if (owner.CountInv("DivineShield") > 0) TimerPart1 -= 15; // Item 8
+					if (owner.CountInv("RuinousShield") > 0) TimerPart1 *= 2;
+				}
+				else
+				{
+					if (owner.CountInv("DSGreenArmorClass") > 0) TimerPart1 -= 5;
+					if (owner.CountInv("DSBlueArmorClass") > 0) TimerPart1 -= 10;
+					if (owner.CountInv("DSStoneArmorClass1") > 0) TimerPart1 -= 15;
+					if (owner.CountInv("DSDiamondArmorClass1") > 0) TimerPart1 -= 20;
+					if (owner.CountInv("DSStoneArmorClass2") > 0) TimerPart1 -= 25;
+					if (owner.CountInv("DSDiamondArmorClass2") > 0) TimerPart1 -= 30;
+				}
+				if (owner.CountInv("TheOneRing") > 0) TimerPart1 -= 20;
+				if (TimerPart1 < 40) TimerPart1 = 40;
+				if (TimerPart1 > 250) TimerPart1 = 250;
+				if (debugexpcomboinfo) Console.Printf("Combo Timer Decrement [Step 2 - Multiplier Base]: %d", TimerPart1);
+
+				TimerMulti = (TimerMulti * TimerPart1) / 100;
+				
+				if (CallACS("GetBuffTimer",5) > 0) TimerMulti = TimerMulti / 15;
+				if (TimerMulti < 1) TimerMulti = 1;
+				if (debugexpcomboinfo) Console.Printf("Combo Timer Decrement [Step 3 - Decrement Timer]: %d, Timer: %d", TimerMulti, EXPComboTimer);
+				EXPComboTimer -= TimerMulti;
+			}
+			
+			if (EXPComboTimer <= 0) // Timer Runs out
+			{
+				int basecomboneeded = dvdsperks_combobase;
+				int comboamount = CallACS("MiscVarCheckDECORATE",158); // Temporarily saves the kill combo counter for Aeon Point Checks
+				int combolevel1 = basecomboneeded * 1;
+				int combolevel2 = basecomboneeded * 3;
+				int combolevel3 = basecomboneeded * 7;
+				int combolevel4 = basecomboneeded * 12;
+				
+				if (basecomboneeded > 0 && comboamount > 0)
+				{
+					if (comboamount >= combolevel1 && comboamount < combolevel2) tempaeonpts = (comboamount / basecomboneeded);
+					if (comboamount >= combolevel2 && comboamount < combolevel3) tempaeonpts = (comboamount / basecomboneeded) * 3 / 2;
+					if (comboamount >= combolevel3 && comboamount < combolevel4) tempaeonpts = (comboamount / basecomboneeded) * 5 / 2;
+					if (comboamount >= combolevel4) tempaeonpts = (comboamount / basecomboneeded) * 4;
+					if (debugexpcomboinfo) Console.Printf("Combo Timer Decrement [Step 4 - Get Combo Amounts]: 1: %d, 2: %d, 3: %d, 4: %d, Current: %d", combolevel1, combolevel2, combolevel3, combolevel4, comboamount);
+					
+					if (tempaeonpts > 0)
+					{
+						tempaeonpts *= CallACS("MiscVarCheckDECORATE",86);
+						CallACS("MiscVarSetDECORATE",25,tempaeonpts,1); 
+						CallACS("MiscVarSetDECORATE",224,tempaeonpts,1); 
+						CallACS("MiscVarSetDECORATE",2033,105);
+						if (PlayerLevel >= CallACS("MiscVarCheckDECORATE",197))
+						{
+							owner.A_Print(String.Format("\c[orange]You have gained %d Aeon Point[s] for a high enough kill combo!\n\n\c[orange]Remember to allocate your Aeon Points as soon as possible...", tempaeonpts), 2.75, "DVDSSMLFONT");
+						}
+					}
+				}
+				
+				tempaeonpts = 0;
+				comboamount = 0;
+				CallACS("MiscVarSetDECORATE",158,0); // Set kill counter back to 0
+				CallACS("MiscVarSetDECORATE",160,0); // Set EXP Combo Amount back to 0
+			}
+			CallACS("MiscVarSetDECORATE",157,EXPComboTimer); // Subtract
+		}
 		
 		
 		
@@ -6238,6 +6399,14 @@ class PlayerStatItem : Inventory
 			if (debugatkinfo == 1) Console.Printf("    \ceSceptre Landing Dmg Multiplier: ZVel: %8f%", SceptreJumpDmgMulti);
 		}
 		
+		
+		
+		
+		
+		//******************************
+		//*Check Hellcore Weapon Levels*
+		//******************************
+		// To be Transplanted From ACS :V
 		
 		
 		
