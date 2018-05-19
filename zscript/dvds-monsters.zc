@@ -226,11 +226,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int preldldmg = 0;
 		// Player/Actor Check
 		AetheriusPlayerPawn playpawn;
-		AetheriusMonsterZSC enemyactor;
+		AetheriusMonsterZSC DVDSActor;
+		AetheriusEffectProjectile ailmentproj;
 		if (source) 
 		{
 			playpawn = AetheriusPlayerPawn(source);
-			enemyactor = AetheriusMonsterZSC(source);
+			DVDSActor = AetheriusMonsterZSC(source);
+		}
+		if (inflictor)
+		{
+			ailmentproj = AetheriusEffectProjectile(inflictor);
 		}
 		if (playpawn && damage > 0)
 		{
@@ -277,24 +282,27 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2x - Player Dmg]\c-: \cxprefdmg = %d\c-, \cxprefrienddmg = %d\c-, \cxprecritdmg = %d\c-, \cxpreldldmg = %d\c-, \cydmg = %d\c-)", preplayerdmg, prefriendlydmg, precritdmg, preldldmg, damage);
 		}
 		else
-		if (enemyactor && damage > 0 && dvds_monstercrits != 0)
+		if (DVDSActor && damage > 0 && dvds_monstercrits != 0)
 		{
 			// Dealing with Critical hits from other Monsters
 			precritdmg = damage;
-			string ActorClass = enemyactor.GetClassName();
+			string AilmentProjClass;
+			if (ailmentproj) AilmentProjClass = ailmentproj.GetClassName();
+			string ActorClass = DVDSActor.GetClassName();
 			int meleeattack = 0;
 			if (dvds_monstercrits != 0)
 			{
-				if (mod == 'Melee' || mod == 'Trample' || mod == 'Stomp' || mod == 'Fist' || mod == 'Kick' || mod == 'Chainsaw') meleeattack = 1;
+				if (mod == 'Melee' || mod == 'Trample' || mod == 'Stomp' || mod == 'Fist' || mod == 'Kick' || mod == 'Chainsaw' || mod == 'Gauntlets' || mod == 'Sceptre') meleeattack = 1;
 				//*****************************************************
 				//**Allows Monsters to deal crits [4/256 base chance]**
 				//*****************************************************
 				// Base Chances
-				CritChance = 8 + (enemyactor.user_monsterlevel / 11.25); // 8 (+ 8 every 90 levels)
-				if (enemyactor && enemyactor.bBOSS) CritChance = (CritChance * 5) / 4; // Boss Flag Check
-				if (enemyactor && enemyactor.bJUSTHIT) CritChance = (CritChance * 6) / 4; // JustHit Flag Check
-				if (enemyactor && enemyactor.user_charmed > 0) CritChance = (CritChance * 5) / 4; // Charm Flag Check
-				if (enemyactor && enemyactor.user_legendaryevolved) CritChance *= 2; // Legendaries have double crit rate
+				CritChance = 8 + (DVDSActor.user_monsterlevel / 11.25); // 8 (+ 8 every 90 levels)
+				if (DVDSActor && DVDSActor.bBOSS) CritChance = (CritChance * 5) / 4; // Boss Flag Check
+				if (DVDSActor && DVDSActor.bJUSTHIT) CritChance = (CritChance * 6) / 4; // JustHit Flag Check
+				if (DVDSActor && DVDSActor.user_charmed > 0) CritChance = (CritChance * 5) / 4; // Charm Flag Check
+				if (DVDSActor && DVDSActor.user_legendaryevolved) CritChance *= 2; // Legendaries have double crit rate
+				if (DVDSActor && DVDSActor.health <= DVDSActor.user_HPBuffRange) CritChance = (CritChance * 5) / 4;
 			
 				// Actor Only Checks
 				if (ActorClass == "DSHelperDog") CritChance *= 3; // Helper Dogs get triple crit rate
@@ -305,8 +313,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (ActorClass == "NightmareNew" || ActorClass == "SirenNightmareNew") CritChance *= 4; // Nightmares are good at crits too
 				if (ActorClass == "EvilDeadHandNew" || ActorClass == "BabyClownNew" || 
 						ActorClass == "BabyClown2New" || ActorClass == "BouncingClownNew") CritChance *= 4;
+				// Ally Specfic
+				if (ActorClass == "RebelNew" || ActorClass == "Rebel1New" || ActorClass == "Rebel2New" || ActorClass == "Rebel3New" || 
+						ActorClass == "Rebel4New" || ActorClass == "Rebel5New" || ActorClass == "Rebel6New") 
+						CritChance = (CritChance * random(7,9)) / 4; // Strife Rebles have +75-125% more crit
 				// Boss Only Checks
-				if (ActorClass == "DSparilMountedNew" || ActorClass == "ClericBossNew" || ActorClass == "FighterBossNew" || ActorClass == "MageBossNew" ||
+				if (ActorClass == "DragonNew" || ActorClass == "FDragon" || ActorClass == "HeresiarchNew" || ActorClass == "FHeresiarch" || 
+						ActorClass == "DSparilMountedNew" || ActorClass == "ClericBossNew" || ActorClass == "FighterBossNew" || ActorClass == "MageBossNew" ||
 						ActorClass == "ProgrammerNew" || ActorClass == "StrifeBishopNew" || ActorClass == "LoremasterNew" || ActorClass == "Macil1New" || ActorClass == "StrifMacil2NeweBishopNew") CritChance *= 4;
 				if (ActorClass == "AlienSpectre1New" || ActorClass == "AlienSpectre2New" || ActorClass == "AlienSpectre3New" || ActorClass == "AlienSpectre4New" || ActorClass == "AlienSpectre5New" ||
 						ActorClass == "AvatarNew" || ActorClass == "Benellus1DS" || ActorClass == "Benellus2DS" || ActorClass == "Benellus3DS" ||
@@ -316,8 +329,29 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						ActorClass == "Magmantis" || ActorClass == "Zakachi") CritChance *= 8;
 		
 				// Unique Checks
+				if (meleeattack && (ActorClass == "WraithNew" || ActorClass == "WraithBuriedNew" || ActorClass == "FWraith")) 
+						CritChance *= 4;
+
+				if (meleeattack && (ActorClass == "Dragon" || ActorClass == "FDragon")) 
+						CritChance *= 8;
+
+				if (meleeattack && (ActorClass == "EttinNew" || ActorClass == "EttinCommander" || ActorClass == "Bormereth" ||
+						ActorClass == "FEttinNew" || ActorClass == "FEttinCommander" || ActorClass == "FBormereth")) 
+						CritChance = (CritChance * 9) / 4; // Ettins have 125% more crit for Melee
+	
+				if (meleeattack && (ActorClass == "StalkerNew" || ActorClass == "StalkerLeaderNew" || ActorClass == "IceStalker" || ActorClass == "IceStalkerLeader" || 
+						ActorClass == "FStalker" || ActorClass == "FStalkerLeader")) 
+						CritChance *= 2; // Hexen Stalkers have 2x more crit for Melee
+	
+				if (meleeattack && (ActorClass == "CentaurNew" || ActorClass == "SlaughtaurNew" || 
+						ActorClass == "FCentaur" || ActorClass == "FSlaughtaur")) 
+						CritChance *= 2; // Centaurs have 2x more crit for Melee
+
 				if (meleeattack && (ActorClass == "DSRevenant" || ActorClass == "FRevenant" || ActorClass == "DeathIncarnate" || ActorClass == "FDeathIncarnate")) 
 						CritChance = (CritChance * 6) / 4; // Revenants/Death Incarnates have another +50% more crit when using melee
+
+				if (meleeattack && (ActorClass == "ReaverNew")) 
+						CritChance *= 3; // Reavers have 3x more crit for melee
 
 				if (meleeattack && (ActorClass == "OStalkerNew")) 
 						CritChance = (CritChance * 6) / 4; // Strife Stalkers have 50% more crit
@@ -364,10 +398,18 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						ActorClass == "PyroDemon" || ActorClass == "FPyroDemon" ||
 						ActorClass == "WeakenedFlyingBalrog" || ActorClass == "FlyingBalrog" || ActorClass == "FFlyingBalrog")) 
 						CritChance *= 4; // Hell Nobles have 4x chance to Crit w/ melee attacks
+
+				// Misc
+				if (mod == 'BFG' || mod == 'BFGSpray') // BFG related attacks have signficantly LESS chance to crit, but still always have at least a 1/512 chance :P
+				{ 
+					CritChance /= 16;
+					if (CritChance < 1) CritChance = 1;
+				}
+				if (infl == "SuicideBomb" || infl == "SuicideBomber" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") CritChance = 0; // Kamikaze Monsters Cannot Crit
 		
 				// Final Crit Roll
 				CritRoll = random(1,512);
-				if (CritRoll <= CritChance && enemyactor.health > 0 && !(level.frozen || globalfreeze) && dvds_monstercrits != 0) criticalhit = 1;
+				if (CritRoll <= CritChance && DVDSActor.health > 0 && !(level.frozen || globalfreeze) && dvds_monstercrits != 0) criticalhit = 1;
 				if (dvdsdebug_actordmgdisplays > 0 && dvds_monstercrits != 0) Console.Printf("    (\czActor Defensive Input [Monster Crit Rate]\c-: %d / 512 (%d) \c-, \cyActorClass: = %s\c-)", CritRoll, CritChance, ActorClass);
 
 				if (criticalhit) 
@@ -408,7 +450,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (DamageFactor < 1.00) DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
 		}
 		// Legendaries
-		if (enemyactor && enemyactor.user_legendaryevolved) 
+		if (DVDSActor && DVDSActor.user_legendaryevolved) 
 		{ 
 			ActorDefenseIgnoreFactor = 0.5;
 			if (DamageFactor < 1.00) DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
