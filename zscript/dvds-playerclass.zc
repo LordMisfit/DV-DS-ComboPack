@@ -297,8 +297,53 @@ class AetheriusPlayerPawn : PlayerPawn
 		double MonsterLevelIgnoreFactor;
 		if (DVDSActor) MonsterLevelIgnoreFactor = (DVDSActor.user_monsterlevel * 0.00022223);
 		int LegendaryIgnoreDefenseFactor = 0.5 - (CallACS("MiscVarCheckDECORATE",10057) * 0.05) - (CallACS("MiscVarCheckDECORATE",10058) * 0.125);
+
+		//*************************************
+		//**Player Taking Crits from Monsters**
+		//*************************************
 		int criticalhit = 0;
-		if (DVDSActor && dvds_monstercrits != 0) criticalhit = DVDSActor.CountInv("DealCriticalHit");
+		int CritChance, CritRoll;
+		if (DVDSActor && dvds_monstercrits != 0) 
+		{
+			string ActorClass = DVDSActor.GetClassName();
+			//*****************************************************
+			//**Allows Monsters to deal crits [4/256 base chance]**
+			//*****************************************************
+			// Base Chances
+			CritChance = 8 + (DVDSActor.user_monsterlevel / 11.25); // 8 (+ 8 every 90 levels)
+			if (DVDSActor && DVDSActor.bBOSS) CritChance = (CritChance * 5) / 4; // Boss Flag Check
+			if (DVDSActor && DVDSActor.user_charmed > 0) CritChance = (CritChance * 5) / 4; // Charm Flag Check
+			if (DVDSActor && DVDSActor.user_legendaryevolved) CritChance *= 2; // Legendaries have double crit rate
+	
+			// Actor Checks
+			if (ActorClass == "DSHelperDog") CritChance *= 3; // Helper Dogs get triple crit rate
+			if (ActorClass == "DSPainElemental" || ActorClass == "FPainElemental" || ActorClass == "DSPainElemental64" || ActorClass == "DSLostSoul" || ActorClass == "DSLostSoul2" || ActorClass == "DSLostSoul64" || ActorClass == "DSLostSoul642" ||
+					ActorClass == "FLostSoul1" || ActorClass == "FLostSoul2") CritChance *= 4; // Pain-Elementals/Lost Souls are Crit-happy nuisances
+			if (ActorClass == "DSDemon" || ActorClass == "DSDemon64" || ActorClass == "DSSpectre" || ActorClass == "DSSpectre64" || ActorClass == "BloodDemon" || ActorClass == "BloodSpectre" ||
+					ActorClass == "FDemon" || ActorClass == "FSpectre" || ActorClass == "FBloodDemon" || ActorClass == "FBloodSpectre") CritChance = (CritChance * 6) / 4; // Pinkies have 50% more crit
+			if (ActorClass == "DSRevenant" || ActorClass == "FRevenant" || ActorClass == "DeathIncarnate" || ActorClass == "FDeathIncarnate") CritChance = (CritChance * 6) / 4; // Death Incarnates have 50% more crit
+			if (ActorClass == "ClinkNew" || ActorClass == "FClink") CritChance = (CritChance * 6) / 4; // SabreClaws have 50% more crit
+			if (ActorClass == "OStalkerNew") CritChance = (CritChance * 6) / 4; // Strife Stalkers have 50% more crit
+			if (ActorClass == "ChainsawZombieNew") CritChance = (CritChance * 10) / 4; // Chainsaw Zombies have 150% more crit
+			if (ActorClass == "NightmareNew" || ActorClass == "SirenNightmareNew") CritChance *= 4; // Nightmares are good at crits too
+			if (ActorClass == "EvilDeadHandNew" || ActorClass == "BabyClownNew" || 
+					ActorClass == "BabyClown2New" || ActorClass == "BouncingClownNew") CritChance *= 4;
+			if (ActorClass == "SatyrNew") CritChance *= 8; // Satyrs are very likely to crit too
+			// Bpss Checks
+			if (ActorClass == "ClericBossNew" || ActorClass == "FighterBossNew" || ActorClass == "MageBossNew" ||
+					ActorClass == "ProgrammerNew" || ActorClass == "StrifeBishopNew" || ActorClass == "LoremasterNew" || ActorClass == "Macil1New" || ActorClass == "StrifMacil2NeweBishopNew") CritChance *= 4;
+			if (ActorClass == "AlienSpectre1New" || ActorClass == "AlienSpectre2New" || ActorClass == "AlienSpectre3New" || ActorClass == "AlienSpectre4New" || ActorClass == "AlienSpectre5New" ||
+					ActorClass == "AvatarNew" || ActorClass == "Benellus1DS" || ActorClass == "Benellus2DS" || ActorClass == "Benellus3DS" ||
+					ActorClass == "TNTSpider" || ActorClass == "SourceGuardian" || ActorClass == "AdolfHitlerDS") CritChance *= 6;
+			if (ActorClass == "DSparilMountedNew" || ActorClass == "DSparilUnmountedNew" || ActorClass == "KoraxNew" || ActorClass == "PennywiseBoss" ||
+					ActorClass == "EntityBossNew" || ActorClass == "EntitySecondNew" || ActorClass == "EntityAscended" || ActorClass == "ThamuzNew" || ActorClass == "TchernobogNew" ||
+					ActorClass == "Magmantis") CritChance *= 8;
+	
+			// Final Crit Roll
+			CritRoll = random(1,512);
+			if (dvdsdebug_playerdmgdisplays > 0 && damage > 0) Console.Printf("    (\cz[STEP 1a] Monster Crit Rate\c-: %d / 512 (%d) \c-, \cyActorClass: = %s\c-)", CritRoll, CritChance, ActorClass);
+			if (CritRoll <= CritChance && DVDSActor.health > 0 && !(level.frozen || globalfreeze) && dvds_monstercrits != 0) criticalhit = 1;
+		}
 		double dmgmulti = 2.0 + (0.01 * random(-10,10));
 
 		int defense;
