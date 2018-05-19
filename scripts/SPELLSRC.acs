@@ -3923,7 +3923,7 @@ script "HUDDisplay" ENTER
 							{
 								SetFont("BBURHPCT");
 								xposmod += 2.0; // 0.0
-								yposmod += 4.0; // 1.0
+								yposmod += 6.0; // 1.0
 							}
 						}
 						HudMessage(s:"A";HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_untranslated,xpos+xposmod+PopUpXPlacement,ypos+yposmod+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
@@ -4016,7 +4016,7 @@ script "HUDDisplay" ENTER
 							{
 								SetFont("BBURAPCR");
 								xposmod += 2.0; // 0.0
-								yposmod += 4.0; // 1.0
+								yposmod += 6.0; // 1.0
 							}
 							PlaySound(Player1TID,"marines/armordamaged",CHAN_ITEM,1.0,0,ATTN_NORM);
 						}
@@ -4100,7 +4100,7 @@ script "HUDDisplay" ENTER
 							{
 								SetFont("BBURMPCR");
 								xposmod += 2.0; // 0.0
-								yposmod += 4.0; // 1.0
+								yposmod += 6.0; // 1.0
 							}
 						}
 						HudMessage(s:"A";HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_untranslated,xpos+xposmod+PopUpXPlacement,ypos+yposmod+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
@@ -30295,7 +30295,7 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 	{
 		ACS_NamedExecuteWithResult("RefreshStealthInfo"); // Runs to check Stealth information [in case something like finding the Ring has happened]
 	
-		if (CheckInventory("MonsterHasBuffs") != 0) terminate;
+		if (CheckInventory("MonsterLevelCalcs") != 0) terminate;
 		if (GetUserVariable(0, "user_checkmapskill") > 0) terminate;
 	
 		str actorname = GetActorClass(0);
@@ -31628,20 +31628,20 @@ script "MonsterStatsHP_ATK_DEF_SPD" (int type, int extraflags)
 		GiveInventory("MonsterDisplayDMG", 1);
 		ACS_NamedExecuteAlways("DamageDisplays",0,0,0,0);
 	
-		GiveInventory("MonsterHasBuffs", 1);
+		GiveInventory("MonsterLevelCalcs", 1);
 		SetUserVariable(0, "user_checkmapskill", GetUserVariable(0, "user_checkmapskill") + 1);
 		if (CheckFlag(0,"FRIENDLY") == 1) Thing_ChangeTID(0,1000);
 	}
 	else // Usually if the monster/actor is dying, the script is called using "type 1"
 	{
 		if (CheckFlag(0,"FRIENDLY") == 1) Thing_ChangeTID(1000,0);
-		if (CheckInventory("MonsterHasBuffs") <= 0) terminate;
+		if (CheckInventory("MonsterLevelCalcs") <= 0) terminate;
 		if (GetUserVariable(0, "user_checkmapskill") < 1) terminate;
 		SetActorProperty(0,APROP_Speed,GetUserVariable(0, "user_basespeed"));
 		SetActorProperty(0,APROP_Mass,GetUserVariable(0, "user_basemass"));
 	
 		TakeInventory("MonsterDisplayDMG", 1);
-		TakeInventory("MonsterHasBuffs", 1);
+		TakeInventory("MonsterLevelCalcs", 1);
 		SetUserVariable(0, "user_legendaryevolved",0);
 		SetUserVariable(0, "user_monsterlevel",0);
 		SetUserVariable(0, "user_checkmapskill", 0);
@@ -37961,7 +37961,11 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 					else If (CheckActorProperty(0, APROP_Friendly, 1)) monstercolor = "\c[Green]";
 					str isfriendly = "";
 					If (CheckActorProperty(0, APROP_Friendly, 0)) isfriendly = "";
-					else If (CheckActorProperty(0, APROP_Friendly, 1)) isfriendly = " \cn(Friend)";
+					else 
+					{
+						If (GetUserVariable(0, "user_charmed") > 0) isfriendly = " \cx(CHARMED)";
+						else isfriendly = " \cn(Friend)";
+					}
 					str willbecomelegendary = "";
 					If (GetUserVariable(0, "user_legendaryevolved") == 0 && GetUserVariable(0, "user_willbecomelegendary") > 0) willbecomelegendary = " \c[teal](???)";
 					str islegendary = "";
@@ -42129,16 +42133,13 @@ script "CheckTensionInvis" (void)
 script "StartTensionCountDown" (void)
 {
 	int random1;
-	if (MiscellaneousVars[181] > 0)
+	if (MiscellaneousVars[181] > 0 && MiscellaneousVars[184] == 0)
 	{
-		if (MiscellaneousVars[184] == 0) // If the timer is not activated
+		if (random(1,1000) > 10) // 1% An attack will NOT start the countdown
 		{
-			if (random(1,1000) > 10) // 1% An attack will NOT start the countdown
-			{
-				MiscellaneousVars[184] = 1;
-				random1 = random(1,10);
-				if (random1 == 1) MiscellaneousVars[183] = MiscellaneousVars[183] * 3 / 4; // 10% Chance for the timer to be cut by 25%
-			}
+			MiscellaneousVars[184] = 1;
+			random1 = random(1,10);
+			if (random1 == 1) MiscellaneousVars[183] = MiscellaneousVars[183] * 3 / 4; // 10% Chance for the timer to be cut by 25%
 		}
 	}
 }
@@ -43837,7 +43838,6 @@ Script "Healing_Actor" (int type, int returntype)
 		finalhealvalue = oldhealthvalue + HealAmount;
 		if (oldhealthvalue < HealCap)
 		{
-			ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
 			if (finalhealvalue < 1) finalhealvalue = 1; // Prevents the game from killing the target when trying to heal >__>;
 			if (finalhealvalue > HealCap) finalhealvalue = HealCap;
 			SetActorProperty(0,APROP_HEALTH,finalhealvalue);
