@@ -1733,10 +1733,8 @@ function int SpellCostCheck(int checktype)
 	int OriginalSpellCost, StatManaCostReduction;
 	int spellcostdebug = GetCVar("dvdsdebug_showspellcoststuff");
 	
-	// G1 = FinalSpellCost
 	SpellIsSelected = checktype;
 	
-	// G4 = DivineAvatarPercentCost
 	if (SpellIsSelected == 53) // Divine Avatar Costs at most 90% of Mana Supply by Default
 	{
 		if (TrueGameSkill <= SKILL_VERY_EASY) DivineAvatarPercentCost = 80;
@@ -1883,7 +1881,6 @@ function int SpellCostCheck(int checktype)
 		if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost: ",d:FinalSpellCost,s:" [TimeFreezerCheck]");
 	}
 
-	// Z1 = SecretSplCostReduceBonus
 	// Secret Tally Affects Mana Consumption
 	int i, forstart, forend;
 	if (ModType == 0) { forstart = 0; forend = 151; }
@@ -2012,7 +2009,7 @@ function int SpellCostCheck(int checktype)
 // GRAND Initialization Script
 script "Initializer" OPEN
 {
-	int CuLv, I1, C2, I2, C3, I3;
+	int CuLv;
 	
 	Player1TID = 1001;
 	if (MiscellaneousVars[199] == 0) // Only on the very first tic of a new game, and never on loading of new maps past the first map.
@@ -2218,8 +2215,6 @@ script "Initializer" OPEN
 			BaseEXPRequirement = BaseEXPRequirement * 8 / 5;
 		}
 		SpecialGameFlags[10001] = SpecialGameFlags[10002];
-		MaxMana += random(10,20) + C2; // 5-25 MP
-		CurrentMana = MaxMana;
 	}
 
 	MiscellaneousVars[1] += 1;
@@ -2237,13 +2232,11 @@ script "Initializer" OPEN
 	{
 		if (CuLv == 0) // Level 0 to Level 1 just use the Base Requirement
 		{
-			ExpTable[CuLv] = I1 + BaseEXPRequirement;
-											I1 += BaseEXPRequirement;
+			ExpTable[CuLv] = BaseEXPRequirement;
 		}
 		else // Level 1+ will use the actual formula :P
 		{
-			ExpTable[CuLv] = I1 + ((BaseEXPRequirement * ((CuLv * BaseExtra) + 1)) * (((CuLv * BaseAccel1) + 200)) / 200) + (BaseEXPRequirement * (CuLv * BaseAccel2) / 10000);
-											I1 += ((BaseEXPRequirement * ((CuLv * BaseExtra) + 1)) * (((CuLv * BaseAccel1) + 200)) / 200) + (BaseEXPRequirement * (CuLv * BaseAccel2) / 10000);
+			ExpTable[CuLv] = ((BaseEXPRequirement * ((CuLv * BaseExtra) + 1)) * (((CuLv * BaseAccel1) + 200)) / 200) + (BaseEXPRequirement * (CuLv * BaseAccel2) / 10000);
 		}
 		//PrintBold(d:CuLv,s:" - ",d:ExpTable[CuLv]);
 	}
@@ -3556,7 +3549,6 @@ script "DMV" (int index, int type, int value)
 //*****************
 script "HUDDisplay" ENTER
 {
-	int Z1, Z2;
 	int MaxHealthLimit = MaxHealthTrue * 2;
 	int xpos;
 	int ypos = 32.0;
@@ -3601,6 +3593,7 @@ script "HUDDisplay" ENTER
 	int VisibleNotchAmount, MaxNotchAmount;
 	int HUDMsgIDAdd;
 	int NotchPos;
+	int PowerUpCheckThing;
 	if (GetCVar("screenblocks") < 12 && MenuSystemVars[0] == 0 && MiscellaneousVars[199] > 0 && CheckActorInventory(Player1TID,"PlayerDeathFadeOut") < 1 && GetCVAR("dvds_showacshudelements") == 1)
 	{
 		if (MiscellaneousVars[2000] >= 0 && ClassCheck > 1) //** NEW STYLE HUD HERE **
@@ -7430,15 +7423,17 @@ script "HUDDisplay" ENTER
 				xpos = ScreenXOffset + 214.0;
 				ypos = ScreenYOffset + 972.0;
 				
+				int CurrentEXPMeterAmount;
+				int MaxEXPMeterAmount;
 				MaxNotchAmount = 200 / HudMeterDetail;
-				Z1 = Experience - ExpTable[PlayerLevel - 1];
-				Z2 = ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1];
-				VisibleNotchAmount = Z1 * MaxNotchAmount / Z2;
+				CurrentEXPMeterAmount = Experience - ExpTable[PlayerLevel - 1];
+				MaxEXPMeterAmount = ExpTable[PlayerLevel] - ExpTable[PlayerLevel - 1];
+				VisibleNotchAmount = CurrentEXPMeterAmount * MaxNotchAmount / MaxEXPMeterAmount;
 				if (VisibleNotchAmount > MaxNotchAmount) VisibleNotchAmount = MaxNotchAmount;
 				if (HudShowEmptyNotches == 0) ForEnd = VisibleNotchAmount; else ForEnd = MaxNotchAmount;
 				for (HUDMsgIDAdd = 1; HUDMsgIDAdd <= ForEnd; HUDMsgIDAdd ++) //for (HUDMsgIDAdd = 201; HUDMsgIDAdd > 1; HUDMsgIDAdd --)
 				{
-					if (Z2 != 0)
+					if (MaxEXPMeterAmount != 0)
 					{
 						if ((HUDMsgIDAdd <= VisibleNotchAmount) || (PlayerLevel == LevelCap))
 						{
@@ -8308,10 +8303,10 @@ script "HUDDisplay" ENTER
 			}
 
 			// Oomph / Blunt
-			Z2 = 0;
-			if (PowerupTimer[13] > 0) Z2 += 1; // Blunt
-			if (PowerupTimer[10] > 0) Z2 += 1; // Oomph
-			if (Z2 > 0)
+			PowerUpCheckThing = 0;
+			if (PowerupTimer[13] > 0) PowerUpCheckThing += 1; // Blunt
+			if (PowerupTimer[10] > 0) PowerUpCheckThing += 1; // Oomph
+			if (PowerUpCheckThing > 0)
 			{
 				if (PowerupTimer[13] > 0) DisplayedTime = PowerupTimer[13] / 35; // Blunt
 				if (PowerupTimer[10] > 0) DisplayedTime = PowerupTimer[10] / 35; // Oomph
@@ -8381,10 +8376,10 @@ script "HUDDisplay" ENTER
 			}
 
 			// Buff / Sap
-			Z2 = 0;
-			if (PowerupTimer[14] > 0) Z2 += 1; // Sap
-			if (PowerupTimer[11] > 0) Z2 += 1; // Buff
-			if (Z2 > 0)
+			PowerUpCheckThing = 0;
+			if (PowerupTimer[14] > 0) PowerUpCheckThing += 1; // Sap
+			if (PowerupTimer[11] > 0) PowerUpCheckThing += 1; // Buff
+			if (PowerUpCheckThing > 0)
 			{
 				if (PowerupTimer[14] > 0) DisplayedTime = PowerupTimer[14] / 35; // Sap
 				if (PowerupTimer[11] > 0) DisplayedTime = PowerupTimer[11] / 35; // Buff
@@ -8454,10 +8449,10 @@ script "HUDDisplay" ENTER
 			}
 
 			// Accelerate / Decelerate
-			Z2 = 0;
-			if (PowerupTimer[15] > 0) Z2 += 1; // Decelerate
-			if (PowerupTimer[12] > 0) Z2 += 1; // Accelerate
-			if (Z2 > 0)
+			PowerUpCheckThing = 0;
+			if (PowerupTimer[15] > 0) PowerUpCheckThing += 1; // Decelerate
+			if (PowerupTimer[12] > 0) PowerUpCheckThing += 1; // Accelerate
+			if (PowerUpCheckThing > 0)
 			{
 				if (PowerupTimer[15] > 0) DisplayedTime = PowerupTimer[15] / 35; // Decelerate
 				if (PowerupTimer[12] > 0) DisplayedTime = PowerupTimer[12] / 35; // Accelerate
@@ -9401,10 +9396,10 @@ script "HUDDisplay" ENTER
 			}
       
 			// Spreader Aura [Both level 1 and 2]
-			Z2 = 0;
-			if (PowerupTimer[8] > 0) Z2 += 1; // Spread Aura Lv. 1
-			if (PowerupTimer[9] > 0) Z2 += 1; // Spread Aura Lv. 2
-			if (Z2 > 0)
+			PowerUpCheckThing = 0;
+			if (PowerupTimer[8] > 0) PowerUpCheckThing += 1; // Spread Aura Lv. 1
+			if (PowerupTimer[9] > 0) PowerUpCheckThing += 1; // Spread Aura Lv. 2
+			if (PowerUpCheckThing > 0)
 			{
 				if (PowerupTimer[8] > 0) DisplayedTime = PowerupTimer[8] / 35; // Spread Aura Lv. 1
 				if (PowerupTimer[9] > 0) DisplayedTime = PowerupTimer[9] / 35; // Spread Aura Lv. 2
@@ -10435,29 +10430,30 @@ script "HUDDisplay" ENTER
 			HudMessage(s:"A";HUDMSG_ALPHA,6206,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha); // 6206
 
 			// Tome of Power Spell Cost [Heretic] (5899)
-			Z2 = 0;
+			int ShowWandCost;
+			ShowWandCost = 0;
 			int TomeCost;
-			If(StrIcmp(weapon, "GoldWandNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostwand"); Z2 += 1; }
-			If(StrIcmp(weapon, "DualGoldWandNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostwand") * 2; Z2 += 1; }
-			If(StrIcmp(weapon, "CrossbowNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostcrossbow"); Z2 += 1; }
-			If(StrIcmp(weapon, "DualCrossbowNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostcrossbow") * 2; Z2 += 1; }
-			If(StrIcmp(weapon, "SuperCrossbowNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostscrossbow"); Z2 += 1; }
-			If(StrIcmp(weapon, "DualSuperCrossbowNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostscrossbow") * 2; Z2 += 1; }
-			If(StrIcmp(weapon, "DragonClawNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostdragonclaw"); Z2 += 1; }
-			If(StrIcmp(weapon, "DualDragonClawNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostdragonclaw") * 2; Z2 += 1; }
-			If(StrIcmp(weapon, "HellStaffNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcosthellstaff"); Z2 += 1; }
-			If(StrIcmp(weapon, "DualHellStaffNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcosthellstaff") * 2; Z2 += 1; }
-			If(StrIcmp(weapon, "PhoenixRodNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostphoenixrod"); Z2 += 1; }
-			If(StrIcmp(weapon, "DualPhoenixRodNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostphoenixrod") * 2; Z2 += 1; }
-			If(StrIcmp(weapon, "FiremaceNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostfiremace"); Z2 += 1; }
-			If(StrIcmp(weapon, "DualFiremaceNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostfiremace") * 2; Z2 += 1; }
-			If(StrIcmp(weapon, "DSparilStaff") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostdsparilstaff"); Z2 += 1; }
-			If(StrIcmp(weapon, "DualDSparilStaff") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostdsparilstaff") * 2; Z2 += 1; }
+			If(StrIcmp(weapon, "GoldWandNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostwand"); ShowWandCost += 1; }
+			If(StrIcmp(weapon, "DualGoldWandNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostwand") * 2; ShowWandCost += 1; }
+			If(StrIcmp(weapon, "CrossbowNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostcrossbow"); ShowWandCost += 1; }
+			If(StrIcmp(weapon, "DualCrossbowNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostcrossbow") * 2; ShowWandCost += 1; }
+			If(StrIcmp(weapon, "SuperCrossbowNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostscrossbow"); ShowWandCost += 1; }
+			If(StrIcmp(weapon, "DualSuperCrossbowNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostscrossbow") * 2; ShowWandCost += 1; }
+			If(StrIcmp(weapon, "DragonClawNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostdragonclaw"); ShowWandCost += 1; }
+			If(StrIcmp(weapon, "DualDragonClawNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostdragonclaw") * 2; ShowWandCost += 1; }
+			If(StrIcmp(weapon, "HellStaffNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcosthellstaff"); ShowWandCost += 1; }
+			If(StrIcmp(weapon, "DualHellStaffNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcosthellstaff") * 2; ShowWandCost += 1; }
+			If(StrIcmp(weapon, "PhoenixRodNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostphoenixrod"); ShowWandCost += 1; }
+			If(StrIcmp(weapon, "DualPhoenixRodNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostphoenixrod") * 2; ShowWandCost += 1; }
+			If(StrIcmp(weapon, "FiremaceNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostfiremace"); ShowWandCost += 1; }
+			If(StrIcmp(weapon, "DualFiremaceNew") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostfiremace") * 2; ShowWandCost += 1; }
+			If(StrIcmp(weapon, "DSparilStaff") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostdsparilstaff"); ShowWandCost += 1; }
+			If(StrIcmp(weapon, "DualDSparilStaff") == 0) { TomeCost = GetCVar("dvds_floratomedmpcostdsparilstaff") * 2; ShowWandCost += 1; }
 			TomeCost = TomeCost * GetCVar("dvds_floratomedmpcostratio") / 100;
 			xpos = ScreenXOffset + 1332.0;
 			ypos = ScreenYOffset + 924.0;
 			SetFont("DQHUDFONTSML");
-			if (Z2 > 0) { HudMessage(d:TomeCost;HUDMSG_ALPHA,5899,cr_lightblue,xpos,ypos,HUDMsgDelayFixed,msgalpha); }
+			if (ShowWandCost > 0) { HudMessage(d:TomeCost;HUDMSG_ALPHA,5899,cr_lightblue,xpos,ypos,HUDMsgDelayFixed,msgalpha); }
 
 			// Ammo [1] / SceptreLevel Label
 			int HellcoreLevel;
@@ -10530,27 +10526,28 @@ script "HUDDisplay" ENTER
 					// [111] is the Current Level of the Hades Elemental's Eye [?]
 					// [112] is the Current Level of the Hades Overlord's Eye [?]
 					// Hellcore "LVL" Text [1] [5901]
-					Z2 = 0;
+					int ShowHellcoreLevel;
+					ShowHellcoreLevel = 0;
 					xpos = ScreenXOffset + 1309.0;
 					ypos = ScreenYOffset + 1060.0;
 					SetFont("DQHUDFONTSML");
-					If(StrIcmp(weapon, "ImpClaw") == 0) { HellcoreLevel = MiscellaneousVars[96]; Z2 += 1; }
-					If(StrIcmp(weapon, "DarkImpClaw") == 0) { HellcoreLevel = MiscellaneousVars[97]; Z2 += 1; }
-					If(StrIcmp(weapon, "CacodemonEye") == 0) { HellcoreLevel = MiscellaneousVars[98]; Z2 += 1; }
-					If(StrIcmp(weapon, "CacolanternEye") == 0) { HellcoreLevel = MiscellaneousVars[99]; Z2 += 1; }
-					If(StrIcmp(weapon, "AbaddonEye") == 0) { HellcoreLevel = MiscellaneousVars[100]; Z2 += 1; }
-					If(StrIcmp(weapon, "KnightFist") == 0) { HellcoreLevel = MiscellaneousVars[101]; Z2 += 1; }
-					If(StrIcmp(weapon, "BaronFist") == 0) { HellcoreLevel = MiscellaneousVars[102]; Z2 += 1; }
-					If(StrIcmp(weapon, "BelphegorFist") == 0) { HellcoreLevel = MiscellaneousVars[103]; Z2 += 1; }
-					If(StrIcmp(weapon, "BruiserFist") == 0) { HellcoreLevel = MiscellaneousVars[104]; Z2 += 1; }
-					If(StrIcmp(weapon, "ArchonFist") == 0) { HellcoreLevel = MiscellaneousVars[105]; Z2 += 1; }
-					If(StrIcmp(weapon, "PyroFist") == 0) { HellcoreLevel = MiscellaneousVars[106]; Z2 += 1; }
-					If(StrIcmp(weapon, "IncarnateSkull") == 0) { HellcoreLevel = MiscellaneousVars[107]; Z2 += 1; }
-					If(StrIcmp(weapon, "ArchvileHand") == 0) { HellcoreLevel = MiscellaneousVars[108]; Z2 += 1; }
-					If(StrIcmp(weapon, "DiabloistHand") == 0) { HellcoreLevel = MiscellaneousVars[109]; Z2 += 1; }
-					If(StrIcmp(weapon, "BalrogFist") == 0) { HellcoreLevel = MiscellaneousVars[110]; Z2 += 1; }
+					If(StrIcmp(weapon, "ImpClaw") == 0) { HellcoreLevel = MiscellaneousVars[96]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "DarkImpClaw") == 0) { HellcoreLevel = MiscellaneousVars[97]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "CacodemonEye") == 0) { HellcoreLevel = MiscellaneousVars[98]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "CacolanternEye") == 0) { HellcoreLevel = MiscellaneousVars[99]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "AbaddonEye") == 0) { HellcoreLevel = MiscellaneousVars[100]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "KnightFist") == 0) { HellcoreLevel = MiscellaneousVars[101]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "BaronFist") == 0) { HellcoreLevel = MiscellaneousVars[102]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "BelphegorFist") == 0) { HellcoreLevel = MiscellaneousVars[103]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "BruiserFist") == 0) { HellcoreLevel = MiscellaneousVars[104]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "ArchonFist") == 0) { HellcoreLevel = MiscellaneousVars[105]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "PyroFist") == 0) { HellcoreLevel = MiscellaneousVars[106]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "IncarnateSkull") == 0) { HellcoreLevel = MiscellaneousVars[107]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "ArchvileHand") == 0) { HellcoreLevel = MiscellaneousVars[108]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "DiabloistHand") == 0) { HellcoreLevel = MiscellaneousVars[109]; ShowHellcoreLevel += 1; }
+					If(StrIcmp(weapon, "BalrogFist") == 0) { HellcoreLevel = MiscellaneousVars[110]; ShowHellcoreLevel += 1; }
 					msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
-					if (Z2 > 0) { HudMessage(s:"LVL \cg",d:HellcoreLevel;HUDMSG_ALPHA,5901,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha); }
+					if (ShowHellcoreLevel > 0) { HudMessage(s:"LVL \cg",d:HellcoreLevel;HUDMSG_ALPHA,5901,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha); }
 				}
 			}
 
@@ -10985,7 +10982,6 @@ script "HUDDisplay" ENTER
 
 script "ManaRegenerationStuff" ENTER
 {
-	int G2;
 	if (FirstRun == 0)
 	{
 		FirstRun = 1;
@@ -12707,8 +12703,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 		terminate; 
 	}
  
-	int C1, C2, C3, I1, I2, I3, G1, G2, G3, G4, Z1, Z2;
 	int MaxHealthLimit = MaxHealthTrue * 2;
+	int CostOfSpell, SelectedSpellSlot;
 	
 	int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 	
@@ -12720,11 +12716,11 @@ script "SpellQuickAssign" (int Slot, int Type)
 	{
 		if (GetActorProperty(Player1TID,APROP_HEALTH) > 0) // Fix Oversight
 		{
-			for (C1 = 0; C1 < 10; C1++)
+			for (SelectedSpellSlot = 0; SelectedSpellSlot < 10; SelectedSpellSlot++)
 			{
-				if (ReadiedSpells[C1] == 0) // Initialize unused slots
+				if (ReadiedSpells[SelectedSpellSlot] == 0) // Initialize unused slots
 				{
-				ReadiedSpells[C1] = 0;
+					ReadiedSpells[SelectedSpellSlot] = 0;
 				}
 			}
 			ReadiedSpells[Slot] = SelectedSpell + 1;
@@ -12742,20 +12738,20 @@ script "SpellQuickAssign" (int Slot, int Type)
 		if (ReadiedSpells[Slot] != 0)
 		{
 			// Function Ran
-			G1 = SpellCostCheck(ReadiedSpells[Slot] - 1); // Function testing to come later :P
-			MiscellaneousVars[555] = G1; // Saves spellcost into a global array [in case the spell fails, so it gives back the MP you lost] :P
+			CostOfSpell = SpellCostCheck(ReadiedSpells[Slot] - 1); // Function testing to come later :P
+			MiscellaneousVars[555] = CostOfSpell; // Saves spellcost into a global array [in case the spell fails, so it gives back the MP you lost] :P
 			// Function Ran
 		
 			if (GetActorProperty(Player1TID,APROP_HEALTH) > 0) // Fix Oversight
 			{
-				if (CurrentMana >= G1)
+				if (CurrentMana >= CostOfSpell)
 				{
 					//PrintBold(d:ReadiedSpells[Slot]);
 					if (ReadiedSpells[Slot] == 2) // Minor Healing [Deggaris/Illucia Only]
 					{
 						if (buttons & BT_ZOOM)
 						{
-							CurrentMana -= G1;
+							CurrentMana -= CostOfSpell;
 							MiscellaneousVars[243] = CurrentMana;
 							MiscellaneousVars[238] = CurrentMana;
 							ACS_NamedExecuteAlways("MagicEffects",0,0,-3,0);
@@ -12764,7 +12760,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 						{
 							if (GetActorProperty(Player1TID,APROP_HEALTH) < MaxHealthTrue)
 							{
-								CurrentMana -= G1;
+								CurrentMana -= CostOfSpell;
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -12775,7 +12771,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 					{
 						if (buttons & BT_ZOOM)
 						{
-							CurrentMana -= G1;
+							CurrentMana -= CostOfSpell;
 							MiscellaneousVars[243] = CurrentMana;
 							MiscellaneousVars[238] = CurrentMana;
 							ACS_NamedExecuteAlways("MagicEffects",0,0,-2,0);
@@ -12784,7 +12780,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 						{
 							if (GetActorProperty(Player1TID,APROP_HEALTH) < MaxHealthTrue)
 							{
-								CurrentMana -= G1;
+								CurrentMana -= CostOfSpell;
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -12797,7 +12793,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 						{
 							if (CheckInventory("Armor") < 2000)
 							{
-								CurrentMana -= G1;
+								CurrentMana -= CostOfSpell;
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -12807,7 +12803,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 						{
 							if (CheckInventory("Armor") < 500)
 							{
-								CurrentMana -= G1;
+								CurrentMana -= CostOfSpell;
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -12818,7 +12814,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 					{
 						if (buttons & BT_ZOOM)
 						{
-							CurrentMana -= G1;
+							CurrentMana -= CostOfSpell;
 							MiscellaneousVars[243] = CurrentMana;
 							MiscellaneousVars[238] = CurrentMana;
 							ACS_NamedExecuteAlways("MagicEffects",0,0,-1,0);
@@ -12827,7 +12823,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 						{
 							if (GetActorProperty(Player1TID,APROP_HEALTH) < MaxHealthLimit)
 							{
-								CurrentMana -= G1;
+								CurrentMana -= CostOfSpell;
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -12841,14 +12837,14 @@ script "SpellQuickAssign" (int Slot, int Type)
 						{
 							if (CheckActorInventory(Player1TID,"SpreaderAura2") > 0) // If Lv. 2 is intact, give it a random (6-8) seconds. :P
 							{
-								CurrentMana -= G1;
+								CurrentMana -= CostOfSpell;
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,18,random(6,8),0);
 							}
 							else // If only Lv. 1 is intact, give it the full 30 seconds. :P
 							{
-								CurrentMana -= G1;
+								CurrentMana -= CostOfSpell;
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,17,30,0);
@@ -12860,7 +12856,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 							{
 								if (CheckInventory("Armor") < 5000)
 								{
-									CurrentMana -= G1;
+									CurrentMana -= CostOfSpell;
 									MiscellaneousVars[243] = CurrentMana;
 									MiscellaneousVars[238] = CurrentMana;
 									ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -12870,7 +12866,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 							{
 								if (CheckInventory("Armor") < 1250)
 								{
-									CurrentMana -= G1;
+									CurrentMana -= CostOfSpell;
 									MiscellaneousVars[243] = CurrentMana;
 									MiscellaneousVars[238] = CurrentMana;
 									ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -12884,7 +12880,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 					}
 					else // All Other Spells [Deggaris/Illucia Only]
 					{
-						CurrentMana -= G1;
+						CurrentMana -= CostOfSpell;
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -12905,36 +12901,36 @@ script "SpellCasting" (int enableRapidCasting)
 		terminate; 
 	}
 	
-	int C1, C2, I1, I2, G1, G2, G3, G4, Z1, Z2;
 	int MaxHealthLimit = MaxHealthTrue * 2;
+	int CurrentHealth, CostOfSpell;
 	
 	// Function Ran
-	G1 = SpellCostCheck(SelectedSpell); // Function testing to come later :P
-	MiscellaneousVars[555] = G1; // Saves spellcost into a global array [in case the spell fails, so it gives back the MP you lost] :P
+	CostOfSpell = SpellCostCheck(SelectedSpell); // Function testing to come later :P
+	MiscellaneousVars[555] = CostOfSpell; // Saves spellcost into a global array [in case the spell fails, so it gives back the MP you lost] :P
 	// Function Ran
 	
 	int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 	
 	if (GetActorProperty(Player1TID,APROP_HEALTH) > 0)
 	{
-		if (CurrentMana >= G1)
+		if (CurrentMana >= CostOfSpell)
 		{
 			//PrintBold(d:SelectedSpell);
 			if (SelectedSpell == 1) // Minor Healing [Deggaris and Illucia Only]
 			{
 				if (buttons & BT_ZOOM)
 				{
-					CurrentMana -= G1;
+					CurrentMana -= CostOfSpell;
 					MiscellaneousVars[243] = CurrentMana;
 					MiscellaneousVars[238] = CurrentMana;
 					ACS_NamedExecuteAlways("MagicEffects",0,0,-3,0);
 				}
 				else
 				{
-					I2 = GetActorProperty(Player1TID,APROP_HEALTH);
-					if (I2 < MaxHealthTrue)
+					CurrentHealth = GetActorProperty(Player1TID,APROP_HEALTH);
+					if (CurrentHealth < MaxHealthTrue)
 					{
-						CurrentMana -= G1;
+						CurrentMana -= CostOfSpell;
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -12945,17 +12941,17 @@ script "SpellCasting" (int enableRapidCasting)
 			{
 				if (buttons & BT_ZOOM)
 				{
-					CurrentMana -= G1;
+					CurrentMana -= CostOfSpell;
 					MiscellaneousVars[243] = CurrentMana;
 					MiscellaneousVars[238] = CurrentMana;
 					ACS_NamedExecuteAlways("MagicEffects",0,0,-2,0);
 				}
 				else
 				{
-					I2 = GetActorProperty(Player1TID,APROP_HEALTH);
-					if (I2 < MaxHealthTrue)
+					CurrentHealth = GetActorProperty(Player1TID,APROP_HEALTH);
+					if (CurrentHealth < MaxHealthTrue)
 					{
-						CurrentMana -= G1;
+						CurrentMana -= CostOfSpell;
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -12968,7 +12964,7 @@ script "SpellCasting" (int enableRapidCasting)
 				{
 					if (CheckInventory("Armor") < 2000)
 					{
-						CurrentMana -= G1;
+						CurrentMana -= CostOfSpell;
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -12978,7 +12974,7 @@ script "SpellCasting" (int enableRapidCasting)
 				{
 					if (CheckInventory("Armor") < 500)
 					{
-						CurrentMana -= G1;
+						CurrentMana -= CostOfSpell;
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -12989,17 +12985,17 @@ script "SpellCasting" (int enableRapidCasting)
 			{
 				if (buttons & BT_ZOOM)
 				{
-					CurrentMana -= G1;
+					CurrentMana -= CostOfSpell;
 					MiscellaneousVars[243] = CurrentMana;
 					MiscellaneousVars[238] = CurrentMana;
 					ACS_NamedExecuteAlways("MagicEffects",0,0,-1,0);
 				}
 				else
 				{
-					I2 = GetActorProperty(Player1TID,APROP_HEALTH);
-					if (I2 < MaxHealthLimit)
+					CurrentHealth = GetActorProperty(Player1TID,APROP_HEALTH);
+					if (CurrentHealth < MaxHealthLimit)
 					{
-						CurrentMana -= G1;
+						CurrentMana -= CostOfSpell;
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -13012,14 +13008,14 @@ script "SpellCasting" (int enableRapidCasting)
 				{
 					if (CheckActorInventory(Player1TID,"SpreaderAura2") > 0) // If Lv. 2 is intact, give it a random (6-8) seconds. :P
 					{
-						CurrentMana -= G1;
+						CurrentMana -= CostOfSpell;
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,18,random(6,8),0);
 					}
 					else // If only Lv. 1 is intact, give it the full 30 seconds. :P
 					{
-						CurrentMana -= G1;
+						CurrentMana -= CostOfSpell;
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,17,30,0);
@@ -13031,7 +13027,7 @@ script "SpellCasting" (int enableRapidCasting)
 					{
 						if (CheckInventory("Armor") < 5000)
 						{
-						CurrentMana -= G1;
+						CurrentMana -= CostOfSpell;
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -13041,7 +13037,7 @@ script "SpellCasting" (int enableRapidCasting)
 					{
 						if (CheckInventory("Armor") < 1250)
 						{
-						CurrentMana -= G1;
+						CurrentMana -= CostOfSpell;
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -13055,7 +13051,7 @@ script "SpellCasting" (int enableRapidCasting)
 			}
 			else // All other spells [Deggaris and Illucia only]
 			{
-				CurrentMana -= G1;
+				CurrentMana -= CostOfSpell;
 				MiscellaneousVars[243] = CurrentMana;
 				MiscellaneousVars[238] = CurrentMana;
 				ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -13082,7 +13078,7 @@ script "StopSpellCasting" (void) net
 
 script "MagicEffects" (int Type, int Strength)
 {
-	int PX, PY, PZ, PFZ, PA, PBA, PVA, FWX, FWY, I1, C1, I2, C2, I3, C3, I4, C4; 
+	int PX, PY, PZ, PFZ, PA, PBA, PVA, FWX, FWY, I4; 
 	int speed, vspeed, angle, fireheight, healheight;
 	int fireheight2, healheight2;
 	int NovaRotations;
@@ -13090,6 +13086,11 @@ script "MagicEffects" (int Type, int Strength)
 	int spelllaunchspdmulti = 16.0; // Basically determines the final speed of the projectile [usually 16.0]
 	int MaxHealthLimit = MaxHealthTrue * 2;
 	
+	int healingcap;
+	int healamount;
+	int oldhealthvalue;
+	int finalhealvalue;
+
 	// TERRAIN FLOOR CHECKS [Check the "floor" definitions in Terrain.txt if you want to add more]
 	int inwater = 0;
 	int waterfootclip = 10.0;
@@ -18884,8 +18885,8 @@ script "MagicEffects" (int Type, int Strength)
 		{
 			if (Strength < 3) // Minor Healing Spell [Deggaris and Illucia Only]
 			{
-				C1 = MaxHealthTrue;
-				C2 = random(GetHealingValue(0,0),GetHealingValue(0,1));
+				healingcap = MaxHealthTrue;
+				healamount = random(GetHealingValue(0,0),GetHealingValue(0,1));
 		
 				StamHealCap = ((MiscellaneousVars[22] * 10250) / 10000);
 				StamHealMin = ((MiscellaneousVars[22] * 36) / 10000);
@@ -18899,8 +18900,8 @@ script "MagicEffects" (int Type, int Strength)
 			}
 			else // Healing Spell [Deggaris and Illucia Only]
 			{
-				C1 = MaxHealthTrue;
-				C2 = random(GetHealingValue(1,0),GetHealingValue(1,1));
+				healingcap = MaxHealthTrue;
+				healamount = random(GetHealingValue(1,0),GetHealingValue(1,1));
 		
 				StamHealCap = ((MiscellaneousVars[22] * 11250) / 10000);
 				StamHealMin = ((MiscellaneousVars[22] * 180) / 10000);
@@ -18915,8 +18916,8 @@ script "MagicEffects" (int Type, int Strength)
 		}
 		else // Major Healing Spell [Deggaris and Illucia Only]
 		{
-			C1 = MaxHealthLimit;
-			C2 = random(GetHealingValue(2,0),GetHealingValue(2,1));
+			healingcap = MaxHealthLimit;
+			healamount = random(GetHealingValue(2,0),GetHealingValue(2,1));
 		
 			StamHealCap = ((MiscellaneousVars[22] * 15000) / 10000);
 			StamHealMin = ((MiscellaneousVars[22] * 450) / 10000);
@@ -18935,7 +18936,7 @@ script "MagicEffects" (int Type, int Strength)
 	
 		if (CheckInventory("SpreaderAura2") > 0)
 		{
-			C2 *= 7;
+			healamount *= 7;
 			StamHealMin *= 7;
 			StamHealMax *= 7;
 		}
@@ -18943,7 +18944,7 @@ script "MagicEffects" (int Type, int Strength)
 		{
 			if (CheckInventory("SpreaderAura1") > 0)
 			{
-				C2 *= 3;
+				healamount *= 3;
 				StamHealMin *= 3;
 				StamHealMax *= 3;
 			}
@@ -19069,12 +19070,8 @@ script "MagicEffects" (int Type, int Strength)
 			StamHealMax = StamHealMax * 8 / 4; // 2x
 		}
 		
-		int healingcap;  
-		int oldhealthvalue;
-		int finalhealvalue;
 		oldhealthvalue = GetActorProperty(Player1TID,APROP_HEALTH);
-		healingcap = C1;
-		finalhealvalue = oldhealthvalue + C2;
+		finalhealvalue = oldhealthvalue + healamount;
 		if (oldhealthvalue < healingcap)
 		{
 			ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
@@ -19128,10 +19125,11 @@ script "MagicEffects" (int Type, int Strength)
 		if (PowerupTimer[23] > 0) GiveActorInventory(Player1TID, "PowerStrength", 1);
 	}
 
+	int DoubleSummon;
 	if (Type == 6) // Summon Monster
 	{
-		C1 = 0;
-		if (random(1,100) < 25) C1 = 1;
+		DoubleSummon = 0;
+		if (random(1,100) < 25) DoubleSummon = 1;
 		if (Strength == 0) // Weak Monster
 		{
 			SpawnForced(FriendIDDoom[random(0,17)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1002,PA >> 16);
@@ -19144,7 +19142,7 @@ script "MagicEffects" (int Type, int Strength)
 				MiscellaneousVars[243] = CurrentMana;
 				MiscellaneousVars[238] = CurrentMana;
 				PrintBold(s:"Successful Summon!");
-				if (C1 == 1)
+				if (DoubleSummon == 1)
 				{
 					SpawnForced(FriendIDDoom[random(0,17)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1003,PA >> 16);
 					if (ThingCount(0,1003) > 0)
@@ -19175,7 +19173,7 @@ script "MagicEffects" (int Type, int Strength)
 				MiscellaneousVars[243] = CurrentMana;
 				MiscellaneousVars[238] = CurrentMana;
 				PrintBold(s:"Successful Summon!");
-				if (C1 == 1)
+				if (DoubleSummon == 1)
 				{
 					SpawnForced(FriendIDDoom[random(18,29)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1003,PA >> 16);
 					if (ThingCount(0,1003) > 0)
@@ -19206,7 +19204,7 @@ script "MagicEffects" (int Type, int Strength)
 				MiscellaneousVars[243] = CurrentMana;
 				MiscellaneousVars[238] = CurrentMana;
 				PrintBold(s:"Successful Summon!");
-				if (C1 == 1)
+				if (DoubleSummon == 1)
 				{
 					SpawnForced(FriendIDDoom[random(30,48)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1003,PA >> 16);
 					if (ThingCount(0,1003) > 0)
@@ -19977,32 +19975,6 @@ script "MagicEffects" (int Type, int Strength)
 				}
 			}
 		}
-	
-	/*
-		else if (Strength == 2) // Spiritual Exoskin [Flora Only] [50% Protection, Max AP equal to 100% of Flora's Max HP]
-		{
-			C1 = MaxHealthTrue;
-			if (CheckInventory("Armor") < C1)
-			{
-			}
-		}
-		else if (Strength == 3) // Greater Spiritual Exoskin [Flora Only] [75% Protection, Max AP equal to 200% of Flora's Max HP]
-		{
-			C1 = MaxHealthLimit;
-			if (CheckInventory("Armor") < C1)
-			{
-			}
-		}
-		else if (Strength == 4) // Perfected Spiritual Exoskin [Flora Only] [100% Protection, Max AP equal to 400% of Flora's Max HP]
-		{
-			C1 = MaxHealthLimit;
-			C1 = C1 * 2;
-			if (CheckInventory("Armor") < C1)
-			{
-			}
-		}
-	*/
-	
 	}
 
 	if (Type == 12) // Computer Map
@@ -20181,7 +20153,6 @@ script "CreateTranslationTables" OPEN
 // Mana Recovery Items
 script "CheckManaLevels" (int overmana)
 {
-	int C1, I1, C2, I2, G1, G2, G3, G4;
 	int MaxManaLimit = MaxMana * 2;
 	
 	int result = 0;
@@ -20193,23 +20164,11 @@ script "CheckManaLevels" (int overmana)
 // ManaCube Pickup script
 script "PickupManaCube" (int type, int overmana)
 {
-	int I1, I2, Z1, Z2, C1, C2;
 	int GiveManaAmount;
 	int MaxManaDouble = MaxMana * 2;
-	if (type == 1) // Small
-	{
-		GiveManaAmount = 50;
-	}
-	else
-	if (type == 2) // Mediym
-	{
-		GiveManaAmount = 125;
-	}
-	else
-	if (type == 3) // Large
-	{
-		GiveManaAmount = 350;
-	}
+	if (type <= 1) GiveManaAmount = 50; // Small
+	if (type == 2) GiveManaAmount = 125; // Medium
+	if (type >= 3) GiveManaAmount = 350; // Large
 	
 	if (CheckActorInventory(Player1TID,"SauronHelmet") > 0) GiveManaAmount = GiveManaAmount * 9 / 8; // Sauron Helmet = 112.5%
 	if (CharacterClass == 0 && CheckActorInventory(Player1TID,"SauronGauntlets") > 0) GiveManaAmount = GiveManaAmount * 5 / 4; // Sauron Gauntlets = 125%
@@ -20227,13 +20186,14 @@ script "PickupManaCube" (int type, int overmana)
 	
 	CurrentMana += GiveManaAmount;
 	if (overmana == 0 && CurrentMana > MaxMana) CurrentMana = MaxMana;
-	if (overmana == 1 && MaxManaDouble > MaxMana) CurrentMana = MaxManaDouble;
+	if (overmana == 1 && CurrentMana > MaxManaDouble) CurrentMana = MaxManaDouble;
+	
+	SetResultValue(GiveManaAmount);
 }
 
 // Defines the Buildup to Sauravatar's appearance [DVI-DS]
 script "DVI-MainEyeDeath2" (void)
 {
-	int C1, C2, C3, C4;
 	if (ModType != 0) // Deus Vult 1 or DVII
 	{
 		Delay(35);
@@ -20255,14 +20215,6 @@ script "DVI-MainEyeDeath2" (void)
 // Awakens the Stone Cyberdemon that becomes the Greater Sauravatar [DVI-DS]
 script "DVI-AwakenSauravatar" (void)
 {
-	int PX, PY, PZ, PA, PBA, FWX, FWY, I1, C1, I2, C2, I3, C3, I4, C4; 
-	
-	PX = GetActorX(Player1TID);
-	PY = GetActorY(Player1TID);
-	PZ = GetActorZ(Player1TID);
-	PA = FixedMul(GetActorAngle(Player1TID),360.0);
-	PBA = FixedMul(GetActorAngle(Player1TID),255.0);
-	
 	if (ModType != 0)
 	{
 		AmbientSound("SauronSight",127);
@@ -20275,7 +20227,6 @@ script "DVI-AwakenSauravatar" (void)
 // Killed MAP02 Eye [DVI-DS] / MAP12 First Eye [DVII-DS]
 script "DVI-M02EyeDead" (void)
 {
-	int C1, C2, C3, G1, G2, G3;
 	if (ModType == 1)
 	{
 		SetLineTexture(1, SIDE_FRONT, TEXTURE_MIDDLE, "-"); //remove middle 
@@ -20290,7 +20241,6 @@ script "DVI-M02EyeDead" (void)
 // Killed MAP04 Eye #1 [DVI-DS] / MAP12 Second Eye [DVII-DS]
 script "DV1-M04Eye1Dead" (void)
 {
-	int C1, C2, C3, G1, G2, G3;
 	if (ModType == 1)
 	{
 		SetLineTexture(2, SIDE_FRONT, TEXTURE_TOP, "BLACK"); //remove middle 
@@ -20302,7 +20252,6 @@ script "DV1-M04Eye1Dead" (void)
 // Killed MAP04 Eye #2 [DVI-DS] / MAP12 Third Eye [DVII-DS]
 script "DV1-M04Eye2Dead" (void)
 {
-	int C1, C2, C3, G1, G2, G3;
 	if (ModType == 1)
 	{
 		SetLineTexture(3, SIDE_FRONT, TEXTURE_TOP, "BLACK"); //remove middle 
@@ -20314,7 +20263,6 @@ script "DV1-M04Eye2Dead" (void)
 // Killed MAP04 Main Eye [DVI-DS] / MAP12 Fourth Eye [DVII-DS]
 script "DVI-MainEyeDeath1" (void)
 {
-	int C1, C2, C3, G1, G2, G3;
 	if (ModType == 1)
 	{
 		SetLineTexture(4, SIDE_FRONT, TEXTURE_TOP, "BLACK"); //remove middle 
@@ -20331,29 +20279,28 @@ script "DVI-MainEyeDeath1" (void)
 // Sauravatar's Death [DVI-DS]
 script "SauravatarDeath" (void)
 {
-	int C1;
 	SetMusic("*", 0); 
 }
 
 // New Soulsphere script :P
 script "GrabSoulsphere" (void)
 {
-	int C1, C2, C3, G1, G2, G3, H1, H2, H3, M1, M2, M3;
 	int MaxManaLimit;
 	int MaxHealthLimit = MaxHealthTrue * 2;
 	int temp1, temp2;
 	int PerkFactor;
 	int perktemp1;
+	int CurrentHealth, HealthValue, ManaValue;
 	
-	G1 = GetActorProperty(Player1TID,APROP_Health); 
-	G2 = MaxHealthLimit;
-	if (G1 < G2)
+	CurrentHealth = GetActorProperty(Player1TID,APROP_Health); 
+	MaxHealthLimit = MaxHealthLimit;
+	if (CurrentHealth < MaxHealthLimit)
 	{
-		C1 = MaxHealthTrue;
-		G1 += C1;
-		if (G1 >= G2) G1 = G2;
+		HealthValue = MaxHealthTrue;
+		CurrentHealth += HealthValue;
+		if (CurrentHealth >= MaxHealthLimit) CurrentHealth = MaxHealthLimit;
 
-		SetActorProperty(Player1TID,APROP_Health,G1);
+		SetActorProperty(Player1TID,APROP_Health,CurrentHealth);
 	}
 
 	// Add 25% to Stamina Value [up to 500%]
@@ -20371,8 +20318,8 @@ script "GrabSoulsphere" (void)
 	MaxManaLimit = MaxMana * 2;
 	if (CurrentMana < MaxManaLimit)
 	{
-		M1 = MaxMana / 2;
-		CurrentMana += M1;
+		ManaValue = MaxMana / 2;
+		CurrentMana += ManaValue;
 		if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
 	}
 
@@ -20381,11 +20328,7 @@ script "GrabSoulsphere" (void)
 	{
 		if (HellcoreOverheatLevel > 0)
 		{
-			H1 = 250000; // 25.00% [10000000 is 1000.00% (maximum)]
-			H2 = PlayerLevel * 2500;
-			H3 = random(-50000,50000);
-		
-			HellcoreRestored = H1 + H2 + H3;
+			HellcoreRestored = 250000 + (PlayerLevel * 2500) + random(-50000,50000);
 			if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
 			if (MiscellaneousVars[10033] >= 0)
 			{
@@ -20409,24 +20352,23 @@ script "GrabSoulsphere" (void)
 	}
 }
 
-// New Megasphere Script [for health half] :P
+// New Megasphere Script [for health/stamina half] :P
 script "MegaSphereHealth" (void)
 {
-	int C1, C2, C3, G1, G2, G3, H1, H2, H3;
 	int MaxHealthLimit = MaxHealthTrue * 2;
-	G1 = GetActorProperty(Player1TID,APROP_Health); 
-	G2 = MaxHealthLimit;
+	int CurrentHealth = GetActorProperty(Player1TID,APROP_Health); 
 	int temp1, temp2;
 	int PerkFactor;
 	int perktemp1;
+	int HealAmount;
 	
-	if (G1 < G2)
+	if (CurrentHealth < MaxHealthLimit)
 	{
-		C1 = MaxHealthLimit;
-		G1 += C1;
-		if (G1 >= G2) G1 = G2;
+		HealAmount = MaxHealthLimit;
+		CurrentHealth += HealAmount;
+		if (CurrentHealth >= MaxHealthLimit) CurrentHealth = MaxHealthLimit;
 	
-		SetActorProperty(Player1TID,APROP_Health,G1);
+		SetActorProperty(Player1TID,APROP_Health,CurrentHealth);
 	}
 	
 	// Add 50% to Stamina Value [up to 200%]
@@ -20445,11 +20387,7 @@ script "MegaSphereHealth" (void)
 	{
 		if (HellcoreOverheatLevel > 0)
 		{
-			H1 = 750000; // 75.00% [10000000 is 1000.00% (maximum)]
-			H2 = PlayerLevel * 7500;
-			H3 = random(-150000,150000);
-			HellcoreRestored = H1 + H2 + H3;
-		
+			HellcoreRestored = 750000 + (PlayerLevel * 7500) + random(-150000,150000);
 			if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
 			if (MiscellaneousVars[10033] >= 0)
 			{
@@ -20473,10 +20411,146 @@ script "MegaSphereHealth" (void)
 	}
 }
 
+// MegaSphere Armor [Deggaris & Illucia Only] or Mana [All Three Characters]
+script "MegaSphereArmor" (void)
+{
+	int MaxManaLimit, ArmorClearValue, RawArmorValue;
+	
+	if (CharacterClass == 9) // Petra gets no armor from a Soul Sphere, but gets Mana and Force Gauge refill.
+	{
+		CurrentMana = MaxMana * 2;
+		//Insert code for refilling force gauge here
+	}
+	else
+	if (CharacterClass == 2) // Flora does not get armor from a Soul Sphere, but instead gets Mana up to 200% of her maximum
+	{
+		CurrentMana = MaxMana * 2;
+	}
+	else
+	if (CharacterClass <= 1)
+	{
+		MaxManaLimit = MaxMana * 2;
+		CurrentMana = MaxManaLimit;
+	
+		// Saves original raw Armor Value
+		RawArmorValue = CheckInventory("Armor");
+	
+		// Clears Armor Types
+		ArmorClearValue = CheckInventory("Armor"); TakeInventory("Armor", ArmorClearValue);
+		ArmorClearValue = CheckInventory("ArmorBonusDS"); TakeInventory("ArmorBonusDS", ArmorClearValue);
+		ArmorClearValue = CheckInventory("ArmorBonusDSGreen"); TakeInventory("ArmorBonusDSGreen", ArmorClearValue);
+		ArmorClearValue = CheckInventory("ArmorBonusDSBlue"); TakeInventory("ArmorBonusDSBlue", ArmorClearValue);
+		ArmorClearValue = CheckInventory("ArmorBonusDSStone1"); TakeInventory("ArmorBonusDSStone1", ArmorClearValue);
+		ArmorClearValue = CheckInventory("ArmorBonusDSStone2"); TakeInventory("ArmorBonusDSStone2", ArmorClearValue);
+		ArmorClearValue = CheckInventory("ArmorBonusDSDiamond1"); TakeInventory("ArmorBonusDSDiamond1", ArmorClearValue);
+		ArmorClearValue = CheckInventory("ArmorBonusDSDiamond2"); TakeInventory("ArmorBonusDSDiamond2", ArmorClearValue);
+	
+		// Reinitalizes the proper Armor Class after the previous code above clears it
+		if (CurrentArmorClass <= 1) { CurrentArmorClass = 2; GiveInventory("ArmorBonusDSBlue", 200); }
+		else if (CurrentArmorClass == 2) { CurrentArmorClass = 3; GiveInventory("ArmorBonusDSStone1", 500); }
+		else if (CurrentArmorClass == 3) { CurrentArmorClass = 4; GiveInventory("ArmorBonusDSDiamond1", 1250); }
+		else if (CurrentArmorClass == 4) { CurrentArmorClass = 5; GiveInventory("ArmorBonusDSStone2", 2000); }
+		else if (CurrentArmorClass == 5) { CurrentArmorClass = 6; GiveInventory("ArmorBonusDSDiamond2", 5000); }
+		else if (CurrentArmorClass == 6) { GiveInventory("ArmorBonusDSDiamond2", 5000); }
+	
+		if (CurrentArmorClass == 6)
+		{
+			CurrentMaxArmor = 5000;
+			GiveInventory("DSDiamondArmorClass2", 1);
+			TakeInventory("DSNoArmorClass", 9999);
+			TakeInventory("DSGreenArmorClass", 9999);
+			TakeInventory("DSBlueArmorClass", 9999);
+			TakeInventory("DSStoneArmorClass1", 9999);
+			TakeInventory("DSDiamondArmorClass1", 9999);
+			TakeInventory("DSStoneArmorClass2", 9999);
+		}
+		else
+		{
+			if (CurrentArmorClass == 5)
+			{
+				CurrentMaxArmor = 2000;
+				GiveInventory("DSStoneArmorClass2", 1);
+				TakeInventory("DSNoArmorClass", 9999);
+				TakeInventory("DSGreenArmorClass", 9999);
+				TakeInventory("DSBlueArmorClass", 9999);
+				TakeInventory("DSStoneArmorClass1", 9999);
+				TakeInventory("DSDiamondArmorClass1", 9999);
+				TakeInventory("DSDiamondArmorClass2", 9999);
+			}
+			else
+			{
+				if (CurrentArmorClass == 4)
+				{
+					CurrentMaxArmor = 1250;
+					GiveInventory("DSDiamondArmorClass1", 1);
+					TakeInventory("DSNoArmorClass", 9999);
+					TakeInventory("DSGreenArmorClass", 9999);
+					TakeInventory("DSBlueArmorClass", 9999);
+					TakeInventory("DSStoneArmorClass1", 9999);
+					TakeInventory("DSStoneArmorClass2", 9999);
+					TakeInventory("DSDiamondArmorClass2", 9999);
+				}
+				else
+				{
+					if (CurrentArmorClass == 3)
+					{
+						CurrentMaxArmor = 500;
+						GiveInventory("DSStoneArmorClass1", 1);
+						TakeInventory("DSNoArmorClass", 9999);
+						TakeInventory("DSGreenArmorClass", 9999);
+						TakeInventory("DSBlueArmorClass", 9999);
+						TakeInventory("DSDiamondArmorClass1", 9999);
+						TakeInventory("DSStoneArmorClass2", 9999);
+						TakeInventory("DSDiamondArmorClass2", 9999);
+					}
+					else
+					{
+						if (CurrentArmorClass == 2)
+						{
+							CurrentMaxArmor = 200;
+							GiveInventory("DSBlueArmorClass", 1);
+							TakeInventory("DSNoArmorClass", 9999);
+							TakeInventory("DSGreenArmorClass", 9999);
+							TakeInventory("DSStoneArmorClass1", 9999);
+							TakeInventory("DSDiamondArmorClass1", 9999);
+							TakeInventory("DSStoneArmorClass2", 9999);
+							TakeInventory("DSDiamondArmorClass2", 9999);
+						}
+						else
+						{
+							if (CurrentArmorClass == 1)
+							{
+								CurrentMaxArmor = 100;
+								GiveInventory("DSGreenArmorClass", 1);
+								TakeInventory("DSNoArmorClass", 9999);
+								TakeInventory("DSBlueArmorClass", 9999);
+								TakeInventory("DSStoneArmorClass1", 9999);
+								TakeInventory("DSDiamondArmorClass1", 9999);
+								TakeInventory("DSStoneArmorClass2", 9999);
+								TakeInventory("DSDiamondArmorClass2", 9999);
+							}
+							else
+							{
+								CurrentMaxArmor = 0;
+								GiveInventory("DSNoArmorClass", 1);
+								TakeInventory("DSGreenArmorClass", 9999);
+								TakeInventory("DSBlueArmorClass", 9999);
+								TakeInventory("DSStoneArmorClass1", 9999);
+								TakeInventory("DSDiamondArmorClass1", 9999);
+								TakeInventory("DSStoneArmorClass2", 9999);
+								TakeInventory("DSDiamondArmorClass2", 9999);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 // New Health Bonus Script :P
 script "EmulateGiveHealthBonus" (int multiplier, int givemanachance, int staminagive, int hellcorecool)
 {
-	int C1, C2, C3, G1, G2, G3, H1, H2, H3;
 	int MaxHealthLimit = MaxHealthTrue * 2;
 	int MaxManaLimit = MaxMana * 2;
 	int temp1, temp2;
@@ -20571,70 +20645,72 @@ script "EmulateGiveHealthBonus" (int multiplier, int givemanachance, int stamina
 // Used later to configure the full max health of the [Greater] Sauravatar and set it to its proper Health to start the fight [instead of its predefined DECORATE amount] [DVI-DS]
 script "SetSauravatarHealth" (void)
 {
-	int C1, C2, C3, C4, G1, G2, G3, G4;
+	int MonstKillHealthMulti, MonsterKillHealth;
+	int SkillMulti;
 
 	SpecialGameFlags[10001] = SpecialGameFlags[10002];
 	// PrintBold(s:"Phase1 - First Value: ",d:SpecialGameFlags[10001]);
 
-	if (TrueGameSkill <= SKILL_VERY_EASY) G4 = 30;
-	else if (TrueGameSkill == SKILL_EASY) G4 = 35;
-	else if (TrueGameSkill == SKILL_NORMAL) G4 = 40;
-	else if (TrueGameSkill == SKILL_HARD) G4 = 45;
-	else if (TrueGameSkill == SKILL_VERY_HARD) G4 = 50;
-	else if (TrueGameSkill == SKILL_EXTREME) G4 = 55;
-	else if (TrueGameSkill == SKILL_HORRIBLE) G4 = 60;
-	else if (TrueGameSkill == SKILL_IMPOSSIBLE) G4 = 65;
-	else if (TrueGameSkill >= SKILL_OMEGA) G4 = 70;
+	if (TrueGameSkill <= SKILL_VERY_EASY) SkillMulti = 30;
+	else if (TrueGameSkill == SKILL_EASY) SkillMulti = 35;
+	else if (TrueGameSkill == SKILL_NORMAL) SkillMulti = 40;
+	else if (TrueGameSkill == SKILL_HARD) SkillMulti = 45;
+	else if (TrueGameSkill == SKILL_VERY_HARD) SkillMulti = 50;
+	else if (TrueGameSkill == SKILL_EXTREME) SkillMulti = 55;
+	else if (TrueGameSkill == SKILL_HORRIBLE) SkillMulti = 60;
+	else if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillMulti = 65;
+	else if (TrueGameSkill >= SKILL_OMEGA) SkillMulti = 70;
 
-	C1 = SpecialGameFlags[10001] * G4 / 100;
-	SpecialGameFlags[10001] += C1;
-	// PrintBold(s:"Phase2 - Difficulty Add: ",d:SpecialGameFlags[10001],s:"\nC1: ",d:C1);
+	SkillHealthAdd = SpecialGameFlags[10001] * SkillMulti / 100;
+	SpecialGameFlags[10001] += SkillHealthAdd;
+	// PrintBold(s:"Phase2 - Difficulty Add: ",d:SpecialGameFlags[10001],s:"\nSkillHealthAdd: ",d:SkillHealthAdd);
 
-	C4 = MonstersAlive[1101] * 192;
-	C4 += MonstersKilled[1101] * 24;
-	C4 += MonstersAlive[1102] * 160;
-	C4 += MonstersKilled[1102] * 36;
-	C4 += MonstersAlive[1103] * 128;
-	C4 += MonstersKilled[1103] * 48;
-	C4 += MonstersAlive[1104] * 96;
-	C4 += MonstersKilled[1104] * 60;
-	if (TrueGameSkill <= SKILL_VERY_EASY) C3 = 70;
-	else if (TrueGameSkill == SKILL_EASY) C3 = 88;
-	else if (TrueGameSkill == SKILL_NORMAL) C3 = 100;
-	else if (TrueGameSkill == SKILL_HARD) C3 = 112;
-	else if (TrueGameSkill == SKILL_VERY_HARD) C3 = 124;
-	else if (TrueGameSkill == SKILL_EXTREME) C3 = 136;
-	else if (TrueGameSkill == SKILL_HORRIBLE) C3 = 148;
-	else if (TrueGameSkill == SKILL_IMPOSSIBLE) C3 = 160;
-	else if (TrueGameSkill >= SKILL_OMEGA) C3 = 172;
+	MonsterKillHealth = MonstersAlive[1101] * 192;
+	MonsterKillHealth += MonstersKilled[1101] * 24;
+	MonsterKillHealth += MonstersAlive[1102] * 160;
+	MonsterKillHealth += MonstersKilled[1102] * 36;
+	MonsterKillHealth += MonstersAlive[1103] * 128;
+	MonsterKillHealth += MonstersKilled[1103] * 48;
+	MonsterKillHealth += MonstersAlive[1104] * 96;
+	MonsterKillHealth += MonstersKilled[1104] * 60;
+	if (TrueGameSkill <= SKILL_VERY_EASY) MonstKillHealthMulti = 70;
+	else if (TrueGameSkill == SKILL_EASY) MonstKillHealthMulti = 88;
+	else if (TrueGameSkill == SKILL_NORMAL) MonstKillHealthMulti = 100;
+	else if (TrueGameSkill == SKILL_HARD) MonstKillHealthMulti = 112;
+	else if (TrueGameSkill == SKILL_VERY_HARD) MonstKillHealthMulti = 124;
+	else if (TrueGameSkill == SKILL_EXTREME) MonstKillHealthMulti = 136;
+	else if (TrueGameSkill == SKILL_HORRIBLE) MonstKillHealthMulti = 148;
+	else if (TrueGameSkill == SKILL_IMPOSSIBLE) MonstKillHealthMulti = 160;
+	else if (TrueGameSkill >= SKILL_OMEGA) MonstKillHealthMulti = 172;
 
-	C4 = C4 * C3 / 100;
-	SpecialGameFlags[10001] += C4;
-	//PrintBold(s:"Phase3 - Level Kills Add: ",d:SpecialGameFlags[10001],s:"\nC4: ",d:C4,s:"\nC3: ",d:C3);
+	MonsterKillHealth = MonsterKillHealth * MonstKillHealthMulti / 100;
+	SpecialGameFlags[10001] += MonsterKillHealth;
+	//PrintBold(s:"Phase3 - Level Kills Add: ",d:SpecialGameFlags[10001],s:"\nMonsterKillHealth: ",d:MonsterKillHealth,s:"\nMonstKillHealthMulti: ",d:MonstKillHealthMulti);
 
-	C4 = SecretsFound[1101];
-	C4 -= SecretsFound[1102];
-	C4 -= SecretsFound[1103];
-	C4 -= SecretsFound[1104];
-	if (TrueGameSkill <= SKILL_VERY_EASY) C4 = C4 * 3 / 2; // 150%
-	else if (TrueGameSkill == SKILL_EASY) C4 = C4 * 5 / 4; // 125%
-	else if (TrueGameSkill == SKILL_NORMAL) C4 = C4 / 2;  // 100%
-	else if (TrueGameSkill == SKILL_HARD) C4 = C4 * 3 / 4; // 75%
-	else if (TrueGameSkill == SKILL_VERY_HARD) C4 = C4 / 2;  // 50%
-	else if (TrueGameSkill == SKILL_EXTREME) C4 = C4 / 3;  // 33%
-	else if (TrueGameSkill == SKILL_HORRIBLE) C4 = C4 / 5;  // 20%
-	else if (TrueGameSkill == SKILL_IMPOSSIBLE) C4 = C4 / 6;  // 16.6%
-	else if (TrueGameSkill >= SKILL_OMEGA) C4 = C4 / 8;  // 12.5%
+	int SecretsFoundHealth;
+	SecretsFoundHealth = SecretsFound[1101];
+	SecretsFoundHealth -= SecretsFound[1102];
+	SecretsFoundHealth -= SecretsFound[1103];
+	SecretsFoundHealth -= SecretsFound[1104];
+	if (TrueGameSkill <= SKILL_VERY_EASY) SecretsFoundHealth = SecretsFoundHealth * 3 / 2; // 150%
+	else if (TrueGameSkill == SKILL_EASY) SecretsFoundHealth = SecretsFoundHealth * 5 / 4; // 125%
+	else if (TrueGameSkill == SKILL_NORMAL) SecretsFoundHealth = SecretsFoundHealth / 2;  // 100%
+	else if (TrueGameSkill == SKILL_HARD) SecretsFoundHealth = SecretsFoundHealth * 3 / 4; // 75%
+	else if (TrueGameSkill == SKILL_VERY_HARD) SecretsFoundHealth = SecretsFoundHealth / 2;  // 50%
+	else if (TrueGameSkill == SKILL_EXTREME) SecretsFoundHealth = SecretsFoundHealth / 3;  // 33%
+	else if (TrueGameSkill == SKILL_HORRIBLE) SecretsFoundHealth = SecretsFoundHealth / 5;  // 20%
+	else if (TrueGameSkill == SKILL_IMPOSSIBLE) SecretsFoundHealth = SecretsFoundHealth / 6;  // 16.6%
+	else if (TrueGameSkill >= SKILL_OMEGA) SecretsFoundHealth = SecretsFoundHealth / 8;  // 12.5%
 
-	C3 = 100;
-	C3 -= C4;
-	SpecialGameFlags[10001] = SpecialGameFlags[10001] * C3 / 100;
-	//PrintBold(s:"Phase4 - SecretsFound Add: ",d:SpecialGameFlags[10001],s:"\nC4: ",d:C4,s:"\nC3: ",d:C3);
+	int SecrFoundHealthMulti = 100;
+	SecrFoundHealthMulti -= SecretsFoundHealth;
+	SpecialGameFlags[10001] = SpecialGameFlags[10001] * SecrFoundHealthMulti / 100;
+	//PrintBold(s:"Phase4 - SecretsFound Add: ",d:SpecialGameFlags[10001],s:"\nSecretsFoundHealth: ",d:SecretsFoundHealth,s:"\nSecrFoundHealthMulti: ",d:SecrFoundHealthMulti);
 
-	C3 = PlayerLevel / 4;
-	C3 += 100;
-	SpecialGameFlags[10001] = SpecialGameFlags[10001] * C3 / 100;
-	//PrintBold(s:"Phase5 - PlayerLevel Add: ",d:SpecialGameFlags[10001],s:"\nC3: ",d:C3);
+	int PLevelHealthMulti = PlayerLevel / 4;
+	PLevelHealthMulti += 100;
+	SpecialGameFlags[10001] = SpecialGameFlags[10001] * PLevelHealthMulti / 100;
+	//PrintBold(s:"Phase5 - PlayerLevel Add: ",d:SpecialGameFlags[10001],s:"\nPLevelHealthMulti: ",d:PLevelHealthMulti);
 
 	if (CheckActorInventory(Player1TID,"SauronHelmet") > 0)
 	{
@@ -20685,52 +20761,53 @@ script "SetSauravatarHealth" (void)
 }
 
 // Health Regeneration [only runs when Sauravatar walks around] [DVI-DS]
-script "SauravatarRegenMode" (int C5)
+script "SauravatarRegenMode" (int RegenType)
 {
-	int C1, C2, C3, G1, G2, G3, G4;
+	int SkillHealthAdd, SkillMulti;
 
-	if (TrueGameSkill <= SKILL_VERY_EASY) G4 = 6;
-	if (TrueGameSkill == SKILL_EASY) G4 = 7;
-	if (TrueGameSkill == SKILL_NORMAL) G4 = 8;
-	if (TrueGameSkill == SKILL_HARD) G4 = 9;
-	if (TrueGameSkill == SKILL_VERY_HARD) G4 = 10;
-	if (TrueGameSkill == SKILL_EXTREME) G4 = 11;
-	if (TrueGameSkill == SKILL_HORRIBLE) G4 = 12;
-	if (TrueGameSkill == SKILL_IMPOSSIBLE) G4 = 13;
-	if (TrueGameSkill >= SKILL_OMEGA) G4 = 14;
-	if (C5 == 1) G4 *= 4;
+	if (TrueGameSkill <= SKILL_VERY_EASY) SkillMulti = 6;
+	if (TrueGameSkill == SKILL_EASY) SkillMulti = 7;
+	if (TrueGameSkill == SKILL_NORMAL) SkillMulti = 8;
+	if (TrueGameSkill == SKILL_HARD) SkillMulti = 9;
+	if (TrueGameSkill == SKILL_VERY_HARD) SkillMulti = 10;
+	if (TrueGameSkill == SKILL_EXTREME) SkillMulti = 11;
+	if (TrueGameSkill == SKILL_HORRIBLE) SkillMulti = 12;
+	if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillMulti = 13;
+	if (TrueGameSkill >= SKILL_OMEGA) SkillMulti = 14;
+	if (RegenType == 1) SkillMulti *= 4;
 
-	if (C2 <= SpecialGameFlags[10003])
+	int BossCurrentHealth;
+	if (BossCurrentHealth <= SpecialGameFlags[10003])
 	{
-		if (C2 <= SpecialGameFlags[10004]) G4 = G4 * 11 / 8; else G4 = G4 * 9 / 8;
+		if (BossCurrentHealth <= SpecialGameFlags[10004]) SkillMulti = SkillMulti * 11 / 8; else SkillMulti = SkillMulti * 9 / 8;
 	}
-	C1 = SpecialGameFlags[10001] * G4 / 131072;
-	if (C2 <= SpecialGameFlags[10003])
+	SkillHealthAdd = SpecialGameFlags[10001] * SkillMulti / 131072;
+	if (BossCurrentHealth <= SpecialGameFlags[10003])
 	{
-		if (C2 <= SpecialGameFlags[10004])
+		if (BossCurrentHealth <= SpecialGameFlags[10004])
 		{
-			C1 += random(-7,7);
+			SkillHealthAdd += random(-7,7);
 		}
 		else
 		{
-			C1 += random(-5,5);
+			SkillHealthAdd += random(-5,5);
 		}
 	}
 	else
 	{
-		C1 += random(-4,4);
+		SkillHealthAdd += random(-4,4);
 	}
-	if (C1 < 1) C1 = 1;
+	if (SkillHealthAdd < 1) SkillHealthAdd = 1;
 
-	C2 = GetActorProperty(1124,APROP_Health);
-	C2 += C1;
-	if (C2 > SpecialGameFlags[10001]) C2 = SpecialGameFlags[10001];
+	BossCurrentHealth = GetActorProperty(1124,APROP_Health);
+	BossCurrentHealth += SkillHealthAdd;
+	if (BossCurrentHealth > SpecialGameFlags[10001]) BossCurrentHealth = SpecialGameFlags[10001];
 
-	SetActorProperty(1124,APROP_Health,C2);
+	SetActorProperty(1124,APROP_Health,BossCurrentHealth);
 
-	if (C2 <= SpecialGameFlags[10003])
+	if (BossCurrentHealth <= SpecialGameFlags[10003])
 	{
-		if (C2 <= SpecialGameFlags[10004])
+		if (BossCurrentHealth <= SpecialGameFlags[10004])
 		{
 			SetThingSpecial(1124,0,2,0,0,0,0); // Set's args[0] to 2 in order to make the Sauravatar shoot his OmniBFG balls in threes [the white BFG balls]
 		}
@@ -20766,7 +20843,7 @@ script 25 (void)
 // Max Health Bonus Script
 script "MaxHPBonusPickup" (void)
 {
-	int I1, I2, Z1, Z2, HPError, C1, C2, BonusMaxHP, CurrentHP, PerkFactor; 
+	int HPError, IncreaseMultiplier, LevelExtraHealth, BonusMaxHP, CurrentHP, PerkFactor; 
 	int ArmorHPBonus = 0;
 	int MapNoBonus = 0;
 	int debugseedstuff = GetCVar("dvdsdebug_showseedstuff");
@@ -20787,13 +20864,13 @@ script "MaxHPBonusPickup" (void)
 	BonusMaxHP = BonusMaxHP + random(-HPError,HPError);
 	if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [After HPError]: ",d:BonusMaxHP);
 	
-	if (CharacterClass == 0) { C1 = random(18,21); } // Deggaris receives 2nd most HP from a bonus
-	if (CharacterClass == 1) { C1 = random(15,17); } // Illucia receives less HP from a bonus than Petra & Deggaris, but more than Flora & Ailish
-	if (CharacterClass == 2) { C1 = random(12,14); } // Flora receives the 2nd least HP from a bonus
-	if (CharacterClass == 8) { C1 = random(10,12); } // Ailish receives the least HP from a bonus
-	if (CharacterClass == 9) { C1 = random(20,23); } // Petra receives most HP from a bonus
-	BonusMaxHP = BonusMaxHP * C1 / 16;
-	if (debugseedstuff > 0) PrintBold(s:"Randomizer C1: ",d:C1,s:" / 16",
+	if (CharacterClass == 0) { IncreaseMultiplier = random(18,21); } // Deggaris receives 2nd most HP from a bonus
+	if (CharacterClass == 1) { IncreaseMultiplier = random(15,17); } // Illucia receives less HP from a bonus than Petra & Deggaris, but more than Flora & Ailish
+	if (CharacterClass == 2) { IncreaseMultiplier = random(12,14); } // Flora receives the 2nd least HP from a bonus
+	if (CharacterClass == 8) { IncreaseMultiplier = random(10,12); } // Ailish receives the least HP from a bonus
+	if (CharacterClass == 9) { IncreaseMultiplier = random(20,23); } // Petra receives most HP from a bonus
+	BonusMaxHP = BonusMaxHP * IncreaseMultiplier / 16;
+	if (debugseedstuff > 0) PrintBold(s:"Randomizer IncreaseMultiplier: ",d:IncreaseMultiplier,s:" / 16",
 																		s:"\nBonusMaxHP [After HPError]: ",d:BonusMaxHP);
 	
 	// Flora's Armor Items [up to +55% Max HP gained from Max HP Bonuses]
@@ -20855,12 +20932,13 @@ script "MaxHPBonusPickup" (void)
 	if (CharacterClass == 8) CurrentHP = CurrentHP + random(6,12) + BonusMaxHP; // Ailish receives the Most Healed HP from a bonus
 	if (CharacterClass == 9) CurrentHP = CurrentHP + random(1,3) + BonusMaxHP; // Petra receives the Least Healed HP from a bonus
 	
-	C1 = MaxHealthTrue / 100;
-	if (C1 < 1) C1 = 1;
+	int ExtraHP;
+	ExtraHP = MaxHealthTrue / 100;
+	if (ExtraHP < 1) ExtraHP = 1;
 	
-	C2 = PlayerLevel / 10;
-	C1 += C2;
-	CurrentHP += C1;
+	LevelExtraHealth = PlayerLevel / 10;
+	ExtraHP += LevelExtraHealth;
+	CurrentHP += ExtraHP;
 	
 	if (CurrentHP > MaxHealthLimit) CurrentHP = MaxHealthLimit;
 	SetActorProperty(Player1TID,APROP_HEALTH,CurrentHP);
@@ -20918,7 +20996,7 @@ script "Stamina-HealingItem" (int PercentMax, int PercentAmount, int ExactAmount
 // Stimpacks/Medikits/Berserk Packs (All games)
 script "PickupMedicalItem" (int HealItemType, int maxhealtype) //
 {
-	int I1, I2, Z1, Z2, C1, C2, HealAmount, ExtraHeal, CurrentHP;
+	int HealAmount, ExtraHeal, CurrentHP;
 	int tempstaminalimit;
 	int perktemp1, perktemp2, perktemp3;
 	int PerkFactor;
@@ -21036,7 +21114,7 @@ script "PickupMedicalItem" (int HealItemType, int maxhealtype) //
 // Debugging for Printing Armor Amounts on Screen
 script "PrintArmorValues" (void)
 {
-	int I1, I2, ArmorCheck, Z2, C1, C2;
+	int ArmorCheck;
 	
 	ArmorCheck = CheckInventory("Armor");
 	Print(s:"BasicArmor: ",d:ArmorCheck);
@@ -21079,36 +21157,37 @@ script "PrintArmorValues" (void)
 }
 
 // Emulates Armor Bonuses for all four (six?) types of armor in DVI-DS. [Applies Only to Deggaris and Illucia]
-script "EmulateGiveArmorBonus" (int C5)
+script "EmulateGiveArmorBonus" (int BaseAmount)
 {
- int I1, I2, Z1, Z2, C1, C2;
+	int ExtraAPAdd, ExtraAPAdd2;
+	int RawArmorValue, ArmorClearValue;
 
 	if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) // Stops Flora/Ailish/Petra from getting armor benefits and sets the item's result to 1 to make the item fail to pickup
 	{
-		If (C5 <= 0) C5 = 1;
+		If (BaseAmount <= 0) BaseAmount = 1;
 	
 		// Saves original raw Armor Value
-		Z1 = CheckActorInventory(Player1TID,"Armor");
+		RawArmorValue = CheckActorInventory(Player1TID,"Armor");
 	
 		// Clears Armor Types
-		Z2 = CheckActorInventory(Player1TID,"Armor"); TakeActorInventory(Player1TID,"Armor", Z2);
-		Z2 = CheckActorInventory(Player1TID,"ArmorBonusDS"); TakeActorInventory(Player1TID,"Armor", Z2);
-		Z2 = CheckActorInventory(Player1TID,"ArmorBonusDSGreen"); TakeActorInventory(Player1TID,"Armor", Z2);
-		Z2 = CheckActorInventory(Player1TID,"ArmorBonusDSBlue"); TakeActorInventory(Player1TID,"Armor", Z2);
-		Z2 = CheckActorInventory(Player1TID,"ArmorBonusDSStone1"); TakeActorInventory(Player1TID,"Armor", Z2);
-		Z2 = CheckActorInventory(Player1TID,"ArmorBonusDSStone2"); TakeActorInventory(Player1TID,"Armor", Z2);
-		Z2 = CheckActorInventory(Player1TID,"ArmorBonusDSDiamond1"); TakeActorInventory(Player1TID,"Armor", Z2);
-		Z2 = CheckActorInventory(Player1TID,"ArmorBonusDSDiamond2"); TakeActorInventory(Player1TID,"Armor", Z2);
+		ArmorClearValue = CheckActorInventory(Player1TID,"Armor"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
+		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDS"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
+		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDSGreen"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
+		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDSBlue"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
+		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDSStone1"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
+		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDSStone2"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
+		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDSDiamond1"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
+		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDSDiamond2"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
 		// Flora and her Spiritual Exoskin spell have no Armor Bonuses
 		// Flora and her Greater Spiritual Exoskin spell have no Armor Bonuses
 		// Flora and her Perfected Spiritual Exoskin spell have no Armor Bonuses
 	
-		if (Z1 == 0) // No Armor
+		if (RawArmorValue == 0) // No Armor
 		{
-			C1 = 1; // Base Increase to Armor and make it Green class
-			C1 = C1 * C5;
-			Z1 += C1;
-			GiveActorInventory(Player1TID,"ArmorBonusDSGreen", Z1);
+			ExtraAPAdd = 1; // Base Increase to Armor and make it Green class
+			ExtraAPAdd = ExtraAPAdd * BaseAmount;
+			RawArmorValue += ExtraAPAdd;
+			GiveActorInventory(Player1TID,"ArmorBonusDSGreen", RawArmorValue);
 			CurrentArmorClass = 1;
 			CurrentMaxArmor = 100;
 			GiveActorInventory(Player1TID,"DSGreenArmorClass", 1);
@@ -21121,40 +21200,40 @@ script "EmulateGiveArmorBonus" (int C5)
 		}
 		else // Have some kind of existing Armor
 		{
-			C1 = CurrentArmorClass; // Base Increase to Armor and make it Green class
-			C1 = C1 * C5;
-			Z1 += C1;
-			C2 = Z1 / 100;
-			C2 = C2 * C5;
-			Z1 += C2;
-			C2 = PlayerLevel / 5;
-			C2 = C2 * C5;
-			Z1 += C2;
-			if (Z1 < 101)
+			ExtraAPAdd = CurrentArmorClass; // Base Increase to Armor and make it Green class
+			ExtraAPAdd = ExtraAPAdd * BaseAmount;
+			RawArmorValue += ExtraAPAdd;
+			ExtraAPAdd2 = RawArmorValue / 100;
+			ExtraAPAdd2 = ExtraAPAdd2 * BaseAmount;
+			RawArmorValue += ExtraAPAdd2;
+			ExtraAPAdd2 = PlayerLevel / 5;
+			ExtraAPAdd2 = ExtraAPAdd2 * BaseAmount;
+			RawArmorValue += ExtraAPAdd2;
+			if (RawArmorValue < 101)
 			{
 				if (CurrentArmorClass < 1) CurrentArmorClass = 1;
 			}
 			else
 			{
-				if (Z1 < 201)
+				if (RawArmorValue < 201)
 				{
 					if (CurrentArmorClass < 2) CurrentArmorClass = 2;
 				}
 				else
 				{
-					if (Z1 < 501)
+					if (RawArmorValue < 501)
 					{
 						if (CurrentArmorClass < 3) CurrentArmorClass = 3;
 					}
 					else
 					{
-						if (Z1 < 1251)
+						if (RawArmorValue < 1251)
 						{
 							if (CurrentArmorClass < 4) CurrentArmorClass = 4;
 						}
 						else
 						{
-							if (Z1 < 2001)
+							if (RawArmorValue < 2001)
 							{
 								if (CurrentArmorClass < 5) CurrentArmorClass = 5;
 							}
@@ -21180,7 +21259,7 @@ script "EmulateGiveArmorBonus" (int C5)
 			}
 			if (CurrentArmorClass == 1)
 			{
-				GiveActorInventory(Player1TID,"ArmorBonusDSGreen", Z1);
+				GiveActorInventory(Player1TID,"ArmorBonusDSGreen", RawArmorValue);
 				CurrentMaxArmor = 100;
 				GiveActorInventory(Player1TID,"DSGreenArmorClass", 1);
 				TakeActorInventory(Player1TID,"DSNoArmorClass", 9999);
@@ -21192,7 +21271,7 @@ script "EmulateGiveArmorBonus" (int C5)
 			}
 			if (CurrentArmorClass == 2)
 			{
-				GiveActorInventory(Player1TID,"ArmorBonusDSBlue", Z1);
+				GiveActorInventory(Player1TID,"ArmorBonusDSBlue", RawArmorValue);
 				CurrentMaxArmor = 200;
 				GiveActorInventory(Player1TID,"DSBlueArmorClass", 1);
 				TakeActorInventory(Player1TID,"DSNoArmorClass", 9999);
@@ -21204,7 +21283,7 @@ script "EmulateGiveArmorBonus" (int C5)
 			}
 			if (CurrentArmorClass == 3)
 			{
-				GiveActorInventory(Player1TID,"ArmorBonusDSStone1", Z1);
+				GiveActorInventory(Player1TID,"ArmorBonusDSStone1", RawArmorValue);
 				CurrentMaxArmor = 500;
 				GiveActorInventory(Player1TID,"DSStoneArmorClass1", 1);
 				TakeActorInventory(Player1TID,"DSNoArmorClass", 9999);
@@ -21216,7 +21295,7 @@ script "EmulateGiveArmorBonus" (int C5)
 			}
 			if (CurrentArmorClass == 4)
 			{
-				GiveActorInventory(Player1TID,"ArmorBonusDSDiamond1", Z1);
+				GiveActorInventory(Player1TID,"ArmorBonusDSDiamond1", RawArmorValue);
 				CurrentMaxArmor = 1250;
 				GiveActorInventory(Player1TID,"DSDiamondArmorClass1", 1);
 				TakeActorInventory(Player1TID,"DSNoArmorClass", 9999);
@@ -21228,7 +21307,7 @@ script "EmulateGiveArmorBonus" (int C5)
 			}
 			if (CurrentArmorClass == 5)
 			{
-				GiveActorInventory(Player1TID,"ArmorBonusDSStone2", Z1);
+				GiveActorInventory(Player1TID,"ArmorBonusDSStone2", RawArmorValue);
 				CurrentMaxArmor = 2000;
 				GiveActorInventory(Player1TID,"DSStoneArmorClass2", 1);
 				TakeActorInventory(Player1TID,"DSNoArmorClass", 9999);
@@ -21240,7 +21319,7 @@ script "EmulateGiveArmorBonus" (int C5)
 			}
 			if (CurrentArmorClass >= 6)
 			{
-				GiveActorInventory(Player1TID,"ArmorBonusDSDiamond2", Z1);
+				GiveActorInventory(Player1TID,"ArmorBonusDSDiamond2", RawArmorValue);
 				CurrentMaxArmor = 5000;
 				GiveActorInventory(Player1TID,"DSDiamondArmorClass2", 1);
 				TakeActorInventory(Player1TID,"DSNoArmorClass", 9999);
@@ -21255,52 +21334,53 @@ script "EmulateGiveArmorBonus" (int C5)
 }
 
 // Checks Whether a Full Armor Item can be picked up or not
-script "CheckArmorLevels" (int C5)
+script "CheckArmorLevels" (int ArmorType)
 {
-	int I1, I2, Z1, Z2, C1, C2;
+	int RawArmorValue, ArmorClearValue;
 	
 	SetResultValue(0); // Stops Flora from getting armor benefits and sets the item's result value to 0 to make the item fail to pickup
 	if (CharacterClass != 2)
 	{
-		Z1 = CheckInventory("Armor");
-		if (C5 == 1 && CurrentArmorClass <= 1 && Z1 < 100) SetResultValue(1);
-		if (C5 == 2 && CurrentArmorClass <= 2 && Z1 < 200) SetResultValue(1);
-		if (C5 == 3 && CurrentArmorClass <= 3 && Z1 < 500) SetResultValue(1);
-		if (C5 == 4 && CurrentArmorClass <= 4 && Z1 < 1250) SetResultValue(1);
-		if (C5 == 5 && CurrentArmorClass <= 5 && Z1 < 2000) SetResultValue(1);
-		if (C5 == 6 && CurrentArmorClass <= 6 && Z1 < 5000) SetResultValue(1);
+		RawArmorValue = CheckInventory("Armor");
+		if (ArmorType == 1 && CurrentArmorClass <= 1 && RawArmorValue < 100) SetResultValue(1);
+		if (ArmorType == 2 && CurrentArmorClass <= 2 && RawArmorValue < 200) SetResultValue(1);
+		if (ArmorType == 3 && CurrentArmorClass <= 3 && RawArmorValue < 500) SetResultValue(1);
+		if (ArmorType == 4 && CurrentArmorClass <= 4 && RawArmorValue < 1250) SetResultValue(1);
+		if (ArmorType == 5 && CurrentArmorClass <= 5 && RawArmorValue < 2000) SetResultValue(1);
+		if (ArmorType == 6 && CurrentArmorClass <= 6 && RawArmorValue < 5000) SetResultValue(1);
 	}
 }
 
 // Emulates Main Armor Item Pickups [Applies Only to Deggaris and Illucia]
-script "PickupArmorMain" (int C5)
+script "PickupArmorMain" (int ArmorType)
 {
-	int I1, I2, Z1, Z2, C1, C2;
-	
+	int GiveArmorAmount;
+	int RawArmorValue, ArmorClearValue;
+
 	// Saves original raw Armor Value
-	Z1 = CheckInventory("Armor");
+	RawArmorValue = CheckInventory("Armor");
 	
 	// Clears Armor Types
-	Z2 = CheckInventory("Armor"); TakeInventory("Armor", Z2);
-	Z2 = CheckInventory("ArmorBonusDS"); TakeInventory("ArmorBonusDS", Z2);
+	ArmorClearValue = CheckInventory("Armor"); TakeInventory("Armor", ArmorClearValue);
+	ArmorClearValue = CheckInventory("ArmorBonusDS"); TakeInventory("ArmorBonusDS", ArmorClearValue);
 	
-	Z2 = CheckInventory("ArmorBonusDSGreen"); TakeInventory("ArmorBonusDSGreen", Z2);
-	Z2 = CheckInventory("ArmorBonusDSBlue"); TakeInventory("ArmorBonusDSBlue", Z2);
-	Z2 = CheckInventory("ArmorBonusDSStone1"); TakeInventory("ArmorBonusDSStone1", Z2);
-	Z2 = CheckInventory("ArmorBonusDSStone2"); TakeInventory("ArmorBonusDSStone2", Z2);
-	Z2 = CheckInventory("ArmorBonusDSDiamond1"); TakeInventory("ArmorBonusDSDiamond1", Z2);
-	Z2 = CheckInventory("ArmorBonusDSDiamond2"); TakeInventory("ArmorBonusDSDiamond2", Z2);
+	ArmorClearValue = CheckInventory("ArmorBonusDSGreen"); TakeInventory("ArmorBonusDSGreen", ArmorClearValue);
+	ArmorClearValue = CheckInventory("ArmorBonusDSBlue"); TakeInventory("ArmorBonusDSBlue", ArmorClearValue);
+	ArmorClearValue = CheckInventory("ArmorBonusDSStone1"); TakeInventory("ArmorBonusDSStone1", ArmorClearValue);
+	ArmorClearValue = CheckInventory("ArmorBonusDSStone2"); TakeInventory("ArmorBonusDSStone2", ArmorClearValue);
+	ArmorClearValue = CheckInventory("ArmorBonusDSDiamond1"); TakeInventory("ArmorBonusDSDiamond1", ArmorClearValue);
+	ArmorClearValue = CheckInventory("ArmorBonusDSDiamond2"); TakeInventory("ArmorBonusDSDiamond2", ArmorClearValue);
 	
-	if (C5 == 1 && CurrentArmorClass <= 1) { CurrentArmorClass = 1; C2 = 100; }
-	if (C5 == 2 && CurrentArmorClass <= 2) { CurrentArmorClass = 2; C2 = 200; }
-	if (C5 == 3 && CurrentArmorClass <= 3) { CurrentArmorClass = 3; C2 = 500; }
-	if (C5 == 4 && CurrentArmorClass <= 4) { CurrentArmorClass = 4; C2 = 1250; }
-	if (C5 == 5 && CurrentArmorClass <= 5) { CurrentArmorClass = 5; C2 = 2000; }
-	if (C5 == 6 && CurrentArmorClass <= 6) { CurrentArmorClass = 6; C2 = 5000; }
+	if (ArmorType == 1 && CurrentArmorClass <= 1) { CurrentArmorClass = 1; GiveArmorAmount = 100; }
+	if (ArmorType == 2 && CurrentArmorClass <= 2) { CurrentArmorClass = 2; GiveArmorAmount = 200; }
+	if (ArmorType == 3 && CurrentArmorClass <= 3) { CurrentArmorClass = 3; GiveArmorAmount = 500; }
+	if (ArmorType == 4 && CurrentArmorClass <= 4) { CurrentArmorClass = 4; GiveArmorAmount = 1250; }
+	if (ArmorType == 5 && CurrentArmorClass <= 5) { CurrentArmorClass = 5; GiveArmorAmount = 2000; }
+	if (ArmorType == 6 && CurrentArmorClass <= 6) { CurrentArmorClass = 6; GiveArmorAmount = 5000; }
 	
 	if (CurrentArmorClass == 1)
 	{
-		GiveInventory("ArmorBonusDSGreen", C2);
+		GiveInventory("ArmorBonusDSGreen", GiveArmorAmount);
 		GiveInventory("DSGreenArmorClass", 1);
 		TakeInventory("DSNoArmorClass", 9999);
 		TakeInventory("DSBlueArmorClass", 9999);
@@ -21312,7 +21392,7 @@ script "PickupArmorMain" (int C5)
 	}
 	if (CurrentArmorClass == 2)
 	{
-		GiveInventory("ArmorBonusDSBlue", C2);
+		GiveInventory("ArmorBonusDSBlue", GiveArmorAmount);
 		GiveInventory("DSBlueArmorClass", 1);
 		TakeInventory("DSNoArmorClass", 9999);
 		TakeInventory("DSGreenArmorClass", 9999);
@@ -21324,7 +21404,7 @@ script "PickupArmorMain" (int C5)
 	}
 	if (CurrentArmorClass == 3)
 	{
-		GiveInventory("ArmorBonusDSStone1", C2);
+		GiveInventory("ArmorBonusDSStone1", GiveArmorAmount);
 		GiveInventory("DSStoneArmorClass1", 1);
 		TakeInventory("DSNoArmorClass", 9999);
 		TakeInventory("DSGreenArmorClass", 9999);
@@ -21336,7 +21416,7 @@ script "PickupArmorMain" (int C5)
 	}
 	if (CurrentArmorClass == 4)
 	{
-		GiveInventory("ArmorBonusDSDiamond1", C2);
+		GiveInventory("ArmorBonusDSDiamond1", GiveArmorAmount);
 		GiveInventory("DSDiamondArmorClass1", 1);
 		TakeInventory("DSNoArmorClass", 9999);
 		TakeInventory("DSGreenArmorClass", 9999);
@@ -21348,7 +21428,7 @@ script "PickupArmorMain" (int C5)
 	}
 	if (CurrentArmorClass == 5)
 	{
-		GiveInventory("ArmorBonusDSStone2", C2);
+		GiveInventory("ArmorBonusDSStone2", GiveArmorAmount);
 		GiveInventory("DSStoneArmorClass2", 1);
 		TakeInventory("DSNoArmorClass", 9999);
 		TakeInventory("DSGreenArmorClass", 9999);
@@ -21360,7 +21440,7 @@ script "PickupArmorMain" (int C5)
 	}
 	if (CurrentArmorClass == 6)
 	{
-		GiveInventory("ArmorBonusDSDiamond2", C2);
+		GiveInventory("ArmorBonusDSDiamond2", GiveArmorAmount);
 		GiveInventory("DSDiamondArmorClass2", 1);
 		TakeInventory("DSNoArmorClass", 9999);
 		TakeInventory("DSGreenArmorClass", 9999);
@@ -26240,7 +26320,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 {
 	int playeractor = 1;
 
-	int G1, C3;
 	int ArmorBits, LevelChecker, AmmoCheck, IronFeetChance, FearChance;
 	int BaseSceptreEXP;
 	int haveruinousshield, SpawnFixedX, SpawnFixedY, SpawnFixedZ, KilledMonsterFactor, Randomizer1;
@@ -27815,6 +27894,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	//***************************************
 	//**Scripted Events for Individual Maps**
 	//***************************************
+	int EventRand;
 	if (ModType == 2) // DVII
 	{
 		if (GetLevelInfo(LEVELINFO_LEVELNUM) == 1204) // MAP04 - Minas Morgul
@@ -27856,21 +27936,21 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 				GameScriptEvents[1404] -= GameScriptEvents[1402];
 				if (GameScriptEvents[1403] == 0)
 				{
-					G1 = random(1,100);
+					EventRand = random(1,100);
 					if (CharacterClass == 2)
 					{
-						if (G1 < 15) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
-						if (G1 > 86) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
+						if (EventRand < 15) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
+						if (EventRand > 86) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
 					}
 					if (CharacterClass == 1)
 					{
-						if (G1 < 11) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
-						if (G1 > 90) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
+						if (EventRand < 11) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
+						if (EventRand > 90) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
 					}
 					else
 					{
-						if (G1 < 13) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
-						if (G1 > 88) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
+						if (EventRand < 13) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
+						if (EventRand > 88) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
 					}
 					Thing_Damage(Player1TID,GameScriptEvents[1401],13);
 				}
@@ -27920,21 +28000,21 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 				GameScriptEvents[1404] -= GameScriptEvents[1402];
 				if (GameScriptEvents[1403] == 0)
 				{
-					G1 = random(1,100);
+					EventRand = random(1,100);
 					if (CharacterClass == 2)
 					{
-						if (G1 < 15) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
-						if (G1 > 86) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
+						if (EventRand < 15) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
+						if (EventRand > 86) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
 					}
 					if (CharacterClass == 1)
 					{
-						if (G1 < 11) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
-						if (G1 > 90) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
+						if (EventRand < 11) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
+						if (EventRand > 90) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
 					}
 					else
 					{
-						if (G1 < 13) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
-						if (G1 > 88) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
+						if (EventRand < 13) GameScriptEvents[1401] = GameScriptEvents[1401] * 14 / 8;
+						if (EventRand > 88) GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 8;
 					}
 					// Upper Left = -9216, 11776
 					// Lower Right = 14336, -11776
@@ -27942,22 +28022,22 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 				
 					if (SpawnFixedZ < 0) // Negative Z Vels
 					{
-						if (SpawnFixedZ > -1001) { G1 = 10; GameScriptEvents[1401] = GameScriptEvents[1401] * 4 / 3; }
-						if (SpawnFixedZ > -2001 && SpawnFixedZ < -1000) { G1 = 16; GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 3; }
-						if (SpawnFixedZ > -3001 && SpawnFixedZ < -2000) { G1 = 23; GameScriptEvents[1401] = GameScriptEvents[1401] * 6 / 3; }
-						if (SpawnFixedZ > -4001 && SpawnFixedZ < -3000) { G1 = 31; GameScriptEvents[1401] = GameScriptEvents[1401] * 7 / 3; }
-						if (SpawnFixedZ < -4000) { G1 = 40; GameScriptEvents[1401] = GameScriptEvents[1401] * 8 / 3; }
+						if (SpawnFixedZ > -1001) { EventRand = 10; GameScriptEvents[1401] = GameScriptEvents[1401] * 4 / 3; }
+						if (SpawnFixedZ > -2001 && SpawnFixedZ < -1000) { EventRand = 16; GameScriptEvents[1401] = GameScriptEvents[1401] * 5 / 3; }
+						if (SpawnFixedZ > -3001 && SpawnFixedZ < -2000) { EventRand = 23; GameScriptEvents[1401] = GameScriptEvents[1401] * 6 / 3; }
+						if (SpawnFixedZ > -4001 && SpawnFixedZ < -3000) { EventRand = 31; GameScriptEvents[1401] = GameScriptEvents[1401] * 7 / 3; }
+						if (SpawnFixedZ < -4000) { EventRand = 40; GameScriptEvents[1401] = GameScriptEvents[1401] * 8 / 3; }
 					}
 					else // Positive Z Vels
 					{
-						if (SpawnFixedZ > -1 && SpawnFixedZ < 1000) { G1 = 5; }
-						if (SpawnFixedZ > 999 && SpawnFixedZ < 2000) { G1 = 4; }
-						if (SpawnFixedZ > 1999 && SpawnFixedZ < 3000) { G1 = 3; GameScriptEvents[1401] = GameScriptEvents[1401] * 2 / 3; }
-						if (SpawnFixedZ > 2999 && SpawnFixedZ < 4000) { G1 = 2; GameScriptEvents[1401] = GameScriptEvents[1401] * 2 / 3; }
-						if (SpawnFixedZ > 3999 && SpawnFixedZ < 5000) { G1 = 1; GameScriptEvents[1401] = GameScriptEvents[1401] * 1 / 3; }
-						if (SpawnFixedZ > 4999) { G1 = 0; GameScriptEvents[1401] = GameScriptEvents[1401] * 0 / 3; }
+						if (SpawnFixedZ > -1 && SpawnFixedZ < 1000) { EventRand = 5; }
+						if (SpawnFixedZ > 999 && SpawnFixedZ < 2000) { EventRand = 4; }
+						if (SpawnFixedZ > 1999 && SpawnFixedZ < 3000) { EventRand = 3; GameScriptEvents[1401] = GameScriptEvents[1401] * 2 / 3; }
+						if (SpawnFixedZ > 2999 && SpawnFixedZ < 4000) { EventRand = 2; GameScriptEvents[1401] = GameScriptEvents[1401] * 2 / 3; }
+						if (SpawnFixedZ > 3999 && SpawnFixedZ < 5000) { EventRand = 1; GameScriptEvents[1401] = GameScriptEvents[1401] * 1 / 3; }
+						if (SpawnFixedZ > 4999) { EventRand = 0; GameScriptEvents[1401] = GameScriptEvents[1401] * 0 / 3; }
 					}
-					if (SpawnFixedX > -9217 && SpawnFixedX < 14337 && SpawnFixedY > -11777 && SpawnFixedY < 11777 && random(1,100) <= G1) { Thing_Damage(Player1TID,GameScriptEvents[1401],13); }
+					if (SpawnFixedX > -9217 && SpawnFixedX < 14337 && SpawnFixedY > -11777 && SpawnFixedY < 11777 && random(1,100) <= EventRand) { Thing_Damage(Player1TID,GameScriptEvents[1401],13); }
 				}
 			}
 		}
@@ -28038,148 +28118,10 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	Restart;
 }
 
-// MegaSphere Armor [Deggaris & Illucia Only] or Mana [All Three Characters]
-script "MegaSphereArmor" (void)
-{
-	int I1, I2, Z1, Z2, C1, C2;
-	int MaxManaLimit;
-	
-	if (CharacterClass == 9) // Petra gets no armor from a Soul Sphere, but gets Mana and Force Gauge refill.
-	{
-		CurrentMana = MaxMana * 2;
-		//Insert code for refilling force gauge here
-	}
-	else
-	if (CharacterClass == 2) // Flora does not get armor from a Soul Sphere, but instead gets Mana up to 200% of her maximum
-	{
-		CurrentMana = MaxMana * 2;
-	}
-	else
-	if (CharacterClass <= 1)
-	{
-		MaxManaLimit = MaxMana * 2;
-		CurrentMana = MaxManaLimit;
-	
-		// Saves original raw Armor Value
-		Z1 = CheckInventory("Armor");
-	
-		// Clears Armor Types
-		Z2 = CheckInventory("Armor"); TakeInventory("Armor", Z2);
-		Z2 = CheckInventory("ArmorBonusDS"); TakeInventory("ArmorBonusDS", Z2);
-		Z2 = CheckInventory("ArmorBonusDSGreen"); TakeInventory("ArmorBonusDSGreen", Z2);
-		Z2 = CheckInventory("ArmorBonusDSBlue"); TakeInventory("ArmorBonusDSBlue", Z2);
-		Z2 = CheckInventory("ArmorBonusDSStone1"); TakeInventory("ArmorBonusDSStone1", Z2);
-		Z2 = CheckInventory("ArmorBonusDSStone2"); TakeInventory("ArmorBonusDSStone2", Z2);
-		Z2 = CheckInventory("ArmorBonusDSDiamond1"); TakeInventory("ArmorBonusDSDiamond1", Z2);
-		Z2 = CheckInventory("ArmorBonusDSDiamond2"); TakeInventory("ArmorBonusDSDiamond2", Z2);
-	
-		// Reinitalizes the proper Armor Class after the previous code above clears it
-		if (CurrentArmorClass <= 1) { CurrentArmorClass = 2; GiveInventory("ArmorBonusDSBlue", 200); }
-		else if (CurrentArmorClass == 2) { CurrentArmorClass = 3; GiveInventory("ArmorBonusDSStone1", 500); }
-		else if (CurrentArmorClass == 3) { CurrentArmorClass = 4; GiveInventory("ArmorBonusDSDiamond1", 1250); }
-		else if (CurrentArmorClass == 4) { CurrentArmorClass = 5; GiveInventory("ArmorBonusDSStone2", 2000); }
-		else if (CurrentArmorClass == 5) { CurrentArmorClass = 6; GiveInventory("ArmorBonusDSDiamond2", 5000); }
-		else if (CurrentArmorClass == 6) { GiveInventory("ArmorBonusDSDiamond2", 5000); }
-	
-		if (CurrentArmorClass == 6)
-		{
-			CurrentMaxArmor = 5000;
-			GiveInventory("DSDiamondArmorClass2", 1);
-			TakeInventory("DSNoArmorClass", 9999);
-			TakeInventory("DSGreenArmorClass", 9999);
-			TakeInventory("DSBlueArmorClass", 9999);
-			TakeInventory("DSStoneArmorClass1", 9999);
-			TakeInventory("DSDiamondArmorClass1", 9999);
-			TakeInventory("DSStoneArmorClass2", 9999);
-		}
-		else
-		{
-			if (CurrentArmorClass == 5)
-			{
-				CurrentMaxArmor = 2000;
-				GiveInventory("DSStoneArmorClass2", 1);
-				TakeInventory("DSNoArmorClass", 9999);
-				TakeInventory("DSGreenArmorClass", 9999);
-				TakeInventory("DSBlueArmorClass", 9999);
-				TakeInventory("DSStoneArmorClass1", 9999);
-				TakeInventory("DSDiamondArmorClass1", 9999);
-				TakeInventory("DSDiamondArmorClass2", 9999);
-			}
-			else
-			{
-				if (CurrentArmorClass == 4)
-				{
-					CurrentMaxArmor = 1250;
-					GiveInventory("DSDiamondArmorClass1", 1);
-					TakeInventory("DSNoArmorClass", 9999);
-					TakeInventory("DSGreenArmorClass", 9999);
-					TakeInventory("DSBlueArmorClass", 9999);
-					TakeInventory("DSStoneArmorClass1", 9999);
-					TakeInventory("DSStoneArmorClass2", 9999);
-					TakeInventory("DSDiamondArmorClass2", 9999);
-				}
-				else
-				{
-					if (CurrentArmorClass == 3)
-					{
-						CurrentMaxArmor = 500;
-						GiveInventory("DSStoneArmorClass1", 1);
-						TakeInventory("DSNoArmorClass", 9999);
-						TakeInventory("DSGreenArmorClass", 9999);
-						TakeInventory("DSBlueArmorClass", 9999);
-						TakeInventory("DSDiamondArmorClass1", 9999);
-						TakeInventory("DSStoneArmorClass2", 9999);
-						TakeInventory("DSDiamondArmorClass2", 9999);
-					}
-					else
-					{
-						if (CurrentArmorClass == 2)
-						{
-							CurrentMaxArmor = 200;
-							GiveInventory("DSBlueArmorClass", 1);
-							TakeInventory("DSNoArmorClass", 9999);
-							TakeInventory("DSGreenArmorClass", 9999);
-							TakeInventory("DSStoneArmorClass1", 9999);
-							TakeInventory("DSDiamondArmorClass1", 9999);
-							TakeInventory("DSStoneArmorClass2", 9999);
-							TakeInventory("DSDiamondArmorClass2", 9999);
-						}
-						else
-						{
-							if (CurrentArmorClass == 1)
-							{
-								CurrentMaxArmor = 100;
-								GiveInventory("DSGreenArmorClass", 1);
-								TakeInventory("DSNoArmorClass", 9999);
-								TakeInventory("DSBlueArmorClass", 9999);
-								TakeInventory("DSStoneArmorClass1", 9999);
-								TakeInventory("DSDiamondArmorClass1", 9999);
-								TakeInventory("DSStoneArmorClass2", 9999);
-								TakeInventory("DSDiamondArmorClass2", 9999);
-							}
-							else
-							{
-								CurrentMaxArmor = 0;
-								GiveInventory("DSNoArmorClass", 1);
-								TakeInventory("DSGreenArmorClass", 9999);
-								TakeInventory("DSBlueArmorClass", 9999);
-								TakeInventory("DSStoneArmorClass1", 9999);
-								TakeInventory("DSDiamondArmorClass1", 9999);
-								TakeInventory("DSStoneArmorClass2", 9999);
-								TakeInventory("DSDiamondArmorClass2", 9999);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
 // DEBUG SCRIPT: Sets Mana to the Current Amount
-script "SetManaAmount" (int C5)
+script "SetManaAmount" (int Value)
 {
-	CurrentMana = C5;
+	CurrentMana = Value;
 	int MaxManaLimit;
 	if (CurrentMana < 1) CurrentMana = 0;
 	
@@ -28317,20 +28259,19 @@ script "HelmetCopyCheck" (void)
 // Prints out damage on screen for a projectile attached to this script
 script "DamagePrintout" (void)
 {
-	int C1;
-	C1 = GetActorProperty(0,APROP_Damage); 
-	PrintBold(d:C1);
+	int Damage;
+	Damage = GetActorProperty(0,APROP_Damage); 
+	PrintBold(d:Damage);
 }
 
 // Set Levelcap Manually
-script "SetLevelCap" (int C5)
+script "SetLevelCap" (int Value)
 {
-	int C1;
-	if (C5 > 99)
+	if (Value > 99)
 	{
-		if (C5 < 201)
+		if (Value < 201)
 		{
-			LevelCap = C5;
+			LevelCap = Value;
 		}
 		else
 		{
@@ -28374,7 +28315,7 @@ script "SceptreTwirlFrameCheck" (int FrameNo)
 // Increases the number of points towards uncursing a Ruinous Shield into a Divine Shield
 script "CursedShieldPain" (int UncursePts, int uncursemulti, int uncurseddivisor)
 {
-	int C1;
+	int CurseMultiRandomizer;
 	if (uncursemulti < 1) uncursemulti = 1;
 	if (uncurseddivisor < 1) uncurseddivisor = 1;
 	
@@ -28387,22 +28328,22 @@ script "CursedShieldPain" (int UncursePts, int uncursemulti, int uncurseddivisor
 	{
 		if (CheckActorInventory(Player1TID,"RuinousShield") > 0)
 		{
-			C1 = random(1,100);
-			if (C1 == 1) UncursePts = UncursePts * 16;
-			if (C1 == 2) UncursePts = UncursePts * 8;
-			if (C1 == 3) UncursePts = UncursePts * 8;
-			if (C1 == 4) UncursePts = UncursePts * 4;
-			if (C1 == 5) UncursePts = UncursePts * 4;
-			if (C1 == 6) UncursePts = UncursePts * 4;
-			if (C1 == 7) UncursePts = UncursePts * 4;
-			if (C1 == 8) UncursePts = UncursePts * 2;
-			if (C1 == 9) UncursePts = UncursePts * 2;
-			if (C1 == 10) UncursePts = UncursePts * 2;
-			if (C1 == 11) UncursePts = UncursePts * 2;
-			if (C1 == 12) UncursePts = UncursePts * 2;
-			if (C1 == 13) UncursePts = UncursePts * 2;
-			if (C1 == 14) UncursePts = UncursePts * 2;
-			if (C1 == 15) UncursePts = UncursePts * 2;
+			CurseMultiRandomizer = random(1,100);
+			if (CurseMultiRandomizer == 1) UncursePts = UncursePts * 16;
+			if (CurseMultiRandomizer == 2) UncursePts = UncursePts * 8;
+			if (CurseMultiRandomizer == 3) UncursePts = UncursePts * 8;
+			if (CurseMultiRandomizer == 4) UncursePts = UncursePts * 4;
+			if (CurseMultiRandomizer == 5) UncursePts = UncursePts * 4;
+			if (CurseMultiRandomizer == 6) UncursePts = UncursePts * 4;
+			if (CurseMultiRandomizer == 7) UncursePts = UncursePts * 4;
+			if (CurseMultiRandomizer == 8) UncursePts = UncursePts * 2;
+			if (CurseMultiRandomizer == 9) UncursePts = UncursePts * 2;
+			if (CurseMultiRandomizer == 10) UncursePts = UncursePts * 2;
+			if (CurseMultiRandomizer == 11) UncursePts = UncursePts * 2;
+			if (CurseMultiRandomizer == 12) UncursePts = UncursePts * 2;
+			if (CurseMultiRandomizer == 13) UncursePts = UncursePts * 2;
+			if (CurseMultiRandomizer == 14) UncursePts = UncursePts * 2;
+			if (CurseMultiRandomizer == 15) UncursePts = UncursePts * 2;
 			UncursePts *= 2;
 
 			UncursePts *= uncursemulti;
@@ -28428,7 +28369,7 @@ script "GauntletFlashEffect" (void)
 // Sauron's Gauntlets Effect
 script "SauronGauntletsHit" (int Amount, int HitType)
 {
-	int C1, C2, C3, Z1, Z2, Z3, I1, I2, I3, G2, G3;
+	int GMultiplier;
 	int MaxManaLimit = MaxMana * 2;
 	int check;
 	if (HitType <= 0) HitType = 1;
@@ -28454,9 +28395,9 @@ script "SauronGauntletsHit" (int Amount, int HitType)
 	
 	// Restore Mana
 	int ManaAmount = (Amount * random(6,9)) / 9;
-	C1 = (PlayerLevel * 4) + 100;
+	GMultiplier = (PlayerLevel * 4) + 100;
 	ManaAmount = Amount;
-	ManaAmount = ManaAmount * C1 / 100;
+	ManaAmount = ManaAmount * GMultiplier / 100;
 	if (CharacterClass == 2) ManaAmount = ManaAmount * random(5,7) / 4; // Flora will gain Extra Mana from a Gauntlet punch to make up for not being able to get armor.
 	else if (CharacterClass == 8) ManaAmount = ManaAmount * random(4,6) / 4; // Ailish will gain Extra Mana from a Gauntlet punch as well.
 	else ManaAmount = ManaAmount * random(9,15) / 12;
@@ -28486,9 +28427,9 @@ script "DVI-M04MonsterTags" (void)
 }
 
 // "Gravity" style Spell (used for fixed % damage based on CURRENT/REMAINING HP or CURRENT/REMAINING Invulnerability Timer)
-script "DiabloistGravity" (int C5, int gravitytype)
+script "DiabloistGravity" (int GravityEffectFactor, int gravitytype)
 {
-	int C1, C2, C3;
+	int PropertyValue, FinalGravityFactor, TherapeusisFactor;
 	int basedmgratio;
 	int AffectedStat, MultFactor, THEEffect;
 	
@@ -28499,94 +28440,94 @@ script "DiabloistGravity" (int C5, int gravitytype)
 	{
 		if (PowerupTimer[4] > 0) // If the character is Invulnerable, diminish their Invulnerability Timer
 		{
-			if (TrueGameSkill <= SKILL_VERY_EASY) C5 = 63;  
-			if (TrueGameSkill == SKILL_EASY) C5 = 125;  
-			if (TrueGameSkill == SKILL_NORMAL) C5 = 250;  
-			if (TrueGameSkill == SKILL_HARD) C5 = 375;  
-			if (TrueGameSkill == SKILL_VERY_HARD) C5 = 437;  
-			if (TrueGameSkill == SKILL_EXTREME) C5 = 450;  
-			if (TrueGameSkill == SKILL_HORRIBLE) C5 = 462;  
-			if (TrueGameSkill == SKILL_IMPOSSIBLE) C5 = 475;  
-			if (TrueGameSkill >= SKILL_OMEGA) C5 = 490;  
-			if (random(1,16) == 16) C5 = C5 * 2;
+			if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 63;  
+			if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 125;  
+			if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 250;  
+			if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 375;  
+			if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 437;  
+			if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 450;  
+			if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 462;  
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 475;  
+			if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 490;  
+			if (random(1,16) == 16) GravityEffectFactor = GravityEffectFactor * 2;
 			// SeedTHE Levels
 			// Deggaris = 300 Needed to max out
 			// Illucia = 200 Needed to max out
 			// Flora = 150 Needed to max out
 			if (CharacterClass == 0)
 			{
-				C3 = 300 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 300;
+				TherapeusisFactor = 300 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
 			}
 			if (CharacterClass == 1)
 			{
-				C3 = 200 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 200;
+				TherapeusisFactor = 200 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
 			}
 			if (CharacterClass == 2)
 			{
-				C3 = 150 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 150;
+				TherapeusisFactor = 150 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
 			}
-			C2 = 1000 - C5;
+			FinalGravityFactor = 1000 - GravityEffectFactor;
 		
-			if (C5 < 0) C5 = 0;
-			if (C5 > 0)
+			if (GravityEffectFactor < 0) GravityEffectFactor = 0;
+			if (GravityEffectFactor > 0)
 			{
-				C1 = PowerupTimer[4];
-				C1 = C1 * C2 / 1000;
+				PropertyValue = PowerupTimer[4];
+				PropertyValue = PropertyValue * FinalGravityFactor / 1000;
 		
-				if (C1 < 1) C1 = 1;
-				PowerupTimer[4] = C1;
+				if (PropertyValue < 1) PropertyValue = 1;
+				PowerupTimer[4] = PropertyValue;
 				SetActorState(Player1TID,"InvulnFlashGravity");
 			}
 		}
 		else // Otherwise affect their HP as per usual
 		{
-			if (TrueGameSkill <= SKILL_VERY_EASY) C5 = 125;  
-			if (TrueGameSkill == SKILL_EASY) C5 = 250;  
-			if (TrueGameSkill == SKILL_NORMAL) C5 = 500;  
-			if (TrueGameSkill == SKILL_HARD) C5 = 750;  
-			if (TrueGameSkill == SKILL_VERY_HARD) C5 = 875;  
-			if (TrueGameSkill == SKILL_EXTREME) C5 = 900;  
-			if (TrueGameSkill == SKILL_HORRIBLE) C5 = 925;  
-			if (TrueGameSkill == SKILL_IMPOSSIBLE) C5 = 950;  
-			if (TrueGameSkill >= SKILL_OMEGA) C5 = 980;  
+			if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 125;  
+			if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 250;  
+			if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 500;  
+			if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 750;  
+			if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 875;  
+			if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 900;  
+			if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 925;  
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 950;  
+			if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 980;  
 			// SeedTHE Levels
 			// Deggaris = 300 Needed to max out
 			// Illucia = 200 Needed to max out
 			// Flora = 150 Needed to max out
 			if (CharacterClass == 0)
 			{
-				C3 = 300 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 300;
+				TherapeusisFactor = 300 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
 			}
 			if (CharacterClass == 1)
 			{
-				C3 = 200 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 200;
+				TherapeusisFactor = 200 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
 			}
 			if (CharacterClass == 2)
 			{
-				C3 = 150 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 150;
+				TherapeusisFactor = 150 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
 			}
-			C2 = 1000 - C5;
+			FinalGravityFactor = 1000 - GravityEffectFactor;
 		
-			if (C5 < 0) C5 = 0;
-			if (C5 > 0)
+			if (GravityEffectFactor < 0) GravityEffectFactor = 0;
+			if (GravityEffectFactor > 0)
 			{
-				C1 = GetActorProperty(Player1TID,APROP_Health);
-				C1 = C1 * C2 / 1000;
+				PropertyValue = GetActorProperty(Player1TID,APROP_Health);
+				PropertyValue = PropertyValue * FinalGravityFactor / 1000;
 		
-				if (C1 < 1) C1 = 1;
-				SetActorProperty(Player1TID,APROP_Health,C1);
+				if (PropertyValue < 1) PropertyValue = 1;
+				SetActorProperty(Player1TID,APROP_Health,PropertyValue);
 				SetActorState(Player1TID,"HPFlashGravity");
 			}
 		}
@@ -28596,101 +28537,101 @@ script "DiabloistGravity" (int C5, int gravitytype)
 	{
 		if (PowerupTimer[4] > 0) // If the character is Invulnerable, diminish their Invulnerability Timer
 		{
-			if (TrueGameSkill <= SKILL_VERY_EASY) C5 = 63;  
-			if (TrueGameSkill == SKILL_EASY) C5 = 125;  
-			if (TrueGameSkill == SKILL_NORMAL) C5 = 250;  
-			if (TrueGameSkill == SKILL_HARD) C5 = 375;  
-			if (TrueGameSkill == SKILL_VERY_HARD) C5 = 437;  
-			if (TrueGameSkill == SKILL_EXTREME) C5 = 450;  
-			if (TrueGameSkill == SKILL_HORRIBLE) C5 = 462;  
-			if (TrueGameSkill == SKILL_IMPOSSIBLE) C5 = 475;  
-			if (TrueGameSkill >= SKILL_OMEGA) C5 = 490;  
-			if (random(1,16) == 16) C5 = C5 * 2;
+			if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 63;  
+			if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 125;  
+			if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 250;  
+			if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 375;  
+			if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 437;  
+			if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 450;  
+			if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 462;  
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 475;  
+			if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 490;  
+			if (random(1,16) == 16) GravityEffectFactor = GravityEffectFactor * 2;
 			// SeedTHE Levels
 			// Deggaris = 300 Needed to max out
 			// Illucia = 200 Needed to max out
 			// Flora = 150 Needed to max out
 			if (CharacterClass == 0)
 			{
-				C3 = 300 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 300;
+				TherapeusisFactor = 300 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
 			}
 			if (CharacterClass == 1)
 			{
-				C3 = 200 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 200;
+				TherapeusisFactor = 200 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
 			}
 			if (CharacterClass == 2)
 			{
-				C3 = 150 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 150;
+				TherapeusisFactor = 150 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
 			}
-			C2 = 1000 - C5;
+			FinalGravityFactor = 1000 - GravityEffectFactor;
 		
-			// PrintBold(d:C2);
+			// PrintBold(d:FinalGravityFactor);
 		
-			if (C5 < 0) C5 = 0;
-			if (C5 > 0)
+			if (GravityEffectFactor < 0) GravityEffectFactor = 0;
+			if (GravityEffectFactor > 0)
 			{
-				C1 = PowerupTimer[4];
-				C1 = C1 * C2 / 1000;
+				PropertyValue = PowerupTimer[4];
+				PropertyValue = PropertyValue * FinalGravityFactor / 1000;
 		
-				if (C1 < 1) C1 = 1;
+				if (PropertyValue < 1) PropertyValue = 1;
 		
-				PowerupTimer[4] = C1;
+				PowerupTimer[4] = PropertyValue;
 				SetActorState(Player1TID,"InvulnFlashGravity");
 			}
 		}
 		else // Otherwise affect their MP as per usual
 		{
-			if (TrueGameSkill <= SKILL_VERY_EASY) C5 = 63;  
-			if (TrueGameSkill == SKILL_EASY) C5 = 125;  
-			if (TrueGameSkill == SKILL_NORMAL) C5 = 250;  
-			if (TrueGameSkill == SKILL_HARD) C5 = 375;  
-			if (TrueGameSkill == SKILL_VERY_HARD) C5 = 437;  
-			if (TrueGameSkill == SKILL_EXTREME) C5 = 450;  
-			if (TrueGameSkill == SKILL_HORRIBLE) C5 = 462;  
-			if (TrueGameSkill == SKILL_IMPOSSIBLE) C5 = 475;  
-			if (TrueGameSkill >= SKILL_OMEGA) C5 = 490;  
-			if (random(1,16) == 16) C5 = C5 * 2;
+			if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 63;  
+			if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 125;  
+			if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 250;  
+			if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 375;  
+			if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 437;  
+			if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 450;  
+			if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 462;  
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 475;  
+			if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 490;  
+			if (random(1,16) == 16) GravityEffectFactor = GravityEffectFactor * 2;
 			// SeedTHE Levels
 			// Deggaris = 300 Needed to max out
 			// Illucia = 200 Needed to max out
 			// Flora = 150 Needed to max out
 			if (CharacterClass == 0)
 			{
-				C3 = 300 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 300;
+				TherapeusisFactor = 300 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
 			}
 			if (CharacterClass == 1)
 			{
-				C3 = 200 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 200;
+				TherapeusisFactor = 200 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
 			}
 			if (CharacterClass == 2)
 			{
-				C3 = 150 - MiscellaneousVars[36];
-				if (C3 < 0) C3 = 0;
-				C5 = C5 * C3 / 150;
+				TherapeusisFactor = 150 - MiscellaneousVars[36];
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
 			}
-			C2 = 1000 - C5;
+			FinalGravityFactor = 1000 - GravityEffectFactor;
 		
-			// PrintBold(d:C2);
+			// PrintBold(d:FinalGravityFactor);
 		
-			if (C5 < 0) C5 = 0;
-			if (C5 > 0)
+			if (GravityEffectFactor < 0) GravityEffectFactor = 0;
+			if (GravityEffectFactor > 0)
 			{
-				C1 = CurrentMana;
-				C1 = C1 * C2 / 1000;
+				PropertyValue = CurrentMana;
+				PropertyValue = PropertyValue * FinalGravityFactor / 1000;
 		
-				if (C1 < 0) C1 = 0;
+				if (PropertyValue < 0) PropertyValue = 0;
 		
-				CurrentMana = C1;
+				CurrentMana = PropertyValue;
 				SetActorState(Player1TID,"ManaFlashGravity");
 			}
 		}
@@ -28875,7 +28816,6 @@ script "GetBuffTimer" (int bufftype, int type, int perkvalue)
 // Redone Buff Checker (allows additive buff timers from spells and powerup items) [must use the "DoomSpellACS" actor on a map to make this work!]
 script "CheckBuffTimers" ENTER
 {
-	int G1, G2, G3, C1, C2, C3, I1, I2, I3, D1;
 	int BaseTimerIncrement;
 	int DoveRegenTimer;
 	int DivineRegenTimer;
@@ -29224,7 +29164,6 @@ script "GiveBuffsPowerup" (int powertype, int powertimeadd)
 {
 	// powertype = Powerup Type
 	// powertimeadd = Powerup Timer Additive
-	int G1, G2, G3, C1, C2, C3, I1, I2, I3;
 	
 	powertimeadd = (powertimeadd * GetCVar("dvds_poweruptimemultiplier")) / 100; // Checks Powerup Time Multiplier
 
@@ -29367,12 +29306,12 @@ script "GiveBuffsPowerup" (int powertype, int powertimeadd)
 }
 
 // Screen Flash for Diabloist's Gravity Attack
-script "DiabloistGravityFlash" (int C5)
+script "DiabloistGravityFlash" (int Type)
 { 
-	if (C5 == 0) FadeRange(192,0,0,1.25,192,0,0,0,1.125);
-	if (C5 == 1) FadeRange(0,0,192,1.25,0,0,192,0,1.125);
-	if (C5 == 2) FadeRange(192,192,192,1.25,192,192,192,0,1.125);
-	if (C5 == 3) FadeRange(192,0,192,1.25,192,0,192,0,1.125);
+	if (Type == 0) FadeRange(192,0,0,1.25,192,0,0,0,1.125);
+	if (Type == 1) FadeRange(0,0,192,1.25,0,0,192,0,1.125);
+	if (Type == 2) FadeRange(192,192,192,1.25,192,192,192,0,1.125);
+	if (Type == 3) FadeRange(192,0,192,1.25,192,0,192,0,1.125);
 }
 
 
@@ -29413,7 +29352,7 @@ script "DiabloistGravityLock" (void)
 // Accmulate EXP for Sceptre
 script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
 {
-	int C1, C2;
+	int ExpPiecesToAdd;
 	int EXPBonus1;
 	int BossEnemy;
 	int DeftnessExpBase = GetCVar("dvds_deftnessexpbase");
@@ -29429,9 +29368,9 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
 	{
 		if (Check2 > 0)
 		{
-			C2 = 16 - SceptreActualLevel;
-			if (C2 < 1) C2 += 16;
-			if (C2 > 16) C2 -= 16;
+			ExpPiecesToAdd = 16 - SceptreActualLevel;
+			if (ExpPiecesToAdd < 1) ExpPiecesToAdd += 16;
+			if (ExpPiecesToAdd > 16) ExpPiecesToAdd -= 16;
 		
 			EXPBonus1 = 1000;
 			// Pearly Corset [+5/10% EXP Bonus]
@@ -29452,7 +29391,7 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
 				if (random(1,100) <= 5) EXPBonus1 += 100; // 5% Chance of +10% EXP Bonus
 				else EXPBonus1 += 50; // Else +5% EXP Bonus
 			}
-			C2 = C2 * EXPBonus1 / 1000;
+			ExpPiecesToAdd = ExpPiecesToAdd * EXPBonus1 / 1000;
 		
 			EXPBonus1 = 1000;
 			// Divine Avatar {+25% EXP Bonus]
@@ -29461,19 +29400,19 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
 				if (random(1,100) <= 20) EXPBonus1 += 500; // 20% Chance of +50% EXP Bonus
 				else EXPBonus1 += 250; // 20% Else +25% EXP Bonus
 			}
-			C2 = C2 * EXPBonus1 / 1000;
-			C2 = C2 * (DeftnessExpBase + MiscellaneousVars[33]) / DeftnessExpBase;
-			C2 = C2 * SceptreExpMultiplier / 100;
+			ExpPiecesToAdd = ExpPiecesToAdd * EXPBonus1 / 1000;
+			ExpPiecesToAdd = ExpPiecesToAdd * (DeftnessExpBase + MiscellaneousVars[33]) / DeftnessExpBase;
+			ExpPiecesToAdd = ExpPiecesToAdd * SceptreExpMultiplier / 100;
 		
 			// "Higher Learning" Grand Mastery Perk
-			if (MiscellaneousVars[11001] == 1) C2 = C2 * 23 / 20; // [115%]
-			if (MiscellaneousVars[11001] == 2) C2 = C2 * 13 / 10; // [130%]
+			if (MiscellaneousVars[11001] == 1) ExpPiecesToAdd = ExpPiecesToAdd * 23 / 20; // [115%]
+			if (MiscellaneousVars[11001] == 2) ExpPiecesToAdd = ExpPiecesToAdd * 13 / 10; // [130%]
 		
-			if (ModType == 0) C2 = C2 * 4 / 3; // Classic Doom 1/2 / Heretic / Hexen / Strife
-			MiscellaneousVars[203] += C2;
+			if (ModType == 0) ExpPiecesToAdd = ExpPiecesToAdd * 4 / 3; // Classic Doom 1/2 / Heretic / Hexen / Strife
+			MiscellaneousVars[203] += ExpPiecesToAdd;
 		
 		
-			// PrintBold(d:C2);
+			// PrintBold(d:ExpPiecesToAdd);
 			while (MiscellaneousVars[203] > 15) // if (MiscellaneousVars[203] > 15)
 			{
 				MiscellaneousVars[203] -= 16;
@@ -29534,32 +29473,32 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
 			if (DivAmount >= 1) SExPts = SExPts / DivAmount;
 			SExPts = SExPts + 16;
 		
-			C1 = random(1,256);
-			if (C1 == 1) SExPts = SExPts * 8;
-			if (C1 == 2) SExPts = SExPts * 4;
-			if (C1 == 3) SExPts = SExPts * 4;
-			if (C1 == 4) SExPts = SExPts * 2;
-			if (C1 == 5) SExPts = SExPts * 2;
-			if (C1 == 6) SExPts = SExPts * 2;
-			if (C1 == 7) SExPts = SExPts * 2;
+			Randomizer = random(1,256);
+			if (Randomizer == 1) SExPts = SExPts * 8;
+			if (Randomizer == 2) SExPts = SExPts * 4;
+			if (Randomizer == 3) SExPts = SExPts * 4;
+			if (Randomizer == 4) SExPts = SExPts * 2;
+			if (Randomizer == 5) SExPts = SExPts * 2;
+			if (Randomizer == 6) SExPts = SExPts * 2;
+			if (Randomizer == 7) SExPts = SExPts * 2;
 		
 			// Higher Levels = slightly less chances to get all EXP
-			if (SceptreActualLevel > 15 && C1 == 241) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 14 && C1 == 242) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 13 && C1 == 243) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 12 && C1 == 244) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 11 && C1 == 245) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 10 && C1 == 246) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 9 && C1 == 247) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 8 && C1 == 248) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 7 && C1 == 249) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 6 && C1 == 250) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 5 && C1 == 251) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 4 && C1 == 252) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 3 && C1 == 253) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 2 && C1 == 254) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 1 && C1 == 255) SExPts = SExPts / 2;
-			if (SceptreActualLevel > 0 && C1 == 256) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 15 && Randomizer == 241) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 14 && Randomizer == 242) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 13 && Randomizer == 243) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 12 && Randomizer == 244) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 11 && Randomizer == 245) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 10 && Randomizer == 246) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 9 && Randomizer == 247) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 8 && Randomizer == 248) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 7 && Randomizer == 249) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 6 && Randomizer == 250) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 5 && Randomizer == 251) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 4 && Randomizer == 252) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 3 && Randomizer == 253) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 2 && Randomizer == 254) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 1 && Randomizer == 255) SExPts = SExPts / 2;
+			if (SceptreActualLevel > 0 && Randomizer == 256) SExPts = SExPts / 2;
 		
 			EXPBonus1 = 1000;
 			// Pearly Corset [+30%/+45% EXP Bonus]
@@ -29658,7 +29597,7 @@ script "DeathTunnelVision" ENTER
 // script for Hellcore Energy and Heating usage [and also controls dealing Flora direct damage when using a Hellcore weapon when heating is 100% or higher]
 script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
 {
-	int C1, C2, C3, C4, C5, OldHealth, NewHealth, HealthDiff, DamageFactor, DamageDealt, DamageRatio, ObitTimes;
+	int LevelHeatAlter, OldHealth, NewHealth, HealthDiff, DamageFactor, DamageDealt, DamageRatio, ObitTimes;
 	int MaxHealthLimit = MaxHealthTrue * 2;
 	int PerkFactor;
 	int temp1, temp2;
@@ -29769,10 +29708,10 @@ script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
 	percent = percent * ArmorHellCoreRate / 200;
 	if (MiscellaneousVars[100003] > 0) PrintBold(s:"Hellcore Heat %: ",d:percent,s:" [Armor Reduction]");
 	
-	C2 = PlayerLevel / 10;
-	C2 = C2 * -1;
-	C2 += 200;
-	percent = percent * C2 / 200;
+	LevelHeatAlter = PlayerLevel / 10;
+	LevelHeatAlter = LevelHeatAlter * -1;
+	LevelHeatAlter += 200;
+	percent = percent * LevelHeatAlter / 200;
 	if (MiscellaneousVars[100003] > 0) PrintBold(s:"Hellcore Heat %: ",d:percent,s:" [Level Alteration]");
 	
 	// Check Hellcore Multiplier in Options
@@ -30242,31 +30181,31 @@ script "CheckFloraArmorCopies" (int Armortype)
 // Using a Diabloist's Hands' HP Gravity attack-projectile on an enemy
 script "Hand-GravityAttack" (int type, int skillcheck)
 {
-	int C1, C2, C3, C4, C5, PrinterOld, PrinterNew;
+	int CurrentHealth, GravityEffectMultiplier, GravityEffectFactor, PrinterOld, PrinterNew;
 
 	PrinterOld = GetActorProperty(0,APROP_Health);
 	if (skillcheck > 0)
 	{
-		if (TrueGameSkill <= SKILL_VERY_EASY) C5 = 875;  
-		if (TrueGameSkill == SKILL_EASY) C5 = 750;  
-		if (TrueGameSkill == SKILL_NORMAL) C5 = 500;  
-		if (TrueGameSkill == SKILL_HARD) C5 = 250;  
-		if (TrueGameSkill == SKILL_VERY_HARD) C5 = 125;  
-		if (TrueGameSkill == SKILL_EXTREME) C5 = 100;  
-		if (TrueGameSkill == SKILL_HORRIBLE) C5 = 75;  
-		if (TrueGameSkill == SKILL_IMPOSSIBLE) C5 = 50;  
-		if (TrueGameSkill >= SKILL_OMEGA) C5 = 20;
+		if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 875;  
+		if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 750;  
+		if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 500;  
+		if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 250;  
+		if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 125;  
+		if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 100;  
+		if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 75;  
+		if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 50;  
+		if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 20;
 	}
-	else C5 = 750;  
+	else GravityEffectFactor = 750;  
 
-	C2 = 1000;
-	C2 = C2 - C5;
+	GravityEffectMultiplier = 1000;
+	GravityEffectMultiplier = GravityEffectMultiplier - GravityEffectFactor;
 
-	C1 = GetActorProperty(0,APROP_Health);
-	C1 = C1 * C2 / 1000;
-	if (C1 < 1) C1 = 1;
+	CurrentHealth = GetActorProperty(0,APROP_Health);
+	CurrentHealth = CurrentHealth * GravityEffectMultiplier / 1000;
+	if (CurrentHealth < 1) CurrentHealth = 1;
 
-	SetActorProperty(0,APROP_Health,C1);
+	SetActorProperty(0,APROP_Health,CurrentHealth);
 	PrinterNew = GetActorProperty(0,APROP_Health);
 	// PrintBold(d:PrinterOld,s:"  ",d:PrinterNew);
 	// SetActorState(0,"HPFlashGravity");
@@ -32937,7 +32876,7 @@ script "AeonPtsResetStats" (void)
 // Sceptre Twirl Mana/MP Check [to "balance" sceptre alt-fire cheapness >.>]
 script "SceptreTwirlManaCheck" (int attacktype) 
 {
-	int C1, C2, C3;
+	int HaveMana, ManaCost;
 	// "16" is the sceptre timer for mana consumption
 	// "17" is the sceptre timer limit for mana consumption
 	MiscellaneousVars[17] = 10;
@@ -32962,26 +32901,26 @@ script "SceptreTwirlManaCheck" (int attacktype)
 	//Print(d:attacktype);
 	if (attacktype == 1)
 	{
-		if (SceptreActualLevel <= 4 && CurrentMana >= 5) { CurrentMana -= 5; C2++; }
-		if (SceptreActualLevel > 4 && SceptreActualLevel <= 8 && CurrentMana >= 4 ) { CurrentMana -= 4; C2++; }
-		if (SceptreActualLevel > 8 && SceptreActualLevel <= 12 && CurrentMana >= 3 ) { CurrentMana -= 3; C2++; }
-		if (SceptreActualLevel > 12 && SceptreActualLevel <= 16 && CurrentMana >= 2 ) { CurrentMana -= 2; C2++; }
-		if (SceptreActualLevel == 16 && CurrentMana >= 1) { CurrentMana -= 1; C2++; }
+		if (SceptreActualLevel <= 4 && CurrentMana >= 5) { CurrentMana -= 5; HaveMana++; }
+		if (SceptreActualLevel > 4 && SceptreActualLevel <= 8 && CurrentMana >= 4 ) { CurrentMana -= 4; HaveMana++; }
+		if (SceptreActualLevel > 8 && SceptreActualLevel <= 12 && CurrentMana >= 3 ) { CurrentMana -= 3; HaveMana++; }
+		if (SceptreActualLevel > 12 && SceptreActualLevel <= 16 && CurrentMana >= 2 ) { CurrentMana -= 2; HaveMana++; }
+		if (SceptreActualLevel == 16 && CurrentMana >= 1) { CurrentMana -= 1; HaveMana++; }
 		if (CurrentMana < 0) CurrentMana = 0;
 		MiscellaneousVars[243] = CurrentMana;
 		MiscellaneousVars[238] = CurrentMana;
 	}
 	else
 	{
-		if (CurrentMana > 0) C2++;
+		if (CurrentMana > 0) HaveMana++;
 		if (random(1,16) == 1) MiscellaneousVars[16] += 2; else MiscellaneousVars[16] += 1;
 		//Print(d:MiscellaneousVars[16]);
 		if (MiscellaneousVars[16] >= MiscellaneousVars[17])
 		{
-			C3 = random(1,2);
+			ManaCost = random(1,2);
 			if (SceptreActualLevel < 8 ) CurrentMana -= 2;
-			if (SceptreActualLevel > 8 && SceptreActualLevel < 16) CurrentMana -= C3; C2++;
-			if (SceptreActualLevel == 16) CurrentMana -= 1; C2++;
+			if (SceptreActualLevel > 8 && SceptreActualLevel < 16) CurrentMana -= ManaCost; HaveMana++;
+			if (SceptreActualLevel == 16) CurrentMana -= 1; HaveMana++;
 			if (CurrentMana < 0) CurrentMana = 0;
 			MiscellaneousVars[16] -= MiscellaneousVars[17];
 			MiscellaneousVars[243] = CurrentMana;
@@ -32989,8 +32928,8 @@ script "SceptreTwirlManaCheck" (int attacktype)
 		}
 	}
 	
-	//Print(d:C2);
-	if (C2 > 0)
+	//Print(d:HaveMana);
+	if (HaveMana > 0)
 	{
 		SetResultValue(1);
 	}
