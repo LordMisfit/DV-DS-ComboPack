@@ -1483,8 +1483,7 @@ int FloraSpellCostsDQ[33] =
 function bool SetActorPositionForced(int tid, int x, int y, int z, bool fog)
 {
 	Warp(tid, x, y, z, 0, WARPF_MOVEPTR|WARPF_ABSOLUTEPOSITION|WARPF_NOCHECKPOSITION);
-	if (fog)
-		SpawnForced("TeleportFog", x, y, z);
+	if (fog) SpawnForced("TeleportFog", x, y, z);
 	return true;
 }
 
@@ -37308,7 +37307,7 @@ script "CheckBFG2704" (void)
 	SetResultValue(GetCVar("dvds_BFG2704"));
 }
 
-str dvds_monsternames[421][3] =
+str dvds_monsternames[422][3] =
 {
 	{"PracticeTarget", "Practicing Target", ""},
 	{"PracticeTarget2", "Practicing Target", ""},
@@ -37341,6 +37340,7 @@ str dvds_monsternames[421][3] =
 	{"DSWolfensteinSS", "SS Nazi", ""},
 	{"DSLostSoul", "Lost Soul", ""},
 	{"DSLostSoul2", "Annoying Lost Soul", ""},
+	{"ForgottenOne", "Forgotten One", ""},
 	{"DSPainElemental", "Pain Elemental", ""},
 	{"DSCacoDemon", "Cacodemon", ""},
 	{"Cacolantern", "Cacolantern", ""},
@@ -37837,7 +37837,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 		int xpos = 0.0;
 		int ypos = 0.0;
 
-		for (int i = 0; i < 421; i++)
+		for (int i = 0; i < 422; i++)
 		{
 			if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
 		}
@@ -42803,12 +42803,18 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 	{
 		baseexp = baseamount;
 	}
+	finalexpamount = baseexp;
+	if (MiscellaneousVars[100008] == 1) PrintBold(s:"EXP1: ",d:finalexpamount,s:" [Base EXP]");
 
+	// Special Calls
+	if (CheckActorClass(0,"ForgottenOne") == 1)
+	{
+		finalexpamount = (finalexpamount * 5) / 2; 
+	}
 	if (CheckActorClass(0,"DSBossBrain") == 1)
 	{
 		finalexpamount = finalexpamount * random(3,5);
 	}
- 
 	if (CheckActorClass(0,"Banshee") == 1 || CheckActorClass(0,"DeathKnight") == 1)
 	{
 		finalexpamount = (finalexpamount * random(3,5)) / 2;
@@ -42830,9 +42836,8 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 		if (random(1,96) == 1) DropItem(0,"RandomSeedDropForcedAlways",1,256);
 		if (random(1,384) == 1) DropItem(0,"RandomSeedDropForcedAlways",1,256);
 	}
+	if (MiscellaneousVars[100008] == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Actor Check]");
 	
-	finalexpamount = baseexp;
-	if (MiscellaneousVars[100008] == 1) PrintBold(s:"EXP1: ",d:finalexpamount,s:" [Base EXP]");
 	
 	if (fakedeath > 0) // Fake deaths [Death Incarnate, etc] cut EXP gain by 75%
 	{
@@ -42841,7 +42846,7 @@ script "AddEXP" (int baseamount, int flags, int incrementcombo)
 	}
 	
 	finalexpamount = finalexpamount * KillExpMultiplier / 20;
-	if (MiscellaneousVars[100008] == 1) PrintBold(s:"EXP2: ",d:finalexpamount,s:" [Multiplier: ",d:KillExpMultiplier,s:" / 20]");
+	if (MiscellaneousVars[100008] == 1) PrintBold(s:"EXP: ",d:finalexpamount,s:" [Multiplier: ",d:KillExpMultiplier,s:" / 20]");
 	
 	// Check for Fast Monsters setting
 	if (GetCVar("sv_fastmonsters") == 1)
@@ -43862,6 +43867,39 @@ script "DebugStrifeFlags" (void)
 							s:"                     Flag 30 [Unused]: ",d:flag30,s:"\n",
 							s:"                     Flag 31 [Unused]: ",d:flag31
 						);
+}
+
+Script "Recall" (void) NET
+{
+	int PX = GetActorX(Player1TID);
+	int PY = GetActorY(Player1TID);
+	int PZ = GetActorZ(Player1TID);
+	int FreezePlayer = 0;
+	int WhistleStamUse = 200;
+	if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
+
+	if (PowerupTimer[20] > 0) FreezePlayer += 1;
+	if (MiscellaneousVars[2500] > 0) FreezePlayer += 1;
+
+	int oldTID, target;
+	if(SetActivator(0,AAPTR_PLAYER_GETTARGET)) // Get the target of the activator. If it fails because there is none nothing will happen.
+	{
+		if (GetActorProperty(Player1TID,APROP_Health) > 0 && MiscellaneousVars[168] == 0 && MiscellaneousVars[21] >= WhistleStamUse && FreezePlayer == 0)
+		{
+			if ((ActivatorTID() == 1000 && CheckFlag(ActivatorTID(), "FRIENDLY") == TRUE) || GetUserVariable(ActivatorTID(), "user_charmed") > 0)
+			{
+				SetActorPositionForced(ActivatorTID(),PX,PY,PZ,1);
+				ActivatorSound("monstersummon",127);
+				SpawnForced("PlayerWhistle",GetActorX(Player1TID),GetActorY(Player1TID),GetActorZ(Player1TID)+(32*65536),0,0);
+				MiscellaneousVars[21] -= WhistleStamUse;
+				MiscellaneousVars[168] = 24; // Set's cooldown for whistling
+			}
+			else
+			{
+				PlaySound(Player1TID,"inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+	}
 }
 
 Script "AttackTarget" (void) NET

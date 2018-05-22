@@ -3858,7 +3858,212 @@ actor DSLostSoul2 : DSLostSoul 22433
 			wait
 	}
 }
+//
+Actor ForgottenOne : AetheriusMonsterZSC
+{
+	Obituary "A Forgotten One rammed %o off into the distance :V"
+	Health 40
+	Radius 14
+	Height 30
+	Mass 50
+	Speed 8
+	PainChance 57
+	PainChance "Melee", 230
+	PainChance "Fist", 230
+	PainChance "Kick", 230
+	PainChance "Gauntlets", 230
+	PainChance "Chainsaw", 230
+	PainChance "Sceptre", 230
+	DamageFactor "Normal", 0.25
+	DamageFactor "Melee", 4
+	DamageFactor "Fist", 4
+	DamageFactor "Kick", 4
+	DamageFactor "Gauntlets", 4
+	DamageFactor "Chainsaw", 4
+	DamageFactor "Sceptre", 4
+	Scale 0.7
+	PainSound "Forgotten/Pain"
+	DeathSound "Forgotten/Death"
+	ActiveSound "Forgotten/Active"
+	Damage 3
+	Monster
+	+FLOORCLIP
+	+FLOAT
+	+NOGRAVITY
+	+NOICEDEATH
+	+DONTFALL
+	+FLOATBOB
+	+NOBLOOD
+	+NOTARGET
+	+NOTARGETSWITCH
+	+NOINFIGHTING
+	States
+	{
+		Spawn:
+			FRGO A 0 Bright NoDelay 
+			{
+				A_TakeInventory("50PercentDMGWeakness",0x7FFFFFFF);
+				A_ChangeFlag("FLOATBOB",1);
+			}
+			FRGO AAAAAABBBBBB 1 Bright A_Look
+			Loop
+		See:
+			FRGO A 0 Bright
+			{
+				A_ChangeFlag("FLOATBOB",1);
+				A_TakeInventory("50PercentDMGWeakness",0x7FFFFFFF);
+				ACS_NamedExecuteAlways("RefreshStealthInfo",0,0);
+				if(health <= user_HPLowRange)
+				{
+					A_ChangeFlag("NOFEAR", 1);
+					A_ChangeFlag("CANTSEEK", 1);
+					A_ChangeFlag("NOINFIGHTING", 1);
+					A_ChangeFlag("THRUSPECIES", 1);
+					A_ChangeFlag("DONTHARMSPECIES", 1);
+					A_ChangeFlag("NORADIUSDMG", 1);
+					if(health <= user_HPCritRange)
+					{
+						A_ChangeFlag("VISIBILITYPULSE", 1);
+						A_ChangeFlag("DONTRIP", 1);
+						A_ChangeFlag("DONTSQUASH", 1);
+						A_ChangeFlag("DONTMORPH", 1);
+						A_ChangeFlag("DONTBLAST", 1);
+					}
+					else
+					{
+						A_ChangeFlag("VISIBILITYPULSE", 0);
+						A_ChangeFlag("DONTRIP", 0);
+						A_ChangeFlag("DONTSQUASH", 0);
+						A_ChangeFlag("DONTMORPH", 0);
+						A_ChangeFlag("DONTBLAST", 0);
+					}
+				}
+				else
+				{
+					A_ChangeFlag("NOFEAR", 0);
+					A_ChangeFlag("CANTSEEK", 0);
+					A_ChangeFlag("NOINFIGHTING", 0);
+					A_ChangeFlag("THRUSPECIES", 0);
+					A_ChangeFlag("DONTHARMSPECIES", 0);
+					A_ChangeFlag("NORADIUSDMG", 0);
+				}
+			}
+			FRGO AABB 3 Bright 
+			{
+				if (levelbehavior > 0 && user_monsterlevel > 60) { A_ChangeFlag("AVOIDMELEE",1); }
+				if (levelbehavior > 0 && user_monsterlevel > 90) { A_SetTics(2); }
 
+				if (levelbehavior > 0) { user_fastchaseextra = user_monsterlevel/12; }
+				user_fastchasechance = 6 + user_fastchaseextra + user_painfastchase;
+				if (random(1,256) <= user_fastchasechance) { A_Chase("Melee","Missile",CHF_FASTCHASE); } else { A_Chase; }
+				user_painfastchase = 0;
+			}
+			Loop
+		Missile:
+			FRGO C 0
+			{
+				A_ChangeFlag("FLOATBOB",0);
+				ACS_NamedExecuteAlways("RefreshStealthInfo",0,1); // makes a Stealth Monster become more visible
+				user_painfastchase = 0;
+			}
+			FRGO CCDDC 2 Bright 
+			{
+				if (levelbehavior > 0 && user_monsterlevel > 240) { A_SetTics(1); }
+				A_FaceTarget;
+			}
+			FRGO D 2 Bright 
+			{
+				if (levelbehavior > 0 && user_monsterlevel > 240) { A_SetTics(1); }
+				A_PlaySound("Forgotten/Attack");
+				A_GiveInventory("50PercentDMGWeakness",1);
+
+				A_MonsterCrisisCheck;
+				if(user_canusecrisisatk == 1)
+				{
+					A_PlayCrisisAtkSound;
+					A_SkullAttack(24);
+				}
+				else
+				{
+					A_SkullAttack(20);
+					A_SkullAttack;
+				}
+			}
+			FRGO C 2 Bright
+			{
+				if (levelbehavior > 0 && user_monsterlevel > 240) { A_SetTics(1); }
+				A_MonsterCrisisCheck;
+				if(user_canusecrisisatk == 1) { A_CustomMeleeAttack(random(1,8)*4,"none","none","Melee",true); }
+			}
+			FRGO C 0 Bright A_JumpIfTargetInLOS(4, 75)
+			FRGO C 0 A_Jump(24, "StopCharge")
+			FRGO DC 2 Bright
+			{
+				if (levelbehavior > 0 && user_monsterlevel > 240) { A_SetTics(1); }
+				A_MonsterCrisisCheck;
+				if(user_canusecrisisatk == 1) { A_CustomMeleeAttack(random(1,8)*4,"none","none","Melee",true); }
+			}
+			Goto Missile+9
+			FRGO C 0 Bright
+			Goto Missile+6
+		StopCharge:
+			FRGO C 0 A_Stop
+			Goto See
+		Pain:
+			FRGO E 0 Bright
+			{
+				A_TakeInventory("50PercentDMGWeakness",0x7FFFFFFF);
+				A_ChangeFlag("FLOATBOB",1);
+			}
+			FRGO E 3 Bright
+			FRGO E 3 Bright
+			{
+				A_Pain;
+				user_painfastchase = 6 * random(1,8);
+			}
+			Goto See
+		Pain.Fist:
+			FRGO E 0 Bright
+			{
+				A_TakeInventory("50PercentDMGWeakness",0x7FFFFFFF);
+				A_ChangeFlag("FLOATBOB",1);
+			}
+			FRGO E 3 Bright
+			FRGO E 3 Bright
+			{
+				A_Pain;
+				user_painfastchase = 6 * random(1,8);
+			}
+			FRGO EE 3 Bright
+			Goto See
+		Pain.Kick:
+			FRGO E 0 Bright
+			{
+				A_TakeInventory("50PercentDMGWeakness",0x7FFFFFFF);
+				A_ChangeFlag("FLOATBOB",1);
+			}
+			FRGO E 3 Bright
+			FRGO E 3 Bright
+			{
+				A_Pain;
+				user_painfastchase = 8 * random(1,8);
+			}
+			FRGO EEEE 3 Bright
+			Goto See
+		Death:
+			TNT1 A 0 ACS_NamedExecuteAlways("AddEXP",0,-2,0,1) // Gives 2.5x their base EXP to make their EXP comparable to Lost Souls in spite of their lower Health :V
+			FRGO E 0 Bright A_TakeInventory("50PercentDMGWeakness",0x7FFFFFFF)
+			FRGO E 0 A_ChangeFlag("FLOATBOB",0)
+			FRGO E 0 A_Stop
+			FRGO EF 4 Bright
+			FRGO G 6 Bright A_Scream
+			FRGO H 6 Bright
+			FRGO I 6 Bright A_NoBlocking
+			FRGO J 6 Bright
+			Stop
+	}
+}
+//
 actor DSDemon : AetheriusMonsterZSC 26518
 {
 	//$Angled
@@ -5790,8 +5995,15 @@ actor DSPainElemental : AetheriusMonsterZSC 26531
 			PAIN F 5 bright    // See LostSoul
 			{
 				A_FaceTarget;
-				if (random(1,256) <= ACS_NamedExecuteWithResult("GetEvolveChance")) { A_PainAttack("DSLostSoul2",0,PAF_NOSKULLATTACK|PAF_AIMFACING); }
-				else { A_PainAttack("DSLostSoul",0,PAF_NOSKULLATTACK|PAF_AIMFACING); }
+				if (random(1,256) <= ACS_NamedExecuteWithResult("GetEvolveChance")) 
+				{ 
+					if (random(1,384) <= ACS_NamedExecuteWithResult("GetEvolveChance")) { A_PainAttack("ForgottenOne",0,PAF_NOSKULLATTACK|PAF_AIMFACING); }
+					else { A_PainAttack("DSLostSoul2",0,PAF_NOSKULLATTACK|PAF_AIMFACING); }
+				}
+				else 
+				{ 
+					A_PainAttack("DSLostSoul",0,PAF_NOSKULLATTACK|PAF_AIMFACING); 
+				}
 				if (levelbehavior > 0 && user_monsterlevel > 150) { A_SetTics(3); }
 				else if (levelbehavior > 0 && user_monsterlevel > 75) { A_SetTics(4); }
 			}
@@ -5820,13 +6032,27 @@ actor DSPainElemental : AetheriusMonsterZSC 26531
 				if (A_JumpIfTargetInsideMeleeRange(1)) { A_CrisisMeleeAttack(10*random(1,6),"caco/melee","none","Melee",true); }
 				if(user_canusecrisisatk == 1)
 				{
-					if (random(1,256) <= ACS_NamedExecuteWithResult("GetEvolveChance")) { A_DualPainAttack("DSLostSoul2"); A_PainAttack("DSLostSoul2");  }
-					else { A_DualPainAttack("DSLostSoul"); A_PainAttack("DSLostSoul");  }
+					if (random(1,256) <= ACS_NamedExecuteWithResult("GetEvolveChance")) 
+					{
+						if (random(1,384) <= ACS_NamedExecuteWithResult("GetEvolveChance")) { A_DualPainAttack("ForgottenOne"); A_PainAttack("ForgottenOne"); }
+						else { A_DualPainAttack("DSLostSoul2"); A_PainAttack("DSLostSoul2"); }
+					}
+					else
+					{
+						A_DualPainAttack("DSLostSoul"); A_PainAttack("DSLostSoul"); 
+					}
 				}
 				else
 				{
-					if (random(1,256) <= ACS_NamedExecuteWithResult("GetEvolveChance")) { A_PainAttack("DSLostSoul2"); }
-					else { A_PainAttack("DSLostSoul"); }
+					if (random(1,256) <= ACS_NamedExecuteWithResult("GetEvolveChance")) 
+					{
+						if (random(1,384) <= ACS_NamedExecuteWithResult("GetEvolveChance")) { A_PainAttack("ForgottenOne"); }
+						else { A_PainAttack("DSLostSoul2"); }
+					}
+					else 
+					{
+						A_PainAttack("DSLostSoul"); 
+					}
 				}
 			}
 			goto See
