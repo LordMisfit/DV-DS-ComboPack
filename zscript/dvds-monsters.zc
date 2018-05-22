@@ -405,6 +405,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					CritChance /= 16;
 					if (CritChance < 1) CritChance = 1;
 				}
+				if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
+						infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
+						infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
+						infl == "FireBreath" || infl == "FireBreathCrisis" ||
+						infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis")
+				{
+					CritChance *= 4;
+				}
 				if (infl == "SuicideBomb" || infl == "SuicideBomber" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") CritChance = 0; // Kamikaze Monsters Cannot Crit
 		
 				// Final Crit Roll
@@ -426,36 +434,66 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		// (Partial) Defense Ignoring Attacks
 		double basedmgfactor = DamageFactor;
 
-		float ActorDefenseIgnoreFactor = 0.00;
-		// BFG Ignores half of "normal" damagefactor
-		if (mod == 'BFG' || mod == 'BFGSpray') 
-		{ 
-			ActorDefenseIgnoreFactor = frandom(0.45,0.55);
-			if (DamageFactor < 1.00) DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
+		double HubBubRand = frandompick(0.45,0.475,0.5,0.525,0.55);
+		double RailRandom = frandompick(0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.50,0.50,0.50,0.50,0.75,0.75,0.9875);
+		double ActorDefenseIgnoreFactor = 0.00;
+		// BFG Ignores roughly half of "normal" damagefactor
+		if (inflictor == null && source == null) { }
+		else
+		{
+			if (mod == 'BFG' || mod == 'BFGSpray') 
+			{ 
+				ActorDefenseIgnoreFactor += (frandom(0.45,0.55) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Plasma Ignores 1/4th of "normal" damagefactor
+			if (mod == 'Plasma') 
+			{ 
+				ActorDefenseIgnoreFactor += (frandom(0.225,0.275) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Railguns
+			if (infl == "DBTRailPuff") 
+			{ 
+				ActorDefenseIgnoreFactor += (RailRandom * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Hubble Bubbles
+			if (infl == "HubbleBubbleSmall" || infl == "HubbleBubbleLarge") 
+			{ 
+				ActorDefenseIgnoreFactor += (HubBubRand * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Sceptre
+			if (mod == 'Sceptre') 
+			{ 
+				ActorDefenseIgnoreFactor += (0.5 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			if (mod == 'Drowning') 
+			{
+				ActorDefenseIgnoreFactor += (1.00 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Suicide Bombers/Kamikaze Enemy Attacks
+			if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") 
+			{
+				ActorDefenseIgnoreFactor += (0.6667 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Fire Breath
+			if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
+					infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
+					infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
+					infl == "FireBreath" || infl == "FireBreathCrisis" ||
+					infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis")
+			{
+				ActorDefenseIgnoreFactor += (0.75 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Legendaries
+			if (DVDSActor && DVDSActor.user_legendaryevolved) 
+			{ 
+				ActorDefenseIgnoreFactor = 0.5;
+			}
 		}
-		// Plasma Ignores 1/4th of "normal" damagefactor
-		if (mod == 'Plasma') 
-		{ 
-			ActorDefenseIgnoreFactor = frandom(0.225,0.275);
-			if (DamageFactor < 1.00) DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
-		}
-		if (infl == "DBTRailPuff") 
-		{ 
-			ActorDefenseIgnoreFactor = frandompick(0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.50,0.50,0.50,0.50,0.75,0.75,0.9875);
-			if (DamageFactor < 1.00) DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
-		}
-		if (infl == "HubbleBubbleSmall" || infl == "HubbleBubbleLarge") 
-		{ 
-			ActorDefenseIgnoreFactor = frandompick(0.45,0.475,0.5,0.525,0.55);
-			if (DamageFactor < 1.00) DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
-		}
-		// Legendaries
-		if (DVDSActor && DVDSActor.user_legendaryevolved) 
-		{ 
-			ActorDefenseIgnoreFactor = 0.5;
-			if (DamageFactor < 1.00) DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
-		}
-		// This ignores damage factors [similar to how DQ crits ignore defense]
+		if (DamageFactor < 1.00) DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
+
+		//**********************************************************************
+		//*This ignores damage factors [similar to how DQ crits ignore defense]*
+		//**********************************************************************
 		if (dealtcrit && DamageFactor < 1.00) 
 		{
 			ActorDefenseIgnoreFactor = 1.00;
@@ -463,13 +501,17 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 		if (dvdsdebug_actordmgdisplays > 0 && damage > 0) 
 		{
-			if (ActorDefenseIgnoreFactor > 0.00) Console.Printf("    (\czActor Defensive Input [STEP 3 - Def Ignoring]\c-: \caDefenseIgnoreFactor\c- = \ca%8f\c-, \cypredmg = %d\c- , \cydmg = %d\c- (Monster Actor))", ActorDefenseIgnoreFactor, predmginr, damage);
+			if (ActorDefenseIgnoreFactor > 0.00) Console.Printf("    (\czActor Defensive Input [STEP 3 - Def Ignoring]\c-: \caDefenseIgnoreFactor = %8f\c-, \cadmgfactor = %8f\c-, \cypredmg = %d\c-, \cydmg = %d\c- (Monster Actor))", ActorDefenseIgnoreFactor, DamageFactor, predmginr, damage);
 																			else Console.Printf("    (\czActor Defensive Input [STEP 3 - Def Ignoring]\c-: \caSKIPPED\c-, \cydmg = %d\c-)", predmginr);
 		}
 
 		int predirdmg = damage;
 		// Direct Damage Changes
-		if (infl == "DemonFire" || infl == "DemonFireCrisis" || infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis")
+		if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
+				infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
+				infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
+				infl == "FireBreath" || infl == "FireBreathCrisis" ||
+				infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis")
 		{
 			damage *= 1.125;
 		}
