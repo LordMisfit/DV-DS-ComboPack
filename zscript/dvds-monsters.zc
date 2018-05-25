@@ -249,9 +249,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2a - Player-Friendly Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-)", prefriendlydmg, damage);
 			}
 			
+			// Chance to RESIST a crit.
+			double CritResistChance = 1.25;
+			if (vict == "ForgottenOne") CritResistChance += 23.75;
+			int CritResistRoll = frandom(0.1,100.0);
+
 			// Dealing with Critical hits
 			precritdmg = damage;
-			if (CountInv("DealCriticalHit", AAPTR_PLAYER1) > 0)
+
+			if (CountInv("DealCriticalHit", AAPTR_PLAYER1) > 0 && CritResistRoll > CritResistChance)
 			{
 				if (CountInv("AnubisCufflinksFear", AAPTR_PLAYER1) > 0) critdmgmulti *= 1.25;
 				if (CountInv("RuinousShield", AAPTR_PLAYER1) > 0) critdmgmulti *= 0.8;
@@ -279,7 +285,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				damage *= ldldmgmulti;
 				if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2c - Player-LDLPerk Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \caldldmgmulti = %3f\c-)", preldldmg, damage, ldldmgmulti);
 			}
-			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2x - Player Dmg]\c-: \cxprefdmg = %d\c-, \cxprefrienddmg = %d\c-, \cxprecritdmg = %d\c-, \cxpreldldmg = %d\c-, \cydmg = %d\c-)", preplayerdmg, prefriendlydmg, precritdmg, preldldmg, damage);
+			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2x - Player Dmg]\c-: \cxprefdmg = %d\c-, \cxprefrienddmg = %d\c-, \cxprecritdmg = %d\c-, \cxpreldldmg = %d\c-, \cydmg = %d\c-, \cbCritResist: (%8f) / %8f\c-)", preplayerdmg, prefriendlydmg, precritdmg, preldldmg, damage, CritResistRoll, CritResistChance);
 		}
 		else
 		if (DVDSActor && damage > 0 && dvds_monstercrits != 0)
@@ -420,12 +426,22 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (CritRoll <= CritChance && DVDSActor.health > 0 && !(level.frozen || globalfreeze) && dvds_monstercrits != 0) criticalhit = 1;
 				if (dvdsdebug_actordmgdisplays > 0 && dvds_monstercrits != 0) Console.Printf("    (\czActor Defensive Input [Monster Crit Rate]\c-: %d / 512 (%d) \c-, \cyActorClass: = %s\c-)", CritRoll, CritChance, ActorClass);
 
+				// Chance to RESIST a crit.
+				double CritResistChance = 1.25;
+				if (vict == "ForgottenOne") CritResistChance += 23.75;
+				int CritResistRoll = frandom(0.1,100.0);
+				if (criticalhit && CritResistRoll <= CritResistChance) 
+				{
+					criticalhit = 0;
+					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit]\c-: \cxRESISTED\c-, \cbCritResist: (%8f) / %8f\c-)", CritResistRoll, CritResistChance);
+				}
+				
 				if (criticalhit) 
 				{
 					damage *= critdmgmulti;
 					A_GiveInventory("TookCriticalHit",1);
 					dealtcrit = true;
-					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti);
+					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cbCritResist: (%8f) / %8f\c-)", precritdmg, damage, critdmgmulti, CritResistRoll, CritResistChance);
 				}
 			}
 		}
