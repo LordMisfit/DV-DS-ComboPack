@@ -13,7 +13,7 @@ class AetheriusPlayerPawn : PlayerPawn
 	double PlayerDefenseIgnoreFactor, PlayerArmorIgnoreFactor, PlayerArmorIgnoreFactorGeneral;
 	double neverbleeds;
 
-	private class<Inventory> APPackToken, APPackCheck;
+	private class<Inventory> APPackToken, APPackCheck, MiscCheck;
 
 	double TotalAirControl;
 	override void MovePlayer()
@@ -179,6 +179,7 @@ class AetheriusPlayerPawn : PlayerPawn
 
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		int CharacterClass = CallACS("CheckCharacterClass");
 		int criticalhit;
 		int CritChance, CritRoll;
 		AetheriusMonsterZSC DVDSActor;
@@ -443,6 +444,31 @@ class AetheriusPlayerPawn : PlayerPawn
 
 			// Chance to RESIST a crit.
 			double CritResistChance = 1.25;
+			// Check Armor
+			if (CharacterClass == 0 || CharacterClass == 1)
+			{
+				if (CountInv("DSGreenArmorClass") > 0) 		CritResistChance += (35.00 / 8);
+				if (CountInv("DSBlueArmorClass") > 0) 		CritResistChance += (52.50 / 8);
+				if (CountInv("DSStoneArmorClass1") > 0)		CritResistChance += (70.80 / 8);
+				if (CountInv("DSDiamondArmorClass1") > 0)	CritResistChance += (93.75 / 8);
+				if (CountInv("DSStoneArmorClass2") > 0)		CritResistChance += (87.50 / 8);
+				if (CountInv("DSDiamondArmorClass2") > 0)	CritResistChance += (98.75 / 8);
+			}
+			if (CharacterClass == 2)
+			{
+				if (CountInv("SafeTeaShoes") > 0) 				CritResistChance += (3.00 / 4);
+				if (CountInv("PearlyCorset") > 0) 				CritResistChance += (7.00 / 4);
+				if (CountInv("WaterFlyingDress") > 0)			CritResistChance += (8.00 / 4);
+				if (CountInv("EvenstarNecklace") > 0)			CritResistChance += (2.00 / 4);
+				if (CountInv("CloakofEvasion") > 0)				CritResistChance += (4.00 / 4);
+				if (CountInv("AnubisCufflinks") > 0)			CritResistChance += (5.00 / 4);
+				if (CountInv("KissaBra") > 0)							CritResistChance += (6.00 / 4);
+				if (CountInv("DivineShield") > 0)					CritResistChance += (16.00 / 4);
+				if (CountInv("BalrogRing") > 0)						CritResistChance += (2.00 / 4);
+				if (CountInv("DoveRibbon") > 0)						CritResistChance += (9.00 / 4);
+				if (CountInv("FalconKnifeEarrings") > 0)	CritResistChance += (5.00 / 4);
+			}
+			// Check Stats
 			double temp1 = 0.0;
 			temp1 += (CallACS("StatCheck",0) * 0.03125); // LVL
 			temp1 += (CallACS("StatCheck",3) * 0.01875); // AGL
@@ -462,7 +488,26 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (CallACS("GetBuffTimer",129) > 0) CritResistChance += 25.0; // GoE
 			if (CallACS("GetBuffTimer",20) > 0) CritResistChance = 0.0; // Sleep
 
+			// Player Has "Item"
+			if (CountInv("HWShieldDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.25);
+			if (CountInv("ImpWarlordShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.25);
+			if (CountInv("ImpWarlordShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.45);
+			if (CountInv("DKnightShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.375);
+			if (CountInv("DKnightShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.475);
+			if (CountInv("AcolyteShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.125);
+			if (CountInv("AcolyteShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.35);
+			if (CountInv("CentaurShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.333);
+			if (CountInv("CentaurShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.48666);
+			if (CountInv("SlaughtaurShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.41667);
+			if (CountInv("SlaughtaurShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.49333);
+			if (CountInv("MaulotaurChargeDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.375);
+			if (CountInv("HeresiarchShieldDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.4375);
+			if (CountInv("HightmarePhaseOutDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.46875);
+			String nm = "ThamuzApocalypseDefendMode"; MiscCheck = nm; if (CountInv(MiscCheck)) CritResistChance += ((100.0 - CritResistChance) * 0.4);
+
+			// Ripper Detection
 			if (inflictor && inflictor.bRIPPER) { if (!singleripproj && !singlefastripproj && random(1,6) != 1) CritResistChance = 200.0; }
+
 			double CritResistRoll = frandom(0.1,100.0);
 			if (criticalhit && CritResistRoll <= CritResistChance) 
 			{
