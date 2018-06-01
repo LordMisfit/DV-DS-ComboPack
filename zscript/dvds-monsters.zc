@@ -11,13 +11,23 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int bobstate;
 
 	// General
+	const SKILL_VERY_EASY = 0;
+	const SKILL_EASY = 1;
+	const SKILL_NORMAL = 2;
+	const SKILL_HARD = 3;
+	const SKILL_VERY_HARD = 4;
+	const SKILL_EXTREME = 5;
+	const SKILL_HORRIBLE = 6;
+	const SKILL_IMPOSSIBLE = 7;
+	const SKILL_OMEGA = 8;
+
 	int painchancefist, painchancekick, painchancegauntlets;
 	int levelbehavior;
 	int bullet_tracer_mode;
 	int gfxeffectlevel;
 	int AggressionLevelThreshold1, AggressionLevelThreshold2, AggressionLevelThreshold3;
 	int neverbleeds;
-
+	
 	property AggressionLevelThreshold: AggressionLevelThreshold1, AggressionLevelThreshold2, AggressionLevelThreshold3;
 
 	default
@@ -40,7 +50,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	*/
 	int ActorRandomBits;
 	
-	private class<Inventory> LDLToken, LDLCheck, MiscCheck;
+	private class<Inventory> LDLToken, LDLCheck, MiscCheck, MiscCheck2, MiscCheck3, MiscCheck4;
+	Actor lastattacker;
+	Actor lastattackeratk;
+	Actor playeriskiller;
 	
 	override void PostBeginPlay()
 	{
@@ -126,7 +139,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		//This space for rent.
 		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
 	}
-    
+
 	override void Die(Actor source, Actor inflictor, int dmgflags)
 	{
 		if (self.health <= 0 && CountInv("MonsterLevelCalcs") == 1 && !bICECORPSE) { A_AetheriusStats(1); }
@@ -209,8 +222,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int maxdmg = self.health;
 		string infl, sour, vict;
 		vict = GetClassName();
+		if (inflictor != null) lastattackeratk = inflictor;
 		if (inflictor == null) infl = "NONE";
 											else infl = inflictor.GetClassName();
+		if (source != null) lastattacker = source;
 		if (source == null) sour = "NONE";
 									 else sour = source.GetClassName();
 
@@ -1000,17 +1015,1332 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_TakeInventory("HightmarePhaseOutDefense",0x7FFFFFFF); // A_SetInvulnerable
 	}
 
+	int EXPCheck1;
+	void A_GetExpMultiFactor()
+	{
+		int debugexp = dvdsdebug_showexpdebugstuff;
+		int ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int PlayerLevel = CallACS("StatCheck",0);
+
+		int ExpMultiFactor, MapCheck, Exp2;
+		int deathkingsmapcalcmod = dvds_deathkingsmapcalcmod;
+		int mapcalcfactorexact = 0;
+		int mapcalcfactorpercent = 100;
+		
+		int mapdifficultyinflationEXP = dvds_mapdifficultyinflationEXP;
+		if (mapdifficultyinflationEXP < -50) mapdifficultyinflationEXP = -50;
+		if (mapdifficultyinflationEXP > 50) mapdifficultyinflationEXP = 50;
+		
+		int mapdifficultyinflationOVERALL = dvds_mapdifficultyinflationOVERALL;
+		if (mapdifficultyinflationOVERALL < -50) mapdifficultyinflationOVERALL = -50;
+		if (mapdifficultyinflationOVERALL > 50) mapdifficultyinflationOVERALL = 50;
+
+		int mapdifficultyinflationEXP2 = dvds_mapdifficultyinflationEXP2;
+		if (mapdifficultyinflationEXP2 < 1) mapdifficultyinflationEXP2 = 1;
+		if (mapdifficultyinflationEXP2 > 5000) mapdifficultyinflationEXP2 = 5000;
+		
+		int mapdifficultyinflationOVERALL2 = dvds_mapdifficultyinflationOVERALL2;
+		if (mapdifficultyinflationOVERALL2 < 1) mapdifficultyinflationOVERALL2 = 1;
+		if (mapdifficultyinflationOVERALL2 > 5000) mapdifficultyinflationOVERALL2 = 5000;
+
+	// Gets the Experience Multiplication Factor [Part 1]
+		ExpMultiFactor = Random(90,120);
+		if (PlayerLevel < 40) ExpMultiFactor += (PlayerLevel * 1.0625); // +6.25%
+		else
+		{
+			if (PlayerLevel < 80) ExpMultiFactor += (PlayerLevel * 1.125); // +12.5%
+			else
+			{
+				if (PlayerLevel < 120) ExpMultiFactor += (PlayerLevel * 1.25); // +25%
+				else
+				{
+					if (PlayerLevel < 160) ExpMultiFactor += (PlayerLevel * 1.5); // +50%
+					else ExpMultiFactor += (PlayerLevel * 2); // +100%
+				}
+			}
+		}
+		
+		// Gets the Experience Multiplication Factor [Part 2]
+		MapCheck = level.levelnum;
+		if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
+		{
+			if (ClassicDoomType == 1 || ClassicDoomType == 2) // Classic Doom 1 or Heretic
+			{
+				if (MapCheck != 1000 || MapCheck != 1010)
+				{
+					if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+					MapCheck += mapdifficultyinflationEXP; // Map Inflation [EXP - Exact]
+					MapCheck += mapdifficultyinflationOVERALL; // Map Inflation [Overall - Exact]
+					MapCheck = MapCheck * mapdifficultyinflationEXP2 / 100; // Map Inflation [EXP - Percentile]
+					MapCheck = MapCheck * mapdifficultyinflationOVERALL2 / 100; // Map Inflation [Overall - Percentile]
+					if (MapCheck < 1) MapCheck = 1;
+					if (MapCheck > 75) MapCheck = 75;
+				}
+				if (MapCheck == 1000) Exp2 = 0; // E1M0 [Classic Doom 1]
+				if (MapCheck == 1010) Exp2 = 0; // E1MA [Heretic]
+				// Episode 1
+				if (MapCheck == 1) Exp2 = MapCheck * 1.00; // Monster Bonus [100%] [E1M1]
+				if (MapCheck == 2) Exp2 = MapCheck * 1.010; // Monster Bonus [100%] [E1M2]
+				if (MapCheck == 3) Exp2 = MapCheck * 1.020; // Monster Bonus [100%] [E1M3]
+				if (MapCheck == 9) Exp2 = MapCheck * 1.090; // Monster Bonus [100%] [E1M9]
+				if (MapCheck == 10) Exp2 = MapCheck * 1.100; // Monster Bonus [100%] [E1M10]
+				if (MapCheck == 4) Exp2 = MapCheck * 1.030; // Monster Bonus [100%] [E1M4]
+				if (MapCheck == 5) Exp2 = MapCheck * 1.040; // Monster Bonus [100%] [E1M5]
+				if (MapCheck == 6) Exp2 = MapCheck * 1.050; // Monster Bonus [100%] [E1M6]
+				if (MapCheck == 7) Exp2 = MapCheck * 1.060; // Monster Bonus [100%] [E1M7]
+				if (MapCheck == 8) Exp2 = MapCheck * 1.070; // Monster Bonus [100%] [E1M8]
+				// Episode 2
+				if (MapCheck == 11) Exp2 = MapCheck * 1.1125; // Monster Bonus [100%] [E2M1]
+				if (MapCheck == 12) Exp2 = MapCheck * 1.125; // Monster Bonus [100%] [E2M2]
+				if (MapCheck == 13) Exp2 = MapCheck * 1.1375; // Monster Bonus [100%] [E2M3]
+				if (MapCheck == 14) Exp2 = MapCheck * 1.150; // Monster Bonus [100%] [E2M4]
+				if (MapCheck == 15) Exp2 = MapCheck * 1.1625; // Monster Bonus [100%] [E2M5]
+				if (MapCheck == 19) Exp2 = MapCheck * 1.220; // Monster Bonus [100%] [E2M9]
+				if (MapCheck == 20) Exp2 = MapCheck * 1.240; // Monster Bonus [100%] [E2M10]
+				if (MapCheck == 16) Exp2 = MapCheck * 1.175; // Monster Bonus [100%] [E2M6]
+				if (MapCheck == 17) Exp2 = MapCheck * 1.1875; // Monster Bonus [100%] [E2M7]
+				if (MapCheck == 18) Exp2 = MapCheck * 1.200; // Monster Bonus [100%] [E2M8]
+				// Episode 3
+				if (MapCheck == 21) Exp2 = MapCheck * 1.280; // Monster Bonus [100%] [E3M1]
+				if (MapCheck == 22) Exp2 = MapCheck * 1.320; // Monster Bonus [100%] [E3M2]
+				if (MapCheck == 23) Exp2 = MapCheck * 1.360; // Monster Bonus [100%] [E3M3]
+				if (MapCheck == 24) Exp2 = MapCheck * 1.400; // Monster Bonus [100%] [E3M4]
+				if (MapCheck == 25) Exp2 = MapCheck * 1.440; // Monster Bonus [100%] [E3M5]
+				if (MapCheck == 26) Exp2 = MapCheck * 1.480; // Monster Bonus [100%] [E3M6]
+				if (MapCheck == 29) Exp2 = MapCheck * 1.600; // Monster Bonus [100%] [E3M9]
+				if (MapCheck == 30) Exp2 = MapCheck * 1.680; // Monster Bonus [100%] [E3M10]
+				if (MapCheck == 27) Exp2 = MapCheck * 1.520; // Monster Bonus [100%] [E3M7]
+				if (MapCheck == 28) Exp2 = MapCheck * 1.560; // Monster Bonus [100%] [E3M8]
+				// Episode 4
+				if (MapCheck == 31) Exp2 = MapCheck * 1.750; // Monster Bonus [100%] [E4M1]
+				if (MapCheck == 32) Exp2 = MapCheck * 1.825; // Monster Bonus [100%] [E4M2]
+				if (MapCheck == 39) Exp2 = MapCheck * 2.600; // Monster Bonus [100%] [E4M9]
+				if (MapCheck == 40) Exp2 = MapCheck * 2.875; // Monster Bonus [100%] [E4M10]
+				if (MapCheck == 33) Exp2 = MapCheck * 1.900; // Monster Bonus [100%] [E4M3]
+				if (MapCheck == 34) Exp2 = MapCheck * 2.000; // Monster Bonus [100%] [E4M4]
+				if (MapCheck == 35) Exp2 = MapCheck * 2.100; // Monster Bonus [100%] [E4M5]
+				if (MapCheck == 36) Exp2 = MapCheck * 2.225; // Monster Bonus [100%] [E4M6]
+				if (MapCheck == 37) Exp2 = MapCheck * 2.350; // Monster Bonus [100%] [E4M7]
+				if (MapCheck == 38) Exp2 = MapCheck * 2.475; // Monster Bonus [100%] [E4M8]
+				// Episode 5
+				if (MapCheck == 41) Exp2 = MapCheck * 2.750; // Monster Bonus [100%] [E5M1]
+				if (MapCheck == 42) Exp2 = MapCheck * 2.825; // Monster Bonus [100%] [E5M2]
+				if (MapCheck == 49) Exp2 = MapCheck * 3.600; // Monster Bonus [100%] [E5M9]
+				if (MapCheck == 50) Exp2 = MapCheck * 3.875; // Monster Bonus [100%] [E5M10]
+				if (MapCheck == 43) Exp2 = MapCheck * 2.900; // Monster Bonus [100%] [E5M3]
+				if (MapCheck == 44) Exp2 = MapCheck * 3.000; // Monster Bonus [100%] [E5M4]
+				if (MapCheck == 45) Exp2 = MapCheck * 3.100; // Monster Bonus [100%] [E5M5]
+				if (MapCheck == 46) Exp2 = MapCheck * 3.225; // Monster Bonus [100%] [E5M6]
+				if (MapCheck == 47) Exp2 = MapCheck * 3.350; // Monster Bonus [100%] [E5M7]
+				if (MapCheck == 48) Exp2 = MapCheck * 3.475; // Monster Bonus [100%] [E5M8]
+				// Episode 6
+				if (MapCheck == 51) Exp2 = MapCheck * 3.250; // Monster Bonus [100%] [E6M1]
+				if (MapCheck == 52) Exp2 = MapCheck * 3.450; // Monster Bonus [100%] [E6M2]
+				if (MapCheck == 53) Exp2 = MapCheck * 3.650; // Monster Bonus [100%] [E6M3]
+				if (MapCheck == 54) Exp2 = MapCheck * 3.850; // Monster Bonus [100%] [E6M4]
+				if (MapCheck == 55) Exp2 = MapCheck * 4.050; // Monster Bonus [100%] [E6M5]
+				if (MapCheck == 56) Exp2 = MapCheck * 4.250; // Monster Bonus [100%] [E6M6]
+				if (MapCheck == 57) Exp2 = MapCheck * 4.450; // Monster Bonus [100%] [E6M7]
+				if (MapCheck == 58) Exp2 = MapCheck * 4.650; // Monster Bonus [100%] [E6M8]
+				if (MapCheck == 59) Exp2 = MapCheck * 4.850; // Monster Bonus [100%] [E6M9]
+				if (MapCheck == 60) Exp2 = MapCheck * 5.050; // Monster Bonus [100%] [E6M10]
+				// Episode 7
+				if (MapCheck == 61) Exp2 = MapCheck * 5.275; // Monster Bonus [100%] [E7M1]
+				if (MapCheck == 62) Exp2 = MapCheck * 5.500; // Monster Bonus [100%] [E7M2]
+				if (MapCheck == 63) Exp2 = MapCheck * 5.725; // Monster Bonus [100%] [E7M3]
+				if (MapCheck == 64) Exp2 = MapCheck * 5.950; // Monster Bonus [100%] [E7M4]
+				if (MapCheck == 65) Exp2 = MapCheck * 6.175; // Monster Bonus [100%] [E7M5]
+				if (MapCheck == 66) Exp2 = MapCheck * 6.400; // Monster Bonus [100%] [E7M6]
+				if (MapCheck == 67) Exp2 = MapCheck * 6.625; // Monster Bonus [100%] [E7M7]
+				if (MapCheck == 68) Exp2 = MapCheck * 6.850; // Monster Bonus [100%] [E7M8]
+				if (MapCheck == 69) Exp2 = MapCheck * 7.075; // Monster Bonus [100%] [E7M9]
+				if (MapCheck >= 70) Exp2 = MapCheck * 7.300; // Monster Bonus [100%] [E7M10]
+					// Episode 8
+				if (MapCheck == 71) Exp2 = MapCheck * 7.550; // Monster Bonus [100%] [E8M1]
+				if (MapCheck == 72) Exp2 = MapCheck * 7.800; // Monster Bonus [100%] [E8M2]
+				if (MapCheck == 73) Exp2 = MapCheck * 8.050; // Monster Bonus [100%] [E8M3]
+				if (MapCheck == 74) Exp2 = MapCheck * 8.300; // Monster Bonus [100%] [E8M4]
+				if (MapCheck >= 75) Exp2 = MapCheck * 8.550; // Monster Bonus [100%] [E8M5]
+	
+							if (MapCheck == 9) Exp2 = Exp2 * 3.75; // [375%]
+				else if (MapCheck == 19) Exp2 = Exp2 * 5.00; // [500%]
+				else if (MapCheck == 29) Exp2 = Exp2 * 6.25; // [625%]
+				else if (MapCheck == 39) Exp2 = Exp2 * 7.50; // [750%]
+				else if (MapCheck == 49) Exp2 = Exp2 * 8.75; // [875%]
+				else if (MapCheck == 59) Exp2 = Exp2 * 10.00; // [1000%]
+				else if (MapCheck == 69) Exp2 = Exp2 * 11.25; // [1125%]
+														else Exp2 = Exp2 * 12.50;  // [250%]
+			}
+			else // Classic Doom 2 / Hexen / Strife / Doom64 / PSXDoom
+			{
+			if (MapCheck != 1050 || MapCheck != 1020 || MapCheck != 1030 || MapCheck != 1036 || MapCheck != 1037 || MapCheck != 1038 || MapCheck != 1039)
+			{
+					if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+					MapCheck += mapdifficultyinflationEXP; // Map Inflation [EXP - Exact]
+					MapCheck += mapdifficultyinflationOVERALL; // Map Inflation [Overall - Exact]
+					MapCheck = MapCheck * mapdifficultyinflationEXP2 / 100; // Map Inflation [EXP - Percentile]
+					MapCheck = MapCheck * mapdifficultyinflationOVERALL2 / 100; // Map Inflation [Overall - Percentile]
+					if (MapCheck < 1) MapCheck = 1;
+					if (MapCheck > 75) MapCheck = 75;
+				}
+				if (MapCheck == 1050) Exp2 = 0; // MAP00 [Classic Doom 2]
+				if (MapCheck == 1020) Exp2 = 0; // MAP0A [Hexen]
+				if (MapCheck == 1030) Exp2 = 0; // MAPAA [Strife]
+				if (MapCheck >= 1036 && MapCheck <= 1038) Exp2 = 0; // [Doom64]
+				if (MapCheck == 1039) Exp2 = 0; // MAPP0 [PSXDoom]
+				// Main Game
+				if (MapCheck == 1) Exp2 = MapCheck * 1.000; // Monster Bonus [100%] [MAP01]
+				if (MapCheck == 2) Exp2 = MapCheck * 1.0125; // Monster Bonus [101.25%] [MAP02]
+				if (MapCheck == 3) Exp2 = MapCheck * 1.025; // Monster Bonus [102.5%] [MAP03]
+				if (MapCheck == 4) Exp2 = MapCheck * 1.0375; // Monster Bonus [103.75%] [MAP04]
+				if (MapCheck == 5) Exp2 = MapCheck * 1.050; // Monster Bonus [105%] [MAP05]
+		
+				if (MapCheck == 6) Exp2 = MapCheck * 1.069; // Monster Bonus [106.9%] [MAP06]
+				if (MapCheck == 7) Exp2 = MapCheck * 1.088; // Monster Bonus [108.8%] [MAP07]
+				if (MapCheck == 8) Exp2 = MapCheck * 1.107; // Monster Bonus [110.7%] [MAP08]
+				if (MapCheck == 9) Exp2 = MapCheck * 1.125; // Monster Bonus [112.5%] [MAP09]
+				if (MapCheck == 10) Exp2 = MapCheck * 1.144; // Monster Bonus [114.4%] [MAP10]
+		
+				if (MapCheck == 11) Exp2 = MapCheck * 1.169; // Monster Bonus [116.9%] [MAP11]
+				if (MapCheck == 12) Exp2 = MapCheck * 1.194; // Monster Bonus [119.4%] [MAP12]
+				if (MapCheck == 13) Exp2 = MapCheck * 1.219; // Monster Bonus [121.9%] [MAP13]
+				if (MapCheck == 14) Exp2 = MapCheck * 1.244; // Monster Bonus [124.4%] [MAP14]
+				if (MapCheck == 15) Exp2 = MapCheck * 1.269; // Monster Bonus [126.9%] [MAP15]
+		
+				if (MapCheck == 31) Exp2 = MapCheck * 1.519; // Monster Bonus [151.9%] [MAP31]
+				if (MapCheck == 32) Exp2 = MapCheck * 2.019; // Monster Bonus [201.9%] [MAP32]
+		
+				if (MapCheck == 16) Exp2 = MapCheck * 1.300; // Monster Bonus [130.0%] [MAP16]
+				if (MapCheck == 17) Exp2 = MapCheck * 1.331; // Monster Bonus [133.1%] [MAP17]
+				if (MapCheck == 18) Exp2 = MapCheck * 1.363; // Monster Bonus [136.3%] [MAP18]
+				if (MapCheck == 19) Exp2 = MapCheck * 1.394; // Monster Bonus [139.4%] [MAP19]
+				if (MapCheck == 20) Exp2 = MapCheck * 1.425; // Monster Bonus [142.5%] [MAP20]
+		
+				if (MapCheck == 21) Exp2 = MapCheck * 1.475; // Monster Bonus [147.5%] [MAP21]
+				if (MapCheck == 22) Exp2 = MapCheck * 1.525; // Monster Bonus [152.5%] [MAP22]
+				if (MapCheck == 23) Exp2 = MapCheck * 1.575; // Monster Bonus [157.5%] [MAP23]
+				if (MapCheck == 24) Exp2 = MapCheck * 1.625; // Monster Bonus [162.5%] [MAP24]
+				if (MapCheck == 25) Exp2 = MapCheck * 1.675; // Monster Bonus [167.5%] [MAP25]
+		
+				if (MapCheck == 26) Exp2 = MapCheck * 1.743; // Monster Bonus [174.3%] [MAP26]
+				if (MapCheck == 27) Exp2 = MapCheck * 1.819; // Monster Bonus [181.9%] [MAP27]
+				if (MapCheck == 28) Exp2 = MapCheck * 1.900; // Monster Bonus [190.0%] [MAP28]
+				if (MapCheck == 29) Exp2 = MapCheck * 1.998; // Monster Bonus [199.8%] [MAP29]
+				if (MapCheck == 30) Exp2 = MapCheck * 2.688; // Monster Bonus [268.8%] [MAP30]
+	
+				if (MapCheck == 33) Exp2 = MapCheck * 2.170; // Monster Bonus [217.0%] [MAP33]
+				if (MapCheck == 34) Exp2 = MapCheck * 2.270; // Monster Bonus [227.0%] [MAP34]
+				if (MapCheck == 35) Exp2 = MapCheck * 2.371; // Monster Bonus [237.1%] [MAP35]
+				if (MapCheck == 36) Exp2 = MapCheck * 2.473; // Monster Bonus [247.3%] [MAP36]
+				if (MapCheck == 37) Exp2 = MapCheck * 2.576; // Monster Bonus [257.6%] [MAP37]
+				if (MapCheck == 38) Exp2 = MapCheck * 2.680; // Monster Bonus [268.0%] [MAP38]
+				if (MapCheck == 39) Exp2 = MapCheck * 2.785; // Monster Bonus [278.5%] [MAP39]
+				if (MapCheck == 40) Exp2 = MapCheck * 2.891; // Monster Bonus [289.1%] [MAP40]
+	
+				if (MapCheck == 41) Exp2 = MapCheck * 3.000; // Monster Bonus [300.0%] [MAP41]
+				if (MapCheck == 42) Exp2 = MapCheck * 3.102; // Monster Bonus [310.2%] [MAP42]
+				if (MapCheck == 43) Exp2 = MapCheck * 3.206; // Monster Bonus [320.6%] [MAP43]
+				if (MapCheck == 44) Exp2 = MapCheck * 3.312; // Monster Bonus [331.2%] [MAP44]
+				if (MapCheck == 45) Exp2 = MapCheck * 3.420; // Monster Bonus [342.0%] [MAP45]
+				if (MapCheck == 46) Exp2 = MapCheck * 3.530; // Monster Bonus [353.0%] [MAP46]
+				if (MapCheck == 47) Exp2 = MapCheck * 3.642; // Monster Bonus [364.2%] [MAP47]
+				if (MapCheck == 48) Exp2 = MapCheck * 3.756; // Monster Bonus [375.6%] [MAP48]
+				if (MapCheck == 49) Exp2 = MapCheck * 3.872; // Monster Bonus [387.2%] [MAP49]
+				if (MapCheck == 50) Exp2 = MapCheck * 3.992; // Monster Bonus [399.2%] [MAP50]
+	
+				if (MapCheck == 51) Exp2 = MapCheck * 4.100; // Monster Bonus [410.0%] [MAP51]
+				if (MapCheck == 52) Exp2 = MapCheck * 4.204; // Monster Bonus [420.4%] [MAP52]
+				if (MapCheck == 53) Exp2 = MapCheck * 4.312; // Monster Bonus [431.2%] [MAP53]
+				if (MapCheck == 54) Exp2 = MapCheck * 4.424; // Monster Bonus [442.4%] [MAP54]
+				if (MapCheck == 55) Exp2 = MapCheck * 4.540; // Monster Bonus [454.0%] [MAP55]
+				if (MapCheck == 56) Exp2 = MapCheck * 4.660; // Monster Bonus [466.0%] [MAP56]
+				if (MapCheck == 57) Exp2 = MapCheck * 4.784; // Monster Bonus [478.4%] [MAP57]
+				if (MapCheck == 58) Exp2 = MapCheck * 4.902; // Monster Bonus [490.2%] [MAP58]
+				if (MapCheck == 59) Exp2 = MapCheck * 5.034; // Monster Bonus [503.0%] [MAP59]
+				if (MapCheck == 60) Exp2 = MapCheck * 5.170; // Monster Bonus [517.0%] [MAP60]
+	
+				if (MapCheck == 61) Exp2 = MapCheck * 5.200; // Monster Bonus [520.0%] [MAP61]
+				if (MapCheck == 62) Exp2 = MapCheck * 5.304; // Monster Bonus [530.4%] [MAP62]
+				if (MapCheck == 63) Exp2 = MapCheck * 5.412; // Monster Bonus [541.2%] [MAP63]
+				if (MapCheck == 64) Exp2 = MapCheck * 5.524; // Monster Bonus [552.4%] [MAP64]
+				if (MapCheck == 65) Exp2 = MapCheck * 5.640; // Monster Bonus [564.0%] [MAP65]
+				if (MapCheck == 66) Exp2 = MapCheck * 5.760; // Monster Bonus [576.0%] [MAP66]
+				if (MapCheck == 67) Exp2 = MapCheck * 5.884; // Monster Bonus [588.4%] [MAP67]
+				if (MapCheck == 68) Exp2 = MapCheck * 6.002; // Monster Bonus [600.2%] [MAP68]
+				if (MapCheck == 69) Exp2 = MapCheck * 6.134; // Monster Bonus [613.0%] [MAP69]
+				if (MapCheck == 70) Exp2 = MapCheck * 6.270; // Monster Bonus [627.0%] [MAP70]
+	
+				if (MapCheck == 71) Exp2 = MapCheck * 6.400; // Monster Bonus [640.0%] [MAP71]
+				if (MapCheck == 72) Exp2 = MapCheck * 6.504; // Monster Bonus [650.4%] [MAP72]
+				if (MapCheck == 73) Exp2 = MapCheck * 6.612; // Monster Bonus [661.2%] [MAP73]
+				if (MapCheck == 74) Exp2 = MapCheck * 6.724; // Monster Bonus [672.4%] [MAP74]
+				if (MapCheck >= 75) Exp2 = MapCheck * 6.840; // Monster Bonus [684.0%] [MAP75]
+	
+						 if (MapCheck == 31) Exp2 = Exp2 * 5.0; // [500%]
+				else if (MapCheck == 32) Exp2 = Exp2 * 7.5; // [750%]
+														else Exp2 = Exp2 * 2.5; // [250%]
+			}
+		}
+		else
+		if (ModType == 1) // Deus Vult 1
+		{
+			if (MapCheck != 1100)
+			{
+				if (MapCheck < 1101) MapCheck = 1101;
+				if (MapCheck > 1104) MapCheck = 1104;
+			}
+			if (MapCheck == 1101) Exp2 = (MapCheck - 1100) * 1.00; // Monster Bonus [100%]
+			if (MapCheck == 1102) Exp2 = (MapCheck - 1100) * 1.20; // Monster Bonus [120%]
+			if (MapCheck == 1103) Exp2 = (MapCheck - 1100) * 1.44; // Monster Bonus [144%]
+			if (MapCheck == 1104) Exp2 = (MapCheck - 1100) * 1.92; // Monster Bonus [192%]
+		}
+		else
+		if (ModType == 2) // Deus Vult 2
+		{
+			if (MapCheck != 1200)
+			{
+				if (MapCheck < 1201) MapCheck = 1201;
+				if (MapCheck > 1212) MapCheck = 1212;
+			}
+			// Zendaria Levels
+			if (MapCheck == 1200) Exp2 = (MapCheck - 1200) * 1.04; // +4% Exp Bonus // Prolouge - The Mysterious Cave
+			// Earth-type Levels
+			if (MapCheck == 1201) Exp2 = (MapCheck - 1200) * 1.00; // Monster Bonus // MAP01 - Entryway Pass
+			if (MapCheck == 1202) Exp2 = (MapCheck - 1200) * 1.06; // Monster Bonus // MAP02 - Mutagen
+			if (MapCheck == 1203) Exp2 = (MapCheck - 1200) * 1.12; // Monster Bonus // MAP03 - Crouching Demon, Hidden Archvile
+			if (MapCheck == 1204) Exp2 = (MapCheck - 1200) * 1.20; // Monster Bonus // MAP04 - Minas Morgul
+			if (MapCheck == 1205) Exp2 = (MapCheck - 1200) * 1.26; // Monster Bonus // MAP05 - Eagle's Nest
+			if (MapCheck == 1206) Exp2 = (MapCheck - 1200) * 1.34; // Monster Bonus // MAP05B - The Manliest Level Ever
+			if (MapCheck == 1207) Exp2 = (MapCheck - 1200) * 1.42; // Monster Bonus // MAP06 - Stargate
+			if (MapCheck == 1208) Exp2 = (MapCheck - 1200) * 1.50; // Monster Bonus // MAP07 - The Desert Temple
+			// Hell Levels
+			if (MapCheck == 1209) Exp2 = (MapCheck - 1200) * 1.78; // Monster Bonus // MAP08 - The Unholy Cathedral
+			if (MapCheck == 1210) Exp2 = (MapCheck - 1200) * 2.10; // Monster Bonus // MAP09 - You Shall Not Pass!
+			if (MapCheck == 1211) Exp2 = (MapCheck - 1200) * 2.48; // Monster Bonus // MAP10 - Hell's Vendetta
+			if (MapCheck == 1212) Exp2 = (MapCheck - 1200) * 2.92; // Monster Bonus // MAP10B - attedneV s'lleH
+			// Extra Levels
+			if (MapCheck == 1213) Exp2 = 0; // NO Exp Bonus since it's Heaven, foo. :P // MAP11 - St. Peter's Gate
+			if (MapCheck == 1214) Exp2 = (MapCheck - 1200) * 1.40; // MAP12 - "The Wings of The Maiar" [DVI combined level remake]
+			if (MapCheck == 1215) Exp2 = (MapCheck - 1200) * 2.92; // MAP10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
+			// Ending Levels
+			if (MapCheck == 1216) Exp2 = 0; // NO Exp Bonus in ending levels // MAP13 - The Return Home
+			if (MapCheck == 1217) Exp2 = 0; // NO Exp Bonus in ending levels // ENDMAP - Credits and Cast
+		}
+		ExpMultiFactor += Exp2;
+		if (debugexp) Console.Printf("ModType: %d, \czMapCheck: %d\c-, Exp2: %d, ExpMultiFactor: %d", ModType, MapCheck, Exp2, ExpMultiFactor);
+		
+		EXPCheck1 = ExpMultiFactor;
+	}
+
+	int EXPCheck2;
+	void A_GetExperience(int RealExpGain, int ExpMultiFactor)
+	{
+		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
+		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		int debugexp = dvdsdebug_showexpdebugstuff;
+		int CharacterClass = CallACS("CheckCharacterClass");
+
+		int DeftnessExpBase = dvds_deftnessexpbase;
+		int ExpMultiplier = dvds_expmultiplier;
+		int OldExp1 = RealExpGain;
+		if (debugexp) Console.Printf("OldExp1: %d", OldExp1);
+
+		RealExpGain = RealExpGain * ExpMultiFactor / 100; // Randomizes some of the experience gained
+		int OldExp2 = RealExpGain;
+		if (debugexp) Console.Printf("OldExp2: %d, [ExpMultiFactor: %d]", OldExp2, ExpMultiFactor);
+
+		RealExpGain = RealExpGain * (DeftnessExpBase + CallACS("MiscVarCheckDECORATE",33)) / DeftnessExpBase;
+		int OldExp3 = RealExpGain;
+		if (debugexp) Console.Printf("OldExp3: %d [DeftBonus: %d]", OldExp3, (DeftnessExpBase + CallACS("MiscVarCheckDECORATE",33)), DeftnessExpBase);
+
+		RealExpGain = RealExpGain * ExpMultiplier / 100; // EXP Multiplier Option
+		int OldExp4 = RealExpGain;
+		if (debugexp) Console.Printf("OldExp4: %d, [ExpMultiOption: %d]", OldExp4, ExpMultiplier);
+		
+		int perkfactor;
+		// "Cleared of Mind" Perk
+		perkfactor = 100;
+		if (clearofmind > 0)
+		{
+			if (clearofmind >= 1) perkfactor += 4;
+			if (clearofmind >= 2) perkfactor += 5;
+			if (clearofmind >= 3) perkfactor += 6;
+			if (clearofmind >= 4) perkfactor += 7;
+			if (clearofmind >= 5) perkfactor += 8;
+			if (clearofmindex >= 1) perkfactor += 15;
+			if (clearofmindex >= 2) perkfactor += 15;
+			RealExpGain = RealExpGain * perkfactor / 100;
+		}
+		int OldExp5 = RealExpGain;
+		if (debugexp) Console.Printf("OldExp5: %d, [perkfactor: %d / 100]", OldExp5, perkfactor);
+
+		// "Higher Learning" Grand Mastery Perk
+		if (CallACS("MiscVarCheckDECORATE",11001) == 1)
+		{
+			if (CharacterClass == 0 | CharacterClass == 1) RealExpGain = RealExpGain * 49 / 40; // EXP Multiplier Option [122.5%]
+			if (CharacterClass == 2) RealExpGain = RealExpGain * 23 / 20; // EXP Multiplier Option [115%]
+		}
+		if (CallACS("MiscVarCheckDECORATE",11001) == 2)
+		{
+			if (CharacterClass == 0 | CharacterClass == 1) RealExpGain = RealExpGain * 29 / 20; // EXP Multiplier Option [145%]
+			if (CharacterClass == 2) RealExpGain = RealExpGain * 13 / 10; // EXP Multiplier Option [115%]
+		}
+		int OldExp6 = RealExpGain;
+		if (debugexp) Console.Printf("OldExp6: %d", OldExp6);
+
+		if (TrueGameSkill <= SKILL_VERY_EASY) RealExpGain = RealExpGain * 25 / 8; // 312.5%
+		else if (TrueGameSkill == SKILL_EASY) RealExpGain = RealExpGain * 5 / 2; // 250%
+		else if (TrueGameSkill == SKILL_NORMAL) RealExpGain = RealExpGain * 15 / 8; // 187.5%
+		else if (TrueGameSkill == SKILL_HARD) RealExpGain = RealExpGain * 5 / 4; // 125%
+		else if (TrueGameSkill == SKILL_VERY_HARD) RealExpGain = RealExpGain * 7 / 8; // 87.5%
+		else if (TrueGameSkill == SKILL_EXTREME) RealExpGain = RealExpGain * 13 / 16; // 81.25%
+		else if (TrueGameSkill == SKILL_HORRIBLE) RealExpGain = RealExpGain * 6 / 8; // 75%
+		else if (TrueGameSkill == SKILL_IMPOSSIBLE) RealExpGain = RealExpGain * 11 / 16; // 68.75%
+		else if (TrueGameSkill >= SKILL_OMEGA) RealExpGain = RealExpGain * 5 / 8; // 62.5%
+		int OldExp7 = RealExpGain;
+		if (debugexp) Console.Printf("OldExp7: %d", OldExp7);
+
+		int ArmorEXPMulti = 20;
+		if (CharacterClass == 2)
+		{
+			if (CountInv("SafeTeaShoes", AAPTR_PLAYER1)) { if (random(1,100) < 6) { ArmorEXPMulti += 2; } else { ArmorEXPMulti += 1; } }
+			if (CountInv("PearlyCorset", AAPTR_PLAYER1)) { if (random(1,100) < 6) { ArmorEXPMulti += 9; } else { ArmorEXPMulti += 6; } }
+			if (CountInv("DoveRibbon", AAPTR_PLAYER1)) { if (random(1,100) < 6) { ArmorEXPMulti += 2; } else { ArmorEXPMulti += 1; } }
+			RealExpGain = RealExpGain * ArmorEXPMulti / 20;
+		}
+		int OldExp8 = RealExpGain;
+		if (debugexp) Console.Printf("OldExp8: %d, [ArmorEXPMulti: %d]", OldExp8, ArmorEXPMulti);
+
+		if (CallACS("GetBuffTimer",7) > 0) { if (random(1,100) > 67) { RealExpGain = RealExpGain * 7 / 6; } else { RealExpGain = RealExpGain * 13 / 12; } } // Divine Avatar [+8.333% EXP, (33% chance of +16.67% EXP instead]
+		if (debugexp) Console.Printf("NewEXP: %d", RealExpGain);
+		
+		EXPCheck2 = RealExpGain;
+	}
+
+	void A_AddEXP(int baseamount = -2, int flags = 0, int incrementcombo = 1, int expfactor = 100)
+	{
+		int debugexp = dvdsdebug_showexpdebugstuff;
+		int debuguncurse = dvdsdebug_shielduncursedisplay;
+		int ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int terminate;
+
+		int baseexp, finalexpamount, overkillhp, overkillhp2;
+		int Exp1, Exp2, ExpMultiFactor, RealExpGain;
+		int ComboMultiplier;
+		int KillExpMultiplier;
+		int KilledByPlayer = 1;
+		int fakedeath;
+		int random1;
+		string ActorClass = GetClassName();
+		string nm;
+
+		if (expfactor == 0) expfactor = 100;
+		if (flags & 2) fakedeath = 1;
+		int MapValue = level.levelnum;
+		//Console.Printf("MapNumber: %d", level.levelnum);
+		int MonsterX = pos.x;
+		int MonsterY = pos.y;
+		int MonsterZ = pos.z;
+
+		double RandomArmorDropChance;
+		double RandomArmorDropMulti;
+		
+		if (ClassicDoomType == 4) // Strife
+		{
+			nm = "DegninOrePickup";
+			MiscCheck = nm;
+			// Enemies in the Degnin Mines or levels in the factory HUB can sometimes drop Degnin Ore depending on the area
+			if (MapValue == 14) // Degnin Mines
+			{
+				if (random(1,768) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,384) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,192) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,96) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,72) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,48) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,24) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,12) == 1) A_DropItem(MiscCheck,1,256);
+				if (debugexp) Console.Printf("Degnin Ore Drop Attempt [MAP14]", debugexp);
+			}
+			if (MapValue == 20) // Factory: Receiving
+			{
+				if (random(1,4096) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,1024) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,256) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,64) == 1) A_DropItem(MiscCheck,1,256);
+				if (debugexp) Console.Printf("Degnin Ore Drop Attempt [MAP20]", debugexp);
+			}
+			if (MapValue == 21) // Factory: Manufacturing
+			{
+				if (random(1,4096) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,1024) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,256) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,64) == 1) A_DropItem(MiscCheck,1,256);
+				if (debugexp) Console.Printf("Degnin Ore Drop Attempt [MAP21]", debugexp);
+			}
+			if (MapValue == 22) // Factory: Forge
+			{
+				if (random(1,192) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,160) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,128) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,96) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,64) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,32) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,16) == 1) A_DropItem(MiscCheck,1,256);
+				if (debugexp) Console.Printf("Degnin Ore Drop Attempt [MAP22]", debugexp);
+			}
+			if (MapValue == 24) // Factory: Conversion Chapel
+			{
+				if (random(1,4096) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,1024) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,256) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,64) == 1) A_DropItem(MiscCheck,1,256);
+				if (debugexp) Console.Printf("Degnin Ore Drop Attempt [MAP24]", debugexp);
+			}
+			if (MapValue == 26) // Proving Grounds
+			{
+				if (random(1,7168) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,1536) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,384) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,96) == 1) A_DropItem(MiscCheck,1,256);
+				if (debugexp) Console.Printf("Degnin Ore Drop Attempt [MAP26]", debugexp);
+			}
+			if (MapValue == 27) // The Lab [Loremaster boss]
+			{
+				if (random(1,8192) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,2048) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,512) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,128) == 1) A_DropItem(MiscCheck,1,256);
+				if (debugexp) Console.Printf("Degnin Ore Drop Attempt [MAP27]", debugexp);
+			}
+			if (CountInv("QuestItem29", AAPTR_PLAYER1) > 0) // Destroying the Transmitter allows any other enemy in the game to have a chance to drop Degnin Ore [any level]
+			{
+				if (random(1,8192) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,2048) == 1) A_DropItem(MiscCheck,1,256);
+				if (random(1,512) == 1) A_DropItem(MiscCheck,1,256);
+				if (debugexp) Console.Printf("Degnin Ore Drop Attempt [Post-Transmitter]", debugexp);
+			}
+		}
+		
+		if (TrueGameSkill <= SKILL_VERY_EASY) RandomArmorDropMulti = 0.75;
+		else if (TrueGameSkill == SKILL_EASY) RandomArmorDropMulti = 0.90;
+		else if (TrueGameSkill == SKILL_NORMAL) RandomArmorDropMulti = 1.00;
+		else if (TrueGameSkill == SKILL_HARD) RandomArmorDropMulti = 1.10;
+		else if (TrueGameSkill == SKILL_VERY_HARD) RandomArmorDropMulti = 1.25;
+		else if (TrueGameSkill == SKILL_EXTREME) RandomArmorDropMulti = 1.35;
+		else if (TrueGameSkill == SKILL_HORRIBLE) RandomArmorDropMulti = 1.50;
+		else if (TrueGameSkill == SKILL_IMPOSSIBLE) RandomArmorDropMulti = 1.65;
+		else if (TrueGameSkill >= SKILL_OMEGA) RandomArmorDropMulti = 1.80;
+		
+		KilledByPlayer = 1;
+		KillExpMultiplier = 20; // 20 = 100% [1 = 5%]
+		string lastattackername; if (lastattacker) lastattackername = lastattacker.GetClassName();
+		playeriskiller = AetheriusPlayerPawn(lastattacker);
+		if (debugexp && lastattacker) Console.Printf("lastattacker: %s", lastattackername);
+		if (debugexp && playeriskiller) Console.Printf("playeriskiller");
+		if (GetCVar("dvds_exppropercredit") == 1)
+		{
+			if (!playeriskiller) // if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == FALSE)
+			{
+				// TODO: Detect if a friendly monster/summon is the killer of the monster to give EXP credit to the player
+				if (lastattacker && lastattacker.bFRIENDLY)
+				{
+					KilledByPlayer = 0;
+					KillExpMultiplier = random(13,18); // [65 to 90%]
+					if (CountInv("AnubisCufflinks", AAPTR_PLAYER1) > 0) KillExpMultiplier += 2;
+				}
+				else
+				{
+					if (debugexp) Console.Printf("Passed Player/Friendly-Monster Credit Check: NO", debugexp);
+					terminate = 1;
+				}
+			}
+		}
+		
+		if (debugexp)
+		{
+			if (KilledByPlayer == 1) Console.Printf("Passed Player/Friendly-Monster Credit Check: YES (PLAYER)", debugexp);
+			else Console.Printf("Passed Player/Friendly-Monster Credit Check: YES (FRIENDLY ACTOR)", debugexp);
+		}
+		
+		if (playeriskiller && playeriskiller.health <= 0)  
+		{
+			if (debugexp) Console.Printf("Passed Player-Alive Check: NO", debugexp);
+			terminate = 1;
+		}
+		else
+		{
+			if (debugexp) Console.Printf("Passed Player-Alive Check: YES", debugexp);
+		}
+		
+		if (bFRIENDLY) // Any "FRIENDLY" flagged monster who runs the script will not get beyond this point UNLESS they have bit 1 enabled.
+		{
+			if (flags & 1) { }
+			else
+			{
+				if (debugexp) Console.Printf("Passed FRIENDLY Check: NO", debugexp);
+				terminate = 1;
+			}
+		}
+		else
+		{
+			if (debugexp) Console.Printf("Passed FRIENDLY Check: YES", debugexp);
+		}
+		
+		if (!terminate)
+		{
+			int HellCoreRuinousDropChance = 5;
+			if (CountInv("RuinousShield", AAPTR_PLAYER1) > 0) HellCoreRuinousDropChance *= 3; // Ruinous Shield triples drop rate
+			if (CallACS("DVDSSpecialArrayCheckDECORATE",3) > 0) HellCoreRuinousDropChance *= 4; // Playing Unloved sets this to drop 4x as often
+			if (CharacterClass != 2) HellCoreRuinousDropChance = 0;
+			// Monster Unique Drop Rates [Hellcore weapons]
+			if (ActorClass == "DSDoomImp")			A_DropItem("ImpClawCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "DarkImp")				A_DropItem("DarkImpClawCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "DSCacodemon")		A_DropItem("CacodemonEyeCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "Cacolantern")		A_DropItem("CacolanternEyeCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "Abaddon")				A_DropItem("AbaddonEyeCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "DSHellKnight")		A_DropItem("KnightFistCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "DSBaronofHell")	A_DropItem("BaronFistCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "Belphegor")			A_DropItem("BelphegorFistCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "BruiserDemon")		A_DropItem("BruiserFistCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "ArchonOfHell")		A_DropItem("ArchonFistCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "PyroDemon")			A_DropItem("PyroFistCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "DeathIncarnate")	A_DropItem("IncarnateSkullCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "DSArchvile")			A_DropItem("ArchvileHandCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "Diabloist")			A_DropItem("DiabloistHandCI",1,HellCoreRuinousDropChance);
+			if (ActorClass == "FlyingBalrog")		A_DropItem("BalrogFistCI",1,HellCoreRuinousDropChance);
+			if (debugexp) Console.Printf("%d", HellCoreRuinousDropChance);
+			
+			int uncursethreshold;
+			int uncursethreshold2;
+			int uncursepts;
+			// Ruinous Shield Checks
+			if (playeriskiller) // if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE) 
+			{
+				if (CharacterClass == 2 && CountInv("RuinousShield", AAPTR_PLAYER1) > 0) // Flora
+				{
+					if (debugexp) Console.Printf("%d", CallACS("MiscVarCheckDECORATE",202));
+					// Increase Ruinous Shield Counter by 1 or 2 pts [this allows the player to uncurse the shield slowly by killing enemies.
+					uncursethreshold = 9375;
+					uncursethreshold2 = 6250;
+					if (CountInv("DoveRibbon", AAPTR_PLAYER1) > 0)
+					{
+						uncursethreshold -= 625;
+						uncursethreshold2 -= 1250;
+					}
+					if (CallACS("GetBuffTimer",7) > 0) 
+					{
+						uncursethreshold = uncursethreshold * 9 / 10; 
+						uncursethreshold2 = uncursethreshold2 * 9 / 10; 
+					}
+					if (random(1,1000) <= uncursethreshold)
+					{
+						if (random(1,1000) <= uncursethreshold2) uncursepts = 1; else uncursepts = 2;
+					}
+					else
+					{
+						if (random(1,1000) <= uncursethreshold2) uncursepts = 4; else uncursepts = 8;
+					}
+					if (CountInv("DoveRibbon", AAPTR_PLAYER1) > 0) uncursepts *= (2 * random(1,2));
+					if (KilledByPlayer != 1) uncursepts /= 4;
+					if (uncursepts < 1) uncursepts = 1;
+					CallACS("MiscVarSetDECORATE",202,uncursepts,1); // Add // MiscellaneousVars[202] += uncursepts;
+					
+					if (debuguncurse) Console.Printf("Uncurse Pts: %d [+%d]", CallACS("MiscVarCheckDECORATE",202), uncursepts);
+				}
+				
+				int donotincreasekills = 0;
+				if (ActorClass == "DSBossBrain" || ActorClass == "ClayDevilNew") donotincreasekills = 1;
+				if (donotincreasekills == 0) 
+				{
+					CallACS("MiscVarSetDECORATE",167,1,1); // Add // KillCounter += 1; // Increases Player's actual total kill count by 1
+					if (debugexp) Console.Printf("Kills: %d", CallACS("MiscVarCheckDECORATE",167));
+				}
+			}
+			
+			int KillCounter = CallACS("MiscVarCheckDECORATE",167);
+			int KillThreshold1 = (20 * 5) / 2;
+			int KillThreshold2 = (200 * 5) / 2;
+			int KillThreshold3 = (800 * 5) / 2;
+			int KillThreshold4 = (1400 * 5) / 2;
+			int KillThreshold5 = (2000 * 5) / 2;
+			int KillThreshold6 = (2800 * 5) / 2;
+			int KillThreshold7 = (3600 * 5) / 2;
+			int KillThreshold8 = (4600 * 5) / 2;
+			int KillThreshold9 = (5600 * 5) / 2;
+			int KillThreshold10 = (6600 * 5) / 2;
+			int KillThreshold11 = (7600 * 5) / 2;
+			int KillThreshold12 = (8800 * 5) / 2;
+			int KillThreshold13 = (10000 * 5) / 2;
+			
+			if (ModType == 0) // Classic Doom 1-2/Heretic/Hexen/Strife mode :P
+			{
+				if (CharacterClass == 2) // Flora
+				{
+					if (KillCounter == KillThreshold1) // 20 enemies killed, high chance of spawning an armor item for Flora
+					{
+						// 75% chance
+						RandomArmorDropChance = 25.0 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold2) // 200 enemies killed, fair chance of spawning an armor item for Flora
+					{
+						// 50% chance
+						RandomArmorDropChance = 50.0 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold3) // 800 enemies killed, low chance of spawning an armor item for Flora
+					{
+						// 25% chance
+						RandomArmorDropChance = 75.0 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold4) // 1400 enemies killed, low chance of spawning an armor item for Flora
+					{
+						// 25% chance
+						RandomArmorDropChance = 75.0 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold5) // 2000 enemies killed, low chance of spawning an armor item for Flora
+					{
+						// 12.5% chance
+						RandomArmorDropChance = 87.5 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold6) // 2800 enemies killed, low chance of spawning an armor item for Flora
+					{
+						// 12.5% chance
+						RandomArmorDropChance = 87.5 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold7) // 3600 enemies killed, low chance of spawning an armor item for Flora
+					{
+						// 6.25% chance
+						RandomArmorDropChance = 93.75 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold8) // 4600 enemies killed, low chance of spawning an armor item for Flora
+					{
+						// 6.25% chance
+						RandomArmorDropChance = 93.75 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold9) // 5600 enemies killed, low chance of spawning an armor item for Flora
+					{
+						// 6.25% chance
+						RandomArmorDropChance = 93.75 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold10) // 6600 enemies killed, low chance of spawning an armor item for Flora
+					{
+						// 6.25% chance
+						RandomArmorDropChance = 93.75 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold11) // 7600 enemies killed, low chance of spawning an armor item for Flora
+					{
+						// 6.25% chance
+						RandomArmorDropChance = 93.75 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold12) // 8800 enemies killed, fair chance of spawning an armor item for Flora
+					{
+						// 36.25% chance
+						RandomArmorDropChance = 63.75 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+					if (KillCounter == KillThreshold13) // 10000 enemies killed, huge chance of spawning an armor item for Flora
+					{
+						// 92.5% chance
+						RandomArmorDropChance = 75.0 * RandomArmorDropMulti;
+						if (frandom(0.1,100.0) > RandomArmorDropChance) A_SpawnItemEx("FloraRandomArmorAlwaysDrop",0.0,0.0,8.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION,0);
+					}
+				}
+			}
+			
+			int randomdropsallowed = 1;
+			int experiessencefactor = 1;
+			// Drops
+			if (bBOSS) experiessencefactor = random(8,16);
+			if (bFRIENDLY || 
+					ActorClass == "DSBossBrain" || 
+					ActorClass == "ClayDevilNew" || 
+					ActorClass == "FakeGoldLich" || 
+					ActorClass == "FireDemonQueenClone" ||
+					fakedeath > 0) 
+			{ 
+				randomdropsallowed = 0; 
+				experiessencefactor = 0; 
+			}
+		
+			if (randomdropsallowed > 0)
+			{
+				if (random(1,256) <= experiessencefactor) A_DropItem("Experiessence",1,256);
+				if (random(1,1024) <= experiessencefactor) A_DropItem("Experiessence",1,256);
+				if (random(1,4096) <= experiessencefactor) A_DropItem("Experiessence",1,256);
+				if (random(1,1024) <= experiessencefactor) A_DropItem("LargeExperiessence",1,256);
+				if (random(1,4096) <= experiessencefactor) A_DropItem("LargeExperiessence",1,256);
+				if (random(1,16384) <= experiessencefactor) A_DropItem("LargeExperiessence",1,256);
+				if (random(1,4096) <= experiessencefactor) A_DropItem("HugeExperiessence",1,256);
+				if (random(1,16384) <= experiessencefactor) A_DropItem("HugeExperiessence",1,256);
+				if (random(1,65536) <= experiessencefactor) A_DropItem("HugeExperiessence",1,256);
+				
+				if (random(1,131072) == 1) A_DropItem("TheOneRing",1,256);
+				if (random(1,16384) == 1) A_DropItem("ElfinElixir",1,256);
+				if (random(1,16384) == 1) A_DropItem("MonsterMunchies",1,256);
+				if (random(1,16384) == 1) A_DropItem("RockBombShard",1,256);
+				if (random(1,16384) == 1 && CharacterClass == 2) A_DropItem("SapphireWandNew",1,256);
+				if (random(1,8192) == 1) A_DropItem("RandomMagicSpawner",1,256);
+				if (random(1,8192) == 1) A_DropItem("RandomHerbSpawner",1,256);
+				if (random(1,8192) == 1) A_DropItem("GreaterVimstone",1,256);
+				if (random(1,8192) == 1) A_DropItem("LesserVimstone",1,256);
+				if (random(1,8192) == 1) A_DropItem("RockBombShard",1,256);
+				if (random(1,8192) == 1 && CharacterClass == 2) A_DropItem("SapphireWandNew",1,256);
+				if (random(1,4096) == 1) A_DropItem("MonsterMunchies",1,256);
+				if (random(1,4096) == 1) A_DropItem("SageElixir",1,256);
+				if (random(1,4096) == 1) A_DropItem("PaxaPunch",1,256);
+				if (random(1,4096) == 1) A_DropItem("MercuryBandana",1,256);
+				if (random(1,4096) == 1) A_DropItem("RockBombShard",1,256);
+				if (random(1,4096) == 1) A_DropItem("RandomSeedDropAlways",1,256);
+				if (random(1,2048) == 1 && CharacterClass == 2) A_DropItem("SapphireWandNew",1,256);
+				if (random(1,2048) == 1) A_DropItem("RandomHerbSpawner",1,256);
+				if (random(1,2048) == 1) A_DropItem("RandomMagicSpawner",1,256);
+				if (random(1,2048) == 1) A_DropItem("YggdrasilDew",1,256);
+				if (random(1,2048) == 1) A_DropItem("RockBombShard",1,256);
+				if (random(1,1024) == 1) A_DropItem("MonsterMunchies",1,256);
+				if (random(1,1024) == 1) A_DropItem("MagicWater",1,256);
+				if (random(1,1024) == 1) A_DropItem("RandomPowerupSpawner",1,256);
+				if (random(1,1024) == 1) A_DropItem("RockBombShard",1,256);
+				if (random(1,1024) == 1) A_DropItem("MiraclePotion",1,256);
+				if (random(1,512) == 1) A_DropItem("RandomHerbSpawner",1,256);
+				if (random(1,512) == 1) A_DropItem("RockBombShard",1,256);
+				if (random(1,256) == 1) A_DropItem("MonsterMunchies",1,256);
+				if (random(1,256) == 1) A_DropItem("RockBombShard",1,256);
+				if (ModType == 0) // Classic Mode
+				{
+					if (ClassicDoomType == 0 || ClassicDoomType == 1 || ClassicDoomType == 5 || ClassicDoomType == 6) // Doom 2, Doom 1, Doom64 or PSXDoom
+					{
+						if (random(1,16384) == 1) A_DropItem("Berserk2",1,256);
+						if (random(1,8192) == 1) A_DropItem("Berserk2",1,256);
+						if (random(1,4096) == 1) A_DropItem("MiniBerserk",1,256);
+						if (random(1,2048) == 1) A_DropItem("MiniBerserk",1,256);
+						if (random(1,1024) == 1) A_DropItem("Medikit2",1,256);
+						if (random(1,512) == 1) A_DropItem("Medikit2",1,256);
+						if (random(1,256) == 1) A_DropItem("Stimpack2",1,256);
+						if (random(1,128) == 1) A_DropItem("Stimpack2",1,256);
+						if (ActorClass == "HellCleric" && random(1,256) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "FlyingBalrog" && random(1,256) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "DSSpiderMastermind" && random(1,64) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "Demolisher" && random(1,48) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "DSCyberdemon" && random(1,64) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "Annihilator" && random(1,48) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (CharacterClass == 0 || CharacterClass == 1) // Deggaris & Illucia Specfic Drops
+						{
+							if (random(1,16384) == 1) A_DropItem("DiamondSkinGA",1,256);
+							if (random(1,8192) == 1) A_DropItem("StoneSkinGA",1,256);
+							if (random(1,4096) == 1) A_DropItem("DiamondSkin",1,256);
+							if (random(1,2048) == 1) A_DropItem("StoneSkin",1,256);
+							if (random(1,1024) == 1) A_DropItem("BlueArmorDS",1,256);
+							if (random(1,512) == 1) A_DropItem("GreenArmorDS",1,256);
+							if (random(1,256) == 1) A_DropItem("ArmorBonusDS2",1,256);
+							if (random(1,128) == 1) A_DropItem("ArmorBonusDS2",1,256);
+							if (random(1,64) == 1) A_DropItem("ArmorBonusDS2",1,256);
+							if (random(1,32) == 1) A_DropItem("ArmorBonusDS2",1,256);
+							if (random(1,16) == 1) A_DropItem("ArmorBonusDS2",1,256);
+							if (random(1,8) == 1) A_DropItem("ArmorBonusDS2",1,256);
+							if (random(1,512) == 1)
+							{
+								random1 = random(1,8);
+								if (random1 >= 1 && random1 <= 3) A_DropItem("ClipBoxNew",1,256);
+								if (random1 >= 4 && random1 <= 6) A_DropItem("ShellBoxNew",1,256);
+								if (random1 == 7) A_DropItem("RocketBoxNew",1,256);
+								if (random1 == 8) A_DropItem("CellPackNew",1,256);
+							}
+							if (random(1,256) == 1)
+							{
+								random1 = random(1,8);
+								if (random1 >= 1 && random1 <= 3) A_DropItem("ClipBoxNew",1,256);
+								if (random1 >= 4 && random1 <= 6) A_DropItem("ShellBoxNew",1,256);
+								if (random1 == 7) A_DropItem("RocketBoxNew",1,256);
+								if (random1 == 8) A_DropItem("CellPackNew",1,256);
+							}
+							if (random(1,128) == 1)
+							{
+								random1 = random(1,8);
+								if (random1 >= 1 && random1 <= 3) A_DropItem("ClipBoxNew",1,256);
+								if (random1 >= 4 && random1 <= 6) A_DropItem("ShellBoxNew",1,256);
+								if (random1 == 7) A_DropItem("RocketBoxNew",1,256);
+								if (random1 == 8) A_DropItem("CellPackNew",1,256);
+							}
+							if (random(1,64) == 1)
+							{
+								random1 = random(1,8);
+								if (random1 >= 1 && random1 <= 3) A_DropItem("ClipNew",1,256);
+								if (random1 >= 4 && random1 <= 6) A_DropItem("ShellNew",1,256);
+								if (random1 == 7) A_DropItem("RocketAmmoNew",1,256);
+								if (random1 == 8) A_DropItem("CellNew",1,256);
+							}
+							if (random(1,32) == 1)
+							{
+								random1 = random(1,8);
+								if (random1 >= 1 && random1 <= 3) A_DropItem("ClipNew",1,256);
+								if (random1 >= 4 && random1 <= 6) A_DropItem("ShellNew",1,256);
+								if (random1 == 7) A_DropItem("RocketAmmoNew",1,256);
+								if (random1 == 8) A_DropItem("CellNew",1,256);
+							}
+							if (random(1,16) == 1)
+							{
+								random1 = random(1,8);
+								if (random1 >= 1 && random1 <= 3) A_DropItem("ClipNew",1,256);
+								if (random1 >= 4 && random1 <= 6) A_DropItem("ShellNew",1,256);
+								if (random1 == 7) A_DropItem("RocketAmmoNew",1,256);
+								if (random1 == 8) A_DropItem("CellNew",1,256);
+							}
+						}
+					}
+					if (ClassicDoomType == 2 || ClassicDoomType == 3) // BOTH Heretic AND Hexen
+					{
+						nm = "ArtiSuperHealthNew"; MiscCheck = nm; if (random(1,2048) == 1) A_DropItem(MiscCheck,1,256);
+						nm = "SapphireWandNew"; MiscCheck = nm; if (random(1,2048) == 1 && CharacterClass == 2) A_DropItem(MiscCheck,1,256);
+						nm = "ArtiSuperHealthNew"; MiscCheck = nm; if (random(1,1024) == 1) A_DropItem(MiscCheck,1,256);
+						nm = "ArtiHealthNew"; MiscCheck = nm; if (random(1,512) == 1) A_DropItem(MiscCheck,1,256);
+						nm = "ArtiHealthNew"; MiscCheck = nm; if (random(1,256) == 1) A_DropItem(MiscCheck,1,256);
+						nm = "CrystalVialNew"; MiscCheck = nm; if (random(1,256) == 1) A_DropItem(MiscCheck,1,256);
+						nm = "CrystalVialNew"; MiscCheck = nm; if (random(1,128) == 1) A_DropItem(MiscCheck,1,256);
+					}
+					if (ClassicDoomType == 2) // Heretic Only
+					{
+						nm = "CrystalVialNew"; MiscCheck = nm; if (random(1,32768) == 1) A_DropItem(MiscCheck,1,256);
+						if (random(1,8192) == 1) A_DropItem("RockBombShard",1,256);
+						if (random(1,2048) == 1) A_DropItem("RockBombShard",1,256);
+						if (random(1,512) == 1) A_DropItem("RockBombShard",1,256);
+						if (ActorClass == "IronlichNew" && random(1,96) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "IceLich" && random(1,96) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "GoldLich" && random(1,48) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "BloodLich" && random(1,48) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "MaulotaurNew" && random(1,48) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "DSparilMountedNew" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "DSparilUnmountedNew" && random(1,16) == 1) A_DropItem("SeedofSkillForced",1,256);
+				
+						if (random(1,2048) == 1)
+						{
+							random1 = random(1,7);
+							nm = "GoldWandNew"; MiscCheck = nm; if (random1 == 1) A_DropItem(MiscCheck,1,256);
+							nm = "CrossbowNew"; MiscCheck = nm; if (random1 == 2) A_DropItem(MiscCheck,1,256);
+							nm = "DragonClawNew"; MiscCheck = nm; if (random1 == 3) A_DropItem(MiscCheck,1,256);
+							nm = "HellStaffNew"; MiscCheck = nm; if (random1 == 4) A_DropItem(MiscCheck,1,256);
+							nm = "PhoenixRodNew"; MiscCheck = nm; if (random1 == 5) A_DropItem(MiscCheck,1,256);
+							nm = "FiremaceNew"; MiscCheck = nm; if (random1 == 6) A_DropItem(MiscCheck,1,256);
+							nm = "SuperCrossbowNew"; MiscCheck = nm; if (random1 == 7) A_DropItem(MiscCheck,1,256);
+						}
+				
+						if (random(1,2048) == 1)
+						{
+							random1 = random(1,12);
+							nm = "GoldWandHeftyNew"; MiscCheck = nm; if (random1 >= 1 && random1 <= 3) A_DropItem(MiscCheck,1,256);
+							nm = "CrossbowHeftyNew"; MiscCheck = nm; if (random1 >= 4 && random1 <= 6) A_DropItem(MiscCheck,1,256);
+							nm = "BlasterHeftyNew"; MiscCheck = nm; if (random1 >= 7 && random1 <= 9) A_DropItem(MiscCheck,1,256);
+							nm = "PhoenixRodHeftyNew"; MiscCheck = nm; if (random1 == 10) A_DropItem(MiscCheck,1,256);
+							nm = "SkullRodHeftyNew"; MiscCheck = nm; if (random1 == 11) A_DropItem(MiscCheck,1,256);
+							nm = "MaceHeftyNew"; MiscCheck = nm; if (random1 == 12) A_DropItem(MiscCheck,1,256);
+						}
+						if (random(1,1024) == 1)
+						{
+							random1 = random(1,12);
+							nm = "GoldWandHeftyNew"; MiscCheck = nm; if (random1 >= 1 && random1 <= 3) A_DropItem(MiscCheck,1,256);
+							nm = "CrossbowHeftyNew"; MiscCheck = nm; if (random1 >= 4 && random1 <= 6) A_DropItem(MiscCheck,1,256);
+							nm = "BlasterHeftyNew"; MiscCheck = nm; if (random1 >= 7 && random1 <= 9) A_DropItem(MiscCheck,1,256);
+							nm = "PhoenixRodHeftyNew"; MiscCheck = nm; if (random1 == 10) A_DropItem(MiscCheck,1,256);
+							nm = "SkullRodHeftyNew"; MiscCheck = nm; if (random1 == 11) A_DropItem(MiscCheck,1,256);
+							nm = "MaceHeftyNew"; MiscCheck = nm; if (random1 == 12) A_DropItem(MiscCheck,1,256);
+						}
+						if (random(1,512) == 1)
+						{
+							random1 = random(1,12);
+							nm = "GoldWandHeftyNew"; MiscCheck = nm; if (random1 >= 1 && random1 <= 3) A_DropItem(MiscCheck,1,256);
+							nm = "CrossbowHeftyNew"; MiscCheck = nm; if (random1 >= 4 && random1 <= 6) A_DropItem(MiscCheck,1,256);
+							nm = "BlasterHeftyNew"; MiscCheck = nm; if (random1 >= 7 && random1 <= 9) A_DropItem(MiscCheck,1,256);
+							nm = "PhoenixRodHeftyNew"; MiscCheck = nm; if (random1 == 10) A_DropItem(MiscCheck,1,256);
+							nm = "SkullRodHeftyNew"; MiscCheck = nm; if (random1 == 11) A_DropItem(MiscCheck,1,256);
+							nm = "MaceHeftyNew"; MiscCheck = nm; if (random1 == 12) A_DropItem(MiscCheck,1,256);
+						}
+						if (random(1,256) == 1)
+						{
+							random1 = random(1,12);
+							nm = "GoldWandAmmoNew"; MiscCheck = nm; if (random1 >= 1 && random1 <= 3) A_DropItem(MiscCheck,1,256);
+							nm = "CrossbowAmmoNew"; MiscCheck = nm; if (random1 >= 4 && random1 <= 6) A_DropItem(MiscCheck,1,256);
+							nm = "BlasterAmmoNew"; MiscCheck = nm; if (random1 >= 7 && random1 <= 9) A_DropItem(MiscCheck,1,256);
+							nm = "PhoenixRodAmmoNew"; MiscCheck = nm; if (random1 == 10) A_DropItem(MiscCheck,1,256);
+							nm = "SkullRodAmmoNew"; MiscCheck = nm; if (random1 == 11) A_DropItem(MiscCheck,1,256);
+							nm = "MaceAmmoNew"; MiscCheck = nm; if (random1 == 12) A_DropItem(MiscCheck,1,256);
+						}
+						if (random(1,128) == 1)
+						{
+							random1 = random(1,12);
+							nm = "GoldWandAmmoNew"; MiscCheck = nm; if (random1 >= 1 && random1 <= 3) A_DropItem(MiscCheck,1,256);
+							nm = "CrossbowAmmoNew"; MiscCheck = nm; if (random1 >= 4 && random1 <= 6) A_DropItem(MiscCheck,1,256);
+							nm = "BlasterAmmoNew"; MiscCheck = nm; if (random1 >= 7 && random1 <= 9) A_DropItem(MiscCheck,1,256);
+							nm = "PhoenixRodAmmoNew"; MiscCheck = nm; if (random1 == 10) A_DropItem(MiscCheck,1,256);
+							nm = "SkullRodAmmoNew"; MiscCheck = nm; if (random1 == 11) A_DropItem(MiscCheck,1,256);
+							nm = "MaceAmmoNew"; MiscCheck = nm; if (random1 == 12) A_DropItem(MiscCheck,1,256);
+						}
+						if (random(1,64) == 1)
+						{
+							random1 = random(1,12);
+							nm = "GoldWandAmmoNew"; MiscCheck = nm; if (random1 >= 1 && random1 <= 3) A_DropItem(MiscCheck,1,256);
+							nm = "CrossbowAmmoNew"; MiscCheck = nm; if (random1 >= 4 && random1 <= 6) A_DropItem(MiscCheck,1,256);
+							nm = "BlasterAmmoNew"; MiscCheck = nm; if (random1 >= 7 && random1 <= 9) A_DropItem(MiscCheck,1,256);
+							nm = "PhoenixRodAmmoNew"; MiscCheck = nm; if (random1 == 10) A_DropItem(MiscCheck,1,256);
+							nm = "SkullRodAmmoNew"; MiscCheck = nm; if (random1 == 11) A_DropItem(MiscCheck,1,256);
+							nm = "MaceAmmoNew"; MiscCheck = nm; if (random1 == 12) A_DropItem(MiscCheck,1,256);
+						}
+					}
+					if (ClassicDoomType == 3) // Hexen Only
+					{
+						nm = "ArtiBoostManaNew"; MiscCheck = nm; if (random(1,8192) == 1) A_DropItem(MiscCheck,1,256);
+						nm = "ArtiBoostManaNew"; MiscCheck = nm; if (random(1,4096) == 1) A_DropItem(MiscCheck,1,256);
+						if (random(1,4096) == 1) A_DropItem("RockBombShard",1,256);
+						if (random(1,1024) == 1) A_DropItem("RockBombShard",1,256);
+						if (random(1,256) == 1) A_DropItem("RockBombShard",1,256);
+						if (ActorClass == "DragonNew" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "HeresiarchNew" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "FighterBossNew" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "ClericBossNew" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "MageBossNew" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "KoraxNew" && random(1,16) == 1) A_DropItem("SeedofSkillForced",1,256);
+					}
+					if (ClassicDoomType == 4) // Strife
+					{
+						if (random(1,16384) == 1) A_DropItem("RandomSeedDropAlways",1,256);
+						if (random(1,8192) == 1) A_DropItem("RandomSeedDropAlways",1,256);
+						if (random(1,4096) == 1) A_DropItem("ElfinElixir",1,256);
+						nm = "PoisonBoltsNew"; MiscCheck = nm; if (random(1,4096) == 1) A_DropItem(MiscCheck,1,256);
+						nm = "SurgeryKitNew"; MiscCheck = nm; if (random(1,4096) == 1) A_DropItem(MiscCheck,1,256);
+						if (random(1,4096) == 1 && CharacterClass == 2) A_DropItem("SapphireWandNew",1,256);
+						if (random(1,4096) == 1) A_DropItem("RandomSeedDropAlways",1,256);
+						if (random(1,2048) == 1) A_DropItem("RandomHerbSpawner",1,256);
+						nm = "ElectricBoltsNew"; MiscCheck = nm; if (random(1,2048) == 1) A_DropItem(MiscCheck,1,256);
+						nm = "SurgeryKitNew"; MiscCheck = nm; if (random(1,2048) == 1) A_DropItem(MiscCheck,1,256);
+						if (random(1,1024) == 1) A_DropItem("RandomSeedDropAlways",1,256);
+						if (random(1,1024) == 1) A_DropItem("RandomPowerupSpawner",1,256);
+						nm = "MedicalKitNew"; MiscCheck = nm; if (random(1,1024) == 1) A_DropItem(MiscCheck,1,256);
+						if (random(1,1024) == 1) A_DropItem("SageElixir",1,256);
+						if (random(1,512) == 1) A_DropItem("RandomHerbSpawner",1,256);
+						nm = "MedicalKitNew"; MiscCheck = nm; if (random(1,512) == 1) A_DropItem(MiscCheck,1,256);
+						nm = "MedPatchNew"; MiscCheck = nm; if (random(1,256) == 1) A_DropItem(MiscCheck,1,256);
+						if (random(1,256) == 1) A_DropItem("MagicWater",1,256);
+						nm = "MedPatchNew"; MiscCheck = nm; if (random(1,128) == 1) A_DropItem(MiscCheck,1,256);
+						if (ActorClass == "ProgrammerNew" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "StrifeBishopNew" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "Macil2New" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "LoreMasterNew" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "AlienSpectre1New" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "AlienSpectre2New" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "AlienSpectre3New" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "AlienSpectre4New" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "AlienSpectre5New" && random(1,32) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "EntityBossNew" && random(1,16) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "EntitySecondNew" && random(1,16) == 1) A_DropItem("SeedofSkillForced",1,256);
+						if (ActorClass == "EntityAscended" && random(1,8) == 1) A_DropItem("SeedofSkillForced",1,256);
+					}
+				}
+				else // DVI/DVII mode
+				{
+					if (random(1,16384) == 1) A_DropItem("Berserk2",1,256);
+					if (random(1,8192) == 1) A_DropItem("Berserk2",1,256);
+					if (random(1,4096) == 1) A_DropItem("MiniBerserk",1,256);
+					if (random(1,2048) == 1) A_DropItem("MiniBerserk",1,256);
+					if (random(1,1024) == 1) A_DropItem("Medikit2",1,256);
+					if (random(1,512) == 1) A_DropItem("Medikit2",1,256);
+					if (random(1,256) == 1) A_DropItem("Stimpack2",1,256);
+					if (random(1,128) == 1) A_DropItem("Stimpack2",1,256);
+					if (ActorClass == "HellCleric" && random(1,256) == 1) A_DropItem("SeedofSkillForced",1,256);
+					if (ActorClass == "FlyingBalrog" && random(1,256) == 1) A_DropItem("SeedofSkillForced",1,256);
+					if (ActorClass == "DSSpiderMastermind" && random(1,64) == 1) A_DropItem("SeedofSkillForced",1,256);
+					if (ActorClass == "Demolisher" && random(1,48) == 1) A_DropItem("SeedofSkillForced",1,256);
+					if (ActorClass == "DSCyberdemon" && random(1,64) == 1) A_DropItem("SeedofSkillForced",1,256);
+					if (ActorClass == "Annihilator" && random(1,48) == 1) A_DropItem("SeedofSkillForced",1,256);
+				}
+			}
+			
+			//**********************
+			//* START OF EXP GAINS *
+			//**********************
+			int EXPTimerIncrease;
+			if (ModType == 0 && dvds_noexpgains != 0) 
+			{
+				if (debugexp) Console.Printf("EXP Gains: STOPPED", debugexp);
+			}
+			else
+			{
+				// Increment the kill combo timer
+				if (dvds_expcombosystem == 1)
+				{
+					int EXPTimer = CallACS("MiscVarCheckDECORATE",157);
+					if (incrementcombo == 1)
+					{
+						if (EXPTimer <= 0) // If not set, set to 4 seconds, if already set, add 1 second
+						{
+							EXPTimerIncrease = 2800; // 140 tics [20 units / tic]
+							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",31) * 16); // 1 point of Agility = 0.8 tics [or 16 units] [5 points = 4 tics (or 80 units)]
+							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",33) * 4); // 1 point of Deftness = 0.2 tics [or 4 units] [20 points = 4 tics (or 80 units)]
+						}
+						else
+						{
+							EXPTimerIncrease = 700; // 35 tics [20 units / tic]
+							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",31) * 4); // 1 point of Agility = 0.8 tics [or 16 units] [5 points = 4 tics (or 80 units)]
+							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",33) * 1); // 1 point of Deftness = 0.2 tics [or 4 units] [20 points = 4 tics (or 80 units)]
+						}
+					
+						// "Higher Learning" Grand Mastery Perk
+						if (CallACS("MiscVarCheckDECORATE",11001) == 1) EXPTimerIncrease *= 1.15; 
+						if (CallACS("MiscVarCheckDECORATE",11001) == 2) EXPTimerIncrease *= 1.30; 
+					
+						if (CallACS("GetBuffTimer",7) > 0) EXPTimerIncrease = EXPTimerIncrease * 5 / 4;
+						
+						EXPTimer += EXPTimerIncrease;
+						if (CallACS("GetBuffTimer",7) > 0) 
+						{
+							if (EXPTimer >= 7000) EXPTimer = 7000; // Combo Timer maxes at 8 seconds.
+						}
+						else
+						{
+							if (EXPTimer >= 5600) EXPTimer = 5600; // Combo Timer maxes at 8 seconds.
+						}
+						CallACS("MiscVarSetDECORATE",157,EXPTimer,0);
+						CallACS("MiscVarSetDECORATE",158,1,1); // combonumber += 1; // Increment Kill Combo Count by 1
+					}
+				}
+				
+				// Check Base Experience to see if it's a fixed amount or if it should be based on spawnhealth/user_MaxHP
+				if (baseamount == -2) // Base on the menu option
+				{
+					if (dvds_monsterexpbase == 1)
+					{
+						if (user_MaxHP <= 0) baseexp = SpawnHealth(); else baseexp = user_MaxHP;
+					}
+					else
+					{
+						baseexp = SpawnHealth();
+					}
+				}
+				else
+				if (baseamount == -1) // ALWAYS use SpawnHealth and not user_MaxHP [if you always want it based only on their base HP and not their recalculated HP]
+				{
+					baseexp = SpawnHealth();
+				}
+				else
+				if (baseamount == 0) // Checks for user_MaxHP first, but will use SpawnHealth if it's not been set
+				{
+					if (user_MaxHP <= 0) baseexp = SpawnHealth(); else baseexp = user_MaxHP;
+				}
+				else
+				if (baseamount > 0) // Sets the EXP to the defined value as a fixed amount
+				{
+					baseexp = baseamount;
+				}
+				finalexpamount = baseexp;
+				if (debugexp) Console.Printf("EXP: %d [Base EXP]", finalexpamount);
+				
+				finalexpamount = (finalexpamount * expfactor) / 100; 
+				if (debugexp) Console.Printf("EXP: %d [ExtraFactor: %d / 100]", finalexpamount, expfactor);
+				
+				// Special Calls
+				if (ActorClass == "ForgottenOne")
+				{
+					finalexpamount = (finalexpamount * 5) / 2; 
+				}
+				if (ActorClass == "DSBossBrain")
+				{
+					finalexpamount = finalexpamount * random(3,5);
+				}
+				if (ActorClass == "Banshee" || ActorClass == "DeathKnight")
+				{
+					finalexpamount = (finalexpamount * random(3,5)) / 2;
+					if (random(1,4) == 1) A_DropItem("RandomSeedDropForcedAlways",1,256);
+					if (random(1,16) == 1) A_DropItem("RandomSeedDropForcedAlways",1,256);
+					if (random(1,64) == 1) A_DropItem("RandomSeedDropForcedAlways",1,256);
+				}
+				if (ActorClass == "Bormereth" || ActorClass == "EtherealChaosSerpentNew")
+				{
+					finalexpamount = (finalexpamount * random(5,7)) / 2;
+					if (random(1,1) == 1) A_DropItem("RandomSeedDropForcedAlways",1,256);
+					if (random(1,4) == 1) A_DropItem("RandomSeedDropForcedAlways",1,256);
+					if (random(1,16) == 1) A_DropItem("RandomSeedDropForcedAlways",1,256);
+				}
+				if (ActorClass == "IceGolem" || ActorClass == "IceGolemGhost" || ActorClass == "VampireDVDS")
+				{
+					finalexpamount = (finalexpamount * random(2,4)) / 2;
+					if (random(1,24) == 1) A_DropItem("RandomSeedDropForcedAlways",1,256);
+					if (random(1,96) == 1) A_DropItem("RandomSeedDropForcedAlways",1,256);
+					if (random(1,384) == 1) A_DropItem("RandomSeedDropForcedAlways",1,256);
+				}
+				if (debugexp) Console.Printf("EXP: %d [Actor Check]", finalexpamount);
+				
+				if (fakedeath > 0) // Fake deaths [Death Incarnate, etc] cut EXP gain by 75%
+				{
+					finalexpamount = finalexpamount / 4;
+					if (debugexp) Console.Printf("EXP: %d [Fake-Death]", finalexpamount);
+				}
+				
+				finalexpamount = finalexpamount * KillExpMultiplier / 20;
+				if (debugexp) Console.Printf("EXP: %d [Multiplier: %d / 20]", finalexpamount, KillExpMultiplier);
+				
+				// Check for Fast Monsters setting
+				if (sv_fastmonsters == 1)
+				{
+					finalexpamount *= 1.375; // [+37.5%]
+					if (debugexp) Console.Printf("EXP: %d [Fast Monsters On]", finalexpamount);
+				}
+				
+				// Check Proper Flags
+				if (user_isstealth)
+				{
+					if (CountInv("TheOneRing", AAPTR_PLAYER1) > 0) finalexpamount *= 1.125;	// DV-DS Style Stealth = [+12.5%]
+					else finalexpamount *= 1.875;	// DV-DS Style Stealth = [+87.5%]
+					if (debugexp) Console.Printf("EXP: %d [Was Stealth]", finalexpamount);
+				}
+				if (bSTEALTH) // ZDoom Style STEALTH = [+100%]
+				{
+					finalexpamount = finalexpamount * 2;
+					if (debugexp) Console.Printf("EXP: %d [Has ZDoom(tm) Stealth]", finalexpamount);
+				}
+				if (debugexp) Console.Printf("EXP3: %d", finalexpamount);
+				
+				// If LEGENDARY [LDL Compatiblity]
+				If (user_legendaryevolved > 0 || CountInv(LDLCheck))
+				{
+					finalexpamount *= 2.5;
+					if (debugexp) Console.Printf("EXP: %d [Is a 'Legendary' Monster? (LDL)]", finalexpamount);
+				}
+				
+ 
+				if (user_MaxHP <= 0) { overkillhp = SpawnHealth() * -1; }
+				else { overkillhp = user_MaxHP * -1; }
+				
+				if (user_MaxHP <= 0) { overkillhp2 = SpawnHealth() * -4; }
+				else { overkillhp2 = user_MaxHP * -4; }
+				
+				if (health <= overkillhp) // Overkilled [+12.5%]
+				{
+					finalexpamount *= 1.125;
+					CallACS("MiscVarSetDECORATE",2022,1); // OVERKILL display color
+					CallACS("MiscVarSetDECORATE",2023,39); // OVERKILL Timer Tics
+				}
+				if (health <= overkillhp2) // Super-Overkilled [+12.5%]
+				{
+					finalexpamount *= 1.125; 
+					CallACS("MiscVarSetDECORATE",2022,2); // OVERKILL display color 
+					CallACS("MiscVarSetDECORATE",2023,52); // OVERKILL Timer Tics 
+				}
+				if (debugexp) Console.Printf("EXP4: %d", finalexpamount);
+				
+				A_GetExpMultiFactor(); // FUNCTION CALL
+				A_GetExperience(finalexpamount,ExpCheck1); // FUNCTION CALL
+				finalexpamount = ExpCheck2;
+				if (debugexp) Console.Printf("EXP5: %d", finalexpamount);
+				
+				int levelcheck = 1000 + (user_monsterlevel * 7); // Lvl 100 = +70% EXP (Lvl 200 = +140% EXP)
+				if (levelcheck < 1000) levelcheck = 1000;
+				if (levelcheck > 3000) levelcheck = 3000;
+				finalexpamount = finalexpamount * levelcheck / 1000;
+				if (debugexp) Console.Printf("EXP6: %d [levelcheck: %d / 1000]", finalexpamount, levelcheck);
+				
+				int PreComboEXP = finalexpamount;
+				// EXP Combo Counter
+				// [158] = number of enemies killed in current combo
+				// [159] = current multiplier amount [xxx.xx% format]
+				int combonumber = CallACS("MiscVarCheckDECORATE",158);
+				int combomultiplieramt = CallACS("MiscVarCheckDECORATE",159);
+				if (combonumber > 1)
+				{
+					if (combonumber < 11)
+					{
+						combomultiplieramt = combonumber * 16;
+						// Each enemy = +0.16% to the bonus multiplier [2-11 enemies killed]
+					}
+					else
+					if (combonumber > 10 && combonumber < 21)
+					{
+						combomultiplieramt = combonumber * 17;
+						// Each enemy = +0.17% to the bonus multiplier [11-20 enemies killed]
+					}
+					else
+					if (combonumber > 20 && combonumber < 36)
+					{
+						combomultiplieramt = combonumber * 20;
+						// Each enemy = +0.20% to the bonus multiplier [21-35 enemies killed]
+					}
+					else
+					if (combonumber > 35 && combonumber < 61)
+					{
+						combomultiplieramt = combonumber * 24;
+						// Each enemy = +0.24% to the bonus multiplier [36-60 enemies killed]
+					}
+					else
+					if (combonumber > 60 && combonumber < 101)
+					{
+						combomultiplieramt = combonumber * 28;
+						// Each enemy = +0.28% to the bonus multiplier [61-100 enemies killed]
+					}
+					else
+					if (combonumber > 100 && combonumber < 201)
+					{
+						combomultiplieramt = combonumber * 34;
+						// Each enemy = +0.34% to the bonus multiplier [101-200 enemies killed]
+					}
+					else
+					if (combonumber > 200 && combonumber < 501)
+					{
+						combomultiplieramt = combonumber * 40;
+						// Each enemy = +0.40% to the bonus multiplier [201-500 enemies killed]
+					}
+					else
+					if (combonumber > 500)
+					{
+						combomultiplieramt = combonumber * 52;
+						// Each enemy = +0.52% to the bonus multiplier [501+ enemies killed]
+					}
+					combomultiplieramt = combomultiplieramt * dvds_expcombobasemultiplier / 100;
+					if (combomultiplieramt < 1) combomultiplieramt = 1;
+					combomultiplieramt = combomultiplieramt + 10000;
+				
+					finalexpamount = (finalexpamount * combomultiplieramt) / 10000;
+					CallACS("MiscVarSetDECORATE",159,combomultiplieramt);
+					if (debugexp) Console.Printf("Combo %: %d, EXP7: %d", combomultiplieramt, finalexpamount);
+				}
+				
+				if (finalexpamount < 1) finalexpamount = 1;
+				CallACS("ExpCheat",finalexpamount,0,0); //Experience += finalexpamount;
+				if (debugexp) Console.Printf("LstHPAmt: %d / OverkillHP: %d, BaseEXP: %d / FinalEXP: %d, 'Friendly' Multiplier: %d / 20", health, overkillhp, baseexp, finalexpamount, KillExpMultiplier);
+				
+				CallACS("MiscVarSetDECORATE",2024,finalexpamount); // MiscellaneousVars[2024] = finalexpamount; // Total EXP for kill [for new HUD]
+				CallACS("MiscVarSetDECORATE",2025,PreComboEXP); // MiscellaneousVars[2025] = PreComboEXP; // Total EXP for kill [for new HUD]
+				CallACS("MiscVarSetDECORATE",2026,78); // MiscellaneousVars[2026] = 78;
+				
+				if (dvds_expcombosystem == 1 && incrementcombo == 1) CallACS("MiscVarSetDECORATE",160,finalexpamount,1); // MiscellaneousVars[160] += finalexpamount;
+			}
+		}
+	}
+
 	// Ice Death
 	void A_DVDSIceDeath(int baseamount = -2, int flags = 0, int incrementcombo = 1, int expfactor = 100)
 	{
-		CallACS("AddEXP", baseamount, flags, incrementcombo, expfactor);
+		A_AddEXP(baseamount, flags, incrementcombo, expfactor);
+		//CallACS("AddEXP", baseamount, flags, incrementcombo, expfactor);
 		bCANTSEEK = TRUE; // Prevents seeking missiles from going after frozen enemies
 		bICECORPSE = TRUE; // Prevents Frost spell missiles from impacting on frozen enemies
 	}
 	// Death
 	void A_DVDSNormalDeath(int baseamount = -2, int flags = 0, int incrementcombo = 1, int expfactor = 100)
 	{
-		CallACS("AddEXP", baseamount, flags, incrementcombo, expfactor);
+		A_AddEXP(baseamount, flags, incrementcombo, expfactor);
+		//CallACS("AddEXP", baseamount, flags, incrementcombo, expfactor);
 	}
 	
 	//**************************
