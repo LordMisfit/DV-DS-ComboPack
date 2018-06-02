@@ -569,7 +569,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [184] Tension Timer Counts Down
 	// [185] Tension Warmup Meter [you must hold down for this long for tension to go up a level]
 	// [186] Tension Cooldown Timer [when Tension levels change, or run out, this decides how long to wait before you can do so again]
-		// [187] ???
+		// [187] Crit Display Timer
 	// [188] Tension Max Cooldown Timer [for bar displays]
 	// [189] Tension Sound Charge Loop Timer
 	// [190] Active-Tension Pulse Timer
@@ -3836,11 +3836,29 @@ script "HUDDisplay" ENTER
 			int MonsterCrit;
 
 			int damageburstratios = GetCVar("dvdsnewhud_damageburstsratios");
+			int crittimer;
 			// Damage Number Flashes
 			if (Timer() > 3)
 			{
 				// Check to see if Player took a Critical Hit [not a CRISIS attack, those are different :V]
-				if (CheckActorInventory(Player1TID,"TookCriticalHit") > 0) { MonsterCrit = 1; TakeActorInventory(Player1TID,"TookCriticalHit",0x7FFFFFFF); }
+				if (CheckActorInventory(Player1TID,"TookCriticalHit") > 0) 
+				{
+					MonsterCrit = 1;
+					if (ClassicDoomType != 3)
+					{
+						TakeActorInventory(Player1TID,"TookCriticalHit",0x7FFFFFFF);
+					}
+					else // If in Hexen, do this dumb hacky-method because the displays are refreshed a tic AFTER verses other game modes x.x
+					{
+						MiscellaneousVars[187] += 1;
+						if (MiscellaneousVars[187] >= 2)
+						{
+							TakeActorInventory(Player1TID,"TookCriticalHit",0x7FFFFFFF);
+							MiscellaneousVars[187] = 0;
+						}
+					}
+					if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) PrintBold(s:"Monster Crit = ",d:MonsterCrit);
+				}
 
 				// Health
 				PopupHoldDuration = 0.0;
@@ -3882,7 +3900,11 @@ script "HUDDisplay" ENTER
 						MiscellaneousVars[174] *= -1;
 						if (MiscellaneousVars[174] < 5) { PopupHoldDuration = -0.375; PopupFadeOutDuration = -0.25; }
 						if (MiscellaneousVars[175] <= 0) { PopupHoldDuration += 0.75; PopupFadeOutDuration += 0.5; } 
-						if (MonsterCrit != 0) { PopupHoldDuration *= 2; PopupFadeOutDuration *= 2; }
+						if (MonsterCrit != 0) 
+						{ 
+							PopupHoldDuration *= 2; PopupFadeOutDuration *= 2; 
+							if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) PrintBold(s:"Health Fade Duration = ",f:PopupHoldDuration,s:" ",f:PopupFadeOutDuration);
+						}
 						SetFont("DQGDMNMED"); // DQHUDFONT 
 						yposmod = 0.0; // 9.0
 						if (damageburstratios == 1)
@@ -3905,14 +3927,19 @@ script "HUDDisplay" ENTER
 						}
 						else // Damage w/o Death
 						{
-							SetFont("BBURHPDP");
-							xposmod = 2.0; // 0.0
-							yposmod = 0.0; // 1.0
-							if (MonsterCrit != 0)
+							if (MonsterCrit == 0)
+							{
+								SetFont("BBURHPDP");
+								xposmod = 2.0; // 0.0
+								yposmod = 0.0; // 1.0
+								if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) PrintBold(s:"Health Dmg = ",f:xposmod,s:" ",f:yposmod,s:" MonsterCrit: ",d:MonsterCrit);
+							}
+							else
 							{
 								SetFont("BBURHPCT");
-								xposmod += 2.0; // 0.0
-								yposmod += 6.0; // 1.0
+								xposmod = 4.0; // 0.0
+								yposmod = 6.0; // 1.0
+								if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) PrintBold(s:"Health Dmg = ",f:xposmod,s:" ",f:yposmod,s:" MonsterCrit: ",d:MonsterCrit);
 							}
 						}
 						HudMessage(s:"A";HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_untranslated,xpos+xposmod+PopUpXPlacement,ypos+yposmod+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
@@ -3973,6 +4000,11 @@ script "HUDDisplay" ENTER
 						MiscellaneousVars[177] *= -1;
 						if (MiscellaneousVars[177] < 5) { PopupHoldDuration = -0.375; PopupFadeOutDuration = -0.25; }
 						if (MiscellaneousVars[178] <= 0) { PopupHoldDuration += 0.75; PopupFadeOutDuration += 0.5; } 
+						if (MonsterCrit != 0) 
+						{ 
+							PopupHoldDuration *= 2; PopupFadeOutDuration *= 2; 
+							if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) PrintBold(s:"Armor Fade Duration = ",f:PopupHoldDuration,s:" ",f:PopupFadeOutDuration);
+						}
 						xpos -= 32.0;
 						ypos -= 32.0;
 						SetFont("DQGDMNMED"); // DQHUDFONT 
@@ -4006,6 +4038,7 @@ script "HUDDisplay" ENTER
 								SetFont("BBURAPCR");
 								xposmod += 2.0; // 0.0
 								yposmod += 6.0; // 1.0
+								if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) PrintBold(s:"Armor Dmg = ",f:xposmod,s:" ",f:yposmod);
 							}
 							PlaySound(Player1TID,"marines/armordamaged",CHAN_ITEM,1.0,0,ATTN_NORM);
 						}
@@ -4058,6 +4091,11 @@ script "HUDDisplay" ENTER
 						MiscellaneousVars[237] *= -1;
 						if (MiscellaneousVars[237] < 5) { PopupHoldDuration = -0.375; PopupFadeOutDuration = -0.25; }
 						if (MiscellaneousVars[238] <= 0) { PopupHoldDuration += 0.75; PopupFadeOutDuration += 0.5; } 
+						if (MonsterCrit != 0) 
+						{ 
+							PopupHoldDuration *= 2; PopupFadeOutDuration *= 2; 
+							if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) PrintBold(s:"Mana Fade Duration = ",f:PopupHoldDuration,s:" ",f:PopupFadeOutDuration);
+						}
 						xpos += 32.0;
 						ypos += 32.0;
 						SetFont("DQGDMNMED"); // DQHUDFONT 
@@ -4090,6 +4128,7 @@ script "HUDDisplay" ENTER
 								SetFont("BBURMPCR");
 								xposmod += 2.0; // 0.0
 								yposmod += 6.0; // 1.0
+								if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) PrintBold(s:"Mana Dmg = ",f:xposmod,s:" ",f:yposmod);
 							}
 						}
 						HudMessage(s:"A";HUDMSG_ALPHA|HUDMSG_FADEOUT,0,cr_untranslated,xpos+xposmod+PopUpXPlacement,ypos+yposmod+PopUpYPlacement,0.75+PopupHoldDuration,0.5+PopupFadeOutDuration,0.834);
@@ -4097,7 +4136,11 @@ script "HUDDisplay" ENTER
 				}
 				
 				// Remove Monster Crit Flag
-				if (MonsterCrit != 0) MonsterCrit = 0;
+				if (MonsterCrit != 0)
+				{
+					if (GetCVar("dvdsdebug_playerdmgdisplays") > 0) PrintBold(s:"Monster Crit = ",d:MonsterCrit);
+					MonsterCrit = 0;
+				}
 			}
 
 			//**********************
