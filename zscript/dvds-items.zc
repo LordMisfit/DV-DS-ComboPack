@@ -1,0 +1,68 @@
+class BaseExperiessence : AetheriusCustomInventory
+{
+	int user_transpulsetype;
+	int ActorVar1;
+	
+	void A_PickupExperiessence(double percentage = 1.0)
+	{
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int PlayerLevel = CallACS("StatCheck",0);
+		int ClearedOfMindParkLevel = CallACS("MiscVarCheckDECORATE",10055);
+		int ClearedOfMindEXParkLevel = CallACS("MiscVarCheckDECORATE",10056);
+		
+		if (dvdsdebug_showexpdebugstuff == 1) Console.Printf("percentage: %8f", percentage);
+		double BaseEXPGain = percentage;
+		double perkfactor;
+		if (random(1,64) == 1) BaseEXPGain *= 2.0;
+		if (random(1,256) == 1) BaseEXPGain *= 2.0;
+		if (random(1,1024) == 1) BaseEXPGain *= 2.0;
+		
+		int EXPGiven;
+		
+		if (PlayerLevel == 0) { EXPGiven = (CallACS("ExpTableCheckDECORATE",PlayerLevel) * BaseEXPGain) / 100; }
+		else if (PlayerLevel >= 1) { EXPGiven = ((CallACS("ExpTableCheckDECORATE",PlayerLevel) - CallACS("ExpTableCheckDECORATE",(PlayerLevel-1))) * BaseEXPGain) / 100; }
+		if (dvdsdebug_showexpdebugstuff == 1) Console.Printf("Experiessence: %d [Base]", EXPGiven);
+		
+		if (ClearedOfMindParkLevel > 0)
+		{
+			perkfactor = 1.00;
+			if (ClearedOfMindParkLevel >= 1) perkfactor += 0.04;
+			if (ClearedOfMindParkLevel >= 2) perkfactor += 0.05;
+			if (ClearedOfMindParkLevel >= 3) perkfactor += 0.06;
+			if (ClearedOfMindParkLevel >= 4) perkfactor += 0.07;
+			if (ClearedOfMindParkLevel >= 5) perkfactor += 0.08;
+			if (ClearedOfMindEXParkLevel >= 1) perkfactor += 0.10;
+			if (ClearedOfMindEXParkLevel >= 2) perkfactor += 0.20;
+			EXPGiven *= perkfactor;
+			if (dvdsdebug_showexpdebugstuff == 1) Console.Printf("Experiessence: %d [Perks1], PerkFactor: %8f", EXPGiven, perkfactor);
+		}
+		if (CallACS("MiscVarCheckDECORATE",11001) > 0)
+		{
+			if (CallACS("MiscVarCheckDECORATE",11001) == 1)
+			{
+				if (CharacterClass == 0 | CharacterClass == 1) EXPGiven *= 1.225; // EXP Multiplier Option [122.5%]
+				if (CharacterClass == 2) EXPGiven *= 1.15; // EXP Multiplier Option [115%]
+			}
+			if (CallACS("MiscVarCheckDECORATE",11001) == 2)
+			{
+				if (CharacterClass == 0 | CharacterClass == 1) EXPGiven *= 1.45; // EXP Multiplier Option [145%]
+				if (CharacterClass == 2) EXPGiven *= 1.3; // EXP Multiplier Option [130%]
+			}
+			if (dvdsdebug_showexpdebugstuff == 1) Console.Printf("Experiessence: %d [Perks2]", EXPGiven);
+		}
+	
+		int ExpMultiplier = dvds_expmultiplier;
+		int basemulti;
+		if (EXPGiven > 0)
+		{
+			basemulti = random(25,35) * 25;
+			EXPGiven = (EXPGiven * basemulti) / 1000;
+			if (dvdsdebug_showexpdebugstuff == 1) Console.Printf("Experiessence: %d [Factor1], BaseMult: %d / 1000", EXPGiven, basemulti);
+	
+			EXPGiven = (EXPGiven * ExpMultiplier) / 100;
+			if (dvdsdebug_showexpdebugstuff == 1) Console.Printf("Experiessence: %d [ExpMulti], ExpMultiplier: %d / 100", EXPGiven, ExpMultiplier);
+
+			CallACS("ExpCheat",ExpGiven); // Experience += EXPGiven;
+		}
+	}
+}
