@@ -689,6 +689,71 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 		if (tracer && tracer.bFRIENDLY == 1) tracer = null;
 	}	
 	
+	/**
+	 * Custom replacement for A_SeekerMissile that actually works correctly, and without the quirks. Always behaves as though SMF_PRECISE and SMF_CURSPEED were given.
+	 *
+	 * @param maxYaw How far the missile is allowed to yaw in one tic.
+	 * @param maxPitch How far the missile is allowed to pitch in one tic.
+	 * @param lookDistance How far the missile will look for targets. If ≤ 0, missile will not look for targets at all, and will simply seek the current tracer (if any).
+	 */
+	action void A_SuperSeekerMissile(double maxYaw, double maxPitch, double lookDistance = 512, bool seekEnemies = true, bool seekFriends = false, int faceFlags = 0)
+	{
+		if (
+			tracer && (
+				!invoker.CanSeek(tracer) ||
+				!tracer.bShootable ||
+				(random(1, 35) == 1 && !IsVisible(tracer, true))
+			)
+		)
+			tracer = null; // Forget about targets that are no longer valid.
+		
+		// Projectiles' yaw and pitch isn't usually controlled, but we need that, so let's control them.
+		{
+			let dir = Vel.Unit();
+			Angle = atan2(dir.Y, dir.X);
+			Pitch = -asin(dir.Z);
+		}
+		
+		if (target && !tracer && lookDistance > 0.)
+		{
+			Vector2 bestAimCorrection = (180, 180);
+			Actor bestTarget = null;
+			
+			// Searches for a monster to seek.
+			for (let i = BlockThingsIterator.Create(invoker, lookDistance); i.Next();)
+			if (
+				i.thing != target &&
+				i.thing.bShootable && !i.thing.bDormant && !i.thing.bNeverTarget &&
+				((seekEnemies && target.isHostile(i.thing)) || (seekFriends && target.isFriend(i.thing)))
+			)
+			{
+				// Math from https://forum.zdoom.org/viewtopic.php?f=15&t=59726&hilit=PitchTo#p1044007
+				let dirTo = Vec3To(i.thing).Unit();
+				let aimCorrection = (
+					abs(atan2(dirTo.y, dirTo.x) - Angle),
+					abs(asin(dirTo.z) - Pitch)
+				);
+				
+				// Save the visibility check for last. It's quite expensive.
+				if (aimCorrection.Length() < bestAimCorrection.Length() && IsVisible(i.thing, true))
+				{
+					bestAimCorrection = aimCorrection;
+					bestTarget = i.thing;
+				}
+			}
+			
+			tracer = bestTarget;
+		}
+		
+		if (tracer)
+		{
+			let curSpeed = Vel.Length();
+			let curAngles = (Angle, Pitch);
+			A_FaceTracer(maxYaw, maxPitch, flags: faceFlags);
+			Vel3DFromAngle(curSpeed, Angle, Pitch);
+		}
+	}
+	
 	void A_CharmSeek(int maxtime = 2)
 	{
 		user_seektimer += 1;
