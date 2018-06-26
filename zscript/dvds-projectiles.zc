@@ -690,11 +690,91 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 	}	
 	
 	/**
+	 * Sets the calling actor's Angle and Pitch to match its velocity vector, so that it is looking in exactly the same direction as it is traveling. Used by A_SelectSeekTarget.
+	 */
+	action void A_FaceVel()
+	{
+		// Math from https://forum.zdoom.org/viewtopic.php?f=15&t=59726&hilit=PitchTo#p1044007
+		let dir = Vel.Unit();
+		Angle = atan2(dir.Y, dir.X);
+		Pitch = -asin(dir.Z);
+	}
+	
+	/**
+	 * Selects a target for A_SeekerMissile or A_SuperSeekerMissile.
+	 *
+	 * @param hitScanDistance If ≥ 0, the routine will first check if there is anything directly in front of the calling actor, up to the given distance.
+	 * @param lookDistance How far to look all around for a target.
+	 * @param seekEnemies Whether to seek actors hostile to the source of this projectile. Defaults to true.
+	 * @param seekFriends Whether to seek actors friendly to the source of this projectile. Defaults to false.
+	 */
+	action void A_SelectSeekTarget(double hitScanDistance = 0, double lookDistance = 512, bool seekEnemies = true, bool seekFriends = false)
+	{
+		A_FaceVel();
+		
+		if (hitScanDistance > 0.)
+		{
+			// Try a hitscan first, straight ahead. If there's an eligible actor there, target that.
+			FLineTraceData result;
+			if (LineTrace(Angle, hitScanDistance, Pitch, data: result) && result.HitActor)
+			{
+				let a = result.HitActor;
+				if (
+					a != target &&
+					a.bShootable && !a.bDormant && !a.bNeverTarget &&
+					(
+						(!seekEnemies && !seekFriends) || !target ||
+						(seekEnemies && target.isHostile(a)) ||
+						(seekFriends && target.isFriend(a))
+					)
+				)
+				{
+					tracer = a;
+					return;
+				}
+			}
+		}
+		
+		Vector2 bestAimCorrection = (180, 180);
+		Actor bestTarget = null;
+		
+		// Searches for a monster to seek.
+		for (let i = BlockThingsIterator.Create(invoker, lookDistance); i.Next();)
+		if (
+			i.thing != target &&
+			i.thing.bShootable && !i.thing.bDormant && !i.thing.bNeverTarget &&
+			(
+				(!seekEnemies && !seekFriends) || !target ||
+				(seekEnemies && target.isHostile(i.thing)) ||
+				(seekFriends && target.isFriend(i.thing))
+			)
+		)
+		{
+			let dirTo = Vec3To(i.thing).Unit();
+			let aimCorrection = (
+				abs(atan2(dirTo.y, dirTo.x) - Angle),
+				abs(asin(dirTo.z) - Pitch)
+			);
+			
+			// Save the visibility check for last. It's quite expensive.
+			if (aimCorrection.Length() < bestAimCorrection.Length() && IsVisible(i.thing, true))
+			{
+				bestAimCorrection = aimCorrection;
+				bestTarget = i.thing;
+			}
+		}
+		
+		tracer = bestTarget;
+	}
+	
+	/**
 	 * Custom replacement for A_SeekerMissile that actually works correctly, and without the quirks. Always behaves as though SMF_PRECISE and SMF_CURSPEED were given.
 	 *
 	 * @param maxYaw How far the missile is allowed to yaw in one tic.
 	 * @param maxPitch How far the missile is allowed to pitch in one tic.
 	 * @param lookDistance How far the missile will look for targets. If ≤ 0, missile will not look for targets at all, and will simply seek the current tracer (if any).
+	 * @param seekEnemies Whether to seek actors hostile to the source of this projectile. Defaults to true.
+	 * @param seekFriends Whether to seek actors friendly to the source of this projectile. Defaults to false.
 	 */
 	action void A_SuperSeekerMissile(double maxYaw, double maxPitch, double lookDistance = 512, bool seekEnemies = true, bool seekFriends = false, int faceFlags = 0)
 	{
@@ -707,43 +787,8 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 		)
 			tracer = null; // Forget about targets that are no longer valid.
 		
-		// Projectiles' yaw and pitch isn't usually controlled, but we need that, so let's control them.
-		{
-			let dir = Vel.Unit();
-			Angle = atan2(dir.Y, dir.X);
-			Pitch = -asin(dir.Z);
-		}
-		
-		if (target && !tracer && lookDistance > 0.)
-		{
-			Vector2 bestAimCorrection = (180, 180);
-			Actor bestTarget = null;
-			
-			// Searches for a monster to seek.
-			for (let i = BlockThingsIterator.Create(invoker, lookDistance); i.Next();)
-			if (
-				i.thing != target &&
-				i.thing.bShootable && !i.thing.bDormant && !i.thing.bNeverTarget &&
-				((seekEnemies && target.isHostile(i.thing)) || (seekFriends && target.isFriend(i.thing)))
-			)
-			{
-				// Math from https://forum.zdoom.org/viewtopic.php?f=15&t=59726&hilit=PitchTo#p1044007
-				let dirTo = Vec3To(i.thing).Unit();
-				let aimCorrection = (
-					abs(atan2(dirTo.y, dirTo.x) - Angle),
-					abs(asin(dirTo.z) - Pitch)
-				);
-				
-				// Save the visibility check for last. It's quite expensive.
-				if (aimCorrection.Length() < bestAimCorrection.Length() && IsVisible(i.thing, true))
-				{
-					bestAimCorrection = aimCorrection;
-					bestTarget = i.thing;
-				}
-			}
-			
-			tracer = bestTarget;
-		}
+		if (!tracer)
+			A_SelectSeekTarget(lookDistance: lookDistance, seekEnemies: seekEnemies, seekFriends: seekFriends);
 		
 		if (tracer)
 		{
