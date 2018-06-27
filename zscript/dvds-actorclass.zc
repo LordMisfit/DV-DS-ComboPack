@@ -42,6 +42,478 @@ class AetheriusCustomInventory : CustomInventory
 	int animationtimer, heartbeattimer;
 	int skilllevel;
 	int frametimer;
+	
+	private class<Inventory> iDTech1Check;
+
+	void A_UseCustomInventoryItem(int type = 0)
+	{
+		String nm;
+		double temp1, temp2, temp3, check1, check2, check3;
+		double healmax;
+		double perktemp1, perktemp2, perktemp3, perktemp4;
+		double perkhealthlimit, perkstaminalimit, perkmanalimit;
+		double PerkFactor;
+		double perkbasemulti = 16;
+		int CurrentHealth = player.mo.health;
+		int CurrentMana = CallACS("StatCheck",14); 
+		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+		int MaxHealthTrue = CallACS("StatCheck",1);
+		int MaxMana = CallACS("StatCheck",2);
+		int MaxStamina = CallACS("MiscVarCheckDECORATE",22);
+		int MaxHealthLimit = MaxHealthTrue * 2;
+		int PowerupTimeMulti = dvds_invpoweruptimemultiplier;
+		int RegenStamFastPerkLevel = CallACS("MiscVarCheckDECORATE",10017);
+		int RegenStamFastEXPerkLevel = CallACS("MiscVarCheckDECORATE",10018);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		
+		nm = "ArtiInvisibilityNew"; iDTech1Check = nm;
+		if (type == -7 && player.mo.CountInv(iDTech1Check) > 0) // Icon of the Defender
+		{
+			perktemp4 = (35 * 90);
+			perktemp4 = (perktemp4 * PowerupTimeMulti) / 100;
+			perktemp4 = perktemp4 * (CallACS("MiscVarCheckDECORATE",10050) + 4) / 4;
+			CallACS("GetBuffTimer",1,2,perktemp4);
+			check1 += 1;
+			if (check1 > 0)
+			{
+				player.mo.A_PlaySound("misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_TakeInventory(iDTech1Check,1);
+			}
+			else
+			{
+				player.mo.A_PlaySound("inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+		
+		nm = "ArtiInvulnerabilityNew"; iDTech1Check = nm;
+		if (type == -6 && player.mo.CountInv(iDTech1Check) > 0) // Ring of Invincibility
+		{
+			perktemp4 = (35 * 45);
+			perktemp4 = (perktemp4 * PowerupTimeMulti) / 100;
+			perktemp4 = perktemp4 * (CallACS("MiscVarCheckDECORATE",10050) + 4) / 4;
+			CallACS("GetBuffTimer",4,2,perktemp4);
+			check1 += 1;
+			if (check1 > 0)
+			{
+				player.mo.A_PlaySound("misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_TakeInventory(iDTech1Check,1);
+			}
+			else
+			{
+				player.mo.A_PlaySound("inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+		
+		nm = "ArtiInvulnerability2New"; iDTech1Check = nm;
+		if (type == -5 && player.mo.CountInv(iDTech1Check) > 0) // Icon of the Defender
+		{
+			perktemp4 = (35 * 45);
+			perktemp4 = (perktemp4 * PowerupTimeMulti) / 100;
+			perktemp4 = perktemp4 * (CallACS("MiscVarCheckDECORATE",10050) + 4) / 4;
+			CallACS("GetBuffTimer",4,2,perktemp4);
+			check1 += 1;
+			if (check1 > 0)
+			{
+				player.mo.A_PlaySound("misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_TakeInventory(iDTech1Check,1);
+			}
+			else
+			{
+				player.mo.A_PlaySound("inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+		
+		nm = "ArtiHealingRadiusNew"; iDTech1Check = nm;
+		if (type == -4 && player.mo.CountInv(iDTech1Check) > 0) // Mystic Ambit Incant
+		{
+			// Heal HP/Health [62.5%] up to 200%
+			temp1 = CurrentHealth;
+			healmax = MaxHealthLimit;
+			if (temp1 < healmax)
+			{
+				check1 += 1;
+				temp1 += (MaxHealthTrue * 5 / 8);
+				if (temp1 > healmax) temp1 = healmax;
+				player.mo.health = temp1;
+			}
+		
+			// Heal MP/Mana [62.5%] up to 200%
+			healmax = MaxMana * 2;
+			if (CurrentMana < healmax)
+			{
+				check1 += 1;
+				CurrentMana += (MaxMana * 5 / 8);
+				if (CurrentMana > healmax) CurrentMana = healmax;
+				CallACS("OtherVarSetDECORATE",2,CurrentMana);
+			}
+		
+			// Heal Stamina [125%] up to 500%
+			healmax = MaxStamina * 5;
+			if (CurrentStamina < healmax)
+			{
+				check1 += 1;
+				temp2 = MaxStamina * 1.25;
+				perktemp1 = temp2;
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+				PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
+				perktemp1 = perktemp1 * PerkFactor;
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+				temp2 = perktemp1;
+				CurrentStamina += temp2;
+				if (CurrentStamina > healmax) CurrentStamina = healmax;
+				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			}
+		
+			if (check1 > 0)
+			{
+				player.mo.A_PlaySound("misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_PlaySound("healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_SetBlend("C0 80 C0",0.55,27); // FadeRange(192,128,192,0.55,192,128,192,0.01,0.77);
+				player.mo.A_TakeInventory(iDTech1Check,1);
+			}
+			else
+			{
+				player.mo.A_PlaySound("inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+		
+		nm = "ArtiBoostManaNew"; iDTech1Check = nm;
+		if (type == -3 && player.mo.CountInv(iDTech1Check) > 0) // Krater of Might [Hexen]
+		{
+			if (player.mo.CountInv("Mana1") < 500)
+			{
+				check1 += 1;
+				player.mo.A_GiveInventory("Mana1",500);
+			}
+			if (player.mo.CountInv("Mana2") < 500)
+			{
+				check1 += 1;
+				player.mo.A_GiveInventory("Mana2",500);
+			}
+			if (CurrentMana < MaxMana * 2)
+			{
+				check1 += 1;
+				CurrentMana = MaxMana * 2;
+				CallACS("OtherVarSetDECORATE",2,CurrentMana);
+			}
+			if (check1 > 0)
+			{
+				player.mo.A_PlaySound("misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_PlaySound("healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_SetBlend("0C FF 0C",0.55,27,"0C FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
+				player.mo.A_TakeInventory(iDTech1Check,1);
+			}
+			else
+			{
+				player.mo.A_PlaySound("inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+		
+		nm = "ArtiSuperHealthNew"; iDTech1Check = nm;
+		if (type == -2 && player.mo.CountInv(iDTech1Check) > 0) // Mystic Urn [Heretic AND Hexen]
+		{
+			// Heal Health [~100 to 110% HP] up to 192.5% Max HP
+			temp1 = CurrentHealth;
+			healmax = MaxHealthTrue * 1.925;
+			if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			healmax = healmax * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+			if (healmax > MaxHealthLimit) healmax = MaxHealthLimit;
+			
+			if (temp1 < healmax)
+			{
+				check1 += 1;
+				temp1 += MaxHealthTrue * frandom(1.0,1.1);
+				if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				temp1 = temp1 * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+				if (temp1 > healmax) temp1 = healmax;
+				player.mo.health = temp1;
+			}
+			// Heal Stamina [62.50%] up to 500%
+			healmax = MaxStamina * 5;
+			if (CurrentStamina < healmax)
+			{
+				check1 += 1;
+				temp2 = MaxStamina * 0.625;
+				perktemp1 = temp2;
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+				PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
+				perktemp1 = perktemp1 * PerkFactor;
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+				temp2 = perktemp1;
+				CurrentStamina += temp2;
+				if (CurrentStamina > healmax) CurrentStamina = healmax;
+				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			}
+			if (check1 > 0)
+			{
+				player.mo.A_PlaySound("misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_PlaySound("healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_SetBlend("0C FF 0C",0.55,27,"0C FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
+				player.mo.A_TakeInventory(iDTech1Check,1);
+			}
+			else
+			{
+				player.mo.A_PlaySound("inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+		
+		nm = "ArtiHealthNew"; iDTech1Check = nm;
+		if (type == -1 && player.mo.CountInv(iDTech1Check) > 0) // Mystic Urn [Heretic AND Hexen]
+		{
+			// Heal Health [~25 to 30% HP] up to 105% Max HP
+			temp1 = CurrentHealth;
+			healmax = MaxHealthTrue * 1.05;
+			if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			healmax = healmax * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+			if (healmax > MaxHealthLimit) healmax = MaxHealthLimit;
+			
+			if (temp1 < healmax)
+			{
+				check1 += 1;
+				temp1 += MaxHealthTrue * frandom(0.25,0.30);
+				if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				temp1 = temp1 * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+				if (temp1 > healmax) temp1 = healmax;
+				player.mo.health = temp1;
+			}
+
+			// Heal Stamina [12.5%]
+			healmax = MaxStamina;
+			if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			healmax = healmax * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+
+			if (CurrentStamina < healmax)
+			{
+				check1 += 1;
+				temp2 = MaxStamina * 0.125;
+				perktemp1 = temp2;
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+				PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
+				perktemp1 = perktemp1 * PerkFactor;
+				if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				perktemp1 = perktemp1 * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+				temp2 = perktemp1;
+				CurrentStamina += temp2;
+				if (CurrentStamina > healmax) CurrentStamina = healmax;
+				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			}
+			if (check1 > 0)
+			{
+				player.mo.A_PlaySound("misc/invuse",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_PlaySound("healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_SetBlend("0C FF 0C",0.55,27,"0C FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
+				player.mo.A_TakeInventory(iDTech1Check,1);
+			}
+			else
+			{
+				player.mo.A_PlaySound("inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+		
+		nm = "MedicinalHerb"; iDTech1Check = nm;
+		if (type == 1 && player.mo.CountInv(iDTech1Check) > 0) // Medicinal Herb
+		{
+			// Heal Health [~25-35 HP]
+			temp1 = CurrentHealth;
+			perkhealthlimit = MaxHealthTrue;
+		
+			if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			perkhealthlimit = perkhealthlimit * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+		
+			if (temp1 < perkhealthlimit)
+			{
+				check1 += 1;
+				temp2 = random(25,35);
+				perktemp1 = temp2;
+			
+				if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				perktemp1 = perktemp1 * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+			
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+				temp1 += perktemp1;
+				if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+				player.mo.health = temp1;
+			}
+			// Heal Stamina [~7.5% - ~10.5%]
+			perkstaminalimit = MaxStamina;
+		
+			if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			perkstaminalimit = perkstaminalimit * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+		
+			if (CurrentStamina < perkstaminalimit)
+			{
+				check1 += 1;
+				temp2 = MaxStamina * frandom(0.075,0.105);
+				perktemp2 = temp2;
+			
+				if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				perktemp2 = perktemp2 * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+			
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp2 = perktemp2 * 5 / 3;
+				PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
+				perktemp2 = perktemp2 * PerkFactor;
+				CurrentStamina += perktemp2;
+
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
+				if (CurrentStamina > perkstaminalimit) CurrentStamina = perkstaminalimit;
+				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			}
+			if (check1 > 0)
+			{
+				player.mo.A_PlaySound("healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_SetBlend("0C FF 0C",0.33,23,"0C FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
+				player.mo.A_TakeInventory(iDTech1Check,1);
+			}
+			else
+			{
+				player.mo.A_PlaySound("inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+		
+		nm = "StrongMedicine"; iDTech1Check = nm;
+		if (type == 2 && player.mo.CountInv(iDTech1Check) > 0) // Medicinal Herb
+		{
+			// Heal Health [~55-65 HP]
+			temp1 = CurrentHealth;
+			perkhealthlimit = MaxHealthTrue;
+		
+			if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			perkhealthlimit = perkhealthlimit * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+		
+			if (temp1 < perkhealthlimit)
+			{
+				check1 += 1;
+				temp2 = random(55,65);
+				perktemp1 = temp2;
+			
+				if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				perktemp1 = perktemp1 * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+			
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+				temp1 += perktemp1;
+				if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+				player.mo.health = temp1;
+			}
+			
+			// Heal Stamina [~16.5% - ~19.5%]
+			perkstaminalimit = MaxStamina;
+		
+			if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			perkstaminalimit = perkstaminalimit * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+		
+			if (CurrentStamina < perkstaminalimit)
+			{
+				check1 += 1;
+				temp2 = MaxStamina * frandom(0.165,0.195);
+				perktemp2 = temp2;
+			
+				if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				perktemp2 = perktemp2 * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+			
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp2 = perktemp2 * 5 / 3;
+				PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
+				perktemp2 = perktemp2 * PerkFactor;
+				CurrentStamina += perktemp2;
+
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
+				if (CurrentStamina > perkstaminalimit) CurrentStamina = perkstaminalimit;
+				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			}
+			if (check1 > 0)
+			{
+				player.mo.A_PlaySound("healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_SetBlend("0C FF 0C",0.55,27,"0C FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
+				player.mo.A_TakeInventory(iDTech1Check,1);
+			}
+			else
+			{
+				player.mo.A_PlaySound("inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+		
+		nm = "SpecialMedicine"; iDTech1Check = nm;
+		if (type == 2 && player.mo.CountInv(iDTech1Check) > 0) // Medicinal Herb
+		{
+			// Heal Health [~85-105 HP]
+			temp1 = CurrentHealth;
+			perkhealthlimit = MaxHealthTrue;
+		
+			if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			perkhealthlimit = perkhealthlimit * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+		
+			if (temp1 < perkhealthlimit)
+			{
+				check1 += 1;
+				temp2 = random(85,105);
+				perktemp1 = temp2;
+			
+				if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				perktemp1 = perktemp1 * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+			
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+				temp1 += perktemp1;
+				if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+				player.mo.health = temp1;
+			}
+			
+			// Heal Stamina [~25.5% - ~31.5%]
+			perkstaminalimit = MaxStamina;
+		
+			if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			perkstaminalimit = perkstaminalimit * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+		
+			if (CurrentStamina < perkstaminalimit)
+			{
+				check1 += 1;
+				temp2 = MaxStamina * frandom(0.225,0.315);
+				perktemp2 = temp2;
+			
+				if (CharacterClass == 2 | CharacterClass == 8) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				perktemp2 = perktemp2 * (perkbasemulti + CallACS("MiscVarCheckDECORATE",10049)) / perkbasemulti;
+			
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp2 = perktemp2 * 5 / 3;
+				PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
+				perktemp2 = perktemp2 * PerkFactor;
+				CurrentStamina += perktemp2;
+
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
+				if (CurrentStamina > perkstaminalimit) CurrentStamina = perkstaminalimit;
+				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			}
+			if (check1 > 0)
+			{
+				player.mo.A_PlaySound("healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
+				player.mo.A_SetBlend("0C FF 0C",0.70,31,"0C FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
+				player.mo.A_TakeInventory(iDTech1Check,1);
+			}
+			else
+			{
+				player.mo.A_PlaySound("inv_fail",CHAN_BODY,1.0,0,ATTN_NORM);
+			}
+		}
+		
+		nm = "YggdrasilDew"; iDTech1Check = nm;
+		
+		nm = "PaxaPunch"; iDTech1Check = nm;
+		
+		nm = "LesserVimstone"; iDTech1Check = nm;
+		
+		nm = "GreaterVimstone"; iDTech1Check = nm;
+		
+		nm = "MercuryBandana"; iDTech1Check = nm;
+		
+		nm = "MagicWater"; iDTech1Check = nm;
+		
+		nm = "SageElixir"; iDTech1Check = nm;
+		
+		nm = "ElfinElixir"; iDTech1Check = nm;
+		
+		nm = "MiraclePotion"; iDTech1Check = nm;
+		
+		
+	}
 }
 
 // Keeps Sounds/Music active during time Freeze powerups

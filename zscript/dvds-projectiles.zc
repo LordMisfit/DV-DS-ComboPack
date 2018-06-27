@@ -680,14 +680,6 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 		A_PlaySound("crisisattack",6);
 		A_PlaySound("crisisattack2",7);
 	}
-
-	// A_SeekerMissile that will clear its tracer pointer if the tracer is friendly.
-	void A_NFSeekerMissile(int threshold, int maxturnangle, int flags = 0, int chance = 50, int distance = 10)
-	{
-		A_SeekerMissile(threshold,maxturnangle,flags,chance,distance);
-		// Clears if the tracer is friendly.
-		if (tracer && tracer.bFRIENDLY == 1) tracer = null;
-	}	
 	
 	/**
 	 * Sets the calling actor's Angle and Pitch to match its velocity vector, so that it is looking in exactly the same direction as it is traveling. Used by A_SelectSeekTarget.
@@ -798,7 +790,42 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 			Vel3DFromAngle(curSpeed, Angle, Pitch);
 		}
 	}
+
+	// A_SeekerMissile that will clear its tracer pointer if the tracer is friendly.
+	void A_NFSeekerMissile(int threshold, int maxturnangle, int flags = 0, int chance = 50, int distance = 10)
+	{
+		if ((flags & SMF_LOOK) && !tracer)
+		{
+			// Searches for a monster to seek, but only if it's not friendly.
+			tracer = RoughMonsterSearch(distance, onlyseekable: true);
+			if (tracer && target && !target.isHostile(tracer)) tracer = null;
+		}
+		A_SeekerMissile(threshold,maxturnangle,flags & ~SMF_LOOK,chance,distance);
+	}	
 	
+	// A_SeekerMissile that will clear its tracer pointer if the tracer is hostile and only try to seek friendlies [for healing projectiles, etc].
+	void A_FOSeekerMissile(int threshold, int maxturnangle, int flags = 0, int chance = 50, int distance = 10)
+	{
+		if ((flags & SMF_LOOK) && !tracer)
+		{
+			// Searches for a monster to seek, but only if it's friendly.
+			tracer = RoughMonsterSearch(distance, onlyseekable: true);
+			if (tracer && target && !target.isFriend(tracer)) tracer = null;
+		}
+		A_SeekerMissile(threshold,maxturnangle,flags & ~SMF_LOOK,chance,distance);
+	}	
+	
+	void A_HealSeek(int maxtime = 2)
+	{
+		user_seektimer += 1;
+		if (user_seektimer >= maxtime) 
+		{
+			A_FOSeekerMissile(90,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64); 
+			user_seektimer = 0;
+		}
+		//A_LogInt(user_seektimer);
+	}
+
 	void A_CharmSeek(int maxtime = 2)
 	{
 		user_seektimer += 1;
@@ -821,6 +848,17 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 		//A_LogInt(user_seektimer);
 	}
 
+	void A_HealCheckNoSeekTimer(int maxchance = 16, int healseek = 2)
+	{
+		user_noseektimer -= 1;
+		if (random(1,maxchance) == 1) 
+		{ 
+			A_HealSeek(healseek);
+			user_noseektimer += 1;
+		}
+		//A_LogInt(user_noseektimer);
+	}
+	
 	void A_CharmCheckNoSeekTimer(int maxchance = 16, int charmseek = 2)
 	{
 		user_noseektimer -= 1;
@@ -2089,6 +2127,32 @@ class MageStaffFX2Base : AetheriusProjectileZSC
 
 class HealMissile : AetheriusProjectileZSC
 {
+	// A_SeekerMissile variant that seeks out friends in need of healing.
+	action void A_HealingSeekerMissile(int threshold, int maxturnangle, int flags = 0, int chance = 50, int distance = 10, int healtype = 0)
+	{
+		int maxhealth;
+		if (
+			(flags & SMF_LOOK) // this projectile should seek new targets
+			&& target // this projectile's shooter is known
+			&& (!tracer || !(tracer.bShootable && CanSeek(tracer))) // not already seeking something
+			&& ((chance >= 255) || ((random() & 255) < chance)) // the random roll checks out
+		)
+		{
+			for (let it = BlockThingsIterator.Create(self, distance); it.Next();)
+			if (target != it.thing && target.isFriend(it.thing) && it.thing is "AetheriusMonsterZSC")
+			{
+				let healee = AetheriusMonsterZSC(it.thing);
+				if (healtype == 0) maxhealth = healee.User_MaxHP; else maxhealth = healee.User_MaxHP*2;
+				if (healee.health > 0 && healee.health < maxhealth)
+				{
+						tracer = it.thing;
+						break;
+				}
+			}
+		}
+		A_SeekerMissile(threshold,maxturnangle,flags & ~SMF_LOOK,chance,distance);
+	}
+	
 	override bool CanCollideWith(Actor other, bool passive)
 	{
 		// Non-passive means the one moving into the other is performing the checks.
