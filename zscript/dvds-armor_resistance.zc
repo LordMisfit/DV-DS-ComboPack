@@ -260,11 +260,11 @@ class PlayerStatItem : Inventory
 			if (ClassCheck == 0) // Will run the check only once at the beginning of a new game
 			{
 				CallACS("MiscVarSetDECORATE",1999,-1);
+				CallACS("MiscVarSetDECORATE",2000,dvds_newhud);
 			}
 			// Check for HUD type settings
 			if (CallACS("MiscVarCheckDECORATE",1999) == -1)
 			{
-				CallACS("MiscVarSetDECORATE",2000,dvds_newhud);
 			}
 			if (ClassCheck == 1) // Will run the check only once at the beginning of a new game
 			{
@@ -1101,25 +1101,92 @@ class PlayerStatItem : Inventory
 		
 		
 		
+		//****************************************************************************************************************************************************************
+		//**Checks "user_PlayerDVDSSpecial[]" array on the player actors [used for various things, including disjointed MAP-specfic ACS scripts (TCOTD:A, Unloved, etc)]**
+		//****************************************************************************************************************************************************************
+		if (playeractor)
+		{
+			int DVDSSpecialArrayCheck = 0;
+			int DVDSArrayValue;
+			
+			while (DVDSSpecialArrayCheck < 256)
+			{
+				DVDSArrayValue = playeractor.user_PlayerDVDSSpecial[DVDSSpecialArrayCheck];
+				CallACS("DVDSSpecialArraySetDECORATE",DVDSSpecialArrayCheck,DVDSArrayValue);
+				//Console.Printf("DVDSSpecialArrayCheck: %d / 256 - (%d)",DVDSSpecialArrayCheck, DVDSArrayValue);
+				DVDSSpecialArrayCheck++;
+			}
+			// DVDSSpecialArrayValue[0] = Off = "Conscious", On = "Unconscious"
+
+			// DVDSSpecialArrayValue[1] = Sets MP/Mana to 0 then unsets itself
+			if (CallACS("DVDSSpecialArrayCheckDECORATE",1) > 0)
+			{
+				CallACS("OtherVarSetDECORATE",2,0); // CurrentMana = 0;
+				CallACS("DVDSSpecialArraySetDECORATE",1,0); // DVDSSpecialArrayValue[1] = 0;
+				playeractor.user_PlayerDVDSSpecial[1] = 0; // SetUserArray(Player1TID,"user_PlayerDVDSSpecial",1,0);
+			}
+			// DVDSSpecialArrayValue[2] = Sets Stamina to 0 then unsets itself
+			if (CallACS("DVDSSpecialArrayCheckDECORATE",2) > 0)
+			{
+				CallACS("MiscVarSetDECORATE",21,0); // MiscellaneousVars[21] = 0;
+				CallACS("DVDSSpecialArraySetDECORATE",2,0); // DVDSSpecialArrayValue[2] = 0;
+				playeractor.user_PlayerDVDSSpecial[2] = 0; // SetUserArray(Player1TID,"user_PlayerDVDSSpecial",2,0);
+			}
+		}
+		
+		// DVDSSpecialArrayValue[3] = Unloved Specfic - Makes Hellcore Weapons drop 4x more often, etc :o
+		// DVDSSpecialArrayValue[4] = TCOTD:A Specfic
+		// DVDSSpecialArrayValue[5] = Circus2 Specfic
+		
+		// DVDSSpecialArrayValue[6] = Make HUD invisible [for TITLEMAP usage]
+		if (CallACS("DVDSSpecialArrayCheckDECORATE",6) > 0) 
+		{
+			CallACS("MiscVarSetDECORATE",2000,-1);
+			CallACS("DVDSSpecialArraySetDECORATE",6,0); // DVDSSpecialArrayValue[6] = 0;
+			playeractor.user_PlayerDVDSSpecial[6] = 0; // SetUserArray(Player1TID,"user_PlayerDVDSSpecial",6,0);
+		}
+		// DVDSSpecialArrayValue[7] = Make HUD visible again
+		if (CallACS("DVDSSpecialArrayCheckDECORATE",7) > 0) 
+		{
+			CallACS("MiscVarSetDECORATE",2000,1);
+			CallACS("DVDSSpecialArraySetDECORATE",7,0); // DVDSSpecialArrayValue[7] = 0;
+			playeractor.user_PlayerDVDSSpecial[7] = 0; // SetUserArray(Player1TID,"user_PlayerDVDSSpecial",7,0);
+		}
+		// DVDSSpecialArrayValue[8] = Remove all weapons [TITLEMAP]
+		if (CallACS("DVDSSpecialArrayCheckDECORATE",8) > 0) 
+		{
+			owner.ClearInventory();
+			owner.A_TakeInventory("SceptreOfEmpyrea",0x7FFFFFFF);
+			CallACS("DVDSSpecialArraySetDECORATE",8,0); // DVDSSpecialArrayValue[8] = 0;
+			playeractor.user_PlayerDVDSSpecial[8] = 0; // SetUserArray(Player1TID,"user_PlayerDVDSSpecial",8,0);
+		}
+		
+		// DVDSSpecialArrayValue[9] = Prevents Dashing
+		
+		
+		
 		//*******************************************
 		//*Delays the levelup speech for a character*
 		//*******************************************
-		int LevelupSpeechTimer = CallACS("MiscVarCheckDECORATE",247);
-		if (LevelupSpeechTimer > 0)
+		if (playeractor)
 		{
-			LevelupSpeechTimer2++;
-			if (debuglvlup) Console.Printf("Level Up Dialouge Timer: %d / 105", LevelupSpeechTimer2);
-			if (LevelupSpeechTimer2 >= 105)
+			int LevelupSpeechTimer = CallACS("MiscVarCheckDECORATE",247);
+			if (LevelupSpeechTimer > 0)
 			{
-				if (random(1,100) <= dvds_levelspeechchance && PlayerCurrentHealth > 0)
+				LevelupSpeechTimer2++;
+				if (debuglvlup) Console.Printf("Level Up Dialouge Timer: %d / 105", LevelupSpeechTimer2);
+				if (LevelupSpeechTimer2 >= 105)
 				{
-					if (CharacterClass == 2) 
+					if (random(1,100) <= dvds_levelspeechchance && PlayerCurrentHealth > 0)
 					{
-						owner.A_PlaySound("FloraLevelSpeech",CHAN_VOICE,1.0,0,ATTN_NORM);
+						if (CharacterClass == 2) 
+						{
+							owner.A_PlaySound("FloraLevelSpeech",CHAN_VOICE,1.0,0,ATTN_NORM);
+						}
 					}
+					CallACS("MiscVarSetDECORATE",247,0);
+					LevelupSpeechTimer2 = 0;
 				}
-				CallACS("MiscVarSetDECORATE",247,0);
-				LevelupSpeechTimer2 = 0;
 			}
 		}
 		
@@ -2790,7 +2857,7 @@ class PlayerStatItem : Inventory
 				
 				
 				if (UsingInGameMenu != 0) HellcoreCoolRatio = 0; // If using In-Game Menus
-				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious"
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious", allow their Hellcore Cooling to count
 				{
 					previousdelaycount = HellcoreOverheatLevel;
 					HellcoreOverheatLevel -= HellcoreCoolRatio;
@@ -3856,7 +3923,7 @@ class PlayerStatItem : Inventory
 				if (SleepTimer > 0) FreezePlayer += 1;
 				if (buttons & BT_USE && buttons & BT_SPEED && TensionCooldownTimer <= 0 && FreezePlayer == 0)
 				{
-					if (AllowTension > 0 && CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // Tension is Enabled & If Player is "Conscious"
+					if (AllowTension > 0 && CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // Tension is Enabled & If Player is "Conscious", Tension Charge Timer counts up
 					{
 						TensionCooldownTimer = 0;
 						TensionMaxCooldownTimer = TensionCooldownTimer;
@@ -4603,7 +4670,7 @@ class PlayerStatItem : Inventory
 				if (Owner.CountInv("FalconKnifeEarrings") > 0) FocusDrain = FocusDrain * 9 / 10;
 				//Console.Printf("    \cnFocusing [Step 1 - Base Drain]: %d\c-", FocusDrain);
 				
-				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0)
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious", allow Focus to activate
 				{
 					previousdelaycount = CurrentStamina;
 					CurrentStamina -= FocusDrain;
@@ -5106,7 +5173,7 @@ class PlayerStatItem : Inventory
 				if (debugregenhealth && PlayerCurrentHealth < RegenMaxHealth) Console.Printf("    \caHP Regen [Step 24 - Regen Intervals (LOWCap)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 				
 				if (UsingInGameMenu != 0) delaycount = 0; // If using In-Game Menus
-				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious"
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious", allow their HP regen timer to count
 				{
 					HPRegenTimer += delaycount;
 				}
@@ -5349,7 +5416,7 @@ class PlayerStatItem : Inventory
 				if (debugregenhealth && PlayerCurrentHealth > RegenMaxHealth) Console.Printf("    \caHP Degen [Step 23 - Degen Intervals (LOWCap)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 
 				if (UsingInGameMenu != 0) delaycount = 0; // If using In-Game Menus
-				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious"
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious", allow their HP degen timer to count
 				{
 					HPDegenTimer += delaycount;
 				}
@@ -5748,7 +5815,7 @@ class PlayerStatItem : Inventory
 			if (delaycount < 1) delaycount = 1;
 
 			if (UsingInGameMenu != 0) delaycount = 0; // If using In-Game Menus
-			if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0 && PlayerCurrentMP < PlayerMaxMP) 
+			if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0 && PlayerCurrentMP < PlayerMaxMP) // If Player is "Conscious", allow their MP regen timer to count
 			{
 				// If Player is "Conscious" and Mana is below Max
 				 MPRegenTimer += delaycount;
@@ -6443,7 +6510,7 @@ class PlayerStatItem : Inventory
 				if (debugstaminaregen) Console.Printf("    \cdStamina Regeneration [Step 20: LowCap/FINAL]: %d\c-, Previous: %d", staminaregenfinal, staminaregenbase);
 
 				if (UsingInGameMenu != 0) staminaregenfinal = 0; // If using In-Game Menus
-				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious"
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious", allow their Stamina Regen to count
 				{
 					PlayerCurrentStamina += staminaregenfinal;
 					if (PlayerCurrentStamina > MaximumStamina) PlayerCurrentStamina = MaximumStamina;
@@ -6662,7 +6729,7 @@ class PlayerStatItem : Inventory
 				if (debugstaminaregen) Console.Printf("    \cdStamina Degeneration [Step 20: LowCap/FINAL]: %d\c-, Previous: %d", staminaregenfinal, staminaregenbase);
 
 				if (UsingInGameMenu != 0) staminaregenfinal = 0; // If using In-Game Menus
-				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious"
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 0) // If Player is "Conscious", allow their Stamina Regen to Count
 				{
 					PlayerCurrentStamina += staminaregenfinal;
 					if (PlayerCurrentStamina < MaximumStamina) PlayerCurrentStamina = MaximumStamina;
