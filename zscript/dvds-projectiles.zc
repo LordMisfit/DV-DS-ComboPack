@@ -728,39 +728,63 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 	}
 	
 	/**
+	 * Selects a target for A_SeekerMissile or A_SuperSeekerMissile, based on where the source of this projectile (that is, the target pointer) is currently aiming.
+	 *
+	 * This should be called when a projectile is first fired. If this is used, then in subsequent calls to A_SuperSeekerMissile, the “retarget” parameter should be the opposite of the value returned by this method. Example:
+	 *
+	 *	private bool specificTarget;
+	 *	states {
+	 *		Spawn:
+	 *			TNT1 A 0 nodelay { invoker.specificTarget = A_SelectSeekTargetByShooterAim(); }
+	 *			MISL A 1 A_SuperSeekerMissile(1, 1, retarget: !specificTarget);
+	 *			wait;
+	 *	}
+	 *
+	 * @param range How far out to look. Defaults to PLAYERMISSILERANGE, the maximum range of player hitscans.
+	 * @param seekEnemies Whether to seek actors hostile to the source of this projectile. Defaults to true.
+	 * @param seekFriends Whether to seek actors friendly to the source of this projectile. Defaults to false.
+	 * @return true if a valid target was selected; false otherwise.
+	 */
+	action bool A_SelectSeekTargetByShooterAim(double range = PLAYERMISSILERANGE, bool seekEnemies = true, bool seekFriends = false)
+	{
+		if (!target)
+		{
+			Console.Printf("\cg%s.A_SelectSeekTargetByShooterAim called, but this actor's target field is null!", GetClassName());
+			return false;
+		}
+		
+		FLineTraceData result;
+		if (LineTrace(target.Angle, range, target.Pitch, data: result) && result.HitActor)
+		{
+			let a = result.HitActor;
+			if (
+				a != target &&
+				a.bShootable && !a.bDormant && !a.bNeverTarget &&
+				(
+					(!seekEnemies && !seekFriends) ||
+					(seekEnemies && target.isHostile(a)) ||
+					(seekFriends && target.isFriend(a))
+				)
+			)
+			{
+				tracer = a;
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
 	 * Selects a target for A_SeekerMissile or A_SuperSeekerMissile.
 	 *
-	 * @param hitScanDistance If ≥ 0, the routine will first check if there is anything directly in front of the calling actor, up to the given distance.
 	 * @param lookDistance How far to look all around for a target.
 	 * @param seekEnemies Whether to seek actors hostile to the source of this projectile. Defaults to true.
 	 * @param seekFriends Whether to seek actors friendly to the source of this projectile. Defaults to false.
 	 */
-	action void A_SelectSeekTarget(double hitScanDistance = 0, double lookDistance = 512, bool seekEnemies = true, bool seekFriends = false)
+	action void A_SelectSeekTarget(double lookDistance = 512, bool seekEnemies = true, bool seekFriends = false)
 	{
 		A_FaceVel();
-		
-		if (hitScanDistance > 0.)
-		{
-			// Try a hitscan first, straight ahead. If there's an eligible actor there, target that.
-			FLineTraceData result;
-			if (LineTrace(Angle, hitScanDistance, Pitch, data: result) && result.HitActor)
-			{
-				let a = result.HitActor;
-				if (
-					a != target &&
-					a.bShootable && !a.bDormant && !a.bNeverTarget &&
-					(
-						(!seekEnemies && !seekFriends) || !target ||
-						(seekEnemies && target.isHostile(a)) ||
-						(seekFriends && target.isFriend(a))
-					)
-				)
-				{
-					tracer = a;
-					return;
-				}
-			}
-		}
 		
 		Vector2 bestAimCorrection = (180, 180);
 		Actor bestTarget = null;
