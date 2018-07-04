@@ -84,6 +84,8 @@ ACTOR RocketPlayerSeeking : RocketPlayer
 					// When the rocket is first fired, check if it's being aimed at a specific target. If so, lock on to that target.
 					A_SelectSeekTarget(PLAYERMISSILERANGE);
 				}
+				// This is needed so that subclasses can override the Idle state.
+				return state("Idle");
 			}
 		Idle:
 			MISL A 1 Bright {
@@ -93,6 +95,29 @@ ACTOR RocketPlayerSeeking : RocketPlayer
 				}
 			}
 			Loop
+	}
+}
+
+ACTOR RocketPlayerDrunk : RocketPlayerSeeking
+{
+	var float user_drunkenness;
+	States
+	{
+		Idle:
+			"####" "#" 0 {
+				user_drunkenness = max(0.0, 10.0 - user_seekstrength * user_seekstrength * 0.4);
+			}
+			MISL A 1 Bright {
+				if (user_seekstrength > 0)
+				{
+					A_SuperSeekerMissile(user_seekstrength, user_seekstrength);
+					if (user_drunkenness > 0)
+					{
+						A_DrunkMissile(user_drunkenness, user_drunkenness);
+					}
+				}
+			}
+			Wait
 	}
 }
 
@@ -112,6 +137,8 @@ ACTOR RocketPlayerSeekingNoAOE : RocketPlayerNoAOE
 					// When the rocket is first fired, check if it's being aimed at a specific target. If so, lock on to that target.
 					A_SelectSeekTarget(PLAYERMISSILERANGE);
 				}
+				// This is needed so that subclasses can override the Idle state.
+				return state("Idle");
 			}
 		Idle:
 			MISL A 1 Bright {
@@ -121,6 +148,29 @@ ACTOR RocketPlayerSeekingNoAOE : RocketPlayerNoAOE
 				}
 			}
 			Loop
+	}
+}
+
+ACTOR RocketPlayerDrunkNoAOE : RocketPlayerSeekingNoAOE
+{
+	var float user_drunkenness;
+	States
+	{
+		Idle:
+			"####" "#" 0 {
+				user_drunkenness = max(0.0, 10.0 - user_seekstrength * user_seekstrength * 0.4);
+			}
+			MISL A 1 Bright {
+				if (user_seekstrength > 0)
+				{
+					A_SuperSeekerMissile(user_seekstrength, user_seekstrength);
+					if (user_drunkenness > 0)
+					{
+						A_DrunkMissile(user_drunkenness, user_drunkenness);
+					}
+				}
+			}
+			Wait
 	}
 }
 
@@ -5762,7 +5812,7 @@ Actor RocketLauncher2 : MarineWeapon
 				else
 				if (CountInv("RLMode",AAPTR_PLAYER1) == 2)
 				{
-					A_SpreadAuraFireProjectileAoE("RocketPlayerSeeking","RocketPlayerSeekingNoAOE",frandom(-CallACS("GetHitScanXSpread",8),CallACS("GetHitScanXSpread",8)),1,"RocketAmmo",0,0,0,frandom(-CallACS("GetHitScanXSpread",8),CallACS("GetHitScanXSpread",8)));
+					A_SpreadAuraFireProjectileAoE("RocketPlayerDrunk","RocketPlayerDrunkNoAOE",0,1,"RocketAmmo",0,0,0,0);
 				}
 			}
 			MISG B 1
