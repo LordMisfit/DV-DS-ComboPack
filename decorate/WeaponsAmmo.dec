@@ -68,6 +68,114 @@ ACTOR RocketPlayerNoAOE : RocketBase
 	}
 }
 
+ACTOR RocketPlayerSeeking : RocketPlayer
+{
+	var float user_seekstrength;
+	var int user_specificTarget;
+	States
+	{
+		Spawn:
+			MISL A 0 NoDelay {
+				A_GetPlayerAttackDamage(8,0);
+				user_seekstrength = CallACS("MiscVarCheckDECORATE", 10025) + (CallACS("MiscVarCheckDECORATE", 10026) * 2);
+				if (user_seekstrength > 0)
+				{
+					A_ChangeFlag("SEEKERMISSILE", true);
+					
+					// When the rocket is first fired, check if it's being aimed at a specific target. If so, lock on to that target.
+					user_specificTarget = A_SelectSeekTargetByShooterAim;
+				}
+				// This is needed so that subclasses can override the Idle state.
+				return state("Idle");
+			}
+		Idle:
+			MISL A 1 Bright {
+				if (user_seekstrength > 0)
+				{
+					A_SuperSeekerMissile(user_seekstrength, user_seekstrength, !user_specificTarget);
+				}
+			}
+			Loop
+	}
+}
+
+ACTOR RocketPlayerDrunk : RocketPlayerSeeking
+{
+	var float user_drunkenness;
+	States
+	{
+		Idle:
+			"####" "#" 0 {
+				user_drunkenness = max(0.0, 10.0 - user_seekstrength * user_seekstrength * 0.4);
+			}
+			MISL A 1 Bright {
+				if (user_seekstrength > 0)
+				{
+					A_SuperSeekerMissile(user_seekstrength, user_seekstrength, !user_specificTarget);
+					if (user_drunkenness > 0)
+					{
+						A_DrunkMissile(user_drunkenness, user_drunkenness);
+					}
+				}
+			}
+			Wait
+	}
+}
+
+ACTOR RocketPlayerSeekingNoAOE : RocketPlayerNoAOE
+{
+	var float user_seekstrength;
+	var int user_specificTarget;
+	States
+	{
+		Spawn:
+			MISL A 0 NoDelay {
+				A_GetPlayerAttackDamage(8,0);
+				user_seekstrength = CallACS("MiscVarCheckDECORATE", 10025) + (CallACS("MiscVarCheckDECORATE", 10026) * 2);
+				if (user_seekstrength > 0)
+				{
+					A_ChangeFlag("SEEKERMISSILE", true);
+					
+					// When the rocket is first fired, check if it's being aimed at a specific target. If so, lock on to that target.
+					user_specificTarget = A_SelectSeekTargetByShooterAim;
+				}
+				// This is needed so that subclasses can override the Idle state.
+				return state("Idle");
+			}
+		Idle:
+			MISL A 1 Bright {
+				if (user_seekstrength > 0)
+				{
+					A_SuperSeekerMissile(user_seekstrength, user_seekstrength, !user_specificTarget);
+				}
+			}
+			Loop
+	}
+}
+
+ACTOR RocketPlayerDrunkNoAOE : RocketPlayerSeekingNoAOE
+{
+	var float user_drunkenness;
+	States
+	{
+		Idle:
+			"####" "#" 0 {
+				user_drunkenness = max(0.0, 10.0 - user_seekstrength * user_seekstrength * 0.4);
+			}
+			MISL A 1 Bright {
+				if (user_seekstrength > 0)
+				{
+					A_SuperSeekerMissile(user_seekstrength, user_seekstrength, !user_specificTarget);
+					if (user_drunkenness > 0)
+					{
+						A_DrunkMissile(user_drunkenness, user_drunkenness);
+					}
+				}
+			}
+			Wait
+	}
+}
+
 actor PlasmaBallPlayer : PlasmaBallBase
 {
 	Damage (finaldamagedealt)
@@ -5652,8 +5760,8 @@ Actor RocketLauncher2 : MarineWeapon
 			}
 			MISG B 4 
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(2); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(3); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(2); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(3); }
 				CallACS("StartTensionCountDown");
 				if (CountInv("RLMode",AAPTR_PLAYER1) == 0)
 				{
@@ -5664,16 +5772,20 @@ Actor RocketLauncher2 : MarineWeapon
 				{
 					A_SpreadAuraFireProjectileAoE("STGrenade","STGrenadeNoAOE",0,1,"RocketAmmo",0,0,0,-9.4921875);
 				}
+				else if (CountInv("RLMode",AAPTR_PLAYER1) == 2)
+				{
+					A_SpreadAuraFireProjectileAoE("RocketPlayerSeeking","RocketPlayerSeekingNoAOE",0,1,"RocketAmmo",0,0,0,0);
+				}
 			}
 			MISG B 4
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(2); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(3); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(2); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(3); }
 			}
 			MISG B 4
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(2); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(3); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(2); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(3); }
 			}
 			MISG B 0 A_ReFire
 			Goto Ready
@@ -5681,14 +5793,14 @@ Actor RocketLauncher2 : MarineWeapon
 		AltFire:
 			MISG B 3
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(2); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(2); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(2); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(2); }
 				A_GunFlash("AltFlash");
 			}
 			MISG B 2
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(1); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(2); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(1); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(2); }
 				CallACS("StartTensionCountDown");
 				if (CountInv("RLMode",AAPTR_PLAYER1) == 0)
 				{
@@ -5699,11 +5811,16 @@ Actor RocketLauncher2 : MarineWeapon
 				{
 					A_SpreadAuraFireProjectileAoE("STGrenade","STGrenadeNoAOE",frandom(-CallACS("GetHitScanXSpread",10),CallACS("GetHitScanXSpread",10)),1,"RocketAmmo",0,0,0,-9.4921875+frandom(-CallACS("GetHitScanXSpread",10),CallACS("GetHitScanXSpread",10)));
 				}
+				else
+				if (CountInv("RLMode",AAPTR_PLAYER1) == 2)
+				{
+					A_SpreadAuraFireProjectileAoE("RocketPlayerDrunk","RocketPlayerDrunkNoAOE",0,1,"RocketAmmo",0,0,0,0);
+				}
 			}
 			MISG B 1
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(0); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(1); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(0); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(1); }
 			}
 			MISG B 0 A_ReFire
 			Goto Ready
@@ -5720,6 +5837,22 @@ Actor RocketLauncher2 : MarineWeapon
 				else
 				if (CountInv("RLMode",AAPTR_PLAYER1) == 1)
 				{
+					if (CallACS("MiscVarCheckDECORATE",10025) > 0)
+					{
+						A_SetInventory("RLMode",2,AAPTR_PLAYER1);
+						A_Print("Using Homing Rockets");
+						A_PlaySound("GetRockets",0);
+					}
+					else
+					{
+						A_SetInventory("RLMode",0,AAPTR_PLAYER1);
+						A_Print("Using Rockets");
+						A_PlaySound("GetRockets",0);
+					}
+				}
+				else
+				if (CountInv("RLMode",AAPTR_PLAYER1) == 2)
+				{
 					A_SetInventory("RLMode",0,AAPTR_PLAYER1);
 					A_Print("Using Rockets");
 					A_PlaySound("GetRockets",0);
@@ -5732,19 +5865,19 @@ Actor RocketLauncher2 : MarineWeapon
 			// 15 tics
 			MISF A 3 Bright
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(1); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(2); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(1); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(2); }
 				A_Light1;
 			}
 			MISF B 4 Bright
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(2); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(3); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(2); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(3); }
 			}
 			MISF CD 4 Bright
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(2); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(3); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(2); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(3); }
 				A_Light2;
 			}
 			Goto LightDone
@@ -5753,19 +5886,19 @@ Actor RocketLauncher2 : MarineWeapon
 			// 11 tics
 			MISF A 1 Bright
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(0); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(0); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(0); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(0); }
 				A_Light1;
 			}
 			MISF B 2 Bright
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(0); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(1); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(0); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(1); }
 			}
 			MISF CD 2 Bright
 			{
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 4) { A_SetTics(1); }
-				if (CallACS("MiscVarCheckDECORATE",10025) >= 2) { A_SetTics(1); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 4) { A_SetTics(1); }
+				if ((CallACS("MiscVarCheckDECORATE",10025) - (CountInv("RLMode") == 2)) >= 2) { A_SetTics(1); }
 				A_Light2;
 			}
 			Goto LightDone
