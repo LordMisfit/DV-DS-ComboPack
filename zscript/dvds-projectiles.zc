@@ -784,6 +784,8 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 	 */
 	action void A_SelectSeekTarget(bool seekEnemies = true, bool seekFriends = false, double lookDistance = MISSILERANGE)
 	{
+		invoker.SuperSeekerMissileLastTargetingAttempt = gametic;
+		
 		A_FaceVel();
 		
 		Vector2 bestAimCorrection = (180, 180);
@@ -820,6 +822,15 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 	}
 	
 	/**
+	 * The most recent tic when A_SelectSeekTarget was executed.
+	 *
+	 * This is used to limit how often A_SuperSeekerMissile searches for a seek target when it doesn't already have one. Searching for a seek target is an expensive operation, so it shouldn't be done on every tic.
+	 *
+	 * The longer ago the last attempt was made, the more probable it is that another attempt will be made on this tic, reaching 100% probability after 32 tics. In other words, seeker missile targeting will happen every 16 tics on average, but it's randomized so that not all seeker missiles in flight will try targeting on the same tic.
+	 */
+	private int SuperSeekerMissileLastTargetingAttempt;
+	
+	/**
 	 * Custom replacement for A_SeekerMissile that actually works correctly, and without the quirks. Always behaves as though SMF_PRECISE and SMF_CURSPEED were given.
 	 *
 	 * @param maxYaw How far the missile is allowed to yaw in one tic.
@@ -835,12 +846,20 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 			tracer && (
 				!invoker.CanSeek(tracer) ||
 				!tracer.bShootable ||
-				(random(1, 35) == 1 && !IsVisible(tracer, true))
+				(!(random() & 31) && !IsVisible(tracer, true))
 			)
 		)
 			tracer = null; // Forget about targets that are no longer valid.
 		
-		if (!tracer || (retarget && !(random() & 127)))
+		if (
+			(!tracer && (
+				// If A_SelectSeekTarget has never run before, then definitely run it.
+				(invoker.SuperSeekerMissileLastTargetingAttempt == 0) ||
+				// Otherwise, avoid running it on every tic; it's an expensive operation.
+				(gametic - invoker.SuperSeekerMissileLastTargetingAttempt) > (random() & 31)
+			)) ||
+			(retarget && !(random() & 127))
+		)
 			A_SelectSeekTarget(seekEnemies: seekEnemies, seekFriends: seekFriends, lookDistance: lookDistance);
 		
 		if (tracer)
