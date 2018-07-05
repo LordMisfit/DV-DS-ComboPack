@@ -728,39 +728,65 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 	}
 	
 	/**
-	 * Selects a target for A_SeekerMissile or A_SuperSeekerMissile.
+	 * Selects a target for A_SeekerMissile or A_SuperSeekerMissile, based on where the source of this projectile (that is, the target pointer) is currently aiming.
 	 *
-	 * @param hitScanDistance If ≥ 0, the routine will first check if there is anything directly in front of the calling actor, up to the given distance.
-	 * @param lookDistance How far to look all around for a target.
+	 * This should be called when a projectile is first fired. If this is used, then in subsequent calls to A_SuperSeekerMissile, the “retarget” parameter should be the opposite of the value returned by this method. Example:
+	 *
+	 *	private bool specificTarget;
+	 *	states {
+	 *		Spawn:
+	 *			TNT1 A 0 nodelay { invoker.specificTarget = A_SelectSeekTargetByShooterAim(); }
+	 *			MISL A 1 A_SuperSeekerMissile(1, 1, retarget: !specificTarget);
+	 *			wait;
+	 *	}
+	 *
 	 * @param seekEnemies Whether to seek actors hostile to the source of this projectile. Defaults to true.
 	 * @param seekFriends Whether to seek actors friendly to the source of this projectile. Defaults to false.
+	 * @param range How far out to look. Defaults to PLAYERMISSILERANGE, the maximum range of player hitscans.
+	 * @return true if a valid target was selected; false otherwise.
 	 */
-	action void A_SelectSeekTarget(double hitScanDistance = 0, double lookDistance = 512, bool seekEnemies = true, bool seekFriends = false)
+	action bool A_SelectSeekTargetByShooterAim(bool seekEnemies = true, bool seekFriends = false, double range = PLAYERMISSILERANGE)
 	{
-		A_FaceVel();
-		
-		if (hitScanDistance > 0.)
+		if (!target)
 		{
-			// Try a hitscan first, straight ahead. If there's an eligible actor there, target that.
-			FLineTraceData result;
-			if (LineTrace(Angle, hitScanDistance, Pitch, data: result) && result.HitActor)
-			{
-				let a = result.HitActor;
-				if (
-					a != target &&
-					a.bShootable && !a.bDormant && !a.bNeverTarget &&
-					(
-						(!seekEnemies && !seekFriends) || !target ||
-						(seekEnemies && target.isHostile(a)) ||
-						(seekFriends && target.isFriend(a))
-					)
+			Console.Printf("\cg%s.A_SelectSeekTargetByShooterAim called, but this actor's target field is null!", GetClassName());
+			return false;
+		}
+		
+		FLineTraceData result;
+		if (LineTrace(target.Angle, range, target.Pitch, data: result) && result.HitActor)
+		{
+			let a = result.HitActor;
+			if (
+				a != target &&
+				a.bShootable && !a.bDormant && !a.bNeverTarget &&
+				(
+					(!seekEnemies && !seekFriends) ||
+					(seekEnemies && target.isHostile(a)) ||
+					(seekFriends && target.isFriend(a))
 				)
-				{
-					tracer = a;
-					return;
-				}
+			)
+			{
+				tracer = a;
+				return true;
 			}
 		}
+		
+		return false;
+	}
+	
+	/**
+	 * Selects a target for A_SeekerMissile or A_SuperSeekerMissile.
+	 *
+	 * @param seekEnemies Whether to seek actors hostile to the source of this projectile. Defaults to true.
+	 * @param seekFriends Whether to seek actors friendly to the source of this projectile. Defaults to false.
+	 * @param lookDistance How far to look all around for a target.
+	 */
+	action void A_SelectSeekTarget(bool seekEnemies = true, bool seekFriends = false, double lookDistance = MISSILERANGE)
+	{
+		invoker.SuperSeekerMissileLastTargetingAttempt = gametic;
+		
+		A_FaceVel();
 		
 		Vector2 bestAimCorrection = (180, 180);
 		Actor bestTarget = null;
@@ -791,31 +817,50 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 			}
 		}
 		
-		tracer = bestTarget;
+		if (bestTarget)
+			tracer = bestTarget;
 	}
+	
+	/**
+	 * The most recent tic when A_SelectSeekTarget was executed.
+	 *
+	 * This is used to limit how often A_SuperSeekerMissile searches for a seek target when it doesn't already have one. Searching for a seek target is an expensive operation, so it shouldn't be done on every tic.
+	 *
+	 * The longer ago the last attempt was made, the more probable it is that another attempt will be made on this tic, reaching 100% probability after 32 tics. In other words, seeker missile targeting will happen every 16 tics on average, but it's randomized so that not all seeker missiles in flight will try targeting on the same tic.
+	 */
+	private int SuperSeekerMissileLastTargetingAttempt;
 	
 	/**
 	 * Custom replacement for A_SeekerMissile that actually works correctly, and without the quirks. Always behaves as though SMF_PRECISE and SMF_CURSPEED were given.
 	 *
 	 * @param maxYaw How far the missile is allowed to yaw in one tic.
 	 * @param maxPitch How far the missile is allowed to pitch in one tic.
-	 * @param lookDistance How far the missile will look for targets. If ≤ 0, missile will not look for targets at all, and will simply seek the current tracer (if any).
+	 * @param retarget If true, the missile will occasionally look for new, better targets even if it already has one.
 	 * @param seekEnemies Whether to seek actors hostile to the source of this projectile. Defaults to true.
 	 * @param seekFriends Whether to seek actors friendly to the source of this projectile. Defaults to false.
+	 * @param lookDistance How far the missile will look for targets. If ≤ 0, missile will not look for targets at all, and will simply seek the current tracer (if any).
 	 */
-	action void A_SuperSeekerMissile(double maxYaw, double maxPitch, double lookDistance = 512, bool seekEnemies = true, bool seekFriends = false, int faceFlags = 0)
+	action void A_SuperSeekerMissile(double maxYaw, double maxPitch, bool retarget = true, bool seekEnemies = true, bool seekFriends = false, double lookDistance = MISSILERANGE, int faceFlags = 0)
 	{
 		if (
 			tracer && (
 				!invoker.CanSeek(tracer) ||
 				!tracer.bShootable ||
-				(random(1, 35) == 1 && !IsVisible(tracer, true))
+				(!(random() & 31) && !IsVisible(tracer, true))
 			)
 		)
 			tracer = null; // Forget about targets that are no longer valid.
 		
-		if (!tracer)
-			A_SelectSeekTarget(lookDistance: lookDistance, seekEnemies: seekEnemies, seekFriends: seekFriends);
+		if (
+			(!tracer && (
+				// If A_SelectSeekTarget has never run before, then definitely run it.
+				(invoker.SuperSeekerMissileLastTargetingAttempt == 0) ||
+				// Otherwise, avoid running it on every tic; it's an expensive operation.
+				(gametic - invoker.SuperSeekerMissileLastTargetingAttempt) > (random() & 31)
+			)) ||
+			(retarget && !(random() & 127))
+		)
+			A_SelectSeekTarget(seekEnemies: seekEnemies, seekFriends: seekFriends, lookDistance: lookDistance);
 		
 		if (tracer)
 		{
