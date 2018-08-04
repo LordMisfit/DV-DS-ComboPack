@@ -19937,14 +19937,20 @@ script "PrintArmorValues" (void)
 }
 
 // Emulates Armor Bonuses for all four (six?) types of armor in DVI-DS. [Applies Only to Deggaris and Illucia]
-script "EmulateGiveArmorBonus" (int BaseAmount)
+script "EmulateGiveArmorBonus" (int BaseAmount, int GauntletGive)
 {
+	int GauntletsArmorLimit = GetCVar("dvds_saurongauntlets_givearmorlimit");
+	if (GauntletGive > 0)
+	{
+		if (!GetCVar("dvds_saurongauntlets_givearmor")) terminate;
+	}
+	
 	int ExtraAPAdd, ExtraAPAdd2;
 	int RawArmorValue, ArmorClearValue;
 
 	if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) // Stops Flora/Ailish/Petra from getting armor benefits and sets the item's result to 1 to make the item fail to pickup
 	{
-		If (BaseAmount <= 0) BaseAmount = 1;
+		if (BaseAmount <= 0) BaseAmount = 1;
 	
 		// Saves original raw Armor Value
 		RawArmorValue = CheckActorInventory(Player1TID,"Armor");
@@ -19964,9 +19970,20 @@ script "EmulateGiveArmorBonus" (int BaseAmount)
 	
 		if (RawArmorValue == 0) // No Armor
 		{
+			//PrintBold(s:"Did Not Have Armor");
+
 			ExtraAPAdd = 1; // Base Increase to Armor and make it Green class
 			ExtraAPAdd = ExtraAPAdd * BaseAmount;
+			if (GauntletGive > 0)
+			{
+				ExtraAPAdd /= 4;
+				if (ExtraAPAdd < 1) ExtraAPAdd = 1;
+			}
 			RawArmorValue += ExtraAPAdd;
+			if (GauntletGive > 0 && RawArmorValue > GauntletsArmorLimit) RawArmorValue = GauntletsArmorLimit;
+
+			//PrintBold(d:ExtraAPAdd,s:" Armor Given");
+
 			GiveActorInventory(Player1TID,"ArmorBonusDSGreen", RawArmorValue);
 			CurrentArmorClass = 1;
 			CurrentMaxArmor = 100;
@@ -19980,6 +19997,8 @@ script "EmulateGiveArmorBonus" (int BaseAmount)
 		}
 		else // Have some kind of existing Armor
 		{
+			//PrintBold(s:"Already Has Armor");
+
 			ExtraAPAdd = CurrentArmorClass; // Base Increase to Armor and make it Green class
 			ExtraAPAdd = ExtraAPAdd * BaseAmount;
 			RawArmorValue += ExtraAPAdd;
@@ -19988,7 +20007,15 @@ script "EmulateGiveArmorBonus" (int BaseAmount)
 			RawArmorValue += ExtraAPAdd2;
 			ExtraAPAdd2 = PlayerLevel / 5;
 			ExtraAPAdd2 = ExtraAPAdd2 * BaseAmount;
+			if (GauntletGive > 0)
+			{
+				ExtraAPAdd2 /= 4;
+				if (ExtraAPAdd2 < 1) ExtraAPAdd2 = 1;
+			}
 			RawArmorValue += ExtraAPAdd2;
+			
+			if (GauntletGive > 0 && RawArmorValue > GauntletsArmorLimit) RawArmorValue = GauntletsArmorLimit;
+
 			if (RawArmorValue < 101)
 			{
 				if (CurrentArmorClass < 1) CurrentArmorClass = 1;
@@ -20026,6 +20053,8 @@ script "EmulateGiveArmorBonus" (int BaseAmount)
 				}
 			}
 		
+			//PrintBold(d:ExtraAPAdd2,s:" Armor Given [",d:CurrentArmorClass,s:" Armor Class]");
+
 			if (CurrentArmorClass == 0)
 			{
 				CurrentMaxArmor = 0;
@@ -20110,6 +20139,7 @@ script "EmulateGiveArmorBonus" (int BaseAmount)
 				TakeActorInventory(Player1TID,"DSStoneArmorClass2", 9999);
 			}
 		}
+
 	}
 }
 
@@ -27127,10 +27157,13 @@ script "SauronGauntletsHit" (int Amount, int HitType)
 	// Restore Armor [Flora Cannot Gain Armor from it though]
 	if (CharacterClass != 2 && GetCVar("dvds_saurongauntlets_givearmor"))
 	{
-		int ArmorAmount = (Amount * random(6,9)) / 15;
-		If (ArmorAmount <= 0) ArmorAmount = 1;
-		ACS_NamedExecuteWithResult("EmulateGiveArmorBonus",ArmorAmount,0,0);
-		gaveAnything = true;
+		if (CheckActorInventory(Player1TID,"Armor") < GetCVar("dvds_saurongauntlets_givearmorlimit"))
+		{
+			int ArmorAmount = (Amount * random(6,9)) / 15;
+			If (ArmorAmount <= 0) ArmorAmount = 1;
+			ACS_NamedExecuteWithResult("EmulateGiveArmorBonus",ArmorAmount,1,0);
+			gaveAnything = true;
+		}
 	}
 	
 	// Restore Mana
