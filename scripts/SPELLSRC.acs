@@ -401,7 +401,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [10] is for the subspell within the current category of spells you're using [for revised Spell Selecting]
 		// [11] is unused for now :V
 	// [12] is for the death time counter, to fade the screen to blackish-red when the player dies.
-		// [13 to 15] are unused for now :V
+	// [13] is the count of times to try to reset the fade if a resurrect is used.
+		// [14 to 15] are unused for now :V
 	// [16] is the sceptre timer for mana consumption
 	// [17] is the sceptre timer limit for mana consumption
 		// [18 to 19] are unused for now :V
@@ -25297,58 +25298,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	{
 		SetActorVelocity(Player1TID, 0, 0, 0, 0, 0);
 	}
-/*
-	//****************************************************************************************************************************************************************
-	//**Checks "user_PlayerDVDSSpecial[]" array on the player actors [used for various things, including disjointed MAP-specfic ACS scripts (TCOTD:A, Unloved, etc)]**
-	//****************************************************************************************************************************************************************
-	int DVDSSpecialArrayCheck = 0;
-	while (DVDSSpecialArrayCheck < 256)
-	{
-		DVDSSpecialArrayValue[DVDSSpecialArrayCheck] = GetUserArray(Player1TID,"user_PlayerDVDSSpecial",DVDSSpecialArrayCheck);
-		DVDSSpecialArrayCheck++;
-	}
-	// DVDSSpecialArrayValue[1] = Sets MP/Mana to 0 then unsets itself
-	if (DVDSSpecialArrayValue[1] > 0)
-	{
-		CurrentMana = 0;
-		DVDSSpecialArrayValue[1] = 0;
-		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",1,0);
-	}
-	// DVDSSpecialArrayValue[2] = Sets Stamina to 0 then unsets itself
-	if (DVDSSpecialArrayValue[2] > 0)
-	{
-		MiscellaneousVars[21] = 0;
-		DVDSSpecialArrayValue[2] = 0;
-		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",2,0);
-	}
-
-	// DVDSSpecialArrayValue[3] = Unloved Specfic - Makes Hellcore Weapons drop 4x more often, etc :o
-	// DVDSSpecialArrayValue[4] = TCOTD:A Specfic
-	// DVDSSpecialArrayValue[5] = Circus2 Specfic
-
-	// DVDSSpecialArrayValue[6] = Make HUD invisible [for TITLEMAP usage]
-	if (DVDSSpecialArrayValue[6] > 0) 
-	{
-		MiscellaneousVars[2000] = -1;
-		DVDSSpecialArrayValue[6] = 0;
-		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",6,0);
-	}
-	// DVDSSpecialArrayValue[7] = Make HUD visible again
-	if (DVDSSpecialArrayValue[7] > 0) 
-	{
-		MiscellaneousVars[2000] = 1;
-		DVDSSpecialArrayValue[7] = 0;
-		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",7,0);
-	}
-	// DVDSSpecialArrayValue[8] = Remove all weapons [TITLEMAP]
-	if (DVDSSpecialArrayValue[8] > 0) 
-	{
-		ClearActorInventory(Player1TID);
-		TakeActorInventory(Player1TID,"SceptreOfEmpyrea",0x7FFFFFFF);
-		DVDSSpecialArrayValue[8] = 0;
-		SetUserArray(Player1TID,"user_PlayerDVDSSpecial",8,0);
-	}
-*/
 	
 	//*******************************************************************************
 	//*Attempting to Interpolate Health Values for the player to show damage values.*
@@ -25584,10 +25533,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		GiveActorInventory(Player1TID,"DodgeGhostOff",1);
 	}
 	
-	// Health Regen/Degen wuz here V:
-	
-	// Skill Level Checks wuz here V:
-	
 	// Ruinous Shield HUD Display Calculations
 	if (MiscellaneousVars[269] != 0)
 	{
@@ -25615,6 +25560,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (GetActorProperty(Player1TID,APROP_Health) < 1)
 		{
 			MiscellaneousVars[12] += 1;
+			MiscellaneousVars[13] = 6;
 			// Game Over Music
 			if (deathmusic != 0)
 			{
@@ -25712,11 +25658,12 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		}
 		else
 		{
-			if (MiscellaneousVars[12] > 114)
+			if (MiscellaneousVars[13] > 0)
 			{
-				SetActivator(Player1TID); // Set to Player's ID to check for weapons from this actor.
-				FadeRange(0, 0, 0, 0.0, 0, 0, 0, 0.0, 0.0);
+				SetActivator(Player1TID); // Set to Player's ID
+				FadeTo(0, 0, 0, 0.0, 0.0001);
 				SetActivator(0); // Set back to worldly activator at the end of weapon checking.
+				MiscellaneousVars[13] -= 1;
 			}
 			HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
 			if (CheckActorInventory(Player1TID,"PlayerDeathFadeOut") > 0) TakeActorInventory(Player1TID,"PlayerDeathFadeOut", 1);
@@ -26865,6 +26812,14 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	Restart;
 }
 
+// DEBUG SCRIPT: Resets Fade
+script "ResetFade" (void)
+{
+	SetActivator(Player1TID); // Set to Player's ID
+	FadeTo(0, 0, 0, 0.0, 0.0001);
+	SetActivator(0); // Set back to worldly activator at the end of weapon checking.
+}
+
 // DEBUG SCRIPT: Sets Mana to the Current Amount
 script "SetManaAmount" (int Value)
 {
@@ -28006,38 +27961,118 @@ script "TunnelVisionControl" ENTER
 	int LowHealth, CriticalHealth;
 	CriticalHealth = MaxHealthTrue / 10;
 	
+	SetHudSize(640, 480, 0);
 	if (GetActorProperty(0, APROP_HEALTH) > 0)
 	{
 		if (GetActorProperty(0, APROP_HEALTH) <= CriticalHealth && GetActorProperty(0, APROP_HEALTH) > 0)
 		{
-			SetHudSize(640, 480, 0);
 			Setfont("M_INJ");
 			Hudmessage(s:"A"; HUDMSG_FADEINOUT, 4, CR_WHITE, 320.0, 240.0, 0.0, 0.5, 0.5);
 			localambientsound("heartb2", 116);
-			delay(15);
+			delay(5);
+			if (GetActorProperty(0, APROP_HEALTH) > CriticalHealth)
+			{
+				Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+				restart;
+			}
+			delay(5);
+			if (GetActorProperty(0, APROP_HEALTH) > CriticalHealth)
+			{
+				Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+				restart;
+			}
+			delay(5);
+			if (GetActorProperty(0, APROP_HEALTH) > CriticalHealth)
+			{
+				Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+				restart;
+			}
 			localambientsound("heartb2", 116);
 		}
-		delay(25);
+
+		delay(5);
+		if (GetActorProperty(0, APROP_HEALTH) <= 0)
+		{
+			Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			restart;
+		}
+		delay(5);
+		if (GetActorProperty(0, APROP_HEALTH) <= 0)
+		{
+			Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			restart;
+		}
+		delay(5);
+		if (GetActorProperty(0, APROP_HEALTH) <= 0)
+		{
+			Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			restart;
+		}
+		delay(5);
+		if (GetActorProperty(0, APROP_HEALTH) <= 0)
+		{
+			Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			restart;
+		}
+		delay(5);
+		if (GetActorProperty(0, APROP_HEALTH) <= 0)
+		{
+			Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			restart;
+		}
 		restart;
 	}
-	else
+	else // Dead - show death overlays
 	{
-		delay(1);
+		Setfont("M_INJ2");
+		Hudmessage(s:"A"; HUDMSG_FADEINOUT, 3, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+		Hudmessage(s:"A"; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+
+		delay(13);
+		if (GetActorProperty(0, APROP_HEALTH) > 0)
+		{
+			Hudmessage(s:""; HUDMSG_FADEINOUT, 3, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			restart;
+		}
+		delay(13);
+		if (GetActorProperty(0, APROP_HEALTH) > 0)
+		{
+			Hudmessage(s:""; HUDMSG_FADEINOUT, 3, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			restart;
+		}
+		delay(13);
+		if (GetActorProperty(0, APROP_HEALTH) > 0)
+		{
+			Hudmessage(s:""; HUDMSG_FADEINOUT, 3, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			restart;
+		}
+		delay(13);
+		if (GetActorProperty(0, APROP_HEALTH) > 0)
+		{
+			Hudmessage(s:""; HUDMSG_FADEINOUT, 3, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			restart;
+		}
+		delay(13);
+		if (GetActorProperty(0, APROP_HEALTH) > 0)
+		{
+			Hudmessage(s:""; HUDMSG_FADEINOUT, 3, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			Hudmessage(s:""; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
+			restart;
+		}
 		restart;
 	}
 }
 
+/*
 // script [HudMessage ids 3 & 4]
 script "DeathTunnelVision" ENTER
 {
 	if (GetActorProperty(0, APROP_HEALTH) <= 0)
 	{
-		SetHudSize(640, 480, 0);
-		Setfont("M_INJ2");
-		Hudmessage(s:"A"; HUDMSG_FADEINOUT, 3, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
-		Hudmessage(s:"A"; 0, 4, CR_WHITE, 320.0, 240.0, 0.0, 1.0, 1.0);
-		delay(65);
-		restart;
 	}
 	else
 	{
@@ -28045,6 +28080,7 @@ script "DeathTunnelVision" ENTER
 		restart;
 	}
 }
+*/
 
 // script for Hellcore Energy and Heating usage [and also controls dealing Flora direct damage when using a Hellcore weapon when heating is 100% or higher]
 script "IncreaseHellcoreHeat" (int percent, int trydamageuser)
