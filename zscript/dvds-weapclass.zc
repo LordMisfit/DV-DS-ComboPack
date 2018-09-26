@@ -19,6 +19,7 @@ class AetheriusBaseWeaponZSC : Weapon
 	const spread2height2 = 0.0;
 
 	int finaldamagedealt;
+	int finalmeleedamagedealt;
 	string attackname1, attackname2, attackname3, attackname4, attackname5;
 
 	private class<Inventory> APPackToken, APPackCheck, APPackCheck2, APPackCheck3, APPackCheck4, iDTech1Check, iDTech1Check2, iDTech1Check3, iDTech1Check4;
@@ -847,16 +848,242 @@ class AetheriusBaseWeaponZSC : Weapon
 		if (debugmelee && altfire == 0) Console.Printf("FinalMeleeDmg: (%s) %d - (Previous Dmg: %d) [Punch]", weapon, damage, previousdamage);
 		if (debugmelee && altfire == 1) Console.Printf("FinalMeleeDmg: (%s) %d - (Previous Dmg: %d) [Uppercut]", weapon, damage, previousdamage);
 
-		A_SetInventory("FinalDamageDealt",damage,AAPTR_PLAYER1,true);
-		finaldamagedealt = damage;
+		A_SetInventory("FinalMeleeDamageDealt",damage,AAPTR_PLAYER1,true);
+		finalmeleedamagedealt = damage;
 	}
 
 	void A_GetKickDamage(int altfire = 0, int shockwave = 0)
 	{
+		int damage;
+		int previousdamage;
+		int strengthcounter;
+		let weapon = owner.player.ReadyWeapon;
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int debugmelee = dvdsdebug_showmeleeinformation;
+		
+		if (CharacterClass == 0) damage = random(45,60); // 2.5x
+		if (CharacterClass == 1) damage = random(25,40); // 2.5x
+		if (CharacterClass == 2) damage = random(26,51); // 4.25x
+		if (CharacterClass == 9) damage = random(35,60); // 
+		if (debugmelee) Console.Printf("BaseDmg: %d", damage);
+
+		// [STRIFE] Stamina Upgrades
+		int stamdamagefactor = CallACS("MiscVarCheckDECORATE",317);
+		previousdamage = damage;
+		damage = (damage * (4 + (stamdamagefactor * 3) / 4));
+		if (debugmelee) Console.Printf("StaminaDmg: %d, StamUpgrades: %d - (Previous Dmg: %d)", damage, stamdamagefactor, previousdamage);
+		
+		// Strength Stat Check [7 pts = roughly double the character's base punch damage]
+		int PlayerSTR = CallACS("StatCheck",7);
+		previousdamage = damage;
+		for (strengthcounter = 0; strengthcounter < PlayerSTR; strengthcounter++)
+		{
+			if (CharacterClass == 0) damage += random(2,8); // 2.5x
+			if (CharacterClass == 1) damage += random(2,5); // 2.5x
+			if (CharacterClass == 2) damage += random(3,9); // 4.25x
+			if (CharacterClass == 9) damage += random(4,12); //
+		}
+		if (debugmelee) Console.Printf("StrDmg: %d - (Strength: %d) - (Previous Dmg: %d)", damage, PlayerSTR, previousdamage);
+	
+		// Reduce Check
+		previousdamage = damage;
+		if (altfire == 0) damage = (damage * random(5,6)) / 5;
+		if (debugmelee) Console.Printf("ReduceDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+	
+		// Berserk Check
+		previousdamage = damage;
+		if (CountInv("PowerStrength", AAPTR_PLAYER1) > 0) damage = damage * 10;
+		if (debugmelee) Console.Printf("BerserkDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+		
+		// Flora Armor Checks
+		previousdamage = damage;
+		if (CharacterClass == 2) 
+		{
+			if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) Damage = Damage * 4 / 3; // +33.3~% Kick Damage
+			if (CountInv("SafeTeaShoes", AAPTR_PLAYER1) > 0) Damage = Damage * 7 / 4; // +75% Kick Damage
+			if (debugmelee) Console.Printf("FloArmorDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+		}
+		
+		int PerkFactor;
+		int temp1, temp2;
+		
+		int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+		int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+		previousdamage = damage;
+		if (shockwave > 0)
+		{
+			if (altfire == 0) damage = damage / 6;
+			if (altfire == 1) damage = damage / 5;
+			if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Shockwave)]", weapon, damage, previousdamage);
+
+			previousdamage = damage;
+			if (MartialArtsMastery > 0)
+			{
+				temp1 = 0;
+				if (MartialArtsMastery == 1) temp1 = 75;
+				if (MartialArtsMastery == 2) temp1 = 225;
+				if (MartialArtsMastery == 3) temp1 = 525;
+				if (MartialArtsMastery == 4) temp1 = 1125;
+				if (MartialArtsMastery >= 5) temp1 = 3375;
+				temp2 = 0;
+				if (MartialArtsMasteryEX == 1) temp2 = 1500;
+				if (MartialArtsMasteryEX == 2) temp2 = 3000;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Shockwave)]", weapon, damage, previousdamage);
+			}
+		}
+		else
+		{
+			previousdamage = damage;
+			if (MartialArtsMastery > 0)
+			{
+				temp1 = 0;
+				if (MartialArtsMastery == 1) temp1 = 25;
+				if (MartialArtsMastery == 2) temp1 = 75;
+				if (MartialArtsMastery == 3) temp1 = 175;
+				if (MartialArtsMastery == 4) temp1 = 375;
+				if (MartialArtsMastery >= 5) temp1 = 1125;
+				temp2 = 0;
+				if (MartialArtsMasteryEX == 1) temp2 = 500;
+				if (MartialArtsMasteryEX == 2) temp2 = 1000;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Shockwave)]", weapon, damage, previousdamage);
+			}
+		}
+		
+		previousdamage = damage;
+		if (altfire == 0) damage = damage;
+		if (altfire == 1) damage = damage / 4;
+		if (debugmelee && altfire == 0) Console.Printf("MeleeDmgAltCheck: (%s) %d - (Previous Dmg: %d) [Punch]", weapon, damage, previousdamage);
+		if (debugmelee && altfire == 1) Console.Printf("MeleeDmgAltCheck: (%s) %d - (Previous Dmg: %d) [Uppercut]", weapon, damage, previousdamage);
+		
+		// StamUp Check
+		previousdamage = damage;
+		int StamUpPerkLevel = CallACS("MiscVarCheckDECORATE",10005);
+		int StamUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10006);
+		if (StamUpPerkLevel > 0)
+		{
+			PerkFactor = ((StamUpPerkLevel * 30) + (StamUpEXPerkLevel * 75)) + 400;
+			damage = damage * PerkFactor / 400;
+		}
+		
+		if (debugmelee && altfire == 0) Console.Printf("FinalMeleeDmg: (%s) %d - (Previous Dmg: %d) [Punch]", weapon, damage, previousdamage);
+		if (debugmelee && altfire == 1) Console.Printf("FinalMeleeDmg: (%s) %d - (Previous Dmg: %d) [Uppercut]", weapon, damage, previousdamage);
+
+		A_SetInventory("FinalMeleeDamageDealt",damage,AAPTR_PLAYER1,true);
+		finalmeleedamagedealt = damage;
 	}
 
 	void A_GetSceptreDamage(int attacktype = 0, int attacklevel = 0, int shockwave = 0)
 	{
+		int damage;
+		int previousdamage;
+		int strengthcounter;
+		int sceptrestrbase;
+		int sceptrestrmin;
+		int sceptrestrmax;
+		int PerkFactor;
+		let weapon = owner.player.ReadyWeapon;
+		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int debugmelee = dvdsdebug_showmeleeinformation;
+		
+		if (SceptreActualLevel <= 0) damage = random(275,325); // Base Damage Range
+		if (SceptreActualLevel == 1) damage = random(280,330); // +5 Damage Range
+		if (SceptreActualLevel == 2) damage = random(290,340); // +10 Damage Range
+		if (SceptreActualLevel == 3) damage = random(320,370); // +30 Damage Range
+		if (SceptreActualLevel == 4) damage = random(340,390); // +20 Damage Range
+		if (SceptreActualLevel == 5) damage = random(365,415); // +25 Damage Range
+		if (SceptreActualLevel == 6) damage = random(425,475); // +60 Damage Range
+		if (SceptreActualLevel == 7) damage = random(425,475); // +0 Damage Range
+		if (SceptreActualLevel == 8) damage = random(545,595); // +120 Damage Range
+		if (SceptreActualLevel == 9) damage = random(590,640); // +45 Damage Range
+		if (SceptreActualLevel == 10) damage = random(640,690); // +50 Damage Range
+		if (SceptreActualLevel == 11) damage = random(750,800); // +110 Damage Range
+		if (SceptreActualLevel == 12) damage = random(810,860); // +60 Damage Range
+		if (SceptreActualLevel == 13) damage = random(875,925); // +65 Damage Range
+		if (SceptreActualLevel == 14) damage = random(1015,1065); // +140 Damage Range
+		if (SceptreActualLevel == 15) damage = random(1015,1065); // +0 Damage Range
+		if (SceptreActualLevel >= 16) damage = random(1255,1305); // +240 Damage Range
+		if (debugmelee) Console.Printf("BaseDmg: %d", damage);
+		
+		// [STRIFE] Stamina Upgrades
+		int stamdamagefactor = CallACS("MiscVarCheckDECORATE",317);
+		previousdamage = damage;
+		damage = (damage * (4 + (stamdamagefactor * 3) / 4));
+		if (debugmelee) Console.Printf("StaminaDmg: %d, StamUpgrades: %d - (Previous Dmg: %d)", damage, stamdamagefactor, previousdamage);
+		
+		// Strength Stat Check [7 pts = roughly double the character's base punch damage]
+		int PlayerSTR = CallACS("StatCheck",7);
+		previousdamage = damage;
+		for (strengthcounter = 0; strengthcounter < PlayerSTR; strengthcounter++)
+		{
+			sceptrestrbase = ((SceptreActualLevel * (4 + (PlayerSTR / 32))) + (16 + (SceptreActualLevel * (2 + (PlayerSTR / 64)))));
+			sceptrestrmin = sceptrestrbase - (16 + (SceptreActualLevel * (2 + (PlayerSTR / 64))));
+			sceptrestrmax = sceptrestrbase + (16 + (SceptreActualLevel * (2 + (PlayerSTR / 64)))); 
+
+			if (debugmelee) Console.Printf("StrBase: %d, StrMin: %d, StrMax: %d", sceptrestrbase, sceptrestrmin, sceptrestrmax);
+
+			damage += random(sceptrestrmin,sceptrestrmax);
+		}
+		if (debugmelee) Console.Printf("StrDmg: %d - (Strength: %d) - (Previous Dmg: %d)", damage, PlayerSTR, previousdamage);
+		
+		if (attacktype == 1) damage = damage * 5 / 2; // If performing the Aireal Attack
+		if (attacktype == 2)
+		{
+			if (attacklevel < 0)
+			{
+				if (SceptreActualLevel <= 0) attacklevel = 0;
+				if (SceptreActualLevel == 1) attacklevel = 0;
+				if (SceptreActualLevel == 2) attacklevel = 0;
+				if (SceptreActualLevel == 3) attacklevel = 0;
+				if (SceptreActualLevel == 4) attacklevel = 0;
+				if (SceptreActualLevel == 5) attacklevel = 1;
+				if (SceptreActualLevel == 6) attacklevel = 1;
+				if (SceptreActualLevel == 7) attacklevel = 1;
+				if (SceptreActualLevel == 8) attacklevel = 1;
+				if (SceptreActualLevel == 9) attacklevel = 1;
+				if (SceptreActualLevel == 10) attacklevel = 2;
+				if (SceptreActualLevel == 11) attacklevel = 2;
+				if (SceptreActualLevel == 12) attacklevel = 2;
+				if (SceptreActualLevel == 13) attacklevel = 2;
+				if (SceptreActualLevel == 14) attacklevel = 2;
+				if (SceptreActualLevel == 15) attacklevel = 3;
+				if (SceptreActualLevel >= 16) attacklevel = 3;
+			}
+		
+			if (attacklevel == 0) damage = damage / 2; // If performing the Spinning Attack [50%]
+			else if (attacklevel == 1) damage = damage * 3 / 4; // If performing the Spinning Attack [75%]
+			else if (attacklevel == 2) damage = damage * 7 / 8; // If performing the Spinning Attack [87.5%]
+			else if (attacklevel == 3) damage = damage * 15 / 16; // If performing the Spinning Attack [93.25%]
+		
+			damage = damage / 4;
+		}
+		if (debugmelee) Console.Printf("BaseDmg: %d", damage);
+		
+		// Berserk Check
+		previousdamage = damage;
+		if (CountInv("PowerStrength", AAPTR_PLAYER1) > 0) damage = damage * 10;
+		if (debugmelee) Console.Printf("BerserkDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+		
+		if (shockwave == 1) damage = damage / 6;
+		if (debugmelee) Console.Printf("ShockWave: (%s) %d", weapon, damage);
+		
+		// StamUp Check
+		previousdamage = damage;
+		int StamUpPerkLevel = CallACS("MiscVarCheckDECORATE",10005);
+		int StamUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10006);
+		if (StamUpPerkLevel > 0)
+		{
+			PerkFactor = ((StamUpPerkLevel * 30) + (StamUpEXPerkLevel * 75)) + 400;
+			damage = damage * PerkFactor / 400;
+		}
+
+		if (debugmelee) Console.Printf("FinalMeleeDmg: (%s) %d - (Previous Dmg: %d)", weapon, damage, previousdamage);
+		A_SetInventory("FinalMeleeDamageDealt",damage,AAPTR_PLAYER1,true);
+		finalmeleedamagedealt = damage;
 	}
 
 	void A_SceptreDvAvSwing()
