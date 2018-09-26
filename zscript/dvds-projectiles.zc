@@ -3,6 +3,9 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 {
 	int tic;
 	int finaldamagedealt;
+
+	private class<Inventory> APPackToken, APPackCheck, APPackCheck2, APPackCheck3, APPackCheck4, iDTech1Check, iDTech1Check2, iDTech1Check3, iDTech1Check4;
+
 	void A_GetPlayerAttackDamage(int type = 0, int puff = 0)
 	{
 		int debugplayeratkinfo = dvdsdebug_showplayeratkinformation;
@@ -624,6 +627,215 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 		}
 		
 		finaldamagedealt = finaldmg;
+	}
+
+	void A_GetPunchDamage(int altfire = 0, int shockwave = 0)
+	{
+		int damage;
+		int previousdamage;
+		int strengthcounter;
+		let weapon = target.player.ReadyWeapon;
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int debugmelee = dvdsdebug_showmeleeinformation;
+		String nm, nn, no, np;
+		nm = "FistAilish"; APPackCheck = nm;
+		nn = "FistPetra"; APPackCheck2 = nn;
+		no = "SauronGauntletsAilish"; APPackCheck3 = no;
+		np = "SauronGauntletsPetra"; APPackCheck4 = np;
+
+		// Character Check [base damage]
+		If (weapon is "FistDeggaris" || weapon is "FistIllucia" || weapon is "FistFlora" || weapon is nm || weapon is nn)
+		{
+			if (altfire == 0)
+			{
+				if (CharacterClass == 0) damage = random(18,24);
+				if (CharacterClass == 1) damage = random(10,16);
+				if (CharacterClass == 2) damage = random(6,12);
+				if (CharacterClass == 9) damage = random(6,12);
+			}
+			else
+			if (altfire == 1)
+			{
+				if (CharacterClass == 0) damage += random(126,148);
+				if (CharacterClass == 1) damage += random(70,112);
+				if (CharacterClass == 2) damage += random(42,84);
+				if (CharacterClass == 9) damage += random(42,84);
+			}
+		}
+		else
+		{
+			if (CharacterClass == 0) damage = random(18,24);
+			if (CharacterClass == 1) damage = random(10,16);
+			if (CharacterClass == 2) damage = random(6,12);
+			if (CharacterClass == 9) damage = random(6,12);
+		}
+		if (debugmelee) Console.Printf("BaseDmg: %d", damage);
+
+		// Gauntlet Check #1 [base damage]
+		previousdamage = damage;
+		If (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora" || weapon is no || weapon is np)
+		{
+			if (CharacterClass == 0) damage += random(14,18);
+			if (CharacterClass == 1) damage += random(10,14);
+			if (CharacterClass == 2) damage += random(8,12);
+			if (CharacterClass == 9) damage += random(8,12);
+
+			if (debugmelee) Console.Printf("GauntDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+		}
+		
+		// [STRIFE] Stamina Upgrades
+		int stamdamagefactor = CallACS("MiscVarCheckDECORATE",317);
+		previousdamage = damage;
+		damage = (damage * (2 + stamdamagefactor / 2));
+		if (debugmelee) Console.Printf("StaminaDmg: %d, StamUpgrades: %d - (Previous Dmg: %d)", damage, stamdamagefactor, previousdamage);
+
+		// Strength Stat Check [7 pts = roughly double the character's base punch damage]
+		int PlayerSTR = CallACS("StatCheck",7);
+		previousdamage = damage;
+		for (strengthcounter = 0; strengthcounter < PlayerSTR; strengthcounter++)
+		{
+			If (weapon is "FistDeggaris" || weapon is "FistIllucia" || weapon is "FistFlora" || weapon is nm || weapon is nn)
+			{
+				if (altfire == 0)
+				{
+					if (CharacterClass == 0) damage += random(1,3);
+					if (CharacterClass == 1) damage += random(1,2);
+					if (CharacterClass == 2) damage += random(0,2);
+					if (CharacterClass == 9) damage += random(0,2);
+				}
+				if (altfire == 1)
+				{
+					if (CharacterClass == 0) damage += random(8,12);
+					if (CharacterClass == 1) damage += random(8,11);
+					if (CharacterClass == 2) damage += random(6,10);
+					if (CharacterClass == 9) damage += random(6,10);
+				}
+			}
+			else
+			{
+				if (CharacterClass == 0) damage += random(1,3);
+				if (CharacterClass == 1) damage += random(1,2);
+				if (CharacterClass == 2) damage += random(0,2);
+				if (CharacterClass == 9) damage += random(0,2);
+			}
+		}
+		if (debugmelee) Console.Printf("StrDmg: %d - (Strength: %d) - (Previous Dmg: %d)", damage, PlayerSTR, previousdamage);
+		
+		// Gauntlet Check #2 [strength stat check] [7 pts = roughly double the character's base gauntlet punch damage]
+		previousdamage = damage;
+		If (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora" || weapon is no || weapon is np)
+		{
+			for (strengthcounter = 0; strengthcounter < PlayerSTR; strengthcounter++)
+			{
+				if (CharacterClass == 0) damage += random(2,3);
+				if (CharacterClass == 1) damage += random(1,3);
+				if (CharacterClass == 2) damage += random(1,2);
+				if (CharacterClass == 9) damage += random(1,2);
+			}
+			if (debugmelee) Console.Printf("Gaunt2Dmg: %d - (Strength: %d) - (Previous Dmg: %d)", damage, PlayerSTR, previousdamage);
+		}
+	
+		// Berserk Check
+		previousdamage = damage;
+		if (CountInv("PowerStrength", AAPTR_PLAYER1) > 0) damage = damage * 10;
+		if (debugmelee) Console.Printf("BerserkDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+		
+		// Flora Armor Checks
+		previousdamage = damage;
+		if (CharacterClass == 2) 
+		{
+			if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) Damage = Damage * 4 / 3; // +33.3~% Punch Damage
+			if (CountInv("AnubisCufflinks", AAPTR_PLAYER1) > 0) Damage = Damage * 7 / 4; // +75% Punch Damage
+			if (debugmelee) Console.Printf("FloArmorDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+		}
+	
+		// Gauntlet Check #3
+		previousdamage = damage;
+		If (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora" || weapon is no || weapon is np)
+		{
+			if (altfire == 0) damage *= 10;
+			if (altfire == 1) damage *= 25;
+			if (debugmelee) Console.Printf("Gaunt3Dmg: %d - (Strength: %d) - (Previous Dmg: %d)", damage, PlayerSTR, previousdamage);
+		}
+		
+		int PerkFactor;
+		int temp1, temp2;
+		
+		int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+		int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+		previousdamage = damage;
+		if (shockwave > 0)
+		{
+			if (altfire == 0) damage = damage / 6;
+			if (altfire == 1) damage = damage / 5;
+			if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Shockwave)]", weapon, damage, previousdamage);
+
+			previousdamage = damage;
+			if (MartialArtsMastery > 0)
+			{
+				temp1 = 0;
+				if (MartialArtsMastery == 1) temp1 = 75;
+				if (MartialArtsMastery == 2) temp1 = 225;
+				if (MartialArtsMastery == 3) temp1 = 525;
+				if (MartialArtsMastery == 4) temp1 = 1125;
+				if (MartialArtsMastery >= 5) temp1 = 3375;
+				temp2 = 0;
+				if (MartialArtsMasteryEX == 1) temp2 = 1500;
+				if (MartialArtsMasteryEX == 2) temp2 = 3000;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Shockwave)]", weapon, damage, previousdamage);
+			}
+		}
+		else
+		{
+			previousdamage = damage;
+			if (MartialArtsMastery > 0)
+			{
+				temp1 = 0;
+				if (MartialArtsMastery == 1) temp1 = 25;
+				if (MartialArtsMastery == 2) temp1 = 75;
+				if (MartialArtsMastery == 3) temp1 = 175;
+				if (MartialArtsMastery == 4) temp1 = 375;
+				if (MartialArtsMastery >= 5) temp1 = 1125;
+				temp2 = 0;
+				if (MartialArtsMasteryEX == 1) temp2 = 500;
+				if (MartialArtsMasteryEX == 2) temp2 = 1000;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Shockwave)]", weapon, damage, previousdamage);
+			}
+		}
+		
+		previousdamage = damage;
+		If (weapon is "FistDeggaris" || weapon is "FistIllucia" || weapon is "FistFlora" || weapon is nm || weapon is nn)
+		{
+			if (altfire == 0) damage = damage;
+			//if (altfire == 1) damage = damage / 4;
+		}
+		
+		if (debugmelee && altfire == 0) Console.Printf("MeleeDmgAltCheck: (%s) %d - (Previous Dmg: %d) [Punch]", weapon, damage, previousdamage);
+		if (debugmelee && altfire == 1) Console.Printf("MeleeDmgAltCheck: (%s) %d - (Previous Dmg: %d) [Uppercut]", weapon, damage, previousdamage);
+		
+		// StamUp Check
+		previousdamage = damage;
+		int StamUpPerkLevel = CallACS("MiscVarCheckDECORATE",10005);
+		int StamUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10006);
+		if (StamUpPerkLevel > 0)
+		{
+			PerkFactor = ((StamUpPerkLevel * 30) + (StamUpEXPerkLevel * 75)) + 400;
+			damage = damage * PerkFactor / 400;
+		}
+		
+		if (debugmelee && altfire == 0) Console.Printf("FinalMeleeDmg: (%s) %d - (Previous Dmg: %d) [Punch]", weapon, damage, previousdamage);
+		if (debugmelee && altfire == 1) Console.Printf("FinalMeleeDmg: (%s) %d - (Previous Dmg: %d) [Uppercut]", weapon, damage, previousdamage);
+
+		A_SetInventory("FinalDamageDealt",damage,AAPTR_PLAYER1,true);
+		finaldamagedealt = damage;
+	}
+
+	void A_GetKickDamage(int altfire = 0, int shockwave = 0)
+	{
 	}
 }
 

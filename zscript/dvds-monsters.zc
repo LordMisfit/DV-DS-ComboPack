@@ -241,6 +241,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
+		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
 		int criticalhit;
 		int CritChance, CritRoll;
 		int oldhealth = self.health;
@@ -249,21 +251,21 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			bNOBLOOD = 0;
 			bNOBLOODDECALS = 0;
 		}
-		int maxdmg = self.health;
+		int drainmaxdmg = self.health; // Prevents overdamage from gauntlets from being factored into Healing values
 		string infl, sour, vict;
 		vict = GetClassName();
 		if (inflictor != null) lastattackeratk = inflictor;
-		if (inflictor == null) infl = "NONE";
-											else infl = inflictor.GetClassName();
+		if (inflictor == null) infl = "NONE"; else infl = inflictor.GetClassName();
 		if (source != null) lastattacker = source;
-		if (source == null) sour = "NONE";
-									 else sour = source.GetClassName();
+		if (source == null) sour = "NONE"; else sour = source.GetClassName();
 
 		int olddmg = damage;
 		if (dvdsdebug_actordmgdisplays > 0 && olddmg > 0) Console.Printf("    (\czActor Defensive Input [STEP 1 - Base Damage]\c-: \cydmg = %d\c-)", olddmg);
 
 		bool dealtcrit = false;
 		double critdmgmulti = 2.0 + (0.01 * random(-10,10));
+		double critextradmgmulti = 1.0 + (clearofmind * 0.05) + (clearofmindex * 0.125);
+		critdmgmulti *= critextradmgmulti;
 		double ldldmgmulti = 1.0;
 		int preplayerdmg = damage;
 		int prefriendlydmg = 0;
@@ -298,7 +300,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2a - Player-Friendly Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-)", prefriendlydmg, damage);
 			}
 			
-			// Chance to RESIST a crit.
+			//**********************************
+			//*Chance to RESIST a critical hit.*
+			//**********************************
 			double CritResistChance = 1.25;
 			double ExtraBlock = 0.0;
 			// Enemy Type
@@ -323,10 +327,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			String nm = "ThamuzApocalypseDefendMode"; MiscCheck = nm; if (CountInv(MiscCheck)) CritResistChance += ((100.0 - CritResistChance) * 0.4);
 			// Flag Detection
 			if (user_legendaryevolved) CritResistChance += ((100.0 - CritResistChance) * 0.1875);
+
+			double CritResistChanceReduce = 1.0 - (clearofmind * 0.0125) + (clearofmindex * 0.03125);
+			CritResistChance *= CritResistChanceReduce;
+
 			// Ripper Detection
-			if (infl == "RagingSpirit" && random(1,6) != 1) CritResistChance = 200.0;
-			if (inflictor && inflictor.bRIPPER) { if (!singleripproj && !singlefastripproj && random(1,6) != 1) CritResistChance = 200.0; }
-			if (mod == 'Dashing') 
+			if (infl == "RagingSpirit" && random(1,6) != 1) CritResistChance = 200.0; // 5 out of 6 times, Raging Spirits/Rippers can't Crit
+			if (inflictor && inflictor.bRIPPER) { if (!singleripproj && !singlefastripproj && random(1,6) != 1) CritResistChance = 200.0; } // 5 out of 6 times, Raging Spirits/Rippers can't Crit
+			// Dashing Detection
+			if (mod == 'Dashing') // Dashing Cannot Crit, but it ignores damagefactors/protection/armor, and doesn't thrust enemies around.
 			{ 
 				CritResistChance = 200.0; 
 				flags |= DMG_THRUSTLESS; 
@@ -339,7 +348,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (CountInv("CheatCritUltimate", AAPTR_PLAYER1) > 0) CritResistChance = -200.0;
 			double CritResistRoll = frandom(0.1,100.0);
 
-			// Dealing with Critical hits
+			//****************************
+			//*Dealing with Critical hits*
+			//****************************
 			precritdmg = damage;
 
 			if (CountInv("DealCriticalHit", AAPTR_PLAYER1) > 0 && CritResistRoll > CritResistChance)
@@ -349,7 +360,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				damage *= critdmgmulti;
 				A_GiveInventory("TookCriticalHit",1);
 				dealtcrit = true;
-				if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Player-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti);
+				if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Player-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti);
 			}
 
 			// "Villain Killer" Perk [for extra damage specifically against Legendaries]
@@ -556,7 +567,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					damage *= critdmgmulti;
 					A_GiveInventory("TookCriticalHit",1);
 					dealtcrit = true;
-					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cbCritResist: (%8f) / %8f\c-)", precritdmg, damage, critdmgmulti, CritResistRoll, CritResistChance);
+					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-, \cbCritResist: (%8f) / %8f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti, CritResistRoll, CritResistChance);
 				}
 			}
 		}
@@ -695,8 +706,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					// Give more life when killing a monster [5+(HP/50)]
 					
 					let drainamt = ret;
-					if (drainamt > maxdmg) drainamt = maxdmg;
-					if (dvdsdebug_actordmgdisplays > 0 && drainamt > 0) Console.Printf("    (\czActor Def. Output [STEP (8) - Gauntlet Drain]:\c- \cy%d\c- / \cy%d\c-)", drainamt, maxdmg);
+					if (drainamt > drainmaxdmg) drainamt = drainmaxdmg;
+					if (dvdsdebug_actordmgdisplays > 0 && drainamt > 0) Console.Printf("    (\czActor Def. Output [STEP (8) - Gauntlet Drain]:\c- \cy%d\c- / \cy%d\c-)", drainamt, drainmaxdmg);
 					ACS_NamedExecuteAlways("SauronGauntletsHit",0,drainamt,(health > 0? 1 : 2),0); 
 				}
 				// Sceptre EXP Gain
