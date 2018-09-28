@@ -1145,7 +1145,343 @@ class AetheriusBaseWeaponZSC : Weapon
 		A_SetInventory("FinalMeleeDamageDealt",damage,AAPTR_PLAYER1,true);
 		finalmeleedamagedealt = damage;
 	}
+	
+	void A_UseStaminaAttack(int amount = 0, int check = 0)
+	{
+		int stamusedebug = dvdsdebug_showstaminausestuff;
+		int powertripmode = dvds_musou_powertripmode;
+		int DQOomphTimer = CallACS("GetBuffTimer",10);
+		int DQBuffTimer = CallACS("GetBuffTimer",11);
+		int DQAcceleratleTimer = CallACS("GetBuffTimer",12);
+		int DQBluntTimer = CallACS("GetBuffTimer",13);
+		int DQSapTimer = CallACS("GetBuffTimer",14);
+		int DQDeceleratleTimer = CallACS("GetBuffTimer",15);
 
+		if (powertripmode == 1) amount = amount / 5;
+		if (powertripmode == 2) amount = amount / 10;
+		if (DQOomphTimer > 0) amount = amount * 4 / 5; // Oomph [80% consumption]
+		if (DQBuffTimer > 0) amount = amount * 4 / 5; // Buff [80% consumption]
+		if (DQAcceleratleTimer > 0) amount = amount * 4 / 5; // Acceleratle [80% consumption]
+		if (DQBluntTimer > 0) amount = amount * 6 / 5; // Blunt [120% consumption]
+		if (DQSapTimer > 0) amount = amount * 6 / 5; // Sap [120% consumption]
+		if (DQDeceleratleTimer > 0) amount = amount * 6 / 5; // Deceleratle [120% consumption]
+		if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) amount = amount * 3 / 4; // Falcon Knife Earrings [75% Consumption]
+		
+		int whole = amount / 100; 
+		int modulus = amount % 100;
+		if (stamusedebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used: %d.%d%",whole, modulus);
+		}
+		
+		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+		if (check > 0)
+		{
+			if (CurrentStamina >= amount) 
+			{
+				if (check > 1)
+				{
+					CurrentStamina -= amount;
+					if (CurrentStamina < 1) CurrentStamina = 0;
+					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+				}
+				A_SetInventory("StamUsed",1,AAPTR_PLAYER1,true);
+			}
+			else { A_SetInventory("StamUsed",0,AAPTR_PLAYER1,true); }
+
+		}
+		else
+		{
+			CurrentStamina -= amount;
+			if (CurrentStamina < 1) CurrentStamina = 0;
+			CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+		}
+	}
+	
+	void A_GetPunchStaminaUse(int attacktype = 0)
+	{
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int stamusedebug = dvdsdebug_showstaminausestuff;
+		int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+		int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+		int BerserkerFit = CallACS("MiscVarCheckDECORATE",10051);
+		int BerserkerFitEX = CallACS("MiscVarCheckDECORATE",10052);
+		int DQOomphTimer = CallACS("GetBuffTimer",10);
+		int BerserkTimer = CallACS("GetBuffTimer",23);
+		int stamuse;
+		int PerkFactor;
+		int temp1, temp2;
+		if (attacktype == 0) // Punch [normal]
+		{
+			if (CharacterClass == 0) stamuse = 225;
+			if (CharacterClass == 1) stamuse = 250;
+			if (CharacterClass == 2) stamuse = 333;
+			if (CharacterClass == 9) stamuse = 298;
+		}
+		else
+		if (attacktype == 1) // Gauntlet Punch [normal]
+		{
+			if (CharacterClass == 0) stamuse = 562;
+			if (CharacterClass == 1) stamuse = 625;
+			if (CharacterClass == 2) stamuse = 832;
+			if (CharacterClass == 9) stamuse = 732;
+		}
+		else
+		if (attacktype == 2) // Gauntlet Punch [altfire]
+		{
+			if (CharacterClass == 0) stamuse = 1405;
+			if (CharacterClass == 1) stamuse = 1562;
+			if (CharacterClass == 2) stamuse = 2081;
+			if (CharacterClass == 9) stamuse = 1830;
+		}
+		else
+		if (attacktype == 4) // Punch [uppercut]
+		{
+			if (CharacterClass == 0) stamuse = 374;
+			if (CharacterClass == 1) stamuse = 415;
+			if (CharacterClass == 2) stamuse = 553;
+			if (CharacterClass == 9) stamuse = 495;
+		}
+		int whole = stamuse / 100; 
+		int modulus = stamuse % 100;
+		if (stamusedebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used [Base]: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used [Base]: %d.%d%",whole, modulus);
+		}
+		
+		if (MartialArtsMastery > 0)
+		{
+			temp1 = 0;
+			if (MartialArtsMastery == 1) temp1 = 50;
+			if (MartialArtsMastery == 2) temp1 = 100;
+			if (MartialArtsMastery == 3) temp1 = 175;
+			if (MartialArtsMastery == 4) temp1 = 300;
+			if (MartialArtsMastery >= 5) temp1 = 600;
+			temp2 = 0;
+			if (MartialArtsMasteryEX == 1) temp2 = 150;
+			if (MartialArtsMasteryEX == 2) temp2 = 350;
+			PerkFactor = 1000 - (temp1 + temp2);
+			stamuse = stamuse * PerkFactor / 1000;
+		}
+		
+		if (BerserkerFit > 0)
+		{
+			temp1 = 0;
+			if (BerserkerFit == 1) temp1 = 50;
+			if (BerserkerFit == 2) temp1 = 100;
+			if (BerserkerFit == 3) temp1 = 175;
+			if (BerserkerFit == 4) temp1 = 300;
+			if (BerserkerFit >= 5) temp1 = 600;
+			temp2 = 0;
+			if (BerserkerFitEX == 1) temp2 = 150;
+			if (BerserkerFitEX == 2) temp2 = 350;
+			PerkFactor = 1000 - (temp1 + temp2);
+			stamuse = stamuse * PerkFactor / 1000;
+		}
+		
+		whole = stamuse / 100; 
+		modulus = stamuse % 100;
+		if (stamusedebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used [After Perks]: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used [After Perks]: %d.%d%",whole, modulus);
+		}
+		
+		if (DQOomphTimer > 0) stamuse = stamuse * 19 / 20; // Oomph
+		if (BerserkTimer > 0) stamuse = stamuse * 7 / 8; // Berserk
+		whole = stamuse / 100; 
+		modulus = stamuse % 100;
+		if (stamusedebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used [Oomph/Berserk]: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used [Oomph/Berserk]: %d.%d%",whole, modulus);
+		}
+
+		A_SetInventory("StamUsed",stamuse,AAPTR_PLAYER1,true);
+	}
+
+	void A_GetKickStaminaUse(int attacktype = 0)
+	{
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int stamusedebug = dvdsdebug_showstaminausestuff;
+		int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+		int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+		int BerserkerFit = CallACS("MiscVarCheckDECORATE",10051);
+		int BerserkerFitEX = CallACS("MiscVarCheckDECORATE",10052);
+		int DQOomphTimer = CallACS("GetBuffTimer",10);
+		int BerserkTimer = CallACS("GetBuffTimer",23);
+		int stamuse;
+		int PerkFactor;
+		int temp1, temp2;
+		if (attacktype == 0) // Kick [normal]
+		{
+			if (CharacterClass == 0) stamuse = 666;
+			if (CharacterClass == 1) stamuse = 500;
+			if (CharacterClass == 2) stamuse = 450;
+			if (CharacterClass == 9) stamuse = 300;
+		}
+		else
+		if (attacktype == 1) // Roundhouse Kick [normal]
+		{
+			if (CharacterClass == 0) stamuse = 1665;
+			if (CharacterClass == 1) stamuse = 1250;
+			if (CharacterClass == 2) stamuse = 1125;
+			if (CharacterClass == 9) stamuse = 750;
+		}
+		int whole = stamuse / 100; 
+		int modulus = stamuse % 100;
+		if (stamusedebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used [Base]: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used [Base]: %d.%d%",whole, modulus);
+		}
+		
+		if (MartialArtsMastery > 0)
+		{
+			temp1 = 0;
+			if (MartialArtsMastery == 1) temp1 = 50;
+			if (MartialArtsMastery == 2) temp1 = 100;
+			if (MartialArtsMastery == 3) temp1 = 175;
+			if (MartialArtsMastery == 4) temp1 = 300;
+			if (MartialArtsMastery >= 5) temp1 = 600;
+			temp2 = 0;
+			if (MartialArtsMasteryEX == 1) temp2 = 150;
+			if (MartialArtsMasteryEX == 2) temp2 = 350;
+			PerkFactor = 1000 - (temp1 + temp2);
+			stamuse = stamuse * PerkFactor / 1000;
+		}
+		
+		if (BerserkerFit > 0)
+		{
+			temp1 = 0;
+			if (BerserkerFit == 1) temp1 = 50;
+			if (BerserkerFit == 2) temp1 = 100;
+			if (BerserkerFit == 3) temp1 = 175;
+			if (BerserkerFit == 4) temp1 = 300;
+			if (BerserkerFit >= 5) temp1 = 600;
+			temp2 = 0;
+			if (BerserkerFitEX == 1) temp2 = 150;
+			if (BerserkerFitEX == 2) temp2 = 350;
+			PerkFactor = 1000 - (temp1 + temp2);
+			stamuse = stamuse * PerkFactor / 1000;
+		}
+		whole = stamuse / 100; 
+		modulus = stamuse % 100;
+		if (stamusedebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used [After Perks]: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used [After Perks]: %d.%d%",whole, modulus);
+		}
+		
+		if (DQOomphTimer > 0) stamuse = stamuse * 19 / 20; // Oomph
+		if (BerserkTimer > 0) stamuse = stamuse * 7 / 8; // Berserk
+		whole = stamuse / 100; 
+		modulus = stamuse % 100;
+		if (stamusedebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used [Oomph/Berserk]: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used [Oomph/Berserk]: %d.%d%",whole, modulus);
+		}
+
+		A_SetInventory("StamUsed",stamuse,AAPTR_PLAYER1,true);
+	}
+
+	void A_GetSceptreStaminaUse(int attacktype = 0)
+	{
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int stamusedebug = dvdsdebug_showstaminausestuff;
+		int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+		int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+		int BerserkerFit = CallACS("MiscVarCheckDECORATE",10051);
+		int BerserkerFitEX = CallACS("MiscVarCheckDECORATE",10052);
+		int DQOomphTimer = CallACS("GetBuffTimer",10);
+		int BerserkTimer = CallACS("GetBuffTimer",23);
+		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
+		int stamuse;
+		if (attacktype == 0) // Normal Swing
+		{
+			if (SceptreActualLevel <= 0) stamuse = 575;
+			if (SceptreActualLevel == 1) stamuse = 568; // -7
+			if (SceptreActualLevel == 2) stamuse = 561; // -7
+			if (SceptreActualLevel == 3) stamuse = 554; // -7
+			if (SceptreActualLevel == 4) stamuse = 546; // -8
+			if (SceptreActualLevel == 5) stamuse = 538; // -8
+			if (SceptreActualLevel == 6) stamuse = 530; // -8
+			if (SceptreActualLevel == 7) stamuse = 521; // -9
+			if (SceptreActualLevel == 8) stamuse = 512; // -9
+			if (SceptreActualLevel == 9) stamuse = 503; // -9
+			if (SceptreActualLevel == 10) stamuse = 493; // -10
+			if (SceptreActualLevel == 11) stamuse = 483; // -10
+			if (SceptreActualLevel == 12) stamuse = 473; // -10
+			if (SceptreActualLevel == 13) stamuse = 462; // -11
+			if (SceptreActualLevel == 14) stamuse = 451; // -11
+			if (SceptreActualLevel == 15) stamuse = 440; // -11
+			if (SceptreActualLevel >= 16) stamuse = 428; // -12
+		}
+		else
+		if (attacktype == 1) // Aireal Attack
+		{
+			if (SceptreActualLevel <= 0) stamuse = 575;
+			if (SceptreActualLevel == 1) stamuse = 568; // -7
+			if (SceptreActualLevel == 2) stamuse = 561; // -7
+			if (SceptreActualLevel == 3) stamuse = 554; // -7
+			if (SceptreActualLevel == 4) stamuse = 546; // -8
+			if (SceptreActualLevel == 5) stamuse = 538; // -8
+			if (SceptreActualLevel == 6) stamuse = 530; // -8
+			if (SceptreActualLevel == 7) stamuse = 521; // -9
+			if (SceptreActualLevel == 8) stamuse = 512; // -9
+			if (SceptreActualLevel == 9) stamuse = 503; // -9
+			if (SceptreActualLevel == 10) stamuse = 493; // -10
+			if (SceptreActualLevel == 11) stamuse = 483; // -10
+			if (SceptreActualLevel == 12) stamuse = 473; // -10
+			if (SceptreActualLevel == 13) stamuse = 462; // -11
+			if (SceptreActualLevel == 14) stamuse = 451; // -11
+			if (SceptreActualLevel == 15) stamuse = 440; // -11
+			if (SceptreActualLevel >= 16) stamuse = 428; // -12
+		}
+		else
+		if (attacktype == 2) // Spinning Attack
+		{
+			if (SceptreActualLevel <= 0) stamuse = 1005;
+			if (SceptreActualLevel == 1) stamuse = 996;
+			if (SceptreActualLevel == 2) stamuse = 987;
+			if (SceptreActualLevel == 3) stamuse = 978;
+			if (SceptreActualLevel == 4) stamuse = 969;
+			if (SceptreActualLevel == 5) stamuse = 960;
+			if (SceptreActualLevel == 6) stamuse = 951;
+			if (SceptreActualLevel == 7) stamuse = 942;
+			if (SceptreActualLevel == 8) stamuse = 933;
+			if (SceptreActualLevel == 9) stamuse = 924;
+			if (SceptreActualLevel == 10) stamuse = 915;
+			if (SceptreActualLevel == 11) stamuse = 903;
+			if (SceptreActualLevel == 12) stamuse = 891;
+			if (SceptreActualLevel == 13) stamuse = 879;
+			if (SceptreActualLevel == 14) stamuse = 867;  
+			if (SceptreActualLevel == 15) stamuse = 855;
+			if (SceptreActualLevel >= 16) stamuse = 840;
+		}
+		int whole = stamuse / 100; 
+		int modulus = stamuse % 100;
+		if (stamusedebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used [Base]: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used [Base]: %d.%d%",whole, modulus);
+		}
+
+		if (DQOomphTimer > 0) stamuse = stamuse * 19 / 20; // Oomph
+		if (BerserkTimer > 0) stamuse = stamuse * 7 / 8; // Berserk
+		whole = stamuse / 100; 
+		modulus = stamuse % 100;
+		if (stamusedebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used [Oomph/Berserk]: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used [Oomph/Berserk]: %d.%d%",whole, modulus);
+		}
+
+		A_SetInventory("StamUsed",stamuse,AAPTR_PLAYER1,true);
+	}
 
 	void A_SceptreDvAvSwing()
 	{
