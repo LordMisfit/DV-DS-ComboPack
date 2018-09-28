@@ -1146,6 +1146,111 @@ class AetheriusBaseWeaponZSC : Weapon
 		finalmeleedamagedealt = damage;
 	}
 	
+	// Sceptre Twirl Mana/MP Check [to "balance" sceptre alt-fire cheapness >.>]
+	void A_SceptreTwirlManaCheck(int attacktype) 
+	{
+		int HaveMana, ManaCost;
+		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
+		int SceptreTimer = CallACS("MiscVarCheckDECORATE",16);
+
+		int SceptreTimerLimit = 10;
+		if (SceptreActualLevel == 0) SceptreTimerLimit = 10;
+		if (SceptreActualLevel == 1) SceptreTimerLimit = 10;
+		if (SceptreActualLevel == 2) SceptreTimerLimit = 11;
+		if (SceptreActualLevel == 3) SceptreTimerLimit = 11;
+		if (SceptreActualLevel == 4) SceptreTimerLimit = 12;
+		if (SceptreActualLevel == 5) SceptreTimerLimit = 12;
+		if (SceptreActualLevel == 6) SceptreTimerLimit = 13;
+		if (SceptreActualLevel == 7) SceptreTimerLimit = 14;
+		if (SceptreActualLevel == 8) SceptreTimerLimit = 14;
+		if (SceptreActualLevel == 9) SceptreTimerLimit = 15;
+		if (SceptreActualLevel == 10) SceptreTimerLimit = 16;
+		if (SceptreActualLevel == 11) SceptreTimerLimit = 16;
+		if (SceptreActualLevel == 12) SceptreTimerLimit = 17;
+		if (SceptreActualLevel == 13) SceptreTimerLimit = 18;
+		if (SceptreActualLevel == 14) SceptreTimerLimit = 19;
+		if (SceptreActualLevel == 15) SceptreTimerLimit = 20;
+		if (SceptreActualLevel == 16) SceptreTimerLimit = 22;
+		
+		int CurrentMana = CallACS("StatCheck",14); 
+		if (attacktype == 1)
+		{
+			if (SceptreActualLevel <= 4 && CurrentMana >= 5) { CurrentMana -= 5; HaveMana++; }
+			if (SceptreActualLevel > 4 && SceptreActualLevel <= 8 && CurrentMana >= 4 ) { CurrentMana -= 4; HaveMana++; }
+			if (SceptreActualLevel > 8 && SceptreActualLevel <= 12 && CurrentMana >= 3 ) { CurrentMana -= 3; HaveMana++; }
+			if (SceptreActualLevel > 12 && SceptreActualLevel <= 16 && CurrentMana >= 2 ) { CurrentMana -= 2; HaveMana++; }
+			if (SceptreActualLevel == 16 && CurrentMana >= 1) { CurrentMana -= 1; HaveMana++; }
+			if (CurrentMana < 0) CurrentMana = 0;
+			CallACS("MiscVarSetDECORATE",243,CurrentMana);
+			CallACS("MiscVarSetDECORATE",238,CurrentMana);
+		}
+		else
+		{
+			if (CurrentMana > 0) HaveMana++;
+			if (random(1,16) == 1) SceptreTimer += 2; else SceptreTimer += 1;
+			//Print(d:SceptreTimer);
+			if (SceptreTimer >= SceptreTimerLimit)
+			{
+				ManaCost = random(1,2);
+				if (SceptreActualLevel < 8 ) CurrentMana -= 2;
+				if (SceptreActualLevel > 8 && SceptreActualLevel < 16) CurrentMana -= ManaCost; HaveMana++;
+				if (SceptreActualLevel == 16) CurrentMana -= 1; HaveMana++;
+				if (CurrentMana < 0) CurrentMana = 0;
+
+				CallACS("MiscVarSetDECORATE",16,SceptreTimerLimit,2);
+				CallACS("MiscVarSetDECORATE",243,CurrentMana);
+				CallACS("MiscVarSetDECORATE",238,CurrentMana);
+			}
+		}
+		
+		//Print(d:HaveMana);
+		if (HaveMana > 0) A_SetInventory("StamUsed",1,AAPTR_PLAYER1,true);
+		else 
+		{
+			CallACS("MiscVarSetDECORATE",16,0);
+			A_SetInventory("StamUsed",0,AAPTR_PLAYER1,true);
+		}
+	}
+
+	// Consumes a set amount of MP/MANA when called or checks for that much for an A_JumpIf call (for Heretic's Tome-fire modes)
+	void A_UseManaAttack(int amount = 0, int check = 0, int infammocheck = 0)
+	{
+		/*
+		// Check 0 = Takes MP without a return value.
+		// Check 1 = Takes NO MP and gives a return value [for just checking]
+		// Check 2 = Takes MP if applicable and gives a return value
+		if (check > 0)
+		{
+			if (infammocheck > 0 && (CheckActorInventory(Player1TID,"RandomInfiniteAmmo") > 0 || CheckActorInventory(Player1TID,"PowerInfiniteAmmo") > 0))
+			{
+				SetResultValue(1); 
+			}
+			else
+			{
+				if (CurrentMana >= amount) 
+				{
+					if (check > 1)
+					{
+						CurrentMana -= amount;
+						if (CurrentMana < 1) CurrentMana = 0;
+						MiscellaneousVars[243] = CurrentMana;
+						MiscellaneousVars[238] = CurrentMana;
+					}
+					SetResultValue(1); 
+				}
+				else SetResultValue(0);
+			}
+		}
+		else
+		{
+			CurrentMana -= amount;
+			if (CurrentMana < 1) CurrentMana = 0;
+			MiscellaneousVars[243] = CurrentMana;
+			MiscellaneousVars[238] = CurrentMana;
+		}
+		*/
+	}
+	
 	// Consumes a set amount of Stamina when called [1 = 0.01% stamina consumed, etc] or checks for that much for an A_JumpIf call
 	void A_UseStaminaAttack(int amount = 0, int check = 0)
 	{
