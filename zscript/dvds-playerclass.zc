@@ -1522,7 +1522,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (hpratio >= 21 && hpratio <= 40)		{ cursemulti = 2; cursedivisor = 2; }
 			if (hpratio <= 20)										{ cursemulti = 1; cursedivisor = 2; }
 			if (dvdsdebug_playerdmgdisplays > 0) Console.Printf("    (\cz[STEP 13] player-damagemobj uncurse stuff\c-: \cydmg = %d\c-, \cwcursemulti = %d\c-, \cxcursedivisor = %d\c-, \cdhpratio = %d\c-)", ret, cursemulti, cursedivisor, hpratio);
-			ACS_NamedExecuteAlways("CursedShieldPain",0,1,cursemulti,cursedivisor);
+			A_CursedShieldPain(1,cursemulti,cursedivisor);
 		}
 		else
 		{
@@ -1566,6 +1566,50 @@ class AetheriusPlayerPawn : PlayerPawn
 		return ret;
 	}
 	
+	// Increases the number of points towards uncursing a Ruinous Shield into a Divine Shield
+	void A_CursedShieldPain(int UncursePts, int uncursemulti, int uncurseddivisor)
+	{
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int CurseMultiRandomizer;
+		if (uncursemulti < 1) uncursemulti = 1;
+		if (uncurseddivisor < 1) uncurseddivisor = 1;
+		
+		if (CountInv("PearlyCorset", AAPTR_PLAYER1) > 0) UncursePts += UncursePts;
+		if (CountInv("DoveRibbon", AAPTR_PLAYER1) > 0) UncursePts += UncursePts;
+		
+		if (CharacterClass == 2)
+		{
+			if (CountInv("RuinousShield", AAPTR_PLAYER1) > 0)
+			{
+				CurseMultiRandomizer = random(1,100);
+				if (CurseMultiRandomizer == 1) UncursePts = UncursePts * 16;
+				if (CurseMultiRandomizer == 2) UncursePts = UncursePts * 8;
+				if (CurseMultiRandomizer == 3) UncursePts = UncursePts * 8;
+				if (CurseMultiRandomizer == 4) UncursePts = UncursePts * 4;
+				if (CurseMultiRandomizer == 5) UncursePts = UncursePts * 4;
+				if (CurseMultiRandomizer == 6) UncursePts = UncursePts * 4;
+				if (CurseMultiRandomizer == 7) UncursePts = UncursePts * 4;
+				if (CurseMultiRandomizer == 8) UncursePts = UncursePts * 2;
+				if (CurseMultiRandomizer == 9) UncursePts = UncursePts * 2;
+				if (CurseMultiRandomizer == 10) UncursePts = UncursePts * 2;
+				if (CurseMultiRandomizer == 11) UncursePts = UncursePts * 2;
+				if (CurseMultiRandomizer == 12) UncursePts = UncursePts * 2;
+				if (CurseMultiRandomizer == 13) UncursePts = UncursePts * 2;
+				if (CurseMultiRandomizer == 14) UncursePts = UncursePts * 2;
+				if (CurseMultiRandomizer == 15) UncursePts = UncursePts * 2;
+				UncursePts *= 2;
+	
+				UncursePts *= uncursemulti;
+				UncursePts /= uncurseddivisor;
+				if (UncursePts < 2) UncursePts = 2;
+				if (UncursePts > 1024) UncursePts = 1024;
+				CallACS("MiscVarSetDECORATE",202,UncursePts,1); // MiscellaneousVars[202] += UncursePts;
+				int uncurselevel = CallACS("MiscVarCheckDECORATE",202);
+				if (dvdsdebug_shielduncursedisplay > 0) Console.Printf("+%d (Now: %d)", UncursePts, uncurselevel);
+			}
+		}
+	}
+
 	// Reset Breathing Scale
 	void A_APPBreatheReset()
 	{

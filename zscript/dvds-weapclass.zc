@@ -1625,6 +1625,203 @@ class AetheriusBaseWeaponZSC : Weapon
 		A_SetInventory("StamConsumed",stamuse,AAPTR_PLAYER1,true);
 	}
 
+	void A_GetRecoil(int type = 0)
+	{
+		double result;
+		int WandMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10053);
+		if (type == 1) result = frandom(4.0,4.5); // Phoenix Rod
+		if (type == 2) result = frandom(9.0,10.125); // Dual Phoenix Rods
+		if (type == 1 || type == 2)
+		{
+			if (WandMasteryPerkLevel == 1) result *= 0.8334;
+			if (WandMasteryPerkLevel == 2) result *= 0.6667;
+			if (WandMasteryPerkLevel == 3) result *= 0.5;
+			if (WandMasteryPerkLevel == 4) result *= 0.3333;
+			if (WandMasteryPerkLevel >= 5) result *= 0.1666;
+		}
+
+		Console.Printf("Recoil: %4f", result);
+		A_SetInventory("RecoilAmt",result,AAPTR_PLAYER1,true);
+	}
+
+	// script for Hellcore Energy and Heating usage [and also controls dealing Flora direct damage when using a Hellcore weapon when heating is 100% or higher]
+	void A_IncreaseHellcoreHeat(int percent = 0, int trydamageuser = 0)
+	{
+		int hellcoredebug = dvdsdebug_hellcoreheatdisplay;
+		int LevelHeatAlter, OldHealth, NewHealth, HealthDiff, DamageFactor, DamageDealt, DamageRatio, ObitTimes;
+		int PlayerLevel = CallACS("StatCheck",0);
+		int MaxHealthTrue = CallACS("StatCheck",1);
+		int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
+		int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
+		int MaxHealthLimit = MaxHealthTrue * 2;
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int PerkFactor;
+		int temp1, temp2;
+		
+		int whole = percent / 100;
+		int modulus = percent % 100;
+		if (hellcoredebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Percent: %d.0%d %", whole, modulus, trydamageuser);
+																	 else Console.Printf("Percent: %d.%d %", whole, modulus, trydamageuser);
+		}
+		
+		int HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
+		// Any damage from overheating is inflicted BEFORE increasing the heating counter (so going from below 100% to above 100% with a single attack doesn't harm you, only being above 100% at the moment of pulling the trigger will harm you)
+		if (HellcoreOverheatLevel > 1000000 && trydamageuser != 0) // Translates to 100% or higher when you first fire your attack, which means you'll deal yourself damage upon use of this attack if above 100% at this point and the "trydamageuser" argument is set to something other than 0.
+		{
+			DamageFactor = (HellcoreOverheatLevel - 1000000) / 100;
+			if (hellcoredebug) Console.Printf("Hellcore Damage % Ratio: %d [unmitigated base]", DamageFactor);
+			// Dove's Ribbon cuts Hellcore Overheating Damage in half
+			if (CountInv("DoveRibbon", AAPTR_PLAYER1) > 0)
+			{
+				DamageFactor = DamageFactor * 1 / 5;
+				if (hellcoredebug) Console.Printf("Hellcore Damage % Ratio: %d [base - Dove Ribbon]", DamageFactor);
+			}
+			else
+			{
+				DamageFactor = DamageFactor * 2 / 5;
+				if (hellcoredebug) Console.Printf("Hellcore Damage % Ratio: %d [base - No Dove's Ribbon]", DamageFactor);
+			}
+		
+			// Playing Unloved halves heat ratio
+			if (CallACS("DVDSSpecialArrayCheckDECORATE",3) > 0) 
+			{
+				DamageFactor = DamageFactor / 2;
+				if (hellcoredebug) Console.Printf("Hellcore Damage % Ratio: %d [base - Playing Unloved]]", DamageFactor);
+			}
+		
+			// Soul Mastery Reduces some damage taken if Overheated.
+			if (SoulMasteryPerkLevel >= 0)
+			{
+				if (SoulMasteryPerkLevel == 1) temp1 = 3;
+				if (SoulMasteryPerkLevel == 2) temp1 = 6;
+				if (SoulMasteryPerkLevel == 3) temp1 = 9;
+				if (SoulMasteryPerkLevel == 4) temp1 = 12;
+				if (SoulMasteryPerkLevel == 5) temp1 = 15;
+				if (SoulMasteryEXPerkLevel == 1) temp2 = random(7,8);
+				if (SoulMasteryEXPerkLevel == 2) temp2 = 15;
+				PerkFactor = 80 - (temp1 + temp2);
+				DamageFactor = DamageFactor * PerkFactor / 80;
+				if (hellcoredebug) Console.Printf("Hellcore Damage % Ratio: %d [Soul Mastery Perk]]", DamageFactor);
+			}
+		
+			DamageDealt = DamageFactor * MaxHealthTrue / 10000;
+			
+			if (DamageDealt < 1) DamageDealt = 1;
+			if (DamageDealt > MaxHealthLimit) DamageDealt = MaxHealthLimit;
+			
+			if (hellcoredebug) Console.Printf("Damage Dealt: %d", DamageDealt);
+
+			// Deal the Actual Damage
+			int CurrentHealth = health;
+			OldHealth = health;
+			if (health <= 0 || bINVULNERABLE || 
+					player.cheats & CF_GODMODE2 || player.cheats & CF_GODMODE || 
+					CountInv("InvulnerabilitySpell",AAPTR_PLAYER1) > 0 || CountInv("IsInvulnerable",AAPTR_PLAYER1) > 0 || CountInv("MenuInvulnerability",AAPTR_PLAYER1) > 0)
+			{
+				A_GiveInventory("TookNoDamageInvuln",1);
+				A_PlaySound("Player/TookNoDamageInvuln",CHAN_BODY,frandom(0.375,0.625),0,ATTN_NORM); 
+			}
+			else
+			{
+				DamageMobj(self, self, DamageDealt, 'HellcoreDrain');
+			}
+			NewHealth = health;
+		
+			HealthDiff = OldHealth - NewHealth;
+			if (hellcoredebug) Console.Printf("HealthDiff: %d (%d - %d)", HealthDiff, OldHealth, NewHealth);
+		
+			// Get's the damage % for a fade screen
+			DamageRatio = HealthDiff; // DamageDealt;
+			DamageRatio = DamageRatio * 10000;
+			DamageRatio = DamageRatio / MaxHealthTrue;
+		
+			if (health > 0)
+			{
+				if (NewHealth < OldHealth)
+				{
+					if (DamageRatio > 0 && DamageRatio < 1001) A_SetBlend("C0 00 40",0.15,random(21,22));
+					if (DamageRatio > 1000 && DamageRatio < 2001) A_SetBlend("C0 00 40",0.30,random(21,22));
+					if (DamageRatio > 2000 && DamageRatio < 3001) A_SetBlend("C0 00 40",0.45,random(21,22));
+					if (DamageRatio > 3000 && DamageRatio < 4001) A_SetBlend("C0 00 40",0.60,random(21,22));
+					if (DamageRatio > 4000 && DamageRatio < 5001) A_SetBlend("C0 00 40",0.75,random(21,22));
+					if (DamageRatio > 5000 && DamageRatio < 6001) A_SetBlend("C0 00 40",0.90,random(21,22));
+					if (DamageRatio > 6000 && DamageRatio < 7001) A_SetBlend("C0 00 40",1.05,random(21,22));
+					if (DamageRatio > 7000 && DamageRatio < 8001) A_SetBlend("C0 00 40",1.20,random(21,22));
+					if (DamageRatio > 8000 && DamageRatio < 9001) A_SetBlend("C0 00 40",1.35,random(21,22));
+					if (DamageRatio > 9000 && DamageRatio < 10001) A_SetBlend("C0 00 40",1.50,random(21,22));
+					if (DamageRatio > 10000) A_SetBlend("C0 00 40",1.65,random(21,22));
+				}
+			}
+		}
+		
+		percent *= 100;
+		if (hellcoredebug) Console.Printf("Hellcore Heat %: %d [Base]", percent);
+		
+		int ArmorHellCoreRate = 200;
+		// Armor Based items [Sauron-class or Flora's specfic] can alter the rate of how fast Hellcore heats up.
+		if (CountInv("RuinousShield", AAPTR_PLAYER1) > 0) percent = percent * 2; 					// +100%
+		if (CountInv("SauronHelmet", AAPTR_PLAYER1) > 0) percent = percent * 134 / 100; 			// +34%
+		if (CountInv("SauronGauntletsFlora", AAPTR_PLAYER1) > 0) percent = percent * 134 / 100; 	// +34%
+		if (CountInv("TheOneRing", AAPTR_PLAYER1) > 0) percent = percent * 75 / 100; 				// -25%
+		
+		if (CountInv("SafeTeaShoes", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 1; 			// -0.5% (1)
+		if (CountInv("PearlyCorset", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 5; 			// -2.5% (5)
+		if (CountInv("WaterFlyingDress", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 15; 	// -7.5% (15)
+		if (CountInv("EvenstarNecklace", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 27; 	// -13.5% (27)
+		if (CountInv("CloakofEvasion", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 3; 		// -1.5% (3)
+		if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 9; 	// -4.5% (9)
+		if (CountInv("AnubisCufflinks", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 7; 		// -3.5% (7)
+		if (CountInv("KissaBra", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 13; 			// -6.5% (13)
+		if (CountInv("DivineShield", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 25; 		// -12.5% (25)
+		if (CountInv("BalrogRing", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 17; 			// -8.5% (17)
+		if (CountInv("DoveRibbon", AAPTR_PLAYER1) > 0) ArmorHellCoreRate -= 11; 			// -5.5% (11)
+																							// Total: -66.5% (133)
+		
+		percent = percent * ArmorHellCoreRate / 200;
+		if (hellcoredebug) Console.Printf("Hellcore Heat %: %d [Armor Reduction]", percent);
+		
+		LevelHeatAlter = PlayerLevel / 10;
+		LevelHeatAlter = LevelHeatAlter * -1;
+		LevelHeatAlter += 200;
+		percent = percent * LevelHeatAlter / 200;
+		if (hellcoredebug) Console.Printf("Hellcore Heat %: %d [Level Alteration]", percent);
+		
+		// Check Hellcore Multiplier in Options
+		percent = (percent * GetCVar("dvds_heatheatmultiplier")) / 100;
+		if (hellcoredebug) Console.Printf("Hellcore Heat %: %d [Menu Options]", percent);
+		
+		// Soul Mastery Reduces rate of heat increase
+		if (SoulMasteryPerkLevel >= 0)
+		{
+			if (SoulMasteryPerkLevel == 1) temp1 = 1;
+			if (SoulMasteryPerkLevel == 2) temp1 = 2;
+			if (SoulMasteryPerkLevel == 3) temp1 = 3;
+			if (SoulMasteryPerkLevel == 4) temp1 = 4;
+			if (SoulMasteryPerkLevel == 5) temp1 = 5;
+			if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
+			if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+			PerkFactor = 16 - (temp1 + temp2);
+			percent = percent * PerkFactor / 16;
+			if (hellcoredebug) Console.Printf("Hellcore Heat %: %d [Soul Mastery]", percent);
+		}
+		
+		if (CountInv("IsHaSatanNow", AAPTR_PLAYER1) > 0)
+		{
+			percent = percent / 16;
+			if (hellcoredebug) Console.Printf("Hellcore Heat %: %d [HaSatan Check]", percent);
+		}
+		
+		if (percent < 1) percent = 1;
+		if (hellcoredebug) Console.Printf("Hellcore Heat %: %d [Final Amount]", percent);
+		
+		HellcoreOverheatLevel += percent;
+		if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+		if (HellcoreOverheatLevel > 10000000) HellcoreOverheatLevel = 10000000;
+		CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+	}
+
 	void A_SceptreDvAvSwing()
 	{
 		if (CallACS("GetBuffTimer",7) > 0) { A_SetTics(0); }

@@ -164,7 +164,6 @@
 			["HellcoreWeaponCheckCharacter"]	-	Checks and Removes Hellcore weapons when Deggaris or Illucia are detected as the current character
 			["GauntletsCheckCharacter"]				-	Checks to see if you already possess Sauron's Gauntlets so they cannot appear more than once.
 			["GauntletFlashEffect"]						-	Creates the Screen Flash Effect when Hitting Someone with Sauron's Gauntlets
-			["SceptreTwirlManaCheck"]					-	Sceptre Spinning Mana/MP Check
 			["SceptreTwirlFrameCheck"]				-	Controls the Timer for both Sceptre Twirl sprite animation and for when to make the swinging noise. [Flora Only]
 			["MaxHPBonusPickup"]							-	Max Health Bonus Pickup Script
 			["CheckModType"]									-	Checks the gametype for spawns to determine various drops/monster spawns.
@@ -30968,73 +30967,6 @@ script "AeonPtsResetStats" (void)
 	MiscellaneousVars[43] = 0;
 }
 
-// Sceptre Twirl Mana/MP Check [to "balance" sceptre alt-fire cheapness >.>]
-script "SceptreTwirlManaCheck" (int attacktype) 
-{
-	int HaveMana, ManaCost;
-	// "16" is the sceptre timer for mana consumption
-	// "17" is the sceptre timer limit for mana consumption
-	MiscellaneousVars[17] = 10;
-	if (SceptreActualLevel == 0) MiscellaneousVars[17] = 10;
-	if (SceptreActualLevel == 1) MiscellaneousVars[17] = 10;
-	if (SceptreActualLevel == 2) MiscellaneousVars[17] = 11;
-	if (SceptreActualLevel == 3) MiscellaneousVars[17] = 11;
-	if (SceptreActualLevel == 4) MiscellaneousVars[17] = 12;
-	if (SceptreActualLevel == 5) MiscellaneousVars[17] = 12;
-	if (SceptreActualLevel == 6) MiscellaneousVars[17] = 13;
-	if (SceptreActualLevel == 7) MiscellaneousVars[17] = 14;
-	if (SceptreActualLevel == 8) MiscellaneousVars[17] = 14;
-	if (SceptreActualLevel == 9) MiscellaneousVars[17] = 15;
-	if (SceptreActualLevel == 10) MiscellaneousVars[17] = 16;
-	if (SceptreActualLevel == 11) MiscellaneousVars[17] = 16;
-	if (SceptreActualLevel == 12) MiscellaneousVars[17] = 17;
-	if (SceptreActualLevel == 13) MiscellaneousVars[17] = 18;
-	if (SceptreActualLevel == 14) MiscellaneousVars[17] = 19;
-	if (SceptreActualLevel == 15) MiscellaneousVars[17] = 20;
-	if (SceptreActualLevel == 16) MiscellaneousVars[17] = 22;
-	
-	//Print(d:attacktype);
-	if (attacktype == 1)
-	{
-		if (SceptreActualLevel <= 4 && CurrentMana >= 5) { CurrentMana -= 5; HaveMana++; }
-		if (SceptreActualLevel > 4 && SceptreActualLevel <= 8 && CurrentMana >= 4 ) { CurrentMana -= 4; HaveMana++; }
-		if (SceptreActualLevel > 8 && SceptreActualLevel <= 12 && CurrentMana >= 3 ) { CurrentMana -= 3; HaveMana++; }
-		if (SceptreActualLevel > 12 && SceptreActualLevel <= 16 && CurrentMana >= 2 ) { CurrentMana -= 2; HaveMana++; }
-		if (SceptreActualLevel == 16 && CurrentMana >= 1) { CurrentMana -= 1; HaveMana++; }
-		if (CurrentMana < 0) CurrentMana = 0;
-		MiscellaneousVars[243] = CurrentMana;
-		MiscellaneousVars[238] = CurrentMana;
-	}
-	else
-	{
-		if (CurrentMana > 0) HaveMana++;
-		if (random(1,16) == 1) MiscellaneousVars[16] += 2; else MiscellaneousVars[16] += 1;
-		//Print(d:MiscellaneousVars[16]);
-		if (MiscellaneousVars[16] >= MiscellaneousVars[17])
-		{
-			ManaCost = random(1,2);
-			if (SceptreActualLevel < 8 ) CurrentMana -= 2;
-			if (SceptreActualLevel > 8 && SceptreActualLevel < 16) CurrentMana -= ManaCost; HaveMana++;
-			if (SceptreActualLevel == 16) CurrentMana -= 1; HaveMana++;
-			if (CurrentMana < 0) CurrentMana = 0;
-			MiscellaneousVars[16] -= MiscellaneousVars[17];
-			MiscellaneousVars[243] = CurrentMana;
-			MiscellaneousVars[238] = CurrentMana;
-		}
-	}
-	
-	//Print(d:HaveMana);
-	if (HaveMana > 0)
-	{
-		SetResultValue(1);
-	}
-	else 
-	{
-		MiscellaneousVars[16] = 0;
-		SetResultValue(0); 
-	}
-}
-
 // For Increasing the Strength Level of a Hellcore-type weapon when picking it up
 script "IncreaseHellcoreLevel" (int HellcoreWeapon)
 {
@@ -38340,43 +38272,6 @@ script "SpecialGameFlagsSetDECORATE" (int value, int perkvalue, int type)
 script "CheckManaAmmoHeretic" (void)
 {
 	SetResultValue(GetCVar("dvds_florausesmagicheretic"));
-}
-
-// Consumes a set amount of MP/MANA when called or checks for that much for an A_JumpIf call (for Heretic's Tome-fire modes)
-script "UseManaAttack" (int amount, int check, int infammocheck)
-{
-	// Check 0 = Takes MP without a return value.
-	// Check 1 = Takes NO MP and gives a return value [for just checking]
-	// Check 2 = Takes MP if applicable and gives a return value
-	if (check > 0)
-	{
-		if (infammocheck > 0 && (CheckActorInventory(Player1TID,"RandomInfiniteAmmo") > 0 || CheckActorInventory(Player1TID,"PowerInfiniteAmmo") > 0))
-		{
-			SetResultValue(1); 
-		}
-		else
-		{
-			if (CurrentMana >= amount) 
-			{
-				if (check > 1)
-				{
-					CurrentMana -= amount;
-					if (CurrentMana < 1) CurrentMana = 0;
-					MiscellaneousVars[243] = CurrentMana;
-					MiscellaneousVars[238] = CurrentMana;
-				}
-				SetResultValue(1); 
-			}
-			else SetResultValue(0);
-		}
-	}
-	else
-	{
-		CurrentMana -= amount;
-		if (CurrentMana < 1) CurrentMana = 0;
-		MiscellaneousVars[243] = CurrentMana;
-		MiscellaneousVars[238] = CurrentMana;
-	}
 }
 
 script "MaxHPDropChance" (void)
