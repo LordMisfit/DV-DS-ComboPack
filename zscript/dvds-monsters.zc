@@ -271,6 +271,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int prefriendlydmg = 0;
 		int precritdmg = 0;
 		int preldldmg = 0;
+		double PoisonNeedleCritChance = 6.25;
 		// Player/Actor Check
 		AetheriusPlayerPawn playpawn;
 		AetheriusMonsterZSC DVDSActor;
@@ -334,6 +335,18 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// Ripper Detection
 			if (infl == "RagingSpirit" && random(1,6) != 1) CritResistChance = 200.0; // 5 out of 6 times, Raging Spirits/Rippers can't Crit
 			if (inflictor && inflictor.bRIPPER) { if (!singleripproj && !singlefastripproj && random(1,6) != 1) CritResistChance = 200.0; } // 5 out of 6 times, Raging Spirits/Rippers can't Crit
+			if (mod == 'PoisonNeedle') // Poison Needle will not thrust
+			{
+				flags |= DMG_THRUSTLESS; 
+				flags |= DMG_NO_ARMOR; 
+				flags |= DMG_NO_FACTOR; 
+				flags |= DMG_NO_PROTECT; 
+				CritResistChance = -200.0;
+				if (damage < 1) damage = randompick(1,1,1,1,2);
+				PoisonNeedleCritChance += ((CallACS("MiscVarCheckDECORATE",10035) * 1.0) + (CallACS("MiscVarCheckDECORATE",10036) * 2.5));
+				if (playpawn.CountInv("PlayerDashing") > 0) PoisonNeedleCritChance *= 2.5;
+				if (frandom(0.1,100.0) <= PoisonNeedleCritChance) { if (playpawn.CountInv("DealCriticalHit") <= 0) playpawn.A_GiveInventory("DealCriticalHit",1); }
+			}
 			// Dashing Detection
 			if (mod == 'Dashing') // Dashing Cannot Crit, but it ignores damagefactors/protection/armor, and doesn't thrust enemies around.
 			{ 
@@ -357,10 +370,24 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				if (CountInv("AnubisCufflinksFear", AAPTR_PLAYER1) > 0) critdmgmulti *= 1.25;
 				if (CountInv("RuinousShield", AAPTR_PLAYER1) > 0) critdmgmulti *= 0.8;
-				damage *= critdmgmulti;
-				A_GiveInventory("TookCriticalHit",1);
-				dealtcrit = true;
-				if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Player-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti);
+				if (mod == 'PoisonNeedle') 
+				{
+					damage *= critdmgmulti;
+					damage += (self.User_MaxHP * 4);
+					A_GiveInventory("TookCriticalHit",1);
+					dealtcrit = true;
+					flags |= DMG_NO_ARMOR; 
+					flags |= DMG_NO_FACTOR; 
+					flags |= DMG_NO_PROTECT; 
+					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Player-Crit Dmg  (\cxPOISON NEEDLE\c-)]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti);
+				}
+				else
+				{
+					damage *= critdmgmulti;
+					A_GiveInventory("TookCriticalHit",1);
+					dealtcrit = true;
+					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Player-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti);
+				}
 			}
 
 			// "Villain Killer" Perk [for extra damage specifically against Legendaries]
@@ -564,10 +591,24 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				
 				if (criticalhit) 
 				{
-					damage *= critdmgmulti;
-					A_GiveInventory("TookCriticalHit",1);
-					dealtcrit = true;
-					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-, \cbCritResist: (%8f) / %8f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti, CritResistRoll, CritResistChance);
+					if (mod == 'PoisonNeedle') 
+					{
+						damage *= critdmgmulti;
+						damage += (self.User_MaxHP * 4);
+						A_GiveInventory("TookCriticalHit",1);
+						dealtcrit = true;
+						flags |= DMG_NO_ARMOR; 
+						flags |= DMG_NO_FACTOR; 
+						flags |= DMG_NO_PROTECT; 
+						if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg (\cxPOISON NEEDLE\c-)]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-, \cbCritResist: (%8f) / %8f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti, CritResistRoll, CritResistChance);
+					}
+					else
+					{
+						damage *= critdmgmulti;
+						A_GiveInventory("TookCriticalHit",1);
+						dealtcrit = true;
+						if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-, \cbCritResist: (%8f) / %8f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti, CritResistRoll, CritResistChance);
+					}
 				}
 			}
 		}
@@ -583,6 +624,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (inflictor == null && source == null) { }
 		else
 		{
+			// BFG
 			if (mod == 'BFG' || mod == 'BFGSpray') 
 			{ 
 				ActorDefenseIgnoreFactor += (frandom(0.45,0.55) * (1.00 - ActorDefenseIgnoreFactor));
@@ -606,6 +648,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (mod == 'Sceptre') 
 			{ 
 				ActorDefenseIgnoreFactor += (0.5 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Poison Needle
+			if (mod == 'PoisonNeedle') 
+			{ 
+				ActorDefenseIgnoreFactor += (0.625 * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			if (mod == 'Drowning') 
 			{
