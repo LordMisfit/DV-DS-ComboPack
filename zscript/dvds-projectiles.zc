@@ -1,6 +1,7 @@
 // Base Projectile Class
 class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 {
+	int user_randompain;
 	int tic;
 	int finaldamagedealt;
 	int finaldamagedealt2;
@@ -567,11 +568,55 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 			extradmg2 *= chargefactor;
 			playershot += 1;
 		}
+		if (type == 59) // Thrown Poison Needle [Player]
+		{
+			int strengthcounter;
+			damage = random(6,12);
+			int stamdamagefactor = CallACS("MiscVarCheckDECORATE",317);
+			damage = (damage * (2 + stamdamagefactor) / 2);
+			int PlayerSTR = CallACS("StatCheck",7);
+			for (strengthcounter = 0; strengthcounter < PlayerSTR; strengthcounter++)
+			{
+				damage += random(0,2);
+				damage += random(0,1);
+			}
+
+			if (CountInv("PowerStrength", AAPTR_PLAYER1) > 0) damage = damage * 10;
+
+			if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) Damage = Damage * 4 / 3; // +33.3~% Punch Damage
+			if (CountInv("AnubisCufflinks", AAPTR_PLAYER1) > 0) Damage = Damage * 7 / 4; // +75% Punch Damage
+			
+			int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+			int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+			if (MartialArtsMastery > 0)
+			{
+				int temp1 = 0;
+				if (MartialArtsMastery == 1) temp1 = 25;
+				if (MartialArtsMastery == 2) temp1 = 75;
+				if (MartialArtsMastery == 3) temp1 = 175;
+				if (MartialArtsMastery == 4) temp1 = 375;
+				if (MartialArtsMastery >= 5) temp1 = 1125;
+				int temp2 = 0;
+				if (MartialArtsMasteryEX == 1) temp2 = 500;
+				if (MartialArtsMasteryEX == 2) temp2 = 1000;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+			}
+			
+			int StamUpPerkLevel = CallACS("MiscVarCheckDECORATE",10005);
+			int StamUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10006);
+			if (StamUpPerkLevel > 0)
+			{
+				PerkFactor = ((StamUpPerkLevel * 30) + (StamUpEXPerkLevel * 75)) + 400;
+				damage = damage * PerkFactor / 400;
+			}
+			
+			damage /= random(10,20);
+		}
 		
 		
 		
-		
-		if (!(type == 14 || type == 15))
+		if (!(type == 14 || type == 15 || type == 59))
 		{
 			if (damage > 0) damage *= perkfactor;
 			if (extradmg1 > 0) extradmg1 *= perkfactor;
@@ -619,6 +664,12 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 				if (CountInv("SauronGauntletsItem", AAPTR_PLAYER1) > 0) misc2 += 125;
 				if (CountInv("TheOneRing", AAPTR_PLAYER1) > 0) misc2 += 500;
 				finaldmg = (finaldmg * misc2) / 1000;
+			}
+
+			// Tries to Guarantee Poison Needles inflict at least 1 base damage
+			if (type == 59)
+			{
+				if (finaldmg < 1) finaldmg = 1;
 			}
 
 			if (debugplayeratkinfo) Console.Printf("Actor Class: %s, Type#: %d, Puff?: %d, Base Dmg: %d, Extra Dmg #1: %d, Extra Dmg #2: %d, Extra Dmg #3: %d, Extra Dmg #4: %d, Extra Dmg #5: %d, Extra Dmg #6: %d, Random: %d - %d, BaseRandom: %d - %d, Perkfactor: %8f, ChargeFactor: %8f, Misc1: %d, Misc2: %d, \cyFinal Damage: %d\c-", 
@@ -2123,6 +2174,8 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 		
 		if (GetClassName() == "EvilWarriorShieldBall" || GetClassName() == "EvilWarriorShieldBallCrisis") { A_GetPlayerAttackDamage(52,0); }
 
+		if (GetClassName() == "PoisonNeedleProj" || GetClassName() == "PoisonNeedleProjExtra") { A_GetPlayerAttackDamage(59,0); }
+
 		Super.BeginPlay(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO BeginPlay() BREAK :V
 	}
 	override void PostBeginPlay()
@@ -2188,6 +2241,8 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 		if (GetClassName() == "HubbleBubbleLarge") { A_GetPlayerAttackDamage(47,0); }
 		
 		if (GetClassName() == "EvilWarriorShieldBall" || GetClassName() == "EvilWarriorShieldBallCrisis") { A_GetPlayerAttackDamage(52,0); }
+
+		if (GetClassName() == "PoisonNeedleProj" || GetClassName() == "PoisonNeedleProjExtra") { A_GetPlayerAttackDamage(59,0); }
 
 		float basexvel = vel.x;
 		float baseyvel = vel.y;
@@ -3129,7 +3184,6 @@ class AetheriusBulletTracerZSC : AetheriusFastProjectileZSC
 class AetheriusPuffZSC : AetheriusBaseProjectileZSC
 {
 	int user_hitsparkrand;
-	int user_randompain;
 	int user_sparksizelevel;
 	double user_sparkscalemulti;
 

@@ -739,76 +739,6 @@ actor DoomSpellMana3 : DoomSpellMana 27339
 	}
 }
 
-actor PoisonNeedlePuff : AetheriusPuffZSC
-{
-	Species "Players"
-	+NOBLOCKMAP
-	+NOGRAVITY
-	+ALLOWPARTICLES
-	+RANDOMIZE
-	+FORCERADIUSDMG +PUFFGETSOWNER +PUFFONACTORS 
-	+THRUSPECIES +MTHRUSPECIES
-	RenderStyle Translucent
-	Alpha 0.5
-	VSpeed 1
-	Mass 5
-	damagetype "PoisonNeedle"
-	SeeSound "null" // "FistHit"
-	AttackSound "null"
-
-	States
-	{
-		Spawn:
-			TNT1 A 0 NoDelay
-			{
-				user_randompain = 44;
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10035) * 4);
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10036) * (4 * 5 / 2));
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10051) * random(3,5));
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10052) * (random(3,5) * 5 / 2));
-				user_randompain *= 2;
-				if (random(1,100) <= user_randompain) { A_ChangeFlag("FORCEPAIN", TRUE); }
-
-				if (CountInv("PowerStrength",AAPTR_PLAYER1) > 0) { A_PlaySound("fisthitberserk",7); } else { A_PlaySound("FistHit",7); }
-			}
-		SpawnSparks:
-			PUFF ABCD 2
-			Stop
-		Melee:
-			TNT1 A 0
-			{
-				user_randompain = 44;
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10035) * 4);
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10036) * (4 * 5 / 2));
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10051) * random(3,5));
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10052) * (random(3,5) * 5 / 2));
-				user_randompain *= 2;
-				if (random(1,100) <= user_randompain) { A_ChangeFlag("FORCEPAIN", TRUE); }
-
-				if (CountInv("PowerStrength",AAPTR_PLAYER1) > 0) { A_PlaySound("fisthitberserk",7); } else { A_PlaySound("FistHit",7); }
-			}
-		MeleeSparks:
-			PUFF ABCD 2
-			Stop
-		Crash:
-			TNT1 A 0
-			{
-				user_randompain = 44;
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10035) * 4);
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10036) * (4 * 5 / 2));
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10051) * random(3,5));
-				user_randompain += (CallACS("MiscVarCheckDECORATE",10052) * (random(3,5) * 5 / 2));
-				user_randompain *= 2;
-				if (random(1,100) <= user_randompain) { A_ChangeFlag("FORCEPAIN", TRUE); }
-
-				if (CountInv("PowerStrength",AAPTR_PLAYER1) > 0) { A_PlaySound("fisthitberserkwall",7); } else { A_PlaySound("FistHitWall",7); }
-			}
-		CrashSparks:
-			PUFF ABCD 2
-			Stop
-	}
-}
-
 actor FistPuff : AetheriusPuffZSC
 {
 	Species "Players"
@@ -14298,7 +14228,6 @@ ACTOR MageWandSmokeNew
 
 ACTOR MageWandMissileNew : SingleDamageFastRipper
 {
-	var int user_randompain;
 	Speed 184
 	Radius 1 // 12
 	Height 1 // 8
@@ -15520,10 +15449,13 @@ actor BoomSource : AetheriusProjectileZSC
 
 actor PoisonNeedle : FloraWeapon // PSND[A-E]0
 {
-	Scale 0.25
-	Game Doom
+	Scale 0.2
+	Weapon.AmmoType2 "PoisonNeedleAmmo"
+	Weapon.AmmoUse2 1  
 	Weapon.SelectionOrder 3700
 	Weapon.Kickback 80
+	+WEAPON.AMMO_OPTIONAL
+	+WEAPON.ALT_AMMO_OPTIONAL
 	+WEAPON.NOALERT
 	+WEAPON.MELEEWEAPON
 	+INVENTORY.UNDROPPABLE
@@ -15536,8 +15468,13 @@ actor PoisonNeedle : FloraWeapon // PSND[A-E]0
 	States
 	{
 		Spawn:
-			PSND Z 1 NoDelay
+			PSNP A 1 NoDelay
 			{
+				if (CountInv("PoisonNeedle",AAPTR_PLAYER1) > 0) 
+				{
+					A_SpawnItemEx("PoisonNeedleAmmo");
+					Thing_Remove(0);
+				}
 			}
 			loop
 		Ready:
@@ -15604,11 +15541,13 @@ actor PoisonNeedle : FloraWeapon // PSND[A-E]0
 			}
 			PSND J 2 // E [Left] or J [Right]
 			{
-				if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_SetTics(1); }
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 1) { A_SetTics(1); }
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_SetTics(0); }
 				CallACS("StartTensionCountDown");
 				A_GetPunchDamage(0);
 				A_GetMeleeRange(7);
 				A_SpreadAuraCustomPunch(((CountInv("FinalMeleeDamageDealt",AAPTR_PLAYER1))/10),1,CPF_NOTURN,"PoisonNeedlePuff",(CountInv("MeleeAtkRange",AAPTR_PLAYER1)),0,0,"","","");
+				if (CountInv("RandomInfiniteAmmo",AAPTR_PLAYER1) > 0) { A_TakeInventory("PoisonNeedleAmmo",1,0,AAPTR_PLAYER1); }
 
 				A_TakeInventory("MeleeDestroyProjectiles",9999,0,AAPTR_PLAYER1);
 				if (CallACS("MiscVarCheckDECORATE",10035) == 0 && random(1,16) == 1) { A_GiveInventory("MeleeDestroyProjectiles",1,AAPTR_PLAYER1); }
@@ -15684,10 +15623,12 @@ actor PoisonNeedle : FloraWeapon // PSND[A-E]0
 			}
 			PSND E 2 // E [Left] or J [Right]
 			{
-				if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_SetTics(1); }
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 1) { A_SetTics(1); }
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_SetTics(0); }
 				CallACS("StartTensionCountDown");
 				A_GetPunchDamage(0);
 				A_SpreadAuraCustomPunch(((CountInv("FinalMeleeDamageDealt",AAPTR_PLAYER1))/10),1,CPF_NOTURN,"PoisonNeedlePuff",(CountInv("MeleeAtkRange",AAPTR_PLAYER1)),0,0,"","","");
+				if (CountInv("RandomInfiniteAmmo",AAPTR_PLAYER1) > 0) { A_TakeInventory("PoisonNeedleAmmo",1,0,AAPTR_PLAYER1); }
 
 				A_TakeInventory("MeleeDestroyProjectiles",9999,0,AAPTR_PLAYER1);
 				if (CallACS("MiscVarCheckDECORATE",10035) == 0 && random(1,16) == 1) { A_GiveInventory("MeleeDestroyProjectiles",1,AAPTR_PLAYER1); }
@@ -15747,130 +15688,59 @@ actor PoisonNeedle : FloraWeapon // PSND[A-E]0
 			}
 			PSND B 0 A_TakeInventory("UsingMeleeAttack",0x7FFFFFFF)
 			goto Ready
-/*
+
 		AltFire:
+			TNT1 A 0
+			{
+				if (CountInv("PoisonNeedleAmmo",AAPTR_PLAYER1) <= 0) { return state("Ready"); }
+				return state("");
+			}
 			TNT1 A 0 
 			{
-				A_GetPunchStaminaUse(4); A_UseStaminaAttack(CountInv("StamConsumed", AAPTR_PLAYER1),2);
+				A_GetPunchStaminaUse(-1); A_UseStaminaAttack(CountInv("StamConsumed", AAPTR_PLAYER1),2);
 				if (CountInv("StamUsed", AAPTR_PLAYER1) == 0) { return state("Ready"); }
 				return state("");
 			}
-			TNT1 A 0
+		AltFireThrow:
+			PSND B 2 // B [Left] or G [Right]
 			{
-				if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_GiveInventory("MartArtsMaster2",1); }
-				if (CallACS("MiscVarCheckDECORATE",10035) == 4) { A_GiveInventory("MartArtsMaster1",1); }
-				A_GiveInventory("UsingMeleeAttack",1);
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 2) { A_SetTics(1); }
 			}
-			goto UppercutStart
-		UppercutStart:
-			// 23 Tics [18 (MAMlv1), 14 (MAMlv2), 11 (MAMlv3), 8 (MAMlv4), 6 (MAMlv5)]
-			FLUP A 1 { if (CallACS("MiscVarCheckDECORATE",10035) == 1 || CallACS("MiscVarCheckDECORATE",10035) == 2) { A_SetTics(0); } }
-			FLUP B 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); } }
-			FLUP C 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_SetTics(0); } } // -1
-			FLUP D 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); } }
-			FLUP E 1 { if (CallACS("MiscVarCheckDECORATE",10035) == 2) { A_SetTics(0); } A_UppercutBonus; }
-			FLU2 A 1 // FLUP F 1
+			PSND C 2 // C [Left] or H [Right]
 			{
-				if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); }
-				if (random(1,256) >= 253)
-				{
-					if (CountInv("PlayingStrife",AAPTR_PLAYER1) > 0) { } // Strife mode makes the punch work like the Punch Dagger where it NEVER makes sound
-					else { A_AlertMonsters; } // Sometimes a swing will be enough to wake up all monsters in the area.
-				}
-	
-				if (GetCVar("dvds_florahokutolol") > 0 && CallACS("MiscVarCheckDECORATE",10035) >= 4)
-				{
-					if (random(1,256) >= 1) { A_PlaySound("FloraHokutoLol",CHAN_VOICE); }
-				}
-				else
-				{
-					if (random(1,256) <= 75) { A_PlaySound("FloraKiaiFull",CHAN_VOICE); }
-				}
-				if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_PlaySound("fistswingheavy0",1); } else { A_PlaySound("fistswingmedium0",1); }
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(1); }
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_PlaySound("fistswingmedium0",1); } else { A_PlaySound("fistswinglight0",1); }
 			}
-			FLU2 B 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_SetTics(0); } } // -1
-			FLU2 C 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); } }
-			FLU2 D 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { A_SetTics(0); } } // -1
-			FLU2 E 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); } } // FLUP IJKL 1
-			FLU2 F 1 // FLUP IJKL 1
+			PSND D 2 // D [Left] or I [Right]
 			{
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { A_SetTics(1); }
+			}
+			PSND E 2 // E [Left] or J [Right]
+			{
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_SetTics(1); }
 				CallACS("StartTensionCountDown");
-				A_GetPunchDamage(1);
-				A_GetMeleeRange(1);
-				A_SpreadAuraCustomPunch((CountInv("FinalMeleeDamageDealt",AAPTR_PLAYER1)),1,CPF_NOTURN,"UppercutPuff",(CountInv("MeleeAtkRange",AAPTR_PLAYER1)),0,0,"","","");
 
-				A_TakeInventory("MeleeDestroyProjectiles",9999,0,AAPTR_PLAYER1);
-				if (CallACS("MiscVarCheckDECORATE",10035) == 0 && random(1,16) == 1) { A_GiveInventory("MeleeDestroyProjectiles",1,AAPTR_PLAYER1); }
-				if (CallACS("MiscVarCheckDECORATE",10035) == 1 && random(1,8) == 1) { A_GiveInventory("MeleeDestroyProjectiles",1,AAPTR_PLAYER1); }
-				if (CallACS("MiscVarCheckDECORATE",10035) == 2 && random(1,4) == 1) { A_GiveInventory("MeleeDestroyProjectiles",1,AAPTR_PLAYER1); }
-				if (CallACS("MiscVarCheckDECORATE",10035) == 3 && random(1,2) == 1) { A_GiveInventory("MeleeDestroyProjectiles",1,AAPTR_PLAYER1); }
-				if (CallACS("MiscVarCheckDECORATE",10035) >= 4 && random(1,1) == 1) { A_GiveInventory("MeleeDestroyProjectiles",1,AAPTR_PLAYER1); }
-				if (CountInv("MeleeDestroyProjectiles",AAPTR_PLAYER1) > 0)
-				{
-					if (CallACS("MiscVarCheckDECORATE",10035) >= 5)
-					{
-						if (random(1,8) <= 3)
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",28,10);
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",52,10);
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",28,42);
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",52,42);
-						}
-						else
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",28,10);
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",52,10);
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",28,42);
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",52,42);
-						}
-					}
-					else
-					{
-						if (random(1,8) <= 1)
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",28,10);
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",52,10);
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",28,42);
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",52,42);
-						}
-						else
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",28,10);
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",52,10);
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",28,42);
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",52,42);
-						}
-					}
-				}
-				A_TakeInventory("MeleeDestroyProjectiles",9999,0,AAPTR_PLAYER1);
+				A_GetPunchDamage(0);
+				A_PlaySound("subweapons/daggerthrow");
+				A_SpreadAuraFireProjectileAoE("PoisonNeedleProj","PoisonNeedleProjExtra",0.0,1,"PoisonNeedleAmmo",0,0,0,0);
 			}
-			FLU2 G 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); } } // FLUP IJKL 1
-			FLU2 F 1 { if (CallACS("MiscVarCheckDECORATE",10035) == 1 || CallACS("MiscVarCheckDECORATE",10035) == 2 || CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_SetTics(0); } } // -1
-			FLU2 E 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); } }
-			FLU2 D 1 { if (CallACS("MiscVarCheckDECORATE",10035) == 1 || CallACS("MiscVarCheckDECORATE",10035) == 2) { A_SetTics(0); } }
-			FLU2 C 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); } }
-			FLU2 B 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { A_SetTics(0); } } // -1
-			FLU2 A 1 { if (CallACS("MiscVarCheckDECORATE",10035) == 1 || CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); } }
-			FLU2 A 0 { return state("UppercutEnd"); }
-		UppercutEnd:
-			TNT1 A 0
+			PSND D 2 // D [Left] or I [Right]
 			{
-				A_UppercutBonusTake; 
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 2) { A_SetTics(1); }
 			}
-			FLUP E 1 { if (CallACS("MiscVarCheckDECORATE",10035) == 2) { A_SetTics(0); } }
-			FLUP D 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); } }
-			FLUP C 1 { if (CallACS("MiscVarCheckDECORATE",10035) == 1 || CallACS("MiscVarCheckDECORATE",10035) == 2) { A_SetTics(0); } }
-			FLUP B 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(0); } }
-			FLUP A 1 { if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { A_SetTics(0); } }
-			TNT1 A 0
+			PSND C 2 // C [Left] or H [Right]
 			{
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(1); }
+			}
+			PSND B 2 // B [Left] or G [Right]
+			{
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { A_SetTics(1); }
 				A_TakeInventory("MartArtsMaster1",0x7FFFFFFF);
 				A_TakeInventory("MartArtsMaster2",0x7FFFFFFF);
 				A_ReFire;
-				return state("Ready");
 			}
 			goto Ready
-*/
+
 		User1: // Kick - Flora PoisonNeedle version
 			TNT1 A 0
 			{
@@ -16032,3 +15902,177 @@ actor PoisonNeedle : FloraWeapon // PSND[A-E]0
 			Goto Ready
 	}
 }
+
+actor PoisonNeedleAmmo : Ammo
+{
+	Scale 0.2
+	Inventory.PickupMessage "Picked Up an \cjExtra Poison Needle\c- \cx[Slot 1 - Alt-Fire Throwing-Weapon]\c-"
+	Inventory.Amount 1
+	Inventory.MaxAmount 2
+	Inventory.Icon "PSNPB0"
+	Ammo.BackpackAmount 2
+	Ammo.BackpackMaxAmount 4
+	states
+	{
+		Spawn:
+			PSNP A -1 NoDelay
+			{
+			}
+			stop
+	}
+}
+
+// Thrown Poison Needle [base code]
+actor PoisonNeedleProj : AetheriusProjectileZSC
+{
+	+SKYEXPLODE
+	+DONTREFLECT
+	+BLOODSPLATTER
+	+FORCEXYBILLBOARD	
+	+THRUSPECIES
+	species "Players"
+	Radius 11
+	Height 8
+	Speed 60
+	Damage ((finaldamagedealt))
+	DamageType "PoisonNeedle"
+	Projectile
+	SeeSound "subweapons/daggerthrow"
+	states
+	{
+		Spawn:
+			DGGR A 0 NoDelay
+			{
+				if (CountInv("PowerStrength", AAPTR_PLAYER1) > 0) { A_ScaleVelocity(2.5); }
+				A_GetPlayerAttackDamage(59,0);
+				user_randompain = 44;
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10035) * 4);
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10036) * (4 * 5 / 2));
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10051) * random(3,5));
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10052) * (random(3,5) * 5 / 2));
+				user_randompain *= 2;
+				if (random(1,100) <= user_randompain) { A_ChangeFlag("FORCEPAIN", TRUE); }
+			}
+		Idle:
+			DGGR AAAAAAAAA 2 { A_GetPlayerAttackDamage(59,0); }
+			DGGR A 0 A_ChangeFlag ("NOGRAVITY",0)
+			goto Falling
+		Falling:
+			DGGR A 2 { A_GetPlayerAttackDamage(59,0); }
+			loop
+		Death:
+			TNT1 A 0
+			TNT1 A 0 A_ChangeFlag ("NOGRAVITY",1)
+			TNT1 A 0 A_PlaySound ("subweapons/miss")
+			//SWMS ABC 3 bright
+			TNT1 A 0 A_SpawnItemEx("PoisonNeedleAmmo")
+			stop
+		Crash:
+			TNT1 A 0
+			TNT1 A 0 A_ChangeFlag ("NOGRAVITY",1)
+			TNT1 A 0 A_PlaySound ("subweapons/miss")
+			// SWMS ABC 3 bright
+			TNT1 A 0 A_SpawnItemEx("PoisonNeedleAmmo")
+			stop
+		XDeath:
+			TNT1 A 0
+			TNT1 A 0 A_ChangeFlag ("NOGRAVITY",1)
+			TNT1 A 0 A_PlaySound ("subweapons/hit")
+			//SWHT ABC 3 bright
+			TNT1 A 0 A_SpawnItemEx("PoisonNeedleAmmo")
+			stop
+	}
+}
+
+actor PoisonNeedleProjExtra : PoisonNeedleProj
+{
+	states
+	{
+		Death:
+			TNT1 A 0
+			TNT1 A 0 A_ChangeFlag ("NOGRAVITY",1)
+			TNT1 A 0 A_PlaySound ("subweapons/miss")
+			stop
+		Crash:
+			TNT1 A 0
+			TNT1 A 0 A_ChangeFlag ("NOGRAVITY",1)
+			TNT1 A 0 A_PlaySound ("subweapons/miss")
+			stop
+		XDeath:
+			TNT1 A 0
+			TNT1 A 0 A_ChangeFlag ("NOGRAVITY",1)
+			TNT1 A 0 A_PlaySound ("subweapons/hit")
+			stop
+	}
+}
+
+actor PoisonNeedlePuff : AetheriusPuffZSC
+{
+	Species "Players"
+	+NOBLOCKMAP
+	+NOGRAVITY
+	+ALLOWPARTICLES
+	+RANDOMIZE
+	+FORCERADIUSDMG +PUFFGETSOWNER +PUFFONACTORS 
+	+THRUSPECIES +MTHRUSPECIES
+	RenderStyle Translucent
+	Alpha 0.5
+	VSpeed 1
+	Mass 5
+	damagetype "PoisonNeedle"
+	SeeSound "null" // "FistHit"
+	AttackSound "null"
+
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay
+			{
+				user_randompain = 44;
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10035) * 4);
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10036) * (4 * 5 / 2));
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10051) * random(3,5));
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10052) * (random(3,5) * 5 / 2));
+				user_randompain *= 2;
+				if (random(1,100) <= user_randompain) { A_ChangeFlag("FORCEPAIN", TRUE); }
+
+				if (CountInv("PowerStrength",AAPTR_PLAYER1) > 0) { A_PlaySound("fisthitberserk",7); } else { A_PlaySound("FistHit",7); }
+			}
+		SpawnSparks:
+			PUFF ABCD 2
+			Stop
+		Melee:
+			TNT1 A 0
+			{
+				user_randompain = 44;
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10035) * 4);
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10036) * (4 * 5 / 2));
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10051) * random(3,5));
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10052) * (random(3,5) * 5 / 2));
+				user_randompain *= 2;
+				if (random(1,100) <= user_randompain) { A_ChangeFlag("FORCEPAIN", TRUE); }
+
+				if (CountInv("PowerStrength",AAPTR_PLAYER1) > 0) { A_PlaySound("fisthitberserk",7); } else { A_PlaySound("FistHit",7); }
+			}
+		MeleeSparks:
+			PUFF ABCD 2
+			Stop
+		Crash:
+			TNT1 A 0
+			{
+				user_randompain = 44;
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10035) * 4);
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10036) * (4 * 5 / 2));
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10051) * random(3,5));
+				user_randompain += (CallACS("MiscVarCheckDECORATE",10052) * (random(3,5) * 5 / 2));
+				user_randompain *= 2;
+				if (random(1,100) <= user_randompain) { A_ChangeFlag("FORCEPAIN", TRUE); }
+
+				if (CountInv("PowerStrength",AAPTR_PLAYER1) > 0) { A_PlaySound("fisthitberserkwall",7); } else { A_PlaySound("FistHitWall",7); }
+			}
+		CrashSparks:
+			PUFF ABCD 2
+			Stop
+	}
+}
+
