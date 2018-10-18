@@ -245,6 +245,7 @@
 
 /*
 		global int 0:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
+						--- [TCOTD:A's ACS uses it for the Siren Timer]
 		global int 24:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V 
 		global int 25:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
 		global int 32:?; // RESERVED FOR MOD GLOBAL VAR USAGE. :V
@@ -11471,7 +11472,7 @@ script "SpellSelection" (int Dir)
 	}
 }
 
-// Spell Readying (For Five Slot system)
+// Spell Readying (For Ten-Slot system)
 script "SpellQuickAssign" (int Slot, int Type)
 {
 	if (MiscellaneousVars[2500] != 0) terminate; // cannot change spells in the menu
@@ -18927,47 +18928,6 @@ script "CreateTranslationTables" OPEN
 	CreateTranslation(44, 1:31=228:231); // For Damage on the Damage Indicator [CRITICAL] [NEW DQH NUMBERS]
 }
 
-// Mana Recovery Items
-script "CheckManaLevels" (int overmana)
-{
-	int MaxManaLimit = MaxMana * 2;
-	
-	int result = 0;
-	if (overmana == 0 && CurrentMana < MaxMana) result = 1;
-	if (overmana == 1 && CurrentMana < MaxManaLimit) result = 1;
-	SetResultValue(result);
-}
-
-// ManaCube Pickup script
-script "PickupManaCube" (int type, int overmana)
-{
-	int GiveManaAmount;
-	int MaxManaDouble = MaxMana * 2;
-	if (type <= 1) GiveManaAmount = 50; // Small
-	if (type == 2) GiveManaAmount = 125; // Medium
-	if (type >= 3) GiveManaAmount = 350; // Large
-	
-	if (CheckActorInventory(Player1TID,"SauronHelmet") > 0) GiveManaAmount = GiveManaAmount * 9 / 8; // Sauron Helmet = 112.5%
-	if (CharacterClass == 0 && CheckActorInventory(Player1TID,"SauronGauntlets") > 0) GiveManaAmount = GiveManaAmount * 5 / 4; // Sauron Gauntlets = 125%
-	if (CharacterClass == 1 && CheckActorInventory(Player1TID,"SauronGauntletsIllucia") > 0) GiveManaAmount = GiveManaAmount * 5 / 4; // Sauron Gauntlets = 125%
-	if (CharacterClass == 2 && CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0) GiveManaAmount = GiveManaAmount * 5 / 4; // Sauron Gauntlets = 125%
-	if (CharacterClass == 8 && CheckActorInventory(Player1TID,"SauronGauntletsAilish") > 0) GiveManaAmount = GiveManaAmount * 5 / 4; // Sauron Gauntlets = 125%
-	if (CharacterClass == 9 && CheckActorInventory(Player1TID,"SauronGauntletsPetra") > 0) GiveManaAmount = GiveManaAmount * 5 / 4; // Sauron Gauntlets = 125%
-	if (CheckActorInventory(Player1TID,"TheOneRing") > 0)
-	{
-		if (CharacterClass == 2) GiveManaAmount = GiveManaAmount * 5 / 4;	// The One Ring [Flora] = 125%
-												else GiveManaAmount = GiveManaAmount / 2;		// The One Ring [Marines] = 50%
-	}
-	
-	GiveManaAmount = GiveManaAmount * GetCVar("dvds_manaitemmultiplier") / 100;
-	
-	CurrentMana += GiveManaAmount;
-	if (overmana == 0 && CurrentMana > MaxMana) CurrentMana = MaxMana;
-	if (overmana == 1 && CurrentMana > MaxManaDouble) CurrentMana = MaxManaDouble;
-	
-	SetResultValue(GiveManaAmount);
-}
-
 // Defines the Buildup to Sauravatar's appearance [DVI-DS]
 script "DVI-MainEyeDeath2" (void)
 {
@@ -19059,16 +19019,15 @@ script "DV1M04-Music1" (void)
 	if (SpecialGameFlags[10000] == 0) SetMusic("DDRAGON3", 13); 
 }
 
-// Changes Music back when exiting the Fishmouth Temple in MAP04 [DVI-DS] or MAP12 [DVII-DS]
-script 24 (void)
+script "UnsetFishmouthMusic" (void)
 {
-	if (SpecialGameFlags[10000] == 0) SetMusic("*", 0); 
+	if (SpecialGameFlags[10000] == 0) SetMusic("*", 0);
 }
 
 // Changes Music for Entering the Fishmouth Temple in MAP04 [DVI-DS] or MAP12 [DVII-DS]
-script 25 (void)
+script "SetFishmouthMusic" (void)
 {
-	if (SpecialGameFlags[10000] == 0) SetMusic("DDRAGON3", 15); 
+	if (SpecialGameFlags[10000] == 0) SetMusic("DDRAGON3", 15);
 }
 
 // Makes Monsters in MAP04 [DVI-DS] or MAP12 [DVII-DS] have a TID of 666 [this makes them suspectible to the Sauravatar's activation script]
@@ -26928,7 +26887,6 @@ script "GrabBackpack" (void)
 {
 	MiscellaneousVars[80] += 1;
 	if (MiscellaneousVars[80] > 512) MiscellaneousVars[80] = 512;
-	
 	Delay(1);
 	
 	// Doom Ammo
