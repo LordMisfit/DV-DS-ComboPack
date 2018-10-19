@@ -162,7 +162,7 @@ class AetheriusCustomInventory : CustomInventory
 				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
 				PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
 				perktemp1 = perktemp1 * PerkFactor;
-				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //Console.Printf("Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
 				temp2 = perktemp1;
 				CurrentStamina += temp2;
 				if (CurrentStamina > healmax) CurrentStamina = healmax;
@@ -243,7 +243,7 @@ class AetheriusCustomInventory : CustomInventory
 				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
 				PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
 				perktemp1 = perktemp1 * PerkFactor;
-				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //Console.Printf("Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
 				temp2 = perktemp1;
 				CurrentStamina += temp2;
 				if (CurrentStamina > healmax) CurrentStamina = healmax;
@@ -297,7 +297,7 @@ class AetheriusCustomInventory : CustomInventory
 				perktemp1 = perktemp1 * PerkFactor;
 				if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
 				perktemp1 = perktemp1 * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
-				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //Console.Printf("Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
 				temp2 = perktemp1;
 				CurrentStamina += temp2;
 				if (CurrentStamina > healmax) CurrentStamina = healmax;
@@ -1037,6 +1037,430 @@ class AetheriusCustomInventory : CustomInventory
 
 		self.A_SetInventory("ManaPickupResult",0);
 		if (CurrentMana < ManaThreshold) self.A_SetInventory("ManaPickupResult",1);
+	}
+	
+	// New Soulsphere script :P
+	void A_GrabSoulsphere()
+	{
+		int debughealitems = dvdsdebug_healitemdisplays;
+		int MaxManaLimit;
+		int temp1, temp2;
+		int PerkFactor;
+		int perktemp1;
+		int TrueStamValue;
+		int HealthValue, ManaValue;
+		int PlayerLevel = CallACS("StatCheck",0);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int CurrentHealth = player.mo.health;
+		int MaxHealthTrue = CallACS("StatCheck",1);
+		int MaxHealthLimit = MaxHealthTrue * 2;
+		int CurrentMana = CallACS("StatCheck",14); 
+		int MaxMana = CallACS("StatCheck",2);
+		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+		int MaxStamina = CallACS("MiscVarCheckDECORATE",22);
+		int MaxStaminaLimit = MaxStamina * 5;
+		int HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
+		int RegenStamFastPerkLevel = CallACS("MiscVarCheckDECORATE",10017);
+		int RegenStamFastEXPerkLevel = CallACS("MiscVarCheckDECORATE",10018);
+		int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
+		int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
+
+		if (CurrentHealth < MaxHealthLimit)
+		{
+			HealthValue = MaxHealthTrue;
+			CurrentHealth += HealthValue;
+			if (CurrentHealth >= MaxHealthLimit) CurrentHealth = MaxHealthLimit;
+
+			player.mo.health = CurrentHealth;
+		}
+		
+		// Add 25% to Stamina Value [up to 500%]
+		TrueStamValue = MaxStamina / 4;
+		perktemp1 = TrueStamValue;
+		if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+		PerkFactor = ((RegenStamFastPerkLevel * 2000) + (RegenStamFastEXPerkLevel * 5000)) + 10000;
+		perktemp1 = perktemp1 * PerkFactor / 10000;
+		
+		if (CurrentStamina != MaxStaminaLimit)
+		{
+			if (debughealitems > 0) Console.Printf("Stamina Restored: %d VS [%d]", perktemp1, TrueStamValue);
+			if (CurrentStamina < MaxStaminaLimit) CurrentStamina += TrueStamValue; 
+			if (CurrentStamina > MaxStaminaLimit) CurrentStamina = MaxStaminaLimit;
+
+			CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+		}
+		
+		// Add 50% MP/Mana to Deggaris/Illucia/Flora, 200% Max MP/Mana.
+		MaxManaLimit = MaxMana * 2;
+		if (CurrentMana < MaxManaLimit)
+		{
+			ManaValue = MaxMana / 2;
+			CurrentMana += ManaValue;
+			if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
+
+			CallACS("OtherVarSetDECORATE",2,CurrentMana);
+		}
+	
+		int HellcoreRestored;
+		if (CharacterClass == 2) // Flora's Hellcore Heating will also go down with each SoulSphere grabbed
+		{
+			if (HellcoreOverheatLevel > 0)
+			{
+				HellcoreRestored = 250000 + (PlayerLevel * 2500) + random(-50000,50000);
+				if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
+				if (SoulMasteryPerkLevel >= 0)
+				{
+					if (SoulMasteryPerkLevel == 1) temp1 = 1;
+					if (SoulMasteryPerkLevel == 2) temp1 = 2;
+					if (SoulMasteryPerkLevel == 3) temp1 = 3;
+					if (SoulMasteryPerkLevel == 4) temp1 = 4;
+					if (SoulMasteryPerkLevel == 5) temp1 = 5;
+					if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
+					if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+					PerkFactor = 16 + (temp1 + temp2);
+					HellcoreRestored = HellcoreRestored * PerkFactor / 16;
+				}
+			
+				if (HellcoreRestored < 1) HellcoreRestored = 1;
+				if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
+			
+				HellcoreOverheatLevel -= HellcoreRestored;
+				if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+
+				CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+			}
+		}
+	}
+	
+	// New Megasphere Script [for health/stamina half] :P
+	void A_MegaSphereHealth()
+	{
+		int debughealitems = dvdsdebug_healitemdisplays;
+		int MaxManaLimit;
+		int temp1, temp2;
+		int PerkFactor;
+		int perktemp1;
+		int TrueStamValue;
+		int HealthValue, ManaValue;
+		int PlayerLevel = CallACS("StatCheck",0);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int CurrentHealth = player.mo.health;
+		int MaxHealthTrue = CallACS("StatCheck",1);
+		int MaxHealthLimit = MaxHealthTrue * 2;
+		int CurrentMana = CallACS("StatCheck",14); 
+		int MaxMana = CallACS("StatCheck",2);
+		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+		int MaxStamina = CallACS("MiscVarCheckDECORATE",22);
+		int MaxStaminaLimit = MaxStamina * 5;
+		int HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
+		int RegenStamFastPerkLevel = CallACS("MiscVarCheckDECORATE",10017);
+		int RegenStamFastEXPerkLevel = CallACS("MiscVarCheckDECORATE",10018);
+		int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
+		int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
+		int HealAmount;
+		
+		if (CurrentHealth < MaxHealthLimit)
+		{
+			HealAmount = MaxHealthLimit;
+			CurrentHealth += HealAmount;
+			if (CurrentHealth >= MaxHealthLimit) CurrentHealth = MaxHealthLimit;
+		
+			player.mo.health = CurrentHealth;
+		}
+		
+		// Add 50% to Stamina Value [up to 200%]
+		TrueStamValue = MaxStamina / 2;
+		perktemp1 = TrueStamValue;
+		if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+		PerkFactor = ((RegenStamFastPerkLevel * 2000) + (RegenStamFastEXPerkLevel * 5000)) + 10000;
+		perktemp1 = perktemp1 * PerkFactor / 10000;
+
+		if (CurrentStamina != MaxStaminaLimit)
+		{
+			if (debughealitems > 0) Console.Printf("Stamina Restored: %d VS [%d]", perktemp1, TrueStamValue);
+			if (CurrentStamina < MaxStaminaLimit) CurrentStamina += TrueStamValue; 
+			if (CurrentStamina > MaxStaminaLimit) CurrentStamina = MaxStaminaLimit;
+
+			CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+		}
+		
+		int HellcoreRestored;
+		if (CharacterClass == 2) // Flora's Hellcore Heating will also go down with each SoulSphere grabbed
+		{
+			if (HellcoreOverheatLevel > 0)
+			{
+				HellcoreRestored = 750000 + (PlayerLevel * 7500) + random(-150000,150000);
+				if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
+				if (SoulMasteryPerkLevel >= 0)
+				{
+					if (SoulMasteryPerkLevel == 1) temp1 = 1;
+					if (SoulMasteryPerkLevel == 2) temp1 = 2;
+					if (SoulMasteryPerkLevel == 3) temp1 = 3;
+					if (SoulMasteryPerkLevel == 4) temp1 = 4;
+					if (SoulMasteryPerkLevel == 5) temp1 = 5;
+					if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
+					if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+					PerkFactor = 16 + (temp1 + temp2);
+					HellcoreRestored = HellcoreRestored * PerkFactor / 16;
+				}
+			
+				if (HellcoreRestored < 1) HellcoreRestored = 1;
+				if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
+			
+				HellcoreOverheatLevel -= HellcoreRestored;
+				if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+
+				CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+			}
+		}
+	}
+	
+	// MegaSphere Armor [Deggaris & Illucia Only] or Mana [All Three Characters]
+	void A_MegaSphereArmor()
+	{
+		int debughealitems = dvdsdebug_healitemdisplays;
+		int MaxManaLimit;
+		int temp1, temp2;
+		int PerkFactor;
+		int perktemp1;
+		int TrueStamValue;
+		int HealthValue, ManaValue;
+		int PlayerLevel = CallACS("StatCheck",0);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int CurrentHealth = player.mo.health;
+		int MaxHealthTrue = CallACS("StatCheck",1);
+		int MaxHealthLimit = MaxHealthTrue * 2;
+		int CurrentMana = CallACS("StatCheck",14); 
+		int MaxMana = CallACS("StatCheck",2);
+		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+		int MaxStamina = CallACS("MiscVarCheckDECORATE",22);
+		int MaxStaminaLimit = MaxStamina * 5;
+		int HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
+		int RegenStamFastPerkLevel = CallACS("MiscVarCheckDECORATE",10017);
+		int RegenStamFastEXPerkLevel = CallACS("MiscVarCheckDECORATE",10018);
+		int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
+		int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
+		int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
+		int HealAmount;
+		int ArmorClearValue, RawArmorValue;
+		int CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
+		
+		if (CharacterClass == 9) // Petra gets no armor from a Soul Sphere, but gets Mana and Force Gauge refill.
+		{
+			CurrentMana = MaxMana * 2;
+			//Insert code for refilling force gauge here
+		}
+		else
+		if (CharacterClass == 2 || CharacterClass == 8) // Flora and Ailish do not get armor from a Soul Sphere, but instead gets Mana up to 200% of their maximum
+		{
+			CurrentMana = MaxMana * 2;
+		}
+		else
+		if (CharacterClass <= 1)
+		{
+			MaxManaLimit = MaxMana * 2;
+			CurrentMana = MaxManaLimit;
+		
+			// Saves original raw Armor Value
+			RawArmorValue = player.mo.CountInv("BasicArmor");
+			//Console.Printf("BasicArmor: %d", RawArmorValue);
+		
+			// Clears Armor Types
+			player.mo.A_SetInventory("BasicArmor", 0);
+			player.mo.A_SetInventory("Armor", 0);
+			player.mo.A_SetInventory("ArmorBonusDSGreen",0);
+			player.mo.A_SetInventory("ArmorBonusDSBlue",0);
+			player.mo.A_SetInventory("ArmorBonusDSStone1",0);
+			player.mo.A_SetInventory("ArmorBonusDSStone2",0);
+			player.mo.A_SetInventory("ArmorBonusDSDiamond1",0);
+			player.mo.A_SetInventory("ArmorBonusDSDiamond2",0);
+		
+			// Reinitalizes the proper Armor Class after the previous code above clears it
+			if (CurrentArmorClass <= 1) 
+			{ 
+				CurrentArmorClass = 2;
+				RawArmorValue = 200;
+				for (int i = 0; i < RawArmorValue; i++) { player.mo.A_GiveInventory("ArmorBonusDSBlue", 1); }
+			}
+			else if (CurrentArmorClass == 2) 
+			{ 
+				CurrentArmorClass = 3; 
+				RawArmorValue = 500;
+				for (int i = 0; i < RawArmorValue; i++) { player.mo.A_GiveInventory("ArmorBonusDSStone1", 1); }
+			}
+			else if (CurrentArmorClass == 3) 
+			{ 
+				CurrentArmorClass = 4;
+				RawArmorValue = 1250;
+				for (int i = 0; i < RawArmorValue; i++) { player.mo.A_GiveInventory("ArmorBonusDSDiamond1", 1); }
+			}
+			else if (CurrentArmorClass == 4) 
+			{ 
+				CurrentArmorClass = 5;
+				RawArmorValue = 2000;
+				for (int i = 0; i < RawArmorValue; i++) { player.mo.A_GiveInventory("ArmorBonusDSStone2", 1); }
+			}
+			else if (CurrentArmorClass >= 5) 
+			{ 
+				CurrentArmorClass = 6; 
+				RawArmorValue = 5000;
+				for (int i = 0; i < RawArmorValue; i++) { player.mo.A_GiveInventory("ArmorBonusDSDiamond2", 1); }
+			}
+			
+			CurrentMaxArmor = 0;
+			player.mo.A_SetInventory("DSNoArmorClass",0);
+			player.mo.A_SetInventory("DSGreenArmorClass",0);
+			player.mo.A_SetInventory("DSBlueArmorClass",0);
+			player.mo.A_SetInventory("DSStoneArmorClass1",0);
+			player.mo.A_SetInventory("DSDiamondArmorClass1",0);
+			player.mo.A_SetInventory("DSStoneArmorClass2",0);
+			player.mo.A_SetInventory("DSDiamondArmorClass2",0);
+
+			if (CurrentArmorClass == 1) { CurrentMaxArmor = 100; player.mo.A_SetInventory("DSGreenArmorClass",1); }
+			if (CurrentArmorClass == 2) { CurrentMaxArmor = 200; player.mo.A_SetInventory("DSBlueArmorClass",1); }
+			if (CurrentArmorClass == 3) { CurrentMaxArmor = 500; player.mo.A_SetInventory("DSStoneArmorClass1",1); }
+			if (CurrentArmorClass == 4) { CurrentMaxArmor = 1250; player.mo.A_SetInventory("DSDiamondArmorClass1",1); }
+			if (CurrentArmorClass == 5) { CurrentMaxArmor = 2000; player.mo.A_SetInventory("DSStoneArmorClass2",1); }
+			if (CurrentArmorClass == 6) { CurrentMaxArmor = 5000; player.mo.A_SetInventory("DSDiamondArmorClass2",1); }
+		}
+		CallACS("OtherVarSetDECORATE",2,CurrentMana);
+		CallACS("OtherVarSetDECORATE",5,CurrentArmorClass);
+		CallACS("OtherVarSetDECORATE",9,CurrentMaxArmor);
+	}
+	
+	// Stimpacks/Medikits/Berserk Packs (All games)
+	void A_PickupMedicalItem(int HealItemType = 0, int maxhealtype = 0) //
+	{
+		int HealAmount, ExtraHeal, CurrentHP;
+		int tempstaminalimit;
+		int perktemp1, perktemp2, perktemp3;
+		int PerkFactor;
+		int perkbasemulti = 16;
+		int debughealitems = dvdsdebug_healitemdisplays;
+		CurrentHP = player.mo.health;
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int MaxHealthTrue = CallACS("StatCheck",1);
+		int MedicinalProwessPerkLevel = CallACS("MiscVarCheckDECORATE",10049);
+		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+		int MaxStamina = CallACS("MiscVarCheckDECORATE",22);
+		int RegenStamFastPerkLevel = CallACS("MiscVarCheckDECORATE",10017);
+		int RegenStamFastEXPerkLevel = CallACS("MiscVarCheckDECORATE",10018);
+		int TrueStamValue;
+
+		if (debughealitems) Console.Printf("HealItemType: %d", HealItemType);
+		if (HealItemType == -1) // Source Guardian Lifeseed
+		{
+			HealAmount = MaxHealthTrue * 25 / 100;
+			perktemp2 = HealAmount;
+		
+			if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			perktemp2 = perktemp2 * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
+		
+			tempstaminalimit = MaxStamina * 5;
+		
+			if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			tempstaminalimit = tempstaminalimit * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
+		
+			if (CurrentStamina < tempstaminalimit)
+			{
+				TrueStamValue = MaxStamina / 8; // 12.5%
+				perktemp1 = TrueStamValue;
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+				PerkFactor = ((RegenStamFastPerkLevel * 2) + (RegenStamFastEXPerkLevel * 5)) + 10;
+				perktemp1 = perktemp1 * PerkFactor / 10;
+			
+				if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				perktemp1 = perktemp1 * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
+			
+				CurrentStamina += perktemp1;
+			
+				if (debughealitems) Console.Printf("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", tempstaminalimit, MaxStamina, perktemp1, TrueStamValue);
+				if (CurrentStamina > tempstaminalimit) CurrentStamina = tempstaminalimit;
+				
+				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			}
+		}
+
+		if (HealItemType == 0 || HealItemType == 1) // Stimpack / Crystal Vial (1) and Medikit / Mini Berserk Pack (2) [Health]
+		{
+			if (HealItemType == 0) HealAmount = MaxHealthTrue * 10 / 100; // [Stimpack]
+			if (HealItemType == 1) HealAmount = MaxHealthTrue * 25 / 100; // [Medikit/Mini-Berserk]
+			perktemp2 = HealAmount;
+		
+			if (CharacterClass == 0 || CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			perktemp2 = perktemp2 * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
+		
+			tempstaminalimit = MaxStamina;
+		
+			if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			tempstaminalimit = tempstaminalimit * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
+		
+			if (CurrentStamina < tempstaminalimit)
+			{
+				if (HealItemType == 0) TrueStamValue = MaxStamina / 20; // 5.0% [Stimpack/Vial]
+				if (HealItemType == 1) TrueStamValue = MaxStamina / 8; // 12.5% [Medikit/Flask]
+				perktemp1 = TrueStamValue;
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+				PerkFactor = ((RegenStamFastPerkLevel * 2) + (RegenStamFastEXPerkLevel * 5)) + 10;
+				perktemp1 = perktemp1 * PerkFactor / 10;
+			
+				if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+				perktemp1 = perktemp1 * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
+			
+				CurrentStamina += perktemp1;
+			
+				if (debughealitems) Console.Printf("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", tempstaminalimit, MaxStamina, perktemp1, TrueStamValue);
+				if (CurrentStamina > tempstaminalimit) CurrentStamina = tempstaminalimit;
+
+				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			}
+		}
+		
+		if (HealItemType == 2) // Berserk Pack
+		{
+			HealAmount = MaxHealthTrue;
+			perktemp2 = HealAmount;
+			
+			if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			perktemp2 = perktemp2 * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
+		}
+		if (HealItemType == 3 || HealItemType == 4) // Full Berserk Pack (3) and Mini Berserk Pack (4) [Stamina]
+		{
+			if (HealItemType == 3) TrueStamValue = MaxStamina * 2; // 200% [Full Berserk Pack]
+			if (HealItemType == 4) TrueStamValue = MaxStamina / 2; // 50% [Mini Berserk Pack]
+			perktemp1 = TrueStamValue;
+			if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
+			PerkFactor = ((RegenStamFastPerkLevel * 2) + (RegenStamFastEXPerkLevel * 5)) + 10;
+			perktemp1 = perktemp1 * PerkFactor / 10;
+		
+			if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+			perktemp1 = perktemp1 * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
+			
+			tempstaminalimit = MaxStamina * 5;
+		
+			if (debughealitems) Console.Printf("Stamina Limit: [%d], Stamina Restored: %d VS [%d]", tempstaminalimit, perktemp1, TrueStamValue);
+			if (CurrentStamina < tempstaminalimit) CurrentStamina += perktemp1;
+			if (CurrentStamina >= tempstaminalimit) CurrentStamina = tempstaminalimit; 
+			
+			CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+		}
+		
+		int temphealthlimit = MaxHealthTrue;
+		if (maxhealtype > 0) temphealthlimit *= 2;
+		
+		if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+		temphealthlimit = temphealthlimit * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
+
+		if (temphealthlimit > (MaxHealthTrue*2)) temphealthlimit = MaxHealthTrue * 2;
+
+		if (CurrentHP <= temphealthlimit)
+		{
+			CurrentHP += perktemp2;
+			if (CurrentHP > temphealthlimit) CurrentHP = temphealthlimit;
+			if (debughealitems) Console.Printf("Health Limit: %d VS [%d], Health Restored: %d VS [%d]", temphealthlimit, MaxHealthTrue, perktemp2, HealAmount);
+
+			player.mo.health = CurrentHP;
+		}
 	}
 }
 

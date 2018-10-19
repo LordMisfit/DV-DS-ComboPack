@@ -174,9 +174,6 @@
 			["EmulateGiveArmorBonus"]					-	Emulates Armor Bonuses for all four types of normal armor in DVI[I]-DS. [Applies Only to Deggaris and Illucia] (also one part of the Sauron's Gauntlet hit effect)
 			["SauronItemSpawnerCheck"]				-	Calculates the occurance rate of Sauron's Gauntlets and Sauron's Helmet Dropping.
 			["FloraRandomArmorDrop"] 					-	Spawn a Randomized Armor Item for Flora in "DVI" mode [used with "FloraRandomArmor" thing]
-			["GrabSoulsphere"]								-	Soulsphere Pickup Script
-			["MegaSphereHealth"]							-	Megasphere Pickup Script [for health half]
-			["MegaSphereArmor"]								-	MegaSphere Armor [Deggaris & Illucia Only] or Mana [Flora Only]
 			["ArmorBonusEyeGlow"]							-	Sets the "glowing eyes" in the "Armor Bonus" items to a specfic color dependant on the current Armor Class of Deggaris/Illucia [does not apply to Flora].
 			["CheckFloraArmorCopies"] 				-	Checks and Removes "Copies" of Flora's armor items on maps [when she already has these items]
 			["OneRingCopyCheck"]							-	Checks to see if you already possess The One Ring so it cannot appear more than once.
@@ -190,7 +187,6 @@
 			["DivineShieldChecker"]						-	Checks for DivineShield in inventory for the Ruinous Shield PICKUP.
 			["GrabBackpack"]									-	Backpack Pickup Script
 			["CheckHealthLevels"]							-	Check if Health is above or below normal max [for customized "normal" health item checks] (All games)
-			["PickupMedicalItem"]							-	Stimpack / Medikit / Berserk Pack Pickups (All games)
 			["CheckArmorLevels"]							-	Checks Whether a Full Armor Item can be picked up or not
 			["PickupArmorMain"]								-	Emulates Main Armor Item Pickups [Applies Only to Deggaris and Illucia]
 			["GetMiscellaneousVar"]						-	Returns the value of the index of "MiscellaneousVars[#]" that is referenced [for A_JumpIf checks in DECORATE]
@@ -19056,272 +19052,6 @@ script "SauravatarDeath" (void)
 	SetMusic("*", 0); 
 }
 
-// New Soulsphere script :P
-script "GrabSoulsphere" (void)
-{
-	int MaxManaLimit;
-	int MaxHealthLimit = MaxHealthTrue * 2;
-	int temp1, temp2;
-	int PerkFactor;
-	int perktemp1;
-	int CurrentHealth, HealthValue, ManaValue;
-	
-	CurrentHealth = GetActorProperty(Player1TID,APROP_Health); 
-	MaxHealthLimit = MaxHealthLimit;
-	if (CurrentHealth < MaxHealthLimit)
-	{
-		HealthValue = MaxHealthTrue;
-		CurrentHealth += HealthValue;
-		if (CurrentHealth >= MaxHealthLimit) CurrentHealth = MaxHealthLimit;
-
-		SetActorProperty(Player1TID,APROP_Health,CurrentHealth);
-	}
-
-	// Add 25% to Stamina Value [up to 500%]
-	MiscellaneousVars[165] = MiscellaneousVars[22] / 4;
-	perktemp1 = MiscellaneousVars[165];
-	if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
-	PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
-	perktemp1 = perktemp1 * PerkFactor / 10000;
-	if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
-	
-	if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
-	if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
-	
-	// Add 50% MP/Mana to Deggaris/Illucia/Flora, 200% Max MP/Mana.
-	MaxManaLimit = MaxMana * 2;
-	if (CurrentMana < MaxManaLimit)
-	{
-		ManaValue = MaxMana / 2;
-		CurrentMana += ManaValue;
-		if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
-	}
-
-	int HellcoreRestored;
-	if (CharacterClass == 2) // Flora's Hellcore Heating will also go down with each SoulSphere grabbed
-	{
-		if (HellcoreOverheatLevel > 0)
-		{
-			HellcoreRestored = 250000 + (PlayerLevel * 2500) + random(-50000,50000);
-			if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
-			if (MiscellaneousVars[10033] >= 0)
-			{
-				if (MiscellaneousVars[10033] == 1) temp1 = 1;
-				if (MiscellaneousVars[10033] == 2) temp1 = 2;
-				if (MiscellaneousVars[10033] == 3) temp1 = 3;
-				if (MiscellaneousVars[10033] == 4) temp1 = 4;
-				if (MiscellaneousVars[10033] == 5) temp1 = 5;
-				if (MiscellaneousVars[10034] == 1) temp2 = random(2,3);
-				if (MiscellaneousVars[10034] == 2) temp2 = 5;
-				PerkFactor = 16 + (temp1 + temp2);
-				HellcoreRestored = HellcoreRestored * PerkFactor / 16;
-			}
-		
-			if (HellcoreRestored < 1) HellcoreRestored = 1;
-			if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
-		
-			HellcoreOverheatLevel -= HellcoreRestored;
-			if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
-		}
-	}
-}
-
-// New Megasphere Script [for health/stamina half] :P
-script "MegaSphereHealth" (void)
-{
-	int MaxHealthLimit = MaxHealthTrue * 2;
-	int CurrentHealth = GetActorProperty(Player1TID,APROP_Health); 
-	int temp1, temp2;
-	int PerkFactor;
-	int perktemp1;
-	int HealAmount;
-	
-	if (CurrentHealth < MaxHealthLimit)
-	{
-		HealAmount = MaxHealthLimit;
-		CurrentHealth += HealAmount;
-		if (CurrentHealth >= MaxHealthLimit) CurrentHealth = MaxHealthLimit;
-	
-		SetActorProperty(Player1TID,APROP_Health,CurrentHealth);
-	}
-	
-	// Add 50% to Stamina Value [up to 200%]
-	MiscellaneousVars[165] = MiscellaneousVars[22] / 2;
-	perktemp1 = MiscellaneousVars[165];
-	if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
-	PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
-	perktemp1 = perktemp1 * PerkFactor / 10000;
-	if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
-	
-	if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
-	if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
-	
-	int HellcoreRestored;
-	if (CharacterClass == 2) // Flora's Hellcore Heating will also go down with each SoulSphere grabbed
-	{
-		if (HellcoreOverheatLevel > 0)
-		{
-			HellcoreRestored = 750000 + (PlayerLevel * 7500) + random(-150000,150000);
-			if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
-			if (MiscellaneousVars[10033] >= 0)
-			{
-				if (MiscellaneousVars[10033] == 1) temp1 = 1;
-				if (MiscellaneousVars[10033] == 2) temp1 = 2;
-				if (MiscellaneousVars[10033] == 3) temp1 = 3;
-				if (MiscellaneousVars[10033] == 4) temp1 = 4;
-				if (MiscellaneousVars[10033] == 5) temp1 = 5;
-				if (MiscellaneousVars[10034] == 1) temp2 = random(2,3);
-				if (MiscellaneousVars[10034] == 2) temp2 = 5;
-				PerkFactor = 16 + (temp1 + temp2);
-				HellcoreRestored = HellcoreRestored * PerkFactor / 16;
-			}
-		
-			if (HellcoreRestored < 1) HellcoreRestored = 1;
-			if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
-		
-			HellcoreOverheatLevel -= HellcoreRestored;
-			if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
-		}
-	}
-}
-
-// MegaSphere Armor [Deggaris & Illucia Only] or Mana [All Three Characters]
-script "MegaSphereArmor" (void)
-{
-	int MaxManaLimit, ArmorClearValue, RawArmorValue;
-	
-	if (CharacterClass == 9) // Petra gets no armor from a Soul Sphere, but gets Mana and Force Gauge refill.
-	{
-		CurrentMana = MaxMana * 2;
-		//Insert code for refilling force gauge here
-	}
-	else
-	if (CharacterClass == 2) // Flora does not get armor from a Soul Sphere, but instead gets Mana up to 200% of her maximum
-	{
-		CurrentMana = MaxMana * 2;
-	}
-	else
-	if (CharacterClass <= 1)
-	{
-		MaxManaLimit = MaxMana * 2;
-		CurrentMana = MaxManaLimit;
-	
-		// Saves original raw Armor Value
-		RawArmorValue = CheckInventory("Armor");
-	
-		// Clears Armor Types
-		ArmorClearValue = CheckInventory("Armor"); TakeInventory("Armor", ArmorClearValue);
-		ArmorClearValue = CheckInventory("ArmorBonusDS"); TakeInventory("ArmorBonusDS", ArmorClearValue);
-		ArmorClearValue = CheckInventory("ArmorBonusDSGreen"); TakeInventory("ArmorBonusDSGreen", ArmorClearValue);
-		ArmorClearValue = CheckInventory("ArmorBonusDSBlue"); TakeInventory("ArmorBonusDSBlue", ArmorClearValue);
-		ArmorClearValue = CheckInventory("ArmorBonusDSStone1"); TakeInventory("ArmorBonusDSStone1", ArmorClearValue);
-		ArmorClearValue = CheckInventory("ArmorBonusDSStone2"); TakeInventory("ArmorBonusDSStone2", ArmorClearValue);
-		ArmorClearValue = CheckInventory("ArmorBonusDSDiamond1"); TakeInventory("ArmorBonusDSDiamond1", ArmorClearValue);
-		ArmorClearValue = CheckInventory("ArmorBonusDSDiamond2"); TakeInventory("ArmorBonusDSDiamond2", ArmorClearValue);
-	
-		// Reinitalizes the proper Armor Class after the previous code above clears it
-		if (CurrentArmorClass <= 1) { CurrentArmorClass = 2; GiveInventory("ArmorBonusDSBlue", 200); }
-		else if (CurrentArmorClass == 2) { CurrentArmorClass = 3; GiveInventory("ArmorBonusDSStone1", 500); }
-		else if (CurrentArmorClass == 3) { CurrentArmorClass = 4; GiveInventory("ArmorBonusDSDiamond1", 1250); }
-		else if (CurrentArmorClass == 4) { CurrentArmorClass = 5; GiveInventory("ArmorBonusDSStone2", 2000); }
-		else if (CurrentArmorClass == 5) { CurrentArmorClass = 6; GiveInventory("ArmorBonusDSDiamond2", 5000); }
-		else if (CurrentArmorClass == 6) { GiveInventory("ArmorBonusDSDiamond2", 5000); }
-	
-		if (CurrentArmorClass == 6)
-		{
-			CurrentMaxArmor = 5000;
-			GiveInventory("DSDiamondArmorClass2", 1);
-			TakeInventory("DSNoArmorClass", 9999);
-			TakeInventory("DSGreenArmorClass", 9999);
-			TakeInventory("DSBlueArmorClass", 9999);
-			TakeInventory("DSStoneArmorClass1", 9999);
-			TakeInventory("DSDiamondArmorClass1", 9999);
-			TakeInventory("DSStoneArmorClass2", 9999);
-		}
-		else
-		{
-			if (CurrentArmorClass == 5)
-			{
-				CurrentMaxArmor = 2000;
-				GiveInventory("DSStoneArmorClass2", 1);
-				TakeInventory("DSNoArmorClass", 9999);
-				TakeInventory("DSGreenArmorClass", 9999);
-				TakeInventory("DSBlueArmorClass", 9999);
-				TakeInventory("DSStoneArmorClass1", 9999);
-				TakeInventory("DSDiamondArmorClass1", 9999);
-				TakeInventory("DSDiamondArmorClass2", 9999);
-			}
-			else
-			{
-				if (CurrentArmorClass == 4)
-				{
-					CurrentMaxArmor = 1250;
-					GiveInventory("DSDiamondArmorClass1", 1);
-					TakeInventory("DSNoArmorClass", 9999);
-					TakeInventory("DSGreenArmorClass", 9999);
-					TakeInventory("DSBlueArmorClass", 9999);
-					TakeInventory("DSStoneArmorClass1", 9999);
-					TakeInventory("DSStoneArmorClass2", 9999);
-					TakeInventory("DSDiamondArmorClass2", 9999);
-				}
-				else
-				{
-					if (CurrentArmorClass == 3)
-					{
-						CurrentMaxArmor = 500;
-						GiveInventory("DSStoneArmorClass1", 1);
-						TakeInventory("DSNoArmorClass", 9999);
-						TakeInventory("DSGreenArmorClass", 9999);
-						TakeInventory("DSBlueArmorClass", 9999);
-						TakeInventory("DSDiamondArmorClass1", 9999);
-						TakeInventory("DSStoneArmorClass2", 9999);
-						TakeInventory("DSDiamondArmorClass2", 9999);
-					}
-					else
-					{
-						if (CurrentArmorClass == 2)
-						{
-							CurrentMaxArmor = 200;
-							GiveInventory("DSBlueArmorClass", 1);
-							TakeInventory("DSNoArmorClass", 9999);
-							TakeInventory("DSGreenArmorClass", 9999);
-							TakeInventory("DSStoneArmorClass1", 9999);
-							TakeInventory("DSDiamondArmorClass1", 9999);
-							TakeInventory("DSStoneArmorClass2", 9999);
-							TakeInventory("DSDiamondArmorClass2", 9999);
-						}
-						else
-						{
-							if (CurrentArmorClass == 1)
-							{
-								CurrentMaxArmor = 100;
-								GiveInventory("DSGreenArmorClass", 1);
-								TakeInventory("DSNoArmorClass", 9999);
-								TakeInventory("DSBlueArmorClass", 9999);
-								TakeInventory("DSStoneArmorClass1", 9999);
-								TakeInventory("DSDiamondArmorClass1", 9999);
-								TakeInventory("DSStoneArmorClass2", 9999);
-								TakeInventory("DSDiamondArmorClass2", 9999);
-							}
-							else
-							{
-								CurrentMaxArmor = 0;
-								GiveInventory("DSNoArmorClass", 1);
-								TakeInventory("DSGreenArmorClass", 9999);
-								TakeInventory("DSBlueArmorClass", 9999);
-								TakeInventory("DSStoneArmorClass1", 9999);
-								TakeInventory("DSDiamondArmorClass1", 9999);
-								TakeInventory("DSStoneArmorClass2", 9999);
-								TakeInventory("DSDiamondArmorClass2", 9999);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
 // New Health Bonus Script :P
 script "EmulateGiveHealthBonus" (int multiplier, int givemanachance, int staminagive, int hellcorecool)
 {
@@ -19758,130 +19488,12 @@ script "Stamina-HealingItem" (int PercentMax, int PercentAmount, int ExactAmount
 	}
 }
 
-// Stimpacks/Medikits/Berserk Packs (All games)
-script "PickupMedicalItem" (int HealItemType, int maxhealtype) //
-{
-	int HealAmount, ExtraHeal, CurrentHP;
-	int tempstaminalimit;
-	int perktemp1, perktemp2, perktemp3;
-	int PerkFactor;
-	int perkbasemulti = 16;
-	CurrentHP = GetActorProperty(Player1TID,APROP_HEALTH);
-	
-	if (HealItemType == -1) // Source Guardian Lifeseed
-	{
-		HealAmount = MaxHealthTrue * 25 / 100;
-	
-		if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
-		perktemp2 = perktemp2 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
-	
-		tempstaminalimit = MiscellaneousVars[22] * 5;
-	
-		if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
-		tempstaminalimit = tempstaminalimit * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
-	
-		if (MiscellaneousVars[21] < tempstaminalimit)
-		{
-			MiscellaneousVars[165] = MiscellaneousVars[22] / 8; // 12.5%
-			perktemp1 = MiscellaneousVars[165];
-			if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
-			PerkFactor = ((MiscellaneousVars[10017] * 2) + (MiscellaneousVars[10018] * 5)) + 10;
-			perktemp1 = perktemp1 * PerkFactor / 10;
-		
-			if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
-			perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
-		
-			MiscellaneousVars[21] += perktemp1;
-		
-			if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Limit: ",d:tempstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
-																															s:"\nStamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
-			if (MiscellaneousVars[21] > tempstaminalimit) MiscellaneousVars[21] = tempstaminalimit;
-		}	
-	}
-
-	if (HealItemType == 0 | HealItemType == 1) // Stimpack / Crystal Vial (1) and Medikit / Quartz Flask / Mini Berserk Pack (2) [Health]
-	{
-		if (HealItemType == 0) HealAmount = MaxHealthTrue * 10 / 100; // [Stimpack/Vial]
-		if (HealItemType == 1) HealAmount = MaxHealthTrue * 25 / 100; // [Medikit/Flask]
-		perktemp2 = HealAmount;
-	
-		if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
-		perktemp2 = perktemp2 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
-	
-		tempstaminalimit = MiscellaneousVars[22];
-	
-		if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
-		tempstaminalimit = tempstaminalimit * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
-	
-		if (MiscellaneousVars[21] < tempstaminalimit)
-		{
-			if (HealItemType == 0) MiscellaneousVars[165] = MiscellaneousVars[22] / 20; // 5.0% [Stimpack/Vial]
-			if (HealItemType == 1) MiscellaneousVars[165] = MiscellaneousVars[22] / 8; // 12.5% [Medikit/Flask]
-			perktemp1 = MiscellaneousVars[165];
-			if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
-			PerkFactor = ((MiscellaneousVars[10017] * 2) + (MiscellaneousVars[10018] * 5)) + 10;
-			perktemp1 = perktemp1 * PerkFactor / 10;
-		
-			if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
-			perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
-		
-			MiscellaneousVars[21] += perktemp1;
-		
-			if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Limit: ",d:tempstaminalimit,s:" VS [",d:MiscellaneousVars[22],s:"]",
-																															s:"\nStamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
-			if (MiscellaneousVars[21] > tempstaminalimit) MiscellaneousVars[21] = tempstaminalimit;
-		}
-	}
-	
-	if (HealItemType == 2) // Berserk Pack / Mystic Urn [Health]
-	{
-		HealAmount = MaxHealthTrue;
-		perktemp2 = HealAmount;
-	
-		if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
-		perktemp2 = perktemp2 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
-	}
-	if (HealItemType == 3 | HealItemType == 4) // Full Berserk Pack (3) and Mini Berserk Pack (4) [Stamina]
-	{
-		if (HealItemType == 3) MiscellaneousVars[165] = MiscellaneousVars[22] * 2; // 200% [Full Berserk Pack]
-		if (HealItemType == 4) MiscellaneousVars[165] = MiscellaneousVars[22] / 2; // 50% [Mini Berserk Pack]
-		perktemp1 = MiscellaneousVars[165];
-		if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 5 / 3;
-		PerkFactor = ((MiscellaneousVars[10017] * 2) + (MiscellaneousVars[10018] * 5)) + 10;
-		perktemp1 = perktemp1 * PerkFactor / 10;
-	
-		if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
-		perktemp1 = perktemp1 * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
-	
-		if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Limit: [",d:MiscellaneousVars[164],s:"]",
-																													s:"\nStamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
-		if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += perktemp1;
-		if (MiscellaneousVars[21] >= MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164]; 
-	}
-	
-	int temphealthlimit = MaxHealthTrue;
-	if (maxhealtype > 0) temphealthlimit *= 2;
-	
-	if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
-	temphealthlimit = temphealthlimit * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
-	
-	if (temphealthlimit > (MaxHealthTrue*2)) temphealthlimit = MaxHealthTrue * 2;
-	if (MiscellaneousVars[110008] > 0) PrintBold(s:"Healing Limit: ",d:temphealthlimit,s:" VS [",d:MaxHealthTrue,s:"]",
-																													s:"\nHealth Restored: ",d:perktemp2,s:" VS [",d:HealAmount,s:"]");
-	if (CurrentHP <= temphealthlimit)
-	{
-		CurrentHP += perktemp2;
-		if (CurrentHP > temphealthlimit) CurrentHP = temphealthlimit;
-		SetActorProperty(Player1TID,APROP_HEALTH,CurrentHP);
-	}
-}
-
 // Debugging for Printing Armor Amounts on Screen
 script "PrintArmorValues" (void)
 {
 	int ArmorCheck;
 	
-	ArmorCheck = CheckInventory("Armor");
+	ArmorCheck = CheckInventory("BasicArmor");
 	Print(s:"BasicArmor: ",d:ArmorCheck);
 	ArmorCheck = CheckInventory("GreenArmor");
 	Print(s:"GreenArmor: ",d:ArmorCheck);
@@ -19896,8 +19508,6 @@ script "PrintArmorValues" (void)
 	
 	ArmorCheck = CheckInventory("DiamondSkinGA");
 	Print(s:"DiamondSkinGA: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("ArmorBonusDS");
-	Print(s:"ArmorBonusDS: ",d:ArmorCheck);
 	ArmorCheck = CheckInventory("ArmorBonusDSGreen");
 	Print(s:"ArmorBonusDSGreen: ",d:ArmorCheck);
 	ArmorCheck = CheckInventory("ArmorBonusDSBlue");
@@ -19942,7 +19552,6 @@ script "EmulateGiveArmorBonus" (int BaseAmount, int GauntletGive)
 	
 		// Clears Armor Types
 		ArmorClearValue = CheckActorInventory(Player1TID,"Armor"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
-		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDS"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
 		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDSGreen"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
 		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDSBlue"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
 		ArmorClearValue = CheckActorInventory(Player1TID,"ArmorBonusDSStone1"); TakeActorInventory(Player1TID,"Armor", ArmorClearValue);
@@ -20157,7 +19766,6 @@ script "PickupArmorMain" (int ArmorType)
 	
 	// Clears Armor Types
 	ArmorClearValue = CheckInventory("Armor"); TakeInventory("Armor", ArmorClearValue);
-	ArmorClearValue = CheckInventory("ArmorBonusDS"); TakeInventory("ArmorBonusDS", ArmorClearValue);
 	
 	ArmorClearValue = CheckInventory("ArmorBonusDSGreen"); TakeInventory("ArmorBonusDSGreen", ArmorClearValue);
 	ArmorClearValue = CheckInventory("ArmorBonusDSBlue"); TakeInventory("ArmorBonusDSBlue", ArmorClearValue);
