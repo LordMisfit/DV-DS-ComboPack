@@ -45,6 +45,17 @@ class AetheriusCustomInventory : CustomInventory
 	int autousemode;
 	int ManaPickupResult;
 	
+	// General
+	const SKILL_VERY_EASY = 0;
+	const SKILL_EASY = 1;
+	const SKILL_NORMAL = 2;
+	const SKILL_HARD = 3;
+	const SKILL_VERY_HARD = 4;
+	const SKILL_EXTREME = 5;
+	const SKILL_HORRIBLE = 6;
+	const SKILL_IMPOSSIBLE = 7;
+	const SKILL_OMEGA = 8;
+
 	private class<Inventory> APPackToken, APPackCheck, APPackCheck2, APPackCheck3, APPackCheck4, iDTech1Check, iDTech1Check2, iDTech1Check3, iDTech1Check4;
 	
 	property HealthAutoUse: autousemode;
@@ -1462,6 +1473,233 @@ class AetheriusCustomInventory : CustomInventory
 			player.mo.health = CurrentHP;
 		}
 	}
+	
+		// Check if Health is above or below normal max [for customized "normal" health item checks] (All games)
+	void A_CheckHealthLevels(int maxhealtype = 0)
+	{
+		int currenthealth = player.mo.health;
+		int MaxHealthTrue = CallACS("StatCheck",1);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int MedicinalProwessPerkLevel = CallACS("MiscVarCheckDECORATE",10049);
+		int perkhealthlimit = MaxHealthTrue;
+		int perkbasemulti = 16;
+		
+		if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
+		perkhealthlimit = perkhealthlimit * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
+		if (maxhealtype > 0) perkhealthlimit *= 2;
+		if (perkhealthlimit > (MaxHealthTrue*2)) perkhealthlimit = (MaxHealthTrue * 2);
+		
+		self.A_SetInventory("HealthPickupResult",0);
+		if (currenthealth < perkhealthlimit) self.A_SetInventory("HealthPickupResult",1);
+	}
+	
+	// Max Health Bonus Script
+	void A_MaxHPBonusPickup()
+	{
+		int HPError, IncreaseMultiplier, LevelExtraHealth, BonusMaxHP, CurrentHP, PerkFactor; 
+		int ArmorHPBonus = 0;
+		int MapNoBonus = 0;
+		int MaxHealthTrue = CallACS("StatCheck",1);
+		int debugseedstuff = GetCVar("dvdsdebug_showseedstuff");
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int PlayerLevel = CallACS("StatCheck",0);
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		
+		if (ModType == 0 && dvds_canseedsappear == 0) { }
+		else
+		{
+			if (CharacterClass == 0) BonusMaxHP = MaxHealthTrue / random(390,410);
+			if (CharacterClass == 1) BonusMaxHP = MaxHealthTrue / random(410,430);
+			if (CharacterClass == 2) BonusMaxHP = MaxHealthTrue / random(430,450);
+			if (CharacterClass == 8) BonusMaxHP = MaxHealthTrue / random(440,460);
+			if (CharacterClass == 9) BonusMaxHP = MaxHealthTrue / random(400,420);
+			if (debugseedstuff) Console.Printf("BonusMaxHP [Base]: %d", BonusMaxHP);
+			
+			HPError = BonusMaxHP / 3;
+			HPError += 1;
+			if (debugseedstuff) Console.Printf("HPError: %d", HPError);
+
+			BonusMaxHP = BonusMaxHP + random(-HPError,HPError);
+			if (debugseedstuff) Console.Printf("BonusMaxHP [After HPError]: %d", BonusMaxHP);
+			
+			if (CharacterClass == 0) { IncreaseMultiplier = random(18,21); } // Deggaris receives 2nd most HP from a bonus
+			if (CharacterClass == 1) { IncreaseMultiplier = random(15,17); } // Illucia receives less HP from a bonus than Petra & Deggaris, but more than Flora & Ailish
+			if (CharacterClass == 2) { IncreaseMultiplier = random(12,14); } // Flora receives the 2nd least HP from a bonus
+			if (CharacterClass == 8) { IncreaseMultiplier = random(10,12); } // Ailish receives the least HP from a bonus
+			if (CharacterClass == 9) { IncreaseMultiplier = random(20,23); } // Petra receives most HP from a bonus
+			BonusMaxHP = BonusMaxHP * IncreaseMultiplier / 16;
+			if (debugseedstuff > 0) Console.Printf("Randomizer IncreaseMultiplier: %d / 16, BonusMaxHP [After HPError]: %d", IncreaseMultiplier, BonusMaxHP);
+			
+			// Flora's Armor Items [up to +55% Max HP gained from Max HP Bonuses]
+			if (CharacterClass == 2)
+			{
+				if (player.mo.CountInv("PearlyCorset")) ArmorHPBonus += 20; // +20%
+				if (player.mo.CountInv("KissaBra")) ArmorHPBonus += 10; // +10%
+				if (player.mo.CountInv("BalrogRing")) ArmorHPBonus += 15; // +25%
+				ArmorHPBonus += 100;
+				BonusMaxHP = BonusMaxHP * ArmorHPBonus / 100; // Flora is the only one who can use the Pearly Corset / Kissa Bra / Balrog Ring
+				if (debugseedstuff > 0) Console.Printf("ArmorHPBonus [Flora]: %d / 100, BonusMaxHP [After ArmorHPBonus]: %d", ArmorHPBonus, BonusMaxHP);
+			}
+			
+			PerkFactor = ((CallACS("MiscVarCheckDECORATE",10001) * 500) + (CallACS("MiscVarCheckDECORATE",10002) * 1250)) + 10000;
+			BonusMaxHP = BonusMaxHP * PerkFactor / 10000; // "LifeUp" and "LifeUp EX" perks.
+			if (debugseedstuff) Console.Printf("BonusMaxHP [LifeUp Perk]: %d", BonusMaxHP);
+			
+			PerkFactor = (CallACS("MiscVarCheckDECORATE",317) * 1250) + 10000;
+			BonusMaxHP = BonusMaxHP * PerkFactor / 10000; // [STRIFE-Compatibility] Times "Stamina Upgraded
+			if (debugseedstuff) Console.Printf("BonusMaxHP [StaminaUpgrade (Strife)]: %d", BonusMaxHP);
+			
+			// Overall Modifier
+			MapNoBonus = (level.levelnum * 9) / 20; // 45%
+			if (debugseedstuff > 0) Console.Printf("MapNoBonus: %d", MapNoBonus);
+			BonusMaxHP = BonusMaxHP * (random(70,80) + MapNoBonus) / 100;
+			if (TrueGameSkill <= SKILL_VERY_EASY)		BonusMaxHP = BonusMaxHP * (random(90,100) + MapNoBonus) / 100;
+			if (TrueGameSkill == SKILL_EASY)				BonusMaxHP = BonusMaxHP * (random(80,90) + MapNoBonus) / 100;
+			if (TrueGameSkill == SKILL_NORMAL)			BonusMaxHP = BonusMaxHP * (random(75,85) + MapNoBonus) / 100;
+			if (TrueGameSkill == SKILL_HARD)				BonusMaxHP = BonusMaxHP * (random(70,80) + MapNoBonus) / 100;
+			if (TrueGameSkill == SKILL_VERY_HARD)		BonusMaxHP = BonusMaxHP * (random(65,75) + MapNoBonus) / 100;
+			if (TrueGameSkill == SKILL_EXTREME)			BonusMaxHP = BonusMaxHP * (random(60,70) + MapNoBonus) / 100;
+			if (TrueGameSkill == SKILL_HORRIBLE)		BonusMaxHP = BonusMaxHP * (random(55,65) + MapNoBonus) / 100;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE)	BonusMaxHP = BonusMaxHP * (random(50,60) + MapNoBonus) / 100;
+			if (TrueGameSkill >= SKILL_OMEGA)	BonusMaxHP = BonusMaxHP * (random(45,55) + MapNoBonus) / 100;
+			if (debugseedstuff) Console.Printf("BonusMaxHP [After MapNoBonus]: %d", BonusMaxHP);
+			
+			PerkFactor = 1;
+			PerkFactor += ((CallACS("MiscVarCheckDECORATE",10001) * 1) / 10) + ((CallACS("MiscVarCheckDECORATE",317) * 1) / 4);
+			PerkFactor += ((CallACS("MiscVarCheckDECORATE",317) * 1) / 4);
+			if (BonusMaxHP < PerkFactor) BonusMaxHP = PerkFactor;
+			if (debugseedstuff) Console.Printf("BonusMaxHP [Final]: %d", BonusMaxHP);
+			
+			CallACS("MiscVarSetDECORATE",222,BonusMaxHP,1);
+			CallACS("MiscVarSetDECORATE",2031,105); 
+			
+			CurrentHP = player.mo.health;
+			player.mo.health = (CurrentHP + BonusMaxHP);
+
+			MaxHealthTrue += BonusMaxHP;
+			int MaxHealthLimit = MaxHealthTrue * 2;
+			//player.mo.SpawnHealth() = MaxHealthTrue;
+			CallACS("OtherVarSetDECORATE",0,MaxHealthTrue);
+			
+			// Max HP Bonus also heals extra HP dependant on the character in use.
+			CurrentHP = player.mo.health;
+			if (CharacterClass == 0) CurrentHP = CurrentHP + random(2,4) + BonusMaxHP; // Deggaris receives the Least Healed HP from a bonus
+			if (CharacterClass == 1) CurrentHP = CurrentHP + random(3,6) + BonusMaxHP; // Illucia receives a Median of Healed HP from a bonus
+			if (CharacterClass == 2) CurrentHP = CurrentHP + random(5,10) + BonusMaxHP; // Flora used to receive the Most Healed HP from a bonus
+			if (CharacterClass == 8) CurrentHP = CurrentHP + random(6,12) + BonusMaxHP; // Ailish receives the Most Healed HP from a bonus
+			if (CharacterClass == 9) CurrentHP = CurrentHP + random(1,3) + BonusMaxHP; // Petra receives the Least Healed HP from a bonus
+			
+			int ExtraHP;
+			ExtraHP = MaxHealthTrue / 100;
+			if (ExtraHP < 1) ExtraHP = 1;
+			
+			LevelExtraHealth = PlayerLevel / 10;
+			ExtraHP += LevelExtraHealth;
+			CurrentHP += ExtraHP;
+			
+			if (CurrentHP > MaxHealthLimit) CurrentHP = MaxHealthLimit;
+			
+			player.mo.health = CurrentHP;
+		}
+	}
+
+	// Checks Whether a Full Armor Item can be picked up or not
+	void A_CheckArmorLevels(int ArmorType = 0)
+	{
+		int RawArmorValue, ArmorClearValue;
+		int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
+		int CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		
+		self.A_SetInventory("ArmorPickupResult",0); // Stops Flora from getting armor benefits and sets the item's result value to 0 to make the item fail to pickup
+		if (CharacterClass != 2)
+		{
+			RawArmorValue = player.mo.CountInv("BasicArmor");
+			if (ArmorType == 1 && CurrentArmorClass <= 1 && RawArmorValue < 100) self.A_SetInventory("ArmorPickupResult",1);
+			if (ArmorType == 2 && CurrentArmorClass <= 2 && RawArmorValue < 200) self.A_SetInventory("ArmorPickupResult",1);
+			if (ArmorType == 3 && CurrentArmorClass <= 3 && RawArmorValue < 500) self.A_SetInventory("ArmorPickupResult",1);
+			if (ArmorType == 4 && CurrentArmorClass <= 4 && RawArmorValue < 1250) self.A_SetInventory("ArmorPickupResult",1);
+			if (ArmorType == 5 && CurrentArmorClass <= 5 && RawArmorValue < 2000) self.A_SetInventory("ArmorPickupResult",1);
+			if (ArmorType == 6 && CurrentArmorClass <= 6 && RawArmorValue < 5000) self.A_SetInventory("ArmorPickupResult",1);
+		}
+	}
+
+	// Emulates Main Armor Item Pickups [Applies Only to Deggaris and Illucia]
+	void A_PickupArmorMain(int ArmorType = 0)
+	{
+		int GiveArmorAmount;
+		int RawArmorValue, ArmorClearValue;
+		int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
+		int CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
+
+		// Saves original raw Armor Value
+		RawArmorValue = player.mo.CountInv("BasicArmor");
+		
+		player.mo.A_SetInventory("BasicArmor",0);
+		player.mo.A_SetInventory("Armor",0);
+		player.mo.A_SetInventory("ArmorBonusDSGreen",0);
+		player.mo.A_SetInventory("ArmorBonusDSBlue",0);
+		player.mo.A_SetInventory("ArmorBonusDSStone1",0);
+		player.mo.A_SetInventory("ArmorBonusDSStone2",0);
+		player.mo.A_SetInventory("ArmorBonusDSDiamond1",0);
+		player.mo.A_SetInventory("ArmorBonusDSDiamond2",0);
+		
+		if (ArmorType == 1 && CurrentArmorClass <= 1) { CurrentArmorClass = 1; GiveArmorAmount = 100; }
+		if (ArmorType == 2 && CurrentArmorClass <= 2) { CurrentArmorClass = 2; GiveArmorAmount = 200; }
+		if (ArmorType == 3 && CurrentArmorClass <= 3) { CurrentArmorClass = 3; GiveArmorAmount = 500; }
+		if (ArmorType == 4 && CurrentArmorClass <= 4) { CurrentArmorClass = 4; GiveArmorAmount = 1250; }
+		if (ArmorType == 5 && CurrentArmorClass <= 5) { CurrentArmorClass = 5; GiveArmorAmount = 2000; }
+		if (ArmorType == 6 && CurrentArmorClass <= 6) { CurrentArmorClass = 6; GiveArmorAmount = 5000; }
+		
+		player.mo.A_SetInventory("DSNoArmorClass",0);
+		player.mo.A_SetInventory("DSGreenArmorClass",0);
+		player.mo.A_SetInventory("DSBlueArmorClass",0);
+		player.mo.A_SetInventory("DSStoneArmorClass1",0);
+		player.mo.A_SetInventory("DSDiamondArmorClass1",0);
+		player.mo.A_SetInventory("DSStoneArmorClass2",0);
+		player.mo.A_SetInventory("DSDiamondArmorClass2",0);
+		if (CurrentArmorClass == 1)
+		{
+			GiveInventory("DSGreenArmorClass", 1);
+			for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSGreen", 1); }
+			CurrentMaxArmor = 100;
+		}
+		if (CurrentArmorClass == 2)
+		{
+			GiveInventory("DSGreenArmorClass", 1);
+			for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSBlue", 1); }
+			CurrentMaxArmor = 200;
+		}
+		if (CurrentArmorClass == 3)
+		{
+			GiveInventory("DSStoneArmorClass1", 1);
+			for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSStone1", 1); }
+			CurrentMaxArmor = 500;
+		}
+		if (CurrentArmorClass == 4)
+		{
+			GiveInventory("DSDiamondArmorClass1", 1);
+			for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSDiamond1", 1); }
+			CurrentMaxArmor = 1250;
+		}
+		if (CurrentArmorClass == 5)
+		{
+			GiveInventory("DSStoneArmorClass1", 1);
+			for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSStone2", 1); }
+			CurrentMaxArmor = 2000;
+		}
+		if (CurrentArmorClass == 6)
+		{
+			GiveInventory("DSDiamondArmorClass1", 1);
+			for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSDiamond2", 1); }
+			CurrentMaxArmor = 5000;
+		}
+
+		CallACS("OtherVarSetDECORATE",5,CurrentArmorClass);
+		CallACS("OtherVarSetDECORATE",9,CurrentMaxArmor);
+	}
+	
 }
 
 // Keeps Sounds/Music active during time Freeze powerups

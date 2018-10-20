@@ -186,7 +186,6 @@
 			["Hand-GravityAttack"]						-	Using a Diabloist's Hands' HP Gravity attack-projectile on an enemy.
 			["DivineShieldChecker"]						-	Checks for DivineShield in inventory for the Ruinous Shield PICKUP.
 			["GrabBackpack"]									-	Backpack Pickup Script
-			["CheckHealthLevels"]							-	Check if Health is above or below normal max [for customized "normal" health item checks] (All games)
 			["CheckArmorLevels"]							-	Checks Whether a Full Armor Item can be picked up or not
 			["PickupArmorMain"]								-	Emulates Main Armor Item Pickups [Applies Only to Deggaris and Illucia]
 			["GetMiscellaneousVar"]						-	Returns the value of the index of "MiscellaneousVars[#]" that is referenced [for A_JumpIf checks in DECORATE]
@@ -19046,106 +19045,6 @@ script "DVI-M04MonsterTags" (void)
 	}
 }
 
-// Sauravatar's Death [DVI-DS]
-script "SauravatarDeath" (void)
-{
-	SetMusic("*", 0); 
-}
-
-// New Health Bonus Script :P
-script "EmulateGiveHealthBonus" (int multiplier, int givemanachance, int staminagive, int hellcorecool)
-{
-	int MaxHealthLimit = MaxHealthTrue * 2;
-	int MaxManaLimit = MaxMana * 2;
-	int temp1, temp2;
-	int PerkFactor;
-	int CurrentHealth, TempHealAmount, TempHealAmount2, TempHealAmount3;
-	
-	if (multiplier <= 0) multiplier = 1;
-	
-	CurrentHealth = GetActorProperty(Player1TID,APROP_Health); 
-	
-	if (CurrentHealth < MaxHealthLimit)
-	{
-		TempHealAmount = MaxHealthTrue / 100;
-		if (TempHealAmount < 1) TempHealAmount = 1;
-	
-		TempHealAmount2 = PlayerLevel / 25;
-		TempHealAmount += TempHealAmount2;
-		TempHealAmount *= multiplier;
-		CurrentHealth += TempHealAmount;
-		if (CurrentHealth >= MaxHealthLimit) CurrentHealth = MaxHealthLimit;
-	
-		SetActorProperty(Player1TID,APROP_Health,CurrentHealth);
-	}
-	
-	if (random(1,100) <= givemanachance)
-	{
-		if (CurrentMana < MaxManaLimit)
-		{
-			TempHealAmount = MaxMana / 100;
-			if (TempHealAmount < 1) TempHealAmount = 1;
-		
-			TempHealAmount2 = PlayerLevel / 25;
-			TempHealAmount += TempHealAmount2;
-			TempHealAmount *= multiplier;
-			CurrentMana += TempHealAmount;
-			if (CurrentMana >= MaxManaLimit) CurrentMana = MaxManaLimit;
-		}
-	}
-	
-	if (staminagive >= 0)
-	{
-		// Add 0.5% to Stamina Value [up to 500%]
-		MiscellaneousVars[165] = MiscellaneousVars[22] / 200;
-		MiscellaneousVars[165] *= multiplier;
-		int perktemp1 = MiscellaneousVars[165];
-		
-		PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
-		perktemp1 = perktemp1 * PerkFactor / 10000;
-		if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) perktemp1 = perktemp1 * 5 / 3;
-		if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
-		MiscellaneousVars[165] = perktemp1;
-		
-		// Tweaks the multiplier for Stamina Recovery.
-		MiscellaneousVars[165] = MiscellaneousVars[165] * staminagive / 100;
-		
-		if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
-		if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
-	}
-	
-	int HellcoreRestored;
-	if (CharacterClass == 2 && hellcorecool > 0) // Flora's Hellcore Heating will also marginally go down with each Health Bonus grabbed
-	{
-		if (HellcoreOverheatLevel > 0)
-		{
-			TempHealAmount = 2500; // 0.25% [10000000 is 1000.00% (maximum)]
-			TempHealAmount *= multiplier;
-			TempHealAmount2 = PlayerLevel * 10;
-			TempHealAmount3 = random(-500,500);
-			HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
-			if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
-			if (MiscellaneousVars[10033] >= 0)
-			{
-				if (MiscellaneousVars[10033] == 1) temp1 = 1;
-				if (MiscellaneousVars[10033] == 2) temp1 = 2;
-				if (MiscellaneousVars[10033] == 3) temp1 = 3;
-				if (MiscellaneousVars[10033] == 4) temp1 = 4;
-				if (MiscellaneousVars[10033] == 5) temp1 = 5;
-				if (MiscellaneousVars[10034] == 1) temp2 = random(2,3);
-				if (MiscellaneousVars[10034] == 2) temp2 = 5;
-				PerkFactor = 16 + (temp1 + temp2);
-				HellcoreRestored = HellcoreRestored * PerkFactor / 16;
-			}
-			if (HellcoreRestored < 1) HellcoreRestored = 1;
-			if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
-		
-			HellcoreOverheatLevel -= HellcoreRestored;
-			if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
-		}
-	}
-}
-
 // Used later to configure the full max health of the [Greater] Sauravatar and set it to its proper Health to start the fight [instead of its predefined DECORATE amount] [DVI-DS]
 script "SetSauravatarHealth" (void)
 {
@@ -19335,200 +19234,104 @@ script "SauravatarRegenMode" (int RegenType)
 	}
 }
 
-// Max Health Bonus Script
-script "MaxHPBonusPickup" (void)
+// Sauravatar's Death [DVI-DS]
+script "SauravatarDeath" (void)
 {
-	int HPError, IncreaseMultiplier, LevelExtraHealth, BonusMaxHP, CurrentHP, PerkFactor; 
-	int ArmorHPBonus = 0;
-	int MapNoBonus = 0;
-	int debugseedstuff = GetCVar("dvdsdebug_showseedstuff");
-	
-	if (ModType == 0 && MiscellaneousVars[110005] == 0) terminate;
-	
-	if (CharacterClass == 0) BonusMaxHP = MaxHealthTrue / random(390,410);
-	if (CharacterClass == 1) BonusMaxHP = MaxHealthTrue / random(410,430);
-	if (CharacterClass == 2) BonusMaxHP = MaxHealthTrue / random(430,450);
-	if (CharacterClass == 8) BonusMaxHP = MaxHealthTrue / random(440,460);
-	if (CharacterClass == 9) BonusMaxHP = MaxHealthTrue / random(400,420);
-	if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [Base]: ",d:BonusMaxHP);
-	
-	HPError = BonusMaxHP / 3;
-	HPError += 1;
-	if (debugseedstuff > 0) PrintBold(s:"HPError: ",d:HPError);
+	SetMusic("*", 0); 
+}
 
-	BonusMaxHP = BonusMaxHP + random(-HPError,HPError);
-	if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [After HPError]: ",d:BonusMaxHP);
-	
-	if (CharacterClass == 0) { IncreaseMultiplier = random(18,21); } // Deggaris receives 2nd most HP from a bonus
-	if (CharacterClass == 1) { IncreaseMultiplier = random(15,17); } // Illucia receives less HP from a bonus than Petra & Deggaris, but more than Flora & Ailish
-	if (CharacterClass == 2) { IncreaseMultiplier = random(12,14); } // Flora receives the 2nd least HP from a bonus
-	if (CharacterClass == 8) { IncreaseMultiplier = random(10,12); } // Ailish receives the least HP from a bonus
-	if (CharacterClass == 9) { IncreaseMultiplier = random(20,23); } // Petra receives most HP from a bonus
-	BonusMaxHP = BonusMaxHP * IncreaseMultiplier / 16;
-	if (debugseedstuff > 0) PrintBold(s:"Randomizer IncreaseMultiplier: ",d:IncreaseMultiplier,s:" / 16",
-																		s:"\nBonusMaxHP [After HPError]: ",d:BonusMaxHP);
-	
-	// Flora's Armor Items [up to +55% Max HP gained from Max HP Bonuses]
-	if (CharacterClass == 2)
-	{
-		if (CheckActorInventory(Player1TID,"PearlyCorset")) ArmorHPBonus += 20; // +20%
-		if (CheckActorInventory(Player1TID,"KissaBra")) ArmorHPBonus += 10; // +10%
-		if (CheckActorInventory(Player1TID,"BalrogRing")) ArmorHPBonus += 15; // +25%
-		ArmorHPBonus += 100;
-		BonusMaxHP = BonusMaxHP * ArmorHPBonus / 100; // Flora is the only one who can use the Pearly Corset / Kissa Bra / Balrog Ring
-		if (debugseedstuff > 0) PrintBold(s:"ArmorHPBonus [Flora]: ",d:ArmorHPBonus,s:" / 100",
-																			s:"\nBonusMaxHP [After ArmorHPBonus]: ",d:BonusMaxHP);
-	}
-	
-	PerkFactor = ((MiscellaneousVars[10001] * 500) + (MiscellaneousVars[10002] * 1250)) + 10000;
-	BonusMaxHP = BonusMaxHP * PerkFactor / 10000; // "LifeUp" and "LifeUp EX" perks.
-	if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [LifeUp Perk]: ",d:BonusMaxHP);
-	
-	PerkFactor = (MiscellaneousVars[317] * 1250) + 10000;
-	BonusMaxHP = BonusMaxHP * PerkFactor / 10000; // [STRIFE-Compatibility] Times "Stamina Upgraded
-	if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [StaminaUpgrade (Strife)]: ",d:BonusMaxHP);
-	
-	// Overall Modifier
-	MapNoBonus = GetLevelInfo(LEVELINFO_LEVELNUM) * 9 / 20; // 45%
-	if (debugseedstuff > 0) PrintBold(s:"MapNoBonus: ",d:MapNoBonus);
-	BonusMaxHP = BonusMaxHP * (random(70,80) + MapNoBonus) / 100;
-	if (TrueGameSkill <= SKILL_VERY_EASY)		BonusMaxHP = BonusMaxHP * (random(90,100) + MapNoBonus) / 100;
-	if (TrueGameSkill == SKILL_EASY)				BonusMaxHP = BonusMaxHP * (random(80,90) + MapNoBonus) / 100;
-	if (TrueGameSkill == SKILL_NORMAL)			BonusMaxHP = BonusMaxHP * (random(75,85) + MapNoBonus) / 100;
-	if (TrueGameSkill == SKILL_HARD)				BonusMaxHP = BonusMaxHP * (random(70,80) + MapNoBonus) / 100;
-	if (TrueGameSkill == SKILL_VERY_HARD)		BonusMaxHP = BonusMaxHP * (random(65,75) + MapNoBonus) / 100;
-	if (TrueGameSkill == SKILL_EXTREME)			BonusMaxHP = BonusMaxHP * (random(60,70) + MapNoBonus) / 100;
-	if (TrueGameSkill == SKILL_HORRIBLE)		BonusMaxHP = BonusMaxHP * (random(55,65) + MapNoBonus) / 100;
-	if (TrueGameSkill == SKILL_IMPOSSIBLE)	BonusMaxHP = BonusMaxHP * (random(50,60) + MapNoBonus) / 100;
-	if (TrueGameSkill >= SKILL_OMEGA)	BonusMaxHP = BonusMaxHP * (random(45,55) + MapNoBonus) / 100;
-	if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [After MapNoBonus]: ",d:BonusMaxHP);
-	
-	PerkFactor = 1;
-	PerkFactor += ((MiscellaneousVars[10001] * 1) / 10) + ((MiscellaneousVars[317] * 1) / 4);
-	PerkFactor += ((MiscellaneousVars[317] * 1) / 4);
-	if (BonusMaxHP < PerkFactor) BonusMaxHP = PerkFactor;
-	if (debugseedstuff > 0) PrintBold(s:"BonusMaxHP [Final]: ",d:BonusMaxHP);
-	
-	MiscellaneousVars[222] += BonusMaxHP;
-	MiscellaneousVars[2031] = 105; 
-	
-	CurrentHP = GetActorProperty(Player1TID,APROP_HEALTH);
-	//GiveInventory("UpgradeStamina", BonusMaxHP);
-	SetActorProperty(Player1TID,APROP_HEALTH,(CurrentHP + BonusMaxHP));
-	MaxHealthTrue += BonusMaxHP;
+// New Health Bonus Script :P
+script "EmulateGiveHealthBonus" (int multiplier, int givemanachance, int staminagive, int hellcorecool)
+{
 	int MaxHealthLimit = MaxHealthTrue * 2;
-	SetActorProperty(Player1TID,APROP_SPAWNHEALTH,MaxHealthTrue);
+	int MaxManaLimit = MaxMana * 2;
+	int temp1, temp2;
+	int PerkFactor;
+	int CurrentHealth, TempHealAmount, TempHealAmount2, TempHealAmount3;
 	
-	// Max HP Bonus also heals extra HP dependant on the character in use.
-	CurrentHP = GetActorProperty(Player1TID,APROP_HEALTH);
-	if (CharacterClass == 0) CurrentHP = CurrentHP + random(2,4) + BonusMaxHP; // Deggaris receives the Least Healed HP from a bonus
-	if (CharacterClass == 1) CurrentHP = CurrentHP + random(3,6) + BonusMaxHP; // Illucia receives a Median of Healed HP from a bonus
-	if (CharacterClass == 2) CurrentHP = CurrentHP + random(5,10) + BonusMaxHP; // Flora used to receive the Most Healed HP from a bonus
-	if (CharacterClass == 8) CurrentHP = CurrentHP + random(6,12) + BonusMaxHP; // Ailish receives the Most Healed HP from a bonus
-	if (CharacterClass == 9) CurrentHP = CurrentHP + random(1,3) + BonusMaxHP; // Petra receives the Least Healed HP from a bonus
+	if (multiplier <= 0) multiplier = 1;
 	
-	int ExtraHP;
-	ExtraHP = MaxHealthTrue / 100;
-	if (ExtraHP < 1) ExtraHP = 1;
+	CurrentHealth = GetActorProperty(Player1TID,APROP_Health); 
 	
-	LevelExtraHealth = PlayerLevel / 10;
-	ExtraHP += LevelExtraHealth;
-	CurrentHP += ExtraHP;
-	
-	if (CurrentHP > MaxHealthLimit) CurrentHP = MaxHealthLimit;
-	SetActorProperty(Player1TID,APROP_HEALTH,CurrentHP);
-}
-
-// Check if Health is above or below normal max [for customized "normal" health item checks] (All games)
-script "CheckHealthLevels" (int maxhealtype)
-{
-	int currenthealth = GetActorProperty(Player1TID,APROP_HEALTH);
-	int perkhealthlimit = MaxHealthTrue;
-	int perkbasemulti = 16;
-	
-	if (CharacterClass == 0 | CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 8; } else { perkbasemulti = 16; }
-	perkhealthlimit = perkhealthlimit * (perkbasemulti + MiscellaneousVars[10049]) / perkbasemulti;
-	if (maxhealtype > 0) perkhealthlimit *= 2;
-	if (perkhealthlimit > (MaxHealthTrue*2)) perkhealthlimit = (MaxHealthTrue * 2);
-	
-	if (currenthealth < perkhealthlimit) SetResultValue(1); else SetResultValue(0);
-}
-
-// General Healing Script For Items [HP]
-script "Health-HealingItem" (int PercentMax, int PercentAmount, int ExactAmount)
-{
-	if (PercentMax < 1) PercentMax = 100;
-	if (PercentMax > 200) PercentMax = 200;
-	int CurrentHP = GetActorProperty(Player1TID,APROP_HEALTH);
-	int HPUpperClamp = (MaxHealthTrue * PercentMax) / 100;
-	int HPActualHealValue = ((MaxHealthTrue * PercentAmount) / 100) + ExactAmount;
-	
-	if (HPActualHealValue > 0)
+	if (CurrentHealth < MaxHealthLimit)
 	{
-		CurrentHP += HPActualHealValue;
-		if (CurrentHP > HPUpperClamp) CurrentHP = HPUpperClamp;
+		TempHealAmount = MaxHealthTrue / 100;
+		if (TempHealAmount < 1) TempHealAmount = 1;
+	
+		TempHealAmount2 = PlayerLevel / 25;
+		TempHealAmount += TempHealAmount2;
+		TempHealAmount *= multiplier;
+		CurrentHealth += TempHealAmount;
+		if (CurrentHealth >= MaxHealthLimit) CurrentHealth = MaxHealthLimit;
+	
+		SetActorProperty(Player1TID,APROP_Health,CurrentHealth);
 	}
-}
-
-// Increase Stamina
-script "Stamina-HealingItem" (int PercentMax, int PercentAmount, int ExactAmount)
-{
-	if (PercentMax < 1) PercentMax = 100;
-	if (PercentMax > 200) PercentMax = 200;
-	// MiscellaneousVars[21] = Current Stamina value
-	int StaminaUpperClamp = (MiscellaneousVars[22] * PercentMax) / 10000;
-	int StaminaPercentHeal = ((MiscellaneousVars[22] * PercentAmount) / 10000) + ExactAmount;
 	
-	if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) StaminaPercentHeal = StaminaPercentHeal * 5 / 3;
-	
-	if (StaminaPercentHeal > 0)
+	if (random(1,100) <= givemanachance)
 	{
-		MiscellaneousVars[21] += StaminaPercentHeal;
-		if (MiscellaneousVars[21] > StaminaUpperClamp) MiscellaneousVars[21] = StaminaUpperClamp;
+		if (CurrentMana < MaxManaLimit)
+		{
+			TempHealAmount = MaxMana / 100;
+			if (TempHealAmount < 1) TempHealAmount = 1;
+		
+			TempHealAmount2 = PlayerLevel / 25;
+			TempHealAmount += TempHealAmount2;
+			TempHealAmount *= multiplier;
+			CurrentMana += TempHealAmount;
+			if (CurrentMana >= MaxManaLimit) CurrentMana = MaxManaLimit;
+		}
 	}
-}
-
-// Debugging for Printing Armor Amounts on Screen
-script "PrintArmorValues" (void)
-{
-	int ArmorCheck;
 	
-	ArmorCheck = CheckInventory("BasicArmor");
-	Print(s:"BasicArmor: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("GreenArmor");
-	Print(s:"GreenArmor: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("BlueArmor");
-	Print(s:"BlueArmor: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("StoneSkin");
-	Print(s:"StoneSkin: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("StoneSkinGA");
-	Print(s:"StoneSkinGA: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("DiamondSkin");
-	Print(s:"DiamondSkin: ",d:ArmorCheck);
+	if (staminagive >= 0)
+	{
+		// Add 0.5% to Stamina Value [up to 500%]
+		MiscellaneousVars[165] = MiscellaneousVars[22] / 200;
+		MiscellaneousVars[165] *= multiplier;
+		int perktemp1 = MiscellaneousVars[165];
+		
+		PerkFactor = ((MiscellaneousVars[10017] * 2000) + (MiscellaneousVars[10018] * 5000)) + 10000;
+		perktemp1 = perktemp1 * PerkFactor / 10000;
+		if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) perktemp1 = perktemp1 * 5 / 3;
+		if (MiscellaneousVars[110008] > 0) PrintBold(s:"Stamina Restored: ",d:perktemp1,s:" VS [",d:MiscellaneousVars[165],s:"]");
+		MiscellaneousVars[165] = perktemp1;
+		
+		// Tweaks the multiplier for Stamina Recovery.
+		MiscellaneousVars[165] = MiscellaneousVars[165] * staminagive / 100;
+		
+		if (MiscellaneousVars[21] < MiscellaneousVars[164]) MiscellaneousVars[21] += MiscellaneousVars[165]; 
+		if (MiscellaneousVars[21] > MiscellaneousVars[164]) MiscellaneousVars[21] = MiscellaneousVars[164];
+	}
 	
-	ArmorCheck = CheckInventory("DiamondSkinGA");
-	Print(s:"DiamondSkinGA: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("ArmorBonusDSGreen");
-	Print(s:"ArmorBonusDSGreen: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("ArmorBonusDSBlue");
-	Print(s:"ArmorBonusDSBlue: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("ArmorBonusDSStone1");
-	Print(s:"ArmorBonusDSStone1: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("ArmorBonusDSStone2");
-	Print(s:"ArmorBonusDSStone2: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("ArmorBonusDSDiamond1");
-	Print(s:"ArmorBonusDSDiamond1: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("ArmorBonusDSDiamond2");
-	Print(s:"ArmorBonusDSDiamond2: ",d:ArmorCheck);
-	
-	/*
-	ArmorCheck = CheckInventory("SpiritualExoskin");
-	Print(s:"SpiritualExoskin: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("GreaterSpiritualExoskin");
-	Print(s:"GreaterSpiritualExoskin: ",d:ArmorCheck);
-	ArmorCheck = CheckInventory("PerfectedSpiritualExoskin");
-	Print(s:"PerfectedSpiritualExoskin: ",d:ArmorCheck);
-	*/
+	int HellcoreRestored;
+	if (CharacterClass == 2 && hellcorecool > 0) // Flora's Hellcore Heating will also marginally go down with each Health Bonus grabbed
+	{
+		if (HellcoreOverheatLevel > 0)
+		{
+			TempHealAmount = 2500; // 0.25% [10000000 is 1000.00% (maximum)]
+			TempHealAmount *= multiplier;
+			TempHealAmount2 = PlayerLevel * 10;
+			TempHealAmount3 = random(-500,500);
+			HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
+			if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
+			if (MiscellaneousVars[10033] >= 0)
+			{
+				if (MiscellaneousVars[10033] == 1) temp1 = 1;
+				if (MiscellaneousVars[10033] == 2) temp1 = 2;
+				if (MiscellaneousVars[10033] == 3) temp1 = 3;
+				if (MiscellaneousVars[10033] == 4) temp1 = 4;
+				if (MiscellaneousVars[10033] == 5) temp1 = 5;
+				if (MiscellaneousVars[10034] == 1) temp2 = random(2,3);
+				if (MiscellaneousVars[10034] == 2) temp2 = 5;
+				PerkFactor = 16 + (temp1 + temp2);
+				HellcoreRestored = HellcoreRestored * PerkFactor / 16;
+			}
+			if (HellcoreRestored < 1) HellcoreRestored = 1;
+			if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
+		
+			HellcoreOverheatLevel -= HellcoreRestored;
+			if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+		}
+	}
 }
 
 // Emulates Armor Bonuses for all four (six?) types of armor in DVI-DS. [Applies Only to Deggaris and Illucia]
@@ -19737,122 +19540,178 @@ script "EmulateGiveArmorBonus" (int BaseAmount, int GauntletGive)
 	}
 }
 
-// Checks Whether a Full Armor Item can be picked up or not
-script "CheckArmorLevels" (int ArmorType)
+// Sauron's Gauntlets Effect
+script "SauronGauntletsHit" (int Amount, int HitType)
 {
-	int RawArmorValue, ArmorClearValue;
+	int GMultiplier;
+	int check;
+	bool gaveAnything = false;
 	
-	SetResultValue(0); // Stops Flora from getting armor benefits and sets the item's result value to 0 to make the item fail to pickup
-	if (CharacterClass != 2)
+	if (HitType <= 0) HitType = 1;
+	if (HitType >= 3) HitType = 2;
+	
+	if (HitType == 1) Amount = (Amount / 250) + 1; // Give some life when hurting a monster [1+(Damage/250)]
+	if (HitType == 2) Amount = (Amount / 50) + 5; // Give more life when killing a monster [5+(Damage/50)]
+
+	If (Amount <= 0) Amount = 1;
+	If (Amount >= 65) Amount = 64;
+	
+	// Restore Health & Stamina
+	bool giveHealth = GetCVar("dvds_saurongauntlets_givehealth");
+	bool giveStamina = GetCVar("dvds_saurongauntlets_givestamina");
+	if (giveHealth || giveStamina)
 	{
-		RawArmorValue = CheckInventory("Armor");
-		if (ArmorType == 1 && CurrentArmorClass <= 1 && RawArmorValue < 100) SetResultValue(1);
-		if (ArmorType == 2 && CurrentArmorClass <= 2 && RawArmorValue < 200) SetResultValue(1);
-		if (ArmorType == 3 && CurrentArmorClass <= 3 && RawArmorValue < 500) SetResultValue(1);
-		if (ArmorType == 4 && CurrentArmorClass <= 4 && RawArmorValue < 1250) SetResultValue(1);
-		if (ArmorType == 5 && CurrentArmorClass <= 5 && RawArmorValue < 2000) SetResultValue(1);
-		if (ArmorType == 6 && CurrentArmorClass <= 6 && RawArmorValue < 5000) SetResultValue(1);
+		int prevHealth = GetActorProperty(Player1TID,APROP_Health);
+		int prevStamina = MiscellaneousVars[21];
+		int giveStaminaAmount = 50;
+		if (!giveStamina)
+			giveStaminaAmount = 0;
+		
+		ACS_NamedExecuteWithResult("EmulateGiveHealthBonus",Amount,0,giveStaminaAmount,0);
+		
+		if (!giveHealth)
+			SetActorProperty(Player1TID,APROP_Health,prevHealth);
+		else if (!GetCVar("dvds_saurongauntlets_giveoverhealth") && GetActorProperty(Player1TID,APROP_Health) > MaxHealthTrue)
+			SetActorProperty(Player1TID,APROP_Health,MaxHealthTrue);
+		
+		if (prevHealth > GetActorProperty(Player1TID,APROP_Health))
+			SetActorProperty(Player1TID,APROP_Health,prevHealth);
+		
+		if (giveStamina && !GetCVar("dvds_saurongauntlets_giveoverstamina") && MiscellaneousVars[21] > MiscellaneousVars[22])
+			MiscellaneousVars[21] = MiscellaneousVars[22];
+		
+		if (prevStamina > MiscellaneousVars[21])
+			MiscellaneousVars[21] = prevStamina;
+		
+		if (MiscellaneousVars[21] > prevStamina || GetActorProperty(Player1TID,APROP_Health) > prevHealth)
+			gaveAnything = true;
+	}
+	
+	// Restore Armor [Flora Cannot Gain Armor from it though]
+	if (CharacterClass != 2 && GetCVar("dvds_saurongauntlets_givearmor"))
+	{
+		if (CheckActorInventory(Player1TID,"Armor") < GetCVar("dvds_saurongauntlets_givearmorlimit"))
+		{
+			int ArmorAmount = (Amount * random(6,9)) / 15;
+			If (ArmorAmount <= 0) ArmorAmount = 1;
+			ACS_NamedExecuteWithResult("EmulateGiveArmorBonus",ArmorAmount,1,0);
+			gaveAnything = true;
+		}
+	}
+	
+	// Restore Mana
+	if (GetCVar("dvds_saurongauntlets_givemana"))
+	{
+		int MaxManaLimit = MaxMana;
+		if (GetCVar("dvds_saurongauntlets_giveovermana"))
+			MaxManaLimit *= 2;
+		
+		if (CurrentMana < MaxManaLimit)
+		{
+			int prevMana = CurrentMana;
+			int ManaAmount = (Amount * random(6,9)) / 9;
+			GMultiplier = (PlayerLevel * 4) + 100;
+			ManaAmount = Amount;
+			ManaAmount = ManaAmount * GMultiplier / 100;
+			if (CharacterClass == 2) ManaAmount = ManaAmount * random(5,7) / 4; // Flora will gain Extra Mana from a Gauntlet punch to make up for not being able to get armor.
+			else if (CharacterClass == 8) ManaAmount = ManaAmount * random(4,6) / 4; // Ailish will gain Extra Mana from a Gauntlet punch as well.
+			else ManaAmount = ManaAmount * random(9,15) / 12;
+			If (ManaAmount <= 0) ManaAmount = 1;
+			CurrentMana += ManaAmount;
+			if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
+			
+			if (CurrentMana > prevMana)
+				gaveAnything = true;
+		}
+	}
+	
+	if (gaveAnything)
+	{
+		// Only do this if the player actually received something (health, mana, armor, and/or stamina).
+		if (CharacterClass == 2) ActivatorSound("healing_dq",127);
+		else ActivatorSound("HealSpell1",127); 
+		
+		SetActivator(Player1TID); // Set to Player's ID
+		FadeRange(224,224,224,0.33,224,224,224,0,0.5);
+		SetActivator(0); // Set back to worldly activator
 	}
 }
 
-// Emulates Main Armor Item Pickups [Applies Only to Deggaris and Illucia]
-script "PickupArmorMain" (int ArmorType)
+// General Healing Script For Items [HP]
+script "Health-HealingItem" (int PercentMax, int PercentAmount, int ExactAmount)
 {
-	int GiveArmorAmount;
-	int RawArmorValue, ArmorClearValue;
+	if (PercentMax < 1) PercentMax = 100;
+	if (PercentMax > 200) PercentMax = 200;
+	int CurrentHP = GetActorProperty(Player1TID,APROP_HEALTH);
+	int HPUpperClamp = (MaxHealthTrue * PercentMax) / 100;
+	int HPActualHealValue = ((MaxHealthTrue * PercentAmount) / 100) + ExactAmount;
+	
+	if (HPActualHealValue > 0)
+	{
+		CurrentHP += HPActualHealValue;
+		if (CurrentHP > HPUpperClamp) CurrentHP = HPUpperClamp;
+	}
+}
 
-	// Saves original raw Armor Value
-	RawArmorValue = CheckInventory("Armor");
+// Increase Stamina
+script "Stamina-HealingItem" (int PercentMax, int PercentAmount, int ExactAmount)
+{
+	if (PercentMax < 1) PercentMax = 100;
+	if (PercentMax > 200) PercentMax = 200;
+	// MiscellaneousVars[21] = Current Stamina value
+	int StaminaUpperClamp = (MiscellaneousVars[22] * PercentMax) / 10000;
+	int StaminaPercentHeal = ((MiscellaneousVars[22] * PercentAmount) / 10000) + ExactAmount;
 	
-	// Clears Armor Types
-	ArmorClearValue = CheckInventory("Armor"); TakeInventory("Armor", ArmorClearValue);
+	if (CheckActorInventory(Player1TID,"WaterFlyingDress") > 0) StaminaPercentHeal = StaminaPercentHeal * 5 / 3;
 	
-	ArmorClearValue = CheckInventory("ArmorBonusDSGreen"); TakeInventory("ArmorBonusDSGreen", ArmorClearValue);
-	ArmorClearValue = CheckInventory("ArmorBonusDSBlue"); TakeInventory("ArmorBonusDSBlue", ArmorClearValue);
-	ArmorClearValue = CheckInventory("ArmorBonusDSStone1"); TakeInventory("ArmorBonusDSStone1", ArmorClearValue);
-	ArmorClearValue = CheckInventory("ArmorBonusDSStone2"); TakeInventory("ArmorBonusDSStone2", ArmorClearValue);
-	ArmorClearValue = CheckInventory("ArmorBonusDSDiamond1"); TakeInventory("ArmorBonusDSDiamond1", ArmorClearValue);
-	ArmorClearValue = CheckInventory("ArmorBonusDSDiamond2"); TakeInventory("ArmorBonusDSDiamond2", ArmorClearValue);
+	if (StaminaPercentHeal > 0)
+	{
+		MiscellaneousVars[21] += StaminaPercentHeal;
+		if (MiscellaneousVars[21] > StaminaUpperClamp) MiscellaneousVars[21] = StaminaUpperClamp;
+	}
+}
+
+// Debugging for Printing Armor Amounts on Screen
+script "PrintArmorValues" (void)
+{
+	int ArmorCheck;
 	
-	if (ArmorType == 1 && CurrentArmorClass <= 1) { CurrentArmorClass = 1; GiveArmorAmount = 100; }
-	if (ArmorType == 2 && CurrentArmorClass <= 2) { CurrentArmorClass = 2; GiveArmorAmount = 200; }
-	if (ArmorType == 3 && CurrentArmorClass <= 3) { CurrentArmorClass = 3; GiveArmorAmount = 500; }
-	if (ArmorType == 4 && CurrentArmorClass <= 4) { CurrentArmorClass = 4; GiveArmorAmount = 1250; }
-	if (ArmorType == 5 && CurrentArmorClass <= 5) { CurrentArmorClass = 5; GiveArmorAmount = 2000; }
-	if (ArmorType == 6 && CurrentArmorClass <= 6) { CurrentArmorClass = 6; GiveArmorAmount = 5000; }
+	ArmorCheck = CheckInventory("BasicArmor");
+	Print(s:"BasicArmor: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("GreenArmor");
+	Print(s:"GreenArmor: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("BlueArmor");
+	Print(s:"BlueArmor: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("StoneSkin");
+	Print(s:"StoneSkin: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("StoneSkinGA");
+	Print(s:"StoneSkinGA: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("DiamondSkin");
+	Print(s:"DiamondSkin: ",d:ArmorCheck);
 	
-	if (CurrentArmorClass == 1)
-	{
-		GiveInventory("ArmorBonusDSGreen", GiveArmorAmount);
-		GiveInventory("DSGreenArmorClass", 1);
-		TakeInventory("DSNoArmorClass", 9999);
-		TakeInventory("DSBlueArmorClass", 9999);
-		TakeInventory("DSStoneArmorClass1", 9999);
-		TakeInventory("DSDiamondArmorClass1", 9999);
-		TakeInventory("DSStoneArmorClass2", 9999);
-		TakeInventory("DSDiamondArmorClass2", 9999);
-		CurrentMaxArmor = 100;
-	}
-	if (CurrentArmorClass == 2)
-	{
-		GiveInventory("ArmorBonusDSBlue", GiveArmorAmount);
-		GiveInventory("DSBlueArmorClass", 1);
-		TakeInventory("DSNoArmorClass", 9999);
-		TakeInventory("DSGreenArmorClass", 9999);
-		TakeInventory("DSStoneArmorClass1", 9999);
-		TakeInventory("DSDiamondArmorClass1", 9999);
-		TakeInventory("DSStoneArmorClass2", 9999);
-		TakeInventory("DSDiamondArmorClass2", 9999);
-		CurrentMaxArmor = 200;
-	}
-	if (CurrentArmorClass == 3)
-	{
-		GiveInventory("ArmorBonusDSStone1", GiveArmorAmount);
-		GiveInventory("DSStoneArmorClass1", 1);
-		TakeInventory("DSNoArmorClass", 9999);
-		TakeInventory("DSGreenArmorClass", 9999);
-		TakeInventory("DSBlueArmorClass", 9999);
-		TakeInventory("DSDiamondArmorClass1", 9999);
-		TakeInventory("DSStoneArmorClass2", 9999);
-		TakeInventory("DSDiamondArmorClass2", 9999);
-		CurrentMaxArmor = 500;
-	}
-	if (CurrentArmorClass == 4)
-	{
-		GiveInventory("ArmorBonusDSDiamond1", GiveArmorAmount);
-		GiveInventory("DSDiamondArmorClass1", 1);
-		TakeInventory("DSNoArmorClass", 9999);
-		TakeInventory("DSGreenArmorClass", 9999);
-		TakeInventory("DSBlueArmorClass", 9999);
-		TakeInventory("DSStoneArmorClass1", 9999);
-		TakeInventory("DSStoneArmorClass2", 9999);
-		TakeInventory("DSDiamondArmorClass2", 9999);
-		CurrentMaxArmor = 1250;
-	}
-	if (CurrentArmorClass == 5)
-	{
-		GiveInventory("ArmorBonusDSStone2", GiveArmorAmount);
-		GiveInventory("DSStoneArmorClass2", 1);
-		TakeInventory("DSNoArmorClass", 9999);
-		TakeInventory("DSGreenArmorClass", 9999);
-		TakeInventory("DSBlueArmorClass", 9999);
-		TakeInventory("DSStoneArmorClass1", 9999);
-		TakeInventory("DSDiamondArmorClass1", 9999);
-		TakeInventory("DSDiamondArmorClass2", 9999);
-		CurrentMaxArmor = 2000;
-	}
-	if (CurrentArmorClass == 6)
-	{
-		GiveInventory("ArmorBonusDSDiamond2", GiveArmorAmount);
-		GiveInventory("DSDiamondArmorClass2", 1);
-		TakeInventory("DSNoArmorClass", 9999);
-		TakeInventory("DSGreenArmorClass", 9999);
-		TakeInventory("DSBlueArmorClass", 9999);
-		TakeInventory("DSStoneArmorClass1", 9999);
-		TakeInventory("DSDiamondArmorClass1", 9999);
-		TakeInventory("DSStoneArmorClass2", 9999);
-		CurrentMaxArmor = 5000;
-	}
+	ArmorCheck = CheckInventory("DiamondSkinGA");
+	Print(s:"DiamondSkinGA: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("ArmorBonusDSGreen");
+	Print(s:"ArmorBonusDSGreen: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("ArmorBonusDSBlue");
+	Print(s:"ArmorBonusDSBlue: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("ArmorBonusDSStone1");
+	Print(s:"ArmorBonusDSStone1: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("ArmorBonusDSStone2");
+	Print(s:"ArmorBonusDSStone2: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("ArmorBonusDSDiamond1");
+	Print(s:"ArmorBonusDSDiamond1: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("ArmorBonusDSDiamond2");
+	Print(s:"ArmorBonusDSDiamond2: ",d:ArmorCheck);
+	
+	/*
+	ArmorCheck = CheckInventory("SpiritualExoskin");
+	Print(s:"SpiritualExoskin: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("GreaterSpiritualExoskin");
+	Print(s:"GreaterSpiritualExoskin: ",d:ArmorCheck);
+	ArmorCheck = CheckInventory("PerfectedSpiritualExoskin");
+	Print(s:"PerfectedSpiritualExoskin: ",d:ArmorCheck);
+	*/
 }
 
 //*************************
@@ -26535,15 +26394,6 @@ script "GrabBackpack" (void)
 	}
 }
 
-// Debug. Prints whatever it specified. :P
-script "PrintTest" (void)
-{
-	int test;
-	test += 1;
-	Print(d:test);
-	// Print(s:"?");
-}
-
 // Prints out damage on screen for a projectile attached to this script
 script "DamagePrintout" (void)
 {
@@ -26600,102 +26450,6 @@ script "SceptreTwirlFrameCheck" (int FrameNo)
 	}
 }
 
-// Sauron's Gauntlets Effect
-script "SauronGauntletsHit" (int Amount, int HitType)
-{
-	int GMultiplier;
-	int check;
-	bool gaveAnything = false;
-	
-	if (HitType <= 0) HitType = 1;
-	if (HitType >= 3) HitType = 2;
-	
-	if (HitType == 1) Amount = (Amount / 250) + 1; // Give some life when hurting a monster [1+(Damage/250)]
-	if (HitType == 2) Amount = (Amount / 50) + 5; // Give more life when killing a monster [5+(Damage/50)]
-
-	If (Amount <= 0) Amount = 1;
-	If (Amount >= 65) Amount = 64;
-	
-	// Restore Health & Stamina
-	bool giveHealth = GetCVar("dvds_saurongauntlets_givehealth");
-	bool giveStamina = GetCVar("dvds_saurongauntlets_givestamina");
-	if (giveHealth || giveStamina)
-	{
-		int prevHealth = GetActorProperty(Player1TID,APROP_Health);
-		int prevStamina = MiscellaneousVars[21];
-		int giveStaminaAmount = 50;
-		if (!giveStamina)
-			giveStaminaAmount = 0;
-		
-		ACS_NamedExecuteWithResult("EmulateGiveHealthBonus",Amount,0,giveStaminaAmount,0);
-		
-		if (!giveHealth)
-			SetActorProperty(Player1TID,APROP_Health,prevHealth);
-		else if (!GetCVar("dvds_saurongauntlets_giveoverhealth") && GetActorProperty(Player1TID,APROP_Health) > MaxHealthTrue)
-			SetActorProperty(Player1TID,APROP_Health,MaxHealthTrue);
-		
-		if (prevHealth > GetActorProperty(Player1TID,APROP_Health))
-			SetActorProperty(Player1TID,APROP_Health,prevHealth);
-		
-		if (giveStamina && !GetCVar("dvds_saurongauntlets_giveoverstamina") && MiscellaneousVars[21] > MiscellaneousVars[22])
-			MiscellaneousVars[21] = MiscellaneousVars[22];
-		
-		if (prevStamina > MiscellaneousVars[21])
-			MiscellaneousVars[21] = prevStamina;
-		
-		if (MiscellaneousVars[21] > prevStamina || GetActorProperty(Player1TID,APROP_Health) > prevHealth)
-			gaveAnything = true;
-	}
-	
-	// Restore Armor [Flora Cannot Gain Armor from it though]
-	if (CharacterClass != 2 && GetCVar("dvds_saurongauntlets_givearmor"))
-	{
-		if (CheckActorInventory(Player1TID,"Armor") < GetCVar("dvds_saurongauntlets_givearmorlimit"))
-		{
-			int ArmorAmount = (Amount * random(6,9)) / 15;
-			If (ArmorAmount <= 0) ArmorAmount = 1;
-			ACS_NamedExecuteWithResult("EmulateGiveArmorBonus",ArmorAmount,1,0);
-			gaveAnything = true;
-		}
-	}
-	
-	// Restore Mana
-	if (GetCVar("dvds_saurongauntlets_givemana"))
-	{
-		int MaxManaLimit = MaxMana;
-		if (GetCVar("dvds_saurongauntlets_giveovermana"))
-			MaxManaLimit *= 2;
-		
-		if (CurrentMana < MaxManaLimit)
-		{
-			int prevMana = CurrentMana;
-			int ManaAmount = (Amount * random(6,9)) / 9;
-			GMultiplier = (PlayerLevel * 4) + 100;
-			ManaAmount = Amount;
-			ManaAmount = ManaAmount * GMultiplier / 100;
-			if (CharacterClass == 2) ManaAmount = ManaAmount * random(5,7) / 4; // Flora will gain Extra Mana from a Gauntlet punch to make up for not being able to get armor.
-			else if (CharacterClass == 8) ManaAmount = ManaAmount * random(4,6) / 4; // Ailish will gain Extra Mana from a Gauntlet punch as well.
-			else ManaAmount = ManaAmount * random(9,15) / 12;
-			If (ManaAmount <= 0) ManaAmount = 1;
-			CurrentMana += ManaAmount;
-			if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
-			
-			if (CurrentMana > prevMana)
-				gaveAnything = true;
-		}
-	}
-	
-	if (gaveAnything)
-	{
-		// Only do this if the player actually received something (health, mana, armor, and/or stamina).
-		if (CharacterClass == 2) ActivatorSound("healing_dq",127);
-		else ActivatorSound("HealSpell1",127); 
-		
-		SetActivator(Player1TID); // Set to Player's ID
-		FadeRange(224,224,224,0.33,224,224,224,0,0.5);
-		SetActivator(0); // Set back to worldly activator
-	}
-}
 
 // "Gravity" style Spell (used for fixed % damage based on CURRENT/REMAINING HP or CURRENT/REMAINING Invulnerability Timer)
 script "DiabloistGravity" (int GravityEffectFactor, int gravitytype)
