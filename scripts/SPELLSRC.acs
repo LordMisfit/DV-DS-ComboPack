@@ -120,10 +120,6 @@
 			["SetTensionLevel"]								-	***DEBUG*** Sets Tension level to the specfied amount
 			
 			["GetSceptreLevel"]								-	***WEAPON*** Returns the Sceptre's Level [for A_JumpIf checks in DECORATE]
-			["MeleeImpactRadius"]							-	***WEAPON*** Determines the radius area for melee impacts [Sceptre, Fist-Punches, Gauntlet-Punches]
-			["CheckWeaponFlash"]							-	***WEAPON*** Used for the revised Plasma Rifle to assure proper muzzle-flash animations w/ Spreader Aura
-			["CheckBFG2704"]									-	***WEAPON*** Used to check the option for BFG2704 usage by both players and BFG-Commandos.
-			["CheckShotgunnerSpreads"]				-	***WEAPON*** Used to check the option for what kind of shotgun spreads are used by the Zombies.
 
 			["DV1M04-Music1"]									-	***EVENT*** Changes Music for Entering the Fishmouth Temple in MAP04 [DVI-DS] or MAP12 [DVII-DS] ***EVENT***
 			["DVI-M02EyeDead"]								-	***EVENT*** Killed MAP02 Eye [DVI-DS] / MAP12 First Eye [DVII-DS] ***EVENT***
@@ -141,7 +137,6 @@
 			["CheckManaLevels"]								-	Mana Recovery Items **new for DV-DS and beyond**
 			["CreateTranslationTables"]				-	Color Translation Tables **new for DV-DS and beyond**
 			["HUDDisplay"]										-	HUD Display
-			["ClassicDoom2ArmorCheck"]				-	Makes Armor Bonuses check for Flora's presense in the game in order to change them over to other items [this version is for when playing classic Doom 1/2]
 			["MonsterStatsHP_ATK_DEF_SPD"]		-	Determines Attack/Defense/Speed Bonuses for Monsters [depending on difficulty level and maps and game mode]
 			["DamageDisplays"]								-	Controls DamageIndicators for Non-Players
 			["DoomMonsterDeathEmulation"]			-	Emulates the various special scripts in Doom 1/2 mode [E1M8, MAP07, etc]
@@ -157,7 +152,6 @@
 			["CalculateSpellBaseAngles"]			-	Works for auto-determining spreads for Glyph-type spells and Raging Spirits [for now]
 			["IncreaseHellcoreHeat"]					-	Hellcore Overheating/Damage Script [ran with shooting Hellcore-class weapons]
 			["SeedLimitChecker"] 							-	Checks to Remove Seeds on the Map if too many have been picked up already.
-			["HellcoreWeaponCheckCharacter"]	-	Checks and Removes Hellcore weapons when Deggaris or Illucia are detected as the current character
 			["GauntletsCheckCharacter"]				-	Checks to see if you already possess Sauron's Gauntlets so they cannot appear more than once.
 			["SceptreTwirlFrameCheck"]				-	Controls the Timer for both Sceptre Twirl sprite animation and for when to make the swinging noise. [Flora Only]
 			["MaxHPBonusPickup"]							-	Max Health Bonus Pickup Script
@@ -175,9 +169,6 @@
 			["SauronItemSpawnerCheck"]				-	Calculates the occurance rate of Sauron's Gauntlets and Sauron's Helmet Dropping.
 			["FloraRandomArmorDrop"] 					-	Spawn a Randomized Armor Item for Flora in "DVI" mode [used with "FloraRandomArmor" thing]
 			["ArmorBonusEyeGlow"]							-	Sets the "glowing eyes" in the "Armor Bonus" items to a specfic color dependant on the current Armor Class of Deggaris/Illucia [does not apply to Flora].
-			["CheckFloraArmorCopies"] 				-	Checks and Removes "Copies" of Flora's armor items on maps [when she already has these items]
-			["OneRingCopyCheck"]							-	Checks to see if you already possess The One Ring so it cannot appear more than once.
-			["HelmetCopyCheck"]								-	Checks to see if you already possess Sauron's Helmet so it cannot appear more than once.
 			["SetSauravatarHealth"]						-	Configures the full max health of the Sauravatar and sets it to its proper Health to start the fight [DVI-DS & DVII-DS]
 			["DiabloistGravityLock"]					-	Prevents the Diabolist from turning his wrath on a non-player target in order to maintain use of his Gravity attack properly.
 			["DiabloistGravityFlash"]					-	Screen Flash for Diabloist's Gravity Attack.
@@ -418,7 +409,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [48] is for "Experience Needed"
 	// [49] is for the Gauntlet Flash Effect
 	// [50] is the Spell-Use Cooldown Timer [possible for future version so spells aren't always tied to how fast you can mash the 'cast spell' buttons :P]
-	// [51] is for GunFlash uses
+		// [51] is unused
 	// [52] is for Artificial Map Inflation (EXP) [to increase/decrease the difficulty of levels by a number of maps]
 	// [53] is for Artificial Map Inflation (Stats) [to increase/decrease the difficulty of levels by a number of maps]
 	// [54] is for Artificial Map Inflation (Spawn/Stealth) [to increase/decrease the difficulty of levels by a number of maps]
@@ -26290,40 +26281,6 @@ script "SetManaAmount" (int Value)
 	if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
 }
 
-// Checks the Player's level to determine how much drawing the Diaris Longbow will slow you down while aiming
-script "DrawBow" (int isbowdrawn)
-{
-	int i = 0;
-	int bowlevel;
-	int bowlevelbase;
-	int lvlforbowdraw;
-	int strforbowdraw;
-	int aglforbowdraw;
-	int perklvlforbowdraw;
-	str BowLevelItem;
-	
-	bowlevelbase = random(15,19);
-	lvlforbowdraw = PlayerLevel / 8; // Max of +25%
-	strforbowdraw = MiscellaneousVars[35] / 16; // Max of +32%
-	aglforbowdraw = MiscellaneousVars[31] / 10; // Max of +51%
-	perklvlforbowdraw = MiscellaneousVars[10031] * 10; // Max of +50%
-	bowlevel = bowlevelbase;
-	bowlevel += lvlforbowdraw;
-	bowlevel += strforbowdraw;
-	bowlevel += aglforbowdraw;
-	bowlevel += perklvlforbowdraw;
-	if (CheckActorInventory(Player1TID,"EvenstarNecklace") > 0) bowlevel = bowlevel * 4 / 3;
-	
-	if (bowlevel < 0) bowlevel = 0; // Min of 0
-	if (bowlevel > 101) bowlevel = 101; // Max of 50
-	
-	MiscellaneousVars[398] = isbowdrawn; // 398 - Bow is Drawn?
-	MiscellaneousVars[8] = bowlevel; // 8 - Bow Proficency/SpeedMovement%
-	if (MiscellaneousVars[100004] > 0)
-	{
-	}
-}
-
 // Checks Sauron's Gauntlets to see if the item is removed from the map or not.
 script "GauntletsCheckCharacter" (void)
 {
@@ -26332,21 +26289,6 @@ script "GauntletsCheckCharacter" (void)
 	if (CharacterClass == 2 && CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0) Thing_Remove(0); 
 	if (CharacterClass == 8 && CheckActorInventory(Player1TID,"SauronGauntletsAilish") > 0) Thing_Remove(0); 
 	if (CharacterClass == 9 && CheckActorInventory(Player1TID,"SauronGauntletsPetra") > 0) Thing_Remove(0); 
-}
-
-// Sets the "glowing eyes" in the "Armor Bonus" items to a specfic color based on the current Armor Class of Deggaris or Illucia [does not apply to Flora as she can't use Armor Bonuses and they aren't supposed to "appear" when she is in play]
-script "ArmorBonusEyeGlow" (void)
-{
-	if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9)
-	{
-		if (CurrentArmorClass == 0) Thing_SetTranslation(0,18); // If you have no Armor Class
-		if (CurrentArmorClass == 1) Thing_SetTranslation(0,18); // If you have Green Armor Class
-		if (CurrentArmorClass == 2) Thing_SetTranslation(0,22); // If you have Blue Armor Class
-		if (CurrentArmorClass == 3) Thing_SetTranslation(0,20); // If you have Stone Armor [1] Class
-		if (CurrentArmorClass == 4) Thing_SetTranslation(0,21); // If you have Diamond Armor [1] Class
-		if (CurrentArmorClass == 5) Thing_SetTranslation(0,20); // If you have Stone Armor [2] Class
-		if (CurrentArmorClass == 6) Thing_SetTranslation(0,21); // If you have Diamond Armor [2] Class
-	}
 }
 
 // Backpack Pickup Script
@@ -26989,35 +26931,6 @@ script "DiabloistGravityFlash" (int Type)
 	if (Type == 3) FadeRange(192,0,192,1.25,192,0,192,0,1.125);
 }
 
-
-// Makes Armor Bonuses check for Flora's presense in the game in order to change them over to other items [this version is for when playing classic Doom 1/2]
-script "ClassicDoom2ArmorCheck" (void)
-{
-	if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
-	{
-		if (CharacterClass == 0) SetResultValue(3);
-		if (CharacterClass == 1) SetResultValue(4);
-		if (CharacterClass == 2) SetResultValue(5); // Sets to 5 so the item can know to transform into another set of items if Flora is detected as the current character.
-		if (CharacterClass == 8) SetResultValue(5); // Ailish and Petra don't get to encounter traditional Doom armor either.
-		if (CharacterClass == 9) SetResultValue(5);
-	}
-	else
-	{
-		if (CharacterClass == 0) SetResultValue(0);
-		if (CharacterClass == 1) SetResultValue(1);
-		if (CharacterClass == 2) SetResultValue(2); // Sets to 2 so the item can know to transform into another set of items if Flora is detected as the current character.
-		if (CharacterClass == 8) SetResultValue(2); // Sets to 2 so the item can know to transform into another set of items if Ailish is detected as the current character.
-		if (CharacterClass == 9) SetResultValue(2); // Sets to 2 so the item can know to transform into another set of items if Petra is detected as the current character.
-	}
-}
-
-script "CheckChainsaw" (void)
-{
-	if (CheckActorInventory(Player1TID,"DoubleBladedChainsaw") > 0) SetResultValue(2);
-	else if (CheckActorInventory(Player1TID,"Chainsaw2") > 0) SetResultValue(1);
-	else SetResultValue(0);
-}
-
 // Keeps Diabloist Locked on players as targets.
 script "DiabloistGravityLock" (void)
 {
@@ -27205,21 +27118,6 @@ script "AddSceptreEXP" (int SExPts, int Check2, int DivAmount)
 				SceptreLevelEXP += 1;
 			}
 		}
-	}
-}
-
-// Calculates the occurance rate of Sauron's Gauntlets and Sauron's Helmet Dropping when a spawner item for them is spawned from a dying monster and gets the character's ID number to determine the right version of the Gauntlets to drop.
-script "SauronItemSpawnerCheck" (void)
-{
-	if (random(1,4) == 1)
-	{
-		if (CharacterClass == 0) SetResultValue(1);
-		if (CharacterClass == 1) SetResultValue(2);
-		if (CharacterClass == 2) SetResultValue(3);
-	}
-	else
-	{
-		SetResultValue(0);
 	}
 }
 
@@ -27668,101 +27566,6 @@ script "FloraRandomArmorDrop" (int type, int OldRand0, int DVIIMode)
 	else // No spawn
 	{
 		Thing_Remove(1535);
-	}
-}
-
-// Checks and Removes "Copies" of Flora's armor items on maps [when she already has these items]
-script "CheckFloraArmorCopies" (int Armortype)
-{
-	if (CharacterClass == 2)
-	{
-		if (Armortype == 1 && CheckActorInventory(Player1TID,"SafeTeaShoes") > 0 && ActivatorTID() == 0) // SafeTeaShoes
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	
-		if (Armortype == 2 && CheckActorInventory(Player1TID,"PearlyCorset") > 0 && ActivatorTID() == 0) // PearlyCorset
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	
-		if (Armortype == 3 && CheckActorInventory(Player1TID,"WaterFlyingDress") > 0 && ActivatorTID() == 0) // WaterFlyingDress
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	
-		if (Armortype == 4 && CheckActorInventory(Player1TID,"EvenstarNecklace") > 0 && ActivatorTID() == 0) // EvenstarNecklace
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	
-		if (Armortype == 5 && CheckActorInventory(Player1TID,"CloakOfEvasion") > 0 && ActivatorTID() == 0) // CloakOfEvasion
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	
-		if (Armortype == 6 && CheckActorInventory(Player1TID,"AnubisCufflinks") > 0 && ActivatorTID() == 0) // AnubisCufflinks
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	
-		if (Armortype == 7 && CheckActorInventory(Player1TID,"KissaBra") > 0 && ActivatorTID() == 0) // KissaBra
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	
-		if (Armortype == 8) 
-		{
-			if (CheckActorInventory(Player1TID,"DivineShield") > 0 && ActivatorTID() == 0) // RuinousShield
-			{
-				Thing_ChangeTID(0,1534);
-				Thing_Remove(1534);
-			}
-			else
-			{
-				if (CheckActorInventory(Player1TID,"RuinousShield") > 0 && ActivatorTID() == 0)
-				{
-				Thing_ChangeTID(0,1534);
-				Thing_Remove(1534);
-				}
-			}
-		}
-	
-		if (Armortype == 9 && CheckActorInventory(Player1TID,"DivineShield") > 0 && ActivatorTID() == 0) // DivineShield 
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	
-		if (Armortype == 10 && CheckActorInventory(Player1TID,"BalrogRing") > 0 && ActivatorTID() == 0) // BalrogRing
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	
-		if (Armortype == 11 && CheckActorInventory(Player1TID,"DoveRibbon") > 0 && ActivatorTID() == 0) // DoveRibbon
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	
-		if (Armortype == 12 && CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0 && ActivatorTID() == 0) // FalconKnifeEarrings
-		{
-			Thing_ChangeTID(0,1534);
-			Thing_Remove(1534);
-		}
-	}
-	else
-	{
-		Thing_ChangeTID(0,1534);
-		Thing_Remove(1534);
 	}
 }
 
@@ -29194,39 +28997,6 @@ script "CheckFloraItems" (int forelse)
 	}
 }
 
-// Checks and Removes Hellcore weapons when Deggaris or Illucia are detected as the current character
-script "HellcoreWeaponCheckCharacter" (int Weapontype)
-{
-	int IsWeaponLevelMaxed;
-	if (CharacterClass == 2)
-	{
-		IsWeaponLevelMaxed = 0;
-		if (Weapontype == 0 && MiscellaneousVars[96] >= 8) IsWeaponLevelMaxed = 1; // Imp Claw [4]
-		if (Weapontype == 1 && MiscellaneousVars[97] >= 8) IsWeaponLevelMaxed = 1; // Dark Imp Claw [4]
-	
-		if (Weapontype == 2 && MiscellaneousVars[98] >= 8) IsWeaponLevelMaxed = 1; // CacoDemon Eye [4]
-		if (Weapontype == 3 && MiscellaneousVars[99] >= 8) IsWeaponLevelMaxed = 1; // Cacolantern Eye [4]
-		if (Weapontype == 4 && MiscellaneousVars[100] >= 8) IsWeaponLevelMaxed = 1; // Abaddon Eye [4]
-	
-		if (Weapontype == 5 && MiscellaneousVars[101] >= 8) IsWeaponLevelMaxed = 1; // Knight Fist [5]
-		if (Weapontype == 6 && MiscellaneousVars[102] >= 8) IsWeaponLevelMaxed = 1; // Baron Fist [5]
-		if (Weapontype == 7 && MiscellaneousVars[103] >= 8) IsWeaponLevelMaxed = 1; // Belphegor Fist [5]
-		if (Weapontype == 8 && MiscellaneousVars[104] >= 8) IsWeaponLevelMaxed = 1; // Bruiser Fist [5]
-		if (Weapontype == 9 && MiscellaneousVars[105] >= 8) IsWeaponLevelMaxed = 1; // Archon Fist [5]
-		if (Weapontype == 10 && MiscellaneousVars[106] >= 8) IsWeaponLevelMaxed = 1; // Pyro Fist [5]
-	
-		if (Weapontype == 11 && MiscellaneousVars[107] >= 8) IsWeaponLevelMaxed = 1; // Incarnate Skull [6]
-		if (Weapontype == 12 && MiscellaneousVars[108] >= 8) IsWeaponLevelMaxed = 1; // Archvile Hand [6]
-		if (Weapontype == 13 && MiscellaneousVars[109] >= 8) IsWeaponLevelMaxed = 1; // Diabloist Hand  [6]
-		if (Weapontype == 14 && MiscellaneousVars[110] >= 8) IsWeaponLevelMaxed = 1; // Balrog Fist [6]
-	
-		if (Weapontype == 15 && MiscellaneousVars[111] >= 8) IsWeaponLevelMaxed = 1; // Elemental's Eye [6]
-		if (Weapontype == 16 && MiscellaneousVars[112] >= 8) IsWeaponLevelMaxed = 1; // Overlord's Eye [6]
-		if (IsWeaponLevelMaxed != 0) { Thing_ChangeTID(0,1534); Thing_Remove(1534); }
-	}
-	else { Thing_ChangeTID(0,1534); Thing_Remove(1534); }
-}
-
 // Checks the mapnumber and gametype for Monster Spawners (main number)
 script "GetEvolveChance" (void)
 {
@@ -30479,21 +30249,21 @@ script "ChangeArmorPage" (int Page)
 	MiscellaneousVars[55] += Page;
 }
 
-/*
+// Show Armor Stats
+script "ShowArmorStats" ENTER
+{
+	/*
 	HudMessage IDs:
 	901		-	Main List for Armor Display Menu
 	902		-	Top Line for Armor Display Menu
 	903		-	Armor Icon
 	904		-	Background Tint for Menus/Armor-Display
-*/
-// Show Armor Stats
-script "ShowArmorStats" ENTER
-{
- int misc1, misc2, misc3, misc4, misc5;
- str ArmorString1, ArmorString2, ArmorString3, ArmorString4, ArmorString5, ArmorString6, ArmorString7, ArmorString8, ArmorString9, ArmorString10, ArmorString11, ArmorString12, ArmorString13, ArmorString14, ArmorString15, ArmorString16, ArmorString17, ArmorString18, ArmorString19, ArmorString20;
- str DivineShieldString1, DivineShieldString2;
+	*/
+	int misc1, misc2, misc3, misc4, misc5;
+	str ArmorString1, ArmorString2, ArmorString3, ArmorString4, ArmorString5, ArmorString6, ArmorString7, ArmorString8, ArmorString9, ArmorString10, ArmorString11, ArmorString12, ArmorString13, ArmorString14, ArmorString15, ArmorString16, ArmorString17, ArmorString18, ArmorString19, ArmorString20;
+	str DivineShieldString1, DivineShieldString2;
 
- // [55] is the Armor Page to display
+	// [55] is the Armor Page to display
 	if (MiscellaneousVars[55] != 0)
 	{
 		SetHudSize(512,384,0); // SetHudSize(MiscellaneousVars[76],MiscellaneousVars[77],MiscellaneousVars[78]);
@@ -32064,22 +31834,6 @@ script "ShowArmorStats" ENTER
 	Restart;
 }
 
-script "CheckWeaponFlash" (int modulous, int increment)
-{
-	int result;
-	if (increment != 0)
-	{
-		MiscellaneousVars[51] += increment;
-		if (MiscellaneousVars[51] >= modulous) MiscellaneousVars[51] = 0;
-	}
-	else
-	{
-		result = MiscellaneousVars[51] % modulous;
-		SetResultValue(result);
-	}
-	//PrintBold(d:MiscellaneousVars[51],s:" / ",d:modulous,s:"    [",d:increment,s:"]");
-}
-
 script "CheckPlayerHealth" (void)
 {
 	SetResultValue(GetActorProperty(Player1TID,APROP_Health));
@@ -32088,11 +31842,6 @@ script "CheckPlayerHealth" (void)
 script "LifebarOptionChecker" ENTER
 {
 	If(GetCVar("dvds_actorlifebars") == 1) ACS_NamedExecuteAlways ("LifebarDisplayClientSide",0,0,0,0);
-}
-
-script "CheckBFG2704" (void)
-{
-	SetResultValue(GetCVar("dvds_BFG2704"));
 }
 
 str dvds_monsternames[425][3] =
@@ -32237,15 +31986,18 @@ str dvds_monsternames[425][3] =
 	// Sitnalta
 	{"Zakachi", "\cfZakachi Daemonbourne\c-", ""},
 
-	// DV1 Bosses & MiniBosses
+// DV1 Bosses & MiniBosses
 	{"SauronEyeWeak", "Lesser Sauron Eye", ""},
 	{"SauronEyeStrong1", "Greater Sauron Eye", ""},
 	{"SauronEyeStrong2", "Greater Sauron Eye", ""},
 	{"SauronEyeMain", "\cfSauron's Mightiest Eye\c-", ""},
 	{"Sauravatar", "\cfGreater Sauravatar\c-", ""},
 
-// Non-Standard Doom Monsters
-	// Happy Time Circus [both] 
+//****************************
+//*Non-Standard Doom Monsters*
+//****************************
+
+// Happy Time Circus [both] 
 	{"BeefyNew", "Beefy The Clown", ""},
 	{"MiniFluffyNew", "Fluffy [mini]", ""},
 	{"FluffyNew", "Fluffy", ""},
@@ -32273,8 +32025,7 @@ str dvds_monsternames[425][3] =
 	// Boss
 	{"PennywiseBoss", "\cfPennywise The Dancing Clown\c-", ""},
 
-// Heretic Monsters
-
+// Heretic
 	// Neutral
 	{"ChickenNew", "Chicken", ""},
 
@@ -32330,8 +32081,7 @@ str dvds_monsternames[425][3] =
 	{"FMaulotaur", "Maulotaur", ""},
 	{"FSnake", "Ophidian", ""},
 
-// Hexen Monsters
-
+// Hexen
 	// Neutral
 	{"PigNew", "Pig", ""},
 
@@ -32396,8 +32146,7 @@ str dvds_monsternames[425][3] =
 	{"FDragon", "Death Wyvern", ""},
 	{"FHeresiarch", "Heresiarch", ""},
 
-// Strife Monsters
-
+// Strife
 	// Peasants
 	{"PeasantNew", "\cbPeasant\c-", ""},
 	{"Peasant1New", "\cbPeasant\c-", ""},
@@ -32491,7 +32240,6 @@ str dvds_monsternames[425][3] =
 	{"EntityAscended", "\cfThe Entity: The One God: Ascendant\c-", ""},
 	
 // Touhou Doom Characters/Monsters
-
 	// Minions
 	{"Fairy1New", "Lesser Fairy [blue]", ""},
 	{"Fairy2New", "Greater Fairy [blue]", ""},
@@ -32507,8 +32255,7 @@ str dvds_monsternames[425][3] =
 	{"MeilingMidBossNew", "Hong Meiling", ""},
 	{"MeilingNew", "Hong Meiling", ""},
 
-// TCOTD2 Monsters
-
+// The City Of The Damned: Apocalypse Monsters
 	// Monsters and Creepy-Crawlies
 	{"MiniSpiderNew", "Spider [smaller]", ""},
 	{"ShotgunCultistNew", "Darkmoon Cultist [shotgun]", ""},
@@ -32534,7 +32281,7 @@ str dvds_monsternames[425][3] =
 	{"ThamuzNew", "\cfThamuz, The Dark God\c-", ""},
 	{"TchernobogNew", "\cfTchernobog, The One That Binds\c-", ""},
 
-	// KDIZD Monsters
+// Knee Deep In ZDoom
 	{"KDIZDChaingunner", "Chaingun Guy", ""},
 	{"DemonCube", "Demon Cube", ""},
 	{"HellsFury", "Hell's Fury", ""},
@@ -32544,9 +32291,7 @@ str dvds_monsternames[425][3] =
 	{"StoneImp", "Stone Imp", ""},
 	{"Magmantis", "\cfMagmantis, Guardian of Deimos\c-", ""},
 
-// Unloved Monsters  
-
-	// Monsters
+// Unloved
 	{"ChainsawZombieNew", "Chainsaw Zombie", ""},
 	{"BloodFiendNew", "Blood Fiend Pinky", ""},
 	{"LurkerNew", "Blood Fiend Lurker", ""},
@@ -32591,7 +32336,6 @@ str dvds_monsternames[425][3] =
 	{"DSMotherDemon64", "\cfThe Mother of all Demons", ""},
 
 // The Ultimate Torment and Torture
-
 	// Allied Marines
 	{"FistMarine", "Space Marine [Grappler]", ""},
 	{"ChainsawMarine", "Space Marine [Chainsaw]", ""},
@@ -32609,6 +32353,8 @@ str dvds_monsternames[425][3] =
 	{"TNTMiniSpider", "Small Spider", ""},
 	{"SourceGuardian", "\cgGuardian of the Source", ""},
 	{"TheSource", "\cfThe Source of All Evil", ""}
+
+// Strange Aeons [TBA]
 	
 };
 
@@ -32627,11 +32373,15 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 		int class_index;
 		int xpos = 0.0;
 		int ypos = 0.0;
+		str monstertag = GetActorProperty(0, APROP_NameTag);
+		str monstername;
 
 		for (int i = 0; i < 425; i++)
 		{
 			if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
 		}
+		monstername = dvds_monsternames[class_index][1];
+
 
 		int hpcritlevel = GetUserVariable(0, "user_HPCritRange");
 		int hplowlevel = GetUserVariable(0, "user_HPLowRange");
@@ -32729,8 +32479,8 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 					ypos = 116.0;
 					if (GetCVar("dvds_actorlifebarnames") == 1)
 					{
-						if (debuglifebar == 1) HudMessage (s:monstercolor,s:dvds_monsternames[class_index][1],s:stealthcheck2,s:isfriendly,s:willbecomelegendary,s:islegendary,s:" [",d:OldActivator,s:"]"; 0, 198, CR_WHITE, xpos, ypos, 0.05);
-															else HudMessage (s:monstercolor,s:dvds_monsternames[class_index][1],s:stealthcheck2,s:isfriendly,s:islegendary; 0, 198, CR_WHITE, xpos, ypos, 0.05); 
+						if (debuglifebar == 1) HudMessage (s:monstercolor,s:monstername,s:stealthcheck2,s:isfriendly,s:willbecomelegendary,s:islegendary,s:" [",d:OldActivator,s:"]"; 0, 198, CR_WHITE, xpos, ypos, 0.05);
+															else HudMessage (s:monstercolor,s:monstername,s:stealthcheck2,s:isfriendly,s:islegendary; 0, 198, CR_WHITE, xpos, ypos, 0.05); 
 					}
 
 					xpos = 400.0; 
@@ -32799,27 +32549,6 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 		}
 	}
 	If(GetCVar("dvds_actorlifebars") == 1 && GetActorProperty(Player1TID,APROP_Health) > 0) Restart;
-}
-
-script "CheckShotgunnerSpreads" (void)
-{
-	SetResultValue(GetCVar("dvds_shotgunnerspread"));
-}
-
-script "CheckMinigunHeat" (int save)
-{
-	int heatsave;
-	if (save > 0) 
-	{
-		MiscellaneousVars[191] = CheckActorInventory(Player1TID,"MinigunHeat") / save; 
-		if (MiscellaneousVars[191] < 1) MiscellaneousVars[191] = 1;
-		//PrintBold(d:MiscellaneousVars[191],s:" - ",d:save);
-	}
-	else
-	{
-		if (MiscellaneousVars[191] > 0) TakeActorInventory(Player1TID,"MinigunHeat",MiscellaneousVars[191]);
-		//PrintBold(s:"- ",d:MiscellaneousVars[191]);
-	}
 }
 
 // Extends the 'lifespan' of Ultra Magic Missiles based on both Sorcery and Therapeusis stats
@@ -35860,12 +35589,12 @@ script "DoomMonsterDeathEmulation" OPEN
 					Script2Delay++;
 					if (Script2Delay > 34) { Floor_RaiseByValue (7, 5, 16); Script2Done++; }
 				}
-		/*
+				/*
 				PrintBold(d:LevelTime,s:" \n",
 									d:TotalCount1,s:" ",d:Script1Done,s:" ",d:Script1Delay,s:" \n",
 									d:TotalCount2,s:" ",d:Script2Done,s:" ",d:Script2Delay,s:" \n",
 									d:TotalCount3,s:" ",d:Script3Done,s:" ",d:Script3Delay);
-		*/
+				*/
 			}
 		}
 	}
@@ -35916,6 +35645,7 @@ script "WeaponAngleLoopSecondary" (int type, int cap, int setangle, int addangle
 	//Print(d:MiscellaneousVars[163],s:"/",d:cap);
 }
 
+// DEBUG
 script "ChangeMana" (int setadd, int value)
 {
 	if (setadd == 0) // Sets the stat to a fixed value
@@ -36863,17 +36593,7 @@ script "UseWhistle" (void)
 script "SawCheckSceptre" (void)
 {
 	int Result = 0;
-	if (CharacterClass == 2)
-	{
-		if (GetCVar("dvds_florastartsceptre") == 0 && GetCVar("dvds_florasceptrecandrop") != 0)
-		{
-			if (CheckActorInventory(Player1TID,"SceptreOfEmpyrea") == 0 && ThingCountName("SceptreOfEmpyrea", 0) < 1)
-			{
-				Result = 1;
-			}
-		}
-	}
-	
+	if (CharacterClass == 2 && GetCVar("dvds_florastartsceptre") == 0 && GetCVar("dvds_florasceptrecandrop") != 0 && CheckActorInventory(Player1TID,"SceptreOfEmpyrea") == 0 && ThingCountName("SceptreOfEmpyrea", 0) < 1) Result = 1;
 	SetResultValue(Result);
 }
 
@@ -36881,16 +36601,7 @@ script "SawCheckSceptre" (void)
 script "BerserkCheckSceptre" (void)
 {
 	int Result = 0;
-	if (CharacterClass == 2 && random(1,4) == 1)
-	{
-		if (GetCVar("dvds_florastartsceptre") == 0 && GetCVar("dvds_florasceptrecandrop") != 0)
-		{
-			if (CheckActorInventory(Player1TID,"SceptreOfEmpyrea") == 0 && ThingCountName("SceptreOfEmpyrea", 0) < 1)
-			{
-				Result = 1;
-			}
-		}
-	}
+	if (CharacterClass == 2 && random(1,4) == 1 && GetCVar("dvds_florastartsceptre") == 0 && GetCVar("dvds_florasceptrecandrop") != 0 && CheckActorInventory(Player1TID,"SceptreOfEmpyrea") == 0 && ThingCountName("SceptreOfEmpyrea", 0) < 1)
 	SetResultValue(Result);
 }
 
@@ -37503,7 +37214,7 @@ Script "Healing_Actor" (int type, int returntype)
 	}
 }
 
-// For showing Quest Item progress in Strife mode :V
+// DEBUG: For showing Quest Item progress in Strife mode :V
 script "DebugStrifeFlags" (void)
 {
 	int flag1, flag2, flag3, flag4, flag5, flag6, flag7, flag8, flag9, flag10, flag11, flag12, flag13, flag14, flag15, flag16;

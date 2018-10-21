@@ -1700,6 +1700,122 @@ class AetheriusCustomInventory : CustomInventory
 		CallACS("OtherVarSetDECORATE",9,CurrentMaxArmor);
 	}
 	
+	// Sets the "glowing eyes" in the "Armor Bonus" items to a specfic color based on the current Armor Class of Deggaris or Illucia [does not apply to Flora as she can't use Armor Bonuses and they aren't supposed to "appear" when she is in play]
+	void A_ArmorBonusEyeGlow()
+	{
+		int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
+		int CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
+		int CharacterClass = CallACS("CheckCharacterClass");
+
+		if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9)
+		{
+			if (CurrentArmorClass == 0) Thing_SetTranslation(0,18); // If you have no Armor Class
+			if (CurrentArmorClass == 1) Thing_SetTranslation(0,18); // If you have Green Armor Class
+			if (CurrentArmorClass == 2) Thing_SetTranslation(0,22); // If you have Blue Armor Class
+			if (CurrentArmorClass == 3) Thing_SetTranslation(0,20); // If you have Stone Armor [1] Class
+			if (CurrentArmorClass == 4) Thing_SetTranslation(0,21); // If you have Diamond Armor [1] Class
+			if (CurrentArmorClass == 5) Thing_SetTranslation(0,20); // If you have Stone Armor [2] Class
+			if (CurrentArmorClass == 6) Thing_SetTranslation(0,21); // If you have Diamond Armor [2] Class
+		}
+	}
+	
+	void A_CheckChainsaw()
+	{
+		if (CountInv("DoubleBladedChainsaw",AAPTR_PLAYER1) > 0) A_SetInventory("ChainsawCheckResult",2); // SetResultValue(2);
+		else if (CountInv("Chainsaw2",AAPTR_PLAYER1) > 0) A_SetInventory("ChainsawCheckResult",1); // SetResultValue(1);
+		else A_SetInventory("ChainsawCheckResult",0);
+	}
+	
+	// Makes Armor Bonuses check for Flora's presense in the game in order to change them over to other items [this version is for when playing classic Doom 1/2]
+	void A_ClassicDoom2ArmorCheck()
+	{
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		
+		if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
+		{
+			if (CharacterClass == 0) A_SetInventory("ArmorPickupResult",3);
+			if (CharacterClass == 1) A_SetInventory("ArmorPickupResult",4);
+			if (CharacterClass == 2 || CharacterClass == 8 || CharacterClass == 9) A_SetInventory("ArmorPickupResult",5);
+		}
+		else
+		{
+			if (CharacterClass == 0) A_SetInventory("ArmorPickupResult",0);
+			if (CharacterClass == 1) A_SetInventory("ArmorPickupResult",1);
+			if (CharacterClass == 2 || CharacterClass == 8 || CharacterClass == 9) A_SetInventory("ArmorPickupResult",2);
+		}
+	}
+	
+	// Checks and Removes "Copies" of Flora's armor items on maps [when she already has these items]
+	void A_CheckFloraArmorCopies(int Armortype = 0)
+	{
+		int CharacterClass = CallACS("CheckCharacterClass");
+
+		if (CharacterClass == 2)
+		{
+			if (Armortype == 1 && CountInv("SafeTeaShoes",AAPTR_PLAYER1) > 0) Thing_Remove(0); // SafeTeaShoes
+			if (Armortype == 2 && CountInv("PearlyCorset",AAPTR_PLAYER1) > 0) Thing_Remove(0); // PearlyCorset
+			if (Armortype == 3 && CountInv("WaterFlyingDress",AAPTR_PLAYER1) > 0) Thing_Remove(0); // WaterFlyingDress
+			if (Armortype == 4 && CountInv("EvenstarNecklace",AAPTR_PLAYER1) > 0) Thing_Remove(0); // EvenstarNecklace
+			if (Armortype == 5 && CountInv("CloakOfEvasion",AAPTR_PLAYER1) > 0) Thing_Remove(0); // CloakOfEvasion
+			if (Armortype == 6 && CountInv("AnubisCufflinks",AAPTR_PLAYER1) > 0) Thing_Remove(0); // AnubisCufflinks
+			if (Armortype == 7 && CountInv("KissaBra",AAPTR_PLAYER1) > 0) Thing_Remove(0); // KissaBra
+			if (Armortype == 8) 
+			{
+				if (CountInv("DivineShield",AAPTR_PLAYER1) > 0) Thing_Remove(0);
+				else if (CountInv("RuinousShield",AAPTR_PLAYER1) > 0) Thing_Remove(0);
+			}
+			if (Armortype == 9 && CountInv("DivineShield",AAPTR_PLAYER1) > 0) Thing_Remove(0); // DivineShield 
+			if (Armortype == 10 && CountInv("BalrogRing",AAPTR_PLAYER1) > 0) Thing_Remove(0); // BalrogRing
+			if (Armortype == 11 && CountInv("DoveRibbon",AAPTR_PLAYER1) > 0) Thing_Remove(0); // DoveRibbon
+			if (Armortype == 12 && CountInv("FalconKnifeEarrings",AAPTR_PLAYER1) > 0) Thing_Remove(0); // FalconKnifeEarrings
+		}
+		else
+		{
+			Thing_Remove(0);
+		}
+	}
+	
+	// Checks and Removes Hellcore weapons when Deggaris or Illucia are detected as the current character
+	void A_HellcoreWeaponCheckCharacter(int Weapontype = 0)
+	{
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int IsWeaponLevelMaxed;
+
+		if (CharacterClass == 2)
+		{
+			IsWeaponLevelMaxed = 0;
+			if (Weapontype == 0 && CallACS("MiscVarCheckDECORATE",96) >= 8) IsWeaponLevelMaxed = 1; // Imp Claw [4]
+			if (Weapontype == 1 && CallACS("MiscVarCheckDECORATE",97) >= 8) IsWeaponLevelMaxed = 1; // Dark Imp Claw [4]
+		
+			if (Weapontype == 2 && CallACS("MiscVarCheckDECORATE",98) >= 8) IsWeaponLevelMaxed = 1; // CacoDemon Eye [4]
+			if (Weapontype == 3 && CallACS("MiscVarCheckDECORATE",99) >= 8) IsWeaponLevelMaxed = 1; // Cacolantern Eye [4]
+			if (Weapontype == 4 && CallACS("MiscVarCheckDECORATE",100) >= 8) IsWeaponLevelMaxed = 1; // Abaddon Eye [4]
+		
+			if (Weapontype == 5 && CallACS("MiscVarCheckDECORATE",101) >= 8) IsWeaponLevelMaxed = 1; // Knight Fist [5]
+			if (Weapontype == 6 && CallACS("MiscVarCheckDECORATE",102) >= 8) IsWeaponLevelMaxed = 1; // Baron Fist [5]
+			if (Weapontype == 7 && CallACS("MiscVarCheckDECORATE",103) >= 8) IsWeaponLevelMaxed = 1; // Belphegor Fist [5]
+			if (Weapontype == 8 && CallACS("MiscVarCheckDECORATE",104) >= 8) IsWeaponLevelMaxed = 1; // Bruiser Fist [5]
+			if (Weapontype == 9 && CallACS("MiscVarCheckDECORATE",105) >= 8) IsWeaponLevelMaxed = 1; // Archon Fist [5]
+			if (Weapontype == 10 && CallACS("MiscVarCheckDECORATE",106) >= 8) IsWeaponLevelMaxed = 1; // Pyro Fist [5]
+		
+			if (Weapontype == 11 && CallACS("MiscVarCheckDECORATE",107) >= 8) IsWeaponLevelMaxed = 1; // Incarnate Skull [6]
+			if (Weapontype == 12 && CallACS("MiscVarCheckDECORATE",108) >= 8) IsWeaponLevelMaxed = 1; // Archvile Hand [6]
+			if (Weapontype == 13 && CallACS("MiscVarCheckDECORATE",109) >= 8) IsWeaponLevelMaxed = 1; // Diabloist Hand  [6]
+			if (Weapontype == 14 && CallACS("MiscVarCheckDECORATE",110) >= 8) IsWeaponLevelMaxed = 1; // Balrog Fist [6]
+		
+			if (Weapontype == 15 && CallACS("MiscVarCheckDECORATE",111) >= 8) IsWeaponLevelMaxed = 1; // Elemental's Eye [6]
+			if (Weapontype == 16 && CallACS("MiscVarCheckDECORATE",112) >= 8) IsWeaponLevelMaxed = 1; // Overlord's Eye [6]
+
+			if (IsWeaponLevelMaxed != 0) { Thing_Remove(0); }
+		}
+		else 
+		{
+			Thing_Remove(0); 
+		}
+	}
+	
+	
 }
 
 // Keeps Sounds/Music active during time Freeze powerups

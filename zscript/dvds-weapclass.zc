@@ -2231,6 +2231,83 @@ class AetheriusBaseWeaponZSC : Weapon
 		A_SetInventory("WandSpread",result,AAPTR_PLAYER1,true);
 	}
 	
+// Checks the Player's level to determine how much drawing the Diaris Longbow will slow you down while aiming
+	void A_DrawBow(int isbowdrawn = 0)
+	{
+		int i = 0;
+		int bowlevel;
+		int bowlevelbase;
+		int lvlforbowdraw;
+		int strforbowdraw;
+		int aglforbowdraw;
+		int perklvlforbowdraw;
+		string BowLevelItem;
+		int PlayerLevel = CallACS("StatCheck",0);
+		
+		bowlevelbase = random(15,19);
+		lvlforbowdraw = PlayerLevel / 8; // Max of +25%
+		strforbowdraw = CallACS("MiscVarCheckDECORATE",35) / 16; // Max of +32%
+		aglforbowdraw = CallACS("MiscVarCheckDECORATE",31) / 10; // Max of +51%
+		perklvlforbowdraw = CallACS("MiscVarCheckDECORATE",10031) * 10; // Max of +50%
+		bowlevel = bowlevelbase;
+		bowlevel += lvlforbowdraw;
+		bowlevel += strforbowdraw;
+		bowlevel += aglforbowdraw;
+		bowlevel += perklvlforbowdraw;
+		if (CountInv("EvenstarNecklace") > 0) bowlevel = bowlevel * 4 / 3;
+		
+		if (bowlevel < 0) bowlevel = 0; // Min of 0
+		if (bowlevel > 101) bowlevel = 101; // Max of 50
+		
+		CallACS("MiscVarSetDECORATE",398,isbowdrawn); // 398 - Bow is Drawn?
+		CallACS("MiscVarSetDECORATE",8,bowlevel); // 8 - Bow Proficency/SpeedMovement%
+
+		if (dvdsdebug_showplayeratkinformation > 0)
+		{
+			if (isbowdrawn) Console.Printf("isbowdrawn: %d, bowlevel: %d", isbowdrawn, bowlevel);
+			else Console.Printf("isbowdrawn: %d", isbowdrawn);
+		}
+	}
+	
+	void A_CheckWeaponFlash(int modulous = 0, int increment = 0)
+	{
+		int result = CountInv("WeaponFlashResult");
+		if (increment != 0)
+		{
+			result += increment;
+			if (result >= modulous) result = 0;
+		}
+		else
+		{
+			result %= modulous;
+		}
+		A_SetInventory("WeaponFlashResult",result);
+		//Console.Printf("result / modulous: %d / %d  [increment: %d]", result, modulous, increment);
+	}
+	
+	void A_CheckMinigunHeat(int save = 0)
+	{
+		int heatsave;
+		int heatdivisior = CallACS("MiscVarCheckDECORATE",191);
+		if (save > 0) 
+		{
+			heatdivisior = CountInv("MinigunHeat") / save; 
+			if (heatdivisior < 1) heatdivisior = 1;
+			//Console.Printf("heatdivisior: %d - save: %d [FIRING]", heatdivisior, save);
+		}
+		else
+		{
+			if (heatdivisior > 0) A_TakeInventory("MinigunHeat",heatdivisior);
+			//Console.Printf("heatdivisior: %d [COOLING]", heatdivisior);
+		}
+		CallACS("MiscVarSetDECORATE",191,heatdivisior);
+	}
+	
+	
+	
+	
+	
+	
 	void A_SceptreDvAvSwing()
 	{
 		if (CallACS("GetBuffTimer",7) > 0) { A_SetTics(0); }
