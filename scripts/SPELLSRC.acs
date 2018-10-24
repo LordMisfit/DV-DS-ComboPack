@@ -24571,15 +24571,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	
 	int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 	int powertripmode = GetCVar("dvds_musou_powertripmode");
-	int HealthRatio;
-
-	// Get Health Ratio
-	if (MaxHealthTrue > 0)
-	{
-		HealthRatio = GetActorProperty(Player1TID,APROP_Health) * 1000 / MaxHealthTrue;
-		if (HealthRatio < 0) HealthRatio = 0;
-		if (HealthRatio > 2000) HealthRatio = 2000;
-	}
 	
 	// Sets a special flag to check for a "pistol reset" like in resurgance
 	if (GetActorProperty(Player1TID,APROP_Health) <= 0) 
@@ -24588,9 +24579,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		if (CheckActorInventory(Player1TID,"Dedz") < 1) GiveActorInventory(Player1TID,"Dedz", 1);
 	}
 	
-	//******************
-	//*Initial Six Tics*
-	//******************
 	// Class Check is done six times for randomization purposes.
 	if (ClassCheck < 6) ClassCheck += 1;
 	
@@ -24669,132 +24657,17 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 		HealthDifferenceTimer += 1;
 	}
 	
-	
-	//**************************************************************************************************************
-	//*Flicker the Player when they survive a mortal hit (mercy invincibility) and perform actions related to perks*
-	//**************************************************************************************************************
-	// [194] Mercy Invincibility "Flag"
-	// [195] Mercy Invincibility Timer
-	// [196] Mercy Invincibility 'Modulus/Remainder'
-	// Death Rage Countdown Checks
-	if (MiscellaneousVars[9043] > 0)
-	{
-		FadeRange(208, 0, 32, 0.525, 0, 0, 0, 0.0, 0.5);
-		MiscellaneousVars[9043] -= 1; // Death Rage Timer
-	}
-	if (MiscellaneousVars[9044] > 0) MiscellaneousVars[9044] -= 1; // Cooldown Timer
-	
-	int TempStartValue, TempEndValue;
-	MiscellaneousVars[175] = GetActorProperty(Player1TID,APROP_Health);
-	if (MiscellaneousVars[175] == 1 && MiscellaneousVars[241] > 1 && GetCVar("dvds_survivemercyinvin") == 1)
-	{
-		MiscellaneousVars[194] = 1; // Turns on Mercy Invincibility Flag
-		MiscellaneousVars[195] = 1210; // 1.5 seconds [51.5 tics * 20]
-		
-		//*************************************************
-		//*Check "Mortal Hit Survivability Psyche Up" Perk*
-		//*************************************************
-		if (MiscellaneousVars[10037] > 0)
-		{
-			if (CharacterClass == 2) PerkFactor = 7500; else PerkFactor = 4000;
-			if (random(1,10000) <= PerkFactor)
-			{
-				if (MiscellaneousVars[10037] == 1 && MiscellaneousVars[181] <= 1) ACS_NamedExecuteAlways("SetTensionLevel",0,1,0);
-				if (MiscellaneousVars[10037] == 2 && MiscellaneousVars[181] <= 2) ACS_NamedExecuteAlways("SetTensionLevel",0,2,0);
-				if (MiscellaneousVars[10037] == 3 && MiscellaneousVars[181] <= 3) ACS_NamedExecuteAlways("SetTensionLevel",0,3,0);
-				if (MiscellaneousVars[10037] == 4 && MiscellaneousVars[181] <= 4) ACS_NamedExecuteAlways("SetTensionLevel",0,4,0);
-				if (MiscellaneousVars[10037] == 5 && MiscellaneousVars[181] <= 5) ACS_NamedExecuteAlways("SetTensionLevel",0,5,0);
-				if (MiscellaneousVars[10037] == 6 && MiscellaneousVars[181] <= 6) ACS_NamedExecuteAlways("SetTensionLevel",0,6,0);
-				if (MiscellaneousVars[10037] == 7 && MiscellaneousVars[181] <= 7) ACS_NamedExecuteAlways("SetTensionLevel",0,7,0);
-			}
-		}
-		
-		//**********************************************************
-		//*Check "Mortal Hit Survivability Mana Recovery [EX]" Perk*
-		//**********************************************************
-		if (MiscellaneousVars[10039] > 0)
-		{
-			PerkFactor = 0;
-			if (MiscellaneousVars[10039] > 0) PerkFactor += 6666;
-			if (MiscellaneousVars[10040] > 0) PerkFactor += 3334;
-			if (random(1,10000) <= PerkFactor)
-			{
-				PerkFactor = 0;
-				if (MiscellaneousVars[10039] > 0) PerkFactor += 25;
-				if (MiscellaneousVars[10040] > 0) PerkFactor += 50;
-				TempStartValue = MaxMana * PerkFactor / 100;
-				TempEndValue = MaxMana * (100 + PerkFactor) / 100;
-				if (CurrentMana < TempEndValue) CurrentMana += TempStartValue;
-				if (CurrentMana > TempEndValue) CurrentMana = TempEndValue;
-				FadeRange(192, 0, 192, 0.75, 0, 0, 0, 0.0, 0.5);
-			}
-		}
-		
-		
-		//*******************************************************
-		//*Check "Mortal Hit Survivability Blast Wave [EX]" Perk*
-		//*******************************************************
-		if (MiscellaneousVars[10041] > 0)
-		{
-			PerkFactor = 0;
-			if (MiscellaneousVars[10041] > 0) PerkFactor += 5000;
-			if (MiscellaneousVars[10042] > 0) PerkFactor += 2500;
-			if (random(1,10000) <= PerkFactor)
-			{
-				SetActivator(Player1TID); ActivatorSound("MortalHit/BlastWave",127); SetActivator(0);
-				FadeRange(255, 192, 1, 0.75, 0, 0, 0, 0.0, 0.5);
-			
-				project_RealZ = GetActorZ(Player1TID) + (GetActorViewHeight(Player1TID) * 39 / 50) + 8.0;
-				SetActivator(Player1TID);
-				SpawnProjectile(0, "PlayerMortalBlastRadius", 0, 0, 0, 0, 2102);
-				SetActorVelocity(2102, 0, 0, 0, 0, 0);
-				SetActorAngle(2102, 0.0);
-				SetActorPosition(2102, GetActorX(Player1TID), GetActorY(Player1TID), project_RealZ, 0);
-				Thing_ChangeTID(2102,4443);
-				SetActivator(0);
-			}
-		}
-		
-		
-		//****************************************************
-		//*Check "Mortal Hit Survivability 'Death Rage'" Perk*
-		//****************************************************
-		if (MiscellaneousVars[10043] > 0 && MiscellaneousVars[9044] == 0)
-		{
-			if (MiscellaneousVars[10043] == 1) PerkFactor = 1250;
-			if (MiscellaneousVars[10043] == 2) PerkFactor = 2000;
-			if (MiscellaneousVars[10043] == 3) PerkFactor = 2500;
-			if (random(1,10000) <= PerkFactor)
-			{
-				SetActivator(Player1TID); ActivatorSound("MortalHit/DeathRage",127); SetActivator(0);
-				PerkFactor = random(17,18);
-				if (MiscellaneousVars[10043] == 1)
-				{
-					MiscellaneousVars[9043] = (15 * 35); // Death Rage Timer
-					MiscellaneousVars[9044] = (195 * 35);
-				}
-				if (MiscellaneousVars[10043] == 2)
-				{
-					MiscellaneousVars[9043] = ((22 * 35) + PerkFactor); // Death Rage Timer
-					MiscellaneousVars[9044] = ((172 * 35) + PerkFactor); // Cooldown Timer
-				}
-				if (MiscellaneousVars[10043] == 3)
-				{
-					MiscellaneousVars[9043] = (30 * 35); // Death Rage Timer
-					MiscellaneousVars[9044] = (150 * 35); // Cooldown Timer
-				}
-			}
-		}
-	}
-	
 	int flickeralpha = 1.0;
 	int basealpha = 1.0;
+	int tempalpha;
+	int ghostdashvis = FixedMul(random(7,9),0.03125);
 	//*******************************
 	//**Mercy Invulnerablity Itself**
 	//*******************************
 	if (MiscellaneousVars[194] != 0) // Flickering
 	{
 		if (PowerUpTimer[1] > 0) basealpha = MiscFixedVars[101]; // Invisible
+		
 		if (MiscellaneousVars[195] > 0) // Timer Above 0
 		{
 			if (PowerupTimer[4] == 0) 
@@ -24803,10 +24676,15 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 				GiveActorInventory(Player1TID,"IsInvulnerable",1);
 			}
 			MiscellaneousVars[196] = MiscellaneousVars[195] % 120;
-			if (MiscellaneousVars[196] >= 0 && MiscellaneousVars[196] <= 29) flickeralpha = FixedMul(basealpha,0.25);
-			if (MiscellaneousVars[196] >= 30 && MiscellaneousVars[196] <= 59) flickeralpha = FixedMul(basealpha,0.375);
-			if (MiscellaneousVars[196] >= 60 && MiscellaneousVars[196] <= 89) flickeralpha = FixedMul(basealpha,0.5);
-			if (MiscellaneousVars[196] >= 90 && MiscellaneousVars[196] <= 119) flickeralpha = FixedMul(basealpha,0.375);
+			if (MiscellaneousVars[196] >= 0 && MiscellaneousVars[196] <= 14) flickeralpha = FixedMul(basealpha,0.25);
+			if (MiscellaneousVars[196] >= 15 && MiscellaneousVars[196] <= 29) flickeralpha = FixedMul(basealpha,0.3125);
+			if (MiscellaneousVars[196] >= 30 && MiscellaneousVars[196] <= 44) flickeralpha = FixedMul(basealpha,0.375);
+			if (MiscellaneousVars[196] >= 45 && MiscellaneousVars[196] <= 59) flickeralpha = FixedMul(basealpha,0.4375);
+			if (MiscellaneousVars[196] >= 60 && MiscellaneousVars[196] <= 74) flickeralpha = FixedMul(basealpha,0.5);
+			if (MiscellaneousVars[196] >= 75 && MiscellaneousVars[196] <= 89) flickeralpha = FixedMul(basealpha,0.4375);
+			if (MiscellaneousVars[196] >= 90 && MiscellaneousVars[196] <= 104) flickeralpha = FixedMul(basealpha,0.375);
+			if (MiscellaneousVars[196] >= 105 && MiscellaneousVars[196] <= 119) flickeralpha = FixedMul(basealpha,0.3125);
+			if (MiscellaneousVars[166] > 0) flickeralpha = FixedMul(flickeralpha,ghostdashvis);
 			SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Add);
 			SetActorProperty(Player1TID,APROP_Alpha,flickeralpha);
 			
@@ -24833,13 +24711,16 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 
 		if (PowerUpTimer[1] > 0)
 		{
+			tempalpha = MiscFixedVars[101];
 			SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Add);
-			SetActorProperty(Player1TID,APROP_Alpha,MiscFixedVars[101]);
+			if (MiscellaneousVars[166] > 0) tempalpha = FixedMul(tempalpha,ghostdashvis);
+			SetActorProperty(Player1TID,APROP_Alpha,tempalpha);
 		}
 		else
 		{
-			SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Normal);
-			SetActorProperty(Player1TID,APROP_Alpha,1.0);
+			tempalpha = 1.0;
+			if (MiscellaneousVars[166] > 0) { tempalpha = FixedMul(tempalpha,ghostdashvis); SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Add); }
+			else { SetActorProperty(Player1TID,APROP_RenderStyle,STYLE_Normal); }
 		}
 		MiscellaneousVars[195] = 0;
 	}
@@ -24847,21 +24728,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	//Calculate Stamina for HUDs
 	if (MiscellaneousVars[22] != 0) MiscellaneousVars[41] = MiscellaneousVars[21] * 10000 / MiscellaneousVars[22];
 	
-	//******************
-	//*Check Dash Timer* // ?
-	//******************
-	if (MiscellaneousVars[166] > 0) 
-	{
-		GiveActorInventory(Player1TID,"PlayerDashing",1);
-		GiveActorInventory(Player1TID,"DodgeGhostOn",1);
-		if (MenuSystemVars[0] == 0) MiscellaneousVars[166]--;
-		if (MenuSystemVars[0] == 0) { if (GetActorZ(Player1TID) - GetActorFloorZ(Player1TID) <= 0) SpawnForced("DashPuff",GetActorX(Player1TID),GetActorY(Player1TID),GetActorZ(Player1TID)+(8*65536),0,0); }
-	}
-	else
-	{
-		TakeActorInventory(Player1TID,"PlayerDashing",1); 
-		GiveActorInventory(Player1TID,"DodgeGhostOff",1);
-	}
 	
 	// Ruinous Shield HUD Display Calculations
 	if (MiscellaneousVars[269] != 0)
@@ -35633,6 +35499,33 @@ script "ExpTableSetDECORATE" (int value, int perkvalue, int type)
 	if (type == 8) ExpTable[value] ^= perkvalue; // XOR
 	if (type == 9) ExpTable[value] <<= perkvalue; // Shift Left
 	if (type == 10) ExpTable[value] >>= perkvalue; // Shift Right
+}
+
+// Allows DECORATE to check the value of a specfic "MiscFixedVars[]" value for checks
+script "FixedVarCheckDECORATE" (int value)
+{
+	int result = MiscFixedVars[value];
+	SetResultValue(result);
+}
+
+// Allows DECORATE to SET the value of a specfic "MiscFixedVars[]" value
+script "FixedVarSetDECORATE" (int value, int perkvalue, int type)
+{
+	if (type <= -1) SetResultValue(MiscFixedVars[value]);
+	if (type == 0) MiscFixedVars[value] = perkvalue; // Set
+	if (type == 1) MiscFixedVars[value] += perkvalue; // Add
+	if (type == 2) MiscFixedVars[value] -= perkvalue; // Subtract
+	if (type == 3) MiscFixedVars[value] *= perkvalue; // Multiply
+	if (type == 4 && perkvalue != 0) MiscFixedVars[value] /= perkvalue; // Divide
+	if (type == 5 && perkvalue != 0) MiscFixedVars[value] %= perkvalue; // Modulo
+	if (type == 6) MiscFixedVars[value] &= perkvalue; // AND
+	if (type == 7) MiscFixedVars[value] |= perkvalue; // OR
+	if (type == 8) MiscFixedVars[value] ^= perkvalue; // XOR
+	if (type == 9) MiscFixedVars[value] <<= perkvalue; // Shift Left
+	if (type == 10) MiscFixedVars[value] >>= perkvalue; // Shift Right
+
+	MiscFixedVars[value] *= 1.0; //PrintBold(s:"Value [*] (",d:value,s:"): ",f:MiscFixedVars[value]);
+	MiscFixedVars[value] >>= 16; //PrintBold(s:"Value [>>] (",d:value,s:"): ",f:MiscFixedVars[value]);
 }
 
 // Allows DECORATE to check the value of a specfic "MiscellaneousVars[]" value for checks
