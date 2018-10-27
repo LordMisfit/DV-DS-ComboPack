@@ -1863,8 +1863,410 @@ class AetheriusCustomInventory : CustomInventory
 		if (ModType == 0 && dvds_canseedsappear == 0) A_SetInventory("MiscResult",0);
 	}
 	
+	// Checks the first Chainsaw to become the Sceptre of Empyrea if playing on a Sceptre-less start mode.
+	void A_SawCheckSceptre()
+	{
+		int Result, SceptreCheck = 0;
+		int CharacterClass = CallACS("CheckCharacterClass");
+
+		ThinkerIterator Test1 = ThinkerIterator.Create("SceptreOfEmpyrea"); Actor mo; while (mo = Actor(Test1.Next())) { SceptreCheck++; }
+
+		if (CharacterClass == 2 && dvds_florastartsceptre == 0 && dvds_florasceptrecandrop != 0 && CountInv("SceptreOfEmpyrea",AAPTR_PLAYER1) == 0 && SceptreCheck < 1) Result = 1;
+		A_SetInventory("MiscResult",Result);
+		
+		//Console.Printf("SceptreOfEmpyrea (BerserkCheck): %d", SceptreCheck);
+		//Console.Printf("Result: %d", Result);
+	}
 	
+	// Checks the Berserk Pack to become the Sceptre of Empyrea if playing on a Sceptre-less start mode.
+	void A_BerserkCheckSceptre()
+	{
+		int Result, SceptreCheck = 0;
+		int CharacterClass = CallACS("CheckCharacterClass");
+
+		ThinkerIterator Test1 = ThinkerIterator.Create("SceptreOfEmpyrea"); Actor mo; while (mo = Actor(Test1.Next())) { SceptreCheck++; }
+
+		if (CharacterClass == 2 && dvds_florastartsceptre == 0 && dvds_florasceptrecandrop != 0 && CountInv("SceptreOfEmpyrea",AAPTR_PLAYER1) == 0 && SceptreCheck < 1) Result = 1;
+		A_SetInventory("MiscResult",Result);
+		
+		//Console.Printf("SceptreOfEmpyrea (BerserkCheck): %d", SceptreCheck);
+		//Console.Printf("Result: %d", Result);
+	}
 	
+	void A_FloraRandomArmorDrop(int type = 0, int OldRand0 = 0, int DVIIMode = 0)
+	{
+		int Rand0, Rand1, Rand2, PX, PY, PZ, DVIIRandVal, spawnedaitem;
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		
+		DVIIRandVal = 1 + (CallACS("MiscVarCheckDECORATE",33) / 32); // Default value for randomizer
+
+		if (dvdsdebug_armordropdisplays) Console.Printf("DVIIRandVal: %d, Type: %d, OldRand0: %d, DVIIMode: %d", DVIIRandVal, type, OldRand0, DVIIMode);
+		// Do not run script if Flora is not the character in play
+		if (CharacterClass != 2) { return; }
+		else
+		{
+			// Do not run script if the game is Deus Vult II
+			if (ModType == 2)
+			{
+				if (DVIIMode == 0) { return; }
+				else DVIIRandVal = 1024; // Randomizer will ALWAYS roll positive in DVII-AltMode
+			}
+		}
+			
+		// Spawn Occurance Rate
+		if (type == 5) // Given by an armorer in Strife [random]
+		{
+			DVIIRandVal = 1024;
+			Rand0 = 0;
+		}
+		else
+		if (type == 4) // ALWAYS SPAWNS [no random failure rate]
+		{
+			DVIIRandVal = 1024;
+			Rand0 = 0;
+		}
+		else
+		if (type == 3) // Doom2-Armor Bonuses
+		{
+			Rand0 = random(1,3072);
+			if (TrueGameSkill <= SKILL_VERY_EASY) Rand0 = random(1,2208);
+			if (TrueGameSkill == SKILL_EASY) Rand0 = random(1,2496);
+			if (TrueGameSkill == SKILL_NORMAL) Rand0 = random(1,2784);
+			if (TrueGameSkill == SKILL_HARD) Rand0 = random(1,3072);
+			if (TrueGameSkill == SKILL_VERY_HARD) Rand0 = random(1,3648);
+			if (TrueGameSkill == SKILL_EXTREME) Rand0 = random(1,4096);
+			if (TrueGameSkill == SKILL_HORRIBLE) Rand0 = random(1,4608);
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) Rand0 = random(1,5120);
+			if (TrueGameSkill >= SKILL_OMEGA) Rand0 = random(1,6144);
+		}
+		else
+		if (type == 2) // Doom2-Armors
+		{
+			Rand0 = random(1,128);
+			if (TrueGameSkill <= SKILL_VERY_EASY) Rand0 = random(1,92);
+			if (TrueGameSkill == SKILL_EASY) Rand0 = random(1,104);
+			if (TrueGameSkill == SKILL_NORMAL) Rand0 = random(1,116);
+			if (TrueGameSkill == SKILL_HARD) Rand0 = random(1,128);
+			if (TrueGameSkill == SKILL_VERY_HARD) Rand0 = random(1,152);
+			if (TrueGameSkill == SKILL_EXTREME) Rand0 = random(1,164);
+			if (TrueGameSkill == SKILL_HORRIBLE) Rand0 = random(1,178);
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) Rand0 = random(1,202);
+			if (TrueGameSkill >= SKILL_OMEGA) Rand0 = random(1,226);
+		}
+		else
+		if (type == 1)
+		{
+			Rand0 = OldRand0;
+		}
+		else
+		{
+			if (ModType == 1) // DVI has 4 levels
+			{
+				Rand0 = random(1,256);
+				if (TrueGameSkill <= SKILL_VERY_EASY) Rand0 = random(1,184);
+				if (TrueGameSkill == SKILL_EASY) Rand0 = random(1,208);
+				if (TrueGameSkill == SKILL_NORMAL) Rand0 = random(1,232);
+				if (TrueGameSkill == SKILL_HARD) Rand0 = random(1,256);
+				if (TrueGameSkill == SKILL_VERY_HARD) Rand0 = random(1,304);
+				if (TrueGameSkill == SKILL_EXTREME) Rand0 = random(1,328);
+				if (TrueGameSkill == SKILL_HORRIBLE) Rand0 = random(1,356);
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) Rand0 = random(1,404);
+				if (TrueGameSkill >= SKILL_OMEGA) Rand0 = random(1,452);
+			}
+			else // Classic has 32 levels [1/4th the spawn rate of DVI mode]
+			{
+				Rand0 = random(1,768);
+				if (TrueGameSkill <= SKILL_VERY_EASY) Rand0 = random(1,552);
+				if (TrueGameSkill == SKILL_EASY) Rand0 = random(1,624);
+				if (TrueGameSkill == SKILL_NORMAL) Rand0 = random(1,696);
+				if (TrueGameSkill == SKILL_HARD) Rand0 = random(1,768);
+				if (TrueGameSkill == SKILL_VERY_HARD) Rand0 = random(1,912);
+				if (TrueGameSkill == SKILL_EXTREME) Rand0 = random(1,984);
+				if (TrueGameSkill == SKILL_HORRIBLE) Rand0 = random(1,1068);
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) Rand0 = random(1,1212);
+				if (TrueGameSkill >= SKILL_OMEGA) Rand0 = random(1,1356);
+			}
+		}
+		
+		if (dvdsdebug_armordropdisplays) Console.Printf("DVIIRandVal / Rand0: %d / %d", DVIIRandVal, Rand0);
+		if (Rand0 <= DVIIRandVal)
+		{
+			Rand1 = 0;
+			if (CountInv("SafeTeaShoes",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("PearlyCorset",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("WaterFlyingDress",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("EvenstarNecklace",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("CloakOfEvasion",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("FalconKnifeEarrings",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("AnubisCufflinks",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("KissaBra",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("RuinousShield",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("DivineShield",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("BalrogRing",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (CountInv("DoveRibbon",AAPTR_PLAYER1) > 0) Rand1 += 1;
+			if (dvdsdebug_armordropdisplays) Console.Printf("Rand1: %d / 11", Rand1);
+			if (Rand1 > 10) { return; } // If all 11 items or more are detected on Flora, this script will not run past this point.
+			
+			int runtimes;
+			int TempArmorCheck = 0;
+			while (spawnedaitem == 0)
+			{
+				Rand2 = random(1,100);
+				if (dvdsdebug_armordropdisplays) Console.Printf("Rand2: %d", Rand2);
+				// PrintBold(d:Rand2,s:" / (",d:Rand0,s:") / [",d:Rand1,s:"]\n\n X",d:PX,s:" Y",d:PY,s:" Z",d:PZ);
+				
+				TempArmorCheck = 0;
+				if (Rand2 > 0 && Rand2 < 10)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("SafeTeaShoes"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("SafeTeaShoes", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						if (type == 5) // Directly GIVE armor to the player instead of spawning it
+						{
+							A_GiveInventory("SafeTeaShoes",1,AAPTR_PLAYER1);
+							spawnedaitem++;
+						}
+						else // Spawn it
+						{
+							A_SpawnItemEx("SafeTeaShoes",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+							spawnedaitem++;
+							Thing_Remove(0);
+						}
+					}
+				}
+				if (Rand2 > 9 && Rand2 < 19)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("PearlyCorset"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("PearlyCorset", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						if (type == 5) // Directly GIVE armor to the player instead of spawning it
+						{
+							A_GiveInventory("PearlyCorset",1,AAPTR_PLAYER1);
+							spawnedaitem++;
+						}
+						else // Spawn it
+						{
+							A_SpawnItemEx("PearlyCorset",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+							spawnedaitem++;
+							Thing_Remove(0);
+						}
+					}
+				}
+				if (Rand2 > 18 && Rand2 < 28)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("WaterFlyingDress"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("WaterFlyingDress", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						if (type == 5) // Directly GIVE armor to the player instead of spawning it
+						{
+							A_GiveInventory("WaterFlyingDress",1,AAPTR_PLAYER1);
+							spawnedaitem++;
+						}
+						else // Spawn it
+						{
+							A_SpawnItemEx("WaterFlyingDress",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+							spawnedaitem++;
+							Thing_Remove(0);
+						}
+					}
+				}
+				if (Rand2 > 27 && Rand2 < 37)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("EvenstarNecklace"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("EvenstarNecklace", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						if (type == 5) // Directly GIVE armor to the player instead of spawning it
+						{
+							A_GiveInventory("EvenstarNecklace",1,AAPTR_PLAYER1);
+							spawnedaitem++;
+						}
+						else // Spawn it
+						{
+							A_SpawnItemEx("EvenstarNecklace",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+							spawnedaitem++;
+							Thing_Remove(0);
+						}
+					}
+				}
+				if (Rand2 > 36 && Rand2 < 46)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("CloakOfEvasion"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("CloakOfEvasion", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						if (type == 5) // Directly GIVE armor to the player instead of spawning it
+						{
+							A_GiveInventory("CloakOfEvasion",1,AAPTR_PLAYER1);
+							spawnedaitem++;
+						}
+						else // Spawn it
+						{
+							A_SpawnItemEx("CloakOfEvasion",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+							spawnedaitem++;
+							Thing_Remove(0);
+						}
+					}
+				}
+				if (Rand2 > 45 && Rand2 < 55)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("FalconKnifeEarrings"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						if (type == 5) // Directly GIVE armor to the player instead of spawning it
+						{
+							A_GiveInventory("FalconKnifeEarrings",1,AAPTR_PLAYER1);
+							spawnedaitem++;
+						}
+						else // Spawn it
+						{
+							A_SpawnItemEx("FalconKnifeEarrings",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+							spawnedaitem++;
+							Thing_Remove(0);
+						}
+					}
+				}
+				if (Rand2 > 54 && Rand2 < 64)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("AnubisCufflinks"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("AnubisCufflinks", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						if (type == 5) // Directly GIVE armor to the player instead of spawning it
+						{
+							A_GiveInventory("AnubisCufflinks",1,AAPTR_PLAYER1);
+							spawnedaitem++;
+						}
+						else // Spawn it
+						{
+							A_SpawnItemEx("AnubisCufflinks",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+							spawnedaitem++;
+							Thing_Remove(0);
+						}
+					}
+				}
+				if (Rand2 > 63 && Rand2 < 73)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("KissaBra"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("KissaBra", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						if (type == 5) // Directly GIVE armor to the player instead of spawning it
+						{
+							A_GiveInventory("KissaBra",1,AAPTR_PLAYER1);
+							spawnedaitem++;
+						}
+						else // Spawn it
+						{
+							A_SpawnItemEx("KissaBra",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+							spawnedaitem++;
+							Thing_Remove(0);
+						}
+					}
+				}
+				if (Rand2 > 72 && Rand2 < 82)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("DivineShield"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("DivineShield", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						ThinkerIterator Test1 = ThinkerIterator.Create("RuinousShield"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+						if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck (2): %d", TempArmorCheck);
+						if (CountInv("RuinousShield", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+						{
+							if (type == 5) // Directly GIVE armor to the player instead of spawning it
+							{
+								A_GiveInventory("RuinousShield",1,AAPTR_PLAYER1);
+								spawnedaitem++;
+							}
+							else // Spawn it
+							{
+								A_SpawnItemEx("RuinousShield",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+								spawnedaitem++;
+								Thing_Remove(0);
+							}
+						}
+					}
+				}
+				if (Rand2 > 81 && Rand2 < 91)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("BalrogRing"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("BalrogRing", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						if (type == 5) // Directly GIVE armor to the player instead of spawning it
+						{
+							A_GiveInventory("BalrogRing",1,AAPTR_PLAYER1);
+							spawnedaitem++;
+						}
+						else // Spawn it
+						{
+							A_SpawnItemEx("BalrogRing",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+							spawnedaitem++;
+							Thing_Remove(0);
+						}
+					}
+				}
+				if (Rand2 > 90 && Rand2 < 100)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("DoveRibbon"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("DoveRibbon", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						if (type == 5) // Directly GIVE armor to the player instead of spawning it
+						{
+							A_GiveInventory("DoveRibbon",1,AAPTR_PLAYER1);
+							spawnedaitem++;
+						}
+						else // Spawn it
+						{
+							A_SpawnItemEx("DoveRibbon",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+							spawnedaitem++;
+							Thing_Remove(0);
+						}
+					}
+				}
+				if (Rand2 > 99)
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("RuinousShield"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+					if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck: %d", TempArmorCheck);
+					if (CountInv("RuinousShield", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+					{
+						ThinkerIterator Test1 = ThinkerIterator.Create("DivineShield"); Actor mo; while (mo = Actor(Test1.Next())) { TempArmorCheck++; }
+						if (dvdsdebug_armordropdisplays) Console.Printf("TempArmorCheck (2): %d", TempArmorCheck);
+						if (CountInv("DivineShield", AAPTR_PLAYER1) == 0 && TempArmorCheck < 1)
+						{
+							if (type == 5) // Directly GIVE armor to the player instead of spawning it
+							{
+								A_GiveInventory("DivineShield",1,AAPTR_PLAYER1);
+								spawnedaitem++;
+							}
+							else // Spawn it
+							{
+								A_SpawnItemEx("DivineShield",0.0,0.0,0.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+								spawnedaitem++;
+								Thing_Remove(0);
+							}
+						}
+					}
+				}
+				runtimes++;
+
+				if (dvdsdebug_armordropdisplays) Console.Printf("runtimes: %d / 64", runtimes);
+				if (runtimes > 63) { return; }
+			}
+		}
+		else // No spawn
+		{
+			Thing_Remove(0);
+		}
+	}
 }
 
 // Keeps Sounds/Music active during time Freeze powerups
