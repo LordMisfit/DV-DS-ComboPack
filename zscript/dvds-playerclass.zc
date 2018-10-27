@@ -180,6 +180,7 @@ class AetheriusPlayerPawn : PlayerPawn
 	
 	override void Tick()
 	{
+		int playeractor = 1;
 		// VOODOO Doll Protection
 		if (!player || !player.mo || player.mo != self) { return Super.Tick(); }
 
@@ -1347,10 +1348,6 @@ class AetheriusPlayerPawn : PlayerPawn
 			CallACS("MiscVarSetDECORATE",194,1); // Turns on Mercy Invincibility Flag
 			CallACS("MiscVarSetDECORATE",195,1210); // 1.5 seconds [51.5 tics * 20]
 			player.health = player.mo.health = 1;
-			//*************************************************************************************************************
-			//CallACS("FixMercyInvulnHealth",2); // IMPORTANT MISFIT: FIGURE OUT THE ISSUE HERE AS SOON AS POSSIBLE >:V
-			//*************************************************************************************************************
-			//Console.Printf("Survival Hit (%d)", MaxHealthTrue);
 
 			//*************************************************
 			//*Check "Mortal Hit Survivability Psyche Up" Perk*
@@ -1471,6 +1468,151 @@ class AetheriusPlayerPawn : PlayerPawn
 			bTHRUACTORS = 0;
 		}
 		
+		/*
+		// Testing ThinkIterator
+		int TestValue, TestValue2, TestValue3 = 0;
+		string spawntype = "DSDoomImp";
+		ThinkerIterator Test1 = ThinkerIterator.Create(spawntype);
+		Actor mo;
+		while (mo = Actor(Test1.Next())) 
+		{ 
+			if (mo.health <= 0) TestValue++; 
+			if (mo.health > 0) TestValue3++; 
+			TestValue2++;
+		}
+		Console.Printf("%s: %d (%d) / %d", spawntype, TestValue, TestValue3, TestValue2);
+		*/
+		
+		//*********************
+		//*Death Music/Effects*
+		//*********************
+		/*
+		int DY1 = MaxHealthTrue * -1;
+		int DeathMusicTimer;
+		if (playeractor)
+		{
+			// [12] is for the death time counter, to fade the screen to blackish-red when the player dies.
+			if (health < 1)
+			{
+				CallACS("MiscVarSetDECORATE",12,1,1);
+				CallACS("MiscVarSetDECORATE",13,6);
+
+				DeathMusicTimer = CallACS("MiscVarCheckDECORATE",12);
+				// Game Over Music
+				if (dvds_deathmusic != 0)
+				{
+					if (DeathMusicTimer == 1) S_ChangeMusic("",0,0);
+					if (dvds_deathmusic == 1 && DeathMusicTimer == 8) S_ChangeMusic("RoReDead",0,0);
+					if (dvds_deathmusic == 2 && DeathMusicTimer == 35) S_ChangeMusic("GaOvYe",0,0);
+					if (dvds_deathmusic == 3 && DeathMusicTimer == 35) S_ChangeMusic("DRQUDEAD",0,0);
+					if (dvds_deathmusic == 4 && DeathMusicTimer == 4) S_ChangeMusic("MiRiBuTi",0,0);
+					if (dvds_deathmusic == 5 && DeathMusicTimer == 14) S_ChangeMusic("ToDiYoAD",0,0);
+					if (dvds_deathmusic == 6 && DeathMusicTimer == 4) S_ChangeMusic("MGS2GMOV",0,0);
+					if (dvds_deathmusic == 7 && DeathMusicTimer == 35) S_ChangeMusic("ShGYaheh",0,0);
+					if (dvds_deathmusic == 8 && DeathMusicTimer == 4) S_ChangeMusic("AH3GMOVR",0,0);
+					if (dvds_deathmusic == 9 && DeathMusicTimer == 50) S_ChangeMusic("JURPRKP2",0,0);
+					
+					if (dvds_deathmusic == 1 && DeathMusicTimer >= 2220) S_ChangeMusic("",0,0);
+					if (dvds_deathmusic == 2 && DeathMusicTimer >= 367) S_ChangeMusic("",0,0);
+					if (dvds_deathmusic == 3 && DeathMusicTimer >= 255) S_ChangeMusic("",0,0);
+					if (dvds_deathmusic == 4 && DeathMusicTimer >= 290) S_ChangeMusic("",0,0);
+					if (dvds_deathmusic == 5 && DeathMusicTimer >= 3970) S_ChangeMusic("",0,0);
+					if (dvds_deathmusic == 6 && DeathMusicTimer == 284) S_ChangeMusic("",0,0);
+					if (dvds_deathmusic == 7 && DeathMusicTimer == 1365) S_ChangeMusic("",0,0);
+					if (dvds_deathmusic == 8 && DeathMusicTimer == 350) S_ChangeMusic("",0,0);
+					if (dvds_deathmusic == 9 && DeathMusicTimer == 273) S_ChangeMusic("",0,0);
+				}
+				
+				// "YOU DIED!" msg [HudMessage id 2] :V
+				if (DeathMusicTimer >= 4)
+				{
+					MiscellaneousVars[179] += 1;
+					if (MiscellaneousVars[179] >= 20) MiscellaneousVars[179] = 1;
+					CallACS("ZSC_SetHudSize",1280,960,0);
+					if (MiscellaneousVars[179] >= 1 && MiscellaneousVars[179] <= 4) Setfont("UDED1");
+					if (MiscellaneousVars[179] >= 5 && MiscellaneousVars[179] <= 8) Setfont("UDED2");
+					if (MiscellaneousVars[179] >= 9 && MiscellaneousVars[179] <= 12) Setfont("UDED3");
+					if (MiscellaneousVars[179] >= 13 && MiscellaneousVars[179] <= 16) Setfont("UDED4");
+					if (MiscellaneousVars[179] >= 17 && MiscellaneousVars[179] <= 20) Setfont("UDED5");
+					HudmessageBold(s:"A"; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 1.0, 1.0);
+					CallACS("ZSC_SetHudSize",0,0,0);
+					SetFont("DVDSSMLFONT");
+				}
+				else
+				{
+					HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
+					MiscellaneousVars[179] = 0;
+				}
+				
+				// Fading Death Heart Beats, if not gibbed
+				if (health > DY1)
+				{
+					SetActivator(Player1TID); // Set to Player's ID
+					if (DeathMusicTimer == 18) localambientsound("heartb2", 120); // +20
+					if (DeathMusicTimer == 20) localambientsound("heartb2", 120); // +20
+					
+					if (DeathMusicTimer == 42) localambientsound("heartb2", 103); // +22
+					if (DeathMusicTimer == 44) localambientsound("heartb2", 103); // +22
+					
+					if (DeathMusicTimer == 68) localambientsound("heartb2", 86); // +26
+					if (DeathMusicTimer == 70) localambientsound("heartb2", 86); // +26
+					
+					if (DeathMusicTimer == 100) localambientsound("heartb2", 69); // +32
+					if (DeathMusicTimer == 102) localambientsound("heartb2", 69); // +32
+					
+					if (DeathMusicTimer == 140) localambientsound("heartb2", 52); // +40
+					if (DeathMusicTimer == 142) localambientsound("heartb2", 52); // +40
+					
+					if (DeathMusicTimer == 188) localambientsound("heartb2", 35); // +62
+					if (DeathMusicTimer == 190) localambientsound("heartb2", 35); // +50
+					
+					if (DeathMusicTimer == 250) localambientsound("heartb2", 18); // +62
+					if (DeathMusicTimer == 252) localambientsound("heartb2", 18); // +62
+					SetActivator(0); // Set back to worldly activator
+				}
+				
+				if (health > DY1) // Not Gibbed
+				{
+					if (DeathMusicTimer == 115)
+					{
+						if (CountInv("PlayerDeathFadeOut") < 1) A_SetInventory(Player1TID,"PlayerDeathFadeOut", 0);
+						SetActivator(Player1TID); // Set to Player's ID
+						FadeRange(16, 0, 0, 0.0, 16, 0, 0, 1.0, 4.0);
+						SetActivator(0); // Set back to worldly activator
+					}
+					if (DeathMusicTimer == 260) FadeRange(16, 0, 0, 1.0, 255, 0, 0, 1.0, 1.0); // Intended to show a "Game Over" Euqse Screen
+				}
+				else // Gibbed
+				{
+					if (DeathMusicTimer == 4)
+					{
+						if (CountInv("PlayerDeathFadeOut") < 1) A_SetInventory("PlayerDeathFadeOut", 1);
+						SetActivator(Player1TID); // Set to Player's ID
+						FadeRange(0, 0, 0, 0.0, 255, 0, 0, 1.0, 0.8);
+						SetActivator(0); // Set back to worldly activator
+					}
+				}
+			}
+			else
+			{
+				if (MiscellaneousVars[13] > 0)
+				{
+					SetActivator(Player1TID); // Set to Player's ID
+					FadeTo(0, 0, 0, 0.0, 0.0001);
+					SetActivator(0); // Set back to worldly activator at the end of weapon checking.
+					MiscellaneousVars[13] -= 1;
+				}
+				HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
+				if (CountInv("PlayerDeathFadeOut") > 0) A_SetInventory(Player1TID,"PlayerDeathFadeOut", 0);
+				if (dvds_deathmusic != 0)
+				{
+					if (DeathMusicTimer > 0) S_ChangeMusic("*", 0, 1);
+				}
+				DeathMusicTimer = 0;
+				CallACS("MiscVarSetDECORATE",12,DeathMusicTimer);
+			}
+		}
+		*/
 		
 		
 		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V

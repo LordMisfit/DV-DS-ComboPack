@@ -107,6 +107,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		A_AetheriusStats(0); 
 		if (self.health <= User_MaxHP) self.health = User_MaxHP;
+		//Console.Printf("User_MaxHP: %d", User_MaxHP);
 
 		ActorRandomBits = random();
 
@@ -128,7 +129,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		bullet_tracer_mode = dvds_monsterbulletstracers;
 		levelbehavior = dvds_monsterlevelbehavior;
 		gfxeffectlevel = dvds_gfxeffectlevel;
-		if (self.health > 0 && CountInv("MonsterLevelCalcs") == 0) { A_AetheriusStats(0); }
+		if (self.health > 0 && CountInv("MonsterLevelCalcs") == 0) 
+		{ 
+			//Console.Printf("Test");
+			A_AetheriusStats(0); 
+		}
 
 		if (((gametic + (ActorRandomBits & 15)) & 15) == 1)
 		{
@@ -792,6 +797,1166 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	//****************************
 	//*AETHERIUS UNIQUE FUNCTIONS*
 	//****************************
+	void A_MonsterStatsHP_ATK_DEF_SPD(int type = 0, int extraflags = 0)
+	{
+		double MaxHP, MSpeed, Attack, Defense, Balance;
+		double PreMaxHP, PreMSpeed, PreAttack, PreDefense, PreBalance;
+		int CurrHP, Temp, RangeVar, LevelCheck, MapCheck;
+		int StealthChance;
+		int nonstatmonster = 0;
+		int debugstatcalc = dvdsdebug_showstatcalcstuff;
+		int skilllevelcalctype = dvds_skilllevelcalctype;
+		int deathkingsmapcalcmod = dvds_deathkingsmapcalcmod;
+		int mapcalcfactorexact = 0;
+		int mapcalcfactorpercent = 100;
+		int BossEyeCheck = 0;
+		int ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int PlayerLevel = CallACS("StatCheck",0);
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		
+		if (type < 0) type = 0;
+		if (type > 1) type = 1;
+		
+	
+		// extraflags
+		// & 1 = Always multiply level by 4 instead of a 1/64 chance of it. [basically "Elitifies" the monster all the time when called]
+		// & 2 = Multiplies the monsters' level by 4 [again]
+
+		if (type == 0) // Giving Stats
+		{
+			ACS_NamedExecuteWithResult("RefreshStealthInfo"); // Runs to check Stealth information [in case something like finding the Ring has happened]
+		
+			if (CountInv("MonsterLevelCalcs") != 0) { if (debugstatcalc) Console.Printf("MonsterLevelCalcs [1]: %d", CountInv("MonsterLevelCalcs")); }
+			else
+			{
+				if (user_checkmapskill > 0) { if (debugstatcalc) Console.Printf("user_checkmapskill [2]: %d", user_checkmapskill); }
+				else
+				{
+					ThinkerIterator Test1 = ThinkerIterator.Create("DSBossEye"); Actor mo; while (mo = Actor(Test1.Next())) { BossEyeCheck++; }
+					if (debugstatcalc) Console.Printf("DSBossEye (Check): %d", BossEyeCheck);
+
+					string ActorName = GetClassName();
+					if (debugstatcalc) Console.Printf("\ckActorName: %s", ActorName);
+
+					StealthChance = ACS_NamedExecuteWithResult("GetStealthChance");
+
+					nonstatmonster = 0;
+					if (ActorName == "PracticeTarget") nonstatmonster = 1;
+					if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+					if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
+					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
+					if (random(1,256) <= StealthChance && nonstatmonster == 0)
+					{
+						if (CountInv("TheOneRing",AAPTR_PLAYER1) > 0) 
+						{
+							A_SetInventory("IsAStealthMonsterRing", 1);
+							A_SetInventory("IsAStealthMonster5000", 0); 
+							A_SetInventory("IsAStealthMonster7500", 0); 
+							A_SetInventory("IsAStealthMonster8750", 0); 
+							A_SetInventory("IsAStealthMonster9375", 0); 
+						}
+						else
+						{
+							A_SetInventory("IsAStealthMonsterRing", 0); 
+							if (dvds_rnd_stealthlevel == 0) A_SetInventory("IsAStealthMonster5000", 1); 
+							if (dvds_rnd_stealthlevel == 1) A_SetInventory("IsAStealthMonster7500", 1); 
+							if (dvds_rnd_stealthlevel == 2) A_SetInventory("IsAStealthMonster8750", 1); 
+							if (dvds_rnd_stealthlevel == 3) A_SetInventory("IsAStealthMonster9375", 1); 
+							if (dvds_rnd_stealthlevel != 0) A_SetInventory("IsAStealthMonster5000", 0); 
+							if (dvds_rnd_stealthlevel != 1) A_SetInventory("IsAStealthMonster7500", 0); 
+							if (dvds_rnd_stealthlevel != 2) A_SetInventory("IsAStealthMonster8750", 0); 
+							if (dvds_rnd_stealthlevel != 3) A_SetInventory("IsAStealthMonster9375", 0); 
+						}
+						user_isstealth = 1;
+					}
+					else
+					{
+						user_isstealth = 0;
+						A_SetInventory("IsAStealthMonsterRing", 0);
+					}
+
+					//*******************************************************
+					//** Calculates Stats By Checking the Difficulty Level **
+					//*******************************************************
+					int DifficultyChecker = 1;
+					if (ModType == 0)
+					{
+						if (dvds_monsterstatcalc_skill) DifficultyChecker = 1; else DifficultyChecker = 0;
+					}
+					else DifficultyChecker = 1;
+
+					double SpeedFactor = 0.0;
+					double AttackFactor = 0.0;
+					double DefenseFactor = 0.0;
+					double MaxHPFactor = 0.0;
+					double BalanceFactor = 0.0;
+					MSpeed = Speed;
+					Attack = 1.0; 
+					Defense = 1.0; 
+					Balance = Mass; 
+					MaxHP = SpawnHealth();
+					PreMSpeed = MSpeed;
+					PreAttack = Attack; 
+					PreDefense = Defense; 
+					PreBalance = Balance; 
+					PreMaxHP = MaxHP;
+					user_basespeed = Speed;
+					user_basemass = Mass;
+					if (debugstatcalc) Console.Printf("\chStart Speed: %8f, \cgStart Attack: %8f, \cdStart Defense: %8f, \caStart Max HP: %d, \cpStart Balance: %d", MSpeed, Attack, Defense, MaxHP, Balance);
+					
+					nonstatmonster = 0;
+					if (ActorName == "PracticeTarget") nonstatmonster = 1;
+					if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+					if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
+					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
+					if (DifficultyChecker == 1 && nonstatmonster == 0) // Difficulty-checking enabled
+					{
+						if (TrueGameSkill <= SKILL_VERY_EASY)
+						{
+							if (skilllevelcalctype == 0) { AttackFactor = -0.3333; DefenseFactor = 0.5000; SpeedFactor = -0.083334; MaxHPFactor = -0.15; BalanceFactor = -0.3333; }
+							else { AttackFactor = -0.1667; DefenseFactor = 0.2000; SpeedFactor = -0.041667; MaxHPFactor = -0.075; BalanceFactor = -0.1667; }
+						}
+						else
+						if (TrueGameSkill == SKILL_EASY)
+						{
+							if (skilllevelcalctype == 0) { AttackFactor = -0.1667; DefenseFactor = 0.2000; SpeedFactor = -0.041667; MaxHPFactor = -0.05; BalanceFactor = -0.1667; }
+							else { AttackFactor = -0.08333; DefenseFactor = 0.090909; SpeedFactor = -0.0208333; MaxHPFactor = -0.025; BalanceFactor = -0.08333; }
+						}
+						else
+						if (TrueGameSkill == SKILL_NORMAL)
+						{
+							if (skilllevelcalctype == 0) { AttackFactor = 0.0; DefenseFactor = 0.0; SpeedFactor = 0.0; MaxHPFactor = 0.0; BalanceFactor = 0.0; }
+							else { AttackFactor = 0.0; DefenseFactor = 0.0; SpeedFactor = 0.0; MaxHPFactor = 0.0; BalanceFactor = 0.0; }
+						}
+						else
+						if (TrueGameSkill == SKILL_HARD)
+						{
+							if (skilllevelcalctype == 0) { AttackFactor = 0.1667; DefenseFactor = -0.142857; SpeedFactor = 0.041667; MaxHPFactor = 0.05; BalanceFactor = 0.1667; }
+							else { AttackFactor = 0.08333; DefenseFactor = -0.076924; SpeedFactor = 0.0208325; MaxHPFactor = 0.0375; BalanceFactor = 0.08333; }
+						}
+						else
+						if (TrueGameSkill == SKILL_VERY_HARD)
+						{
+							if (skilllevelcalctype == 0) { AttackFactor = 0.5; DefenseFactor = -0.333334; SpeedFactor = 0.125; MaxHPFactor = 0.15; BalanceFactor = 0.5; }
+							else { AttackFactor = 0.2; DefenseFactor = -0.1667; SpeedFactor = 0.05; MaxHPFactor = 0.10; BalanceFactor = 0.2; }
+						}
+						else
+						if (TrueGameSkill == SKILL_EXTREME)
+						{
+							if (skilllevelcalctype == 0) { AttackFactor = 1.0; DefenseFactor = -0.5; SpeedFactor = 0.25; MaxHPFactor = 0.30; BalanceFactor = 1.0; }
+							else { AttackFactor = 0.5; DefenseFactor = -0.3333; SpeedFactor = 0.125; MaxHPFactor = 0.225; BalanceFactor = 0.5; }
+						}
+						else
+						if (TrueGameSkill == SKILL_HORRIBLE)
+						{
+							if (skilllevelcalctype == 0) { AttackFactor = 1.2; DefenseFactor = -0.6666; SpeedFactor = 0.325; MaxHPFactor = 0.40; BalanceFactor = 1.25; }
+							else { AttackFactor = 0.6; DefenseFactor = -0.3333; SpeedFactor = 0.1625; MaxHPFactor = 0.30; BalanceFactor = 0.625; }
+						}
+						else
+						if (TrueGameSkill == SKILL_IMPOSSIBLE)
+						{
+							if (skilllevelcalctype == 0) { AttackFactor = 1.35; DefenseFactor = -0.75; SpeedFactor = 0.40; MaxHPFactor = 0.45; BalanceFactor = 1.5; }
+							else { AttackFactor = 0.675; DefenseFactor = -0.375; SpeedFactor = 0.20; MaxHPFactor = 0.3375; BalanceFactor = 0.75; }
+						}
+						else
+						if (TrueGameSkill >= SKILL_OMEGA)
+						{
+							if (skilllevelcalctype == 0) { AttackFactor = 1.5; DefenseFactor = -0.825; SpeedFactor = 0.50; MaxHPFactor = 0.55; BalanceFactor = 1.625; }
+							else { AttackFactor = 0.75; DefenseFactor = -0.4125; SpeedFactor = 0.25; MaxHPFactor = 0.4125; BalanceFactor = 0.8125; }
+						}
+						if (debugstatcalc) Console.Printf("\cgAttackFactor [Skill]: %8f, \cdDefenseFactor [Skill]: %8f, \chSpeedFactor [Skill]: %8f, \caMaxHPFactor [Skill]: %8f, \cpBalanceFactor [Skill]: %8f", AttackFactor, DefenseFactor, SpeedFactor, MaxHPFactor, BalanceFactor);
+
+						SpeedFactor *= dvds_monsterspeedratio_skill;
+						if (SpeedFactor < -4.00) SpeedFactor = -4.00;
+						if (SpeedFactor > 4.00) SpeedFactor = 4.00;
+						MSpeed *= (1.0 + SpeedFactor);
+						Speed = MSpeed;
+					
+						AttackFactor *= dvds_monsterattackratio_skill;
+						if (AttackFactor < -4.00) AttackFactor = -4.00;
+						if (AttackFactor > 4.00) AttackFactor = 4.00;
+						Attack *= (1.0 + AttackFactor);
+						DamageMultiply = Attack;
+					
+						DefenseFactor *= dvds_monsterdefenseratio_skill;
+						if (DefenseFactor < -4.00) DefenseFactor = -4.00;
+						if (DefenseFactor > 4.00) DefenseFactor = 4.00;
+						Defense *= (1.0 + DefenseFactor);
+						DamageFactor = Defense; 
+					
+						MaxHPFactor *= dvds_monstermaxhpratio_skill;
+						if (MaxHPFactor < -4.00) MaxHPFactor = -4.00;
+						if (MaxHPFactor > 4.00) MaxHPFactor = 4.00;
+						MaxHP *= (1.0 + MaxHPFactor);
+					
+						BalanceFactor *= dvds_monsterbalanceratio_skill;
+						if (BalanceFactor < -4.00) BalanceFactor = -4.00;
+						if (BalanceFactor > 4.00) BalanceFactor = 4.00;
+						Balance *= (1.0 + BalanceFactor);
+						Mass = Balance;
+					
+						if (Attack < 0.005) Attack = 0.005;
+						if (Attack > 20.00) Attack = 20.00;
+						if (Defense < 0.005) Defense = 0.005;
+						if (Defense > 20.00) Defense = 20.00;
+						if (Balance < 1) Balance = 1;
+						if (Balance > 2500000) Balance = 2500000;
+						if (MaxHP < 1) MaxHP = 1;
+						if (MaxHP > 2147483647) MaxHP = 2147483647;
+					
+						if (debugstatcalc)
+						{
+							Console.Printf("\chSpeedFactor [Skill]: %8f, Speed After Skill: %8f (%8f)", (1.0 + SpeedFactor), MSpeed, PreMSpeed);
+							Console.Printf("\cgAttackFactor [Skill]: %8f, Attack After Skill: %8f (%8f)", (1.0 + AttackFactor), Attack, PreAttack);
+							Console.Printf("\cdDefenseFactor [Skill]: %8f, Defense After Skill: %8f (%8f)", (1.0 + DefenseFactor), Defense, PreDefense);
+							Console.Printf("\caMaxHPFactor [Skill]: %8f, MaxHP After Skill: %d (%d)", (1.0 + MaxHPFactor), MaxHP, PreMaxHP);
+							Console.Printf("\cpBalanceFactor [Skill]: %8f, Balance After Skill: %d (%d)", (1.0 + BalanceFactor), Balance, PreBalance);
+						}
+					}
+					//*************************************************
+					//** Calculates Stats By Checking the Map Number **
+					//*************************************************
+					int MapChecker = 1;
+					if (ModType == 0)
+					{
+						if (dvds_monsterstatcalc_maps) MapChecker = 1; else MapChecker = 0;
+					}
+					else MapChecker = 1;
+
+					nonstatmonster = 0;
+					if (ActorName == "PracticeTarget") nonstatmonster = 1;
+					if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+					if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
+					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
+					if (MapChecker == 1 && nonstatmonster == 0) // Map-checking enabled
+					{
+						PreMSpeed = MSpeed;
+						PreAttack = Attack; 
+						PreDefense = Defense; 
+						PreBalance = Balance; 
+						PreMaxHP = MaxHP;
+						if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
+						{
+							if (ClassicDoomType == 1 || ClassicDoomType == 2) // Doom 1 / Heretic [ExMx system]
+							{
+								MapCheck = level.levelnum;
+								if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+								MapCheck += CallACS("MiscVarCheckDECORATE",53); // Map Inflation [Stats - Exact]
+								MapCheck += CallACS("MiscVarCheckDECORATE",169); // Map Inflation [Overall - Exact]
+								MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",2) / 100; // Map Inflation [Stats - Percentile]
+								MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",5) / 100; // Map Inflation [Overall - Percentile]
+								if (MapCheck < 1) MapCheck = 1;
+								if (MapCheck > 75) MapCheck = 75;
+						
+								AttackFactor = 0.0;
+								if (MapCheck > 1) AttackFactor += (0.02 * (MapCheck - 1));
+								if (MapCheck > 2) AttackFactor += (0.001 * (MapCheck - 2));
+								if (MapCheck >= 1 && MapCheck <= 10) AttackFactor *= 1.0125;
+								if (MapCheck >= 11 && MapCheck <= 20) AttackFactor *= 1.025;
+								if (MapCheck >= 21 && MapCheck <= 30) AttackFactor *= 1.0375;
+								if (MapCheck >= 31 && MapCheck <= 40) AttackFactor *= 1.05;
+								if (MapCheck >= 41 && MapCheck <= 50) AttackFactor *= 1.0625;
+								if (MapCheck >= 51 && MapCheck <= 60) AttackFactor *= 1.075;
+								if (MapCheck >= 61 && MapCheck <= 70) AttackFactor *= 1.0875;
+								if (MapCheck >= 71) AttackFactor *= 1.1;
+						
+								DefenseFactor = 1.0 / (AttackFactor + 1.0); //(1.0 / (AttackFactor + 1.0)) - 1.0;
+								DefenseFactor -= 1.0;
+						
+								SpeedFactor = AttackFactor / 4.0;
+						
+								MaxHPFactor = AttackFactor;
+						
+								BalanceFactor = AttackFactor;
+							}
+							else // Doom 2 / Hexen / Strife / Doom64 / PSXDoom [MAPxx system]
+							{
+								MapCheck = level.levelnum;
+								if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+								MapCheck += CallACS("MiscVarCheckDECORATE",53); // Map Inflation [Stats - Exact]
+								MapCheck += CallACS("MiscVarCheckDECORATE",169); // Map Inflation [Overall - Exact]
+								MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",2) / 100; // Map Inflation [Stats - Percentile]
+								MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",5) / 100; // Map Inflation [Overall - Percentile]
+								if (MapCheck < 1) MapCheck = 1;
+								if (MapCheck > 75) MapCheck = 75;
+						
+								AttackFactor = 0.0;
+								if (MapCheck > 1) AttackFactor += (0.025 * (MapCheck - 1));
+						
+								if (MapCheck >= 1 && MapCheck <= 6) AttackFactor *= 1.0125;
+								if (MapCheck >= 7 && MapCheck <= 11) AttackFactor *= 1.025;
+								if (MapCheck >= 12 && MapCheck <= 20) AttackFactor *= 1.0375;
+								if (MapCheck == 31) AttackFactor *= 1.0375;
+								if (MapCheck == 32) AttackFactor *= 1.0375;
+								if (MapCheck >= 21 && MapCheck <= 30) AttackFactor *= 1.05;
+								if (MapCheck >= 33 && MapCheck <= 40) AttackFactor *= 1.0625;
+								if (MapCheck >= 41 && MapCheck <= 50) AttackFactor *= 1.075;
+								if (MapCheck >= 51 && MapCheck <= 60) AttackFactor *= 1.0875;
+								if (MapCheck >= 61 && MapCheck <= 70) AttackFactor *= 1.10;
+								if (MapCheck >= 71) AttackFactor *= 1.125;
+						
+								DefenseFactor = 1.0 / (AttackFactor + 1.0); //(1.0 / (AttackFactor + 1.0)) - 1.0;
+								DefenseFactor -= 1.0;
+						
+								SpeedFactor = AttackFactor / 4.0;
+						
+								MaxHPFactor = AttackFactor;
+						
+								BalanceFactor = AttackFactor;
+							}
+						}
+
+						nonstatmonster = 0;
+						if (ActorName == "PracticeTarget") nonstatmonster = 1;
+						if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+						if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
+						if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
+						if (ModType == 1 && nonstatmonster == 0) // Deus Vult 1
+						{
+							MapCheck = level.levelnum;
+							if (MapCheck < 1101) MapCheck = 1101;
+							if (MapCheck > 1104) MapCheck = 1104;
+					
+							AttackFactor = 0.0;
+							if (MapCheck == 1101) AttackFactor = 0.0; // MAP01 - Insurgents
+							if (MapCheck == 1102) AttackFactor = 0.25; // MAP02 - Torture Chamber
+							if (MapCheck == 1103) AttackFactor = 0.75; // MAP03 - Cathedral
+							if (MapCheck == 1104) AttackFactor = 1.5; // MAP04 - End Of Days
+					
+							DefenseFactor = 1.0 / (AttackFactor + 1.0); //(1.0 / (AttackFactor + 1.0)) - 1.0;
+							DefenseFactor -= 1.0;
+					
+							SpeedFactor = AttackFactor / 4.0;
+					
+							MaxHPFactor = AttackFactor / 2.0;
+					
+							BalanceFactor = AttackFactor / 2.0;
+						}
+						
+						if (ModType == 2 && (ActorName != "PracticeTarget" || ActorName != "PracticeTarget2")) // Deus Vult 2
+						{
+							MapCheck = level.levelnum;
+							if (MapCheck < 1201) MapCheck = 1201;
+							if (MapCheck > 1212) MapCheck = 1212;
+					
+							// Earth-type Levels
+							if (MapCheck == 1201) // MAP01 - Entryway Pass
+							{
+								AttackFactor = 0.0; DefenseFactor = 0.0; SpeedFactor = 0.0; MaxHPFactor = 0.0; BalanceFactor = 0.0;
+							}
+							else
+							if (MapCheck == 1202) // MAP02 - Mutagen
+							{
+								AttackFactor = 0.03; DefenseFactor = -0.029126; SpeedFactor = 0.0075; MaxHPFactor = 0.06; BalanceFactor = 0.03;
+							}
+							else
+							if (MapCheck == 1203) // MAP03 - Crouching Demon, Hidden Archvile
+							{
+								AttackFactor = 0.09; DefenseFactor = -0.082569; SpeedFactor = 0.0225; MaxHPFactor = 0.12; BalanceFactor = 0.09;
+							}
+							else
+							if (MapCheck == 1204) // MAP04 - Minas Morgul
+							{
+								AttackFactor = 0.18; DefenseFactor = -0.152542; SpeedFactor = 0.045; MaxHPFactor = 0.19; BalanceFactor = 0.18;
+							}
+							else
+							if (MapCheck == 1205) // MAP05 - Eagle's Nest
+							{
+								AttackFactor = 0.30; DefenseFactor = -0.230769; SpeedFactor = 0.075; MaxHPFactor = 0.26; BalanceFactor = 0.30;
+							}
+							else
+							if (MapCheck == 1206) // MAP05S - The Manliest Level Ever
+							{
+								AttackFactor = 0.45; DefenseFactor = -0.310345; SpeedFactor = 0.1125; MaxHPFactor = 0.34; BalanceFactor = 0.45;
+							}
+							else
+							if (MapCheck == 1207) // MAP06 - Stargate
+							{
+								AttackFactor = 0.63; DefenseFactor = -0.386503; SpeedFactor = 0.1575; MaxHPFactor = 0.42; BalanceFactor = 0.63;
+							}
+							else
+							if (MapCheck == 1208) // MAP07 - The Desert Temple
+							{
+								AttackFactor = 0.84; DefenseFactor = -0.456522; SpeedFactor = 0.21; MaxHPFactor = 0.50; BalanceFactor = 0.84;
+							}
+							else
+							// Hell Levels
+							if (MapCheck == 1209) // MAP08 - The Unholy Cathedral
+							{
+								AttackFactor = 1.14; DefenseFactor = -0.53271; SpeedFactor = 0.285; MaxHPFactor = 0.77; BalanceFactor = 1.14;
+							}
+							else
+							if (MapCheck == 1210) // DV2M09 - You Shall Not Pass!
+							{
+								AttackFactor = 1.53; DefenseFactor = -0.604743; SpeedFactor = 0.3825; MaxHPFactor = 1.09; BalanceFactor = 1.53;
+							}
+							else
+							if (MapCheck == 1211) // DV2M10 - Hell's Vendetta
+							{
+								AttackFactor = 2.01; DefenseFactor = -0.667774; SpeedFactor = 0.5025; MaxHPFactor = 1.48; BalanceFactor = 2.01;
+							}
+							else
+							if (MapCheck == 1212) // DV2M10B - attedneV s'lleH
+							{
+								AttackFactor = 2.58; DefenseFactor = -0.72067; SpeedFactor = 0.645; MaxHPFactor = 1.92; BalanceFactor = 2.58;
+							}
+							else
+							if (MapCheck == 1214) // DV2M12 - "The Wings of The Maiar" [DVI combined level remake]
+							{
+								AttackFactor = 1.56; DefenseFactor = -0.609375; SpeedFactor = 0.39; MaxHPFactor = 1.41; BalanceFactor = 1.56;
+							}
+							else
+							if (MapCheck == 1215) // DV2M10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
+							{
+								AttackFactor = 2.58; DefenseFactor = -0.72067; SpeedFactor = 0.645; MaxHPFactor = 1.92; BalanceFactor = 2.58;
+							}
+						}
+						if (debugstatcalc) Console.Printf("\cx[MAP] \czMapCheck: %d, \chSpeedFactor: %8f, \cgAttackFactor: %8f, \cdDefenseFactor: %8f, \caMaxHPFactor: %8f, \cpBalanceFactor: %8f", MapCheck, SpeedFactor, AttackFactor, DefenseFactor, MaxHPFactor, BalanceFactor);
+
+						SpeedFactor *= dvds_monsterspeedratio_maps;
+						if (SpeedFactor < -4.00) SpeedFactor = -4.00;
+						if (SpeedFactor > 4.00) SpeedFactor = 4.00;
+						MSpeed *= (1.0 + SpeedFactor);
+						Speed = MSpeed;
+					
+						AttackFactor *= dvds_monsterattackratio_maps;
+						if (AttackFactor < -4.00) AttackFactor = -4.00;
+						if (AttackFactor > 4.00) AttackFactor = 4.00;
+						Attack *= (1.0 + AttackFactor);
+						DamageMultiply = Attack;
+					
+						DefenseFactor *= dvds_monsterdefenseratio_maps;
+						if (DefenseFactor < -4.00) DefenseFactor = -4.00;
+						if (DefenseFactor > 4.00) DefenseFactor = 4.00;
+						Defense *= (1.0 + DefenseFactor);
+						DamageFactor = Defense; 
+					
+						MaxHPFactor *= dvds_monstermaxhpratio_maps;
+						if (MaxHPFactor < -4.00) MaxHPFactor = -4.00;
+						if (MaxHPFactor > 4.00) MaxHPFactor = 4.00;
+						MaxHP *= (1.0 + MaxHPFactor);
+					
+						BalanceFactor *= dvds_monsterbalanceratio_maps;
+						if (BalanceFactor < -4.00) BalanceFactor = -4.00;
+						if (BalanceFactor > 4.00) BalanceFactor = 4.00;
+						Balance *= (1.0 + BalanceFactor);
+						Mass = Balance;
+					
+						if (Attack < 0.0025) Attack = 0.0025;
+						if (Attack > 40.00) Attack = 40.00;
+						if (Defense < 0.0025) Defense = 0.0025;
+						if (Defense > 40.00) Defense = 40.00;
+						if (Balance < 1) Balance = 1;
+						if (Balance > 5000000) Balance = 5000000;
+						if (MaxHP < 1) MaxHP = 1;
+						if (MaxHP > 2147483647) MaxHP = 2147483647;
+					
+						if (debugstatcalc)
+						{
+							Console.Printf("\chSpeedFactor [MAP]: %8f, Speed After Map: %8f (%8f)", (1.0 + SpeedFactor), MSpeed, PreMSpeed);
+							Console.Printf("\cgAttackFactor [MAP]: %8f, Attack After Map: %8f (%8f)", (1.0 + AttackFactor), Attack, PreAttack);
+							Console.Printf("\cdDefenseFactor [MAP]: %8f, Defense After Map: %8f (%8f)", (1.0 + DefenseFactor), Defense, PreDefense);
+							Console.Printf("\caMaxHPFactor [MAP]: %8f, MaxHP After Map: %d (%d)", (1.0 + MaxHPFactor), MaxHP, PreMaxHP);
+							Console.Printf("\cpBalanceFactor [MAP]: %8f, Balance After Map: %d (%d)", (1.0 + BalanceFactor), Balance, PreBalance);
+						}
+					}
+
+					//*****************************************************************
+					//** Calculates Stats [and Level] By Checking the Player's Level **
+					//*****************************************************************
+					int LevelErrorRange;
+					double LevelBaseMulti = 0.00375;
+					if (TrueGameSkill <= SKILL_VERY_EASY) LevelBaseMulti = 0.00225;
+					if (TrueGameSkill == SKILL_EASY) LevelBaseMulti = 0.003;
+					if (TrueGameSkill == SKILL_NORMAL) LevelBaseMulti = 0.00375;
+					if (TrueGameSkill == SKILL_HARD) LevelBaseMulti = 0.0045;
+					if (TrueGameSkill == SKILL_VERY_HARD) LevelBaseMulti = 0.00525;
+					if (TrueGameSkill == SKILL_EXTREME) LevelBaseMulti = 0.006;
+					if (TrueGameSkill == SKILL_HORRIBLE) LevelBaseMulti = 0.00675;
+					if (TrueGameSkill == SKILL_IMPOSSIBLE) LevelBaseMulti = 0.0075;
+					if (TrueGameSkill >= SKILL_OMEGA) LevelBaseMulti = 0.00875;
+					LevelBaseMulti *= dvds_monsterlevelstatfactor;
+				
+					int LevelChecker = 1;
+					int LevelDifficultyInflation = dvds_leveldifficultyinflation;
+					if (LevelDifficultyInflation < -2000) LevelDifficultyInflation = -2000;
+					if (LevelDifficultyInflation > 2000) LevelDifficultyInflation = 2000;
+					int LevelDifficultyInflationPercent = dvds_leveldifficultyinflation2;
+					if (LevelDifficultyInflationPercent < -100) LevelDifficultyInflationPercent = -100;
+					if (LevelDifficultyInflationPercent > 2000) LevelDifficultyInflationPercent = 2000;
+				
+					if (ModType == 0)
+					{
+						if (dvds_monsterstatcalc_levels) LevelChecker = 1; else LevelChecker = 0;
+					}
+					else LevelChecker = 1;
+				
+					nonstatmonster = 0;
+					if (ActorName == "PracticeTarget") nonstatmonster = 1;
+					if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+					if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
+					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
+					if (LevelChecker == 1 && nonstatmonster == 0)
+					{
+						PreMSpeed = MSpeed;
+						PreAttack = Attack; 
+						PreDefense = Defense; 
+						PreBalance = Balance; 
+						PreMaxHP = MaxHP;
+						LevelCheck = user_presetleveladd; // Checks the "Preset" strength of a monster
+						if (debugstatcalc) Console.Printf("\ckMonsterLevel [PresetLevel Add]: %d (Add: %d)", LevelCheck, user_presetleveladd, user_presetlevelrand1, user_presetlevelrand2);
+
+						LevelCheck += random(user_presetlevelrand1,user_presetlevelrand2); // Checks the "Preset" strength of a monster
+						if (debugstatcalc) Console.Printf("\ckMonsterLevel [PresetLevel Rand]: %d (Error: +%d to %d)", LevelCheck, user_presetlevelrand1, user_presetlevelrand2);
+
+						LevelCheck += PlayerLevel;
+						if (debugstatcalc) Console.Printf("\ckMonsterLevel [PlayerLevel Check]: %d (PlayLvl: +%d)", LevelCheck, PlayerLevel);
+				
+						LevelCheck += user_ressurrectstr; // Checks the "Resurrect" strength of a monster [Clay Devils in TCOTD:A get stronger each time they resurrect]
+						if (debugstatcalc) Console.Printf("\ckMonsterLevel [ResurrectStr Check]: %d (ResStr: +%d)", LevelCheck, user_ressurrectstr);
+			
+						LevelCheck += LevelDifficultyInflation;
+						if (debugstatcalc) Console.Printf("\ckMonsterLevel [inflation-exact]: %d (Difficulty Inflation: +%d)", LevelCheck, LevelDifficultyInflation);
+			
+						LevelCheck = LevelCheck * (100 + LevelDifficultyInflationPercent) / 100;
+						if (debugstatcalc) Console.Printf("\ckMonsterLevel [inflation-percent]: %d (Percent: %d%)", LevelCheck, (100 + LevelDifficultyInflationPercent));
+						
+						LevelErrorRange = LevelCheck * 0.1667;
+						if (LevelErrorRange < 1) LevelErrorRange = random(0,3);
+						LevelCheck += random(-LevelErrorRange,LevelErrorRange);
+						if (debugstatcalc) Console.Printf("\ckMonsterLevel [error-range]: %d (Error Range: +-%d)", LevelCheck, LevelErrorRange);
+						
+						int PreviousLevelCheck = LevelCheck;
+						if (ModType == 1) // DV1 [general]
+						{
+							LevelCheck += random(0,10);
+						}
+						else
+						if (ModType == 2) // DV2 [general]
+						{
+							if (MapCheck >= 1209 && MapCheck <= 1215) // DV2's Hell Levels
+							{
+								LevelCheck += random(10,25);
+							}
+							else
+							{
+								LevelCheck += random(0,10);
+							}
+						}
+						else // Normal Mode
+						{
+							// Specfic Actors
+							if (ActorName == "RebelNew") LevelCheck += random(-3,7);
+							if (ActorName == "Rebel1New") LevelCheck += random(-3,7);
+							if (ActorName == "Rebel2New") LevelCheck += random(-3,7);
+							if (ActorName == "Rebel3New") LevelCheck += random(-3,7);
+							if (ActorName == "Rebel4New") LevelCheck += random(-3,7);
+							if (ActorName == "Rebel5New") LevelCheck += random(-3,7);
+							if (ActorName == "Rebel6New") LevelCheck += random(-3,7);
+					
+							// Specfic Monsters
+							// Mini-Boss
+							if (ActorName == "DSSpiderMastermind") LevelCheck += random(3,6);
+							if (ActorName == "Demolisher") LevelCheck += random(3,6);
+							if (ActorName == "DSCyberdemon") LevelCheck += random(3,6);
+							if (ActorName == "Annihilator") LevelCheck += random(3,6);
+							if (ActorName == "MaulotaurNew") LevelCheck += random(3,6);
+					
+							// Specfic Bosses
+							// Tier 1 Boss
+							if (ActorName == "DSparilMountedNew") LevelCheck += random(9,18);
+							if (ActorName == "FighterBossNew") LevelCheck += random(9,18);
+							if (ActorName == "ClericBossNew") LevelCheck += random(9,18);
+							if (ActorName == "MagicBossNew") LevelCheck += random(9,18);
+							if (ActorName == "ProgrammerNew") LevelCheck += random(9,18);
+							if (ActorName == "StrifeBishopNew") LevelCheck += random(9,18);
+							if (ActorName == "OracleNew") LevelCheck += random(9,18);
+							if (ActorName == "Macil1New") LevelCheck += random(9,18);
+							if (ActorName == "Macil2New") LevelCheck += random(9,18);
+							if (ActorName == "LoremasterNew") LevelCheck += random(9,18);
+							// Tier 2 Boss
+							if (ActorName == "DSBossBrain") LevelCheck += random(15,30);
+							if (ActorName == "AlienSpectre1New") LevelCheck += random(15,30);
+							if (ActorName == "AlienSpectre2New") LevelCheck += random(15,30);
+							if (ActorName == "AlienSpectre3New") LevelCheck += random(15,30);
+							if (ActorName == "AlienSpectre4New") LevelCheck += random(15,30);
+							if (ActorName == "AlienSpectre5New") LevelCheck += random(15,30);
+							if (ActorName == "AlienSpectre1Model") LevelCheck += random(15,30);
+							if (ActorName == "AlienSpectre2Model") LevelCheck += random(15,30);
+							if (ActorName == "AlienSpectre3Model") LevelCheck += random(15,30);
+							if (ActorName == "AlienSpectre4Model") LevelCheck += random(15,30);
+							if (ActorName == "AlienSpectre5Model") LevelCheck += random(15,30);
+							if (ActorName == "SourceGuardian") LevelCheck += random(15,30);
+							// Tier 3 Boss
+							if (ActorName == "DSparilUnmountedNew") LevelCheck += random(23,45);
+							if (ActorName == "Zakachi") LevelCheck += random(23,45);
+							if (ActorName == "KoraxNew") LevelCheck += random(23,45);
+							if (ActorName == "ThamuzNew") LevelCheck += random(23,45);
+							if (ActorName == "AvatarNew") LevelCheck += random(23,45);
+							if (ActorName == "TchernobogNew") LevelCheck += random(23,45);
+							if (ActorName == "AdolfHitlerDS") LevelCheck += random(23,45);
+							if (ActorName == "DSMotherDemon64") LevelCheck += random(23,45);
+							// Tier 4 Boss
+							if (ActorName == "EntityBossNew") LevelCheck += random(37,75);
+							if (ActorName == "EntitySecondNew") LevelCheck += random(37,75);
+							if (ActorName == "PennywiseBoss") LevelCheck += random(37,75);
+							if (ActorName == "Sauravatar") LevelCheck += random(37,75);
+							if (ActorName == "TheSource") LevelCheck += random(37,75);
+							// Tier 5 Boss
+							if (ActorName == "EntityAscended") LevelCheck += random(75,112);
+							// Oddball Tier Boss
+							if (ActorName == "Benellus1DS") LevelCheck += random(37,75);
+							if (ActorName == "Benellus2DS") LevelCheck += random(42,80);
+							if (ActorName == "Benellus3DS") LevelCheck += random(47,85);
+							if (ActorName == "Magmantis") LevelCheck += random(52,75);
+						}
+						if (debugstatcalc) Console.Printf("\ckMonsterLevel [actor-check: %s]: %d (Previous: %d)", ActorName, LevelCheck, PreviousLevelCheck);
+	
+						// Check if the actor is one of Strife's Peasents [and if so, cancel out most level additions and divide their level by 4]
+						int IsAPeasent = 0;
+						If (ActorName == "PeasantNew") IsAPeasent++;
+						If (ActorName == "Peasant1New") IsAPeasent++;
+						If (ActorName == "Peasant2New") IsAPeasent++;
+						If (ActorName == "Peasant3New") IsAPeasent++;
+						If (ActorName == "Peasant4New") IsAPeasent++;
+						If (ActorName == "Peasant5New") IsAPeasent++;
+						If (ActorName == "Peasant6New") IsAPeasent++;
+						If (ActorName == "Peasant7New") IsAPeasent++;
+						If (ActorName == "Peasant8New") IsAPeasent++;
+						If (ActorName == "Peasant9New") IsAPeasent++;
+						If (ActorName == "Peasant10New") IsAPeasent++;
+						If (ActorName == "Peasant11New") IsAPeasent++;
+						If (ActorName == "Peasant12New") IsAPeasent++;
+						If (ActorName == "Peasant13New") IsAPeasent++;
+						If (ActorName == "Peasant14New") IsAPeasent++;
+						If (ActorName == "Peasant15New") IsAPeasent++;
+						If (ActorName == "Peasant16New") IsAPeasent++;
+						If (ActorName == "Peasant17New") IsAPeasent++;
+						If (ActorName == "Peasant18New") IsAPeasent++;
+						If (ActorName == "Peasant19New") IsAPeasent++;
+						If (ActorName == "Peasant20New") IsAPeasent++;
+						If (ActorName == "Peasant21New") IsAPeasent++;
+						If (ActorName == "Peasant22New") IsAPeasent++;
+						If (ActorName == "BeggarNew") IsAPeasent++;
+						If (ActorName == "Beggar1New") IsAPeasent++;
+						If (ActorName == "Beggar2New") IsAPeasent++;
+						If (ActorName == "Beggar3New") IsAPeasent++;
+						If (ActorName == "Beggar4New") IsAPeasent++;
+						If (ActorName == "Beggar5New") IsAPeasent++;
+						If (ActorName == "MerchantNew") IsAPeasent++;
+						If (ActorName == "WeaponSmithNew") IsAPeasent++;
+						If (ActorName == "BarKeepNew") IsAPeasent++;
+						If (ActorName == "ArmorerNew") IsAPeasent++;
+						If (ActorName == "MedicNew") IsAPeasent++;
+						
+						If (IsAPeasent > 0) LevelCheck /= 4;
+						else
+						{
+							if (random(1,10) <= 1)
+							{
+								if (random(1,10) <= 1)
+								{
+									if (random(1,10) <= 1)
+									{
+										LevelCheck += random(64,96);
+									}
+									else
+									{
+										LevelCheck += random(16,24);
+									}
+								}
+								else
+								{
+									LevelCheck += random(4,6);
+								}
+							}
+							if (extraflags & 1) { LevelCheck *= 4; } else { if (random(1,64) == 1) LevelCheck *= 4; }
+							if (extraflags & 2) { LevelCheck *= 4; }
+						}
+						if (debugstatcalc) Console.Printf("\ckMonsterLevel [peasent-checking]: %d, (IsAPeasent: %d)", LevelCheck, IsAPeasent);
+						
+						PreviousLevelCheck = LevelCheck;
+						if (LevelCheck < 0) LevelCheck = 0;
+						if (LevelCheck > 2000) LevelCheck = 2000;
+						if (debugstatcalc) Console.Printf("\ckMonsterLevel [final calc]: %d (Previous: %d)", LevelCheck, PreviousLevelCheck);
+						user_monsterlevel = LevelCheck;
+						
+						AttackFactor = 0.0;
+						if (LevelCheck > 0) AttackFactor += (LevelBaseMulti * (LevelCheck));
+				
+						DefenseFactor = 1.0 / (AttackFactor + 1.0); //(1.0 / (AttackFactor + 1.0)) - 1.0;
+						DefenseFactor -= 1.0;
+				
+						SpeedFactor = AttackFactor / 4.0;
+				
+						MaxHPFactor = AttackFactor;
+				
+						BalanceFactor = AttackFactor;
+				
+						if (debugstatcalc) Console.Printf("\cgAttackFactor [MonLevel]: %8f, \cdDefenseFactor [MonLevel]: %8f, \chSpeedFactor [MonLevel]: %8f, \caMaxHPFactor [MonLevel]: %8f, \cpBalanceFactor [MonLevel]: %8f", AttackFactor, DefenseFactor, SpeedFactor, MaxHPFactor, BalanceFactor);
+						
+						SpeedFactor *= dvds_monsterspeedratio_levels;
+						if (SpeedFactor < -4.00) SpeedFactor = -4.00;
+						if (SpeedFactor > 4.00) SpeedFactor = 4.00;
+						MSpeed *= (1.0 + SpeedFactor);
+						Speed = MSpeed;
+					
+						AttackFactor *= dvds_monsterattackratio_levels;
+						if (AttackFactor < -4.00) AttackFactor = -4.00;
+						if (AttackFactor > 4.00) AttackFactor = 4.00;
+						Attack *= (1.0 + AttackFactor);
+						DamageMultiply = Attack;
+					
+						DefenseFactor *= dvds_monsterdefenseratio_levels;
+						if (DefenseFactor < -4.00) DefenseFactor = -4.00;
+						if (DefenseFactor > 4.00) DefenseFactor = 4.00;
+						Defense *= (1.0 + DefenseFactor);
+						DamageFactor = Defense; 
+					
+						MaxHPFactor *= dvds_monstermaxhpratio_levels;
+						if (MaxHPFactor < -4.00) MaxHPFactor = -4.00;
+						if (MaxHPFactor > 4.00) MaxHPFactor = 4.00;
+						MaxHP *= (1.0 + MaxHPFactor);
+					
+						BalanceFactor *= dvds_monsterbalanceratio_levels;
+						if (BalanceFactor < -4.00) BalanceFactor = -4.00;
+						if (BalanceFactor > 4.00) BalanceFactor = 4.00;
+						Balance *= (1.0 + BalanceFactor);
+						Mass = Balance;
+					
+						if (Attack < 0.005) Attack = 0.005;
+						if (Attack > 20.00) Attack = 20.00;
+						if (Defense < 0.005) Defense = 0.005;
+						if (Defense > 20.00) Defense = 20.00;
+						if (Balance < 1) Balance = 1;
+						if (Balance > 5000000) Balance = 5000000;
+						if (MaxHP < 1) MaxHP = 1;
+						if (MaxHP > 2147483647) MaxHP = 2147483647;
+					
+						if (debugstatcalc)
+						{
+							Console.Printf("\chSpeedFactor [LEVELS]: %8f, Speed After Levels: %8f (%8f)", (1.0 + SpeedFactor), MSpeed, PreMSpeed);
+							Console.Printf("\cgAttackFactor [LEVELS]: %8f, Attack After Levels: %8f (%8f)", (1.0 + AttackFactor), Attack, PreAttack);
+							Console.Printf("\cdDefenseFactor [LEVELS]: %8f, Defense After Levels: %8f (%8f)", (1.0 + DefenseFactor), Defense, PreDefense);
+							Console.Printf("\caMaxHPFactor [LEVELS]: %8f, MaxHP After Levels: %d (%d)", (1.0 + MaxHPFactor), MaxHP, PreMaxHP);
+							Console.Printf("\cpBalanceFactor [LEVELS]: %8f, Balance After Levels: %d (%d)", (1.0 + BalanceFactor), Balance, PreBalance);
+						}
+					}
+					
+					//**********************************************
+					//** Calculates Stats Based on Varience/Error **
+					//**********************************************
+					int ErrorChecker = 1;
+					if (ModType == 0)
+					{
+						if (dvds_monsterstatcalc_varience > 0) ErrorChecker = 1; else ErrorChecker = 0;
+					}
+					else ErrorChecker = 1;
+				
+					nonstatmonster = 0;
+					if (ActorName == "PracticeTarget") nonstatmonster = 1;
+					if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+					if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
+					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
+					if (ErrorChecker == 1 && nonstatmonster == 0)
+					{
+						PreMSpeed = MSpeed;
+						PreAttack = Attack; 
+						PreDefense = Defense; 
+						PreBalance = Balance; 
+						PreMaxHP = MaxHP;
+						// HP Error
+						double MaxHPErrorRange = (MaxHP * dvds_monstermaxhpvarience);
+						MaxHP += random(-MaxHPErrorRange,MaxHPErrorRange);
+						if (MaxHP < 1) MaxHP = 1;
+					
+						double SpeedErrorRange = (MSpeed * dvds_monsterspeedvarience);
+						MSpeed += frandom(-SpeedErrorRange,SpeedErrorRange);
+						Speed = MSpeed; //Set's Final Speed values
+					
+						double AttackErrorRange = (Attack * dvds_monsterattackvarience);
+						Attack += frandom(-AttackErrorRange,AttackErrorRange);
+						DamageMultiply = Attack;
+					
+						double DefenseErrorRange = (Defense * dvds_monsterdefensevarience);
+						Defense += frandom(-DefenseErrorRange,DefenseErrorRange);
+						DamageFactor = Defense;
+					
+						double BalanceErrorRange = (Balance * dvds_monsterbalancevarience);
+						Balance += random(-BalanceErrorRange,BalanceErrorRange);
+						Mass = Balance; 
+					
+						if (debugstatcalc) 
+						{
+							Console.Printf("\caMaxHP Error Range: %d, \chSpeed Error Range: %8f, \cgAttack Error Range: %8f, \cdDefense Error Range: %8f, \cpBalance Error Range: %8f", MaxHPErrorRange, SpeedErrorRange, AttackErrorRange, DefenseErrorRange, BalanceErrorRange);
+							Console.Printf("\chSpeedFactor [ERROR]: %8f, Speed After Error: %8f (%8f)", (1.0 + SpeedFactor), MSpeed, PreMSpeed);
+							Console.Printf("\cgAttackFactor [ERROR]: %8f, Attack After Error: %8f (%8f)", (1.0 + AttackFactor), Attack, PreAttack);
+							Console.Printf("\cdDefenseFactor [ERROR]: %8f, Defense After Error: %8f (%8f)", (1.0 + DefenseFactor), Defense, PreDefense);
+							Console.Printf("\caMaxHPFactor [ERROR]: %8f, MaxHP After Error: %d (%d)", (1.0 + MaxHPFactor), MaxHP, PreMaxHP);
+							Console.Printf("\cpBalanceFactor [ERROR]: %8f, Balance After Error: %d (%d)", (1.0 + BalanceFactor), Balance, PreBalance);
+						}
+					}
+					
+					//****************************
+					//** Specialized Situations **
+					//****************************
+					// Strife Rebels
+					int IsARebel = 0;
+					if (ActorName == "RebelNew") IsARebel ++;
+					if (ActorName == "Rebel1New") IsARebel ++;
+					if (ActorName == "Rebel2New") IsARebel ++;
+					if (ActorName == "Rebel3New") IsARebel ++;
+					if (ActorName == "Rebel4New") IsARebel ++;
+					if (ActorName == "Rebel5New") IsARebel ++;
+					if (ActorName == "Rebel6New") IsARebel ++;
+					if (IsARebel > 0)
+					{
+						int OldMaxHP = MaxHP;
+						// Rebels get an HP boost dependant on the Player's "Stamina" stat in Strife [to reflect them having undergone the process as the player does to "keep up"] :V
+						MaxHP = MaxHP * (100 + (CallACS("MiscVarCheckDECORATE",317) * 10)) / 100;
+						if (debugstatcalc) Console.Printf("\caPre Stamina Max HP: %d, \caPost Stamina Max HP: %d, \cgPlayer's Stamina Level: %d", OldMaxHP, MaxHP, CallACS("MiscVarCheckDECORATE",317));
+
+						string StaminaUpgradeItem = "StaminaUpgrade";
+						StaminaUpgradeItem.AppendFormat("%d", CallACS("MiscVarCheckDECORATE",317));
+						A_SetInventory(StaminaUpgradeItem,1);
+					
+						string AccuracyUpgradeItem = "AccuracyUpgrade";
+						AccuracyUpgradeItem.AppendFormat("%d", CallACS("MiscVarCheckDECORATE",318));
+						A_SetInventory(AccuracyUpgradeItem,1);
+					}
+					
+					//*******************************************************************
+					//** Specialized Boss Options [D'Sparil/Korax/Spectres/Entity/etc] **
+					//*******************************************************************
+					int OldMaxHP = MaxHP;
+					// Doom2
+					if (ActorName == "DSBossBrain" && dvds_improvediconofsin && BossEyeCheck > 0)
+					{
+						MaxHP *= 8;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Icon of Sin): %d (%d)", MaxHP, OldMaxHP);
+					}
+				
+					// DUMP3
+					if (ActorName == "AdolfHitlerDS")
+					{
+						MaxHP *= 5;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Hitler [DUMP3]): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "Benellus1DS")
+					{
+						MaxHP *= 5;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Benellus 1 [DUMP3]): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "Benellus2DS")
+					{
+						MaxHP *= 5;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Benellus 2 [DUMP3]): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "Benellus3DS")
+					{
+						MaxHP *= 4;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Benellus 3 [DUMP3]): %d (%d)", MaxHP, OldMaxHP);
+					}
+					// KDIZD
+					if (ActorName == "Magmantis")
+					{
+						MaxHP *= 7;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Magmantis): %d (%d)", MaxHP, OldMaxHP);
+					}
+					// Unloved
+					if (ActorName == "AvatarNew")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Avatar): %d (%d)", MaxHP, OldMaxHP);
+					}
+					// Doom 64 Retribution
+					if (ActorName == "DSMotherDemon64")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Mother Demon): %d (%d)", MaxHP, OldMaxHP);
+					}
+					// TCOTD:A
+					if (ActorName == "ThamuzNew")
+					{
+						MaxHP = (MaxHP * 3) / 2;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Thamuz): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "TchernobogNew")
+					{
+						MaxHP = (MaxHP * 3) / 2;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Tchernobog): %d (%d)", MaxHP, OldMaxHP);
+					}
+					// HTC II
+					if (ActorName == "PennywiseBoss")
+					{
+						MaxHP = (MaxHP * 3) / 2;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Thamuz): %d (%d)", MaxHP, OldMaxHP);
+					}
+					// TUTNT
+					if (ActorName == "SourceGuardian")
+					{
+						MaxHP = (MaxHP * random(4,5)) / 4;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Source Guardian [TUTNT]): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "TheSource")
+					{
+						MaxHP *= 4;
+						if (debugstatcalc) Console.Printf("\caMaxHP (The Source of All Evil [TUTNT]): %d (%d)", MaxHP, OldMaxHP);
+					}
+				
+					// Hexen
+					if (ActorName == "DragonNew")
+					{
+						// MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Death Wyvern): %d (%d)", MaxHP, OldMaxHP);
+					}
+				
+					// Hexen
+					if (ActorName == "HeresiarchNew")
+					{
+						// MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Heresiarch): %d (%d)", MaxHP, OldMaxHP);
+					}
+				
+					if (ActorName == "ClericBossNew")
+					{
+						// MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Traductus): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "MageBossNew")
+					{
+						// MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Melenkir): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "FighterBossNew")
+					{
+						// MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Zedek): %d (%d)", MaxHP, OldMaxHP);
+					}
+				
+					// Heretic
+					if (ActorName == "DSparilMountedNew")
+					{
+						// MaxHP *= 12;
+						if (debugstatcalc) Console.Printf("\caMaxHP (D'Sparil [Mounted]): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "DSparilUnmountedNew")
+					{
+						// MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (D'Sparil [Unmounted]): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "KoraxNew")
+					{
+						// MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Korax): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "Zakachi")
+					{
+						// MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Zakachi Daemonbourne): %d (%d)", MaxHP, OldMaxHP);
+					}
+				
+					// Strife
+					if (ActorName == "ProgrammerNew")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (The Programmer): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "StrifeBishopNew")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (The Bishop): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "OracleNew")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (The Oracle): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "Macil1New")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Macil1): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "Macil2New")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Macil2): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "LoremasterNew")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (The Loremaster): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "AlienSpectre1New")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Programmer's Spectre): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "AlienSpectre2New")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Bishop's Spectre): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "AlienSpectre3New")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Oracle's Spectre): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "AlienSpectre4New")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Macil's Spectre): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "AlienSpectre5New")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Loremaster's Spectre): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "AlienSpectre1Model")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Programmer's Spectre): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "AlienSpectre2Model")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Bishop's Spectre): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "AlienSpectre3Model")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Oracle's Spectre): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "AlienSpectre4Model")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Macil's Spectre): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "AlienSpectre5Model")
+					{
+						MaxHP *= 16;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Loremaster's Spectre): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "EntityBossNew")
+					{
+						MaxHP *= 24;
+						if (debugstatcalc) Console.Printf("\caMaxHP (The Entity): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "EntitySecondNew")
+					{
+						MaxHP *= 24;
+						if (debugstatcalc) Console.Printf("\caMaxHP (Mini Entity): %d (%d)", MaxHP, OldMaxHP);
+					}
+					if (ActorName == "EntityAscended")
+					{
+						MaxHP *= 24;
+						if (debugstatcalc) Console.Printf("\caMaxHP (ASCENDED Entity): %d (%d)", MaxHP, OldMaxHP);
+					}
+					
+					if (Attack < 0.005) Attack = 0.005;
+					if (Attack > 20.00) Attack = 20.00;
+					if (Defense < 0.005) Defense = 0.005;
+					if (Defense > 20.00) Defense = 20.00;
+					if (MaxHP < 1) MaxHP = 1;
+					if (MaxHP > 2147483647) MaxHP = 2147483647;
+					
+					//** Set's Final MaxHP and Current HP values **
+					self.health = MaxHP;
+					//self.SpawnHealth() = MaxHP;
+					if (debugstatcalc) Console.Printf("\chFinal Speed: %8f, \cgFinal Attack: %8f, \cdFinal Defense: %8f, \caFinal Max HP: %d, \cpFinal Balance: %d, \ck[Actor-Check: %s]", MSpeed, Attack, Defense, MaxHP, Balance, ActorName);
+					
+					if (ActorName != "Sauravatar") user_MaxHP = MaxHP; 
+					if (ActorName == "HeresiarchNew") Score = MaxHP;
+					
+					// Sets the monster's "Desperation Buff" level. The level it must fall below in order to gain it's unique buffs
+					RangeVar = 375;
+					if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 250; // 25.0%
+					if (TrueGameSkill == SKILL_EASY) RangeVar = 313; // 31.3%
+					if (TrueGameSkill == SKILL_NORMAL) RangeVar = 375; // 37.5%
+					if (TrueGameSkill == SKILL_HARD) RangeVar = 437; // 43.7%
+					if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 500; // 50.0%
+					if (TrueGameSkill == SKILL_EXTREME) RangeVar = 625; // 62.5%
+					if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 750; // 75%
+					if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 825; // 82.5%
+					if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 900; // 90%
+					Temp = MaxHP * RangeVar / 1000;
+					Temp = Temp + 1;
+					if (Temp < 2) Temp = 2;
+					user_HPBuffRange = Temp;
+					
+					// Sets the monster's "Low Range" of HP, meaning there is a 25% chance it will execute a "nova" or "shock" attack
+					RangeVar = 160;
+					if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 80; // 8.0%
+					if (TrueGameSkill == SKILL_EASY) RangeVar = 120; // 12.0%
+					if (TrueGameSkill == SKILL_NORMAL) RangeVar = 160; // 16.0%
+					if (TrueGameSkill == SKILL_HARD) RangeVar = 200; // 20.0%
+					if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 240; // 24.0%
+					if (TrueGameSkill == SKILL_EXTREME) RangeVar = 320; // 32.0%
+					if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 400; // 40.0%
+					if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 450; // 45.0%
+					if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 500; // 50%
+					Temp = MaxHP * RangeVar / 1000;
+					Temp = Temp + 1;
+					if (Temp < 2) Temp = 2;
+					user_HPLowRange = Temp;
+					if (ActorName == "HeresiarchNew") Accuracy = Temp;
+					
+					// Sets the monster's "Critical Range" of HP, meaning there is a 100% chance it will execute a "nova" or "shock" attack
+					RangeVar = 20;
+					if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 10; // 1.0%
+					if (TrueGameSkill == SKILL_EASY) RangeVar = 15; // 1.5%
+					if (TrueGameSkill == SKILL_NORMAL) RangeVar = 20; // 2.0%
+					if (TrueGameSkill == SKILL_HARD) RangeVar = 25; // 2.5%
+					if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 30; // 3.0%
+					if (TrueGameSkill == SKILL_EXTREME) RangeVar = 40; // 4.0%
+					if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 50; // 5.0%
+					if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 60; // 6.0%
+					if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 80; // 8.0%
+					Temp = MaxHP * RangeVar / 1000;
+					Temp = Temp + 1;
+					if (Temp < 2) Temp = 2;
+					user_HPCritRange = Temp;
+					if (ActorName == "HeresiarchNew") Stamina = Temp;
+					
+					// Sets the monster's "Extreme Death" range of HP, determining how much it takes to gib most monsters (or permenantly kill a Death Incarnate)
+					Temp = MaxHP * -1; // -100.0%
+					if (Temp > 0) Temp = 0;
+					user_HPXDeathRange = Temp;
+
+					// Excutes Lifebar-Related Code
+					A_SetInventory("MonsterDisplayDMG",1);
+					ACS_NamedExecuteAlways("DamageDisplays",0,0,0,0);
+				
+					A_SetInventory("MonsterLevelCalcs",1);
+					user_checkmapskill += 1;
+					if (bFRIENDLY) Thing_ChangeTID(0,1000);
+				}
+			}
+		}
+		else
+		{
+			if (CountInv("MonsterLevelCalcs") <= 0) { }
+			else
+			{
+				if (user_checkmapskill < 1) { }
+				else
+				{
+					if (bFRIENDLY) Thing_ChangeTID(0,0);
+					self.speed = user_basespeed;
+					self.mass = user_basemass;
+				
+					A_SetInventory("MonsterDisplayDMG",0);
+					A_SetInventory("MonsterLevelCalcs",0);
+					user_legendaryevolved = 0;
+					user_monsterlevel = 0;
+					user_checkmapskill = 0;
+					user_isstealth = 0;
+				}
+			}
+		}
+	}
+	
 	void A_AetheriusStats(int type)
 	{
 		// 0 = Set special stats
@@ -800,7 +1965,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		levelbehavior = dvds_monsterlevelbehavior;
 		if (type == 0 && CountInv("MonsterLevelCalcs") == 0) 
 		{
-			CallACS("MonsterStatsHP_ATK_DEF_SPD",type);
+			//Console.Printf("type %d!", type);
+			A_MonsterStatsHP_ATK_DEF_SPD(type); // CallACS("MonsterStatsHP_ATK_DEF_SPD",type);
 			if (levelbehavior > 0)
 			{
 				//Console.Printf("Level %d!", user_monsterlevel);
@@ -812,7 +1978,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (type != 0 && CountInv("MonsterLevelCalcs") > 0) 
 		{
-			CallACS("MonsterStatsHP_ATK_DEF_SPD",type);
+			A_MonsterStatsHP_ATK_DEF_SPD(type); // CallACS("MonsterStatsHP_ATK_DEF_SPD",type);
 		}
 	}
 
