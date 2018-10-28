@@ -1011,6 +1011,7 @@ class PlayerStatItem : Inventory
 				SOR = (SOR * dvds_startotherstatsfactor) / 100; // Check Start Other Stats Factor
 				STR = (STR * dvds_startotherstatsfactor) / 100; // Check Start Other Stats Factor
 				THE = (THE * dvds_startotherstatsfactor) / 100; // Check Start Other Stats Factor
+				CallACS("MiscVarSetDECORATE",25,AeonPts);
 				CallACS("MiscVarSetDECORATE",31,AGL);
 				CallACS("MiscVarSetDECORATE",32,DEF);
 				CallACS("MiscVarSetDECORATE",33,DFT);
@@ -9207,12 +9208,40 @@ class PlayerStatItem : Inventory
 		
 		
 		
-		/*
-		Console.Printf("%d", level.levelnum);
-		Console.Printf("%d / %d", level.found_secrets, level.total_secrets);
-		Console.Printf("%d / %d", level.found_items, level.total_items);
-		Console.Printf("%d / %d", level.killed_monsters, level.total_monsters);
-		*/
+		//*******************************************
+		// Gets Values for Accquired Kills & Secrets*
+		//*******************************************
+		A_AppendDoEffect2();
+		
+		
+		
+		
+		
+		A_AppendDoEffect3();
+		
+		
+		
+		
+		
+		A_AppendDoEffect4();
+		
+		
+		
+		
+		
+		A_AppendDoEffect5();
+		
+		
+		
+		
+		
+		A_AppendDoEffect6();
+		
+		
+		
+		
+		
+		A_AppendDoEffect7();
 		
 		
 		
@@ -9338,8 +9367,140 @@ class PlayerStatItem : Inventory
 		if (CallACS("MiscVarCheckDECORATE",2039) <= 0) CallACS("MiscVarSetDECORATE",230,0);
 	}
 
+	// Actions to APPEND DoEffect() due to Register Limit Issues in the main function >.> [Completion Checking/Aeon Point Giving)
 	void A_AppendDoEffect2()
 	{
+		//*******************************************
+		// Gets Values for Accquired Kills & Secrets*
+		//*******************************************
+		int LevelNum = level.levelnum;
+		int PlayerLevel = CallACS("StatCheck",0);
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		
+		if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
+		{
+			CallACS("ArrayVarSetDECORATE",0,LevelNum,(level.total_monsters - level.killed_monsters));
+			CallACS("ArrayVarSetDECORATE",1,LevelNum,level.killed_monsters);
+			CallACS("ArrayVarSetDECORATE",2,LevelNum,level.found_secrets);
+			CallACS("ArrayVarSetDECORATE",3,LevelNum,level.found_items);
+		}
+		if (ModType == 1 && (LevelNum >= 1100 && LevelNum <= 1199)) // Deus Vult 1 only
+		{
+			if (CallACS("SpecialGameFlagsCheckDECORATE",10000) != 1)
+			{
+				CallACS("ArrayVarSetDECORATE",0,LevelNum,(level.total_monsters - level.killed_monsters));
+				CallACS("ArrayVarSetDECORATE",1,LevelNum,level.killed_monsters);
+				CallACS("ArrayVarSetDECORATE",2,LevelNum,level.found_secrets);
+				CallACS("ArrayVarSetDECORATE",3,LevelNum,level.found_items);
+			}
+		}
+		if (ModType == 2 && (LevelNum >= 1200 && LevelNum <= 1299)) // Deus Vult 2 only
+		{
+			CallACS("ArrayVarSetDECORATE",0,LevelNum,(level.total_monsters - level.killed_monsters));
+			CallACS("ArrayVarSetDECORATE",1,LevelNum,level.killed_monsters);
+			CallACS("ArrayVarSetDECORATE",2,LevelNum,level.found_secrets);
+			CallACS("ArrayVarSetDECORATE",3,LevelNum,level.found_items);
+		}
+
+		int i = 0;
+		int tempaeonpts;
+		let playeractor = AetheriusPlayerPawn(owner);
+		//*************************
+		//*Aeon Point Distribution*
+		//*************************
+		int AeonBonusChecker = dvds_aeonpointbonus;
+		int forstart, forend;
+		int totalkills, totalsecrets, totalitems = 0;
+		int aeontogivekills, aeontogivesecrets, aeontogiveitems = 0;
+		int aeontogivekillsyet, aeontogivesecretsyet, aeontogiveitemsyet = 0;
+		if (playeractor)
+		{
+			if (AeonBonusChecker == 1)
+			{
+				if (ModType == 0) { forstart = 0; forend = 151; }
+				if (ModType == 1) { forstart = 1100; forend = 1105; }
+				if (ModType == 2) { forstart = 1200; forend = 1215; }
+				
+				// Kills
+				totalkills = 0;
+				for (i = forstart; i < forend; i++) { totalkills += CallACS("ArrayVarCheckDECORATE",1,i); }
+				CallACS("MiscVarSetDECORATE",63,totalkills);
+				aeontogivekills = totalkills / dvds_killsforaeonpts;
+				aeontogivekillsyet = CallACS("MiscVarCheckDECORATE",62);
+				
+				if (aeontogivekillsyet < aeontogivekills)
+				{
+					tempaeonpts = 1;
+					tempaeonpts *= CallACS("MiscVarCheckDECORATE",86);
+					
+					CallACS("MiscVarSetDECORATE",25,tempaeonpts,1);
+					CallACS("MiscVarSetDECORATE",224,tempaeonpts,1);
+					CallACS("MiscVarSetDECORATE",2033,105);
+					aeontogivekillsyet += 1;
+					
+					if (PlayerLevel >= CallACS("MiscVarCheckDECORATE",197)) owner.A_Print(String.Format("\c[orange]You have gained %d Aeon Point[s] for killing enough monsters!\n\n\c[orange]Remember to allocate your Aeon Points as soon as possible...", tempaeonpts));
+					tempaeonpts = 0;
+				}
+				if (dvdsdebug_aeonbonusdisplays) Console.Printf("\c[brick]totalkills: %d (%d) / %d, (GiveYet / Give: %d / %d)", totalkills, level.killed_monsters, dvds_killsforaeonpts, aeontogivekillsyet, aeontogivekills);
+				CallACS("MiscVarSetDECORATE",62,aeontogivekillsyet);
+				CallACS("MiscVarSetDECORATE",61,aeontogivekills);
+				
+				// Secrets
+				totalsecrets = 0;
+				for (i = forstart; i < forend; i++) { totalsecrets += CallACS("ArrayVarCheckDECORATE",2,i); }
+				CallACS("MiscVarSetDECORATE",64,totalsecrets);
+				aeontogivesecrets = totalsecrets / dvds_secretsforaeonpts;
+				aeontogivesecretsyet = CallACS("MiscVarCheckDECORATE",60);
+
+				if (aeontogivesecretsyet < aeontogivesecrets)
+				{
+					tempaeonpts = 1;
+					tempaeonpts *= CallACS("MiscVarCheckDECORATE",86);
+					
+					CallACS("MiscVarSetDECORATE",25,tempaeonpts,1);
+					CallACS("MiscVarSetDECORATE",224,tempaeonpts,1);
+					CallACS("MiscVarSetDECORATE",2033,105);
+					aeontogivesecretsyet += 1;
+					
+					if (PlayerLevel >= CallACS("MiscVarCheckDECORATE",197)) owner.A_Print(String.Format("\c[orange]You have gained %d Aeon Point[s] for finding enough secrets!\n\n\c[orange]Remember to allocate your Aeon Points as soon as possible...", tempaeonpts));
+					tempaeonpts = 0;
+				}
+				if (dvdsdebug_aeonbonusdisplays) Console.Printf("\c[gold]totalsecrets: %d (%d) / %d, (GiveYet / Give: %d / %d)", totalsecrets, level.found_secrets, dvds_secretsforaeonpts, aeontogivesecretsyet, aeontogivesecrets);
+				CallACS("MiscVarSetDECORATE",60,aeontogivesecretsyet);
+				CallACS("MiscVarSetDECORATE",59,aeontogivesecrets);
+				
+				// Items
+				totalitems = 0;
+				for (i = forstart; i < forend; i++) { totalitems += CallACS("ArrayVarCheckDECORATE",3,i); }
+				CallACS("MiscVarSetDECORATE",56,totalitems);
+				aeontogiveitems = totalitems / dvds_itemsforaeonpts;
+				aeontogiveitemsyet = CallACS("MiscVarCheckDECORATE",58);
+				
+				if (aeontogiveitemsyet < aeontogiveitems)
+				{
+					tempaeonpts = 1;
+					tempaeonpts *= CallACS("MiscVarCheckDECORATE",86);
+					
+					CallACS("MiscVarSetDECORATE",25,tempaeonpts,1);
+					CallACS("MiscVarSetDECORATE",224,tempaeonpts,1);
+					CallACS("MiscVarSetDECORATE",2033,105);
+					aeontogiveitemsyet += 1;
+					
+					if (PlayerLevel >= CallACS("MiscVarCheckDECORATE",197)) owner.A_Print(String.Format("\c[orange]You have gained %d Aeon Point[s] for finding special items!\n\n\c[orange]Remember to allocate your Aeon Points as soon as possible...", tempaeonpts));
+					tempaeonpts = 0;
+				}
+				if (dvdsdebug_aeonbonusdisplays) Console.Printf("\c[lightblue]totalitems: %d (%d) / %d, (GiveYet / Give: %d / %d)", totalitems, level.found_items, dvds_itemsforaeonpts, aeontogiveitemsyet, aeontogiveitems);
+				CallACS("MiscVarSetDECORATE",58,aeontogiveitemsyet);
+				CallACS("MiscVarSetDECORATE",57,aeontogiveitems);
+			}
+		}
+		if (CallACS("MiscVarCheckDECORATE",25) < 1) CallACS("MiscVarSetDECORATE",24,0);
+		if (CallACS("MiscVarCheckDECORATE",31) > 511 && 
+				CallACS("MiscVarCheckDECORATE",32) > 511 && 
+				CallACS("MiscVarCheckDECORATE",33) > 511 && 
+				CallACS("MiscVarCheckDECORATE",34) > 511 && 
+				CallACS("MiscVarCheckDECORATE",35) > 511 && 
+				CallACS("MiscVarCheckDECORATE",36) > 511) CallACS("MiscVarSetDECORATE",24,0);
 	}
 
 	void A_AppendDoEffect3()
@@ -9347,6 +9508,18 @@ class PlayerStatItem : Inventory
 	}
 
 	void A_AppendDoEffect4()
+	{
+	}
+	
+	void A_AppendDoEffect5()
+	{
+	}
+	
+	void A_AppendDoEffect6()
+	{
+	}
+	
+	void A_AppendDoEffect7()
 	{
 	}
 	

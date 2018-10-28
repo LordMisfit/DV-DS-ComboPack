@@ -244,12 +244,11 @@
 
 //		global int 20:?;
 
-//		global int 29:?;
-
 //		global int 35:?;
 //		global int 36:?;
 
 //		global int 39:?;
+//		global int 40:?;
 
 //		global int 42:?;
 //		global int 43:?;
@@ -838,7 +837,7 @@ global int 23:SpecialGameFlags[]; // ***ARRAY***
 global int 26:MonstersAlive[]; // ***ARRAY*** Array to Replace "MonstersAliveMAPXX" vars.
 global int 27:MonstersKilled[]; // ***ARRAY*** Array to Replace "MonstersKilledMAPXX" vars.
 global int 28:SecretsFound[]; // ***ARRAY*** Array to Replace "SecretsFoundMAPXX" vars.
-
+global int 29:ItemsFound[];
 global int 30:CurrentMaxArmor; //  All Games - USED BY HUD
 global int 31:CurrentArmorClass; // All Games
 
@@ -860,7 +859,6 @@ global int 34:ClassCheck; // All Games
 
 global int 37:LevelCap; // Applies to all games, however Flora's the only character legally able to extend her level cap from 100 to 200.
 global int 38:SpellIDLimit; // Defines the total number of spells allowed for quick var references
-global int 40:ItemsFound[];
 global int 41:TrueGameSkill;
 global int 46:ClassicDoomType;
 	// 0 = Doom 2
@@ -22927,31 +22925,19 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 {
 	int playeractor = 1;
 
-	int LevelChecker;
-	int SpawnFixedX, SpawnFixedY, SpawnFixedZ;
-	int MaxHealthLimit = MaxHealthTrue * 2;
-	int FreezePlayer, PerkFactor, BasePerkFactor, project_RealZ;
-
 	int VelX = GetActorVelX(Player1TID);
 	int VelY = GetActorVelY(Player1TID);
 	int VelZ = GetActorVelZ(Player1TID);
 	
 	int buttons = GetPlayerInput(0, INPUT_BUTTONS);
-	int powertripmode = GetCVar("dvds_musou_powertripmode");
 	
-	// Sets a special flag to check for a "pistol reset" like in resurgance
-	if (GetActorProperty(Player1TID,APROP_Health) <= 0) 
-	{
-		if (MiscellaneousVars[149] != 1) MiscellaneousVars[149] = 1;
-		if (CheckActorInventory(Player1TID,"Dedz") < 1) GiveActorInventory(Player1TID,"Dedz", 1);
-	}
 	
 	// Class Check is done six times for randomization purposes.
 	if (ClassCheck < 6) ClassCheck += 1;
 	
 	// [2501] Player should be frozen
 	// [2502] Unfreeze Player
-	FreezePlayer = 0;
+	int FreezePlayer = 0;
 	if (MiscellaneousVars[2500] == 1) FreezePlayer += 1; // Freezes the player's actions if in the menu...
 	if (PowerupTimer[20] > 0) FreezePlayer += 1; // ...or put to sleep.
 	if (FreezePlayer > 0)
@@ -23239,128 +23225,7 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	}
 	
 	
-	int LevelNum = GetLevelInfo(LEVELINFO_LEVELNUM);
-	//*******************************************
-	// Gets Values for Accquired Kills & Secrets*
-	//*******************************************
-	if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
-	{
-		MonstersAlive[LevelNum] = GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) - GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-		MonstersKilled[LevelNum] = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-		SecretsFound[LevelNum] = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
-		ItemsFound[LevelNum] = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
-	}
-	if (ModType == 1 && (LevelNum >= 1100 && LevelNum <= 1199)) // Deus Vult 1 only
-	{
-		if (SpecialGameFlags[10000] != 1)
-		{
-			MonstersAlive[LevelNum] = GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) - GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-			MonstersKilled[LevelNum] = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-			SecretsFound[LevelNum] = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
-			ItemsFound[LevelNum] = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
-		}
-	}
-	if (ModType == 2 && (LevelNum >= 1200 && LevelNum <= 1299)) // Deus Vult 2 only
-	{
-		MonstersAlive[LevelNum] = GetLevelInfo(LEVELINFO_TOTAL_MONSTERS) - GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-		MonstersKilled[LevelNum] = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-		SecretsFound[LevelNum] = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
-		ItemsFound[LevelNum] = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
-	}
-	//PrintBold(s:"MAP: ",d:LevelNum,s:"\n Alive: ",d:MonstersAlive[LevelNum],s:"\n Dead: ",d:MonstersKilled[LevelNum],s:"\n Secrets: ",d:SecretsFound[LevelNum],s:"\n Items: ",d:ItemsFound[LevelNum]);
 	
-	
-	int i = 0;
-	int tempaeonpts;
-	//*************************
-	//*Aeon Point Distribution*
-	//*************************
-	int AeonBonusChecker = GetCVar("dvds_aeonpointbonus");
-	int forstart, forend;
-	if (playeractor)
-	{
-		if (AeonBonusChecker == 1)
-		{
-			if (ModType == 0) { forstart = 0; forend = 151; }
-			if (ModType == 1) { forstart = 1100; forend = 1105; }
-			if (ModType == 2) { forstart = 1200; forend = 1215; }
-	
-			// Kills
-			MiscellaneousVars[63] = 0;
-			for (i = forstart; i < forend; i++) { MiscellaneousVars[63] += MonstersKilled[i]; }
-			MiscellaneousVars[61] = MiscellaneousVars[63] / GetCVar("dvds_killsforaeonpts");
-			
-			if (MiscellaneousVars[62] < MiscellaneousVars[61])
-			{
-				tempaeonpts = 1;
-				tempaeonpts *= MiscellaneousVars[86];
-				
-				MiscellaneousVars[25] += tempaeonpts; 
-				MiscellaneousVars[224] += tempaeonpts; 
-				MiscellaneousVars[2033] = 105;
-				MiscellaneousVars[62] += 1;
-				
-				if (PlayerLevel >= MiscellaneousVars[197])
-				{
-					SetHudSize(0,0,0);
-					HudMessage(s:"You have gained ",d:tempaeonpts,s:" Aeon Point[s] for killing enough monsters!\n\nRemember to allocate your Aeon Points as soon as possible...";
-					HUDMSG_LOG,3432,cr_orange,1.5,0.5,2.75);
-				}
-				tempaeonpts = 0;
-			}
-			
-			// Secrets
-			MiscellaneousVars[64] = 0;
-			for (i = forstart; i < forend; i++) { MiscellaneousVars[64] += SecretsFound[i]; }
-			MiscellaneousVars[59] = MiscellaneousVars[64] / GetCVar("dvds_secretsforaeonpts");
-			
-			if (MiscellaneousVars[60] < MiscellaneousVars[59])
-			{
-				tempaeonpts = 1;
-				tempaeonpts *= MiscellaneousVars[86];
-				
-				MiscellaneousVars[25] += tempaeonpts; 
-				MiscellaneousVars[224] += tempaeonpts; 
-				MiscellaneousVars[2033] = 105;
-				MiscellaneousVars[60] += 1;
-				
-				if (PlayerLevel >= MiscellaneousVars[197])
-				{
-					SetHudSize(0,0,0);
-					HudMessage(s:"You have gained ",d:tempaeonpts,s:" Aeon Point[s] for finding enough secrets!\n\nRemember to allocate your Aeon Points as soon as possible...";
-					HUDMSG_LOG,3432,cr_orange,1.5,0.5,2.75);
-				}
-				tempaeonpts = 0;
-			}
-			
-			// Items
-			MiscellaneousVars[56] = 0;
-			for (i = forstart; i < forend; i++) { MiscellaneousVars[56] += ItemsFound[i]; }
-			MiscellaneousVars[57] = MiscellaneousVars[56] / GetCVar("dvds_itemsforaeonpts");
-			
-			if (MiscellaneousVars[58] < MiscellaneousVars[57])
-			{
-				tempaeonpts = 1;
-				tempaeonpts *= MiscellaneousVars[86];
-				
-				MiscellaneousVars[25] += tempaeonpts; 
-				MiscellaneousVars[224] += tempaeonpts; 
-				MiscellaneousVars[2033] = 105;
-				MiscellaneousVars[58] += 1;
-				
-				if (PlayerLevel >= MiscellaneousVars[197])
-				{
-					SetHudSize(0,0,0);
-					HudMessage(s:"You have gained ",d:tempaeonpts,s:" Aeon Point[s] for finding enough special items!\n\nRemember to allocate your Aeon Points as soon as possible...";
-					HUDMSG_LOG,3432,cr_orange,1.5,0.5,2.75);
-				}
-				tempaeonpts = 0;
-			}
-		}
-	}
-	if (MiscellaneousVars[25] < 1) MiscellaneousVars[24] = 0;
-	if (MiscellaneousVars[31] > 511 && MiscellaneousVars[32] > 511 && MiscellaneousVars[33] > 511 && MiscellaneousVars[34] > 511 && MiscellaneousVars[35] > 511 && MiscellaneousVars[36] > 511) MiscellaneousVars[24] = 0;
-		
 	//***********************
 	//*Marine's Armor Checks*
 	//***********************
@@ -23500,7 +23365,6 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	if (MiscellaneousVars[141] == 29 || MiscellaneousVars[141] == 31) MiscFixedVars[101] = 0.155;
 	if (MiscellaneousVars[141] == 30) MiscFixedVars[101] = 0.15;
 	
-	
 	VelX /= 10;
 	VelY /= 10;
 	VelZ /= 10;
@@ -23533,12 +23397,9 @@ script "CENTRALSCRIPTOFEVERYTHING" ENTER
 	
 	
 	
-	// Unsets a special flag to check for a "pistol reset" like in resurgance
-	if (GetActorProperty(Player1TID,APROP_Health) > 0) 
-	{
-		if (MiscellaneousVars[149] != 0) MiscellaneousVars[149] = 0; 
-		if (CheckActorInventory(Player1TID,"Dedz") > 0) TakeActorInventory(Player1TID,"Dedz", 9999);
-	}
+	// Sets/Unsets a special flag to check for a "pistol reset" like in resurgance
+	if (GetActorProperty(Player1TID,APROP_Health) <= 0) { if (MiscellaneousVars[149] != 1) MiscellaneousVars[149] = 1; }
+	else { if (MiscellaneousVars[149] != 0) MiscellaneousVars[149] = 0; }
 
 	// END OF THE SCRIPT OMIGODFINALLY :V V:
 	Delay(1);
@@ -32469,6 +32330,83 @@ script "GetBuffTimer" (int bufftype, int type, int perkvalue)
 	if (type == 9) PowerupTimer[bufftype] ^= perkvalue; // XOR
 	if (type == 10) PowerupTimer[bufftype] <<= perkvalue; // Shift Left
 	if (type == 11) PowerupTimer[bufftype] >>= perkvalue; // Shift Right
+}
+
+// REFERENCE/CHECK/SET: Allows ZSCRIPT/DECORATE to check the value of a specfic "Array Var" value for checks
+script "ArrayVarCheckDECORATE" (int value, int arraynum)
+{
+	int result; 
+	if (value == 0) result = MonstersAlive[arraynum];
+	if (value == 1) result = MonstersKilled[arraynum];
+	if (value == 2) result = SecretsFound[arraynum];
+	if (value == 3) result = ItemsFound[arraynum];
+	SetResultValue(result);
+}
+
+// REFERENCE/CHECK/SET: Allows ZSCRIPT/DECORATE to SET the value of a specfic "Array Var" value
+script "ArrayVarSetDECORATE" (int value, int arraynum, int perkvalue, int type)
+{
+	int result; 
+	if (value == 0) // MonstersAlive[]
+	{
+		if (type <= -1) SetResultValue(MonstersAlive[arraynum]);
+		if (type == 0) MonstersAlive[arraynum] = perkvalue; // Set
+		if (type == 1) MonstersAlive[arraynum] += perkvalue; // Add
+		if (type == 2) MonstersAlive[arraynum] -= perkvalue; // Subtract
+		if (type == 3) MonstersAlive[arraynum] *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) MonstersAlive[arraynum] /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) MonstersAlive[arraynum] %= perkvalue; // Modulo
+		if (type == 6) MonstersAlive[arraynum] &= perkvalue; // AND
+		if (type == 7) MonstersAlive[arraynum] |= perkvalue; // OR
+		if (type == 8) MonstersAlive[arraynum] ^= perkvalue; // XOR
+		if (type == 9) MonstersAlive[arraynum] <<= perkvalue; // Shift Left
+		if (type == 10) MonstersAlive[arraynum] >>= perkvalue; // Shift Right
+	}
+	if (value == 1) // MonstersKilled[]
+	{
+		if (type <= -1) SetResultValue(MonstersKilled[arraynum]);
+		if (type == 0) MonstersKilled[arraynum] = perkvalue; // Set
+		if (type == 1) MonstersKilled[arraynum] += perkvalue; // Add
+		if (type == 2) MonstersKilled[arraynum] -= perkvalue; // Subtract
+		if (type == 3) MonstersKilled[arraynum] *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) MonstersKilled[arraynum] /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) MonstersKilled[arraynum] %= perkvalue; // Modulo
+		if (type == 6) MonstersKilled[arraynum] &= perkvalue; // AND
+		if (type == 7) MonstersKilled[arraynum] |= perkvalue; // OR
+		if (type == 8) MonstersKilled[arraynum] ^= perkvalue; // XOR
+		if (type == 9) MonstersKilled[arraynum] <<= perkvalue; // Shift Left
+		if (type == 10) MonstersKilled[arraynum] >>= perkvalue; // Shift Right
+	}
+	if (value == 2) // SecretsFound[]
+	{
+		if (type <= -1) SetResultValue(SecretsFound[arraynum]);
+		if (type == 0) SecretsFound[arraynum] = perkvalue; // Set
+		if (type == 1) SecretsFound[arraynum] += perkvalue; // Add
+		if (type == 2) SecretsFound[arraynum] -= perkvalue; // Subtract
+		if (type == 3) SecretsFound[arraynum] *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) SecretsFound[arraynum] /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) SecretsFound[arraynum] %= perkvalue; // Modulo
+		if (type == 6) SecretsFound[arraynum] &= perkvalue; // AND
+		if (type == 7) SecretsFound[arraynum] |= perkvalue; // OR
+		if (type == 8) SecretsFound[arraynum] ^= perkvalue; // XOR
+		if (type == 9) SecretsFound[arraynum] <<= perkvalue; // Shift Left
+		if (type == 10) SecretsFound[arraynum] >>= perkvalue; // Shift Right
+	}
+	if (value == 3) // ItemsFound[]
+	{
+		if (type <= -1) SetResultValue(ItemsFound[arraynum]);
+		if (type == 0) ItemsFound[arraynum] = perkvalue; // Set
+		if (type == 1) ItemsFound[arraynum] += perkvalue; // Add
+		if (type == 2) ItemsFound[arraynum] -= perkvalue; // Subtract
+		if (type == 3) ItemsFound[arraynum] *= perkvalue; // Multiply
+		if (type == 4 && perkvalue != 0) ItemsFound[arraynum] /= perkvalue; // Divide
+		if (type == 5 && perkvalue != 0) ItemsFound[arraynum] %= perkvalue; // Modulo
+		if (type == 6) ItemsFound[arraynum] &= perkvalue; // AND
+		if (type == 7) ItemsFound[arraynum] |= perkvalue; // OR
+		if (type == 8) ItemsFound[arraynum] ^= perkvalue; // XOR
+		if (type == 9) ItemsFound[arraynum] <<= perkvalue; // Shift Left
+		if (type == 10) ItemsFound[arraynum] >>= perkvalue; // Shift Right
+	}
 }
 
 // REFERENCE/CHECK/SET: Allows ZSCRIPT/DECORATE to check the value of a specfic "Other" value for checks
