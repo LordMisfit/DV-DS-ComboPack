@@ -8055,12 +8055,12 @@ class PlayerStatItem : Inventory
 			// Stealth
 			if (CallACS("GetBuffTimer",3) > 0)
 			{
-				owner.player.cheats |= CF_NOTARGET;
+				owner.player.cheats |= CF_NOTARGET; // Turns On
 				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",3,3,1);
 			}
 			else
 			{
-				owner.player.cheats &= ~CF_NOTARGET;
+				owner.player.cheats &= ~CF_NOTARGET; // Turns Off
 			}
 			
 			// Invulnerability
@@ -8274,23 +8274,23 @@ class PlayerStatItem : Inventory
 			// RadSphere Effects
 			if (CallACS("GetBuffTimer",22) > 0)
 			{
-				if (ClassicDoomType == 4) owner.A_GiveInventory("AetheriusPowerMask",1); else owner.A_GiveInventory("PowerIronFeet",1);
+				if (ClassicDoomType == 4) owner.A_SetInventory("AetheriusPowerMask",1); else owner.A_SetInventory("PowerIronFeet",1);
 				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",22,3,1);
 			}
 			else
 			{
-				if (ClassicDoomType == 4) owner.A_TakeInventory("AetheriusPowerMask",0x7FFFFFFF); else owner.A_TakeInventory("PowerIronFeet",0x7FFFFFFF);
+				if (ClassicDoomType == 4) owner.A_SetInventory("AetheriusPowerMask",0); else owner.A_SetInventory("PowerIronFeet",0);
 			}
 			
 			// Berserk Effects
 			if (CallACS("GetBuffTimer",23) > 0)
 			{
-				owner.A_GiveInventory("PowerStrength", 1);
+				owner.A_SetInventory("PowerStrength", 1);
 				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",23,3,1);
 			}
 			else
 			{
-				owner.A_TakeInventory("PowerStrength",0x7FFFFFFF);
+				owner.A_SetInventory("PowerStrength",0);
 			}
 			
 			// Regen Effects
@@ -8298,6 +8298,21 @@ class PlayerStatItem : Inventory
 			
 			// Arcana Force Effects
 			if (CallACS("GetBuffTimer",25) > 0) { if (UsingInGameMenu == 0) CallACS("GetBuffTimer",25,3,1); }
+			
+			// Desperado Damsel Effects
+			if (CallACS("GetBuffTimer",26) > 0) 
+			{ 
+				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",25,3,1); 
+				nm = "PowerHitscanBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 1);
+				nm = "PowerChristinaBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 1);
+				nm = "PowerAccuracyBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 1);
+			}
+			else
+			{
+				nm = "PowerHitscanBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 0);
+				nm = "PowerChristinaBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 0);
+				nm = "PowerAccuracyBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 0);
+			}
 			
 			// GoE?? Effects
 			if (CallACS("GetBuffTimer",129) > 0) 
@@ -9255,6 +9270,8 @@ class PlayerStatItem : Inventory
 	// Actions to APPEND DoEffect() due to Register Limit Issues in the main function >.>
 	void A_AppendDoEffect1()
 	{
+		int SleepTimer = CallACS("GetBuffTimer",20);
+
 		int tempcvarvalue;
 		CallACS("MiscVarSetDECORATE",100001,dvdsdebug_showmeleeinformation);
 		CallACS("MiscVarSetDECORATE",100005,dvdsdebug_showstaminausestuff);
@@ -9365,6 +9382,35 @@ class PlayerStatItem : Inventory
 		if (CallACS("MiscVarCheckDECORATE",2037) <= 0) CallACS("MiscVarSetDECORATE",228,0);
 		if (CallACS("MiscVarCheckDECORATE",2038) <= 0) CallACS("MiscVarSetDECORATE",229,0);
 		if (CallACS("MiscVarCheckDECORATE",2039) <= 0) CallACS("MiscVarSetDECORATE",230,0);
+		
+		
+		
+		
+		
+		// [2500] In Menu or Not?
+		// [2502] Unfreeze Player
+		CallACS("MiscVarSetDECORATE",4,0);
+		if (CallACS("MiscVarCheckDECORATE",2500) == 1 || SleepTimer > 0) CallACS("MiscVarSetDECORATE",4,1,1); // Freezes the player's actions if in the menu or was put to sleep.
+		if (CallACS("MiscVarCheckDECORATE",4) > 0)
+		{
+			owner.player.cheats |= CF_FROZEN; // Turns on Freezing
+			owner.player.cheats |= CF_TOTALLYFROZEN; // Turns on Total Freezing
+			CallACS("DVDSSpecialArraySetDECORATE",9,1); // Prevents Dashing
+			//Console.Printf("Player Frozen!");
+			CallACS("MiscVarSetDECORATE",2502,0);
+		}
+		else
+		{
+			if (CallACS("MiscVarCheckDECORATE",2502) == 0)
+			{
+				owner.player.cheats &= ~CF_FROZEN; // Turns off Total Freezing
+				owner.player.cheats &= ~CF_TOTALLYFROZEN; // Turns off Total Freezing
+				CallACS("DVDSSpecialArraySetDECORATE",9,0); // Allows Dashing
+				//Console.Printf("Player UnFrozen!");
+				CallACS("MiscVarSetDECORATE",2502,1);
+			}
+		}
+		//Console.Printf("[2502]: %d, [4]: %d", CallACS("MiscVarCheckDECORATE",2502), CallACS("MiscVarCheckDECORATE",4));
 	}
 
 	// Actions to APPEND DoEffect() due to Register Limit Issues in the main function >.> [Completion Checking/Aeon Point Giving)
