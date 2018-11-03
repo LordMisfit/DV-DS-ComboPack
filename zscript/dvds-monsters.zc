@@ -9,6 +9,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	// Bishop
 	int missilecount;
 	int bobstate;
+	int stealthstate;
 
 	// General
 	const SKILL_VERY_EASY = 0;
@@ -62,7 +63,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_DVDSPain()
 	{
 		A_Pain();
-		ACS_NamedExecuteAlways("RefreshStealthInfo",0,1);
+		//A_RefreshStealthInfo(1);
+		A_RefreshStealthInfo(1);
 	}
 	
 	override void PostBeginPlay()
@@ -92,7 +94,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		*/
 		InitRenderType = GetRenderStyle();
 		InitAlpha = Alpha;
-		//Console.Printf("InitRenderType: %d (InitAlpha: %8f)", InitRenderType, InitAlpha);
+		StealthAlpha = Alpha;
+		//Console.Printf("InitRenderType: %d (InitAlpha: %8f) [Name: %s]", InitRenderType, InitAlpha, GetClassName());
 		
 		if (bNOBLOOD == 1) 
 		{
@@ -126,6 +129,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int glitterheight, glitterheight2, glitterwidth;
 	override void Tick()
 	{
+		int debugevolvestealth = dvdsdebug_evolvestealthstuff;
 		bullet_tracer_mode = dvds_monsterbulletstracers;
 		levelbehavior = dvds_monsterlevelbehavior;
 		gfxeffectlevel = dvds_gfxeffectlevel;
@@ -133,6 +137,42 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{ 
 			//Console.Printf("Test");
 			A_AetheriusStats(0); 
+		}
+		
+		//InStateSequence
+		int stealthcheckinterval = dvds_rnd_stealth_refreshrate;
+		if (stealthcheckinterval < 1) stealthcheckinterval = 1;
+		if (stealthcheckinterval > 35) stealthcheckinterval = 35;
+		if (user_isstealth && (gametic % stealthcheckinterval) == 0)
+		{
+			if (InStateSequence(curstate,ResolveState("See")) || 
+				  InStateSequence(curstate,ResolveState("Spawn")) || 
+				  InStateSequence(curstate,ResolveState("Idle")) || 
+				  InStateSequence(curstate,ResolveState("Raise")) ) 
+			{
+				A_RefreshStealthInfo(0);
+				if (debugevolvestealth) Console.Printf("gametic: %d (stealth type: 0)", gametic);
+			}
+
+			if (InStateSequence(curstate,ResolveState("Melee")) || 
+				  InStateSequence(curstate,ResolveState("Missile")) ||
+				  InStateSequence(curstate,ResolveState("Heal")) ||
+				  InStateSequence(curstate,ResolveState("Pain")) ) 
+			{
+				A_RefreshStealthInfo(1);
+				if (debugevolvestealth) Console.Printf("gametic: %d (stealth type: 1)", gametic);
+			}
+
+			if (InStateSequence(curstate,ResolveState("Death")) || 
+				  InStateSequence(curstate,ResolveState("XDeath")) || 
+				  InStateSequence(curstate,ResolveState("Crash")) || 
+				  InStateSequence(curstate,ResolveState("Burn")) || 
+				  InStateSequence(curstate,ResolveState("Disintergrate")) || 
+				  InStateSequence(curstate,ResolveState("Ice")) ) 
+			{
+				A_RefreshStealthInfo(2);
+				if (debugevolvestealth) Console.Printf("gametic: %d (stealth type: 2)", gametic);
+			}
 		}
 
 		if (((gametic + (ActorRandomBits & 15)) & 15) == 1)
@@ -177,10 +217,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 	override void Die(Actor source, Actor inflictor, int dmgflags)
 	{
+		if (user_isstealth)
+		{
+			A_SetRenderStyle(InitAlpha,InitRenderType);
+			Alpha = InitAlpha;
+		}
+
 		if (self.health <= 0 && CountInv("MonsterLevelCalcs") == 1 && !bICECORPSE) { A_AetheriusStats(1); }
 		if (CountInv("CharmMonsterAttack") > 0) A_TakeInventory("CharmMonsterAttack",9999);
 		if (CountInv("CharmMonsterDefense") > 0) A_TakeInventory("CharmMonsterDefense",9999);
-		if (user_charmed > 0) user_charmed = 0;
+		if (user_charmed) user_charmed = 0;
 
 		//This space for rent.
 		Super.Die(source, inflictor, dmgflags);
@@ -825,8 +871,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (type == 0) // Giving Stats
 		{
-			ACS_NamedExecuteWithResult("RefreshStealthInfo"); // Runs to check Stealth information [in case something like finding the Ring has happened]
-		
 			if (CountInv("MonsterLevelCalcs") != 0) { if (debugstatcalc) Console.Printf("MonsterLevelCalcs [1]: %d", CountInv("MonsterLevelCalcs")); }
 			else
 			{
@@ -848,32 +892,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
 					if (random(1,256) <= StealthChance && nonstatmonster == 0)
 					{
-						if (CountInv("TheOneRing",AAPTR_PLAYER1) > 0) 
-						{
-							A_SetInventory("IsAStealthMonsterRing", 1);
-							A_SetInventory("IsAStealthMonster5000", 0); 
-							A_SetInventory("IsAStealthMonster7500", 0); 
-							A_SetInventory("IsAStealthMonster8750", 0); 
-							A_SetInventory("IsAStealthMonster9375", 0); 
-						}
-						else
-						{
-							A_SetInventory("IsAStealthMonsterRing", 0); 
-							if (dvds_rnd_stealthlevel == 0) A_SetInventory("IsAStealthMonster5000", 1); 
-							if (dvds_rnd_stealthlevel == 1) A_SetInventory("IsAStealthMonster7500", 1); 
-							if (dvds_rnd_stealthlevel == 2) A_SetInventory("IsAStealthMonster8750", 1); 
-							if (dvds_rnd_stealthlevel == 3) A_SetInventory("IsAStealthMonster9375", 1); 
-							if (dvds_rnd_stealthlevel != 0) A_SetInventory("IsAStealthMonster5000", 0); 
-							if (dvds_rnd_stealthlevel != 1) A_SetInventory("IsAStealthMonster7500", 0); 
-							if (dvds_rnd_stealthlevel != 2) A_SetInventory("IsAStealthMonster8750", 0); 
-							if (dvds_rnd_stealthlevel != 3) A_SetInventory("IsAStealthMonster9375", 0); 
-						}
 						user_isstealth = 1;
+						A_RefreshStealthInfo(0); // Runs to check Stealth information [in case something like finding the Ring has happened]
 					}
 					else
 					{
 						user_isstealth = 0;
-						A_SetInventory("IsAStealthMonsterRing", 0);
 					}
 
 					//*******************************************************
@@ -3784,21 +3808,85 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		STYLE_AddStencil (12)
 		STYLE_AddShaded (13)
 		*/
-		//InitRenderType = GetRenderStyle();
-		//InitAlpha = Alpha;
+		int debugevolvestealth = dvdsdebug_evolvestealthstuff;
+		double TempAlpha;
 
-		if (user_isstealth > 0)
+		if (type == 0) // nothing special
 		{
-			if (type == 0) // nothing special
+			if (user_isstealth > 0)
 			{
+				A_SetRenderStyle(InitAlpha,6); // Set to "Translucent"
+				TempAlpha = InitAlpha;
+				if (dvds_rnd_stealthlevel <= 0) TempAlpha *= 0.5;
+				if (dvds_rnd_stealthlevel == 1) TempAlpha *= 0.25;
+				if (dvds_rnd_stealthlevel == 2) TempAlpha *= 0.125;
+				if (dvds_rnd_stealthlevel == 3) TempAlpha *= 0.0625;
+				if (dvds_rnd_stealthlevel >= 4) TempAlpha *= 0.03125;
+				if (debugevolvestealth) Console.Printf("TempAlpha [Base - Normal]: %8f (Name: %s)", TempAlpha, GetClassName());
+
+				// The One Ring - Quarters Stealth Cloaking
+				if (CountInv("TheOneRing",AAPTR_PLAYER1) > 0) 
+				{
+					TempAlpha = 1.0 - ((1.0 - TempAlpha) * 0.25);
+					if (debugevolvestealth) Console.Printf("TempAlpha [Ring - Normal]: %8f (Name: %s)", TempAlpha, GetClassName());
+				}
+
+				// Night-Vision - Halves Stealth Cloaking
+				if (CallACS("GetBuffTimer",0) > 0)
+				{
+					TempAlpha = 1.0 - ((1.0 - TempAlpha) * 0.5);
+					if (debugevolvestealth) Console.Printf("TempAlpha [Night Vision - Normal]: %8f (Name: %s)", TempAlpha, GetClassName());
+				}
+
+				Alpha = TempAlpha;
 			}
-			if (type == 1) // attacking
+			else
 			{
+				A_SetRenderStyle(InitAlpha,InitRenderType);
+				Alpha = InitAlpha;
 			}
 		}
-		else
+
+		if (type == 1) // attacking
 		{
-		
+			if (user_isstealth > 0)
+			{
+				A_SetRenderStyle(InitAlpha,6); // Set to "Translucent"
+				TempAlpha = InitAlpha;
+				if (dvds_rnd_stealthlevel <= 0) TempAlpha *= 0.8334;
+				if (dvds_rnd_stealthlevel == 1) TempAlpha *= 0.75;
+				if (dvds_rnd_stealthlevel == 2) TempAlpha *= 0.7084;
+				if (dvds_rnd_stealthlevel == 3) TempAlpha *= 0.6875;
+				if (dvds_rnd_stealthlevel >= 4) TempAlpha *= 0.677083;
+				if (debugevolvestealth) Console.Printf("TempAlpha [Base - Attacking]: %8f (Name: %s)", TempAlpha, GetClassName());
+
+				// The One Ring - Quarters Stealth Cloaking
+				if (CountInv("TheOneRing",AAPTR_PLAYER1) > 0) 
+				{
+					TempAlpha = 1.0 - ((1.0 - TempAlpha) * 0.25);
+					if (debugevolvestealth) Console.Printf("TempAlpha [Ring - Attacking]: %8f (Name: %s)", TempAlpha, GetClassName());
+				}
+
+				// Night-Vision - Halves Stealth Cloaking
+				if (CallACS("GetBuffTimer",0) > 0)
+				{
+					TempAlpha = 1.0 - ((1.0 - TempAlpha) * 0.5);
+					if (debugevolvestealth) Console.Printf("TempAlpha [Night Vision - Attacking]: %8f (Name: %s)", TempAlpha, GetClassName());
+				}
+
+				Alpha = TempAlpha;
+			}
+			else
+			{
+				A_SetRenderStyle(InitAlpha,InitRenderType);
+				Alpha = InitAlpha;
+			}
+		}
+
+		if (type == 2) // dying
+		{
+			A_SetRenderStyle(InitAlpha,InitRenderType);
+			Alpha = InitAlpha;
 		}
 	}
 
