@@ -9,7 +9,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	// Bishop
 	int missilecount;
 	int bobstate;
-	int stealthstate;
+	int stealthstate, stealthtimer;
 
 	// General
 	const SKILL_VERY_EASY = 0;
@@ -63,7 +63,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_DVDSPain()
 	{
 		A_Pain();
-		//A_RefreshStealthInfo(1);
 		A_RefreshStealthInfo(1);
 	}
 	
@@ -3822,6 +3821,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvds_rnd_stealthlevel == 2) TempAlpha *= 0.125;
 				if (dvds_rnd_stealthlevel == 3) TempAlpha *= 0.0625;
 				if (dvds_rnd_stealthlevel >= 4) TempAlpha *= 0.03125;
+				if (InitRenderType == 4) TempAlpha *= 0.5;
 				if (debugevolvestealth) Console.Printf("TempAlpha [Base - Normal]: %8f (Name: %s)", TempAlpha, GetClassName());
 
 				// The One Ring - Quarters Stealth Cloaking
@@ -3858,6 +3858,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvds_rnd_stealthlevel == 2) TempAlpha *= 0.7084;
 				if (dvds_rnd_stealthlevel == 3) TempAlpha *= 0.6875;
 				if (dvds_rnd_stealthlevel >= 4) TempAlpha *= 0.677083;
+				if (InitRenderType == 4) TempAlpha *= 0.5;
 				if (debugevolvestealth) Console.Printf("TempAlpha [Base - Attacking]: %8f (Name: %s)", TempAlpha, GetClassName());
 
 				// The One Ring - Quarters Stealth Cloaking
@@ -3903,6 +3904,91 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		A_AddEXP(baseamount, flags, incrementcombo, expfactor);
 		//CallACS("AddEXP", baseamount, flags, incrementcombo, expfactor);
+	}
+	
+	// Diabloist Gravity Attack
+	void A_DiabloistGravity(int gravitytype)
+	{
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		double GravityEffectFactor, FinalGravityFactor;
+		int PropertyValue, TherapeusisFactor;
+		int basedmgratio;
+		int AffectedStat, MultFactor, THEEffect;
+		int CharacterClass = CallACS("CheckCharacterClass");
+
+		Actor targ = target;
+		if (targ)
+		{
+			A_FaceTarget();
+			if (!CheckSight(targ, 0)) return;
+			if (targ.health < 1) return;
+			A_PlaySound("monster/diagra", CHAN_WEAPON);
+
+			if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 0.125;  
+			if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 0.250;  
+			if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 0.500;  
+			if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 0.750;  
+			if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 0.875;  
+			if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 0.900;  
+			if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 0.925;  
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 0.950;  
+			if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 0.980;
+			if (CallACS("GetBuffTimer",4) > 0)
+			{
+				if (random(1,16) != 16) GravityEffectFactor *= 0.5;
+			}
+			// SeedTHE Levels
+			// Deggaris = 300 Needed to max out
+			// Illucia = 200 Needed to max out
+			// Flora = 150 Needed to max out
+			if (CharacterClass == 0)
+			{
+				TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
+			}
+			if (CharacterClass == 1)
+			{
+				TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
+			}
+			if (CharacterClass == 2)
+			{
+				TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
+			}
+			if (CharacterClass == 8)
+			{
+				TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
+			}
+			if (CharacterClass == 9)
+			{
+				TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
+			}
+			FinalGravityFactor = 1.000 - GravityEffectFactor;
+			if (GravityEffectFactor < 0.000) GravityEffectFactor = 0.000;
+			if (GravityEffectFactor > 0.000)
+			{
+			}
+
+			if (gravitytype == 0) // HP only
+			{
+			}
+			else
+			if (gravitytype == 1) // Mana only
+			{
+			}
+			else
+			if (gravitytype == 2) // HP & Mana
+			{
+			}
+		}
 	}
 	
 	//**************************
