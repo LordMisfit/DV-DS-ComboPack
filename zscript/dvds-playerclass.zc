@@ -129,11 +129,12 @@ class AetheriusPlayerPawn : PlayerPawn
 		PerkFactorAirControl += ((CallACS("MiscVarCheckDECORATE",10009) * 0.05) + (CallACS("MiscVarCheckDECORATE",10010) * 0.125));
 
 		double DashingAirControl = 1.0;
-		if (CallACS("MiscVarCheckDECORATE",166) > 0) DashingAirControl = 0.015625;
+		if (CallACS("MiscVarCheckDECORATE",166) > 0) DashingAirControl = frandompick(0.75, 0.875, 1.0, 1.125, 1.25); // (0.015625 * 5);
 
 		double DivineAvatarAirControl = 1.00;
 		if (CallACS("GetBuffTimer",7) > 0) DivineAvatarAirControl *= 2.00;
-
+		
+		
 		level.aircontrol = AirControlBase
 										 * LVLAirControl
 										 * AGLAirControl
@@ -144,8 +145,11 @@ class AetheriusPlayerPawn : PlayerPawn
 										 * PerkFactorAirControl
 										 * DashingAirControl
 										 * DivineAvatarAirControl;
+		level.airfriction = level.aircontrol * -0.0941 + 1.0004;
+		
 		if (dvdsdebug_showmoveinformation > 0)
 		{
+			Console.Printf("    \czSV_AirControl:\c- \cz%8f\c-", sv_aircontrol); 
 			Console.Printf("    \cwTotalAirControl:\c- \cw%8f\c-, \cyAirControlBase:\c- \cy%8f\c-, LVLAirControl: %8f, AGLAirControl: %8f, ArmorAirControl: %8f, SauronArmorAirControl: %8f, BuffAirControl: %8f, SceptreAirControl: %8f, PerkFactorAirControl: %8f, DashingAirControl: %8f, DivineAvatarAirControl: %8f", 
 													level.aircontrol, AirControlBase,
 													LVLAirControl, AGLAirControl,
@@ -153,7 +157,6 @@ class AetheriusPlayerPawn : PlayerPawn
 													BuffAirControl, SceptreAirControl,
 													PerkFactorAirControl, DashingAirControl,
 													DivineAvatarAirControl);
-													
 			Console.Printf("    \cwTotalFriction:\c- \cw%8f\c-, \cyLevelAirFriction:\c- \cy%8f\c-, WaterLevel: %d (%d)", 
 													friction, level.airfriction, waterlevel, player.air_finished);
 		}
@@ -1519,8 +1522,6 @@ class AetheriusPlayerPawn : PlayerPawn
 				{
 					if (dvds_allowfullairdash && dashveltimer2 == 0) { vel.z = 0.0; }
 				}
-
-				if (dvdsdebug_showdashinformation) Console.Printf("\cxfirsttic: %d\c-, \cgPosZ: %d\c-, \cgFloorZ: %d\c-, VelX: %8f, VelY: %8f, VelZ: %8f", firsttic, pos.z, floorz, vel.x, vel.y, vel.z);
 			}
 		}
 		else
@@ -1530,7 +1531,15 @@ class AetheriusPlayerPawn : PlayerPawn
 			bVISIBILITYPULSE = 0;
 			bTHRUACTORS = 0;
 		}
-		if (dvdsdebug_showdashinformation) Console.Printf("DashTimer: %d / %d, DashVelTimer: %d / 2, DashVelTimer2: %d / 1", CallACS("MiscVarCheckDECORATE",166), CallACS("MiscVarCheckDECORATE",91), dashveltimer, dashveltimer2);
+		if (dvdsdebug_showdashinformation) 
+		{
+			Console.Printf("\cxfirsttic: %d\c-, \czPosX: %d, PosY: %d, PosZ: %d\c-, \cnFloorZ: %d\c-, \cyVelX: %8f, VelY: %8f, VelZ: %8f\c-", firsttic, pos.x, pos.y, pos.z, floorz, vel.x, vel.y, vel.z);
+			Console.Printf("DashTimer: %d / %d, DashVelTimer: %d / 2, DashVelTimer2: %d / 1", CallACS("MiscVarCheckDECORATE",166), CallACS("MiscVarCheckDECORATE",91), dashveltimer, dashveltimer2);
+		}
+		else
+		{
+			if (GetCVar("dvdsdebug_showmoveinformation") > 0) Console.Printf("\czPosX: %d, PosY: %d, PosZ: %d\c-, \cyVelX: %8f, VelY: %8f, VelZ: %8f\c-", pos.x, pos.y, pos.z, vel.x, vel.y, vel.z);
+		}
 		
 		/*
 		// Testing ThinkIterator
@@ -1545,137 +1554,6 @@ class AetheriusPlayerPawn : PlayerPawn
 			TestValue2++;
 		}
 		Console.Printf("%s: %d (%d) / %d", spawntype, TestValue, TestValue3, TestValue2);
-		*/
-		
-		//*********************
-		//*Death Music/Effects*
-		//*********************
-		/*
-		int DY1 = MaxHealthTrue * -1;
-		int DeathMusicTimer;
-		if (playeractor)
-		{
-			// [12] is for the death time counter, to fade the screen to blackish-red when the player dies.
-			if (health < 1)
-			{
-				CallACS("MiscVarSetDECORATE",12,1,1);
-				CallACS("MiscVarSetDECORATE",13,6);
-
-				DeathMusicTimer = CallACS("MiscVarCheckDECORATE",12);
-				// Game Over Music
-				if (dvds_deathmusic != 0)
-				{
-					if (DeathMusicTimer == 1) S_ChangeMusic("",0,0);
-					if (dvds_deathmusic == 1 && DeathMusicTimer == 8) S_ChangeMusic("RoReDead",0,0);
-					if (dvds_deathmusic == 2 && DeathMusicTimer == 35) S_ChangeMusic("GaOvYe",0,0);
-					if (dvds_deathmusic == 3 && DeathMusicTimer == 35) S_ChangeMusic("DRQUDEAD",0,0);
-					if (dvds_deathmusic == 4 && DeathMusicTimer == 4) S_ChangeMusic("MiRiBuTi",0,0);
-					if (dvds_deathmusic == 5 && DeathMusicTimer == 14) S_ChangeMusic("ToDiYoAD",0,0);
-					if (dvds_deathmusic == 6 && DeathMusicTimer == 4) S_ChangeMusic("MGS2GMOV",0,0);
-					if (dvds_deathmusic == 7 && DeathMusicTimer == 35) S_ChangeMusic("ShGYaheh",0,0);
-					if (dvds_deathmusic == 8 && DeathMusicTimer == 4) S_ChangeMusic("AH3GMOVR",0,0);
-					if (dvds_deathmusic == 9 && DeathMusicTimer == 50) S_ChangeMusic("JURPRKP2",0,0);
-					
-					if (dvds_deathmusic == 1 && DeathMusicTimer >= 2220) S_ChangeMusic("",0,0);
-					if (dvds_deathmusic == 2 && DeathMusicTimer >= 367) S_ChangeMusic("",0,0);
-					if (dvds_deathmusic == 3 && DeathMusicTimer >= 255) S_ChangeMusic("",0,0);
-					if (dvds_deathmusic == 4 && DeathMusicTimer >= 290) S_ChangeMusic("",0,0);
-					if (dvds_deathmusic == 5 && DeathMusicTimer >= 3970) S_ChangeMusic("",0,0);
-					if (dvds_deathmusic == 6 && DeathMusicTimer == 284) S_ChangeMusic("",0,0);
-					if (dvds_deathmusic == 7 && DeathMusicTimer == 1365) S_ChangeMusic("",0,0);
-					if (dvds_deathmusic == 8 && DeathMusicTimer == 350) S_ChangeMusic("",0,0);
-					if (dvds_deathmusic == 9 && DeathMusicTimer == 273) S_ChangeMusic("",0,0);
-				}
-				
-				// "YOU DIED!" msg [HudMessage id 2] :V
-				if (DeathMusicTimer >= 4)
-				{
-					MiscellaneousVars[179] += 1;
-					if (MiscellaneousVars[179] >= 20) MiscellaneousVars[179] = 1;
-					CallACS("ZSC_SetHudSize",1280,960,0);
-					if (MiscellaneousVars[179] >= 1 && MiscellaneousVars[179] <= 4) Setfont("UDED1");
-					if (MiscellaneousVars[179] >= 5 && MiscellaneousVars[179] <= 8) Setfont("UDED2");
-					if (MiscellaneousVars[179] >= 9 && MiscellaneousVars[179] <= 12) Setfont("UDED3");
-					if (MiscellaneousVars[179] >= 13 && MiscellaneousVars[179] <= 16) Setfont("UDED4");
-					if (MiscellaneousVars[179] >= 17 && MiscellaneousVars[179] <= 20) Setfont("UDED5");
-					HudmessageBold(s:"A"; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 1.0, 1.0);
-					CallACS("ZSC_SetHudSize",0,0,0);
-					SetFont("DVDSSMLFONT");
-				}
-				else
-				{
-					HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
-					MiscellaneousVars[179] = 0;
-				}
-				
-				// Fading Death Heart Beats, if not gibbed
-				if (health > DY1)
-				{
-					SetActivator(Player1TID); // Set to Player's ID
-					if (DeathMusicTimer == 18) localambientsound("heartb2", 120); // +20
-					if (DeathMusicTimer == 20) localambientsound("heartb2", 120); // +20
-					
-					if (DeathMusicTimer == 42) localambientsound("heartb2", 103); // +22
-					if (DeathMusicTimer == 44) localambientsound("heartb2", 103); // +22
-					
-					if (DeathMusicTimer == 68) localambientsound("heartb2", 86); // +26
-					if (DeathMusicTimer == 70) localambientsound("heartb2", 86); // +26
-					
-					if (DeathMusicTimer == 100) localambientsound("heartb2", 69); // +32
-					if (DeathMusicTimer == 102) localambientsound("heartb2", 69); // +32
-					
-					if (DeathMusicTimer == 140) localambientsound("heartb2", 52); // +40
-					if (DeathMusicTimer == 142) localambientsound("heartb2", 52); // +40
-					
-					if (DeathMusicTimer == 188) localambientsound("heartb2", 35); // +62
-					if (DeathMusicTimer == 190) localambientsound("heartb2", 35); // +50
-					
-					if (DeathMusicTimer == 250) localambientsound("heartb2", 18); // +62
-					if (DeathMusicTimer == 252) localambientsound("heartb2", 18); // +62
-					SetActivator(0); // Set back to worldly activator
-				}
-				
-				if (health > DY1) // Not Gibbed
-				{
-					if (DeathMusicTimer == 115)
-					{
-						if (CountInv("PlayerDeathFadeOut") < 1) A_SetInventory(Player1TID,"PlayerDeathFadeOut", 0);
-						SetActivator(Player1TID); // Set to Player's ID
-						FadeRange(16, 0, 0, 0.0, 16, 0, 0, 1.0, 4.0);
-						SetActivator(0); // Set back to worldly activator
-					}
-					if (DeathMusicTimer == 260) FadeRange(16, 0, 0, 1.0, 255, 0, 0, 1.0, 1.0); // Intended to show a "Game Over" Euqse Screen
-				}
-				else // Gibbed
-				{
-					if (DeathMusicTimer == 4)
-					{
-						if (CountInv("PlayerDeathFadeOut") < 1) A_SetInventory("PlayerDeathFadeOut", 1);
-						SetActivator(Player1TID); // Set to Player's ID
-						FadeRange(0, 0, 0, 0.0, 255, 0, 0, 1.0, 0.8);
-						SetActivator(0); // Set back to worldly activator
-					}
-				}
-			}
-			else
-			{
-				if (MiscellaneousVars[13] > 0)
-				{
-					SetActivator(Player1TID); // Set to Player's ID
-					FadeTo(0, 0, 0, 0.0, 0.0001);
-					SetActivator(0); // Set back to worldly activator at the end of weapon checking.
-					MiscellaneousVars[13] -= 1;
-				}
-				HudmessageBold(s:""; 0, 2, CR_DARKRED, 640.0, 480.0, 0.005, 0.01);
-				if (CountInv("PlayerDeathFadeOut") > 0) A_SetInventory(Player1TID,"PlayerDeathFadeOut", 0);
-				if (dvds_deathmusic != 0)
-				{
-					if (DeathMusicTimer > 0) S_ChangeMusic("*", 0, 1);
-				}
-				DeathMusicTimer = 0;
-				CallACS("MiscVarSetDECORATE",12,DeathMusicTimer);
-			}
-		}
 		*/
 		
 		lastvelx = vel.x;
