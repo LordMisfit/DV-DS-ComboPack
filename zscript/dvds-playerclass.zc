@@ -129,7 +129,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		PerkFactorAirControl += ((CallACS("MiscVarCheckDECORATE",10009) * 0.05) + (CallACS("MiscVarCheckDECORATE",10010) * 0.125));
 
 		double DashingAirControl = 1.0;
-		if (CallACS("MiscVarCheckDECORATE",166) > 0) DashingAirControl = frandompick(0.75, 0.875, 1.0, 1.125, 1.25); // (0.015625 * 5);
+		if (CallACS("MiscVarCheckDECORATE",166) > 0) DashingAirControl = 1.5 + frandom(-0.25,0.25); // (0.015625 * 5);
 
 		double DivineAvatarAirControl = 1.00;
 		if (CallACS("GetBuffTimer",7) > 0) DivineAvatarAirControl *= 2.00;
@@ -157,8 +157,8 @@ class AetheriusPlayerPawn : PlayerPawn
 													BuffAirControl, SceptreAirControl,
 													PerkFactorAirControl, DashingAirControl,
 													DivineAvatarAirControl);
-			Console.Printf("    \cwTotalFriction:\c- \cw%8f\c-, \cyLevelAirFriction:\c- \cy%8f\c-, WaterLevel: %d (%d)", 
-													friction, level.airfriction, waterlevel, player.air_finished);
+			Console.Printf("    \cwTotalFriction:\c- \cw%8f\c-, \cyLevelAirFriction:\c- \cy%8f\c-", friction, level.airfriction);
+			
 		}
 
 		
@@ -167,19 +167,24 @@ class AetheriusPlayerPawn : PlayerPawn
 
 	override void CheckAirSupply()
 	{
+		int DrownDmg = 2 + ((level.time - player.air_finished) / TICRATE);
 		// Handle air supply
 		//if (level.airsupply > 0)
 		{
 			let player = self.player;
-			if (waterlevel < 3 || (bInvulnerable) || (player.cheats & (CF_GODMODE | CF_NOCLIP2)) ||	(player.cheats & CF_GODMODE2))
+			if (waterlevel < 3 || (bInvulnerable) || 
+					CountInv("InvulnerabilitySpell",AAPTR_PLAYER1) > 0 || CountInv("IsInvulnerable",AAPTR_PLAYER1) > 0 || 
+				 (player.cheats & (CF_GODMODE | CF_NOCLIP2)) || (player.cheats & CF_GODMODE2))
 			{
 				ResetAirSupply();
 			}
 			else if (player.air_finished <= level.time && !(level.time & 31))
 			{
-				DamageMobj(NULL, NULL, 2 + ((level.time - player.air_finished) / TICRATE), 'Drowning');
+				DamageMobj(NULL, NULL, DrownDmg, 'Drowning');
 			}
 		}
+		int AirTime = max(player.air_finished - level.time, 0);
+		//Console.Printf("    WaterLevel: %d, Level.Time: %d, Player.AirFinished: %d, AirTime: %d / %d, DrownDmg: %d", waterlevel, level.time, player.air_finished, AirTime, level.airsupply, DrownDmg);
 	}
 
 	override void PostBeginPlay()
@@ -212,17 +217,23 @@ class AetheriusPlayerPawn : PlayerPawn
 	
 	override void Tick()
 	{
-		int playeractor = 1;
 		// VOODOO Doll Protection
-		if (!player || !player.mo || player.mo != self)
-		{ 
-			Super.Tick();
-			return;
-		}
+		if (!player || !player.mo || player.mo != self) { Super.Tick(); return; }
 
 		int CharacterClass = CallACS("CheckCharacterClass");
 		int ClassCheck = CallACS("OtherVarCheckDECORATE",4);
-
+		int playeractor = 1;
+		int velxint = vel.x * 65536;
+		int velyint = vel.y * 65536;
+		int velzint = vel.z * 65536;
+		int basespeedvels;
+		double basespeedvelsd;
+		if (CharacterClass == 0) { basespeedvels = 1092266; basespeedvelsd = 16.666667; }
+		if (CharacterClass == 1) { basespeedvels = 1228799; basespeedvelsd = 18.750000; }
+		if (CharacterClass == 2) { basespeedvels = 1365333; basespeedvelsd = 20.833333; }
+		if (CharacterClass == 8) { basespeedvels = 1092266; basespeedvelsd = 16.666667; }
+		if (CharacterClass == 9) { basespeedvels = 1228799; basespeedvelsd = 18.750000; }
+		
 		// Melee Ghost Range Reticles
 		if (dvdsdebug_sceptrerangeghost)
 		{
@@ -1489,6 +1500,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		double dashtimermulti = 1.0;
 		if (CountInv("SafeTeaShoes") > 0) dashtimermulti += 0.125;
 		if (CountInv("CloakofEvasion") > 0) dashtimermulti += 0.0625;
+		if (CountInv("DoveRibbon") > 0) dashtimermulti += 0.0625;
 
 		int MaxDashTimer = 18 + (CallACS("MiscVarCheckDECORATE",31) / 32);
 		MaxDashTimer *= dashtimermulti;
@@ -1526,6 +1538,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		}
 		else
 		{
+			firsttic = -1;
 			A_SetInventory("PlayerDashing",0,AAPTR_PLAYER1); 
 			bSHOOTABLE = 1;
 			bVISIBILITYPULSE = 0;
@@ -1533,12 +1546,12 @@ class AetheriusPlayerPawn : PlayerPawn
 		}
 		if (dvdsdebug_showdashinformation) 
 		{
-			Console.Printf("\cxfirsttic: %d\c-, \czPosX: %d, PosY: %d, PosZ: %d\c-, \cnFloorZ: %d\c-, \cyVelX: %8f, VelY: %8f, VelZ: %8f\c-", firsttic, pos.x, pos.y, pos.z, floorz, vel.x, vel.y, vel.z);
+			Console.Printf("\cxfirsttic: %d\c-, \czPosX: %d, PosY: %d, PosZ: %d\c-, \cnFloorZ: %d\c-, \cyVelX: %8f (%d), VelY: %8f (%d), VelZ: %8f (%d)\c-", firsttic, pos.x, pos.y, pos.z, floorz, vel.x, velxint, vel.y, velyint, vel.z, velzint);
 			Console.Printf("DashTimer: %d / %d, DashVelTimer: %d / 2, DashVelTimer2: %d / 1", CallACS("MiscVarCheckDECORATE",166), CallACS("MiscVarCheckDECORATE",91), dashveltimer, dashveltimer2);
 		}
 		else
 		{
-			if (GetCVar("dvdsdebug_showmoveinformation") > 0) Console.Printf("\czPosX: %d, PosY: %d, PosZ: %d\c-, \cyVelX: %8f, VelY: %8f, VelZ: %8f\c-", pos.x, pos.y, pos.z, vel.x, vel.y, vel.z);
+			if (GetCVar("dvdsdebug_showmoveinformation") > 0) Console.Printf("\czPosX: %d, PosY: %d, PosZ: %d\c-, \cyVelX: %8f (%d), VelY: %8f (%d), VelZ: %8f (%d)\c-", pos.x, pos.y, pos.z, vel.x, velxint, vel.y, velyint, vel.z, velzint);
 		}
 		
 		/*
