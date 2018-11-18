@@ -21,7 +21,7 @@ class AetheriusPlayerPawn : PlayerPawn
 	int user_PlayerDVDSSpecial[256];
 	int MeleeAtkRange;
 
-	int actortimer;
+	int jiggle_jump, jiggle_crouch, jiggle_left, jiggle_right, jiggle_up, jiggle_down;	int actortimer;
 	int firsttic;
 	int pbuddha1, pbuddha2, pgod1, pgod2, pnoclip1, pnoclip2;
 	int breathdirection; // 0 = down [size decreases], 1 = up [size increases]
@@ -160,7 +160,118 @@ class AetheriusPlayerPawn : PlayerPawn
 			Console.Printf("    \cwTotalFriction:\c- \cw%8f\c-, \cyLevelAirFriction:\c- \cy%8f\c-", friction, level.airfriction);
 			
 		}
-
+		
+		//********************************************************************************
+		//*Allows the player to "jiggle" out of sleep faster by pressing movement keys :V*
+		//********************************************************************************
+		int SleepTimer = CallACS("GetBuffTimer",20);
+		int buttons = GetPlayerInput(INPUT_BUTTONS);
+		int jiggledecrease = random(4,6);
+		if (CountInv("EvenstarNecklace") > 0) jiggledecrease += random(2,3);
+		if (CountInv("BalrogRing") > 0) jiggledecrease += random(0,1);
+		if (CallACS("GetBuffTimer",129) > 0) jiggledecrease *= 10;
+		int jigglecooldown = random(2,3);
+		int jigglewarmup = 5;
+		if (jiggle_jump > 0) jiggle_jump -= 1;
+		if (jiggle_crouch > 0) jiggle_crouch -= 1;
+		if (jiggle_left > 0) jiggle_left -= 1;
+		if (jiggle_right > 0) jiggle_right -= 1;
+		if (jiggle_up > 0) jiggle_up -= 1;
+		if (jiggle_down > 0) jiggle_down -= 1;
+		if (jiggle_jump < 0) jiggle_jump = 0;
+		if (jiggle_crouch < 0) jiggle_crouch = 0;
+		if (jiggle_left < 0) jiggle_left = 0;
+		if (jiggle_right < 0) jiggle_right = 0;
+		if (jiggle_up < 0) jiggle_up = 0;
+		if (jiggle_down < 0) jiggle_down = 0;
+		if (SleepTimer > 0) // ... put to sleep.
+		{
+			if (buttons & BT_JUMP | buttons & BT_MOVEUP) // "Crouch"
+			{
+				if (jiggle_jump < 1)
+				{
+					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					jiggle_jump += jigglewarmup;
+					jiggle_crouch -= jigglecooldown;
+					jiggle_left -= jigglecooldown;
+					jiggle_right -= jigglecooldown;
+					jiggle_up -= jigglecooldown;
+					jiggle_down -= jigglecooldown;
+				}
+			}
+			else
+			if (buttons & BT_CROUCH | buttons & BT_MOVEDOWN) // "Crouch"
+			{
+				if (jiggle_crouch < 1)
+				{
+					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					jiggle_jump -= jigglecooldown;
+					jiggle_crouch += jigglewarmup;
+					jiggle_left -= jigglecooldown;
+					jiggle_right -= jigglecooldown;
+					jiggle_up -= jigglecooldown;
+					jiggle_down -= jigglecooldown;
+				}
+			}
+			else
+			if (buttons & BT_LEFT | buttons & BT_MOVELEFT) // Move "Left"
+			{
+				if (jiggle_left < 1)
+				{
+					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					jiggle_jump -= jigglecooldown;
+					jiggle_crouch -= jigglecooldown;
+					jiggle_left += jigglewarmup;
+					jiggle_right -= jigglecooldown;
+					jiggle_up -= jigglecooldown;
+					jiggle_down -= jigglecooldown;
+				}
+			}
+			else
+			if (buttons & BT_RIGHT | buttons & BT_MOVERIGHT) // Move "Right"
+			{
+				if (jiggle_right < 1)
+				{
+					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					jiggle_jump -= jigglecooldown;
+					jiggle_crouch -= jigglecooldown;
+					jiggle_left -= jigglecooldown;
+					jiggle_right += jigglewarmup;
+					jiggle_up -= jigglecooldown;
+					jiggle_down -= jigglecooldown;
+				}
+			}
+			else
+			if (buttons & BT_FORWARD | buttons & BT_LOOKUP) // Move "Forward/Up"
+			{
+				if (jiggle_up < 1)
+				{
+					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					jiggle_jump -= jigglecooldown;
+					jiggle_crouch -= jigglecooldown;
+					jiggle_left -= jigglecooldown;
+					jiggle_right -= jigglecooldown;
+					jiggle_up += jigglewarmup;
+					jiggle_down -= jigglecooldown;
+				}
+			}
+			else
+			if (buttons & BT_BACK | buttons & BT_LOOKDOWN) // Move "Backwards/Down"
+			{
+				if (jiggle_down < 1)
+				{
+					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					jiggle_jump -= jigglecooldown;
+					jiggle_crouch -= jigglecooldown;
+					jiggle_left -= jigglecooldown;
+					jiggle_right -= jigglecooldown;
+					jiggle_up -= jigglecooldown;
+					jiggle_down += jigglewarmup;
+				}
+			}
+			if (SleepTimer < 0) CallACS("GetBuffTimer",20,1,0); // Set
+			if (dvdsdebug_showmoveinformation > 0) Console.Printf("Jiggle - Sleep Time: %d, Jump: %d, Crouch: %d, Left: %d, Right: %d, Up: %d, Down: %d", SleepTimer, jiggle_jump, jiggle_crouch, jiggle_left, jiggle_right, jiggle_up, jiggle_down);
+		}
 		
 		super.MovePlayer();
 	}
