@@ -96,12 +96,14 @@ class PlayerStatItem : Inventory
 	int SkillFactor;
 	int TrueGameSkill;
 	int CurrentArmorClass;
+	int CurrentMaxArmor;
 	int HellcoreOverheatLevel;
 	int ClassicDoomType;
 	int ModType;
 	
 	int buttons;
 	int FreezePlayer;
+	int Player1TID;
 	
 	int EvasionRate; // Based on 0.1% to 100.0% [though the displays only show full %]
 	int AglEvadeCheck, DftEvadeCheck;
@@ -169,6 +171,7 @@ class PlayerStatItem : Inventory
 	
 	override void DoEffect()
 	{
+		Player1TID = 1001;
 		let playeractor = AetheriusPlayerPawn(owner);
 		if (!playeractor) { owner.A_SetInventory("PlayerStatItem",0); super.DoEffect(); } // Removes itself if given to a non-Aetherius Player Class
 
@@ -1139,16 +1142,16 @@ class PlayerStatItem : Inventory
 			// DVDSSpecialArrayValue[1] = Sets MP/Mana to 0 then unsets itself
 			if (CallACS("DVDSSpecialArrayCheckDECORATE",1) > 0)
 			{
-				CallACS("OtherVarSetDECORATE",2,0); // CurrentMana = 0;
-				CallACS("DVDSSpecialArraySetDECORATE",1,0); // DVDSSpecialArrayValue[1] = 0;
-				playeractor.user_PlayerDVDSSpecial[1] = 0; // SetUserArray(Player1TID,"user_PlayerDVDSSpecial",1,0);
+				CallACS("OtherVarSetDECORATE",2,0);
+				CallACS("DVDSSpecialArraySetDECORATE",1,0);
+				playeractor.user_PlayerDVDSSpecial[1] = 0;
 			}
 			// DVDSSpecialArrayValue[2] = Sets Stamina to 0 then unsets itself
 			if (CallACS("DVDSSpecialArrayCheckDECORATE",2) > 0)
 			{
-				CallACS("MiscVarSetDECORATE",21,0); // MiscellaneousVars[21] = 0;
-				CallACS("DVDSSpecialArraySetDECORATE",2,0); // DVDSSpecialArrayValue[2] = 0;
-				playeractor.user_PlayerDVDSSpecial[2] = 0; // SetUserArray(Player1TID,"user_PlayerDVDSSpecial",2,0);
+				CallACS("MiscVarSetDECORATE",21,0);
+				CallACS("DVDSSpecialArraySetDECORATE",2,0);
+				playeractor.user_PlayerDVDSSpecial[2] = 0;
 			}
 		
 			// DVDSSpecialArrayValue[3] = Unloved Specfic - Makes Hellcore Weapons drop 4x more often, etc :o
@@ -1159,23 +1162,23 @@ class PlayerStatItem : Inventory
 			if (CallACS("DVDSSpecialArrayCheckDECORATE",6) > 0) 
 			{
 				CallACS("MiscVarSetDECORATE",2000,-1);
-				CallACS("DVDSSpecialArraySetDECORATE",6,0); // DVDSSpecialArrayValue[6] = 0;
-				playeractor.user_PlayerDVDSSpecial[6] = 0; // SetUserArray(Player1TID,"user_PlayerDVDSSpecial",6,0);
+				CallACS("DVDSSpecialArraySetDECORATE",6,0);
+				playeractor.user_PlayerDVDSSpecial[6] = 0;
 			}
 			// DVDSSpecialArrayValue[7] = Make HUD visible again
 			if (CallACS("DVDSSpecialArrayCheckDECORATE",7) > 0) 
 			{
 				CallACS("MiscVarSetDECORATE",2000,1);
-				CallACS("DVDSSpecialArraySetDECORATE",7,0); // DVDSSpecialArrayValue[7] = 0;
-				playeractor.user_PlayerDVDSSpecial[7] = 0; // SetUserArray(Player1TID,"user_PlayerDVDSSpecial",7,0);
+				CallACS("DVDSSpecialArraySetDECORATE",7,0);
+				playeractor.user_PlayerDVDSSpecial[7] = 0;
 			}
 			// DVDSSpecialArrayValue[8] = Remove all weapons [TITLEMAP]
 			if (CallACS("DVDSSpecialArrayCheckDECORATE",8) > 0) 
 			{
 				owner.ClearInventory();
 				owner.A_SetInventory("SceptreOfEmpyrea",0);
-				CallACS("DVDSSpecialArraySetDECORATE",8,0); // DVDSSpecialArrayValue[8] = 0;
-				playeractor.user_PlayerDVDSSpecial[8] = 0; // SetUserArray(Player1TID,"user_PlayerDVDSSpecial",8,0);
+				CallACS("DVDSSpecialArraySetDECORATE",8,0);
+				playeractor.user_PlayerDVDSSpecial[8] = 0;
 			}
 			
 			// DVDSSpecialArrayValue[9] = Prevents Dashing
@@ -1916,6 +1919,15 @@ class PlayerStatItem : Inventory
 		// Gets Values for Accquired Kills & Secrets*
 		//*******************************************
 		A_PSI1DoEffectCountKSI();
+		
+		
+		
+		
+		
+		//************************************************
+		//*Marine's Armor Checks (for color translations)*
+		//************************************************
+		A_PSI1DoEffectArmorChecks();
 		
 		
 		
@@ -9587,7 +9599,132 @@ class PlayerStatItem : Inventory
 		}
 	}
 	
-	
+	// Armor Checking and Palette Assignment
+	void A_PSI1DoEffectArmorChecks()
+	{
+		let playeractor = AetheriusPlayerPawn(owner);
+		//************************************************
+		//*Marine's Armor Checks (for color translations)*
+		//************************************************
+		if (playeractor)
+		{
+			CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5); // CurrentArmorClass
+			CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9); // CurrentMaxArmor
+			if (ClassCheck >= 2)
+			{
+				if (CurrentArmorClass == 6)
+				{
+					owner.A_SetInventory("DSDiamondArmorClass2", 1);
+					owner.A_SetInventory("DSNoArmorClass", 0);
+					owner.A_SetInventory("DSGreenArmorClass", 0);
+					owner.A_SetInventory("DSBlueArmorClass", 0);
+					owner.A_SetInventory("DSStoneArmorClass1", 0);
+					owner.A_SetInventory("DSDiamondArmorClass1", 0);
+					owner.A_SetInventory("DSStoneArmorClass2", 0);
+					if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) Thing_SetTranslation(Player1TID,21); 
+				}
+				else
+				{
+					if (CurrentArmorClass == 5)
+					{
+						owner.A_SetInventory("DSStoneArmorClass2", 1);
+						owner.A_SetInventory("DSNoArmorClass", 0);
+						owner.A_SetInventory("DSGreenArmorClass", 0);
+						owner.A_SetInventory("DSBlueArmorClass", 0);
+						owner.A_SetInventory("DSStoneArmorClass1", 0);
+						owner.A_SetInventory("DSDiamondArmorClass1", 0);
+						owner.A_SetInventory("DSDiamondArmorClass2", 0);
+						if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) Thing_SetTranslation(Player1TID,20); 
+					}
+					else
+					{
+						if (CurrentArmorClass == 4)
+						{
+							owner.A_SetInventory("DSDiamondArmorClass1", 1);
+							owner.A_SetInventory("DSNoArmorClass", 0);
+							owner.A_SetInventory("DSGreenArmorClass", 0);
+							owner.A_SetInventory("DSBlueArmorClass", 0);
+							owner.A_SetInventory("DSStoneArmorClass1", 0);
+							owner.A_SetInventory("DSStoneArmorClass2", 0);
+							owner.A_SetInventory("DSDiamondArmorClass2", 0);
+							if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) Thing_SetTranslation(Player1TID,21); 
+						}
+						else
+						{
+							if (CurrentArmorClass == 3)
+							{
+								owner.A_SetInventory("DSStoneArmorClass1", 1);
+								owner.A_SetInventory("DSNoArmorClass", 0);
+								owner.A_SetInventory("DSGreenArmorClass", 0);
+								owner.A_SetInventory("DSBlueArmorClass", 0);
+								owner.A_SetInventory("DSDiamondArmorClass1", 0);
+								owner.A_SetInventory("DSStoneArmorClass2", 0);
+								owner.A_SetInventory("DSDiamondArmorClass2", 0);
+								if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) Thing_SetTranslation(Player1TID,20); 
+							}
+							else
+							{
+								if (CurrentArmorClass == 2)
+								{
+									owner.A_SetInventory("DSBlueArmorClass", 1);
+									owner.A_SetInventory("DSNoArmorClass", 0);
+									owner.A_SetInventory("DSGreenArmorClass", 0);
+									owner.A_SetInventory("DSStoneArmorClass1", 0);
+									owner.A_SetInventory("DSDiamondArmorClass1", 0);
+									owner.A_SetInventory("DSStoneArmorClass2", 0);
+									owner.A_SetInventory("DSDiamondArmorClass2", 0);
+									if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) Thing_SetTranslation(Player1TID,19); 
+								}
+								else
+								{
+									if (CurrentArmorClass == 1)
+									{
+										owner.A_SetInventory("DSGreenArmorClass", 1);
+										owner.A_SetInventory("DSNoArmorClass", 0);
+										owner.A_SetInventory("DSBlueArmorClass", 0);
+										owner.A_SetInventory("DSStoneArmorClass1", 0);
+										owner.A_SetInventory("DSDiamondArmorClass1", 0);
+										owner.A_SetInventory("DSStoneArmorClass2", 0);
+										owner.A_SetInventory("DSDiamondArmorClass2", 0);
+										if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) Thing_SetTranslation(Player1TID,18); 
+									}
+									else
+									{
+										owner.A_SetInventory("DSNoArmorClass", 1);
+										owner.A_SetInventory("DSGreenArmorClass", 0);
+										owner.A_SetInventory("DSBlueArmorClass", 0);
+										owner.A_SetInventory("DSStoneArmorClass1", 0);
+										owner.A_SetInventory("DSDiamondArmorClass1", 0);
+										owner.A_SetInventory("DSStoneArmorClass2", 0);
+										owner.A_SetInventory("DSDiamondArmorClass2", 0);
+										if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) Thing_SetTranslation(Player1TID,17); 
+									}
+								}
+							}
+						}
+					}
+				}
+
+				if (owner.CountInv("BasicArmor") <= 0)
+				{
+					CurrentArmorClass = 0;
+					CurrentMaxArmor = 0;
+					if (owner.CountInv("DSNoArmorClass") == 0)
+					{
+						owner.A_SetInventory("DSNoArmorClass", 1);
+						owner.A_SetInventory("DSGreenArmorClass", 0);
+						owner.A_SetInventory("DSBlueArmorClass", 0);
+						owner.A_SetInventory("DSStoneArmorClass1", 0);
+						owner.A_SetInventory("DSDiamondArmorClass1", 0);
+						owner.A_SetInventory("DSStoneArmorClass2", 0);
+						owner.A_SetInventory("DSDiamondArmorClass2", 0);
+					}
+				}
+				CallACS("OtherVarSetDECORATE",5,CurrentArmorClass); // CurrentArmorClass
+				CallACS("OtherVarSetDECORATE",9,CurrentMaxArmor); // CurrentMaxArmor
+			}
+		}
+	}
 	
 	
 	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive)
@@ -10615,13 +10752,6 @@ class PlayerStatItem2 : Inventory
 		let playeractor = AetheriusPlayerPawn(owner);
 		if (!playeractor) { owner.A_SetInventory("PlayerStatItem2",0); super.DoEffect(); } // Removes itself if given to a non-Aetherius Player Class
 		
-		
-		
-		
-		
-		//*******************************************************************************
-		//*Attempting to Interpolate Health Values for the player to show damage values.*
-		//*******************************************************************************
 		int ArmorResistance, ArmRes1, ArmRes2, ArmRes3;
 		int MaxHealthTrue = CallACS("StatCheck",1);
 		int MaxMana = CallACS("StatCheck",2);
@@ -10630,6 +10760,14 @@ class PlayerStatItem2 : Inventory
 		CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
 		int ClassCheck = CallACS("OtherVarCheckDECORATE",4);
 		int CharacterClass = CallACS("CheckCharacterClass");
+		
+		int InvisibilityTimer = CallACS("GetBuffTimer",1);
+		int InvulnerabilityTimer = CallACS("GetBuffTimer",4);
+		
+		
+		//*******************************************************************************
+		//*Attempting to Interpolate Health Values for the player to show damage values.*
+		//*******************************************************************************
 		if (playeractor)
 		{
 			if (ClassCheck > 1)
@@ -10678,6 +10816,126 @@ class PlayerStatItem2 : Inventory
 			}
 		}
 		
+		
+		
+		
+		
+		//**********************************************************************
+		//*Alpha and RenderStyle Effects [Invisiblity and Mercy Invulnerablity]*
+		//**********************************************************************
+		int InvisPulseTimer = level.totaltime % 40;
+		double InvisPulseAlpha;
+		double flickeralpha = 1.0;
+		double basealpha = 1.0;
+		double tempalpha;
+		double ghostdashvis = random(7,9) * 0.03125;
+		int FlickerTimerMod;
+		if (playeractor)
+		{
+			//Invisibility Pulse Timers
+			if (InvisibilityTimer > 0)
+			{
+				if (InvisPulseTimer == 0 || InvisPulseTimer == 20 || InvisPulseTimer == 40) InvisPulseAlpha = 0.20;
+				if (InvisPulseTimer == 1 || InvisPulseTimer == 19) InvisPulseAlpha = 0.205;
+				if (InvisPulseTimer == 2 || InvisPulseTimer == 18) InvisPulseAlpha = 0.21;
+				if (InvisPulseTimer == 3 || InvisPulseTimer == 17) InvisPulseAlpha = 0.215;
+				if (InvisPulseTimer == 4 || InvisPulseTimer == 16) InvisPulseAlpha = 0.22;
+				if (InvisPulseTimer == 5 || InvisPulseTimer == 15) InvisPulseAlpha = 0.225;
+				if (InvisPulseTimer == 6 || InvisPulseTimer == 14) InvisPulseAlpha = 0.23;
+				if (InvisPulseTimer == 7 || InvisPulseTimer == 13) InvisPulseAlpha = 0.235;
+				if (InvisPulseTimer == 8 || InvisPulseTimer == 12) InvisPulseAlpha = 0.24;
+				if (InvisPulseTimer == 9 || InvisPulseTimer == 11) InvisPulseAlpha = 0.245;
+				if (InvisPulseTimer == 10) InvisPulseAlpha = 0.25;
+				if (InvisPulseTimer == 21 || InvisPulseTimer == 39) InvisPulseAlpha = 0.195;
+				if (InvisPulseTimer == 22 || InvisPulseTimer == 38) InvisPulseAlpha = 0.19;
+				if (InvisPulseTimer == 23 || InvisPulseTimer == 37) InvisPulseAlpha = 0.185;
+				if (InvisPulseTimer == 24 || InvisPulseTimer == 36) InvisPulseAlpha = 0.18;
+				if (InvisPulseTimer == 25 || InvisPulseTimer == 35) InvisPulseAlpha = 0.175;
+				if (InvisPulseTimer == 26 || InvisPulseTimer == 34) InvisPulseAlpha = 0.17;
+				if (InvisPulseTimer == 27 || InvisPulseTimer == 33) InvisPulseAlpha = 0.165;
+				if (InvisPulseTimer == 28 || InvisPulseTimer == 32) InvisPulseAlpha = 0.16;
+				if (InvisPulseTimer == 29 || InvisPulseTimer == 31) InvisPulseAlpha = 0.155;
+				if (InvisPulseTimer == 30) InvisPulseAlpha = 0.15;
+			}
+			if (dvdsdebug_mercyinvulndisplays) Console.Printf("InvisPulseTimer: %d, level.totaltime: %d", InvisPulseTimer, level.totaltime);
+			
+			
+			//Mercy Invulnerablity Itself
+			if (CallACS("MiscVarCheckDECORATE",194) != 0) // Flickering
+			{
+				if (InvisibilityTimer > 0) basealpha = InvisPulseAlpha; // Invisible
+				if (dvdsdebug_mercyinvulndisplays) Console.Printf("BaseAlpha: %8f, ghostdashvis: %8f", basealpha, ghostdashvis);
+				
+				if (CallACS("MiscVarCheckDECORATE",195) > 0) // Timer Above 0
+				{
+					if (InvulnerabilityTimer == 0) 
+					{
+						owner.player.cheats |= CF_GODMODE;
+						owner.bINVULNERABLE = 1;
+						owner.A_SetInventory("IsInvulnerable",1);
+					}
+					FlickerTimerMod = CallACS("MiscVarCheckDECORATE",195) % 120;
+					if (FlickerTimerMod >= 0 && FlickerTimerMod <= 14) flickeralpha = basealpha * 0.25;
+					if (FlickerTimerMod >= 15 && FlickerTimerMod <= 29) flickeralpha = basealpha * 0.3125;
+					if (FlickerTimerMod >= 30 && FlickerTimerMod <= 44) flickeralpha = basealpha * 0.375;
+					if (FlickerTimerMod >= 45 && FlickerTimerMod <= 59) flickeralpha = basealpha * 0.4375;
+					if (FlickerTimerMod >= 60 && FlickerTimerMod <= 74) flickeralpha = basealpha * 0.5;
+					if (FlickerTimerMod >= 75 && FlickerTimerMod <= 89) flickeralpha = basealpha * 0.4375;
+					if (FlickerTimerMod >= 90 && FlickerTimerMod <= 104) flickeralpha = basealpha * 0.375;
+					if (FlickerTimerMod >= 105 && FlickerTimerMod <= 119) flickeralpha = basealpha * 0.3125;
+					if (CallACS("MiscVarCheckDECORATE",166) > 0) flickeralpha *= ghostdashvis;
+					owner.A_SetRenderStyle(flickeralpha,7);
+					if (dvdsdebug_mercyinvulndisplays) Console.Printf("flickeralpha: %8f, FlickerTimerMod [Timer]: %d [%d]", flickeralpha, owner.GetRenderStyle(), FlickerTimerMod, CallACS("MiscVarCheckDECORATE",195));
+					
+					CallACS("MiscVarSetDECORATE",196,FlickerTimerMod);
+					CallACS("MiscVarSetDECORATE",195,20,2);
+				}
+				else // Timer at 0
+				{
+					if (InvulnerabilityTimer == 0) 
+					{
+						owner.player.cheats &= ~CF_GODMODE;
+						owner.bINVULNERABLE = 0;
+						owner.A_SetInventory("IsInvulnerable",0);
+					}
+					CallACS("MiscVarSetDECORATE",194,0);
+					CallACS("MiscVarSetDECORATE",195,0);
+				}
+			}
+			else // Not Flickering
+			{
+				if (InvulnerabilityTimer == 0) 
+				{
+					owner.player.cheats &= ~CF_GODMODE;
+					owner.bINVULNERABLE = 0;
+					owner.A_SetInventory("IsInvulnerable",0);
+				}
+		
+				if (InvisibilityTimer > 0)
+				{
+					tempalpha = InvisPulseAlpha;
+					if (CallACS("MiscVarCheckDECORATE",166) > 0) tempalpha *= ghostdashvis;
+					owner.A_SetRenderStyle(tempalpha,7);
+				}
+				else
+				{
+					tempalpha = 1.0;
+					if (CallACS("MiscVarCheckDECORATE",166) > 0) 
+					{ 
+						tempalpha *= ghostdashvis; 
+						owner.A_SetRenderStyle(tempalpha,7);
+					}
+					else 
+					{ 
+						owner.A_SetRenderStyle(1.0,1);
+					}
+				}
+				CallACS("MiscVarSetDECORATE",195,0);
+				if (dvdsdebug_mercyinvulndisplays) Console.Printf("tempalpha: %8f", tempalpha, owner.GetRenderStyle());
+			}
+			if (dvdsdebug_mercyinvulndisplays) Console.Printf("owner.player.cheats: %d, InvisPulseAlpha: %8f", owner.player.cheats, InvisPulseAlpha);
+			CallACS("FixedVarSetDECORATE",101,(InvisPulseAlpha * 65536));
+		}
 		
 		
 		
