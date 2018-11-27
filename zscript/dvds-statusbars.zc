@@ -1,0 +1,275 @@
+class AetheriusStatusBar : BaseStatusBar
+{
+	// Except for the placement information this gets all info from the struct that gets passed in.
+	void DrawInventoryBar(InventoryBarState parms, Vector2 position, int numfields, int flags = 0, double bgalpha = 1.)
+	{
+		int ItemHeldRatio;
+
+		double width = parms.boxsize.X * numfields;
+		[position, flags] = AdjustPosition(position, flags, width, parms.boxsize.Y);
+		
+		CPlayer.mo.InvFirst = ValidateInvFirst(numfields);
+		if (CPlayer.mo.InvFirst == null) return;	// Player has no listed inventory items.
+		
+		Vector2 boxsize = parms.boxsize;
+		// First draw all the boxes
+		for(int i = 0; i < numfields; i++)
+		{
+			DrawTexture(parms.box, position + (boxsize.X * i, 0), flags | DI_ITEM_LEFT_TOP, bgalpha);
+		}
+		
+		// now the items and the rest
+		
+		Vector2 itempos = position + boxsize / 2;
+		Vector2 textpos = position + boxsize - (1, 1 + parms.amountfont.mFont.GetHeight());
+		Vector2 textposmax = position + boxsize - (1, 1 + parms.amountfont.mFont.GetHeight());
+
+		int i = 0;
+		Inventory item;
+		double inviconalpha;
+		for(item = CPlayer.mo.InvFirst; item != NULL && i < numfields; item = item.NextInv())
+		{
+			for(int j = 0; j < 2; j++)
+			{
+				if (j ^ !!(flags & DI_DRAWCURSORFIRST))
+				{
+					if (item == CPlayer.mo.InvSel)
+					{
+						double flashAlpha = bgalpha;
+						if (flags & DI_ARTIFLASH) flashAlpha *= itemflashFade;
+						DrawTexture(parms.selector, position + parms.selectofs + (boxsize.X * i, 0), flags | DI_ITEM_LEFT_TOP, flashAlpha);
+					}
+				}
+				else
+				{
+					if (item.Amount <= 0) inviconalpha = 0.25; else inviconalpha = 0.875;
+
+					DrawInventoryIcon(item, itempos + (boxsize.X * i, 0), flags | DI_ITEM_CENTER, inviconalpha );
+				}
+			}
+			
+			if (parms.amountfont != null && (item.Amount >= 0 || (flags & DI_ALWAYSSHOWCOUNTERS)))
+			{
+				ItemHeldRatio = (item.Amount * 1000) / item.MaxAmount;
+				if (item is "Coin")
+				{
+					if (dvds_imposeinventorylimits)
+					{
+						DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textposmax + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, parms.cr, parms.itemalpha);
+					}
+					else
+					{
+						DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textposmax + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, parms.cr, parms.itemalpha);
+					}
+				}
+				else
+				{
+					if (dvds_imposeinventorylimits)
+					{
+						if (item.Amount <= 0) 
+						{
+							DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_DARKRED, parms.itemalpha);
+						}
+						else 
+						if (item.Amount >= item.MaxAmount)
+						{
+							DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_LIGHTBLUE, parms.itemalpha);
+						}
+						else
+						{
+							if (ItemHeldRatio <= 250) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_RED, parms.itemalpha);
+							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_ORANGE, parms.itemalpha);
+							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_YELLOW, parms.itemalpha);
+							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_GREEN, parms.itemalpha);
+						}
+						//DrawString(parms.amountfont, "/", textpos + (boxsize.X * i, 0) + (-13,-2), flags | DI_TEXT_ALIGN_CENTER, Font.CR_WHITE, parms.itemalpha);
+						DrawString(parms.amountfont, FormatNumber(item.MaxAmount, 0, 10), textposmax + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_GOLD, parms.itemalpha);
+					}
+					else
+					{
+						if (item.Amount <= 0) 
+						{
+							DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_DARKRED, parms.itemalpha);
+						}
+						else 
+						if (item.Amount >= item.MaxAmount)
+						{
+							DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_LIGHTBLUE, parms.itemalpha);
+						}
+						else
+						{
+							if (ItemHeldRatio <= 250) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_RED, parms.itemalpha);
+							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE, parms.itemalpha);
+							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW, parms.itemalpha);
+							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_GREEN, parms.itemalpha);
+						}
+					}
+				}
+			}
+			i++;
+		}
+		// Is there something to the left?
+		if (CPlayer.mo.FirstInv() != CPlayer.mo.InvFirst)
+		{
+			DrawTexture(parms.left, position + (-parms.arrowoffset.X, parms.arrowoffset.Y), flags | DI_ITEM_RIGHT|DI_ITEM_VCENTER);
+		}
+		// Is there something to the right?
+		if (item != NULL)
+		{
+			DrawTexture(parms.right, position + parms.arrowoffset + (width, 0), flags | DI_ITEM_LEFT|DI_ITEM_VCENTER);
+		}
+	}
+}
+
+class AetheriusStatusBarMain : AetheriusStatusBar
+{
+	HUDFont mHUDFont;
+	HUDFont mIndexFont;
+	HUDFont mAmountFont;
+	InventoryBarState diparms;
+	
+
+	override void Init()
+	{
+		Super.Init();
+		SetSize(0, 320, 200);
+
+		// Create the font used for the fullscreen HUD
+		Font fnt = "DQHUDFONTSML";
+		mHUDFont = HUDFont.Create(fnt, fnt.GetCharWidth("0"), true, 1, 1);
+		fnt = "INDEXFONT_DOOM";
+		mIndexFont = HUDFont.Create(fnt, fnt.GetCharWidth("0"), true);
+		mAmountFont = HUDFont.Create("INDEXFONT");
+		diparms = InventoryBarState.Create();
+	}
+
+	override int GetProtrusion(double scaleratio) const
+	{
+		return 0;
+	}
+
+	override void Draw (int state, double TicFrac)
+	{
+		Super.Draw (state, TicFrac);
+		
+		BeginHUD();
+		DrawFullScreenStuff ();
+	}
+
+	protected void DrawMainBar (double TicFrac)
+	{
+	}
+
+	protected void DrawFullScreenStuff ()
+	{
+		SetSize(0, 320, 200);
+		// Draw the keys. This does not use a special draw function like SBARINFO because the specifics will be different for each mod 
+		// so it's easier to copy or reimplement the following piece of code instead of trying to write a complicated all-encompassing solution.
+		Vector2 keypos = (-10, 24); // (-10, 2)
+		if (gameinfo.gametype == GAME_Doom) keypos.x -= 0;
+		if (gameinfo.gametype == GAME_Heretic) keypos.x -= 4;
+		if (gameinfo.gametype == GAME_Hexen) keypos.x -= 10;
+		if (gameinfo.gametype == GAME_Strife) keypos.x -= 8;
+
+		int rowc = 0;
+		double roww = 0;
+		bool showkeys = true;
+		if (!automapactive)
+		{
+			if (gameinfo.gametype == GAME_Hexen) showkeys = false;
+			if (gameinfo.gametype == GAME_Strife) showkeys = false;
+		}
+		
+		if (showkeys)
+		{
+			for(let i = CPlayer.mo.Inv; i != null; i = i.Inv)
+			{
+				if (i is "Key" && i.Icon.IsValid())
+				{
+					DrawTexture(i.Icon, keypos, DI_SCREEN_RIGHT_TOP|DI_ITEM_LEFT_TOP);
+					Vector2 size = TexMan.GetScaledSize(i.Icon);
+					keypos.Y += size.Y + 2;
+					roww = max(roww, size.X);
+					if (++rowc == 6)
+					{
+						keypos.Y = 24;
+						keypos.X -= roww + 2;
+						roww = 0;
+						rowc = 0;
+					}
+				}
+			}
+		}
+
+		SetSize(0, 320, 200);
+		int invX = -48; // -20
+		int invXExtra;
+		int invY = -123; // -20
+		int invYExtra;
+		int ItemHeldRatio;
+		if (screenblocks < 12)
+		{
+			if (CPlayer.mo.InvSel != null)
+			{
+				ItemHeldRatio = (CPlayer.mo.InvSel.Amount * 1000) / CPlayer.mo.InvSel.MaxAmount;
+				//Console.Printf("%d", ItemHeldRatio);
+				DrawInventoryIcon(CPlayer.mo.InvSel, (-14, invY + 17));
+				if (CPlayer.mo.InvSel is "Coin")
+				{
+					invXExtra = 18;
+					invYExtra = -10;
+					DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 0, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_GOLD);
+				}
+				else
+				{
+					if (dvds_imposeinventorylimits)
+					{
+						invXExtra = 0;
+						invYExtra = -23;
+						if (CPlayer.mo.InvSel.Amount <= 0) 
+						{
+							DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_DARKRED);
+						}
+						else 
+						if (CPlayer.mo.InvSel.Amount >= CPlayer.mo.InvSel.MaxAmount)
+						{
+							DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_LIGHTBLUE);
+						}
+						else
+						{
+							if (ItemHeldRatio <= 250) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_RED);
+							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_ORANGE);
+							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_YELLOW);
+							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_GREEN);
+						}
+						DrawString(mHUDFont, "/", (invX + 22, invY - 10), DI_TEXT_ALIGN_RIGHT, font.CR_WHITE);
+						DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.MaxAmount, 6), (invX - 0, invY + 3), DI_TEXT_ALIGN_RIGHT|DI_NOSHADOW, font.CR_GOLD);
+					}
+					else
+					{
+						invXExtra = 18;
+						invYExtra = -10;
+						if (CPlayer.mo.InvSel.Amount <= 0) 
+						{
+							DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_DARKRED);
+						}
+						else 
+						if (CPlayer.mo.InvSel.Amount >= CPlayer.mo.InvSel.MaxAmount)
+						{
+							DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_LIGHTBLUE);
+						}
+						else
+						{
+							if (ItemHeldRatio <= 250) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_RED);
+							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_ORANGE);
+							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_YELLOW);
+							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_GREEN);
+						}
+					}
+				}
+
+			}
+			DrawInventoryBar(diparms, (0, 0), 8, DI_SCREEN_CENTER_BOTTOM, HX_SHADOW);
+		}
+	}
+}
