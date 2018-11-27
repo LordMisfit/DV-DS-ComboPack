@@ -1,9 +1,93 @@
+class InventoryBarStateDVDS : InventoryBarState
+{
+	TextureID box;
+	TextureID selector;
+	Vector2 boxsize;
+	Vector2 boxofs;
+	Vector2 selectofs;
+	Vector2 innersize;
+		
+	TextureID left;
+	TextureID right;
+	Vector2 arrowoffset;
+
+	double itemalpha;
+	
+	HUDFont amountfont;
+	int cr;
+	int flags;
+
+	private static void Init(InventoryBarState me, HUDFont indexfont, int cr, double itemalpha, Vector2 innersize,	String leftgfx, String rightgfx, Vector2 arrowoffs, int flags)
+	{
+		me.itemalpha = itemalpha;
+		if (innersize == (0, 0))
+		{
+			me.boxofs = (2, 2);
+			me.innersize = me.boxsize - (4, 4);	// Default is based on Heretic's and Hexens icons.
+		}
+		else
+		{
+			me.innersize = innersize;
+			me.boxofs = (me.boxsize - me.innersize) / 2;
+		}
+		if (me.selector.IsValid())
+		{
+			Vector2 sel = TexMan.GetScaledSize(me.selector);
+			me.selectofs = (me.boxsize - sel) / 2;
+		}
+		me.left = TexMan.CheckForTexture(leftgfx, TexMan.TYPE_MiscPatch);
+		me.right = TexMan.CheckForTexture(rightgfx, TexMan.TYPE_MiscPatch);
+		me.arrowoffset = arrowoffs;
+		me.arrowoffset.Y += me.boxsize.Y/2;	// default is centered to the side of the box.
+		if (indexfont == null) 
+		{
+			me.amountfont = HUDFont.Create("INDEXFONT_DVDS");
+			if (cr == Font.CR_UNTRANSLATED) cr = Font.CR_GOLD;
+		}
+		else me.amountfont = indexfont;
+		me.cr = cr;
+		me.flags = flags;
+	}
+
+	// The default settings here are what SBARINFO is using.
+	static InventoryBarState Create(HUDFont indexfont = null, int cr = Font.CR_UNTRANSLATED, double itemalpha = 1.,
+							String boxgfx = "ARTIBOX", String selgfx = "SELECTBO", Vector2 innersize = (0, 0),
+							String leftgfx = "INVGEML1", String rightgfx = "INVGEMR1", Vector2 arrowoffs = (0, 0), int flags = 0)
+	{
+		let me = new ("InventoryBarState");
+		me.box = TexMan.CheckForTexture(boxgfx, TexMan.TYPE_MiscPatch);
+		me.selector = TexMan.CheckForTexture(selgfx, TexMan.TYPE_MiscPatch);
+		if (me.box.IsValid() || me.selector.IsValid()) me.boxsize = TexMan.GetScaledSize(me.box.IsValid()? me.box : me.selector);
+		else me.boxsize = (32., 32.);
+		Init(me, indexfont, cr, itemalpha, innersize, leftgfx, rightgfx, arrowoffs, flags);
+		return me;
+	}
+	
+	// The default settings here are what SBARINFO is using.
+	static InventoryBarState CreateNoBox(HUDFont indexfont = null, int cr = Font.CR_UNTRANSLATED, double itemalpha = 1.,
+							Vector2 boxsize = (32, 32), String selgfx = "SELECTBO", Vector2 innersize = (0, 0),
+							String leftgfx = "INVGEML1", String rightgfx = "INVGEMR1", Vector2 arrowoffs = (0, 0), int flags = 0)
+	{
+		let me = new ("InventoryBarState");
+		me.box.SetInvalid();
+		me.selector = TexMan.CheckForTexture(selgfx, TexMan.TYPE_MiscPatch);
+		me.boxsize = boxsize;
+		Init(me, indexfont, cr, itemalpha, innersize, leftgfx, rightgfx, arrowoffs, flags);
+		return me;
+	}
+	
+}
+	
+	
 class AetheriusStatusBar : BaseStatusBar
 {
 	// Except for the placement information this gets all info from the struct that gets passed in.
 	void DrawInventoryBar(InventoryBarState parms, Vector2 position, int numfields, int flags = 0, double bgalpha = 1.)
 	{
 		int ItemHeldRatio;
+
+		Font fnt = "INDEXFONT_DVDS";
+		parms.amountfont = HUDFont.Create(fnt, fnt.GetCharWidth("0"), true, 1, 1);
 
 		double width = parms.boxsize.X * numfields;
 		[position, flags] = AdjustPosition(position, flags, width, parms.boxsize.Y);
@@ -29,6 +113,8 @@ class AetheriusStatusBar : BaseStatusBar
 		double inviconalpha, inviconalphapulse;
 		int inviconalphatimer = level.time % 35;
 		CPlayer.inventorytics = 0; // Makes it you can immediately "use" items after selecting through them.
+		
+		int texttranslation = font.CR_UNTRANSLATED;
 		//Console.Printf("%d", CPlayer.inventorytics);
 		for(item = CPlayer.mo.InvFirst; item != NULL && i < numfields; item = item.NextInv())
 		{
@@ -45,40 +131,47 @@ class AetheriusStatusBar : BaseStatusBar
 				}
 				else
 				{
-					if (item.Amount <= 0) 
-					{
-						inviconalpha = 0.25; 
-					}
-					else 
-					if (item.Amount >= item.MaxAmount) 
-					{
-						if (inviconalphatimer == 0) inviconalphapulse = -0.125;
-						if (inviconalphatimer == 1 || inviconalphatimer == 39) inviconalphapulse = -0.1125;
-						if (inviconalphatimer == 2 || inviconalphatimer == 38) inviconalphapulse = -0.1000;
-						if (inviconalphatimer == 3 || inviconalphatimer == 37) inviconalphapulse = -0.0875;
-						if (inviconalphatimer == 4 || inviconalphatimer == 36) inviconalphapulse = -0.075;
-						if (inviconalphatimer == 5 || inviconalphatimer == 35) inviconalphapulse = -0.0625;
-						if (inviconalphatimer == 6 || inviconalphatimer == 34) inviconalphapulse = -0.05;
-						if (inviconalphatimer == 7 || inviconalphatimer == 33) inviconalphapulse = -0.0375;
-						if (inviconalphatimer == 8 || inviconalphatimer == 32) inviconalphapulse = -0.025;
-						if (inviconalphatimer == 9 || inviconalphatimer == 31) inviconalphapulse = -0.0125;
-						if (inviconalphatimer == 10 || inviconalphatimer == 30) inviconalphapulse = -0.00;
-						if (inviconalphatimer == 11 || inviconalphatimer == 29) inviconalphapulse = 0.0125;
-						if (inviconalphatimer == 12 || inviconalphatimer == 28) inviconalphapulse = 0.025;
-						if (inviconalphatimer == 13 || inviconalphatimer == 27) inviconalphapulse = 0.0375;
-						if (inviconalphatimer == 14 || inviconalphatimer == 26) inviconalphapulse = 0.05;
-						if (inviconalphatimer == 15 || inviconalphatimer == 25) inviconalphapulse = 0.0625;
-						if (inviconalphatimer == 16 || inviconalphatimer == 24) inviconalphapulse = 0.075;
-						if (inviconalphatimer == 17 || inviconalphatimer == 23) inviconalphapulse = 0.0875;
-						if (inviconalphatimer == 18 || inviconalphatimer == 22) inviconalphapulse = 0.10;
-						if (inviconalphatimer == 19 || inviconalphatimer == 21) inviconalphapulse = 0.125;
-						if (inviconalphatimer == 20) inviconalphapulse = 0.1375;
-						inviconalphapulse *= 2;
-						inviconalpha = 0.75 + inviconalphapulse;
-					}
-					else 
+					if (item is "Coin")
 					{
 						inviconalpha = 0.875;
+					}
+					else
+					{
+						if (item.Amount <= 0) 
+						{
+							inviconalpha = 0.4375; 
+						}
+						else 
+						if (item.Amount >= item.MaxAmount) 
+						{
+							if (inviconalphatimer == 0) inviconalphapulse = -0.125;
+							if (inviconalphatimer == 1 || inviconalphatimer == 39) inviconalphapulse = -0.1125;
+							if (inviconalphatimer == 2 || inviconalphatimer == 38) inviconalphapulse = -0.1000;
+							if (inviconalphatimer == 3 || inviconalphatimer == 37) inviconalphapulse = -0.0875;
+							if (inviconalphatimer == 4 || inviconalphatimer == 36) inviconalphapulse = -0.075;
+							if (inviconalphatimer == 5 || inviconalphatimer == 35) inviconalphapulse = -0.0625;
+							if (inviconalphatimer == 6 || inviconalphatimer == 34) inviconalphapulse = -0.05;
+							if (inviconalphatimer == 7 || inviconalphatimer == 33) inviconalphapulse = -0.0375;
+							if (inviconalphatimer == 8 || inviconalphatimer == 32) inviconalphapulse = -0.025;
+							if (inviconalphatimer == 9 || inviconalphatimer == 31) inviconalphapulse = -0.0125;
+							if (inviconalphatimer == 10 || inviconalphatimer == 30) inviconalphapulse = -0.00;
+							if (inviconalphatimer == 11 || inviconalphatimer == 29) inviconalphapulse = 0.0125;
+							if (inviconalphatimer == 12 || inviconalphatimer == 28) inviconalphapulse = 0.025;
+							if (inviconalphatimer == 13 || inviconalphatimer == 27) inviconalphapulse = 0.0375;
+							if (inviconalphatimer == 14 || inviconalphatimer == 26) inviconalphapulse = 0.05;
+							if (inviconalphatimer == 15 || inviconalphatimer == 25) inviconalphapulse = 0.0625;
+							if (inviconalphatimer == 16 || inviconalphatimer == 24) inviconalphapulse = 0.075;
+							if (inviconalphatimer == 17 || inviconalphatimer == 23) inviconalphapulse = 0.0875;
+							if (inviconalphatimer == 18 || inviconalphatimer == 22) inviconalphapulse = 0.10;
+							if (inviconalphatimer == 19 || inviconalphatimer == 21) inviconalphapulse = 0.125;
+							if (inviconalphatimer == 20) inviconalphapulse = 0.1375;
+							inviconalphapulse *= 2;
+							inviconalpha = 0.75 + inviconalphapulse;
+						}
+						else 
+						{
+							inviconalpha = 0.875;
+						}
 					}
 
 					DrawInventoryIcon(item, itempos + (boxsize.X * i, 0), flags | DI_ITEM_CENTER, inviconalpha );
@@ -92,54 +185,42 @@ class AetheriusStatusBar : BaseStatusBar
 				{
 					if (dvds_imposeinventorylimits)
 					{
-						DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textposmax + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, parms.cr, parms.itemalpha);
+						DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textposmax + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, font.CR_GOLD, parms.itemalpha);
 					}
 					else
 					{
-						DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textposmax + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, parms.cr, parms.itemalpha);
+						DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textposmax + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, font.CR_GOLD, parms.itemalpha);
 					}
 				}
 				else
 				{
 					if (dvds_imposeinventorylimits)
 					{
-						if (item.Amount <= 0) 
-						{
-							DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_DARKRED, parms.itemalpha);
-						}
-						else 
-						if (item.Amount >= item.MaxAmount)
-						{
-							DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_LIGHTBLUE, parms.itemalpha);
-						}
+						if (item.Amount <= 0) texttranslation = Font.CR_DARKRED;
+						else if (item.Amount >= item.MaxAmount) texttranslation = Font.CR_LIGHTBLUE;
 						else
 						{
-							if (ItemHeldRatio <= 250) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_RED, parms.itemalpha);
-							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_ORANGE, parms.itemalpha);
-							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_YELLOW, parms.itemalpha);
-							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, Font.CR_GREEN, parms.itemalpha);
+							if (ItemHeldRatio <= 250) texttranslation = Font.CR_RED;
+							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) texttranslation = Font.CR_ORANGE;
+							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) texttranslation = Font.CR_YELLOW;
+							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) texttranslation = Font.CR_GREEN;
 						}
-						//DrawString(parms.amountfont, "/", textpos + (boxsize.X * i, 0) + (-13,-2), flags | DI_TEXT_ALIGN_CENTER, Font.CR_WHITE, parms.itemalpha);
+						DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-27,-19), flags | DI_TEXT_ALIGN_LEFT, texttranslation, parms.itemalpha);
+						DrawString(parms.amountfont, "/", textpos + (boxsize.X * i, 0) + (-14,-10), flags | DI_TEXT_ALIGN_CENTER, Font.CR_WHITE, parms.itemalpha);
 						DrawString(parms.amountfont, FormatNumber(item.MaxAmount, 0, 10), textposmax + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_GOLD, parms.itemalpha);
 					}
 					else
 					{
-						if (item.Amount <= 0) 
-						{
-							DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_DARKRED, parms.itemalpha);
-						}
-						else 
-						if (item.Amount >= item.MaxAmount)
-						{
-							DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_LIGHTBLUE, parms.itemalpha);
-						}
+						if (item.Amount <= 0) texttranslation = Font.CR_DARKRED;
+						else if (item.Amount >= item.MaxAmount) texttranslation = Font.CR_LIGHTBLUE;
 						else
 						{
-							if (ItemHeldRatio <= 250) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_RED, parms.itemalpha);
-							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE, parms.itemalpha);
-							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW, parms.itemalpha);
-							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, Font.CR_GREEN, parms.itemalpha);
+							if (ItemHeldRatio <= 250) texttranslation = Font.CR_RED;
+							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) texttranslation = Font.CR_ORANGE;
+							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) texttranslation = Font.CR_YELLOW;
+							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) texttranslation = Font.CR_GREEN;
 						}
+						DrawString(parms.amountfont, FormatNumber(item.Amount, 0, 6), textpos + (boxsize.X * i, 0) + (-2,-2), flags | DI_TEXT_ALIGN_RIGHT, texttranslation, parms.itemalpha);
 					}
 				}
 			}
@@ -168,15 +249,25 @@ class AetheriusStatusBarMain : AetheriusStatusBar
 
 	override void Init()
 	{
-		Super.Init();
-		SetSize(0, 320, 200);
+		// Run the parent status bar's Init() function
+		//   It's generally a good idea to call the super class's function whenever you 
+		//   are overriding a function, in case some critical code is executed by the 
+		//   parent class - unless you know specifically that you want to completely
+		//   replace the parent class's function instead		Super.Init();
+
+		SetSize(0, 320, 200); // This sets the pixel height of the status bar and the base resolution
+
+		// Initialize the fonts - there's actually a wiki page on this part: 
+		// https://zdoom.org/wiki/Classes:HUDFont
 
 		// Create the font used for the fullscreen HUD
 		Font fnt = "DQHUDFONTSML";
-		mHUDFont = HUDFont.Create(fnt, fnt.GetCharWidth("0"), true, 1, 1);
-		fnt = "INDEXFONT_DOOM";
-		mIndexFont = HUDFont.Create(fnt, fnt.GetCharWidth("0"), true);
+		mHUDFont = HUDFont.Create(fnt, fnt.GetCharWidth("0"), true, 2, 2);
+		fnt = "INDEXFONT_DVDS";
+		mIndexFont = HUDFont.Create(fnt, fnt.GetCharWidth("0"), true, 1, 1);
 		mAmountFont = HUDFont.Create("INDEXFONT");
+
+		// Initialize the inventory bar
 		diparms = InventoryBarState.Create();
 	}
 
@@ -187,9 +278,10 @@ class AetheriusStatusBarMain : AetheriusStatusBar
 
 	override void Draw (int state, double TicFrac)
 	{
+		// Run the parent status bar's Draw() function
 		Super.Draw (state, TicFrac);
 		
-		BeginHUD();
+		BeginHUD(); // You'd use BeginStatusBar(); if you wanted a traditional bar instead of fullscreen
 		DrawFullScreenStuff ();
 	}
 
@@ -244,8 +336,16 @@ class AetheriusStatusBarMain : AetheriusStatusBar
 		int invY = -123; // -20
 		int invYExtra;
 		int ItemHeldRatio;
+		int texttranslation;
 		if (screenblocks < 12)
 		{
+			// Draw the currently selected inventory item
+			//  void DrawInventoryIcon(Inventory item, Vector2 pos, int flags = 0, double alpha = 1.0, Vector2 boxsize = (-1, -1), Vector2 scale = (1.,1.))
+			//  Parameters:
+			//   Inventory item name - CPlayer.mo.InvSel is the current inventroy selected by the player
+			//   All other parameters are the same as DrawImage
+			//
+			//  A major difference from SBARINFO is that you have to manually draw the inventory amount			if (CPlayer.mo.InvSel != null)
 			if (CPlayer.mo.InvSel != null)
 			{
 				ItemHeldRatio = (CPlayer.mo.InvSel.Amount * 1000) / CPlayer.mo.InvSel.MaxAmount;
@@ -263,22 +363,16 @@ class AetheriusStatusBarMain : AetheriusStatusBar
 					{
 						invXExtra = 0;
 						invYExtra = -23;
-						if (CPlayer.mo.InvSel.Amount <= 0) 
-						{
-							DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_DARKRED);
-						}
-						else 
-						if (CPlayer.mo.InvSel.Amount >= CPlayer.mo.InvSel.MaxAmount)
-						{
-							DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_LIGHTBLUE);
-						}
+						if (CPlayer.mo.InvSel.Amount <= 0) texttranslation = Font.CR_DARKRED;
+						else if (CPlayer.mo.InvSel.Amount >= CPlayer.mo.InvSel.MaxAmount) texttranslation = Font.CR_LIGHTBLUE;
 						else
 						{
-							if (ItemHeldRatio <= 250) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_RED);
-							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_ORANGE);
-							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_YELLOW);
-							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_GREEN);
+							if (ItemHeldRatio <= 250) texttranslation = Font.CR_RED;
+							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) texttranslation = Font.CR_ORANGE;
+							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) texttranslation = Font.CR_YELLOW;
+							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) texttranslation = Font.CR_GREEN;
 						}
+						DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, texttranslation);
 						DrawString(mHUDFont, "/", (invX + 22, invY - 10), DI_TEXT_ALIGN_RIGHT, font.CR_WHITE);
 						DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.MaxAmount, 6), (invX - 0, invY + 3), DI_TEXT_ALIGN_RIGHT|DI_NOSHADOW, font.CR_GOLD);
 					}
@@ -286,26 +380,28 @@ class AetheriusStatusBarMain : AetheriusStatusBar
 					{
 						invXExtra = 18;
 						invYExtra = -10;
-						if (CPlayer.mo.InvSel.Amount <= 0) 
-						{
-							DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_DARKRED);
-						}
-						else 
-						if (CPlayer.mo.InvSel.Amount >= CPlayer.mo.InvSel.MaxAmount)
-						{
-							DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_LIGHTBLUE);
-						}
+						if (CPlayer.mo.InvSel.Amount <= 0) texttranslation = Font.CR_DARKRED;
+						else if (CPlayer.mo.InvSel.Amount >= CPlayer.mo.InvSel.MaxAmount) texttranslation = Font.CR_LIGHTBLUE;
 						else
 						{
-							if (ItemHeldRatio <= 250) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_RED);
-							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_ORANGE);
-							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_YELLOW);
-							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, font.CR_GREEN);
+							if (ItemHeldRatio <= 250) texttranslation = Font.CR_RED;
+							else if (ItemHeldRatio > 250 && ItemHeldRatio <= 500) texttranslation = Font.CR_ORANGE;
+							else if (ItemHeldRatio > 500 && ItemHeldRatio <= 750) texttranslation = Font.CR_YELLOW;
+							else if (ItemHeldRatio > 750 && ItemHeldRatio <= 1000) texttranslation = Font.CR_GREEN;
 						}
+						DrawString(mHUDFont, FormatNumber(CPlayer.mo.InvSel.Amount, 6), (invX + invXExtra, invY + invYExtra), DI_TEXT_ALIGN_RIGHT, texttranslation);
 					}
 				}
 
 			}
+
+			// void DrawInventoryBar(InventoryBarState parms, Vector2 position, int numfields, int flags = 0, double bgalpha = 1.)
+			// Parameters:
+			//  The InventoryBarState variable that you declared and initialized above
+			//  The desired coordinates of the bar
+			//  The number of inventory items to show in the bar at one time
+			//  Positioning flags
+			//  Alpha of the background for the inventory bar (0.0 to 1.0)
 			DrawInventoryBar(diparms, (0, 0), 8, DI_SCREEN_CENTER_BOTTOM, HX_SHADOW);
 		}
 	}
