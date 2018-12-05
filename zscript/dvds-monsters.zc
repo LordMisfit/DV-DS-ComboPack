@@ -149,20 +149,19 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (TrueGameSkill == SKILL_IMPOSSIBLE) { nm = "LDLegendaryMonsterPickupImpossible"; LDLPreload = nm; }
 			if (TrueGameSkill >= SKILL_OMEGA) { nm = "LDLegendaryMonsterPickupOmega"; LDLPreload = nm; }
 			self.A_GiveInventory(LDLPreload,1);
+
 			LDLRerollTimer = 0;
-			
-			if (TrueGameSkill <= SKILL_VERY_EASY) rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 5 / 4);
-			if (TrueGameSkill == SKILL_EASY) rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 9 / 8);
-			if (TrueGameSkill == SKILL_NORMAL) rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 1 / 1);
-			if (TrueGameSkill == SKILL_HARD) rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 7 / 8);
-			if (TrueGameSkill == SKILL_VERY_HARD) rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 3 / 4);
-			if (TrueGameSkill == SKILL_EXTREME) rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 5 / 8);
-			if (TrueGameSkill == SKILL_HORRIBLE) rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 9 / 16);
-			if (TrueGameSkill == SKILL_IMPOSSIBLE) rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 1 / 2);
-			if (TrueGameSkill >= SKILL_OMEGA) rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 7 / 16);
+			if (TrueGameSkill <= SKILL_VERY_EASY) rerolldelay = 35 * (LD_restartdelayseconds * 5 / 4);
+			if (TrueGameSkill == SKILL_EASY) rerolldelay = 35 * (LD_restartdelayseconds * 9 / 8);
+			if (TrueGameSkill == SKILL_NORMAL) rerolldelay = 35 * (LD_restartdelayseconds * 1 / 1);
+			if (TrueGameSkill == SKILL_HARD) rerolldelay = 35 * (LD_restartdelayseconds * 7 / 8);
+			if (TrueGameSkill == SKILL_VERY_HARD) rerolldelay = 35 * (LD_restartdelayseconds * 3 / 4);
+			if (TrueGameSkill == SKILL_EXTREME) rerolldelay = 35 * (LD_restartdelayseconds * 5 / 8);
+			if (TrueGameSkill == SKILL_HORRIBLE) rerolldelay = 35 * (LD_restartdelayseconds * 9 / 16);
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) rerolldelay = 35 * (LD_restartdelayseconds * 1 / 2);
+			if (TrueGameSkill >= SKILL_OMEGA) rerolldelay = 35 * (LD_restartdelayseconds * 7 / 16);
 			if (rerolldelay <= 35) rerolldelay = 35;
 		}
-		
 	}
 	
 	override void PostBeginPlay()
@@ -214,27 +213,31 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			neverbleeds = 1;
 		}
 
-		A_AetheriusStats(0); 
-		if (self.health <= User_MaxHP) self.health = User_MaxHP;
-		//Console.Printf("User_MaxHP: %d", User_MaxHP);
-
-		ActorRandomBits = random();
-
 		String nm = "LDLegendaryMonsterPickupEasy";
 		LDLPreload = nm;
 
-		// LDL
-		//if (GetCVar("LD_legendarydebug") > 0) Console.Printf("\ca%s\c- - LevelSpawnTime: %d", GetClassName(), GetLevelSpawnTime());
-		A_LegendaryCheck();
-		
 		nm = "LDLegendaryMonsterToken";
 		LDLToken = nm;
 
 		nm = "LDLegendaryMonsterTransformed";
 		LDLCheck = nm;
 
+		if (self.health > 0 && CountInv("MonsterLevelCalcs") == 0) 
+		{ 
+			A_AetheriusStats(0); 
+			if (self.health <= User_MaxHP) self.health = User_MaxHP;
+			
+			// LDL
+			A_LegendaryCheck();
+		}
+		//Console.Printf("User_MaxHP: %d", User_MaxHP);
+
+		ActorRandomBits = random();
+
 		user_hyperlvl1 = 225;
 		user_hyperlvl2 = 450;
+
+		deathcounter = 0;
 		//This space for rent.
 		Super.PostBeginPlay();
 	}
@@ -242,17 +245,22 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int glitterheight, glitterheight2, glitterwidth;
 	override void Tick()
 	{
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
-		int debugevolvestealth = dvdsdebug_evolvestealthstuff;
 		bullet_tracer_mode = dvds_monsterbulletstracers;
 		levelbehavior = dvds_monsterlevelbehavior;
 		gfxeffectlevel = dvds_gfxeffectlevel;
+		
 		if (self.health > 0 && CountInv("MonsterLevelCalcs") == 0) 
 		{ 
 			A_AetheriusStats(0); 
+			if (self.health <= User_MaxHP) self.health = User_MaxHP;
+			
+			// LDL
+			A_LegendaryCheck();
 		}
 		
-		//InStateSequence
+		//******************
+		//*"Stealth" Checks*
+		//******************
 		int stealthcheckinterval = dvds_rnd_stealth_refreshrate;
 		if (stealthcheckinterval < 1) stealthcheckinterval = 1;
 		if (stealthcheckinterval > 35) stealthcheckinterval = 35;
@@ -271,7 +279,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				  InStateSequence(curstate,ResolveState("Raise")) ) 
 			{
 				A_RefreshStealthInfo(0);
-				if (debugevolvestealth) Console.Printf("gametic: %d (stealth type: 0)", gametic);
+				if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 0)", gametic);
 			}
 
 			if (InStateSequence(curstate,ResolveState("Melee")) || 
@@ -293,7 +301,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				  InStateSequence(curstate,ResolveState("Pain.Gauntlets")) ) 
 			{
 				A_RefreshStealthInfo(1);
-				if (debugevolvestealth) Console.Printf("gametic: %d (stealth type: 1)", gametic);
+				if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 1)", gametic);
 			}
 
 			if (InStateSequence(curstate,ResolveState("Death")) || 
@@ -304,10 +312,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				  InStateSequence(curstate,ResolveState("Ice")) ) 
 			{
 				A_RefreshStealthInfo(2);
-				if (debugevolvestealth) Console.Printf("gametic: %d (stealth type: 2)", gametic);
+				if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 2)", gametic);
 			}
 		}
 
+		//*********************************************************
+		//*Ally/Charm Sparkle Code [for easily identifying allies]*
+		//*********************************************************
 		if (((gametic + (ActorRandomBits & 15)) & 15) == 1)
 		{
 			if (self.bFRIENDLY > 0 && self.health > 0 && !(level.frozen || globalfreeze))
@@ -344,7 +355,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (CountInv(LDLCheck)) bBuddha = false;
 		}
 
-		if (self.health <= 0) 
+		//********************************************************
+		//*Sets Fading for monster corpses if option is turned on*
+		//********************************************************
+		if (health <= 0) 
 		{
 			if (dvds_deadwillfade)
 			{
@@ -352,9 +366,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				{
 					fadecounter++;
 					cannotres == 1;
-					A_FadeOut((1.0/random(32,38)),FTF_REMOVE);
-					if (fadecounter > 39) Destroy();
-					if (dvdsdebug_deathgibfadedisplays) Console.Printf("\cy%s\c- alpha: \cx%8f\c- - fadecounter: %d / 40", GetClassName(), alpha, fadecounter);
+					A_FadeOut((1.0/random(28,32)),FTF_REMOVE);
+					if (fadecounter > 32) Destroy();
+					if (dvdsdebug_deathgibfadedisplays) Console.Printf("\cy%s\c- alpha: \cx%8f\c- - fadecounter: %d / 32", GetClassName(), alpha, fadecounter);
 				}
 				else
 				{
@@ -363,10 +377,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 			}
 		}
-		else
-		{
-			deathcounter = 0;
 
+		/*
+		//cvar LDLReroll = cvar.findcvar("LD_Reroll");
+		if (health > 0)
+		{
 			if (!(GetClassName() == "PeasantNew" || GetClassName() == "Peasant1New" || GetClassName() == "Peasant2New" || GetClassName() == "Peasant3New"
 					|| GetClassName() == "Peasant4New" || GetClassName() == "Peasant5New" || GetClassName() == "Peasant6New" || GetClassName() == "Peasant7New"
 					|| GetClassName() == "Peasant8New" || GetClassName() == "Peasant9New" || GetClassName() == "Peasant10New" || GetClassName() == "Peasant11New"
@@ -377,14 +392,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					|| GetClassName() == "Beggar5New" || GetClassName() == "MerchantNew" || GetClassName() == "WeaponSmithNew" || GetClassName() == "BarKeepNew"
 					|| GetClassName() == "ArmorerNew" || GetClassName() == "MedicNew"))
 			{
-				if (GetCVar("LD_Reroll") > 0)
+				if (LD_Reroll > 0)
 				{
 					LDLRerollTimer++;
-					if (GetCVar("LD_legendaryrerolldebug") > 0) Console.Printf("\ca%s\c- - LDLRerollTimer: %d / %d", GetClassName(), LDLRerollTimer, rerolldelay);
 					if (LDLRerollTimer >= rerolldelay) A_LegendaryCheck();
+					if (LD_legendaryrerolldebug > 0) Console.Printf("\ca%s\c- - LDLRerollTimer: %d / %d", GetClassName(), LDLRerollTimer, rerolldelay);
 				}
 			}
 		}
+		*/
 
 		//This space for rent.
 		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
@@ -398,7 +414,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			Alpha = InitAlpha;
 		}
 
-		if (self.health <= 0 && CountInv("MonsterLevelCalcs") == 1 && !bICECORPSE) { A_AetheriusStats(1); }
+		if (self.health <= 0 && CountInv("MonsterLevelCalcs") == 1 && !bICECORPSE) 
+		{ 
+			string nm = "LDLegendaryMonsterToken";
+			LDLToken = nm;
+			SetInventory(LDLToken, 0);
+
+			A_AetheriusStats(1); 
+		}
 		if (CountInv("CharmMonsterAttack") > 0) A_SetInventory("CharmMonsterAttack",0);
 		if (CountInv("CharmMonsterDefense") > 0) A_SetInventory("CharmMonsterDefense",0);
 		if (user_charmed) user_charmed = 0;
@@ -2267,10 +2290,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 	void A_GiveGold(int basegold)
 	{
-		String nm = "LDLegendaryMonsterToken";
-		LDLToken = nm;
-
-		nm = "LDLegendaryMonsterTransformed";
+		String nm = "LDLegendaryMonsterTransformed";
 		LDLCheck = nm;
 
 		int goldamt = CountInv("Coin",AAPTR_DEFAULT);
@@ -4067,7 +4087,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		STYLE_AddStencil (12)
 		STYLE_AddShaded (13)
 		*/
-		int debugevolvestealth = dvdsdebug_evolvestealthstuff;
+		int dvdsdebug_evolvestealthstuff = dvdsdebug_evolvestealthstuff;
 		double TempAlpha;
 
 		if (type == 0) // nothing special
@@ -4082,20 +4102,20 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvds_rnd_stealthlevel == 3) TempAlpha *= 0.0625;
 				if (dvds_rnd_stealthlevel >= 4) TempAlpha *= 0.03125;
 				if (InitRenderType == 4) TempAlpha *= 0.5;
-				if (debugevolvestealth) Console.Printf("TempAlpha [Base - Normal]: %8f (Name: %s)", TempAlpha, GetClassName());
+				if (dvdsdebug_evolvestealthstuff) Console.Printf("TempAlpha [Base - Normal]: %8f (Name: %s)", TempAlpha, GetClassName());
 
 				// The One Ring - Quarters Stealth Cloaking
 				if (CountInv("TheOneRing",AAPTR_PLAYER1) > 0) 
 				{
 					TempAlpha = 1.0 - ((1.0 - TempAlpha) * 0.25);
-					if (debugevolvestealth) Console.Printf("TempAlpha [Ring - Normal]: %8f (Name: %s)", TempAlpha, GetClassName());
+					if (dvdsdebug_evolvestealthstuff) Console.Printf("TempAlpha [Ring - Normal]: %8f (Name: %s)", TempAlpha, GetClassName());
 				}
 
 				// Night-Vision - Halves Stealth Cloaking
 				if (CallACS("GetBuffTimer",0) > 0)
 				{
 					TempAlpha = 1.0 - ((1.0 - TempAlpha) * 0.5);
-					if (debugevolvestealth) Console.Printf("TempAlpha [Night Vision - Normal]: %8f (Name: %s)", TempAlpha, GetClassName());
+					if (dvdsdebug_evolvestealthstuff) Console.Printf("TempAlpha [Night Vision - Normal]: %8f (Name: %s)", TempAlpha, GetClassName());
 				}
 
 				Alpha = TempAlpha;
@@ -4119,20 +4139,20 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvds_rnd_stealthlevel == 3) TempAlpha *= 0.6875;
 				if (dvds_rnd_stealthlevel >= 4) TempAlpha *= 0.677083;
 				if (InitRenderType == 4) TempAlpha *= 0.5;
-				if (debugevolvestealth) Console.Printf("TempAlpha [Base - Attacking]: %8f (Name: %s)", TempAlpha, GetClassName());
+				if (dvdsdebug_evolvestealthstuff) Console.Printf("TempAlpha [Base - Attacking]: %8f (Name: %s)", TempAlpha, GetClassName());
 
 				// The One Ring - Quarters Stealth Cloaking
 				if (CountInv("TheOneRing",AAPTR_PLAYER1) > 0) 
 				{
 					TempAlpha = 1.0 - ((1.0 - TempAlpha) * 0.25);
-					if (debugevolvestealth) Console.Printf("TempAlpha [Ring - Attacking]: %8f (Name: %s)", TempAlpha, GetClassName());
+					if (dvdsdebug_evolvestealthstuff) Console.Printf("TempAlpha [Ring - Attacking]: %8f (Name: %s)", TempAlpha, GetClassName());
 				}
 
 				// Night-Vision - Halves Stealth Cloaking
 				if (CallACS("GetBuffTimer",0) > 0)
 				{
 					TempAlpha = 1.0 - ((1.0 - TempAlpha) * 0.5);
-					if (debugevolvestealth) Console.Printf("TempAlpha [Night Vision - Attacking]: %8f (Name: %s)", TempAlpha, GetClassName());
+					if (dvdsdebug_evolvestealthstuff) Console.Printf("TempAlpha [Night Vision - Attacking]: %8f (Name: %s)", TempAlpha, GetClassName());
 				}
 
 				Alpha = TempAlpha;
