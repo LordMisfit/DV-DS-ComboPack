@@ -2303,6 +2303,102 @@ class AetheriusCustomInventory : CustomInventory
 	}
 }
 
+// Custom Powerups that obey the effect of "AetheriusTimeFreezer"
+class AetheriusPowerup : Powerup
+{
+	override void Tick()
+	{
+		// Powerups cannot exist outside an inventory
+		if (Owner == NULL)
+		{
+			Destroy();
+		}
+
+		if (CallACS("MenuVarCheckDECORATE",0) == 0 && CallACS("GetBuffTimer",5) == 0)
+		{
+			//Console.Printf("EffectTics: %d", EffectTics);
+			EffectTics--;
+		}
+		if (EffectTics <= 0)
+		{
+			Destroy();
+		}
+	}
+}
+
+class AetheriusPowerStrength : PowerStrength
+{
+	Default
+	{
+		Powerup.Duration 1;
+		Powerup.Color "ff 00 00", 0.5;
+		+INVENTORY.HUBPOWER
+	}
+	
+	override bool HandlePickup (Inventory item)
+	{
+		if (item.GetClass() == GetClass())
+		{ // Setting EffectTics to 0 will force Powerup's HandlePickup()
+		  // method to reset the tic count so you get the red flash again.
+			EffectTics = 0;
+		}
+		return Super.HandlePickup (item);
+	}
+
+	//===========================================================================
+	//
+	// APowerStrength :: DoEffect
+	//
+	//===========================================================================
+	int EffectTics2;
+	int Dire;
+
+	override void Tick ()
+	{
+		int Point1 = 360;
+		int Point2 = Point1 + 60;
+		int increment = 3;
+		if (EffectTics < Point1) { EffectTics = Point1; Dire = 1; }
+
+		if (Dire == 1)
+		{
+			if (CallACS("MenuVarCheckDECORATE",0) == 0 && CallACS("GetBuffTimer",5) == 0) EffectTics += increment;
+			if (EffectTics >= Point2) Dire = 2;
+		}
+		else
+		if (Dire == 2)
+		{
+			if (CallACS("MenuVarCheckDECORATE",0) == 0 && CallACS("GetBuffTimer",5) == 0) EffectTics -= increment;
+			if (EffectTics <= Point1) Dire = 1;
+		}
+
+		// Powerups cannot exist outside an inventory
+		if (Owner == NULL) Destroy();
+		if (EffectTics <= 0) Destroy();
+
+		//Console.Printf("EffectTics: %d, Dire: %d, Increment: %d", EffectTics, Dire, Increment);
+	}
+
+	//===========================================================================
+	//
+	// APowerStrength :: GetBlend
+	//
+	//===========================================================================
+
+	override color GetBlend()
+	{
+		// slowly fade the berserk out
+		int cnt = 128 - (EffectTics>>3);
+
+		if (cnt > 0)
+		{
+			return Color(BlendColor.a*cnt/256,
+				BlendColor.r, BlendColor.g, BlendColor.b);
+		}
+		return 0;
+	}
+}
+
 // Keeps Sounds/Music active during time Freeze powerups
 class AetheriusTimeFreezer : PowerTimeFreezer
 {
