@@ -11725,7 +11725,15 @@ actor PyroDemon : DSBaronofHell 30105
 		Melee:
 		Missile:
 			TNT1 A 0 A_RefreshStealthInfo(1) // makes a Stealth Monster become more visible
-			PYRO E 0 A_Jump(32,"Attack4")
+			PYRO E 0 
+			{
+				if (!(CountInv("PyroDemonTeleportCooldown")))
+				{
+					if (random (1,256) <= 32) { return state("Attack4"); }
+					 return state("");
+				}
+				return state("");
+			}
 			PYRO E 0 A_Jump(32,"Attack3")
 		// Fire Shots - Normal
 		Attack1:
@@ -11907,14 +11915,22 @@ actor PyroDemon : DSBaronofHell 30105
 			PYRO O 1 A_FaceTarget
 			PYRO O 0
 			{
-				A_SetInvulnerable;
-				A_MonsterCrisisCheck;
-				A_CrisisSpawnProjectile("EscapeExplosion","EscapeExplosionCrisis",28,10,0,0);
-				A_CrisisMushroom("Pyroball","PyroballCrisis",16); //,MSF_DontHurt
-				if (levelbehavior > 0 && user_monsterlevel >= user_hyperlvl2)
+				if (!(CountInv("PyroDemonTeleportCooldown")))
 				{
-					A_CrisisMushroom("Pyroball","PyroballCrisis",8); //,MSF_DontHurt
+					A_SetInvulnerable;
+					A_MonsterCrisisCheck;
+					A_CrisisSpawnProjectile("EscapeExplosion","EscapeExplosionCrisis",28,10,0,0);
+					A_CrisisMushroom("Pyroball","PyroballCrisis",16); //,MSF_DontHurt
+					if (levelbehavior > 0 && user_monsterlevel >= user_hyperlvl2)
+					{
+						A_CrisisMushroom("Pyroball","PyroballCrisis",8); //,MSF_DontHurt
+					}
 				}
+				else
+				{
+					return state("See");
+				}
+				return state("");
 			}
 			PYRO O 3 
 			PYRO P 3 BRIGHT
@@ -11953,8 +11969,12 @@ actor PyroDemon : DSBaronofHell 30105
 					A_CrisisMushroom("Pyroball","PyroballCrisis",8); //,MSF_DontHurt
 				}
 			}
-			PYRO A 0 A_SetShootable
-			PYRO A 0 A_UnSetInvulnerable
+			PYRO A 0
+			{
+				A_SetShootable;
+				A_UnSetInvulnerable;
+				A_GiveInventory("PyroDemonTeleportCooldown", 1);
+			}
 			Goto See
 
 		ApplyDesperate:
@@ -11976,6 +11996,7 @@ actor PyroDemon : DSBaronofHell 30105
 			}
 			PYRO A 1 
 		goto Spawn+1
+
 		Spawn:
 			PYRO A 0 NoDelay 
 			PYRO AB 10 A_Look
@@ -12038,21 +12059,58 @@ actor PyroDemon : DSBaronofHell 30105
 			loop
 
 		Pain: 
+			PYRO A 0
+			{
+				if (!(CountInv("PyroDemonTeleportCooldown")))
+				{
+					if (random (1,256) <= 8) { return state("Attack4"); }
+					return state("");
+				}
+				return state("");
+			}
 			PYRO Q 2 
 			PYRO Q 2 A_DVDSPain 
-			PYRO A 0 A_Jump(8,"Attack4")
+			Goto See 
+		Pain.Sceptre: 
+			PYRO A 0
+			{
+				if (!(CountInv("PyroDemonTeleportCooldown")))
+				{
+					if (random (1,256) <= 1) { return state("Attack4"); }
+					return state("");
+				}
+				return state("");
+			}
+			PYRO Q 2 
+			PYRO Q 2 A_DVDSPain 
 			Goto See 
 		Pain.Fist: 
+			PYRO A 0
+			{
+				if (!(CountInv("PyroDemonTeleportCooldown")))
+				{
+					if (random (1,256) <= 2) { return state("Attack4"); }
+					return state("");
+				}
+				return state("");
+			}
 			PYRO Q 2 
 			PYRO Q 2 A_DVDSPain 
 			PYRO QQ 2 
-			PYRO A 0 A_Jump(8,"Attack4")
 			Goto See 
 		Pain.Kick: 
+			PYRO A 0
+			{
+				if (!(CountInv("PyroDemonTeleportCooldown")))
+				{
+					if (random (1,256) <= 6) { return state("Attack4"); }
+					return state("");
+				}
+				return state("");
+			}
 			PYRO Q 2 
 			PYRO Q 2 A_DVDSPain 
 			PYRO QQQQ 2 
-			PYRO A 0 A_Jump(8,"Attack4")
 			Goto See 
 		Pain.Ice:
 			PYRO Q 2 
@@ -12067,7 +12125,15 @@ actor PyroDemon : DSBaronofHell 30105
 			PYRO Q 0 Bright A_Jump (128, 2)
 			PYRO Q 6 Bright
 			PYRO Q 0 Bright
-			PYRO A 0 A_Jump(128,"Attack4")
+			PYRO Q 0
+			{
+				if (random (1,256) <= 240) 
+				{
+					A_TakeInventory("PyroDemonTeleportCooldown",9999);
+					return state("Attack4"); 
+				}
+				return state("");
+			}
 			Goto See
 		Death:
 			TNT1 A 0 A_DVDSNormalDeath(-2,0,1)
