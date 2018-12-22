@@ -1067,14 +1067,15 @@ class AetheriusBaseWeaponZSC : Weapon
 		finalmeleedamagedealt = damage;
 	}
 
-	void A_GetSceptreSwingRecoil(int attacktype = 0, int attacklevel = 0, int shockwave = 0)
+	void A_GetPunchSwingRecoil(int attacktype = 0)
 	{
-		if (dvds_sceptrerecoil)
+		if (dvds_punchrecoil)
 		{
 			let weapon = player.ReadyWeapon;
 			string weaponname = weapon.GetClassName();
 			string actorname = GetClassName();
 			double recoil;
+			double recoilmulti;
 			int previousdamage;
 			int strengthcounter;
 			int sceptrestrbase;
@@ -1084,11 +1085,181 @@ class AetheriusBaseWeaponZSC : Weapon
 			int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
 			int CharacterClass = CallACS("CheckCharacterClass");
 			int debugmelee = dvdsdebug_showmeleeinformation;
+			int PlayerLevel = CallACS("StatCheck",0);
+			int PlayerAGL = CallACS("StatCheck",3);
+			int PlayerSTR = CallACS("StatCheck",7);
+			int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+			int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+			int BerserkerFit = CallACS("MiscVarCheckDECORATE",10051);
+			int BerserkerFitEX = CallACS("MiscVarCheckDECORATE",10052);
 			
-			recoil = -0.3125 * random(1,12);
-			recoil *= (1.0 - (SceptreActualLevel * 0.0625));
-			if ((random(1,48) <= SceptreActualLevel) || recoil >= 0.0) recoil = 0.0;
-			if (debugmelee) Console.Printf("Recoil: %8f", recoil);
+			
+			// Base "Recoil"
+			double baserecoil = -0.125;
+			if (CharacterClass == 0) baserecoil = -0.0500;
+			if (CharacterClass == 1) baserecoil = -0.0875;
+			if (CharacterClass == 2) baserecoil = -0.125;
+			if (CharacterClass == 8) baserecoil = -0.1625;
+			if (CharacterClass == 9) baserecoil = -0.0875;
+			recoil = baserecoil * random(0,4);
+			if (attacktype == 0) recoil = baserecoil * random(0,4);
+			if (attacktype == 1) recoil = baserecoil * random(2,10);
+			if (attacktype == 2) recoil = baserecoil * random(4,8);
+			if (attacktype == 3) recoil = baserecoil * random(8,20);
+			if (debugmelee) Console.Printf("\cxRecoil [Base]: %8f", recoil);
+			
+			
+			// MAM Perk Mitigation
+			recoilmulti = (1.0 - (MartialArtsMastery * 0.125) - (MartialArtsMasteryEX * 0.3125) - (BerserkerFit * 0.125) - (BerserkerFitEX * 0.3125));
+			recoil *= recoilmulti;
+			if (debugmelee) Console.Printf("\cxRecoil [MAM Perk]: %8f, Multiplier: %8f", recoil, recoilmulti);
+			
+			
+			// Stat/Level Mitigation
+			recoilmulti = (1.0 - (PlayerLevel * 0.00078125) - (PlayerSTR * 0.000390625) - (PlayerAGL * 0.0015625));
+			recoil *= recoilmulti;
+			if (debugmelee) Console.Printf("\cxRecoil [Stats]: %8f, Multiplier: %8f", recoil, recoilmulti);
+			
+			
+			// Random Chance for 0 recoil
+			if (attacktype == 1) 
+			{
+				if (random(1,96) <= 1) recoil = 0.0;
+			}
+			else
+			{
+				if (random(1,48) <= 1) recoil = 0.0;
+			}
+			if (debugmelee) Console.Printf("\cxRecoil [Final]: %8f", recoil);
+
+			A_Recoil(recoil);
+		}
+	}
+
+	void A_GetKickSwingRecoil(int attacktype = 0)
+	{
+		if (dvds_kickrecoil)
+		{
+			let weapon = player.ReadyWeapon;
+			string weaponname = weapon.GetClassName();
+			string actorname = GetClassName();
+			double recoil;
+			double recoilmulti;
+			int previousdamage;
+			int strengthcounter;
+			int sceptrestrbase;
+			int sceptrestrmin;
+			int sceptrestrmax;
+			int PerkFactor;
+			int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
+			int CharacterClass = CallACS("CheckCharacterClass");
+			int debugmelee = dvdsdebug_showmeleeinformation;
+			int PlayerLevel = CallACS("StatCheck",0);
+			int PlayerAGL = CallACS("StatCheck",3);
+			int PlayerSTR = CallACS("StatCheck",7);
+			int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+			int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+			int BerserkerFit = CallACS("MiscVarCheckDECORATE",10051);
+			int BerserkerFitEX = CallACS("MiscVarCheckDECORATE",10052);
+			
+			
+			// Base "Recoil"
+			double baserecoil = -0.125;
+			if (CharacterClass == 0) baserecoil = -0.0500;
+			if (CharacterClass == 1) baserecoil = -0.0875;
+			if (CharacterClass == 2) baserecoil = -0.125;
+			if (CharacterClass == 8) baserecoil = -0.1625;
+			if (CharacterClass == 9) baserecoil = -0.0875;
+			recoil = baserecoil * random(-4,4);
+			if (debugmelee) Console.Printf("\cxRecoil [Base]: %8f", recoil);
+			
+			
+			// MAM Perk Mitigation
+			recoilmulti = (1.0 - (MartialArtsMastery * 0.125) - (MartialArtsMasteryEX * 0.3125) - (BerserkerFit * 0.125) - (BerserkerFitEX * 0.3125));
+			recoil *= recoilmulti;
+			if (debugmelee) Console.Printf("\cxRecoil [MAM Perk]: %8f, Multiplier: %8f", recoil, recoilmulti);
+			
+			
+			// Stat/Level Mitigation
+			recoilmulti = (1.0 - (PlayerLevel * 0.00078125) - (PlayerSTR * 0.000390625) - (PlayerAGL * 0.0015625));
+			recoil *= recoilmulti;
+			if (debugmelee) Console.Printf("\cxRecoil [Stats]: %8f, Multiplier: %8f", recoil, recoilmulti);
+			
+			
+			// Random Chance for 0 recoil
+			if (attacktype == 1) 
+			{
+				if (random(1,96) <= 1) recoil = 0.0;
+			}
+			else
+			{
+				if (random(1,48) <= 1) recoil = 0.0;
+			}
+			if (debugmelee) Console.Printf("\cxRecoil [Final]: %8f", recoil);
+
+			A_Recoil(recoil);
+		}
+	}
+
+	void A_GetSceptreSwingRecoil(int attacktype = 0)
+	{
+		if (dvds_sceptrerecoil)
+		{
+			let weapon = player.ReadyWeapon;
+			string weaponname = weapon.GetClassName();
+			string actorname = GetClassName();
+			double recoil;
+			double recoilmulti;
+			int previousdamage;
+			int strengthcounter;
+			int sceptrestrbase;
+			int sceptrestrmin;
+			int sceptrestrmax;
+			int PerkFactor;
+			int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
+			int CharacterClass = CallACS("CheckCharacterClass");
+			int debugmelee = dvdsdebug_showmeleeinformation;
+			int PlayerLevel = CallACS("StatCheck",0);
+			int PlayerAGL = CallACS("StatCheck",3);
+			int PlayerSTR = CallACS("StatCheck",7);
+			int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+			int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+			
+			
+			// Base "Recoil"
+			recoil = -0.3125 * random(0,12);
+			if (attacktype == 1) recoil = -0.3125 * random(-6,6);
+			if (debugmelee) Console.Printf("\cxRecoil [Base]: %8f", recoil);
+			
+			
+			// MAM Perk Mitigation
+			recoilmulti = (1.0 - (MartialArtsMastery * 0.125) - (MartialArtsMasteryEX * 0.3125));
+			recoil *= recoilmulti;
+			if (debugmelee) Console.Printf("\cxRecoil [MAM Perk]: %8f, Multiplier: %8f", recoil, recoilmulti);
+			
+			
+			// Sceptre-Level Mitigation
+			recoilmulti = (1.0 - (SceptreActualLevel * 0.0625));
+			recoil *= recoilmulti;
+			if (debugmelee) Console.Printf("\cxRecoil [SceptreLevel]: %8f, Multiplier: %8f", recoil, recoilmulti);
+			
+			
+			// Stat/Level Mitigation
+			recoilmulti = (1.0 - (PlayerLevel * 0.00078125) - (PlayerSTR * 0.000390625) - (PlayerAGL * 0.0015625));
+			recoil *= recoilmulti;
+			if (debugmelee) Console.Printf("\cxRecoil [Stats]: %8f, Multiplier: %8f", recoil, recoilmulti);
+			
+			
+			// Random Chance for 0 recoil
+			if (attacktype == 1) 
+			{
+				if (random(1,96) <= SceptreActualLevel) recoil = 0.0;
+			}
+			else
+			{
+				if (random(1,48) <= SceptreActualLevel || recoil >= 0.0) recoil = 0.0;
+			}
+			if (debugmelee) Console.Printf("\cxRecoil [Final]: %8f", recoil);
 
 			A_Recoil(recoil);
 		}
