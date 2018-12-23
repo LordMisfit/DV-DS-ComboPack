@@ -2,188 +2,42 @@
 class AetheriusMonsterSpawner : RandomSpawner abstract
 {
 	int deathtimer;
+	string MonsterName;
 
-	override void Tick()	// This function is needed for handling boss replacers
+	// This function is needed for handling boss replacers 
+	// [also this is to try to fix the problem of INSTANT effects on the death of spawned "boss" monsters in maps like E2M8/E3M8 so you can try to pick up the bosses' drops before the level ends]
+	override void Tick()
 	{
-		Actor.Tick();
-		if (tracer == null || tracer.health <= 0)
+		Actor.Tick(); // Actor instead of Super in order to replace the original code added to RandomSpawner instead of adding to it.
+		AetheriusMonsterZSC monstertype;
+		if (tracer) monstertype = AetheriusMonsterZSC(tracer);
+		if (tracer == null)
 		{
-			int ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
-			int ModType = CallACS("OtherVarCheckDECORATE",8);
-
-			AetheriusMonsterZSC monstertype;
-			if (tracer) monstertype = AetheriusMonsterZSC(tracer);
-			if (dvdsdebug_scriptdisplays && monstertype) Console.Printf("%s Death Timer: %d", monstertype.GetClassName(), deathtimer);
-			
+			A_BossDeath();
+			if (dvdsdebug_scriptdisplays) Console.Printf("BOSS/BOSSDEATH type RandomSpawner Self-Destroyed/nulled");
+			Destroy();
+		}
+		else
+		{
 			if (monstertype)
 			{
-				deathtimer++;
-				if (ModType == 0)
-				{
-					if (ClassicDoomType == 4) // Strife
-					{
-						A_BossDeath();
-						Destroy();
-					}
-					else if (ClassicDoomType == 3) // Hexen
-					{
-						A_BossDeath();
-						Destroy();
-					}
-					else if (ClassicDoomType == 2) // Heretic
-					{
-						if (level.levelnum == 8) // E1M8 [Liches (tag666)]
-						{
-							if (deathtimer >= 35) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						if (level.levelnum == 18) // E2M8 [Maulotaurs (tag666)]
-						{
-							if (deathtimer >= 35) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						if (level.levelnum == 28) // E3M8 [D'Sparil (kill all monsters)]
-						{
-							if (deathtimer >= 140) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						if (level.levelnum == 38) // E4M8 [Liches (tag666)]
-						{
-							if (deathtimer >= 35) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						if (level.levelnum == 48) // E5M8 [Maulotaurs (tag666)]
-						{
-							if (deathtimer >= 35) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						{
-							A_BossDeath();
-							Destroy();
-						}
-					}
-					else if (ClassicDoomType == 1) // Doom 1
-					{
-						if (level.levelnum == 8) // E1M8 [Barons (tag666)]
-						{
-							if (deathtimer >= 35) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						if (level.levelnum == 18) // E2M8 [Cyberdemons (endlevel)]
-						{
-							if (deathtimer >= 140) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						if (level.levelnum == 28) // E3M8 [Spider Masterminds (endlevel)]
-						{
-							if (deathtimer >= 140) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						if (level.levelnum == 36) // E4M6 [Cyberdemons (tag666)]
-						{
-							if (deathtimer >= 35) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						if (level.levelnum == 38) // E4M8 [Spider (tag666)]
-						{
-							if (deathtimer >= 35) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						{
-							A_BossDeath();
-							Destroy();
-						}
-					}
-					else if (ClassicDoomType == 0 || ClassicDoomType == 5) // Doom 2 or Doom 64
-					{
-						if (level.levelnum == 7) // MAP07 [Mancubi and Arachnotrons (tag666/667)]
-						{
-							if (deathtimer >= 35) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						{
-							A_BossDeath();
-							Destroy();
-						}
-					}
-					else if (ClassicDoomType == 6) // PSXDoom
-					{
-						if (level.levelnum == 37) // MAP37 [Mancubi (tag2) and Arachnotrons (tag7)]
-						{
-							if (deathtimer >= 35) 
-							{
-								A_BossDeath();
-								Destroy();
-							}
-						}
-						else
-						{
-							A_BossDeath();
-							Destroy();
-						}
-					}
-					else
-					{
-						A_BossDeath();
-						Destroy();
-					}
-				}
-				else
+				MonsterName = monstertype.GetClassName();
+				if (monstertype.bossdeathactivate)
 				{
 					A_BossDeath();
+					if (dvdsdebug_scriptdisplays) Console.Printf("%s [bossdeathactivate: %d]", MonsterName, monstertype.bossdeathactivate);
 					Destroy();
 				}
 			}
 			else
 			{
-				A_BossDeath();
-				Destroy();
+				if (tracer.health <= 0)
+				{
+					A_BossDeath();
+					if (dvdsdebug_scriptdisplays) Console.Printf("BOSS/BOSSDEATH type RandomSpawner Self-Destroyed/nulled");
+					Destroy();
+				}
 			}
-			
 		}
 	}
 
