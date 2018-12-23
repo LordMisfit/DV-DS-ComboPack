@@ -550,12 +550,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int criticalhit;
 		int CritChance, CritRoll;
 		int oldhealth = self.health;
+		
 		if (mod == 'dashing')
 		{
 			if (NORADDMG == 1 && bNORADIUSDMG) 
 			{
 				bNORADIUSDMG = 0;
-				if (dvdsdebug_actordmgdisplays > 0) Console.Printf("    (\czActor Defensive Input [STEP ? - UNSET NORADIUSDMG TEMPORARILY])");
+				if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP ? - UNSET NORADIUSDMG TEMPORARILY])");
 			}
 		}
 		if (neverbleeds == 0)
@@ -572,7 +573,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (source == null) sour = "NONE"; else sour = source.GetClassName();
 
 		int olddmg = damage;
-		if (dvdsdebug_actordmgdisplays > 0 && olddmg > 0) Console.Printf("    (\czActor Defensive Input [STEP 1 - Base Damage]\c-: \cydmg = %d\c-)", olddmg);
+		if (dvdsdebug_actordmgdisplays && olddmg > 0) Console.Printf("    (\czActor Defensive Input [STEP 1 - Base Damage]\c-: \cydmg = %d\c-)", olddmg);
+
 
 		bool dealtcrit = false;
 		double critdmgmulti = 2.0 + (0.01 * random(-10,10));
@@ -615,6 +617,42 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			singleripproj = SingleDamageRipper(inflictor);
 			singlefastripproj = SingleDamageFastRipper(inflictor);
 		}
+
+		olddmg = damage;
+		// Checks Buffs on Monsters based on their Health Levels
+		if (health <= user_HPBuffRange)
+		{
+					 if (vict == "Magmantis") damage *= 0.625;
+			else if (vict == "Annihilator" || vict == "FAnnihilator" ||
+							 vict == "Demolisher" || vict == "FDemolisher") damage *= 0.75;
+			else if (vict == "PyroDemon" || vict == "FPyroDemon") damage *= 0.80;
+			else if (vict == "ArchonOfHell" || vict == "FArchonOfHell" ||
+							 vict == "Cybruiser" || vict == "FCybruiser" ||
+							 vict == "BruiserDemon" || vict == "FBruiserDemon") damage *= 0.85;
+			else if (vict == "Belphegor" || vict == "FBelphegor" ||
+							 vict == "HadesElemental" || vict == "HadesOverlord") damage *= 0.9;
+			else if (sour == "Diabloist" || sour == "FDiabloist" ||
+							 sour == "Abaddon" || sour == "FAbaddon") damage *= 0.95;
+			else damage *= 0.9875;
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP 1a1 - Attacker Monster Buffs/Debuffs [%s]]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-)", sour, olddmg, damage);
+		}
+		if (DVDSActor && DVDSActor.health <= DVDSActor.user_HPBuffRange)
+		{
+					 if (sour == "Magmantis") damage *= 1.75;
+			else if (sour == "Annihilator" || sour == "FAnnihilator" ||
+							 sour == "Demolisher" || sour == "FDemolisher") damage *= 1.5;
+			else if (sour == "PyroDemon" || sour == "FPyroDemon") damage *= 1.4;
+			else if (sour == "ArchonOfHell" || sour == "FArchonOfHell" ||
+							 sour == "Cybruiser" || sour == "FCybruiser" ||
+							 sour == "BruiserDemon" || sour == "FBruiserDemon") damage *= 1.3;
+			else if (sour == "Belphegor" || sour == "FBelphegor" ||
+							 sour == "HadesElemental" || sour == "HadesOverlord") damage *= 1.2;
+			else if (sour == "Diabloist" || sour == "FDiabloist" ||
+							 sour == "Abaddon" || sour == "FAbaddon") damage *= 1.1;
+			else damage *= 1.025;
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP 1a2 - Defender Monster Buffs/Debuffs [%s]]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-)", vict, olddmg, damage);
+		}
+
 		if (playpawn && damage > 0)
 		{
 			prefriendlydmg = damage;
@@ -624,7 +662,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (user_summoned > 0) damage /= 4;
 				if (user_charmed > 0) damage /= 4;
 				if (damage < 1) damage = 1;
-				if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2a - Player-Friendly Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-)", prefriendlydmg, damage);
+				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2a - Player-Friendly Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-)", prefriendlydmg, damage);
 			}
 			
 			//**********************************
@@ -683,7 +721,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 				if (vict == "PossessedBalloonNew" || vict == "BigBerthaNew" || vict == "BigBertha2New" || vict == "SuperBerthaNew" || vict == "ClownGhostNew") PoisonNeedleCritChance = 200.0;
 
-				if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2aa - Player-Crit Dmg (\cxPOISON NEEDLE Check\c-)]\c-: \cyPoisonNeedleCritChance = %8f\c-)", PoisonNeedleCritChance);
+				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2aa - Player-Crit Dmg (\cxPOISON NEEDLE Check\c-)]\c-: \cyPoisonNeedleCritChance = %8f\c-)", PoisonNeedleCritChance);
 				if (frandom(0.1,100.0) <= PoisonNeedleCritChance) { if (playpawn.CountInv("DealCriticalHit") <= 0) playpawn.A_SetInventory("DealCriticalHit",1); }
 			}
 			// Dashing Detection
@@ -720,14 +758,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					flags |= DMG_NO_ARMOR; 
 					flags |= DMG_NO_FACTOR; 
 					flags |= DMG_NO_PROTECT; 
-					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Player-Crit Dmg  (\cxPOISON NEEDLE\c-)]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti);
+					if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Player-Crit Dmg  (\cxPOISON NEEDLE\c-)]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti);
 				}
 				else
 				{
 					damage *= critdmgmulti;
 					A_SetInventory("TookCriticalHit",1);
 					dealtcrit = true;
-					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Player-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti);
+					if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Player-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti);
 				}
 			}
 
@@ -747,9 +785,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				ldldmgmulti += (ldlbasemod * CallACS("MiscVarCheckDECORATE",10057));
 				ldldmgmulti += ((ldlbasemod * 2.5) * CallACS("MiscVarCheckDECORATE",10058));
 				damage *= ldldmgmulti;
-				if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2c - Player-LDLPerk Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \caldldmgmulti = %3f\c-)", preldldmg, damage, ldldmgmulti);
+				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2c - Player-LDLPerk Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \caldldmgmulti = %3f\c-)", preldldmg, damage, ldldmgmulti);
 			}
-			if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2x - Player Dmg]\c-: \cxprefdmg = %d\c-, \cxprefrienddmg = %d\c-, \cxprecritdmg = %d\c-, \cxpreldldmg = %d\c-, \cydmg = %d\c-, \cbCritResist: (%8f) / %8f\c-)", preplayerdmg, prefriendlydmg, precritdmg, preldldmg, damage, CritResistRoll, CritResistChance);
+			if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2x - Player Dmg]\c-: \cxprefdmg = %d\c-, \cxprefrienddmg = %d\c-, \cxprecritdmg = %d\c-, \cxpreldldmg = %d\c-, \cydmg = %d\c-, \cbCritResist: (%8f) / %8f\c-)", preplayerdmg, prefriendlydmg, precritdmg, preldldmg, damage, CritResistRoll, CritResistChance);
 		}
 		else
 		if (DVDSActor && damage > 0 && dvds_monstercrits != 0)
@@ -892,7 +930,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				// Final Crit Roll
 				CritRoll = random(1,512);
 				if (CritRoll <= CritChance && DVDSActor.health > 0 && !(level.frozen || globalfreeze) && dvds_monstercrits != 0) criticalhit = 1;
-				if (dvdsdebug_actordmgdisplays > 0 && dvds_monstercrits != 0) Console.Printf("    (\czActor Defensive Input [Monster Crit Rate]\c-: %d / 512 (%d) \c-, \cyActorClass: = %s\c-)", CritRoll, CritChance, ActorClass);
+				if (dvdsdebug_actordmgdisplays && dvds_monstercrits != 0) Console.Printf("    (\czActor Defensive Input [Monster Crit Rate]\c-: %d / 512 (%d) \c-, \cyActorClass: = %s\c-)", CritRoll, CritChance, ActorClass);
 
 				// Chance to RESIST a crit.
 				double CritResistChance = 1.25;
@@ -927,7 +965,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (criticalhit && CritResistRoll <= CritResistChance) 
 				{
 					criticalhit = 0;
-					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit]\c-: \cxRESISTED\c-, \cbCritResist: (%8f) / %8f\c-)", CritResistRoll, CritResistChance);
+					if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit]\c-: \cxRESISTED\c-, \cbCritResist: (%8f) / %8f\c-)", CritResistRoll, CritResistChance);
 				}
 				
 				if (criticalhit) 
@@ -935,7 +973,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					damage *= critdmgmulti;
 					A_SetInventory("TookCriticalHit",1);
 					dealtcrit = true;
-					if (dvdsdebug_actordmgdisplays > 0 && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-, \cbCritResist: (%8f) / %8f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti, CritResistRoll, CritResistChance);
+					if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-, \cbCritResist: (%8f) / %8f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti, CritResistRoll, CritResistChance);
 				}
 			}
 		}
@@ -1016,7 +1054,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			ActorDefenseIgnoreFactor = 1.00;
 			DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
 		}
-		if (dvdsdebug_actordmgdisplays > 0 && damage > 0) 
+		if (dvdsdebug_actordmgdisplays && damage > 0) 
 		{
 			if (ActorDefenseIgnoreFactor > 0.00) Console.Printf("    (\czActor Defensive Input [STEP 3 - Def Ignoring]\c-: \caDefenseIgnoreFactor = %8f\c-, \cadmgfactor = %8f\c-, \cypredmg = %d\c-, \cydmg = %d\c- (Monster Actor))", ActorDefenseIgnoreFactor, DamageFactor, predmginr, damage);
 																			else Console.Printf("    (\czActor Defensive Input [STEP 3 - Def Ignoring]\c-: \caSKIPPED\c-, \cydmg = %d\c-)", predmginr);
@@ -1033,7 +1071,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			damage *= 1.125;
 		}
-		if (dvdsdebug_actordmgdisplays > 0 && damage > 0) 
+		if (dvdsdebug_actordmgdisplays && damage > 0) 
 		{
 			if (DamageFactor != basedmgfactor) Console.Printf("    (\czActor Defensive Input [STEP 4 - Direct Dmg Changes]:\c- \cypredmg = %d\c-, \cydmg = %d\c-)", predirdmg, damage);
 																		else Console.Printf("    (\czActor Defensive Input [STEP 4 - Direct Dmg Changes]:\c- \caSKIPPED\c-, \cydmg = %d\c-)", predirdmg);
@@ -1047,14 +1085,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (mod == 'dashing' && NORADDMG == 1 && !bNORADIUSDMG) 
 		{
 			bNORADIUSDMG = 1;
-			if (dvdsdebug_actordmgdisplays > 0) Console.Printf("    (\czActor Defensive Input [STEP ? - RESET NORADIUSDMG])");
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP ? - RESET NORADIUSDMG])");
 		}
 
 		int outputdmg = damage;
 		if (playpawn) outputdmg = playpawn.playoutputdmg;
 		double finaldmgfactor = 1.00;
 		if (outputdmg > 0) finaldmgfactor = 1.00 * ret / outputdmg;
-		if (dvdsdebug_actordmgdisplays > 0 && outputdmg > 0) 
+		if (dvdsdebug_actordmgdisplays && outputdmg > 0) 
 		{
 			if (inflictor == null && source == null && mod == 'Melee' && health < 1) { }
 			else
@@ -1075,7 +1113,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			int InvalidTargetType = 0;
 			if (vict == "PracticeTarget" || vict == "PracticeTarget2") InvalidTargetType = 1;
-			//if (dvdsdebug_actordmgdisplays > 0) Console.Printf("    (\czINFO:\c- \cavict\c-: \ca%s\c-, \cdinfl\c-: \cd%s\c-)", vict, infl);
+			//if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czINFO:\c- \cavict\c-: \ca%s\c-, \cdinfl\c-: \cd%s\c-)", vict, infl);
 
 			if (InvalidTargetType == 0)
 			{
@@ -1086,7 +1124,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					
 					let drainamt = ret;
 					if (drainamt > drainmaxdmg) drainamt = drainmaxdmg;
-					if (dvdsdebug_actordmgdisplays > 0 && drainamt > 0) Console.Printf("    (\czActor Def. Output [STEP (8) - Gauntlet Drain]:\c- \cy%d\c- / \cy%d\c-)", drainamt, drainmaxdmg);
+					if (dvdsdebug_actordmgdisplays && drainamt > 0) Console.Printf("    (\czActor Def. Output [STEP (8) - Gauntlet Drain]:\c- \cy%d\c- / \cy%d\c-)", drainamt, drainmaxdmg);
 					ACS_NamedExecuteAlways("SauronGauntletsHit",0,drainamt,(health > 0? 1 : 2),0); 
 				}
 				// Sceptre EXP Gain
@@ -1162,7 +1200,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		double MaxHP, MSpeed, Attack, Defense, Balance;
 		double PreMaxHP, PreMSpeed, PreAttack, PreDefense, PreBalance;
-		int CurrHP, Temp, RangeVar, LevelCheck, MapCheck;
+		double RangeVar;
+		int CurrHP, Temp, LevelCheck, MapCheck;
 		int StealthChance;
 		int nonstatmonster = 0;
 		int debugstatcalc = dvdsdebug_showstatcalcstuff;
@@ -2209,54 +2248,57 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (ActorName == "HeresiarchNew") Score = MaxHP;
 					
 					// Sets the monster's "Desperation Buff" level. The level it must fall below in order to gain it's unique buffs
-					RangeVar = 375;
-					if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 250; // 25.0%
-					if (TrueGameSkill == SKILL_EASY) RangeVar = 313; // 31.3%
-					if (TrueGameSkill == SKILL_NORMAL) RangeVar = 375; // 37.5%
-					if (TrueGameSkill == SKILL_HARD) RangeVar = 437; // 43.7%
-					if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 500; // 50.0%
-					if (TrueGameSkill == SKILL_EXTREME) RangeVar = 625; // 62.5%
-					if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 750; // 75%
-					if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 825; // 82.5%
-					if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 900; // 90%
-					Temp = MaxHP * RangeVar / 1000;
+					RangeVar = 0.375;
+					if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 0.250; // 25.0%
+					if (TrueGameSkill == SKILL_EASY) RangeVar = 0.313; // 31.3%
+					if (TrueGameSkill == SKILL_NORMAL) RangeVar = 0.375; // 37.5%
+					if (TrueGameSkill == SKILL_HARD) RangeVar = 0.437; // 43.7%
+					if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 0.500; // 50.0%
+					if (TrueGameSkill == SKILL_EXTREME) RangeVar = 0.563; // 56.3%
+					if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 0.625; // 62.5%
+					if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 0.687; // 68.7%
+					if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 0.750; // 75%
+					Temp = MaxHP * RangeVar;
 					Temp = Temp + 1;
 					if (Temp < 2) Temp = 2;
 					user_HPBuffRange = Temp;
+					if (debugstatcalc) Console.Printf("user_HPBuffRange [%s]: %d", ActorName, user_HPBuffRange);
 					
 					// Sets the monster's "Low Range" of HP, meaning there is a 25% chance it will execute a "nova" or "shock" attack
-					RangeVar = 160;
-					if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 80; // 8.0%
-					if (TrueGameSkill == SKILL_EASY) RangeVar = 120; // 12.0%
-					if (TrueGameSkill == SKILL_NORMAL) RangeVar = 160; // 16.0%
-					if (TrueGameSkill == SKILL_HARD) RangeVar = 200; // 20.0%
-					if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 240; // 24.0%
-					if (TrueGameSkill == SKILL_EXTREME) RangeVar = 320; // 32.0%
-					if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 400; // 40.0%
-					if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 450; // 45.0%
-					if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 500; // 50%
-					Temp = MaxHP * RangeVar / 1000;
+					RangeVar = 0.160;
+					if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 0.080; // 8.0%
+					if (TrueGameSkill == SKILL_EASY) RangeVar = 0.120; // 12.0%
+					if (TrueGameSkill == SKILL_NORMAL) RangeVar = 0.160; // 16.0%
+					if (TrueGameSkill == SKILL_HARD) RangeVar = 0.200; // 20.0%
+					if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 0.240; // 24.0%
+					if (TrueGameSkill == SKILL_EXTREME) RangeVar = 0.320; // 32.0%
+					if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 0.400; // 40.0%
+					if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 0.450; // 45.0%
+					if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 0.500; // 50%
+					Temp = MaxHP * RangeVar;
 					Temp = Temp + 1;
 					if (Temp < 2) Temp = 2;
 					user_HPLowRange = Temp;
 					if (ActorName == "HeresiarchNew") Accuracy = Temp;
+					if (debugstatcalc) Console.Printf("user_HPLowRange [%s]: %d", ActorName, user_HPLowRange);
 					
 					// Sets the monster's "Critical Range" of HP, meaning there is a 100% chance it will execute a "nova" or "shock" attack
 					RangeVar = 20;
-					if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 10; // 1.0%
-					if (TrueGameSkill == SKILL_EASY) RangeVar = 15; // 1.5%
-					if (TrueGameSkill == SKILL_NORMAL) RangeVar = 20; // 2.0%
-					if (TrueGameSkill == SKILL_HARD) RangeVar = 25; // 2.5%
-					if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 30; // 3.0%
-					if (TrueGameSkill == SKILL_EXTREME) RangeVar = 40; // 4.0%
-					if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 50; // 5.0%
-					if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 60; // 6.0%
-					if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 80; // 8.0%
-					Temp = MaxHP * RangeVar / 1000;
+					if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 0.010; // 1.0%
+					if (TrueGameSkill == SKILL_EASY) RangeVar = 0.015; // 1.5%
+					if (TrueGameSkill == SKILL_NORMAL) RangeVar = 0.020; // 2.0%
+					if (TrueGameSkill == SKILL_HARD) RangeVar = 0.025; // 2.5%
+					if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 0.030; // 3.0%
+					if (TrueGameSkill == SKILL_EXTREME) RangeVar = 0.040; // 4.0%
+					if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 0.050; // 5.0%
+					if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 0.060; // 6.0%
+					if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 0.080; // 8.0%
+					Temp = MaxHP * RangeVar;
 					Temp = Temp + 1;
 					if (Temp < 2) Temp = 2;
 					user_HPCritRange = Temp;
 					if (ActorName == "HeresiarchNew") Stamina = Temp;
+					if (debugstatcalc) Console.Printf("user_HPCritRange [%s]: %d", ActorName, user_HPCritRange);
 					
 					// Sets the monster's "Extreme Death" range of HP, determining how much it takes to gib most monsters (or permenantly kill a Death Incarnate)
 					Temp = MaxHP * -1; // -100.0%
