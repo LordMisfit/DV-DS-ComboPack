@@ -35,6 +35,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int deathcounter;
 	int fadecounter;
 	int cannotres;
+	double gravitypulsetimer;
 	
 	property AggressionLevelThreshold: AggressionLevelThreshold1, AggressionLevelThreshold2, AggressionLevelThreshold3;
 
@@ -1190,6 +1191,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		A_Pain();
 		A_RefreshStealthInfo(1);
+
+		if (GetClassName() == "Diabloist" || GetClassName() == "FDiabloist")
+		{
+			if (bNOTARGETSWITCH) bNOTARGETSWITCH = false;
+			if (!bQUICKTORETALIATE) bQUICKTORETALIATE = true;
+		}
 	}
 	
 	void A_LegendaryCheck()
@@ -4345,6 +4352,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	// Diabloist Gravity Attack
 	void A_DiabloistGravityCheck()
 	{
+		gravitypulsetimer = 0;
 		Actor targ = target;
 		if (targ)
 		{
@@ -4358,96 +4366,404 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 
 			Actor playertarg = AetheriusPlayerPawn(target);
-			if (!playertarg && user_gravitytype != 0) user_gravitytype = 0;
+			if (!playertarg && user_gravitytype != 0) user_gravitytype = 1;
+			//Console.Printf("user_gravitytype: %d", user_gravitytype);
+
+			targ.A_PlaySound("diabloistgravitystart", 7);
+			bNOTARGETSWITCH = true;
+			if (random(1,3) <= 1) bNOPAIN = true;
+			bQUICKTORETALIATE = false;
+		}
+	}
+	
+	void A_DiabloistSpawnGravityNodes()
+	{
+		gravitypulsetimer = 0;
+		if (user_gravitytype == 1 || user_gravitytype == 3) 
+		{
+			//A_Log("HP Targetter");
+			if (levelbehavior > 0 && user_monsterlevel > 240) { A_VileTarget("DiabloistGravityHPTargeter3"); }
+			else if (levelbehavior > 0 && user_monsterlevel > 120) { A_VileTarget("DiabloistGravityHPTargeter2"); }
+			else { A_VileTarget("DiabloistGravityHPTargeter"); }
+		}
+		if (user_gravitytype == 2 || user_gravitytype == 3)
+		{
+			//A_Log("MP Targetter");
+			if (levelbehavior > 0 && user_monsterlevel > 240) { A_VileTarget("DiabloistGravityManaTargeter3"); }
+			else if (levelbehavior > 0 && user_monsterlevel > 120) { A_VileTarget("DiabloistGravityManaTargeter2"); }
+			else { A_VileTarget("DiabloistGravityManaTargeter"); }
+		}
+		bNOTARGETSWITCH = true;
+		bQUICKTORETALIATE = false;
+	}
+	
+	void A_DiabloistGravityPulse(double speed)
+	{
+		gravitypulsetimer += speed;
+		if (gravitypulsetimer > 22.5)
+		{
+			gravitypulsetimer -= 22.5;
+			A_PlaySound("diabloistgravitypulse", 7);
 		}
 	}
 	
 	void A_DiabloistGravity(int gravitytype)
 	{
+		gravitypulsetimer = 0;
 		int TrueGameSkill = dvds_gendifficultycurve + Skill;
 		double GravityEffectFactor, FinalGravityFactor;
-		int PropertyValue, TherapeusisFactor;
+		int PropertyValue, TherapeusisFactor, LevelFactor;
 		int basedmgratio;
 		int AffectedStat, MultFactor, THEEffect;
 		int CharacterClass = CallACS("CheckCharacterClass");
+		int InvulnerabilityTimer = CallACS("GetBuffTimer",4);
 
 		Actor targ = target;
 		if (targ)
 		{
+			gravitytype -= 1;
 			Actor playertarg = AetheriusPlayerPawn(target);
 			if (!playertarg && gravitytype != 0) gravitytype = 0;
 
 			A_FaceTarget();
 			if (!CheckSight(targ, 0)) return;
-			if (targ.health < 1) return;
-			A_PlaySound("monster/diagra", CHAN_WEAPON);
+			if (playertarg && playertarg.CountInv("PlayerDashing")) return;
 
-			if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 0.125;  
-			if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 0.250;  
-			if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 0.500;  
-			if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 0.750;  
-			if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 0.875;  
-			if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 0.900;  
-			if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 0.925;  
-			if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 0.950;  
-			if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 0.980;
-			if (CallACS("GetBuffTimer",4) > 0)
-			{
-				if (random(1,16) != 16) GravityEffectFactor *= 0.5;
-			}
-			// SeedTHE Levels
-			// Deggaris = 300 Needed to max out
-			// Illucia = 200 Needed to max out
-			// Flora = 150 Needed to max out
-			if (CharacterClass == 0)
-			{
-				TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
-				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
-				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
-			}
-			if (CharacterClass == 1)
-			{
-				TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
-				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
-				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
-			}
-			if (CharacterClass == 2)
-			{
-				TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
-				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
-				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
-			}
-			if (CharacterClass == 8)
-			{
-				TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
-				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
-				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
-			}
-			if (CharacterClass == 9)
-			{
-				TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
-				if (TherapeusisFactor < 0) TherapeusisFactor = 0;
-				GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
-			}
-			FinalGravityFactor = 1.000 - GravityEffectFactor;
-			if (GravityEffectFactor < 0.000) GravityEffectFactor = 0.000;
-			if (GravityEffectFactor > 0.000)
-			{
-			}
+			targ.A_PlaySound("diabloistgravityend", 7);
 
-			
-			if (gravitytype == 0) // HP only
+			if (playertarg)
 			{
+				if (InvulnerabilityTimer > 0)
+				{
+					//Console.Printf("gravitytype: %d [Invulnerable]", gravitytype);
+
+					if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 0.0625;  
+					if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 0.1250;  
+					if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 0.2500;  
+					if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 0.3750;  
+					if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 0.4375;  
+					if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 0.450;  
+					if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 0.4625;  
+					if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 0.475;  
+					if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 0.490;
+					if (gravitytype == 2) GravityEffectFactor *= 2;
+					if (random(1,16) == 16) GravityEffectFactor *= 2;
+
+					// SeedTHE Levels
+					// Deggaris = 300 Needed to max out
+					// Illucia = 200 Needed to max out
+					// Flora = 150 Needed to max out
+					if (CharacterClass == 0)
+					{
+						TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+						if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+						GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
+					}
+					if (CharacterClass == 1)
+					{
+						TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+						if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+						GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
+					}
+					if (CharacterClass == 2)
+					{
+						TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+						if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+						GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
+					}
+					if (CharacterClass == 8)
+					{
+						TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+						if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+						GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
+					}
+					if (CharacterClass == 9)
+					{
+						TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+						if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+						GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
+					}
+					FinalGravityFactor = 1.000 - GravityEffectFactor;
+					if (GravityEffectFactor < 0.000) GravityEffectFactor = 0.000;
+					if (GravityEffectFactor > 0.000)
+					{
+						PropertyValue = InvulnerabilityTimer;
+						PropertyValue = PropertyValue * FinalGravityFactor;
+				
+						if (PropertyValue < 1) PropertyValue = 1;
+						CallACS("GetBuffTimer",4,1,PropertyValue);
+						if (playertarg) playertarg.A_SetBlend("C0 C0 C0",1.25,random(39,40));
+					}
+				}
+				else
+				{
+					//Console.Printf("gravitytype: %d", gravitytype);
+
+					if (gravitytype == 0) // HP only
+					{
+						if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 0.125;  
+						if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 0.250;  
+						if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 0.500;  
+						if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 0.750;  
+						if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 0.875;  
+						if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 0.900;  
+						if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 0.925;  
+						if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 0.950;  
+						if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 0.980;
+						// SeedTHE Levels
+						// Deggaris = 300 Needed to max out
+						// Illucia = 200 Needed to max out
+						// Flora = 150 Needed to max out
+						if (CharacterClass == 0)
+						{
+							TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
+						}
+						if (CharacterClass == 1)
+						{
+							TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
+						}
+						if (CharacterClass == 2)
+						{
+							TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
+						}
+						if (CharacterClass == 8)
+						{
+							TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
+						}
+						if (CharacterClass == 9)
+						{
+							TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
+						}
+						FinalGravityFactor = 1.000 - GravityEffectFactor;
+						if (GravityEffectFactor < 0.000) GravityEffectFactor = 0.000;
+						if (GravityEffectFactor > 0.000)
+						{
+							PropertyValue = targ.health;
+							PropertyValue = PropertyValue * FinalGravityFactor;
+					
+							if (PropertyValue < 1) PropertyValue = 1;
+							targ.health = PropertyValue;
+							if (playertarg) playertarg.A_SetBlend("C0 00 00",1.25,random(39,40));
+						}
+					}
+					else
+					if (gravitytype == 1) // Mana only
+					{
+						if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 0.125;  
+						if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 0.250;  
+						if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 0.500;  
+						if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 0.750;  
+						if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 0.875;  
+						if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 0.900;  
+						if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 0.925;  
+						if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 0.950;  
+						if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 0.980;
+						// SeedTHE Levels
+						// Deggaris = 300 Needed to max out
+						// Illucia = 200 Needed to max out
+						// Flora = 150 Needed to max out
+						if (CharacterClass == 0)
+						{
+							TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
+						}
+						if (CharacterClass == 1)
+						{
+							TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
+						}
+						if (CharacterClass == 2)
+						{
+							TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
+						}
+						if (CharacterClass == 8)
+						{
+							TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
+						}
+						if (CharacterClass == 9)
+						{
+							TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
+						}
+						FinalGravityFactor = 1.000 - GravityEffectFactor;
+						if (GravityEffectFactor < 0.000) GravityEffectFactor = 0.000;
+						if (GravityEffectFactor > 0.000)
+						{
+							PropertyValue = CallACS("StatCheck",14);
+							PropertyValue = PropertyValue * FinalGravityFactor;
+					
+							if (PropertyValue < 1) PropertyValue = 1;
+							CallACS("OtherVarSetDECORATE",2,PropertyValue);
+							if (playertarg) playertarg.A_SetBlend("00 00 C0",1.25,random(39,40));
+						}
+					}
+					else
+					if (gravitytype == 2) // HP & Mana
+					{
+						// HP Damage
+						if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 0.125;  
+						if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 0.250;  
+						if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 0.500;  
+						if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 0.750;  
+						if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 0.875;  
+						if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 0.900;  
+						if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 0.925;  
+						if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 0.950;  
+						if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 0.980;
+						// SeedTHE Levels
+						// Deggaris = 300 Needed to max out
+						// Illucia = 200 Needed to max out
+						// Flora = 150 Needed to max out
+						if (CharacterClass == 0)
+						{
+							TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
+						}
+						if (CharacterClass == 1)
+						{
+							TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
+						}
+						if (CharacterClass == 2)
+						{
+							TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
+						}
+						if (CharacterClass == 8)
+						{
+							TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
+						}
+						if (CharacterClass == 9)
+						{
+							TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
+						}
+						FinalGravityFactor = 1.000 - GravityEffectFactor;
+						if (GravityEffectFactor < 0.000) GravityEffectFactor = 0.000;
+						if (GravityEffectFactor > 0.000)
+						{
+							PropertyValue = targ.health;
+							PropertyValue = PropertyValue * FinalGravityFactor;
+					
+							if (PropertyValue < 1) PropertyValue = 1;
+							targ.health = PropertyValue;
+						}
+						
+						// MP Damage
+						if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 0.125;  
+						if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 0.250;  
+						if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 0.500;  
+						if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 0.750;  
+						if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 0.875;  
+						if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 0.900;  
+						if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 0.925;  
+						if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 0.950;  
+						if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 0.980;
+						if (random(1,16) != 16) GravityEffectFactor /= 2;
+						// SeedTHE Levels
+						// Deggaris = 300 Needed to max out
+						// Illucia = 200 Needed to max out
+						// Flora = 150 Needed to max out
+						if (CharacterClass == 0)
+						{
+							TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
+						}
+						if (CharacterClass == 1)
+						{
+							TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
+						}
+						if (CharacterClass == 2)
+						{
+							TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
+						}
+						if (CharacterClass == 8)
+						{
+							TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
+						}
+						if (CharacterClass == 9)
+						{
+							TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
+							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
+						}
+						FinalGravityFactor = 1.000 - GravityEffectFactor;
+						if (GravityEffectFactor < 0.000) GravityEffectFactor = 0.000;
+						if (GravityEffectFactor > 0.000)
+						{
+							PropertyValue = CallACS("StatCheck",14);
+							PropertyValue = PropertyValue * FinalGravityFactor;
+					
+							if (PropertyValue < 1) PropertyValue = 1;
+							CallACS("OtherVarSetDECORATE",2,PropertyValue);
+						}
+						if (playertarg) playertarg.A_SetBlend("C0 00 C0",1.25,random(39,40));
+					}
+					
+					// Inflict Possible Blindness
+					if (playertarg && random(1,32) <= 1) ACS_NamedExecuteAlways("BuffTimer",0,8,19,random(17,51));
+				}
 			}
 			else
-			if (gravitytype == 1) // Mana only
 			{
-			}
-			else
-			if (gravitytype == 2) // HP & Mana
-			{
+				if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 0.125;  
+				if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 0.250;  
+				if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 0.500;  
+				if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 0.750;  
+				if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 0.875;  
+				if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 0.900;  
+				if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 0.925;  
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 0.950;  
+				if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 0.980;
+
+				LevelFactor = 512 - user_monsterlevel;
+				GravityEffectFactor = GravityEffectFactor * LevelFactor / 512;
+
+				FinalGravityFactor = 1.000 - GravityEffectFactor;
+				if (GravityEffectFactor < 0.000) GravityEffectFactor = 0.000;
+				if (GravityEffectFactor > 0.000)
+				{
+					PropertyValue = targ.health;
+					PropertyValue = PropertyValue * FinalGravityFactor;
+				
+					if (PropertyValue < 1) PropertyValue = 1;
+					targ.health = PropertyValue;
+				}
 			}
 		}
+		bQUICKTORETALIATE = true;
+		bNOPAIN = false;
+		bNOTARGETSWITCH = false;
 	}
 	
 	//**************************
