@@ -67,7 +67,6 @@
 
 	--NAMED Scripts and their functions--:
 			["CENTRALSCRIPTOFEVERYTHING"]			-	******MANDATORY****** Check Player Stuff Consistantly And Startup Stats. ******MANDATORY******
-			["GiveBuffsPowerup"]							-	Enforces Giving or Removing Buffs when certain powerup timers are on/off.
 			["DMV"]														-	***DEBUG*** Prints out or changes the number for the "MiscellaneousVars[#]" vars.
 			["GiveStats"]											-	***DEBUG*** Cheat to set stats ("pukename GiveStats [type] [value]")
 			["EXPCheat"]											-	***DEBUG*** Adds EXP equal to the Amount Inputted ("Pukename EXPCheat [number of experience to add] [EXP type] [EXP Increment Type]" in console) ***DEBUG***
@@ -9648,17 +9647,6 @@ script "HUDDISPLAY" ENTER
 	}
 	SetHudSize(0,0,0);
 	Delay(HUDMsgDelayBase);
-	Restart;
-}
-
-script "ManaRegenerationStuff" ENTER
-{
-	if (FirstRun == 0)
-	{
-		FirstRun = 1;
-		Thing_ChangeTID(0,Player1TID);
-	}
-	Delay(1);
 	Restart;
 }
 
@@ -24550,6 +24538,12 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 // ************************
 script "CENTRALSCRIPTOFEVERYTHING" ENTER
 {
+	if (FirstRun == 0)
+	{
+		FirstRun = 1;
+		Thing_ChangeTID(0,Player1TID);
+	}
+
 	int playeractor = 1;
 
 	int VelX = GetActorVelX(Player1TID);
@@ -25130,141 +25124,6 @@ script "SceptreTwirlFrameCheck" (int FrameNo)
 			GiveActorInventory(Player1TID, TwirlFrame, 1);
 		else
 			TakeActorInventory(Player1TID, TwirlFrame, 1);
-	}
-}
-
-// Enforces Giving or Removing Buffs when certain powerup timers are on/off
-script "GiveBuffsPowerup" (int powertype, int powertimeadd)
-{
-	// powertype = Powerup Type
-	// powertimeadd = Powerup Timer Additive
-	
-	powertimeadd = (powertimeadd * GetCVar("dvds_poweruptimemultiplier")) / 100; // Checks Powerup Time Multiplier
-
-	powertimeadd *= 35;
-	powertimeadd = powertimeadd * (MiscellaneousVars[10050] + 4) / 4;
-
-	if (powertype == 0) // Light/Infared
-	{
-		PowerupTimer[0] += powertimeadd;
-		if (PowerupTimer[0] > 0) GiveActorInventory(Player1TID,"NightVisionSpell",1);
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = -7;
-	}
-	if (powertype == 1) // Invisibility
-	{
-		PowerupTimer[1] += powertimeadd;
-		if (PowerupTimer[1] > 0) GiveActorInventory(Player1TID,"InvisiblitySpell",1);
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = -1;
-	}
-	if (powertype == 2) // Flight
-	{
-		PowerupTimer[2] += powertimeadd;
-		if (PowerupTimer[2] > 0) GiveActorInventory(Player1TID,"FlightSpell",1);
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = -2;
-	}
-	if (powertype == 3) // Stealth
-	{
-		PowerupTimer[3] += powertimeadd;
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = -6;
-	}
-	if (powertype == 4) // Invulnerability
-	{
-		PowerupTimer[4] += powertimeadd;
-		if (PowerupTimer[4] > 0) GiveActorInventory(Player1TID, "InvulnerabilitySpell", 1);
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = -5;
-	}
-	if (powertype == 5) // Time Freeze
-	{
-		PowerupTimer[5] += powertimeadd;
-		if (PowerupTimer[5] > 0) GiveActorInventory(Player1TID, "AetheriusTimeFreezer", 1);
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = -4;
-	}
-	if (powertype == 6) // Fear Aura
-	{
-		PowerupTimer[6] += powertimeadd;
-		if (PowerupTimer[6] > 0) GiveActorInventory(Player1TID, "PowerFrightener", 1);
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = -3;
-	}
-	if (powertype == 7) // Divine Avatar
-	{
-		PowerupTimer[7] += powertimeadd;
-		if (PowerupTimer[7] > 0)
-		{
-			GiveActorInventory(Player1TID, "PowerDoubleFiringSpeed", 1);
-			GiveActorInventory(Player1TID, "DivineAvatarHighJump", 1);
-		}
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = 5;
-	}
-	if (powertype == 8) // Spreader Aura Lv. 1
-	{
-		if (PowerupTimer[9] == 0) // If lacking the Lv. 2 Aura, add to the Lv. 1
-		{
-			PowerupTimer[8] += powertimeadd;
-			if (PowerupTimer[8] > 0) GiveActorInventory(Player1TID, "SpreaderAura1", 1);
-			MiscellaneousVars[2040] = 70;
-			MiscellaneousVars[2045] = 6;
-		}
-		else // If possessing Lv. 2 aura, give the player the timer divided by 5 or 6 instead and add to the second level aura.
-		{
-			if (PowerupTimer[8] > 0) TakeActorInventory(Player1TID, "SpreaderAura1", 1);
-			PowerupTimer[8] = 0;
-			powertimeadd = powertimeadd / random(5,6);
-			PowerupTimer[9] += powertimeadd;
-			if (PowerupTimer[9] > 0) GiveActorInventory(Player1TID, "SpreaderAura2", 1);
-			MiscellaneousVars[2040] = 70;
-			MiscellaneousVars[2045] = 7;
-		}
-	}
-	if (powertype == 9) // Spreader Aura Lv. 2
-	{
-		PowerupTimer[9] += powertimeadd;
-		if (PowerupTimer[9] > 0) GiveActorInventory(Player1TID, "SpreaderAura2", 1);
-		if (PowerupTimer[8] > 0) { TakeActorInventory(Player1TID, "SpreaderAura1", 1); PowerupTimer[8] = 0; }
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = 7;
-	}
-	if (powertype == 10) // Oomph [double damage from player]
-	{
-		PowerupTimer[10] += powertimeadd;
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = 0;
-	}
-	if (powertype == 11) // Buff [-50% damage to player]
-	{
-		PowerupTimer[11] += powertimeadd;
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = 1;
-	}
-	if (powertype == 12) // Acceleratle [+33% speed for player]
-	{
-		PowerupTimer[12] += powertimeadd;
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = 2;
-	}
-	
-	if (powertype == 22) // RadSuit [IronFeet, protection from most damage floors]
-	{
-		PowerupTimer[22] += powertimeadd;
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = -8;
-	}
-	if (powertype == 23) // Berserk [10x damage on exertion based melee attacks]
-	{
-		PowerupTimer[23] += powertimeadd;
-		MiscellaneousVars[2040] = 70;
-		MiscellaneousVars[2045] = 4;
-	}
-	if (powertype == 129) // GoE??
-	{
-		PowerupTimer[129] += powertimeadd;
 	}
 }
 
