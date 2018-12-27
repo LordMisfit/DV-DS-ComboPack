@@ -3,6 +3,17 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 {
 	const MACELDLDMGMULTI = 5;
 
+	// General
+	const SKILL_VERY_EASY = 0;
+	const SKILL_EASY = 1;
+	const SKILL_NORMAL = 2;
+	const SKILL_HARD = 3;
+	const SKILL_VERY_HARD = 4;
+	const SKILL_EXTREME = 5;
+	const SKILL_HORRIBLE = 6;
+	const SKILL_IMPOSSIBLE = 7;
+	const SKILL_OMEGA = 8;
+
 	int Fuse;
 	int user_BaseDamage;
 	int user_DamageError;
@@ -5640,7 +5651,6 @@ class LoreShotBase : AetheriusProjectileZSC
 	
 	override int DoSpecialDamage (Actor victim, int damage, Name damagetype)
 	{
-		
 		if (victim != NULL && target != NULL && !victim.bDontThrust)
 		{
 			Vector3 thrust = victim.Vec3To(target);
@@ -5658,3 +5668,102 @@ class LoreShotBase : AetheriusProjectileZSC
 	}
 	
 }
+
+class GravityHPBall : AetheriusFastProjectileZSC
+{
+	default
+	{
+		Damage (0);
+		+MISSILE
+		+PIERCEARMOR
+		+FORCERADIUSDMG
+		+FORCEPAIN
+		+NODAMAGETHRUST
+		+CANNOTPUSH
+		+NOTIMEFREEZE
+		+FOILINVUL
+		RenderStyle "Add";
+		Alpha 0.0;
+		Speed 511;
+		Radius 1;
+		Height 1;
+		FastSpeed 511;
+		SeeSound "null";
+		DeathSound "null";
+	}
+
+	override int SpecialMissileHit (Actor victim)
+ 	{
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		double GravityEffectFactor, FinalGravityFactor;
+		int PropertyValue;
+		int LevelFactor;
+		double EffectChance;
+		string vict;
+
+		AetheriusMonsterZSC svictim;
+		if (victim) svictim = AetheriusMonsterZSC(victim);
+
+		if (svictim && svictim.bISMONSTER)
+		{
+			vict = svictim.GetClassName();
+			if (vict == "PracticeTarget" || vict == "PracticeTarget2") EffectChance = 0;
+			if (vict == "ProgrammerNew" || vict == "StrifeBishopNew" || vict == "OracleNew" || vict == "Macil1New" || vict == "LoremasterNew" ||
+					vict == "AlienSpectre1New" || vict == "AlienSpectre2New" || vict == "AlienSpectre3New" || vict == "AlienSpectre4New" || vict == "AlienSpectre5New" ||
+					vict == "EntityBossNew" || vict == "EntitySecondNew" || vict == "EntityAscended") EffectChance = 0;
+			if (vict == "SirenNightmareNew" || vict == "CeilingTurretNew") EffectChance = 0;
+			if (vict == "ThamuzNew" || vict == "TchernobogNew") EffectChance = 0.03125;
+			if (vict == "DSparilMountedNew" || vict == "DSparilUnmountedNew" || vict == "KoraxNew" || vict == "Zakachi") EffectChance = 1;
+			if (vict == "Daedabus") EffectChance = 8;
+			if (vict == "Macil2New") EffectChance = 8;
+			if (vict == "HeresiarchNew" || vict == "ClericBossNew" || vict == "FighterBossNew" || vict == "FighterBossNew") EffectChance = 16;
+			if (vict == "VampireDVDS" || vict == "ReaverNew" || vict == "CrusaderNew" || vict == "SentinelNew" || vict == "OStalkerNew") EffectChance = 32;
+			if (vict == "Bormereth" || vict == "DragonNew") EffectChance = 64;
+			if (vict == "MaulotaurNew" || vict == "TNTSpider") EffectChance = 85;
+			if (vict == "Hierophant" || vict == "TemplarNew") EffectChance = 128;
+			else EffectChance = 256;
+			
+			if (frandom(0.1,256.0) <= EffectChance)
+			{
+				if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 0.125;  
+				if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 0.250;  
+				if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 0.500;  
+				if (TrueGameSkill == SKILL_HARD) GravityEffectFactor = 0.750;  
+				if (TrueGameSkill == SKILL_VERY_HARD) GravityEffectFactor = 0.875;  
+				if (TrueGameSkill == SKILL_EXTREME) GravityEffectFactor = 0.900;  
+				if (TrueGameSkill == SKILL_HORRIBLE) GravityEffectFactor = 0.925;  
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) GravityEffectFactor = 0.950;  
+				if (TrueGameSkill >= SKILL_OMEGA) GravityEffectFactor = 0.980;
+				
+				LevelFactor = 512 - svictim.user_monsterlevel;
+				GravityEffectFactor = GravityEffectFactor * LevelFactor / 512;
+				
+				FinalGravityFactor = 1.000 - GravityEffectFactor;
+				if (GravityEffectFactor < 0.000) GravityEffectFactor = 0.000;
+				if (GravityEffectFactor > 0.000)
+				{
+					PropertyValue = svictim.health;
+					PropertyValue = PropertyValue * FinalGravityFactor;
+				
+					if (PropertyValue < 1) PropertyValue = 1;
+					svictim.health = PropertyValue;
+					svictim.A_PlaySound("diabloistgravityend");
+				}
+			}
+		}
+		return -1;
+	}
+
+	States
+	{
+		Spawn:
+			TNT1 A 0;
+			TNT1 A 1 A_SeekerMissile(360,90,SMF_LOOK|SMF_PRECISE|SMF_CURSPEED,256,64);
+			loop;
+		Death:
+			TNT1 A 0;
+			TNT1 A 0 bright A_SpawnItem("DiabloistGravityHPTargeter");
+			stop;
+	}
+}
+
