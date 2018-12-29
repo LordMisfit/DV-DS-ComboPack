@@ -2547,11 +2547,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		
 	}
 
-	void A_MonsterCrisisCheck ()
+	void A_MonsterCrisisCheck()
 	{
 		user_canusecrisisatk = 0;
-		if(health <= user_HPLowRange) { if(health <= user_HPCritRange) { user_canusecrisisatk = 1; } else { if (random(1,4) == 4) { user_canusecrisisatk = 1; } } }
-		if(dvds_monstercrisisattacks == 0) { user_canusecrisisatk = 0; }
+		if (health <= user_HPLowRange) { if (health <= user_HPCritRange) { user_canusecrisisatk = 1; } else { if (random(1,4) == 4) { user_canusecrisisatk = 1; } } }
+		if (dvds_monstercrisisattacks == 0) { user_canusecrisisatk = 0; }
 	}
 
 	void A_PlayCrisisAtkSound ()
@@ -2562,8 +2562,18 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 	void A_CrisisExplode (int damage = 128, int radius = 128, int flags = 1, bool alert = false, int fulldmgradius = 0, int nails = 0, int naildamage = 10, string pufftype = "BulletPuff", string damagetype = "none", bool playcrisissound = true)
 	{
-		A_MonsterCrisisCheck();
-		if(user_canusecrisisatk == 1) 
+		//A_MonsterCrisisCheck(); // Inside CrisisAttack Function
+		if (user_canusecrisisatk == 1) 
+		{
+			damage *= CallACS("CrisisMultiplier"); 
+			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
+		}
+		A_Explode(damage,radius,flags,alert,fulldmgradius,nails,naildamage,pufftype,damagetype);
+	}
+ 
+	void A_CrisisExplodeNRR (int damage = 128, int radius = 128, int flags = 1, bool alert = false, int fulldmgradius = 0, int nails = 0, int naildamage = 10, string pufftype = "BulletPuff", string damagetype = "none", bool playcrisissound = true)
+	{
+		if (user_canusecrisisatk == 1) 
 		{
 			damage *= CallACS("CrisisMultiplier"); 
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
@@ -2573,19 +2583,33 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
  
 	void A_CrisisMushroom (string missiletype, string crisismissiletype, int amount = 0, int flags = 0, float vrange = 4.0, float hrange = 0.5, bool playcrisissound = true)
 	{
+		//A_MonsterCrisisCheck(); // Inside CrisisAttack Function
 		string atktype = missiletype;
-		if(user_canusecrisisatk == 1) 
+		if (user_canusecrisisatk == 1) 
 		{
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
 			atktype = crisismissiletype;
 		}
 		A_MushRoom(atktype,amount,flags,vrange,hrange);
 	}
- 
-	void A_CrisisSpawnProjectile (string missiletype, string crisismissiletype, float spawnheight = 32.0, float spawnofs_xy = 0.0, double angle = 0.0, int flags = 0, double pitch = 0.0, int ptr = AAPTR_TARGET, bool playcrisissound = true)
+
+	void A_CrisisMushroomNRR (string missiletype, string crisismissiletype, int amount = 0, int flags = 0, float vrange = 4.0, float hrange = 0.5, bool playcrisissound = true)
 	{
 		string atktype = missiletype;
-		if(user_canusecrisisatk == 1) 
+		if (user_canusecrisisatk == 1) 
+		{
+			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
+			atktype = crisismissiletype;
+		}
+		A_MushRoom(atktype,amount,flags,vrange,hrange);
+	}
+
+	// A_CrisisSpawnProjectile that automatically rerolls the crisis chance within its code on each call
+	void A_CrisisSpawnProjectile (string missiletype, string crisismissiletype, float spawnheight = 32.0, float spawnofs_xy = 0.0, double angle = 0.0, int flags = 0, double pitch = 0.0, int ptr = AAPTR_TARGET, bool playcrisissound = true)
+	{
+		//A_MonsterCrisisCheck(); // Inside CrisisAttack Function
+		string atktype = missiletype;
+		if (user_canusecrisisatk == 1) 
 		{
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
 			atktype = crisismissiletype;
@@ -2593,9 +2617,37 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_SpawnProjectile(atktype,spawnheight,spawnofs_xy,angle,flags,pitch,ptr);
 	}
 
-	void A_CrisisBulletAttack(float horz_spread, float vert_spread, int numbullets, int damageperbullet, string pufftype = "BulletPuff", float range = 2048.0, int flags = 0, int ptr = AAPTR_TARGET, string missile = "none", float spawnheight = 32.0, float Spawnofs_xy = 0.0, bool playcrisissound = true)
+	// A_CrisisSpawnProjectile w/o Crisis Chance rerolling [for single pre-rolls that affect multiple projectile calls at once]
+	void A_CrisisSpawnProjectileNRR (string missiletype, string crisismissiletype, float spawnheight = 32.0, float spawnofs_xy = 0.0, double angle = 0.0, int flags = 0, double pitch = 0.0, int ptr = AAPTR_TARGET, bool playcrisissound = true)
 	{
-		if(user_canusecrisisatk == 1) 
+		string atktype = missiletype;
+		if (user_canusecrisisatk == 1) 
+		{
+			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
+			atktype = crisismissiletype;
+		}
+		A_SpawnProjectile(atktype,spawnheight,spawnofs_xy,angle,flags,pitch,ptr);
+	}
+
+	// A_CrisisBulletAttack that automatically rerolls the crisis chance within its code on each call
+	void A_CrisisBulletAttack (float horz_spread, float vert_spread, int numbullets, int damageperbullet, string pufftype = "BulletPuff", float range = 2048.0, int flags = 0, int ptr = AAPTR_TARGET, string missile = "none", float spawnheight = 32.0, float Spawnofs_xy = 0.0, bool playcrisissound = true)
+	{
+		//A_MonsterCrisisCheck(); // Inside CrisisAttack Function
+		if (user_canusecrisisatk == 1) 
+		{
+			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
+			damageperbullet *= CallACS("CrisisMultiplier"); 
+		}
+		for (int i = 0; i < numbullets; i++) 
+		{
+			A_CustomBulletAttack(horz_spread,vert_spread,1,damageperbullet,pufftype,range,flags,ptr,missile,spawnheight,Spawnofs_xy); 
+		}
+	}
+
+	// A_CrisisBulletAttack w/o Crisis Chance rerolling [for single pre-rolls that affect multiple bullet calls at once]
+	void A_CrisisBulletAttackNRR (float horz_spread, float vert_spread, int numbullets, int damageperbullet, string pufftype = "BulletPuff", float range = 2048.0, int flags = 0, int ptr = AAPTR_TARGET, string missile = "none", float spawnheight = 32.0, float Spawnofs_xy = 0.0, bool playcrisissound = true)
+	{
+		if (user_canusecrisisatk == 1) 
 		{
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
 			damageperbullet *= CallACS("CrisisMultiplier"); 
@@ -2606,9 +2658,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
  
-	void A_CrisisRailgun(int damage, int spawnofs_xy = 0, color ringcolor = 0, color corecolor = 0, int flags = 0, int aim = 0, double maxdiff = 0, string pufftype = "", double spread_xy = 0.0, double spread_z = 0.0, int range = 8192, int duration = 35, double sparsity = 1.0, double driftspeed = 1.0, string spawnclass = "", double spawnofs_z = 0.0, int spiraloffset = 270, int limit = 0, double veleffect = 3.0, bool playcrisissound = true)
+	void A_CrisisRailgun (int damage, int spawnofs_xy = 0, color ringcolor = 0, color corecolor = 0, int flags = 0, int aim = 0, double maxdiff = 0, string pufftype = "", double spread_xy = 0.0, double spread_z = 0.0, int range = 8192, int duration = 35, double sparsity = 1.0, double driftspeed = 1.0, string spawnclass = "", double spawnofs_z = 0.0, int spiraloffset = 270, int limit = 0, double veleffect = 3.0, bool playcrisissound = true)
 	{
-		if(user_canusecrisisatk == 1) 
+		A_MonsterCrisisCheck(); // Inside CrisisAttack Function
+		if (user_canusecrisisatk == 1) 
 		{
 			damage *= CallACS("CrisisMultiplier"); 
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
@@ -2616,10 +2669,21 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_CustomRailgun(damage,spawnofs_xy,ringcolor,corecolor,flags,aim,maxdiff,pufftype,spread_xy,spread_z,range,duration,sparsity,driftspeed,spawnclass,spawnofs_z,spiraloffset,limit,veleffect);
 	}
  
-	void A_CrisisComboAttack(string missiletype, string crisismissiletype, float spawnheight = 32.0, int meleedamage = 0, string meleesound = "imp/melee", string damagetype = "Melee", bool bleed = 1, bool playcrisissound = true)
+	void A_CrisisRailgunNRR (int damage, int spawnofs_xy = 0, color ringcolor = 0, color corecolor = 0, int flags = 0, int aim = 0, double maxdiff = 0, string pufftype = "", double spread_xy = 0.0, double spread_z = 0.0, int range = 8192, int duration = 35, double sparsity = 1.0, double driftspeed = 1.0, string spawnclass = "", double spawnofs_z = 0.0, int spiraloffset = 270, int limit = 0, double veleffect = 3.0, bool playcrisissound = true)
+	{
+		//A_MonsterCrisisCheck(); // Inside CrisisAttack Function
+		if (user_canusecrisisatk == 1) 
+		{
+			damage *= CallACS("CrisisMultiplier"); 
+			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
+		}
+		A_CustomRailgun(damage,spawnofs_xy,ringcolor,corecolor,flags,aim,maxdiff,pufftype,spread_xy,spread_z,range,duration,sparsity,driftspeed,spawnclass,spawnofs_z,spiraloffset,limit,veleffect);
+	}
+ 
+	void A_CrisisComboAttack (string missiletype, string crisismissiletype, float spawnheight = 32.0, int meleedamage = 0, string meleesound = "imp/melee", string damagetype = "Melee", bool bleed = 1, bool playcrisissound = true)
 	{
 		string atktype = missiletype;
-		if(user_canusecrisisatk == 1) 
+		if (user_canusecrisisatk == 1) 
 		{
 			meleedamage *= CallACS("CrisisMultiplier"); 
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
@@ -2628,9 +2692,21 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_CustomComboAttack(atktype,spawnheight,meleedamage,meleesound,damagetype,bleed);
 	}
 
-	void A_CrisisMeleeAttack(int meleedamage, string meleesound = "", string misssound = "", string damagetype = "Melee", bool bleed = 1, bool playcrisissound = true)
+	void A_CrisisComboAttackNRR (string missiletype, string crisismissiletype, float spawnheight = 32.0, int meleedamage = 0, string meleesound = "imp/melee", string damagetype = "Melee", bool bleed = 1, bool playcrisissound = true)
 	{
-		if(user_canusecrisisatk == 1) 
+		string atktype = missiletype;
+		if (user_canusecrisisatk == 1) 
+		{
+			meleedamage *= CallACS("CrisisMultiplier"); 
+			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
+			atktype = crisismissiletype;
+		}
+		A_CustomComboAttack(atktype,spawnheight,meleedamage,meleesound,damagetype,bleed);
+	}
+
+	void A_CrisisMeleeAttack (int meleedamage, string meleesound = "", string misssound = "", string damagetype = "Melee", bool bleed = 1, bool playcrisissound = true)
+	{
+		if (user_canusecrisisatk == 1) 
 		{
 			meleedamage *= CallACS("CrisisMultiplier");
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
@@ -2638,10 +2714,34 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_CustomMeleeAttack(meleedamage,meleesound,misssound,damagetype,bleed);
 	}
 	
-	void A_CrisisSpawnItemEx(string type = "", string crisistype = "", float xofs = 0.0, float yofs = 0.0, float zofs = 0.0, float xvel = 0.0, float yvel = 0.0, float zvel = 0.0, float angle = 0.0, int flags = 0, int failchance = 0, int tid = 0, bool playcrisissound = true)
+	void A_CrisisMeleeAttackNRR (int meleedamage, string meleesound = "", string misssound = "", string damagetype = "Melee", bool bleed = 1, bool playcrisissound = true)
+	{
+		if (user_canusecrisisatk == 1) 
+		{
+			meleedamage *= CallACS("CrisisMultiplier");
+			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
+		}
+		A_CustomMeleeAttack(meleedamage,meleesound,misssound,damagetype,bleed);
+	}
+	
+	void A_CrisisSpawnItemEx (string type = "", string crisistype = "", float xofs = 0.0, float yofs = 0.0, float zofs = 0.0, float xvel = 0.0, float yvel = 0.0, float zvel = 0.0, float angle = 0.0, int flags = 0, int failchance = 0, int tid = 0, bool playcrisissound = true)
 	{
 		string spawntype = type;
-		if(user_canusecrisisatk == 1) 
+		if (user_canusecrisisatk == 1) 
+		{
+			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
+			spawntype = crisistype;
+		}
+		else
+		{
+			A_SpawnItemEx(spawntype,xofs,yofs,zofs,xvel,yvel,zvel,angle,flags,failchance,tid);
+		}
+	}
+
+	void A_CrisisSpawnItemExNRR (string type = "", string crisistype = "", float xofs = 0.0, float yofs = 0.0, float zofs = 0.0, float xvel = 0.0, float yvel = 0.0, float zvel = 0.0, float angle = 0.0, int flags = 0, int failchance = 0, int tid = 0, bool playcrisissound = true)
+	{
+		string spawntype = type;
+		if (user_canusecrisisatk == 1) 
 		{
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
 			spawntype = crisistype;
@@ -4921,7 +5021,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			return;
 		}
 
-		if(user_canusecrisisatk == 1) 
+		if (user_canusecrisisatk == 1) 
 		{
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
 			Actor mo = SpawnMissile (target, crisismissiletype);
@@ -4953,7 +5053,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		// Whirlwind	(close 40% : far 20%)
 		// Distance threshold = 8 cells
 
-		A_MonsterCrisisCheck();
 		if (target == null)
 		{
 			return;
@@ -4961,20 +5060,26 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_FaceTarget ();
 		if (CheckMeleeRange ())
 		{
-			if(user_canusecrisisatk == 1) { meleedamage *= CallACS("CrisisMultiplier"); if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } }
+			A_MonsterCrisisCheck(); // LichAttack - Melee
+			if (user_canusecrisisatk == 1) 
+			{ 
+				if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
+				meleedamage *= CallACS("CrisisMultiplier"); 
+			}
 			int damage = meleedamage;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
 			target.TraceBleed (newdam > 0 ? newdam : damage, self);
 			return;
 		}
-		if(user_canusecrisisatk == 1) { if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } }
 		int dist = Distance2D(target) > 8 * 64;
 		int randAttack = random[LichAttack]();
 		if (randAttack < atkResolve1[dist])
 		{
 			// Ice ball
-			if(user_canusecrisisatk == 1) 
+			A_MonsterCrisisCheck(); // LichAttack - Ice Ball
+			if (user_canusecrisisatk == 1) 
 			{
+				if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
 				SpawnMissile (target, icemissilecrisis); 
 			}
 			else 
@@ -4987,7 +5092,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			// Fire column
 			string firetype = firemissile;
-			if(user_canusecrisisatk == 1) { firetype = firemissilecrisis; }
+			A_MonsterCrisisCheck(); // LichAttack - Fire Wall/Column
+			if (user_canusecrisisatk == 1) { firetype = firemissilecrisis; }
 			Actor baseFire = SpawnMissile (target, firetype);
 			if (baseFire != null)
 			{
@@ -5017,7 +5123,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			for (int i = 0; i < tornados; i++)
 			{
 				string twistertype = twistermissile;
-				if(user_canusecrisisatk == 1) { twistertype = twistermissilecrisis; }
+				A_MonsterCrisisCheck(); // LichAttack - Whirlwind
+				if (user_canusecrisisatk == 1) { twistertype = twistermissilecrisis; }
 				Actor mo = SpawnMissile (target, twistertype);
 				if (mo != null)
 				{
@@ -5223,8 +5330,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	// Bishop
 	void A_BishopAttack(int meleedmg = 4, int missilenum = 5)
 	{
-		A_MonsterCrisisCheck();
-		if(user_canusecrisisatk == 1) meleedmg *= CallACS("CrisisMultiplier");
 
 		if (!target)
 		{
@@ -5233,7 +5338,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_PlaySound (AttackSound, CHAN_BODY);
 		if (CheckMeleeRange())
 		{
-			if(user_canusecrisisatk == 1) A_PlayCrisisAtkSound();
+			A_MonsterCrisisCheck(); // A_BishopAttack - Melee
+			if (user_canusecrisisatk == 1) 
+			{
+				meleedmg *= CallACS("CrisisMultiplier");
+				A_PlayCrisisAtkSound();
+			}
 			int damage = meleedmg;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
 			target.TraceBleed (newdam > 0 ? newdam : damage, self);
@@ -5245,8 +5355,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_BishopAttack2(string missiletype = "BishopFX", string crisismissiletype = "BishopFXCrisis")
 	{
 		string atktype = missiletype;
-		A_MonsterCrisisCheck();
-		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
+		A_MonsterCrisisCheck(); // BishopAttack2 - Missiles
+		if (user_canusecrisisatk == 1) { atktype = crisismissiletype; }
 
 		if (!target || !missilecount)
 		{
@@ -5258,6 +5368,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (mo != null)
 		{
 			mo.tracer = target;
+			if (user_canusecrisisatk == 1) A_PlayCrisisAtkSound();
 		}
 		missilecount--;
 		return;
@@ -5579,14 +5690,17 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		int maxdrain;
 		if (drainamount == 0) drainamount = random[StealHealth](1,8)*2;
-		A_MonsterCrisisCheck();
-		if(user_canusecrisisatk == 1) drainamount *= CallACS("CrisisMultiplier");
 
 		if (user_MaxHP <= 0) maxdrain = spawnhealth(); else maxdrain = user_MaxHP;
 		// Steal health from target and give to self
-		if (CheckMeleeRange() && (random[StealHealth]()<maxdrain))
+		if (CheckMeleeRange() && (random[StealHealth]() < maxdrain))
 		{
-			if(user_canusecrisisatk == 1) A_PlayCrisisAtkSound(); 
+			A_MonsterCrisisCheck(); // WraithMelee - Life Drain
+			if (user_canusecrisisatk == 1) 
+			{
+				drainamount *= CallACS("CrisisMultiplier");
+				A_PlayCrisisAtkSound(); 
+			}
 			int amount = drainamount;
 			target.DamageMobj (self, self, amount, 'Melee');
 			if (health < maxdrain && target.bINVULNERABLE == 0)
@@ -5594,7 +5708,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				health += amount;
 				if (health > maxdrain) health = maxdrain;
 			}
-			
 		}
 	}
 
@@ -5658,9 +5771,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			return;
 		}
-		
 		string specialmissile = missiletype;
-		A_MonsterCrisisCheck();
+
+		A_MonsterCrisisCheck(); // IceGuyAttack
 		if(user_canusecrisisatk == 1)
 		{
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); A_PlayCrisisAtkSound(); } 
@@ -5728,7 +5841,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				target = targ;
 				if (CheckMeleeRange ())
 				{
-					A_MonsterCrisisCheck();
+					A_MonsterCrisisCheck(); // DragonSeek - Melee
 					int basedmg = meleedamage;
 					if(user_canusecrisisatk == 1) 
 					{
@@ -5744,7 +5857,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				else if (random[DragonSeek]() < 128 && CheckMissileRange())
 				{
 					string atktype = missiletype;
-					A_MonsterCrisisCheck();
+					A_MonsterCrisisCheck(); // DragonSeek - Missile
 					if(user_canusecrisisatk == 1)
 					{
 						A_PlayCrisisAtkSound();
@@ -5847,7 +5960,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (ang <22.5 && CheckMeleeRange())
 			{
 				int basedmg = meleedamage;
-				A_MonsterCrisisCheck();
+				A_MonsterCrisisCheck(); // DragonFlight - Melee
 				if(user_canusecrisisatk == 1) 
 				{
 					basedmg *= CallACS("CrisisMultiplier");	
@@ -5887,7 +6000,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_DragonAttack(string missiletype = "DragonFireball", string crisismissiletype = "DragonFireballCrisis")
 	{
 		string atktype = missiletype;
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // DragonAttack - Missile
 		if(user_canusecrisisatk == 1)
 		{
 			A_PlayCrisisAtkSound();
@@ -5918,7 +6031,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_ClericAttack(string missiletype = "HolyMissile", string crisismissiletype = "HolyMissileCrisis")
 	{
 		string atktype = missiletype;
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Cleric Attack - Projectile
 		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
 
 		if (!target) return;
@@ -5932,7 +6045,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void MStaffSpawn2 (double angle, string missiletype = "MageStaffFX2", string crisismissiletype = "MageStaffFX2Crisis")
 	{
 		string atktype = missiletype;
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Magic Attack - Projectile
 		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
 
 		Actor mo = SpawnMissileAngleZ (pos.z + 40, atktype, angle, 0.);
@@ -5958,7 +6071,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_FighterAttack(string missiletype = "FSwordMissile", string crisismissiletype = "FSwordMissileCrisis")
 	{
 		string atktype = missiletype;
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Fighter Attack - Projectile
 		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
 
 		if (!target) return;
@@ -6087,7 +6200,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_InquisitorAttack (string missiletype = "InquisitorShot", string crisismissiletype = "InquisitorShotCrisis")
 	{
 		string atktype = missiletype;
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Inquisitor Attack - Projectile
 		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
 
 		if (target == null)
@@ -6188,7 +6301,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		string fireatktype = firemissile;
 		string missileatktype = rockmissile;
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Crusader Attack - Projectiles
 		if(user_canusecrisisatk == 1) { fireatktype = crisisfiremissile; missileatktype = crisisrockmissile; A_PlayCrisisAtkSound(); }
 
 		if (target == null)
@@ -6220,7 +6333,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_CrusaderSweepLeft (string firemissile = "FastFlameMissile", string crisisfiremissile = "FastFlameMissileCrisis")
 	{
 		string fireatktype = firemissile;
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Inquisitor Attack - Fire [Leftward Sweep]
 		if(user_canusecrisisatk == 1) { fireatktype = crisisfiremissile; A_PlayCrisisAtkSound(); }
 
 		angle += 90./16;
@@ -6234,7 +6347,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_CrusaderSweepRight (string firemissile = "FastFlameMissile", string crisisfiremissile = "FastFlameMissileCrisis")
 	{
 		string fireatktype = firemissile;
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Inquisitor Attack - Fire [Rightward Sweep]
 		if(user_canusecrisisatk == 1) { fireatktype = crisisfiremissile; A_PlayCrisisAtkSound(); }
 
 		angle -= 90./16;
@@ -6267,8 +6380,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_SentinelAttack (string missiletype = "SentinelFX2", string crisismissiletype = "SentinelFX2Crisis", string trailtype = "SentinelFX1", int trailsize = 8)
 	{
 		string atktype = missiletype;
-		A_MonsterCrisisCheck();
-		if(user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
+		A_MonsterCrisisCheck(); // Sentinel Attack - Projectile
+		if (user_canusecrisisatk == 1) { atktype = crisismissiletype; A_PlayCrisisAtkSound(); }
 		
 		// [BB] Without a target the P_SpawnMissileZAimed call will crash.
 		if (!target)
@@ -6341,7 +6454,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			A_FaceTarget ();
 			if (CheckMeleeRange ())
 			{
-				A_MonsterCrisisCheck();
+				A_MonsterCrisisCheck(); // [Order] Stalker Attack - Melee
 				if(user_canusecrisisatk == 1) { dmg *= CallACS("CrisisMultiplier"); A_PlayCrisisAtkSound(); }
 
 				int damage = dmg;
@@ -6360,7 +6473,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	// Programmer
 	void A_ProgrammerMelee (int dmg = 6)
 	{
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Programmer Attack - Melee
 		if(user_canusecrisisatk == 1) { dmg *= CallACS("CrisisMultiplier"); A_PlayCrisisAtkSound(); }
 
 		if (target == null)
@@ -6410,7 +6523,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_SpotLightning(string missiletype = "SpectralLightningSpot", string crisismissiletype = "SpectralLightningSpotCrisis")
 	{
 		string atktype = missiletype;
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Spectres/Entity - Spot Lightning
 		if(user_canusecrisisatk == 1) 
 		{
 			atktype = crisismissiletype;
@@ -6916,7 +7029,7 @@ class MaulotaurBase : AetheriusMonsterZSC
 
 	void A_MinotaurAtk1(int atkdamage = 4, int squishamount = -16)
 	{
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Maulotaur Attack - Hammer Smash [Melee]
 		if(user_canusecrisisatk == 1) atkdamage *= CallACS("CrisisMultiplier");
 
 		if (!target)
@@ -7031,8 +7144,8 @@ class MaulotaurBase : AetheriusMonsterZSC
 		if (friendly == 1) actualmeleedmg = friendlymeleedamage;
 		string actualmissile = missiletype;
 
-		A_MonsterCrisisCheck();
-		if(user_canusecrisisatk == 1) 
+		A_MonsterCrisisCheck(); // Maulotaur Attack2 - Hammer Smash Projectile
+		if (user_canusecrisisatk == 1) 
 		{
 			actualmeleedmg *= CallACS("CrisisMultiplier");
 			actualmissile = crisismissiletype;
@@ -7046,7 +7159,7 @@ class MaulotaurBase : AetheriusMonsterZSC
 		A_PlaySound ("minotaur/attack2", CHAN_WEAPON);
 		if (CheckMeleeRange())
 		{
-			if(user_canusecrisisatk == 1) A_PlayCrisisAtkSound(); 
+			if (user_canusecrisisatk == 1) A_PlayCrisisAtkSound(); 
 			int damage = actualmeleedmg;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
 			target.TraceBleed (newdam > 0 ? newdam : damage, self);
@@ -7070,7 +7183,7 @@ class MaulotaurBase : AetheriusMonsterZSC
 
 	void A_MinotaurAtk3(int atkdamage = 4, int squishamount = -16, string missiletype = "MinotaurFX2New", string crisismissiletype = "MinotaurFX2Crisis")
 	{
-		A_MonsterCrisisCheck();
+		A_MonsterCrisisCheck(); // Maulotaur Attack3 - Hammer Side-Swing Spread Shot
 		string attacktype = missiletype;
 		if(user_canusecrisisatk == 1) 
 		{
