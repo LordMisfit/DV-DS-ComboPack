@@ -12,6 +12,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int stealthstate, stealthtimer;
 	int IsACrisisBulletAttack;
 	int IsACrisisMeleeAttack;
+	int IsACrisisComboAttack;
 
 	// General
 	const SKILL_VERY_EASY = 0;
@@ -1287,18 +1288,87 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 	
+	void A_DVDSCustomComboAttack(Class<Actor> ti = "", float spawnheight = 32.0, int meleedamage = 0, string meleesound = "", string meleedmgtype = "Melee", bool bleed = true)
+	{
+		if (!target) 
+						return;
+
+		IsACrisisComboAttack = false;
+		let targ = target;
+		if (targ)
+		{
+			user_canusecrisisatk = 0;
+			if (health <= user_HPLowRange) 
+			{ 
+				if (health <= user_HPCritRange) 
+				{ 
+					user_canusecrisisatk = 1; 
+					//Console.Printf("user_HPCritRange");
+				} 
+				else 
+				{ 
+					if (random(1,4) == 4) user_canusecrisisatk = 1;
+					//Console.Printf("user_HPLowRange");
+				} 
+			}
+			if (dvds_monstercrisisattacks == 0) { user_canusecrisisatk = 0; }
+			//Console.Printf("user_canusecrisisatk: %d", user_canusecrisisatk);
+			if (user_canusecrisisatk)
+			{
+				A_PlaySound("crisisattack",6);
+				A_PlaySound("crisisattack2",7);
+				IsACrisisComboAttack = true;
+			}
+
+			A_FaceTarget();
+			if (CheckMeleeRange()) // Melee Attack
+			{
+				if (IsACrisisComboAttack) meleedamage *= dvds_monstercrisismulti;
+				if (meleesound) 
+							A_PlaySound(meleesound, CHAN_WEAPON, 1, ATTN_NORM);
+				int newdam = targ.DamageMobj(self, self, meleedamage, meleedmgtype);
+				if (bleed) 
+							targ.TraceBleed (newdam > 0 ? newdam : meleedamage, self);
+			}
+			else if (ti) // Shoot a single Projectile
+			{
+				// This seemingly senseless code is needed for proper aiming.
+				double add = spawnheight + GetBobOffset() - 32;
+				AddZ(add);
+				Actor missile = SpawnMissileXYZ((0,0,32), targ, ti, false);
+				AddZ(-add);
+
+				if (missile)
+				{
+					AetheriusProjectileZSC UniqueProjectile;
+					UniqueProjectile = AetheriusProjectileZSC(missile);
+					if (IsACrisisComboAttack && UniqueProjectile) UniqueProjectile.IsACrisisAttack = true;
+
+					// automatic handling of seeker missiles
+					if (missile.bSEEKERMISSILE)
+					{
+						missile.tracer = self.target;
+					}
+					missile.CheckMissileSpawn(radius);
+				}
+			}
+			return;
+		}
+		return;
+	}
+	
 	void A_DVDSCustomMeleeAttack(int damage = 0, string meleesound = "", string misssound = "", string damagetype = "Melee", bool bleed = true)
 	{
 		if (damagetype == "None")
 						damagetype = "Melee";	// Melee is the default type
 
-		if (!self.target) 
+		if (!target) 
 						return;
 
+		IsACrisisMeleeAttack = false;
 		let targ = target;
 		if (targ)
 		{
-			IsACrisisMeleeAttack = false;
 			user_canusecrisisatk = 0;
 			if (health <= user_HPLowRange) 
 			{ 
@@ -1321,7 +1391,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				A_PlaySound("crisisattack2",7);
 				IsACrisisMeleeAttack = true;
 			}
-			if (IsACrisisBulletAttack) damage *= dvds_monstercrisismulti;
+			if (IsACrisisMeleeAttack) damage *= dvds_monstercrisismulti;
 
 			A_FaceTarget();
 			if (CheckMeleeRange())
