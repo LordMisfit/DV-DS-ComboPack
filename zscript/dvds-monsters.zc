@@ -11,6 +11,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int bobstate;
 	int stealthstate, stealthtimer;
 	int IsACrisisBulletAttack;
+	int IsACrisisMeleeAttack;
 
 	// General
 	const SKILL_VERY_EASY = 0;
@@ -1284,6 +1285,60 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 			}
 		}
+	}
+	
+	void A_DVDSCustomMeleeAttack(int damage = 0, string meleesound = "", string misssound = "", string damagetype = "Melee", bool bleed = true)
+	{
+		if (damagetype == "None")
+						damagetype = "Melee";	// Melee is the default type
+
+		if (!self.target) 
+						return;
+
+		let targ = target;
+		if (targ)
+		{
+			IsACrisisMeleeAttack = false;
+			user_canusecrisisatk = 0;
+			if (health <= user_HPLowRange) 
+			{ 
+				if (health <= user_HPCritRange) 
+				{ 
+					user_canusecrisisatk = 1; 
+					//Console.Printf("user_HPCritRange");
+				} 
+				else 
+				{ 
+					if (random(1,4) == 4) user_canusecrisisatk = 1;
+					//Console.Printf("user_HPLowRange");
+				} 
+			}
+			if (dvds_monstercrisisattacks == 0) { user_canusecrisisatk = 0; }
+			//Console.Printf("user_canusecrisisatk: %d", user_canusecrisisatk);
+			if (user_canusecrisisatk)
+			{
+				A_PlaySound("crisisattack",6);
+				A_PlaySound("crisisattack2",7);
+				IsACrisisMeleeAttack = true;
+			}
+			if (IsACrisisBulletAttack) damage *= dvds_monstercrisismulti;
+
+			A_FaceTarget();
+			if (CheckMeleeRange())
+			{
+				if (meleesound) 
+							A_PlaySound(meleesound, CHAN_WEAPON, 1, ATTN_NORM);
+				int newdam = targ.DamageMobj(self, self, damage, damagetype);
+				if (bleed) 
+							targ.TraceBleed (newdam > 0 ? newdam : damage, self);
+			}
+			else
+			{
+				if (misssound) 
+							A_PlaySound(misssound, CHAN_WEAPON, 1, ATTN_NORM);
+			}
+		}
+		return;
 	}
 	
 	//****************************
@@ -2722,6 +2777,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 	void A_CrisisMeleeAttack (int meleedamage, string meleesound = "", string misssound = "", string damagetype = "Melee", bool bleed = 1, bool playcrisissound = true)
 	{
+		/*
 		A_MonsterCrisisCheck();
 		if (user_canusecrisisatk == 1) 
 		{
@@ -2729,6 +2785,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
 		}
 		A_CustomMeleeAttack(meleedamage,meleesound,misssound,damagetype,bleed);
+		*/
+		A_DVDSCustomMeleeAttack(meleedamage,meleesound,misssound,damagetype,bleed);
 	}
 	
 	void A_CrisisSpawnItemEx (string type = "", string crisistype = "", float xofs = 0.0, float yofs = 0.0, float zofs = 0.0, float xvel = 0.0, float yvel = 0.0, float zvel = 0.0, float angle = 0.0, int flags = 0, int failchance = 0, int tid = 0, bool playcrisissound = true)
