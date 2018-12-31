@@ -34,6 +34,108 @@ class AetheriusBaseZSC : Actor
 	int user_charmchance, user_charmed;
 	int user_summoned;
 	int user_regencycles, user_regencyclemax;
+	int IsACrisisExplosion;
+	
+	// Altered A_Explode to have automatic Crisis Attack support. :V
+	int A_DVDSExplode(int damage = -1, int distance = -1, int flags = XF_HURTSOURCE, bool alert = false, int fulldamagedistance = 0, int nails = 0, int naildamage = 10, class<Actor> pufftype = "BulletPuff", name damagetype = "none")
+	{
+		AetheriusMonsterZSC DVDSActor;
+		DVDSActor = AetheriusMonsterZSC(tracer);
+		AetheriusProjectileZSC UniqueProjectile;
+		UniqueProjectile = AetheriusProjectileZSC(self);
+		int CheckForCrisis = 0;
+
+		IsACrisisExplosion = false;
+		if (DVDSActor) 
+		{
+			if (flags & XF_NOTMISSILE)
+			{
+				CheckForCrisis = 1;
+			}
+			else
+			{
+				if (UniqueProjectile) CheckForCrisis = 2;
+			}
+		}
+		
+		if (CheckForCrisis > 0)
+		{
+			DVDSActor.user_canusecrisisatk = 0;
+			if (DVDSActor.health <= DVDSActor.user_HPLowRange) 
+			{ 
+				if (DVDSActor.health <= DVDSActor.user_HPCritRange) 
+				{ 
+					DVDSActor.user_canusecrisisatk = 1; 
+					//Console.Printf("user_HPCritRange");
+				} 
+				else 
+				{ 
+					if (random(1,4) == 4) DVDSActor.user_canusecrisisatk = 1;
+					//Console.Printf("user_HPLowRange");
+				} 
+			}
+			if (dvds_monstercrisisattacks == 0) { DVDSActor.user_canusecrisisatk = 0; }
+			//Console.Printf("user_canusecrisisatk: %d", user_canusecrisisatk);
+			if (DVDSActor.user_canusecrisisatk)
+			{
+				DVDSActor.A_PlaySound("crisisattack",6);
+				DVDSActor.A_PlaySound("crisisattack2",7);
+				IsACrisisExplosion = true;
+			}
+		}
+
+
+		if (damage < 0)	// get parameters from metadata
+		{
+			damage = ExplosionDamage;
+			distance = ExplosionRadius;
+			flags = !DontHurtShooter;
+			alert = false;
+		}
+		if (distance <= 0) distance = damage;
+		
+		if (IsACrisisExplosion) damage *= dvds_monstercrisismulti;
+
+		// NailBomb effect, from SMMU but not from its source code: instead it was implemented and
+		// generalized from the documentation at http://www.doomworld.com/eternity/engine/codeptrs.html
+
+		if (nails)
+		{
+			if (IsACrisisExplosion) naildamage *= dvds_monstercrisismulti; //
+
+			double ang;
+			for (int i = 0; i < nails; i++)
+			{
+				ang = i*360./nails;
+				// Comparing the results of a test wad with Eternity, it seems A_NailBomb does not aim
+				LineAttack(ang, MISSILERANGE, 0.,
+					//P_AimLineAttack (self, ang, MISSILERANGE), 
+					naildamage, 'Hitscan', pufftype, bMissile ? LAF_TARGETISSOURCE : 0);
+			}
+		}
+
+		if (!(flags & XF_EXPLICITDAMAGETYPE) && damagetype == 'None')
+		{
+			damagetype = self.DamageType;
+		}
+
+		int pflags = 0;
+		if (flags & XF_HURTSOURCE)	pflags |= RADF_HURTSOURCE;
+		if (flags & XF_NOTMISSILE)	pflags |= RADF_SOURCEISSPOT;
+
+		int count = RadiusAttack (target, damage, distance, damagetype, pflags, fulldamagedistance);
+		if (!(flags & XF_NOSPLASH)) CheckSplash(distance);
+		if (alert && target != NULL && target.player != NULL)
+		{
+			SoundAlert(target);
+		}
+		return count;
+	}
+}
+
+class AetheriusSpawnedItem : AetheriusBaseZSC
+{
+	bool IsACrisisSpawnedItem;
 }
 
 class AetheriusCustomGib : AetheriusBaseZSC

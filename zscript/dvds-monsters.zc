@@ -1288,134 +1288,401 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 	
-	void A_DVDSCustomComboAttack(Class<Actor> ti = "", float spawnheight = 32.0, int meleedamage = 0, string meleesound = "", string meleedmgtype = "Melee", bool bleed = true)
+	void A_DVDSCustomComboAttack(Class<Actor> missiletype = "", float spawnheight = 32.0, int meleedamage = 0, string meleesound = "", string meleedmgtype = "Melee", bool bleed = true)
 	{
 		if (!target) 
 						return;
-
-		if (meleedmgtype == "")
-						meleedmgtype = "Melee";	// Melee is the default type
-
+		//
 		IsACrisisComboAttack = false;
-		let targ = target;
-		if (targ)
-		{
-			user_canusecrisisatk = 0;
-			if (health <= user_HPLowRange) 
+		user_canusecrisisatk = 0;
+		if (health <= user_HPLowRange) 
+		{ 
+			if (health <= user_HPCritRange) 
 			{ 
-				if (health <= user_HPCritRange) 
-				{ 
-					user_canusecrisisatk = 1; 
-					//Console.Printf("user_HPCritRange");
-				} 
-				else 
-				{ 
-					if (random(1,4) == 4) user_canusecrisisatk = 1;
-					//Console.Printf("user_HPLowRange");
-				} 
-			}
-			if (dvds_monstercrisisattacks == 0) { user_canusecrisisatk = 0; }
-			//Console.Printf("user_canusecrisisatk: %d", user_canusecrisisatk);
-			if (user_canusecrisisatk)
-			{
-				A_PlaySound("crisisattack",6);
-				A_PlaySound("crisisattack2",7);
-				IsACrisisComboAttack = true;
-			}
-
-			A_FaceTarget();
-			if (CheckMeleeRange()) // Melee Attack
-			{
-				if (IsACrisisComboAttack) meleedamage *= dvds_monstercrisismulti;
-				if (meleesound) 
-							A_PlaySound(meleesound, CHAN_WEAPON, 1, ATTN_NORM);
-				int newdam = targ.DamageMobj(self, self, meleedamage, meleedmgtype);
-				if (bleed) 
-							targ.TraceBleed (newdam > 0 ? newdam : meleedamage, self);
-			}
-			else if (ti) // Shoot a single Projectile
-			{
-				// This seemingly senseless code is needed for proper aiming.
-				double add = spawnheight + GetBobOffset() - 32;
-				AddZ(add);
-				Actor missile = SpawnMissileXYZ((0,0,32), targ, ti, false);
-				AddZ(-add);
-
-				if (missile)
-				{
-					AetheriusProjectileZSC UniqueProjectile;
-					UniqueProjectile = AetheriusProjectileZSC(missile);
-					if (IsACrisisComboAttack && UniqueProjectile) UniqueProjectile.IsACrisisAttack = true;
-
-					// automatic handling of seeker missiles
-					if (missile.bSEEKERMISSILE)
-					{
-						missile.tracer = self.target;
-					}
-					missile.CheckMissileSpawn(radius);
-				}
-			}
-			return;
+				user_canusecrisisatk = 1; 
+				//Console.Printf("user_HPCritRange");
+			} 
+			else 
+			{ 
+				if (random(1,4) == 4) user_canusecrisisatk = 1;
+				//Console.Printf("user_HPLowRange");
+			} 
 		}
-	}
-	
-	void A_DVDSSpawnProjectile(class<Actor> missiletype, double spawnheight = 32, double spawnofs_xy = 0, double angle = 0, int flags = 0, double pitch = 0, int ptr = AAPTR_TARGET)
-	{
-	}
-	
-	void A_DVDSCustomMeleeAttack(int damage = 0, string meleesound = "", string misssound = "", string damagetype = "Melee", bool bleed = true)
-	{
-		if (damagetype == "")
-						damagetype = "Melee";	// Melee is the default type
-
-		if (!target) 
-						return;
-
-		IsACrisisMeleeAttack = false;
-		let targ = target;
-		if (targ)
+		if (dvds_monstercrisisattacks == 0) { user_canusecrisisatk = 0; }
+		//Console.Printf("user_canusecrisisatk: %d", user_canusecrisisatk);
+		if (user_canusecrisisatk)
 		{
-			user_canusecrisisatk = 0;
-			if (health <= user_HPLowRange) 
-			{ 
-				if (health <= user_HPCritRange) 
-				{ 
-					user_canusecrisisatk = 1; 
-					//Console.Printf("user_HPCritRange");
-				} 
-				else 
-				{ 
-					if (random(1,4) == 4) user_canusecrisisatk = 1;
-					//Console.Printf("user_HPLowRange");
-				} 
-			}
-			if (dvds_monstercrisisattacks == 0) { user_canusecrisisatk = 0; }
-			//Console.Printf("user_canusecrisisatk: %d", user_canusecrisisatk);
-			if (user_canusecrisisatk)
+			A_PlaySound("crisisattack",6);
+			A_PlaySound("crisisattack2",7);
+			IsACrisisComboAttack = true;
+		}
+		//
+    
+		A_FaceTarget();
+		if (CheckMeleeRange()) // Melee Attack
+		{
+			if (IsACrisisComboAttack) meleedamage *= dvds_monstercrisismulti; //
+    
+			if (damagetype == 'None')
+							damagetype = 'Melee';	// Melee is the default type
+			if (meleesound) 
+						A_PlaySound(meleesound, CHAN_WEAPON, 1, ATTN_NORM);
+			int newdam = target.DamageMobj(self, self, meleedamage, meleedmgtype);
+			if (bleed) 
+						target.TraceBleed (newdam > 0 ? newdam : meleedamage, self);
+		}
+		else if (missiletype) // Shoot a single Projectile
+		{
+			// This seemingly senseless code is needed for proper aiming.
+			double add = spawnheight + GetBobOffset() - 32;
+			AddZ(add);
+			Actor missile = SpawnMissileXYZ((0,0,32), target, missiletype, false);
+			AddZ(-add);
+    
+			if (missile)
 			{
-				A_PlaySound("crisisattack",6);
-				A_PlaySound("crisisattack2",7);
-				IsACrisisMeleeAttack = true;
-			}
-			if (IsACrisisMeleeAttack) damage *= dvds_monstercrisismulti;
-
-			A_FaceTarget();
-			if (CheckMeleeRange())
-			{
-				if (meleesound) 
-							A_PlaySound(meleesound, CHAN_WEAPON, 1, ATTN_NORM);
-				int newdam = targ.DamageMobj(self, self, damage, damagetype);
-				if (bleed) 
-							targ.TraceBleed (newdam > 0 ? newdam : damage, self);
-			}
-			else
-			{
-				if (misssound) 
-							A_PlaySound(misssound, CHAN_WEAPON, 1, ATTN_NORM);
+				AetheriusProjectileZSC UniqueProjectile; //
+				UniqueProjectile = AetheriusProjectileZSC(missile); //
+				if (IsACrisisComboAttack && UniqueProjectile) UniqueProjectile.IsACrisisAttack = true; //
+    
+				// automatic handling of seeker missiles
+				if (missile.bSEEKERMISSILE)
+				{
+					missile.tracer = target;
+				}
+				missile.CheckMissileSpawn(radius);
 			}
 		}
 		return;
 	}
+	
+	enum CM_Flags
+	{
+		CMF_AIMMODE = 3,
+		CMF_TRACKOWNER = 4,
+		CMF_CHECKTARGETDEAD = 8,
+	
+		CMF_ABSOLUTEPITCH = 16,
+		CMF_OFFSETPITCH = 32,
+		CMF_SAVEPITCH = 64,
+	
+		CMF_ABSOLUTEANGLE = 128,
+		CMF_BADPITCH = 256
+	};
+	
+	Actor A_DVDSSpawnProjectile(class<Actor> missiletype, double spawnheight = 32, double spawnofs_xy = 0, double angle = 0, int flags = 0, double pitch = 0, int ptr = AAPTR_TARGET)
+	{
+		/*
+		PARAM_SELF_PROLOGUE(AActor);
+		PARAM_CLASS		(ti, AActor);
+		PARAM_FLOAT	(Spawnheight);
+		PARAM_FLOAT	(Spawnofs_xy);
+		PARAM_ANGLE	(Angle);
+		PARAM_INT	(flags);
+		PARAM_ANGLE	(Pitch);
+		PARAM_INT	(ptr);
+		*/
+
+		let ref = GetPointer(ptr); // AActor *ref = COPY_AAPTR(self, ptr);
+		
+		int aimmode = flags & CMF_AIMMODE;
+		
+		Actor targ; // AActor * targ;
+		Actor missile = null; // AActor * missile = nullptr;
+		
+		if (ref != NULL || aimmode == 2)
+		{
+			if (missiletype) // if (ti)
+			{
+				angle -= 90; // DAngle angle = self->Angles.Yaw - 90;
+				double x = Spawnofs_xy * cos(angle); // double x = Spawnofs_xy * angle.Cos();
+				double y = Spawnofs_xy * sin(angle); // double y = Spawnofs_xy * angle.Sin();
+				double z = Spawnheight + GetBobOffset() - 32 + (player? player.crouchoffset : 0.); // double z = Spawnheight + self->GetBobOffset() - 32 + (self->player? self->player->crouchoffset : 0.);
+	
+				Vector3 pos = (pos.x, pos.y, pos.z); // DVector3 pos = self->Pos();
+				switch (aimmode)
+				{
+					case 0:
+					default:
+						// same adjustment as above (in all 3 directions this time) - for better aiming!
+						SetXYZ(Vec3Offset(pos.x, pos.y, pos.z)); // self->SetXYZ(self->Vec3Offset(x, y, z));
+						missile = SpawnMissileXYZ((0,0,32), ref, missiletype, false); // missile = P_SpawnMissileXYZ(self->PosPlusZ(32.), self, ref, ti, false);
+						SetXYZ(pos); // self->SetXYZ(pos);
+						break;
+		
+					case 1:
+						missile = SpawnMissileXYZ(Vec3Offset(pos.x, pos.y, GetBobOffset() + Spawnheight), ref, missiletype, false); // missile = P_SpawnMissileXYZ(self->Vec3Offset(x, y, self->GetBobOffset() + Spawnheight), self, ref, ti, false);
+						break;
+		
+					case 2:
+						SetXYZ(Vec3Offset(pos.x, pos.y, 0.)); // self->SetXYZ(self->Vec3Offset(x, y, 0.));
+						missile = SpawnMissileAngleZSpeed(pos.z + GetBobOffset() + Spawnheight, missiletype, angle, 0, GetDefaultByType(missiletype).Speed, self, false); // missile = P_SpawnMissileAngleZSpeed(self, self->Z() + self->GetBobOffset() + Spawnheight, ti, self->Angles.Yaw, 0, GetDefaultByType(ti)->Speed, self, false);
+						SetXYZ(pos); // self->SetXYZ(pos);
+		
+						flags |= CMF_ABSOLUTEPITCH;
+		
+						break;
+				}
+	
+				if (missile != NULL)
+				{
+					// Use the actual velocity instead of the missile's Speed property
+					// so that this can handle missiles with a high vertical velocity 
+					// component properly.
+	
+					double missilespeed;
+	
+					if ( (CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH) & flags)
+					{
+						if (CMF_OFFSETPITCH & flags)
+						{
+							pitch += missile.pitch; // Pitch += missile->Vel.Pitch();
+						}
+						missilespeed = abs(Cos(pitch) * missile.Speed); // missilespeed = fabs(Pitch.Cos() * missile->Speed);
+						missile.Vel.Z = Sin(pitch) * missile.Speed; // missile->Vel.Z = Pitch.Sin() * missile->Speed;
+						if (!(flags & CMF_BADPITCH)) missile.Vel.Z *= -1; // if (!(flags & CMF_BADPITCH)) missile->Vel.Z *= -1;
+					}
+					else
+					{
+						missilespeed = missile.vel.xy.Length(); // missilespeed = missile->VelXYToSpeed();
+					}
+	
+					if (CMF_SAVEPITCH & flags)
+					{
+						missile.pitch = pitch; // missile->Angles.Pitch = Pitch;
+						// In aimmode 0 and 1 without absolutepitch or offsetpitch, the pitch parameter
+						// contains the unapplied parameter. In that case, it is set as pitch without
+						// otherwise affecting the spawned actor.
+					}
+	
+					missile.angle = (CMF_ABSOLUTEANGLE & flags) ? Angle : missile.angle + Angle; // missile->Angles.Yaw = (CMF_ABSOLUTEANGLE & flags) ? Angle : missile->Angles.Yaw + Angle;
+					missile.VelFromAngle(missilespeed); // missile->VelFromAngle(missilespeed);
+		
+					// handle projectile shooting projectiles - track the
+					// links back to a real owner
+					if (bMISSILE && (!!(flags & CMF_TRACKOWNER))) //if (self->isMissile(!!(flags & CMF_TRACKOWNER)))
+					{
+						Actor owner = self; // AActor *owner = self ;//->target;
+						while (owner.bMISSILE && (!!(flags & CMF_TRACKOWNER)) && owner.target) // while (owner->isMissile(!!(flags & CMF_TRACKOWNER)) && owner.target)
+										owner = owner.target; // owner = owner->target;
+						targ = owner;
+						missile.target = owner; // missile->target = owner;
+						// automatic handling of seeker missiles
+						if (bSEEKERMISSILE & missile.bSEEKERMISSILE) // if (self->flags2 & missile->flags2 & MF2_SEEKERMISSILE)
+						{
+							missile.tracer = tracer; // missile->tracer = self->tracer;
+						}
+					}
+					else if (missile.bSEEKERMISSILE) // else if (missile->flags2 & MF2_SEEKERMISSILE)
+					{
+						// automatic handling of seeker missiles
+						missile.tracer = target; // missile->tracer = self->target;
+					}
+
+					// we must redo the spectral check here because the owner is set after spawning so the FriendPlayer value may be wrong
+					if (missile.bSPECTRAL) // if (missile->flags4 & MF4_SPECTRAL)
+					{
+						if (missile.target != NULL) // if (missile->target != NULL)
+						{
+							missile.SetFriendPlayer(missile.target.player); // missile->SetFriendPlayer(missile->target->player);
+						}
+						else
+						{
+							missile.FriendPlayer = 0; // missile->FriendPlayer = 0;
+						}
+					}
+					CheckMissileSpawn(radius); // P_CheckMissileSpawn(missile, self->radius);
+				}
+			}
+		}
+		else if (flags & CMF_CHECKTARGETDEAD)
+		{
+			// Target is dead and the attack shall be aborted.
+			if (SeeState != NULL && (health > 0 || !(bISMONSTER))) // if (self->SeeState != NULL && (self->health > 0 || !(self->flags3 & MF3_ISMONSTER)))
+				SetState(SeeState); // self->SetState(self->SeeState);
+		}
+		return(missile); // ACTION_RETURN_OBJECT(missile);
+	}
+	
+	void A_DVDSCustomMeleeAttack(int damage = 0, string meleesound = "", string misssound = "", string damagetype = "Melee", bool bleed = true)
+	{
+		if (damagetype == 'None')
+						damagetype = 'Melee';	// Melee is the default type
+
+		if (!target) 
+						return;
+
+		IsACrisisMeleeAttack = false; //
+		let targ = target;
+		//
+		user_canusecrisisatk = 0;
+		if (health <= user_HPLowRange) 
+		{ 
+			if (health <= user_HPCritRange) 
+			{ 
+				user_canusecrisisatk = 1; 
+				//Console.Printf("user_HPCritRange");
+			} 
+			else 
+			{ 
+				if (random(1,4) == 4) user_canusecrisisatk = 1;
+				//Console.Printf("user_HPLowRange");
+			} 
+		}
+		if (dvds_monstercrisisattacks == 0) { user_canusecrisisatk = 0; }
+		//Console.Printf("user_canusecrisisatk: %d", user_canusecrisisatk);
+		if (user_canusecrisisatk)
+		{
+			A_PlaySound("crisisattack",6);
+			A_PlaySound("crisisattack2",7);
+			IsACrisisMeleeAttack = true;
+		}
+		if (IsACrisisMeleeAttack) damage *= dvds_monstercrisismulti;
+		//
+    
+		A_FaceTarget();
+		if (CheckMeleeRange())
+		{
+			if (meleesound) 
+						A_PlaySound(meleesound, CHAN_WEAPON, 1, ATTN_NORM);
+			int newdam = target.DamageMobj(self, self, damage, damagetype);
+			if (bleed) 
+						target.TraceBleed (newdam > 0 ? newdam : damage, self);
+		}
+		else
+		{
+			if (misssound) 
+						A_PlaySound(misssound, CHAN_WEAPON, 1, ATTN_NORM);
+		}
+		return;
+	}
+	
+	enum CustomRailgun
+	{
+		CRF_DONTAIM = 0,
+		CRF_AIMPARALLEL = 1,
+		CRF_AIMDIRECT = 2,
+		CRF_EXPLICITANGLE = 4,
+	};
+	
+	void A_DVDSCustomRailgun(int damage, int spawnofs_xy = 0, color color1 = 0, color color2 = 0, int flags = 0, int aim = 0, double maxdiff = 0, class<Actor> pufftype = "BulletPuff", double spread_xy = 0, double spread_z = 0, double range = 0, int duration = 0, double sparsity = 1.0, double driftspeed = 1.0, class<Actor> spawnclass = null, double spawnofs_z = 0, int spiraloffset = 270, int limit = 0, double veleffect = 3)
+	{
+		/*
+		PARAM_SELF_PROLOGUE(AActor);
+		PARAM_INT		(damage);
+		PARAM_INT	(spawnofs_xy)		
+		PARAM_COLOR	(color1)			
+		PARAM_COLOR	(color2)			
+		PARAM_INT	(flags)				
+		PARAM_INT	(aim)				
+		PARAM_FLOAT	(maxdiff)			
+		PARAM_CLASS	(pufftype, AActor)	
+		PARAM_ANGLE	(spread_xy)			
+		PARAM_ANGLE	(spread_z)			
+		PARAM_FLOAT	(range)				
+		PARAM_INT	(duration)			
+		PARAM_FLOAT	(sparsity)			
+		PARAM_FLOAT	(driftspeed)		
+		PARAM_CLASS	(spawnclass, AActor)
+		PARAM_FLOAT	(spawnofs_z)		
+		PARAM_INT	(SpiralOffset)		
+		PARAM_INT	(limit)				
+		PARAM_FLOAT	(veleffect)
+		*/
+	
+		if (range == 0) range = 8192.;
+		if (sparsity == 0) sparsity = 1;
+	
+		FTranslatedLineTarget t;
+	
+		Vector3 savedpos = (pos.x, pos.y, pos.z); // DVector3 savedpos = self->Pos();
+		double saved_angle = Angle; // DAngle saved_angle = self->Angles.Yaw;
+		double saved_pitch = Pitch; // DAngle saved_pitch = self->Angles.Pitch;
+	
+		if (aim && target == NULL) // if (aim && self->target == NULL)
+		{
+			return; // return 0;
+		}
+		// [RH] Andy Baker's stealth monsters
+		if (bSTEALTH) // if (self->flags & MF_STEALTH)
+		{
+			visdir = 1; // self->visdir = 1;
+		}
+	
+		flags &= bAMBUSH; // self->flags &= ~MF_AMBUSH;
+	
+	
+		if (aim)
+		{
+			Angle = AngleTo(target); // self->Angles.Yaw = self->AngleTo(self->target);
+		}
+		Pitch = AimLineAttack (Angle, MISSILERANGE, t, 60., 0, aim ? target : NULL); // self->Angles.Pitch = P_AimLineAttack (self, self->Angles.Yaw, MISSILERANGE, &t, 60., 0, aim ? self->target : NULL);
+		if (t.linetarget == NULL && aim)
+		{
+			// We probably won't hit the target, but aim at it anyway so we don't look stupid.
+			Vector2 xydiff = Vec2To(target); // DVector2 xydiff = self->Vec2To(self->target);
+			double zdiff = (target.pos.z + (target.height/2)) - (pos.z + (height/2)) - Floorclip; // double zdiff = self->target->Center() - self->Center() - self->Floorclip;
+			Pitch = -VectorAngle(xydiff.Length(), zdiff); // self->Angles.Pitch = -VecToAngle(xydiff.Length(), zdiff);
+		}
+		// Let the aim trail behind the player
+		if (aim)
+		{
+			let vec = target.Vec2To (self) + (-target.Vel.X * veleffect, -target.Vel.Y * veleffect);  // saved_angle = self->Angles.Yaw = self->AngleTo(self->target, -self->target->Vel.X * veleffect, -self->target->Vel.Y * veleffect);
+			saved_angle = angle = VectorAngle (vec.X, vec.Y);
+	
+			if (aim == CRF_AIMDIRECT)
+			{
+				// Tricky: We must offset to the angle of the current position
+				// but then change the angle again to ensure proper aim.
+				Vector3 dpos = (Vec2Offset(spawnofs_xy * Cos(angle), spawnofs_xy * Sin(angle)), pos.z); SetXYZ(dpos); // self->SetXY(self->Vec2Offset(spawnofs_xy * self->Angles.Yaw.Cos(), spawnofs_xy * self->Angles.Yaw.Sin()));
+				spawnofs_xy = 0;
+				vec = target.Vec2To (self) + (-target.Vel.X * veleffect, -target.Vel.Y * veleffect); // self->Angles.Yaw = self->AngleTo(self->target, -self->target->Vel.X * veleffect, -self->target->Vel.Y * veleffect);
+				angle = VectorAngle (vec.X, vec.Y);
+				
+			}
+	
+			if (target.bSHADOW) // if (self->target->flags & MF_SHADOW)
+			{
+				double rnd = Random2[pr_crailgun]() * (45. / 256.); // DAngle rnd = pr_crailgun.Random2() * (45. / 256.);
+				angle += rnd; // self->Angles.Yaw += rnd;
+			}
+		}
+	
+		if (!(flags & CRF_EXPLICITANGLE))
+		{
+			spread_xy = spread_xy * Random2[pr_crailgun]() / 255; // spread_xy = spread_xy * pr_crailgun.Random2() / 255;
+			spread_z = spread_z * Random2[pr_crailgun]() / 255; // spread_z = spread_z * pr_crailgun.Random2() / 255;
+		}
+	
+		/*
+		FRailParams p;
+		p.source = self;
+		p.damage = damage;
+		p.offset_xy = spawnofs_xy;
+		p.offset_z = spawnofs_z;
+		p.color1 = color1;
+		p.color2 = color2;
+		p.maxdiff = maxdiff;
+		p.flags = flags;
+		p.puff = pufftype;
+		p.angleoffset = spread_xy;
+		p.pitchoffset = spread_z;
+		p.distance = range;
+		p.duration = duration;
+		p.sparsity = sparsity;
+		p.drift = driftspeed;
+		p.spawnclass = spawnclass;
+		p.SpiralOffset = SpiralOffset;
+		p.limit = 0;
+		P_RailAttack(&p);
+		*/
+	
+		SetXYZ(savedpos); // self->SetXYZ(savedpos);
+		angle = saved_angle; // self->Angles.Yaw = saved_angle;
+		pitch = saved_pitch; // self->Angles.Pitch = saved_pitch;
+		return; // return 0;
+	}
+	
 	
 	//****************************
 	//*AETHERIUS UNIQUE FUNCTIONS*
@@ -2873,10 +3140,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
 			spawntype = crisistype;
 		}
-		else
-		{
-			A_SpawnItemEx(spawntype,xofs,yofs,zofs,xvel,yvel,zvel,angle,flags,failchance,tid);
-		}
+		A_SpawnItemEx(spawntype,xofs,yofs,zofs,xvel,yvel,zvel,angle,flags,failchance,tid);
 	}
 	
 	
@@ -7045,10 +7309,28 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 	
-	
-	
-	
+	int A_EnemyRailgunDamage(int base = 0)
+	{
+		int damage = base;
+		int charge = CountInv("RailgunCharge");
+		int chargefactor = ( ( (CountInv("RailgunCharge") * 2) + (CountInv("RailgunCharge") / 3) ) * 10);
+		damage = damage * chargefactor / 100;
+		if (damage < 1) damage = 1;
 
+		if (dvdsdebug_showmiscdmginformation) Console.Printf("Damage: %d, [Base: %d], [Charge: %d% / ChargeFactor: %d%", damage, base, charge, chargefactor);
+		/*
+		{
+			PrintBold(s:"Damage: ",d:damage,s:"\n",
+								s:"[Base: ",d:base,s:"]\n",
+								s:"[Charge: ",d:charge,s:"% / ",d:chargefactor,s:"]");
+		}
+		*/
+		return damage;
+	}
+	
+	
+	
+	
 	States
 	{
 		Pain.Charm: 
