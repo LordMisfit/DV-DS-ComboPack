@@ -1520,25 +1520,39 @@ class PlayerStatItem : Inventory
 				Owner.A_SetInventory("PlayerIsDead", 0);
 				if (HealthRatio != PrevHealthRatio)
 				{
-					if (HealthRatio < 167)
+					if (HealthRatio < 625)
 					{
-						if (HealthRatio < 21)
+						if (HealthRatio < 167)
 						{
-							Owner.A_SetInventory("CriticalHealth", 1);
-							Owner.A_SetInventory("LowHealth", 0);
+							if (HealthRatio < 21)
+							{
+								Owner.A_SetInventory("CriticalHealth", 1);
+								Owner.A_SetInventory("LowHealth", 0);
+								Owner.A_SetInventory("DecentHealth", 0);
+								Owner.A_SetInventory("NormalHealth", 0);
+							}
+							else 
+							{
+								Owner.A_SetInventory("CriticalHealth", 0);
+								Owner.A_SetInventory("LowHealth", 1);
+								Owner.A_SetInventory("DecentHealth", 0);
+								Owner.A_SetInventory("NormalHealth", 0);
+							}
 						}
 						else 
 						{
-							Owner.A_SetInventory("LowHealth", 1);
 							Owner.A_SetInventory("CriticalHealth", 0);
+							Owner.A_SetInventory("LowHealth", 0);
+							Owner.A_SetInventory("DecentHealth", 1);
+							Owner.A_SetInventory("NormalHealth", 0);
 						}
-						Owner.A_SetInventory("NormalHealth", 0);
 					}
-					else 
+					else
 					{
-						Owner.A_SetInventory("NormalHealth", 1);
-						Owner.A_SetInventory("LowHealth", 0);
 						Owner.A_SetInventory("CriticalHealth", 0);
+						Owner.A_SetInventory("LowHealth", 0);
+						Owner.A_SetInventory("DecentHealth", 0);
+						Owner.A_SetInventory("NormalHealth", 1);
 					}
 					if (PlayerCurrentHealth >= PlayerMaxHP) Owner.A_SetInventory("FullHealth", 1); else Owner.A_SetInventory("FullHealth", 0);
 					
@@ -6074,38 +6088,46 @@ class PlayerStatItem : Inventory
 								if (GoETimer > 0) TensionChargeAmount = TensionChargeAmount * 3 / 2;
 								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18d - Charge Up P4 - Divine Avatar]: %d", TensionChargeAmount);
 
+								// +5% Charge Speed When at Decent Health
+								if (Owner.CountInv("DecentHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1050 / 1000;
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18e - Charge Up P5a - Decent Health]: %d", TensionChargeAmount);
+
 								// +12.5% Charge Speed When Low on Health
 								if (Owner.CountInv("LowHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1125 / 1000;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18e - Charge Up P5 - Low Health]: %d", TensionChargeAmount);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18f - Charge Up P5b - Low Health]: %d", TensionChargeAmount);
 
 								// +33.4% Charge Speed When Critically Low on Health
 								if (Owner.CountInv("CriticalHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18f - Charge Up P6 - Critically-Low Health]: %d", TensionChargeAmount);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18g - Charge Up P5c - Critically-Low Health]: %d", TensionChargeAmount);
 
 								// +33.4% Charge Speed for Flora
 								if (CharacterClass == 2) TensionChargeAmount = TensionChargeAmount * 1334 / 1000;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18g - Charge Up P7 - Flora Check]: %d", TensionChargeAmount);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18h - Charge Up P6 - Flora Check]: %d", TensionChargeAmount);
+
+								// +20% Charge Speed for Flora when Low on Health
+								if (CharacterClass == 2 && Owner.CountInv("DecentHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1200 / 1000;
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18i - Charge Up P7 - Flora - Decent Health]: %d", TensionChargeAmount);
 
 								// +50% Charge Speed for Flora when Low on Health
 								if (CharacterClass == 2 && Owner.CountInv("LowHealth") > 0) TensionChargeAmount = TensionChargeAmount * 1500 / 1000;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18h - Charge Up P8 - Flora - Low Health]: %d", TensionChargeAmount);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18j - Charge Up P8 - Flora - Low Health]: %d", TensionChargeAmount);
 
 								// +125% Charge Speed for Flora when Critically low on Health
 								if (CharacterClass == 2 && Owner.CountInv("CriticalHealth") > 0) TensionChargeAmount = TensionChargeAmount * 2250 / 1000;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18i - Charge Up P9 - Flora - Critically-Low Health]: %d", TensionChargeAmount);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18k - Charge Up P9 - Flora - Critically-Low Health]: %d", TensionChargeAmount);
 
 								// Check Tension Charge Multiplier Option
 								TensionChargeAmount = TensionChargeAmount * dvds_tension_chargemultiplier / 100;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18j - Charge Up P10 - Charge Multiplier]: %d, Multiplier: %d%", TensionChargeAmount, dvds_tension_chargemultiplier);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18l - Charge Up P10 - Charge Multiplier]: %d, Multiplier: %d%", TensionChargeAmount, dvds_tension_chargemultiplier);
 
 								// Check Tension Speed Option [also affects Stamina]
 								TensionChargeAmount = (TensionChargeAmount * CallACS("MiscVarCheckDECORATE",193)) / 100;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18k - Charge Up P11 - Tension Speed Multi]: %d, Multiplier: %d%", TensionChargeAmount, CallACS("MiscVarCheckDECORATE",193));
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18m - Charge Up P11 - Tension Speed Multi]: %d, Multiplier: %d%", TensionChargeAmount, CallACS("MiscVarCheckDECORATE",193));
 
 								// Check "Power Trip" mode Cheat
 								if (dvds_musou_powertripmode == 1) TensionChargeAmount *= 5;
 								if (dvds_musou_powertripmode == 2) TensionChargeAmount *= 10;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18l - Charge Up P12 - Power Trip Mode]: %d", TensionChargeAmount);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18n - Charge Up P12 - Power Trip Mode]: %d", TensionChargeAmount);
 								
 								// Kill Combo
 								if (KillCounter > 1)
@@ -6118,23 +6140,23 @@ class PlayerStatItem : Inventory
 									else if (KillCounter > 200 && KillCounter < 501) { TensionChargeAmount = (TensionChargeAmount * 1250) / 1000; }
 									else if (KillCounter > 500) { TensionChargeAmount = (TensionChargeAmount * 1475) / 1000; }
 								}
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18m - Charge Up P13 - Kill Counter]: %d, KillCount: %d", TensionChargeAmount, KillCounter);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18o - Charge Up P13 - Kill Counter]: %d, KillCount: %d", TensionChargeAmount, KillCounter);
 								
 								// PsycheMore perks
 								PerkFactor = ((PsychFstPerkLvl * 750) + (PsychFstEXPerkLvl * 1875)) + 10000;
 								TensionChargeAmount = TensionChargeAmount * PerkFactor / 10000; // "PsycheMore" and "PsycheMore EX" perks.
 								TensionChargeAmount += (PsychFstPerkLvl / 2);
 								TensionChargeAmount += PsychFstEXPerkLvl;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18n - Charge Up P14 - PsycheFast]: %d", TensionChargeAmount);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18p - Charge Up P14 - PsycheFast]: %d", TensionChargeAmount);
 								
 								// Kill-Combo Bonus
 								int TensionChargeKillBonus = ((KillCounter * 3) / 4) + 100;
 								if (KillCounter > 0) TensionChargeAmount = (TensionChargeAmount * TensionChargeKillBonus) / 100;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18o - Charge Up P15 - Kill Bonus]: %d, KillBonus: %d%", TensionChargeAmount, TensionChargeKillBonus);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18q - Charge Up P15 - Kill Bonus]: %d, KillBonus: %d%", TensionChargeAmount, TensionChargeKillBonus);
 								
 								// Up-Clamp to 1 Tic
 								if (TensionChargeAmount < 1) TensionChargeAmount = 1;
-								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18p - Charge Up P16 - Clamp]: %d", TensionChargeAmount);
+								if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 18r - Charge Up P16 - Clamp]: %d", TensionChargeAmount);
 							}
 							else
 							{
