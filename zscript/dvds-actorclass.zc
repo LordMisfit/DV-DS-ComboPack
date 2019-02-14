@@ -2715,7 +2715,7 @@ class SpidMastChaingunCooldown : AetheriusPowerup
 }
 
 // Keeps Sounds/Music active during time Freeze powerups
-class AetheriusTimeFreezer : PowerTimeFreezer
+class AetheriusTimeFreezerMenu : PowerTimeFreezer
 {
 	override void InitEffect()
 	{
@@ -2733,6 +2733,77 @@ class AetheriusTimeFreezer : PowerTimeFreezer
 		Super.Tick();
 		EffectTics = 350;
 		S_ResumeSound(false);
+	}
+}
+class AetheriusTimeFreezer : AetheriusTimeFreezerMenu
+{
+	default
+	{
+		Powerup.Color "8f 8f 8f", 0.5;
+		Powerup.Duration 1;
+	}
+
+	override bool HandlePickup (Inventory item)
+	{
+		if (item.GetClass() == GetClass())
+		{ // Setting EffectTics to 0 will force Powerup's HandlePickup()
+		  // method to reset the tic count so you get the red flash again.
+			EffectTics = 0;
+		}
+		return Super.HandlePickup (item);
+	}
+
+	//===========================================================================
+	//
+	// APowerStrength :: DoEffect
+	//
+	//===========================================================================
+	int EffectTics2;
+	int Dire;
+
+	override void Tick ()
+	{
+		int Point1 = 200;
+		int Point2 = Point1 + 280;
+		int increment = 7;
+		if (EffectTics < Point1) { EffectTics = Point1; Dire = 1; }
+
+		if (Dire == 1)
+		{
+			if (CallACS("MenuVarCheckDECORATE",0) == 0) EffectTics += increment;
+			if (EffectTics >= Point2) Dire = 2;
+		}
+		else
+		if (Dire == 2)
+		{
+			if (CallACS("MenuVarCheckDECORATE",0) == 0) EffectTics -= increment;
+			if (EffectTics <= Point1) Dire = 1;
+		}
+
+		// Powerups cannot exist outside an inventory
+		if (Owner == NULL) Destroy();
+		if (EffectTics <= 0) Destroy();
+
+		//Console.Printf("EffectTics: %d, Dire: %d, Increment: %d", EffectTics, Dire, Increment);
+	}
+
+	//===========================================================================
+	//
+	// APowerStrength :: GetBlend
+	//
+	//===========================================================================
+
+	override color GetBlend()
+	{
+		// slowly fade the berserk out
+		int cnt = 128 - (EffectTics>>3);
+
+		if (cnt > 0)
+		{
+			return Color(BlendColor.a*cnt/256,
+				BlendColor.r, BlendColor.g, BlendColor.b);
+		}
+		return 0;
 	}
 }
 
