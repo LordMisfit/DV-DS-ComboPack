@@ -15,6 +15,7 @@ class PlayerStatItem : Inventory
 	const minzmoveneg = -1.907348633;
 	const minzmovepos = 1.907348633;
 
+	int PrevTimeFreezeTimer;
 	int InitEXPTables;
 	int ClassCheck;
 	int outputdamage;
@@ -6887,15 +6888,47 @@ class PlayerStatItem : Inventory
 			}
 			
 			// Time Stop
+			int BeatTimer;
 			if (CallACS("GetBuffTimer",5) > 0)
 			{
+				if (PrevTimeFreezeTimer == 0)
+				{
+					owner.A_StopSound(CHAN_7); 
+					owner.A_PlaySound("TimeFreezeIn2",CHAN_7,10,0,ATTN_NONE); 
+				}
 				owner.A_SetInventory("AetheriusTimeFreezer",1);
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",5,3,1);
+				if (UsingInGameMenu == 0)
+				{
+					CallACS("GetBuffTimer",5,3,1);
+					if (CallACS("GetBuffTimer",5) >= 64 && CallACS("GetBuffTimer",5) <= 66) 
+					{
+						owner.A_StopSound(CHAN_7); 
+						owner.A_PlaySound("TimeFreezeOut2",CHAN_7,10,0,ATTN_NONE); 
+					}
+					else
+					{
+						if (CallACS("GetBuffTimer",5) > 66)
+						{
+							BeatTimer = CallACS("GetBuffTimer",5) % 120;
+							if (Owner.CountInv("NormalHealth") > 0) BeatTimer = CallACS("GetBuffTimer",5) % 120;
+							else if (Owner.CountInv("DecentHealth") > 0) BeatTimer = CallACS("GetBuffTimer",5) % 100;
+							else if (Owner.CountInv("LowHealth") > 0) BeatTimer = CallACS("GetBuffTimer",5) % 80;
+							else if (Owner.CountInv("CriticalHealth") > 0) BeatTimer = CallACS("GetBuffTimer",5) % 60;
+							//Console.Printf("BeatTimer: %d", BeatTimer);
+							if (BeatTimer == 0)
+							{
+								owner.A_StopSound(CHAN_7); 
+								owner.A_PlaySound("TimeFreezeLoop2",CHAN_7,10,0,ATTN_NONE); 
+							}
+						}
+					}
+				}
 			}
 			else
 			{
 				if (UsingInGameMenu == 0) owner.A_SetInventory("AetheriusTimeFreezer",0);
 			}
+			PrevTimeFreezeTimer = CallACS("GetBuffTimer",5);
 			
 			// Fear Aura Effects
 			if (CallACS("GetBuffTimer",6) > 0)
