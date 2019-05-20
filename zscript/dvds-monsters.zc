@@ -641,6 +641,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input\c-: \cygametic = %d\c-)", gametic);
 		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
 		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
 		int criticalhit;
@@ -1051,7 +1052,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						CritChance *= 4; // Hell Nobles have 4x chance to Crit w/ melee attacks
 
 				// Misc
-				if (mod == 'BFG' || mod == 'BFGSpray') // BFG related attacks have signficantly LESS chance to crit, but still always have at least a 1/512 chance :P
+				if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') // BFG related attacks have signficantly LESS chance to crit, but still always have at least a 1/512 chance :P
 				{ 
 					CritChance /= 16;
 					if (CritChance < 1) CritChance = 1;
@@ -1130,7 +1131,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		else
 		{
 			// BFG
-			if (mod == 'BFG' || mod == 'BFGSpray') 
+			if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') 
 			{ 
 				ActorDefenseIgnoreFactor += (frandom(0.45,0.55) * (1.00 - ActorDefenseIgnoreFactor));
 			}
@@ -1159,6 +1160,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{ 
 				ActorDefenseIgnoreFactor += (0.625 * (1.00 - ActorDefenseIgnoreFactor));
 			}
+			// Poison Clouds
+			if ((mod == "PoisonElemental" || mod == "Poison") && 
+					(infl == "MinorPoisonCloud" || infl == "NormalPoisonCloud" || infl == "MajorPoisonCloud" ||
+					 infl == "HexenPoisonCloud1" || infl == "HexenPoisonCloud2Source" || infl == "HexenPoisonCloud2Outer" || infl == "HexenPoisonCloud3Source" || infl == "HexenPoisonCloud3Outer"))
+			{
+				ActorDefenseIgnoreFactor += (frandompick(0.20,0.225,0.25,0.275,0.30) * (1.00 - ActorDefenseIgnoreFactor));
+			}
 			if (mod == 'Drowning') 
 			{
 				ActorDefenseIgnoreFactor += (1.00 * (1.00 - ActorDefenseIgnoreFactor));
@@ -1167,6 +1175,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") 
 			{
 				ActorDefenseIgnoreFactor += (0.6667 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Chill Touch
+			if (infl == "ChillTouch") 
+			{
+				ActorDefenseIgnoreFactor += (0.5 * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Fire Breath
 			if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
@@ -1221,18 +1234,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		double cheatnpcdmgtaken;
 		cheatnpcdmgtaken = dvds_cheatnpcdmgtaken * 0.01;
 		if (cheatnpcdmgtaken < 0.01) cheatnpcdmgtaken = 0.01;
-		if (cheatnpcdmgtaken != 1.00)
+		if (dvds_cheatnpcdmgtaken != 100)
 		{
 			if (damage > 0)
 			{
 				damage *= cheatnpcdmgtaken;
 				if (damage < 1) damage = 1;
+				if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP C1 - Direct Dmg Changes]:\c- \cypredmg = %d\c-, \cydmg = %d\c-, \cxcheatnpcdmgtaken = %2f)", predirdmg, damage, cheatnpcdmgtaken);
 			}
-		}
-		if (dvdsdebug_actordmgdisplays && damage > 0) 
-		{
-			if (predirdmg != damage) Console.Printf("    (\cz[STEP C1] Direct Dmg Changes\c-: \cypredmg = %d\c-, \cydmg = %d\c-, \cxcheatnpcdmgtaken = %2f)", predirdmg, damage, cheatnpcdmgtaken);
-													else Console.Printf("    (\cz[STEP C1] Direct Dmg Changes\c-: \caSKIPPED\c-, \cydmg = %d\c-, \cxcheatnpcdmgtaken = %2f)", predirdmg, cheatnpcdmgtaken);
 		}
 
 		double nrmldmgfctr = DamageFactor;

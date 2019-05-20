@@ -1708,6 +1708,7 @@ class AetheriusPlayerPawn : PlayerPawn
 
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\czplayer-damagemobj input\c-: \cygametic = %d\c-)", gametic);
 		int predamage = damage;
 		int CharacterClass = CallACS("CheckCharacterClass");
 		int criticalhit;
@@ -2013,7 +2014,7 @@ class AetheriusPlayerPawn : PlayerPawn
 					CritChance *= 4; // Hell Nobles have 4x chance to Crit w/ melee attacks
 
 			// Misc
-			if (mod == 'BFG' || mod == 'BFGSpray') // BFG related attacks have signficantly LESS chance to crit, but still always have at least a 1/512 chance :P
+			if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') // BFG related attacks have signficantly LESS chance to crit, but still always have at least a 1/512 chance :P
 			{ 
 				CritChance /= 16;
 				if (CritChance < 1) CritChance = 1;
@@ -2246,7 +2247,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			else
 			{
 				// Plasma Ignores 1/4th of "normal" damagefactor
-				if (mod == 'BFG' || mod == 'BFGSpray') 
+				if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') 
 				{ 
 					PlayerDefenseIgnoreFactor += (frandom(0.45,0.55) * (1.00 - PlayerDefenseIgnoreFactor));
 				}
@@ -2262,9 +2263,21 @@ class AetheriusPlayerPawn : PlayerPawn
 				{
 					PlayerDefenseIgnoreFactor += (1.00 * (1.00 - PlayerDefenseIgnoreFactor));
 				}
+				// Poison Clouds
+				if ((mod == "PoisonElemental" || mod == "Poison") && 
+						(infl == "MinorPoisonCloud" || infl == "NormalPoisonCloud" || infl == "MajorPoisonCloud" ||
+						infl == "HexenPoisonCloud1" || infl == "HexenPoisonCloud2Source" || infl == "HexenPoisonCloud2Outer" || infl == "HexenPoisonCloud3Source" || infl == "HexenPoisonCloud3Outer"))
+				{
+					PlayerDefenseIgnoreFactor += (frandompick(0.20,0.225,0.25,0.275,0.30) * (1.00 - PlayerDefenseIgnoreFactor));
+				}
 				if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") 
 				{
 					PlayerDefenseIgnoreFactor += (0.6667 * (1.00 - PlayerDefenseIgnoreFactor));
+				}
+				// Chill Touch
+				if (infl == "ChillTouch") 
+				{
+					PlayerDefenseIgnoreFactor += (0.5 * (1.00 - PlayerDefenseIgnoreFactor));
 				}
 				if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
 						infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
@@ -2355,18 +2368,14 @@ class AetheriusPlayerPawn : PlayerPawn
 		double cheatplayerdmgtaken;
 		cheatplayerdmgtaken = dvds_cheatplayerdmgtaken * 0.01;
 		if (cheatplayerdmgtaken < 0.01) cheatplayerdmgtaken = 0.01;
-		if (cheatplayerdmgtaken != 1.00)
+		if (dvds_cheatplayerdmgtaken != 100)
 		{
 			if (damage > 0)
 			{
 				damage *= cheatplayerdmgtaken;
 				if (damage < 1) damage = 1;
+				if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP C1] Direct Dmg Changes\c-: \cypredmg = %d\c-, \cydmg = %d\c-, \cxcheatplayerdmgtaken = %2f)", predirdmg, damage, cheatplayerdmgtaken);
 			}
-		}
-		if (dvdsdebug_playerdmgdisplays && damage > 0) 
-		{
-			if (predirdmg != damage) Console.Printf("    (\cz[STEP C1] Direct Dmg Changes\c-: \cypredmg = %d\c-, \cydmg = %d\c-, \cxcheatplayerdmgtaken = %2f)", predirdmg, damage, cheatplayerdmgtaken);
-													else Console.Printf("    (\cz[STEP C1] Direct Dmg Changes\c-: \caSKIPPED\c-, \cydmg = %d\c-, \cxcheatplayerdmgtaken = %2f)", predirdmg, cheatplayerdmgtaken);
 		}
 
 
