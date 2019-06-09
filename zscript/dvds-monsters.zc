@@ -1285,6 +1285,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 		}
 
+		int ComboTimerDelay = CallACS("MiscVarCheckDECORATE",162);
+		int ComboTimerDelayIncrease = 0;
 		// Play Q3A/QC Style "Hit" Sounds when the player hits a monster and does legit damage
 		if (outputdmg > 0 && (oldhealth > 0 && oldhealth > health))
 		{
@@ -1292,14 +1294,54 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				if (health <= 0 && dvds_q3aqckillsounds2) A_PlaySound("misc/killsnd2", CHAN_5, (dvds_q3aqckillsoundvol * frandom(0.75,1.25)), 0, ATTN_NONE);
 				if (dvds_q3aqchitsounds2) A_PlaySound("misc/hit2", CHAN_6, (dvds_q3aqchitsoundvol * frandom(0.75,1.25)), 0, ATTN_NONE);
+				ComboTimerDelayIncrease = random(2,4);
 			}
 			else
 			if (playpawn && source != null)
 			{
 				if (health <= 0 && dvds_q3aqckillsounds) A_PlaySound("misc/killsnd", CHAN_5, (dvds_q3aqckillsoundvol * frandom(0.75,1.25)), 0, ATTN_NONE);
 				if (dvds_q3aqchitsounds) A_PlaySound("misc/hit", CHAN_6, (dvds_q3aqchitsoundvol * frandom(0.75,1.25)), 0, ATTN_NONE);
+				ComboTimerDelayIncrease = random(2,4);
 			}
 		}
+		int EXPComboTimer = CallACS("MiscVarCheckDECORATE",157);
+		if (outputdmg > 0 && ComboTimerDelayIncrease > 0 && EXPComboTimer > 0)
+		{
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czINFO:\c- \cyComboTimerDelayIncrease [Base]\c-: \cy%8f\c-)", ComboTimerDelayIncrease);
+			// "Legendary" Check
+			if (CountInv(LDLCheck)) ComboTimerDelayIncrease *= 1.375; //2.5;
+			// BOSS Flag Check
+			if (bBOSS) ComboTimerDelayIncrease *= 1.125; //1.5;
+			// STEALTH Flag Check
+			if (bSTEALTH) ComboTimerDelayIncrease *= 1.125; //1.5;
+			// "Cleared of Mind" Perk
+			if (clearofmind == 1) ComboTimerDelayIncrease *= 1.00375; //1.015;
+			if (clearofmind == 2) ComboTimerDelayIncrease *= 1.0075; //1.03;
+			if (clearofmind == 3) ComboTimerDelayIncrease *= 1.015; //1.06;
+			if (clearofmind == 4) ComboTimerDelayIncrease *= 1.03; //1.12;
+			if (clearofmind == 5) ComboTimerDelayIncrease *= 1.06; //1.24;
+			// "Higher Learning" Grand Mastery Perk
+			if (CallACS("MiscVarCheckDECORATE",11001) == 1) ComboTimerDelayIncrease *= 1.0375; //1.15;
+			if (CallACS("MiscVarCheckDECORATE",11001) == 2) ComboTimerDelayIncrease *= 1.075; //1.30;
+			if (CallACS("GetBuffTimer",7) > 0) ComboTimerDelayIncrease *= 1.0625; //1.25; // Divine Avatar
+			if (CallACS("GetBuffTimer",12) > 0) ComboTimerDelayIncrease *= 1.0625; //1.25; // Acceleratle
+			if (CallACS("GetBuffTimer",15) > 0) ComboTimerDelayIncrease *= 0.95; //0.8; // Deceleratle
+			double DamageRatio = 1.0;
+			int ClampCheck = ret;
+			if (ClampCheck > oldhealth) ClampCheck = oldhealth;
+			if (User_MaxHP > 0)
+			{
+				if (outputdmg > 0) DamageRatio = (1.00 * ClampCheck) / User_MaxHP;
+			}
+			else
+			{
+				if (outputdmg > 0) DamageRatio = (1.00 * ClampCheck) / SpawnHealth();
+			}
+			ComboTimerDelayIncrease *= (1.0 + (DamageRatio * 0.5));
+			ComboTimerDelay += ComboTimerDelayIncrease;
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czINFO:\c- \cxDamageRatio\c-: \cx\%8f\c-, \cyComboTimerDelayIncrease\c-: \cy%8f\c-)", DamageRatio, ComboTimerDelayIncrease);
+		}
+		CallACS("MiscVarSetDECORATE",162,ComboTimerDelay);
 
 		// Unsets Alterations of target's DamageFactor
 		DamageFactor = basedmgfactor;
@@ -4704,6 +4746,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			//* START OF EXP GAINS *
 			//**********************
 			int EXPTimerIncrease;
+			int ComboTimerDelayIncrease;
 			if (ModType == 0 && dvds_noexpgains != 0) 
 			{
 				if (debugexp) Console.Printf("\cxAddEXP\c- - EXP Gains: STOPPED", debugexp);
@@ -4713,6 +4756,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				// Increment the kill combo timer
 				if (dvds_expcombosystem == 1)
 				{
+					int ComboTimerDelay = CallACS("MiscVarCheckDECORATE",162);
 					int EXPTimer = CallACS("MiscVarCheckDECORATE",157);
 					if (incrementcombo == 1)
 					{
@@ -4721,28 +4765,37 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 							EXPTimerIncrease = 2800; // 140 tics [20 units / tic]
 							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",31) * 16); // 1 point of Agility = 0.8 tics [or 16 units] [5 points = 4 tics (or 80 units)]
 							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",33) * 4); // 1 point of Deftness = 0.2 tics [or 4 units] [20 points = 4 tics (or 80 units)]
+							ComboTimerDelayIncrease = random(2,4) * 4;
 						}
 						else
 						{
 							EXPTimerIncrease = 700; // 35 tics [20 units / tic]
 							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",31) * 4); // 1 point of Agility = 0.8 tics [or 16 units] [5 points = 4 tics (or 80 units)]
 							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",33) * 1); // 1 point of Deftness = 0.2 tics [or 4 units] [20 points = 4 tics (or 80 units)]
+							ComboTimerDelayIncrease = random(2,4) * 2;
 						}
 					
+						// "Legendary" Check
+						if (CountInv(LDLCheck)) { EXPTimerIncrease *= 2.5; ComboTimerDelayIncrease *= 2.5; }
+						// BOSS Flag Check
+						if (bBOSS) { EXPTimerIncrease *= 1.5; ComboTimerDelayIncrease *= 1.5; }
+						// STEALTH Flag Check
+						if (bSTEALTH) { EXPTimerIncrease *= 1.5; ComboTimerDelayIncrease *= 1.5; }
 						// "Cleared of Mind" Perk
-						if (clearofmind == 1) EXPTimerIncrease *= 1.015; 
-						if (clearofmind == 2) EXPTimerIncrease *= 1.03; 
-						if (clearofmind == 3) EXPTimerIncrease *= 1.06; 
-						if (clearofmind == 4) EXPTimerIncrease *= 1.12; 
-						if (clearofmind == 5) EXPTimerIncrease *= 1.24; 
+						if (clearofmind == 1) { EXPTimerIncrease *= 1.015; ComboTimerDelayIncrease *= 1.015; }
+						if (clearofmind == 2) { EXPTimerIncrease *= 1.03; ComboTimerDelayIncrease *= 1.03; }
+						if (clearofmind == 3) { EXPTimerIncrease *= 1.06; ComboTimerDelayIncrease *= 1.06; }
+						if (clearofmind == 4) { EXPTimerIncrease *= 1.12; ComboTimerDelayIncrease *= 1.12; }
+						if (clearofmind == 5) { EXPTimerIncrease *= 1.24; ComboTimerDelayIncrease *= 1.24; }
 						// "Higher Learning" Grand Mastery Perk
-						if (CallACS("MiscVarCheckDECORATE",11001) == 1) EXPTimerIncrease *= 1.15; 
-						if (CallACS("MiscVarCheckDECORATE",11001) == 2) EXPTimerIncrease *= 1.30; 
+						if (CallACS("MiscVarCheckDECORATE",11001) == 1) { EXPTimerIncrease *= 1.15; ComboTimerDelayIncrease *= 1.15; }
+						if (CallACS("MiscVarCheckDECORATE",11001) == 2) { EXPTimerIncrease *= 1.30; ComboTimerDelayIncrease *= 1.30; }
 					
-						if (CallACS("GetBuffTimer",7) > 0) EXPTimerIncrease *= 1.25; // Divine Avatar
-						if (CallACS("GetBuffTimer",12) > 0) EXPTimerIncrease *= 1.25; // Acceleratle
-						if (CallACS("GetBuffTimer",15) > 0) EXPTimerIncrease *= 0.8; // Deceleratle
+						if (CallACS("GetBuffTimer",7) > 0) { EXPTimerIncrease *= 1.25; ComboTimerDelayIncrease *= 1.25; } // Divine Avatar
+						if (CallACS("GetBuffTimer",12) > 0) { EXPTimerIncrease *= 1.25; ComboTimerDelayIncrease *= 1.25; } // Acceleratle
+						if (CallACS("GetBuffTimer",15) > 0) { EXPTimerIncrease *= 0.8; ComboTimerDelayIncrease *= 0.8; } // Deceleratle
 						EXPTimer += EXPTimerIncrease;
+						ComboTimerDelay += ComboTimerDelayIncrease;
 						if (CallACS("GetBuffTimer",7) > 0) 
 						{
 							if (EXPTimer >= 7000) EXPTimer = 7000; // Combo Timer maxes at 10 seconds.
@@ -4752,6 +4805,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 							if (EXPTimer >= 5600) EXPTimer = 5600; // Combo Timer maxes at 8 seconds.
 						}
 						CallACS("MiscVarSetDECORATE",157,EXPTimer,0);
+						CallACS("MiscVarSetDECORATE",162,ComboTimerDelay,0);
 						CallACS("MiscVarSetDECORATE",158,1,1); // combonumber += 1; // Increment Kill Combo Count by 1
 					}
 				}

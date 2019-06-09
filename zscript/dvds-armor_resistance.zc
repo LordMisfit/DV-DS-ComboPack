@@ -28,7 +28,7 @@ class PlayerStatItem : Inventory
 	// Strife Flag Checks
 	int StrifeQuestFlag25, StrifeQuestFlag29;
 	
-	int EXPComboTimer, MaxEXPCombotimer;
+	int EXPComboTimer, MaxEXPCombotimer, ComboTimerDelay;
 	
 	double HPRegenTimer, HPDelayInterval;
 	double HPDegenTimer, HPDelayInterval2;
@@ -4385,10 +4385,26 @@ class PlayerStatItem : Inventory
 		{
 			int TimerMulti, TimerPart1;
 			int tempaeonpts = 0;
+			ComboTimerDelay = CallACS("MiscVarCheckDECORATE",162);
 			EXPComboTimer = CallACS("MiscVarCheckDECORATE",157);
 			if (EXPComboTimer > 0)
 			{
-				TimerMulti = (20 * dvds_expcombotimermultiplier) / 100;
+				if (CallACS("GetBuffTimer",7) > 0)
+				{
+					if (ComboTimerDelay >= 175) ComboTimerDelay = 175;
+				}
+				else
+				{
+					if (ComboTimerDelay >= 140) ComboTimerDelay = 140;
+				}
+				if (!dvds_expdmgkilldelaytimer) ComboTimerDelay = 0;
+				TimerMulti = (randompick(20,20,20,20,20,20,20,20,20,10) * dvds_expcombotimermultiplier) / 100;
+				if (ComboTimerDelay >= 0)
+				{
+					TimerMulti *= 0.4;
+					ComboTimerDelay -= 1;
+					if (dvdsdebug_showexpdebugstuff) Console.Printf("Combo Timer Delay: %d", ComboTimerDelay);
+				}
 				if (dvdsdebug_showexpdebugstuff) Console.Printf("Combo Timer Decrement [Step 1 - Base]: %d", TimerMulti);
 				TimerPart1 = 100;
 				
@@ -4427,7 +4443,6 @@ class PlayerStatItem : Inventory
 			if (EXPComboTimer <= 0) // Timer Runs out
 			{
 				tempaeonpts = 0;
-				if (dvdsdebug_showexpdebugstuff) Console.Printf("tempaeonpts: %d", tempaeonpts);
 				int basecomboneeded = dvdsperks_combobase;
 				int comboamount = CallACS("MiscVarCheckDECORATE",158); // Temporarily saves the kill combo counter for Aeon Point Checks
 				int combolevel1 = basecomboneeded * 1;
@@ -4462,6 +4477,7 @@ class PlayerStatItem : Inventory
 				CallACS("MiscVarSetDECORATE",160,0); // Set EXP Combo Amount back to 0
 			}
 			CallACS("MiscVarSetDECORATE",157,EXPComboTimer); // Subtract
+			CallACS("MiscVarSetDECORATE",162,ComboTimerDelay); // Subtract
 		}
 	}
 	
