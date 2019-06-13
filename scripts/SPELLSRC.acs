@@ -343,7 +343,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [47] is for 'stepping' [converted from a global var]
 		// [48-49] are unused
 	// [50] is the Spell-Use Cooldown Timer [possible for future version so spells aren't always tied to how fast you can mash the 'cast spell' buttons :P]
-		// [51] is unused
+	// [51] is for Combo "Rank" [D to S]
 	// [52] is for Artificial Map Inflation (EXP) [to increase/decrease the difficulty of levels by a number of maps]
 	// [53] is for Artificial Map Inflation (Stats) [to increase/decrease the difficulty of levels by a number of maps]
 	// [54] is for Artificial Map Inflation (Spawn/Stealth) [to increase/decrease the difficulty of levels by a number of maps]
@@ -450,7 +450,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [159] Combo Multiplier
 	// [160] Combo EXP Total
 	// [161] Exp Combo Timer Multiplier
-		// [162] ?
+	// [162] Combo Timer Delay
 	// [163] Secondary Spinning Timer
 	// [164] 5x Stamina Limit
 	// [165] True Stamina Gain/Cost
@@ -1034,7 +1034,7 @@ int SpellCastTypes[58] = {
 		7, 8, 9, 3, 0,
 		0, 2, 4, 0, 6,
 		7,10, 0,11, 1,
-		2, 0,12, 7, 8,
+		2, 0,12, 7, 13,
 		9, 3, 4, 0, 6,
 		11, 0, 0,10, 0,
 		9, 8, 0, 6, 0,
@@ -1048,7 +1048,7 @@ int SpellCastStrength[58] = {
 		0,  10,  10,  30,   7,
 		8,  30,  30,   9,   1,
 		1,   1,  10,   0,  10,
-		60,  11,   0,   2,  30,
+		60,  11,   0,   2,  5,
 		30,  60,  60,  12,   2,
 		1,  13,  14,   2,  15,
 		60,  60,  16,   3,  17,
@@ -1098,7 +1098,7 @@ str SpellTable[59] =	{																	//[id] (deg?), (ill?), (flo?)
 												"\cdIce Blast\c-",							//[31] O, O, O  [Offense]
 												"\cfFarsight\c-",								//[32] O, O, O  [Status]
 												"\cdLightning Nova\c-",					//[33] X, O, O  [Offense]
-												"\cfStealth\c-",								//[34] X, O, O  [Status]
+												"\cfMinor Time Freezer\c-",								//[34] X, O, O  [Status]
 												"\cfInvulnerability\c-",				//[35] O, O, O  [Status]
 												"\cfMajor Invisibility\c-",			//[36] X, O, O  [Status]
 												"\cfMajor Flight\c-",						//[37] X, O, O  [Status]
@@ -1163,7 +1163,7 @@ str SpellDesc[59] =	{
 											"Shoots several ice shards",
 											"Allow you to see the entire map.",
 											"A ring of lightning",
-											"Enemies won't be able to hear/see you for 30 seconds",
+											"Freeze Time for 5 seconds, rendering all but you frozen.",
 											"Shrug of all damage for 30 seconds",
 											"Become harder to see [and +1/3 Evasion] for a full minute",
 											"Defy gravity for a full minute",
@@ -1225,7 +1225,7 @@ int SpellCosts[59] =	{
 												50,			// Ice Blast
 												150,		// Farsight
 												150,		// Lightning Nova
-												150,		// Stealth
+												120,		// Minor Time Freeze
 												200,		// Invulnerability
 												150,		// Major Invisibility
 												150,		// Major Flight
@@ -1280,7 +1280,7 @@ int SpellCosts[59] =	{
 17. Summon Hell Noble (23)
 18. Major Farsight (24)
 19. Minor Charm (24)
-20. Stealth (26)
+20. Minor Time Freezer (26)
 21. Invulnerability (28)
 22. Summon Archvile (29)
 23. Ultra Magic Missile (30)
@@ -1804,7 +1804,7 @@ function int SpellCostCheck(int checktype)
 	if (SpellIsSelected == 31) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Ice Blast) Level 20
 	if (SpellIsSelected == 32) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Farsight) Level 20
 	if (SpellIsSelected == 33) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Lightning Nova) Level 20
-	if (SpellIsSelected == 34) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Stealth) Level 21
+	if (SpellIsSelected == 34) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Minor Time Freezer) Level 21
 	if (SpellIsSelected == 35) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Invulnerability) Level 21
 	if (SpellIsSelected == 36) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Major Invisibility) Level 21
 	if (SpellIsSelected == 37) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Major Flight) Level 21
@@ -1855,6 +1855,13 @@ function int SpellCostCheck(int checktype)
 	LvlSpellCostReducePercent -= LevelSpellCostReductionFactor;
 	FinalSpellCost = FinalSpellCost * LvlSpellCostReducePercent / 100;
 	if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [LevelCostReduce], LvlSpellCostReducePercent: [",d:LvlSpellCostReducePercent,s:"/ 100]");
+
+	if (SpellIsSelected == 34) // Minor Time Freezer Costs at least 10% of Mana Supply by Default (Deggaris and Illucia Only)
+	{
+		LevelSpellCostReductionFactor = MaxMana / 10;
+		FinalSpellCost += LevelSpellCostReductionFactor;
+		if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [TimeFreezerCheck]");
+	}
 
 	if (SpellIsSelected == 50) // Time Freezer Costs at least 25% of Mana Supply by Default (Deggaris and Illucia Only)
 	{
@@ -4539,7 +4546,7 @@ script "HUDDISPLAY" ENTER
 						}
 						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 32) SetFont("SPLIFARS"); // (Farsight) Level 20
 						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 33) SetFont("SPLINVLG"); // (Lightning Nova) Level 20
-						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 34) SetFont("SPLISTL2"); // (Stealth) Level 21
+						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 34) SetFont("SPLITMF1"); // (Minor Time Freezer) Level 21
 						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 35) SetFont("SPLIIVN2"); // (Invulnerability) Level 21
 						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 36) SetFont("SPLIIVS3"); // (Major Invisibility) Level 21
 						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 37) SetFont("SPLIFLI3"); // (Major Flight) Level 21
@@ -4567,7 +4574,7 @@ script "HUDDISPLAY" ENTER
 						{
 							if (buttons & BT_ZOOM) SetFont("SPLIMAS4"); else SetFont("SPLIMAM4"); 
 						}
-						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 50) SetFont("SPLITMFR"); // (Time Freezer) Level 30
+						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 50) SetFont("SPLITMF2"); // (Time Freezer) Level 30
 						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 51) SetFont("SPLIFRAR"); // (Terrorization Aura) Level 30
 						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 52) SetFont("SPLICRLA"); // (Create Lotso Ammo) Level 30
 						if ((ReadiedSpells[HUDMsgIDAdd] - 1) == 53) SetFont("SPLIDVAV"); // (Divine Avatar) Level 31
@@ -4759,7 +4766,7 @@ script "HUDDISPLAY" ENTER
 			}
 			if (SelectedSpell == 32) SetFont("SPLIFARS"); // (Farsight) Level 20
 			if (SelectedSpell == 33) SetFont("SPLINVLG"); // (Lightning Nova) Level 20
-			if (SelectedSpell == 34) SetFont("SPLISTL2"); // (Stealth) Level 21
+			if (SelectedSpell == 34) SetFont("SPLITMF1"); // (Minor Time Freezer) Level 21
 			if (SelectedSpell == 35) SetFont("SPLIIVN2"); // (Invulnerability) Level 21
 			if (SelectedSpell == 36) SetFont("SPLIIVS3"); // (Major Invisibility) Level 21
 			if (SelectedSpell == 37) SetFont("SPLIFLI3"); // (Major Flight) Level 21
@@ -4787,7 +4794,7 @@ script "HUDDISPLAY" ENTER
 			{
 				if (buttons & BT_ZOOM) SetFont("SPLIMAS4"); else SetFont("SPLIMAM4"); 
 			}
-			if (SelectedSpell == 50) SetFont("SPLITMFR"); // (Time Freezer) Level 30
+			if (SelectedSpell == 50) SetFont("SPLITMF2"); // (Time Freezer) Level 30
 			if (SelectedSpell == 51) SetFont("SPLIFRAR"); // (Terrorization Aura) Level 30
 			if (SelectedSpell == 52) SetFont("SPLICRLA"); // (Create Lotso Ammo) Level 30
 			if (SelectedSpell == 53) SetFont("SPLIDVAV"); // (Divine Avatar) Level 31
@@ -4850,10 +4857,20 @@ script "HUDDISPLAY" ENTER
 							if (HUDMsgIDAdd <= VisibleNotchAmount)
 							{
 								// Note: Meter Fixed Notches
-								if (HudMeterDetailActual == 10) { SetFont("KLBNOTCA"); MeterNotchOffset = -5.0; }
-								if (HudMeterDetailActual == 4) { SetFont("KLBNOTC4"); MeterNotchOffset = -2.0; }
-								if (HudMeterDetailActual == 2) { SetFont("KLBNOTC2"); MeterNotchOffset = -1.0; }
-								if (HudMeterDetailActual == 1) { SetFont("KLBNOTCH"); MeterNotchOffset = 0.0; }
+								if (MiscellaneousVars[162] > 0) // Combo Timer Delay is active, change color of meter to indicate this
+								{
+									if (HudMeterDetailActual == 10) { SetFont("KL2NOTCA"); MeterNotchOffset = -5.0; }
+									if (HudMeterDetailActual == 4) { SetFont("KL2NOTC4"); MeterNotchOffset = -2.0; }
+									if (HudMeterDetailActual == 2) { SetFont("KL2NOTC2"); MeterNotchOffset = -1.0; }
+									if (HudMeterDetailActual == 1) { SetFont("KL2NOTCH"); MeterNotchOffset = 0.0; }
+								}
+								else
+								{
+									if (HudMeterDetailActual == 10) { SetFont("KLBNOTCA"); MeterNotchOffset = -5.0; }
+									if (HudMeterDetailActual == 4) { SetFont("KLBNOTC4"); MeterNotchOffset = -2.0; }
+									if (HudMeterDetailActual == 2) { SetFont("KLBNOTC2"); MeterNotchOffset = -1.0; }
+									if (HudMeterDetailActual == 1) { SetFont("KLBNOTCH"); MeterNotchOffset = 0.0; }
+								}
 							}
 							else SetFont("KLBNOTEM");
 							NotchPos = ((HUDMsgIDAdd << 16) * HudMeterDetailActual) + MeterNotchOffset;
@@ -4895,7 +4912,10 @@ script "HUDDISPLAY" ENTER
 					}
 
 					SetFont("DQHUDFONT");
-					xpos = ScreenXOffset + 108.0 + 0.2;
+					int combolettershow = GetCVar("dvds_combometershowrank");
+					int comboshowextrax = 0.0;
+					if (combolettershow > 0) comboshowextrax = -12.0;
+					xpos = ScreenXOffset + 108.0 + comboshowextrax + 0.2; // 108.0
 					if (xpos < 0.0) xpos -= 0.4;
 					//Print(f:xpos);
 					ypos += -22.0; // = 750.0;
@@ -4903,13 +4923,28 @@ script "HUDDISPLAY" ENTER
 					HudMessage(d:MiscellaneousVars[158];HUDMSG_ALPHA | HUDMSG_COLORSTRING,2112,killmsgcolor,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 					SetFont("DQHUDFONTSML");
 					// "Kills" Label
-					xpos = ScreenXOffset + 120.0 + 0.1;
+					xpos = ScreenXOffset + 120.0 + comboshowextrax + 0.1; // 120.0
 					if (xpos < 0.0) xpos -= 0.2;
 					ypos += 5.0; // = 755.0;
 					msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
-	
-					if (MiscellaneousVars[158] == 1) HudMessage(s:"KILL";HUDMSG_ALPHA | HUDMSG_COLORSTRING,2113,killmsgcolor,xpos,ypos,HUDMsgDelayFixed,msgalpha);
-					else HudMessage(s:"KILLS";HUDMSG_ALPHA | HUDMSG_COLORSTRING,2113,killmsgcolor,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+					str ComboLetter = "-";
+					if (MiscellaneousVars[51] == 0) ComboLetter = "D";
+					if (MiscellaneousVars[51] == 1) ComboLetter = "C";
+					if (MiscellaneousVars[51] == 2) ComboLetter = "B";
+					if (MiscellaneousVars[51] == 3) ComboLetter = "A";
+					if (MiscellaneousVars[51] == 4) ComboLetter = "S";
+
+					if (MiscellaneousVars[158] == 1)
+					{
+						if (combolettershow > 0) HudMessage(s:"KILL [",s:ComboLetter,s:"]";HUDMSG_ALPHA | HUDMSG_COLORSTRING,2113,killmsgcolor,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+						else HudMessage(s:"KILL";HUDMSG_ALPHA | HUDMSG_COLORSTRING,2113,killmsgcolor,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+						
+					}
+					else 
+					{
+						if (combolettershow > 0) HudMessage(s:"KILLS [",s:ComboLetter,s:"]";HUDMSG_ALPHA | HUDMSG_COLORSTRING,2113,killmsgcolor,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+						else HudMessage(s:"KILLS";HUDMSG_ALPHA | HUDMSG_COLORSTRING,2113,killmsgcolor,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+					}
 				}
 
 				// "OVERKILL" text
@@ -10135,7 +10170,7 @@ script "SpellSelection" (int Dir)
 		if (MiscellaneousVars[9] == 2 && MiscellaneousVars[10] == 8) SelectedSpell = 22; // Flight
 		if (MiscellaneousVars[9] == 2 && MiscellaneousVars[10] == 9) SelectedSpell = 30; // Major Night Vision
 		if (MiscellaneousVars[9] == 2 && MiscellaneousVars[10] == 10) SelectedSpell = 32; // Farsight
-		if (MiscellaneousVars[9] == 2 && MiscellaneousVars[10] == 11) SelectedSpell = 34; // Stealth
+		if (MiscellaneousVars[9] == 2 && MiscellaneousVars[10] == 11) SelectedSpell = 34; // Minor Time Freezer
 		if (MiscellaneousVars[9] == 2 && MiscellaneousVars[10] == 12) SelectedSpell = 35; // Invulnerability
 		if (MiscellaneousVars[9] == 2 && MiscellaneousVars[10] == 13) SelectedSpell = 36; // Major Invisiblity
 		if (MiscellaneousVars[9] == 2 && MiscellaneousVars[10] == 14) SelectedSpell = 37; // Major Flight
@@ -10184,7 +10219,7 @@ script "SpellSelection" (int Dir)
 				if (SelectedSpell == 29) SelectedSpell += 1;
 				if (SelectedSpell == 30) SelectedSpell += 1;
 				if (SelectedSpell == 33) SelectedSpell += 1;
-				if (SelectedSpell == 34) SelectedSpell += 1;
+				if (SelectedSpell == 34) SelectedSpell += 1; // Skip "Minor Time Freezer"
 				if (SelectedSpell == 36) SelectedSpell += 1;
 				if (SelectedSpell == 37) SelectedSpell += 1;
 				if (SelectedSpell == 41) SelectedSpell += 1; // Skip "Major Fireball"
@@ -10267,7 +10302,7 @@ script "SpellSelection" (int Dir)
 				if (SelectedSpell == 41) SelectedSpell -= 1; // Skip "Major Fireball"
 				if (SelectedSpell == 37) SelectedSpell -= 1;
 				if (SelectedSpell == 36) SelectedSpell -= 1;
-				if (SelectedSpell == 34) SelectedSpell -= 1;
+				if (SelectedSpell == 34) SelectedSpell -= 1; // Skip "Minor Time Freezer"
 				if (SelectedSpell == 33) SelectedSpell -= 1;
 				if (SelectedSpell == 30) SelectedSpell -= 1;
 				if (SelectedSpell == 29) SelectedSpell -= 1;
@@ -17611,8 +17646,8 @@ script "MagicEffects" (int Type, int Strength)
 
 	if (Type == 13) // Freeze Time
 	{
-		ActivatorSound("CastTimeFreeze",127);
 		BuffTimeGive = Strength * 35;
+		ActivatorSound("CastTimeFreeze",127);
 		BuffTimeGive = (BuffTimeGive * BuffTimeMulti) / 100;
 		PowerupTimer[5] += BuffTimeGive;
 	}
@@ -22221,12 +22256,12 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 		
 				if (CharacterClass != 0)
 				{
-					// Stealth [Level 21]
+					// Minor Time Freezer [Level 21]
 					xtemp2 = (HudXRange * 0 / 100000) * 1.0; // -0.10;
 					ytemp2 = (HudYRange * 80000 / 100000) * 1.0; // 0.1625;
 					SetFont("SPLIUNKN");
 					LevelRequirement = 21;
-					if (PlayerLevel >= LevelRequirement) SetFont("SPLISTL2");
+					if (PlayerLevel >= LevelRequirement) SetFont("SPLITMF1");
 					HudMessage(s:"A"; HUDMSG_ALPHA,  1990, CR_UNTRANSLATED,  xtemp2, ytemp2, baseholdtime, 1.0);
 					SetFont("DVDSSMLFONT"); // DQHUDFONTSTATUS
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
