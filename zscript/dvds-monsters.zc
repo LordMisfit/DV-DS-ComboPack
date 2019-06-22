@@ -622,7 +622,174 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		// We don't really care about others making the check.
 		return true;
 	}
+	
+	// Sceptre EXP Increase [Monster/Actor-Side Specfic Code]
+	void A_AddSceptreEXP_M (int SExPts = 1, int DivAmount = 1)
+	{
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int ExpPiecesToAdd;
+		double EXPBonus1;
+		int BossEnemy;
+		int DeftnessExpBase = dvds_deftnessexpbase;
+		int SceptreExpMultiplier = dvds_sceptreexpmultiplier;
+		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
+		string vict = GetClassName();
+		
+		if (ModType == 0 && dvds_noscexpgains != 0) return;
+		
+		//if (BossEnemy != 0) DivAmount *= 5;
+		if (DivAmount <= 1) DivAmount = 1;
+		
+		if (CharacterClass == 2)
+		{
+			if (user_MaxHP > 0) SExPts = user_MaxHP; else SExPts = SpawnHealth();
+			if (ModType == 0) SExPts *= 1.334; // Classic Doom 1/2 / Heretic / Hexen / Strife
+			SExPts *= 16; // * 16 is because each full Sceptre EXP Point is 16 "fragments".
+			SExPts = SExPts / 300;
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 1 - Base): %d / 16", SExPts);
 
+			// Check for if the monster calling the script is a boss or strong monster [to cut down on SExp Gains]
+			if (vict == "Benellus1DS") DivAmount *= 16;
+			if (vict == "Benellus2DS") DivAmount *= 16;
+			if (vict == "Benellus3DS") DivAmount *= 16;
+			if (vict == "DragonNew") DivAmount *= 16;
+			if (vict == "HeresiarchNew") DivAmount *= 16;
+			if (vict == "ClericBossNew") DivAmount *= 16;
+			if (vict == "MageBossNew") DivAmount *= 16;
+			if (vict == "FighterBossNew") DivAmount *= 16;
+			if (vict == "DSparilMountedNew") DivAmount *= 12; // 12
+			if (vict == "DSparilUnmountedNew") DivAmount *= 16;
+			if (vict == "KoraxNew") DivAmount *= 16;
+			if (vict == "Zakachi") DivAmount *= 16;
+			if (vict == "AvatarNew") DivAmount *= 16; // 32
+			if (vict == "ProgrammerNew") DivAmount *= 16;
+			if (vict == "StrifeBishopNew") DivAmount *= 16;
+			if (vict == "OracleNew") DivAmount *= 16;
+			if (vict == "Macil1New") DivAmount *= 16;
+			if (vict == "Macil2New") DivAmount *= 16;
+			if (vict == "LoremasterNew") DivAmount *= 16;
+			if (vict == "SourceGuardian") DivAmount *= 16;
+			if (vict == "AlienSpectre1New") DivAmount *= 16; // 24
+			if (vict == "AlienSpectre2New") DivAmount *= 16; // 24
+			if (vict == "AlienSpectre3New") DivAmount *= 16; // 24
+			if (vict == "AlienSpectre4New") DivAmount *= 16; // 24
+			if (vict == "AlienSpectre5New") DivAmount *= 16; // 24
+			if (vict == "AlienSpectre1Model") DivAmount *= 16; // 24
+			if (vict == "AlienSpectre2Model") DivAmount *= 16; // 24
+			if (vict == "AlienSpectre3Model") DivAmount *= 16; // 24
+			if (vict == "AlienSpectre4Model") DivAmount *= 16; // 24
+			if (vict == "AlienSpectre5Model") DivAmount *= 16; // 24
+			if (vict == "EntityBossNew") DivAmount *= 24; // 32
+			if (vict == "EntitySecondNew") DivAmount *= 24; // 32
+			if (vict == "EntityAscended") DivAmount *= 24; // 32
+			if (vict == "DSMotherDemon64") DivAmount *= 16;
+			if (vict == "ThamuzNew") DivAmount *= 24; // 32
+			if (vict == "TchernobogNew") DivAmount *= 24; // 32
+			if (vict == "PennywiseBoss") DivAmount *= 32; // 32
+			if (vict == "TheSource") DivAmount *= 32; // 128
+			if (vict == "Magmantis") DivAmount *= 64; // 32
+			if (vict == "AdolfHitlerDS") DivAmount *= 64; // 32
+			if (vict == "Sauravatar") DivAmount *= 96; // 128
+		
+			if (DivAmount >= 1) SExPts /= DivAmount;
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 2a - Boss Check [%s]): %d / 16", vict, SExPts);
+			SExPts = SExPts + 16;
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 2b - Post Boss Check): %d / 16", SExPts);
+		
+			int Randomizer = random(1,256);
+			if (Randomizer == 1) SExPts *= 8;
+			if (Randomizer == 2) SExPts *= 4;
+			if (Randomizer == 3) SExPts *= 4;
+			if (Randomizer == 4) SExPts *= 2;
+			if (Randomizer == 5) SExPts *= 2;
+			if (Randomizer == 6) SExPts *= 2;
+			if (Randomizer == 7) SExPts *= 2;
+		
+			// Higher Levels = slightly less chances to get all EXP
+			if (SceptreActualLevel > 15 && Randomizer == 241) SExPts /= 2;
+			if (SceptreActualLevel > 14 && Randomizer == 242) SExPts /= 2;
+			if (SceptreActualLevel > 13 && Randomizer == 243) SExPts /= 2;
+			if (SceptreActualLevel > 12 && Randomizer == 244) SExPts /= 2;
+			if (SceptreActualLevel > 11 && Randomizer == 245) SExPts /= 2;
+			if (SceptreActualLevel > 10 && Randomizer == 246) SExPts /= 2;
+			if (SceptreActualLevel > 9 && Randomizer == 247) SExPts /= 2;
+			if (SceptreActualLevel > 8 && Randomizer == 248) SExPts /= 2;
+			if (SceptreActualLevel > 7 && Randomizer == 249) SExPts /= 2;
+			if (SceptreActualLevel > 6 && Randomizer == 250) SExPts /= 2;
+			if (SceptreActualLevel > 5 && Randomizer == 251) SExPts /= 2;
+			if (SceptreActualLevel > 4 && Randomizer == 252) SExPts /= 2;
+			if (SceptreActualLevel > 3 && Randomizer == 253) SExPts /= 2;
+			if (SceptreActualLevel > 2 && Randomizer == 254) SExPts /= 2;
+			if (SceptreActualLevel > 1 && Randomizer == 255) SExPts /= 2;
+			if (SceptreActualLevel > 0 && Randomizer == 256) SExPts /= 2;
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 3 - Randomizer Check [%d]): %d / 16", Randomizer, SExPts);
+		
+			EXPBonus1 = 1.000;
+			// Safe Tea Shoes [+2.5/5% EXP Bonus]
+			if (CountInv("SafeTeaShoes", AAPTR_PLAYER1) > 0)
+			{
+				if (random(1,100) <= 5) EXPBonus1 += 0.050; // 5% Chance of +5% EXP Bonus
+				else EXPBonus1 += 0.025; // Else +2.5% EXP Bonus
+			}
+			// Pearly Corset [+20/30% EXP Bonus]
+			if (CountInv("PearlyCorset", AAPTR_PLAYER1) > 0)
+			{
+				if (random(1,100) <= 5) EXPBonus1 += 0.300; // 5% Chance of +30% EXP Bonus
+				else EXPBonus1 += 0.200; // Else +20% EXP Bonus
+			}
+			// Dove's [+2.5/5% EXP Bonus]
+			if (CountInv("DoveRibbon", AAPTR_PLAYER1) > 0)
+			{
+				if (random(1,100) <= 5) EXPBonus1 += 0.050; // 5% Chance of +5% EXP Bonus
+				else EXPBonus1 += 0.025; // Else +2.5% EXP Bonus
+			}
+			SExPts *= EXPBonus1;
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 4 - Armor Check [%8f]): %d / 16", EXPBonus1, SExPts);
+		
+			EXPBonus1 = 1.000;
+			// Divine Avatar {+25% EXP Bonus]
+			if (CallACS("GetBuffTimer",7) > 0)
+			{
+				if (random(1,100) <= 20) EXPBonus1 += 0.500; // 20% Chance of +50% EXP Bonus
+				else EXPBonus1 += 0.250; // 20% Else +25% EXP Bonus
+			}
+			SExPts *= EXPBonus1;
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 5 - Buff Check [%8f]): %d / 16", EXPBonus1, SExPts);
+			SExPts = SExPts * (DeftnessExpBase + CallACS("MiscVarCheckDECORATE",33)) / DeftnessExpBase;
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 6 - Deftness Check): %d / 16 [DeftExpBase: %d / %d]", SExPts, (DeftnessExpBase + CallACS("MiscVarCheckDECORATE",33)), DeftnessExpBase);
+			SExPts = SExPts * SceptreExpMultiplier / 100;
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 7 - Option Checker [%d%]): %d / 16", SceptreExpMultiplier, SExPts);
+		
+			// "Higher Learning" Grand Mastery Perk
+			if (CallACS("MiscVarCheckDECORATE",11001) == 1) SExPts *= 1.15; // [115%]
+			if (CallACS("MiscVarCheckDECORATE",11001) >= 2) SExPts *= 1.30; // [130%]
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 8 - Higher Learning): %d / 16", SExPts);
+
+			if (ModType == 0) ExpPiecesToAdd *= 1.334; // Classic Doom 1/2 / Heretic / Hexen / Strife
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 9 - ModType Checker): %d / 16", SExPts);
+
+			SExPts = SExPts * 1.25;
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 10 - ?): %d / 16", SExPts);
+
+			while (SExPts > 15)
+			{
+				SExPts -= 16;
+				CallACS("OtherVarSetDECORATE",10,1,1);
+				if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (while): %d / 16", SExPts);
+			}
+			CallACS("MiscVarSetDECORATE",203,SExPts,1); 
+		
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts: %d / 16", CallACS("MiscVarCheckDECORATE",203));
+			while (CallACS("MiscVarCheckDECORATE",203) > 15) // if (MiscellaneousVars[203] > 15)
+			{
+				CallACS("MiscVarSetDECORATE",203,-16,1); 
+				CallACS("OtherVarSetDECORATE",10,1,1);
+				if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (while): %d / 16", CallACS("MiscVarCheckDECORATE",203));
+			}
+		}
+	}
+	
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
 		if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input\c-: \cygametic = %d\c-)", gametic);
@@ -1368,7 +1535,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				// Sceptre EXP Gain
 				else if (infl == "SceptrePuff-Normal" || infl == "SceptrePuff-Spinning")
 				{
-					ACS_NamedExecuteAlways("AddSceptreEXP",0,0,0,(health > 0? 10 : 1));
+					A_AddSceptreEXP_M(0,(health > 0? randompick(4,5,5,5,6) : 1));
 				}
 			}
 		}
