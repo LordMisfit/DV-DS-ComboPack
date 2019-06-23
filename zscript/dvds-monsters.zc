@@ -626,6 +626,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	// Sceptre EXP Increase [Monster/Actor-Side Specfic Code]
 	void A_AddSceptreEXP_M (int SExPts = 1, int DivAmount = 1)
 	{
+		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
+		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
 		int ModType = CallACS("OtherVarCheckDECORATE",8);
 		int CharacterClass = CallACS("CheckCharacterClass");
 		int ExpPiecesToAdd;
@@ -694,7 +696,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		
 			if (DivAmount >= 1) SExPts /= DivAmount;
 			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 2a - Boss Check [%s]): %d / 16", vict, SExPts);
-			SExPts = SExPts + 16;
+			SExPts += (16 - (SceptreActualLevel * 0.67));
 			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 2b - Post Boss Check): %d / 16", SExPts);
 		
 			int Randomizer = random(1,256);
@@ -761,31 +763,46 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			SExPts = SExPts * SceptreExpMultiplier / 100;
 			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 7 - Option Checker [%d%]): %d / 16", SceptreExpMultiplier, SExPts);
 		
+			// "Cleared of Mind" Perk
+			double perkfactor = 1.00;
+			if (clearofmind > 0)
+			{
+				if (clearofmind >= 1) perkfactor += 0.04;
+				if (clearofmind >= 2) perkfactor += 0.05;
+				if (clearofmind >= 3) perkfactor += 0.06;
+				if (clearofmind >= 4) perkfactor += 0.07;
+				if (clearofmind >= 5) perkfactor += 0.08;
+				if (clearofmindex >= 1) perkfactor += 0.15;
+				if (clearofmindex >= 2) perkfactor += 0.15;
+				SExPts *= perkfactor;
+			}
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 8 - Cleared of Mind [%8f]): %d / 16", perkfactor, SExPts);
+
 			// "Higher Learning" Grand Mastery Perk
 			if (CallACS("MiscVarCheckDECORATE",11001) == 1) SExPts *= 1.15; // [115%]
 			if (CallACS("MiscVarCheckDECORATE",11001) >= 2) SExPts *= 1.30; // [130%]
-			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 8 - Higher Learning): %d / 16", SExPts);
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 9 - Higher Learning): %d / 16", SExPts);
 
 			if (ModType == 0) ExpPiecesToAdd *= 1.334; // Classic Doom 1/2 / Heretic / Hexen / Strife
-			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 9 - ModType Checker): %d / 16", SExPts);
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 10 - ModType Checker): %d / 16", SExPts);
 
 			SExPts = SExPts * 1.25;
-			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 10 - ?): %d / 16", SExPts);
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 11 - ?): %d / 16", SExPts);
 
 			while (SExPts > 15)
 			{
 				SExPts -= 16;
 				CallACS("OtherVarSetDECORATE",10,1,1);
-				if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (while): %d / 16", SExPts);
+				if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (while 1): %d / 16", SExPts);
 			}
 			CallACS("MiscVarSetDECORATE",203,SExPts,1); 
 		
-			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts: %d / 16", CallACS("MiscVarCheckDECORATE",203));
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (pre-while 2): %d / 16", CallACS("MiscVarCheckDECORATE",203));
 			while (CallACS("MiscVarCheckDECORATE",203) > 15) // if (MiscellaneousVars[203] > 15)
 			{
 				CallACS("MiscVarSetDECORATE",203,-16,1); 
 				CallACS("OtherVarSetDECORATE",10,1,1);
-				if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (while): %d / 16", CallACS("MiscVarCheckDECORATE",203));
+				if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (while 2): %d / 16", CallACS("MiscVarCheckDECORATE",203));
 			}
 		}
 	}
