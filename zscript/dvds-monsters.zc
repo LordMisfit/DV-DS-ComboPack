@@ -638,6 +638,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
 		string vict = GetClassName();
 		double sceptbasemulti = 1.00;
+		int higherlearning = CallACS("MiscVarCheckDECORATE",11001);
 		
 		if (ModType == 0 && dvds_noscexpgains != 0) return;
 		
@@ -649,8 +650,18 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (user_MaxHP > 0) SExPts = user_MaxHP; else SExPts = SpawnHealth();
 			if (ModType == 0) SExPts *= 1.334; // Classic Doom 1/2 / Heretic / Hexen / Strife
 			SExPts *= 16; // * 16 is because each full Sceptre EXP Point is 16 "fragments".
-			SExPts = SExPts / 300;
 			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 1 - Base): %d / 16", SExPts);
+			SExPts = SExPts / 300;
+			if (clearofmind >= 1) SExPts += 4;
+			if (clearofmind >= 2) SExPts += 5;
+			if (clearofmind >= 3) SExPts += 6;
+			if (clearofmind >= 4) SExPts += 7;
+			if (clearofmind >= 5) SExPts += 8;
+			if (clearofmindex >= 1) SExPts += 15;
+			if (clearofmindex >= 2) SExPts += 15;
+			if (higherlearning == 1) SExPts += 15; // [115%]
+			if (higherlearning >= 2) SExPts += 30; // [130%]
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 1b - Base 2): %d / 16", SExPts);
 
 			// Check for if the monster calling the script is a boss or strong monster [to cut down on SExp Gains]
 			if (vict == "Benellus1DS") DivAmount *= 16;
@@ -781,8 +792,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 8 - Cleared of Mind [%8f]): %d / 16", perkfactor, SExPts);
 
 			// "Higher Learning" Grand Mastery Perk
-			if (CallACS("MiscVarCheckDECORATE",11001) == 1) SExPts *= 1.15; // [115%]
-			if (CallACS("MiscVarCheckDECORATE",11001) >= 2) SExPts *= 1.30; // [130%]
+			if (higherlearning == 1) SExPts *= 1.15; // [115%]
+			if (higherlearning >= 2) SExPts *= 1.30; // [130%]
 			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 9 - Higher Learning): %d / 16", SExPts);
 
 			if (ModType == 0) ExpPiecesToAdd *= 1.334; // Classic Doom 1/2 / Heretic / Hexen / Strife
@@ -1302,6 +1313,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (inflictor == null && source == null) { }
 		else
 		{
+			// Melee
+			if (mod == 'Melee' || mod == 'Trample' || mod == 'Stomp' || mod == 'Fist' || mod == 'Kick' || mod == 'Chainsaw' || mod == 'Gauntlets')
+			{
+				ActorDefenseIgnoreFactor += ((random(0,10) * 0.01) * (1.00 - ActorDefenseIgnoreFactor));
+			}
 			// BFG
 			if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') 
 			{ 
@@ -1339,7 +1355,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// Sceptre
 			if (mod == 'Sceptre') 
 			{ 
-				ActorDefenseIgnoreFactor += (0.5 * (1.00 - ActorDefenseIgnoreFactor));
+				ActorDefenseIgnoreFactor += ((0.5 + (random(0,10) * 0.01)) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Diaris Arrows
+			if (infl == 'DiarisHolyArrow' || infl == 'DiarisHolyArrow2xDmg' || infl == 'DiarisHolyArrow3xDmg' || 
+			    infl == 'DiarisHolyArrowGlitter1' || infl == 'DiarisHolyArrowGlitter2' || infl == 'DiarisHolyArrowGlitter3') 
+			{ 
+				ActorDefenseIgnoreFactor += ((0.5 + (random(-10,10) * 0.01)) * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Poison Needle
 			if (mod == 'PoisonNeedle') 
@@ -1448,21 +1470,35 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// Legendaries
 			if (DVDSActor && DVDSActor.user_legendaryevolved) 
 			{ 
-				ActorDefenseIgnoreFactor = 0.5;
+				ActorDefenseIgnoreFactor += (0.50 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Player Buff Checks
+			if (playpawn)
+			{
+				double temp = (0.025 * random(0,5));
+				if (CallACS("GetBuffTimer",10) > 0) temp *= 1;
+				if (CallACS("GetBuffTimer",13) > 0) temp -= 1;
+				ActorDefenseIgnoreFactor += (temp * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Target itself is a Legendary
+			if (user_legendaryevolved)
+			{
+				if (ActorDefenseIgnoreFactor > 0.00) ActorDefenseIgnoreFactor /= random(2,6);
 			}
 		}
 
 		//**********************************************************************
 		//*This ignores damage factors [similar to how DQ crits ignore defense]*
 		//**********************************************************************
-		if (dealtcrit && DamageFactor < 1.00) 
+		prevDamageFactor = DamageFactor;
+		if (DamageFactor < 1.00) 
 		{
-			ActorDefenseIgnoreFactor = 1.00;
+			if (dealtcrit) ActorDefenseIgnoreFactor = 1.00;
 			DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
 		}
 		if (dvdsdebug_actordmgdisplays && damage > 0) 
 		{
-			if (ActorDefenseIgnoreFactor > 0.00) Console.Printf("    (\czActor Defensive Input [STEP 3a - Def Ignoring]\c-: \caDefenseIgnoreFactor = %8f\c-, \cadmgfactor = %8f\c-, \cypredmg = %d\c-, \cydmg = %d\c- (Monster Actor))", ActorDefenseIgnoreFactor, DamageFactor, predmginr, damage);
+			if (ActorDefenseIgnoreFactor > 0.00) Console.Printf("    (\czActor Defensive Input [STEP 3a - Def Ignoring]\c-: \caDefenseIgnoreFactor = %8f\c-, \cadmgfactor = %8f\c-, \caprevdmgfactor = %8f\c-, \cypredmg = %d\c-, \cydmg = %d\c- (Monster Actor))", ActorDefenseIgnoreFactor, DamageFactor, prevDamageFactor, predmginr, damage);
 																			else Console.Printf("    (\czActor Defensive Input [STEP 3a - Def Ignoring]\c-: \caSKIPPED\c-, \cydmg = %d\c-)", predmginr);
 		}
 
