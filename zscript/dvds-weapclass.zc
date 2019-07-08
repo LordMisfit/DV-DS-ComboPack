@@ -1778,7 +1778,7 @@ class AetheriusBaseWeaponZSC : Weapon
 	}
 	
 	// Consumes a set amount of Stamina when called [1 = 0.01% stamina consumed, etc] or checks for that much for an A_JumpIf call
-	void A_UseStaminaAttack(int amount = 0, int check = 0)
+	void A_UseStaminaAttack(int amount = 0, int check = 0, int type = 0)
 	{
 		int stamusedebug = dvdsdebug_showstaminausestuff;
 		int powertripmode = dvds_musou_powertripmode;
@@ -1789,28 +1789,41 @@ class AetheriusBaseWeaponZSC : Weapon
 		int DQSapTimer = CallACS("GetBuffTimer",14);
 		int DQDeceleratleTimer = CallACS("GetBuffTimer",15);
 
-		if (powertripmode == 1) amount = amount / 5;
-		if (powertripmode == 2) amount = amount / 10;
-		if (DQOomphTimer > 0) amount = amount * 4 / 5; // Oomph [80% consumption]
-		if (DQBuffTimer > 0) amount = amount * 4 / 5; // Buff [80% consumption]
-		if (DQAcceleratleTimer > 0) amount = amount * 4 / 5; // Acceleratle [80% consumption]
-		if (DQBluntTimer > 0) amount = amount * 6 / 5; // Blunt [120% consumption]
-		if (DQSapTimer > 0) amount = amount * 6 / 5; // Sap [120% consumption]
-		if (DQDeceleratleTimer > 0) amount = amount * 6 / 5; // Deceleratle [120% consumption]
-		if (CallACS("MiscVarCheckDECORATE",9043) > 0) 
-		{
-			if (CallACS("MiscVarCheckDECORATE",9043) <= 1) amount = amount / 2; // Death Rage [50% consumption]
-			if (CallACS("MiscVarCheckDECORATE",9043) == 2) amount = amount / 4; // Death Rage [25% consumption]
-			if (CallACS("MiscVarCheckDECORATE",9043) >= 3) amount = amount / 8; // Death Rage [12.5% consumption]
-		}
-		if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) amount = amount * 3 / 4; // Falcon Knife Earrings [75% Consumption]
-		
 		int whole = amount / 100; 
 		int modulus = amount % 100;
 		if (stamusedebug)
 		{
-			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used: %d.0%d%",whole, modulus);
-																	 else Console.Printf("Stamina Used: %d.%d%",whole, modulus);
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used [Base]: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used [Base]: %d.%d%",whole, modulus);
+		}
+		
+		if (powertripmode == 1) amount *= 0.2;
+		if (powertripmode == 2) amount *= 0.1;
+		if (DQOomphTimer > 0) amount *= 0.80; // Oomph [80% consumption]
+		if (DQBuffTimer > 0) amount *= 0.80; // Buff [80% consumption]
+		if (DQAcceleratleTimer > 0) amount *= 0.80; // Acceleratle [80% consumption]
+		if (DQBluntTimer > 0) amount *= 1.20; // Blunt [120% consumption]
+		if (DQSapTimer > 0) amount *= 1.20; // Sap [120% consumption]
+		if (DQDeceleratleTimer > 0) amount *= 1.20; // Deceleratle [120% consumption]
+		if (CallACS("MiscVarCheckDECORATE",9043) > 0) 
+		{
+			if (CallACS("MiscVarCheckDECORATE",9043) <= 1) amount *= 0.5; // Death Rage [50% consumption]
+			if (CallACS("MiscVarCheckDECORATE",9043) == 2) amount *= 0.25; // Death Rage [25% consumption]
+			if (CallACS("MiscVarCheckDECORATE",9043) >= 3) amount *= 0.125; // Death Rage [12.5% consumption]
+		}
+		if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) amount *= 0.75; // Falcon Knife Earrings [75% Consumption]
+		
+		if (type == 1) // Hellcore [Hell Warrior Shield]
+		{
+			amount *= (1.00 - (CallACS("MiscVarCheckDECORATE",10033) * 0.05) - (CallACS("MiscVarCheckDECORATE",10034) * 0.125));
+		}
+		
+		whole = amount / 100; 
+		modulus = amount % 100;
+		if (stamusedebug)
+		{
+			if (modulus > -1 && modulus < 10) Console.Printf("Stamina Used [Final]: %d.0%d%",whole, modulus);
+																	 else Console.Printf("Stamina Used [Final]: %d.%d%",whole, modulus);
 		}
 		
 		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
