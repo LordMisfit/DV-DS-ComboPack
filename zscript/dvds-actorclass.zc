@@ -485,25 +485,25 @@ class AetheriusBaseZSC : Actor
 		// Restore Health & Stamina
 		bool giveHealth = dvds_saurongauntlets_givehealth;
 		bool giveStamina = dvds_saurongauntlets_givestamina;
+		int previousHealth = player.mo.health;
+		int previousStamina = CurrentStamina;
 		if (giveHealth || giveStamina)
 		{
-			int prevHealth = player.mo.health;
-			int prevStamina = CurrentStamina;
 			int giveStaminaAmount = 50;
 			if (!giveStamina) giveStaminaAmount = 0;
 			
 			A_EmulateGiveHealthBonus(Amount,0,giveStaminaAmount,0);
 			
-			if (!giveHealth) player.mo.health = player.health = prevHealth;
+			if (!giveHealth) player.mo.health = player.health = previousHealth;
 			else if (!dvds_saurongauntlets_giveoverhealth && player.mo.health > MaxHealthTrue) player.mo.health = player.health = MaxHealthTrue;
 			
-			if (prevHealth > player.mo.health) player.mo.health = player.health = prevHealth;
+			if (previousHealth > player.mo.health) player.mo.health = player.health = previousHealth;
 			
 			if (giveStamina && !dvds_saurongauntlets_giveoverstamina && CurrentStamina > MaxStamina) CurrentStamina = MaxStamina;
 			
-			if (prevStamina > CurrentStamina) CurrentStamina = prevStamina;
+			if (previousStamina > CurrentStamina) CurrentStamina = previousStamina;
 			
-			if (CurrentStamina > prevStamina || player.mo.health > prevHealth) gaveAnything = true;
+			if (CurrentStamina > previousStamina || player.mo.health > previousHealth) gaveAnything = true;
 		}
 		
 		// Restore Armor [Flora Cannot Gain Armor from it though]
@@ -3111,6 +3111,31 @@ class AetheriusPowerup : Powerup
 		if (EffectTics <= 0)
 		{
 			Destroy();
+		}
+	}
+}
+
+class AetheriusPowerIronFeet : PowerIronFeet
+{
+	Default
+	{
+		Powerup.Duration -60;
+		Powerup.Color "00 ff 00", 0.125;
+	}
+	
+	override void AbsorbDamage (int damage, Name damageType, out int newdamage)
+	{
+		if (damageType == 'Drowning')
+		{
+			newdamage = 0;
+		}
+	}
+
+	override void DoEffect ()
+	{
+		if (Owner.player != NULL)
+		{
+			Owner.player.mo.ResetAirSupply ();
 		}
 	}
 }
