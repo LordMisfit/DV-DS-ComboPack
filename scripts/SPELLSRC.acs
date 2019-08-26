@@ -25792,7 +25792,8 @@ script "CheckFloraItems" (int forelse)
 // Checks the mapnumber and gametype for Monster Spawners (main number)
 script "GetEvolveChance" (void)
 {
-	int SpawnChance, ChanceFactor, LevelCheck, MapCheck;
+	int TempRatio;
+	int SpawnChance, TempSpawnChance, ChanceFactor, LevelCheck, MapCheck;
 	int debugevolvestealth = GetCVar("dvdsdebug_evolvestealthstuff");
 	int deathkingsmapcalcmod = GetCVar("dvds_deathkingsmapcalcmod");
 	int mapcalcfactorexact = 0;
@@ -25807,42 +25808,90 @@ script "GetEvolveChance" (void)
 	
 	if (GetCVar("dvds_rnd_evolve_levels") == 1) 
 	{
-		SpawnChance = SpawnChance + (SceptreActualLevel * 2 / 10) + (PlayerLevel / 15); 
-		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [Level]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
+		TempRatio = GetCVar("dvds_rnd_evolve_levels_ratio");
+		if (TempRatio < 0) TempRatio = 0;
+		if (TempRatio > 1000) TempRatio = 1000;
+		
+		TempSpawnChance = (SceptreActualLevel * 2 / 10) + (PlayerLevel / 15);
+
+		TempSpawnChance = TempSpawnChance * TempRatio / 100;
+		SpawnChance += TempSpawnChance;
+		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [Level]: ",d:SpawnChance,s:" - ",s:GetActorClass(0),s:" - (",d:TempSpawnChance,s:")");
 	}
 	
 	if (GetCVar("dvds_rnd_evolve_chars") == 1) 
 	{
-		if (CharacterClass == 0) SpawnChance = SpawnChance * 900 / 1000;
-		else if (CharacterClass == 1) SpawnChance = SpawnChance * 975 / 1000;
-		else if (CharacterClass == 2) SpawnChance = SpawnChance * 1050 / 1000;
-		else SpawnChance = SpawnChance * 1000 / 1000;
-		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [Character]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
+		TempRatio = GetCVar("dvds_rnd_evolve_chars_ratio");
+		if (TempRatio < 0) TempRatio = 0;
+		if (TempRatio > 1000) TempRatio = 1000;
+		
+		TempSpawnChance = 0;
+		if (CharacterClass == 0) TempSpawnChance = -100;
+		else if (CharacterClass == 1) TempSpawnChance = -25;
+		else if (CharacterClass == 2) TempSpawnChance = 50;
+		else if (CharacterClass == 8) TempSpawnChance = -50;
+		else if (CharacterClass == 9) TempSpawnChance = 25;
+
+		TempSpawnChance = TempSpawnChance * TempRatio / 100;
+		TempSpawnChance += 1000;
+		SpawnChance *= TempSpawnChance;
+		SpawnChance /= 1000;
+		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [Character]: ",d:SpawnChance,s:" - ",s:GetActorClass(0),s:" - (",d:TempSpawnChance,s:")");
 	}
 	
 	if (GetCVar("dvds_rnd_evolve_skill") == 1) 
 	{
-		if (TrueGameSkill <= SKILL_VERY_EASY) SpawnChance = SpawnChance * 80 / 100;
-		else if (TrueGameSkill == SKILL_EASY) SpawnChance = SpawnChance * 90 / 100;
-		else if (TrueGameSkill == SKILL_NORMAL) SpawnChance = SpawnChance * 100 / 100;
-		else if (TrueGameSkill == SKILL_HARD) SpawnChance = SpawnChance * 110 / 100;
-		else if (TrueGameSkill == SKILL_VERY_HARD) SpawnChance = SpawnChance * 125 / 100;
-		else if (TrueGameSkill == SKILL_EXTREME) SpawnChance = SpawnChance * 135 / 100;
-		else if (TrueGameSkill == SKILL_HORRIBLE) SpawnChance = SpawnChance * 150 / 100;
-		else if (TrueGameSkill == SKILL_IMPOSSIBLE) SpawnChance = SpawnChance * 170 / 100;
-		else if (TrueGameSkill >= SKILL_OMEGA) SpawnChance = SpawnChance * 200 / 100;
-		else SpawnChance = SpawnChance * 100 / 100;
-		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [Skill]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
-	}
+		TempRatio = GetCVar("dvds_rnd_evolve_skill_ratio");
+		if (TempRatio < 0) TempRatio = 0;
+		if (TempRatio > 1000) TempRatio = 1000;
 		
+		TempSpawnChance = 0;
+		if (TrueGameSkill <= SKILL_VERY_EASY) TempSpawnChance = -200;
+		else if (TrueGameSkill == SKILL_EASY) TempSpawnChance = -100;
+		else if (TrueGameSkill == SKILL_NORMAL) TempSpawnChance = 0;
+		else if (TrueGameSkill == SKILL_HARD) TempSpawnChance = 100;
+		else if (TrueGameSkill == SKILL_VERY_HARD) TempSpawnChance = 250;
+		else if (TrueGameSkill == SKILL_EXTREME) TempSpawnChance = 350;
+		else if (TrueGameSkill == SKILL_HORRIBLE) TempSpawnChance = 500;
+		else if (TrueGameSkill == SKILL_IMPOSSIBLE) TempSpawnChance = 700;
+		else if (TrueGameSkill >= SKILL_OMEGA) TempSpawnChance = 1000;
+
+		TempSpawnChance = TempSpawnChance * TempRatio / 100;
+		TempSpawnChance += 1000;
+		SpawnChance *= TempSpawnChance;
+		SpawnChance /= 1000;
+		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [Skill]: ",d:SpawnChance,s:" - ",s:GetActorClass(0),s:" - (",d:TempSpawnChance,s:")");
+	}
+	
 	if (GetCVar("dvds_rnd_evolve_sauronequip") == 1) 
 	{
-		if (CheckActorInventory(Player1TID,"SauronHelmet") > 0) SpawnChance = SpawnChance * 110 / 100; // Elevates Spawn Chances by 10%
-		if (CheckActorInventory(Player1TID,"SauronGauntletsItem") > 0) SpawnChance = SpawnChance * 110 / 100; // Elevates Spawn Chances by 10%
-		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [SauronEquip]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
+		TempRatio = GetCVar("dvds_rnd_evolve_sauronequip_ratio");
+		if (TempRatio < 0) TempRatio = 0;
+		if (TempRatio > 1000) TempRatio = 1000;
+		
+		TempSpawnChance = 0;
+		if (CheckActorInventory(Player1TID,"SauronHelmet") > 0) TempSpawnChance = 100; // Elevates Spawn Chances by 10%
+		TempSpawnChance = TempSpawnChance * TempRatio / 100;
+		TempSpawnChance += 1000;
+		SpawnChance *= TempSpawnChance;
+		SpawnChance /= 1000;
+		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [SauronHelm]: ",d:SpawnChance,s:" - ",s:GetActorClass(0),s:" - (",d:TempSpawnChance,s:")");
+
+		TempSpawnChance = 0;
+		if (CheckActorInventory(Player1TID,"SauronGauntletsItem") > 0) TempSpawnChance = 100; // Elevates Spawn Chances by 10%
+		TempSpawnChance = TempSpawnChance * TempRatio / 100;
+		TempSpawnChance += 1000;
+		SpawnChance *= TempSpawnChance;
+		SpawnChance /= 1000;
+		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [SauronGauntlets]: ",d:SpawnChance,s:" - ",s:GetActorClass(0),s:" - (",d:TempSpawnChance,s:")");
 	}
+
 	if (GetCVar("dvds_rnd_evolve_maps") == 1) 
 	{
+		TempRatio = GetCVar("dvds_rnd_evolve_maps_ratio");
+		if (TempRatio < 0) TempRatio = 0;
+		if (TempRatio > 1000) TempRatio = 1000;
+		
 		if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
 		{
 			if (ClassicDoomType == 1 || ClassicDoomType == 2) // Doom 1 / Heretic
@@ -25897,20 +25946,18 @@ script "GetEvolveChance" (void)
 				if (MapCheck >= 91 && MapCheck <= 96) ChanceFactor = (MapCheck * 135);
 				if (MapCheck >= 97 && MapCheck <= 102) ChanceFactor = (MapCheck * 144);
 			}
-			ChanceFactor += 1000;
-			SpawnChance = SpawnChance * ChanceFactor / 1000;
 		}
 		else if (ModType == 1) // DVI
 		{
 			MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
 			if (MapCheck < 1101) MapCheck = 1101;
 			if (MapCheck > 1104) MapCheck = 1104;
-		
-			if (MapCheck == 1101) SpawnChance = SpawnChance * 1000 / 1000; // MAP01 - Insurgents
-			else if (MapCheck == 1102) SpawnChance = SpawnChance * 1116 / 1000; // MAP02 - Torture Chamber
-			else if (MapCheck == 1103) SpawnChance = SpawnChance * 1256 / 1000; // MAP03 - Cathedral
-			else if (MapCheck == 1104) SpawnChance = SpawnChance * 1418 / 1000; // MAP04 - End Of Days
-			else SpawnChance = SpawnChance * 1000 / 1000; // Any other Map
+			
+			ChanceFactor = 0;
+			if (MapCheck == 1101) ChanceFactor = 0; // MAP01 - Insurgents
+			else if (MapCheck == 1102) ChanceFactor = 116; // MAP02 - Torture Chamber
+			else if (MapCheck == 1103) ChanceFactor = 256; // MAP03 - Cathedral
+			else if (MapCheck == 1104) ChanceFactor = 418; // MAP04 - End Of Days
 		}
 		else if (ModType == 2) // DVII
 		{
@@ -25918,27 +25965,30 @@ script "GetEvolveChance" (void)
 			if (MapCheck < 1201) MapCheck = 1201;
 			if (MapCheck > 1212) MapCheck = 1212;
 		
-			if (MapCheck == 1201) SpawnChance = SpawnChance * 1000 / 1000; // MAP01 - Entryway Pass
-			else if (MapCheck == 1202) SpawnChance = SpawnChance * 1070 / 1000; // MAP02 - Mutagen
-			else if (MapCheck == 1203) SpawnChance = SpawnChance * 1140 / 1000; // MAP03 - Crouching Demon, Hidden Archvile
-			else if (MapCheck == 1204) SpawnChance = SpawnChance * 1209 / 1000; // MAP04 - Minas Morgul
-			else if (MapCheck == 1205) SpawnChance = SpawnChance * 1302 / 1000; // MAP05 - Eagle's Nest
-			else if (MapCheck == 1206) SpawnChance = SpawnChance * 1395 / 1000; // MAP05B - The Manliest Level Ever
-			else if (MapCheck == 1207) SpawnChance = SpawnChance * 1488 / 1000; // MAP06 - Stargate
-			else if (MapCheck == 1208) SpawnChance = SpawnChance * 1605 / 1000; // MAP07 - The Desert Temple
-			else if (MapCheck == 1209) SpawnChance = SpawnChance * 1953 / 1000; // MAP08 - The Unholy Cathedral
-			else if (MapCheck == 1210) SpawnChance = SpawnChance * 2372 / 1000; // MAP09 - You Shall Not Pass!
-			else if (MapCheck == 1211) SpawnChance = SpawnChance * 2884 / 1000; // MAP10 - Hell's Vendetta
-			else if (MapCheck == 1212) SpawnChance = SpawnChance * 3488 / 1000; // MAP10B - attedneV s'lleH
-			else if (MapCheck == 1214) SpawnChance = SpawnChance * 1465 / 1000; // MAP12 - "The Wings of The Maiar" [DVI combined level remake]
-			else if (MapCheck == 1215) SpawnChance = SpawnChance * 3488 / 1000; // MAP10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
-			else SpawnChance = SpawnChance * 1000 / 1000; // All other Maps
+			ChanceFactor = 0;
+			if (MapCheck == 1201) ChanceFactor = 0; // MAP01 - Entryway Pass
+			else if (MapCheck == 1202) ChanceFactor = 70; // MAP02 - Mutagen
+			else if (MapCheck == 1203) ChanceFactor = 140; // MAP03 - Crouching Demon, Hidden Archvile
+			else if (MapCheck == 1204) ChanceFactor = 209; // MAP04 - Minas Morgul
+			else if (MapCheck == 1205) ChanceFactor = 302; // MAP05 - Eagle's Nest
+			else if (MapCheck == 1206) ChanceFactor = 395; // MAP05B - The Manliest Level Ever
+			else if (MapCheck == 1207) ChanceFactor = 488; // MAP06 - Stargate
+			else if (MapCheck == 1208) ChanceFactor = 605; // MAP07 - The Desert Temple
+			else if (MapCheck == 1209) ChanceFactor = 953; // MAP08 - The Unholy Cathedral
+			else if (MapCheck == 1210) ChanceFactor = 1372; // MAP09 - You Shall Not Pass!
+			else if (MapCheck == 1211) ChanceFactor = 1884; // MAP10 - Hell's Vendetta
+			else if (MapCheck == 1212) ChanceFactor = 2488; // MAP10B - attedneV s'lleH
+			else if (MapCheck == 1214) ChanceFactor = 465; // MAP12 - "The Wings of The Maiar" [DVI combined level remake]
+			else if (MapCheck == 1215) ChanceFactor = 2488; // MAP10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
 		}
-		else SpawnChance = SpawnChance * 1000 / 1000;
+		ChanceFactor = ChanceFactor * TempRatio / 100;
+		ChanceFactor += 1000;
+		SpawnChance = SpawnChance * ChanceFactor / 1000;
+
 		if (debugevolvestealth == 1)
 		{
 			PrintBold(s:"\czMapCheck: ",d:MapCheck,s:"\n\n",
-								s:"\c-Evolve Chance [Maps]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
+								s:"\c-Evolve Chance [Maps]: ",d:SpawnChance,s:" - ",s:GetActorClass(0),s:" - (",d:ChanceFactor,s:")");
 		}
 	}
 	
@@ -25978,8 +26028,11 @@ script "GetEvolveChance" (void)
 	If(CheckActorClass(0,"BarKeepNew") == 1) IsAPeasent ++;
 	If(CheckActorClass(0,"ArmorerNew") == 1) IsAPeasent ++;
 	If(CheckActorClass(0,"MedicNew") == 1) IsAPeasent ++;
-	If(IsAPeasent > 0) SpawnChance = 0;
-	if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [PeasentCheck]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
+	If(IsAPeasent > 0)
+	{
+		SpawnChance = 0;
+		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [PeasentCheck]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
+	}
 	
 	if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [Final]: ",d:SpawnChance,s:" - ",s:GetActorClass(0));
 	SetResultValue(SpawnChance);
@@ -25988,7 +26041,8 @@ script "GetEvolveChance" (void)
 // Checks the mapnumber and gametype for Monster Spawners (stealth number)
 script "GetStealthChance" (void)
 {
-	int StealthChance, ChanceFactor, LevelCheck, MapCheck;
+	int TempRatio;
+	int StealthChance, TempStealthChance, ChanceFactor, LevelCheck, MapCheck;
 	int debugevolvestealth = GetCVar("dvdsdebug_evolvestealthstuff");
 	int deathkingsmapcalcmod = GetCVar("dvds_deathkingsmapcalcmod");
 	int mapcalcfactorexact = 0;
@@ -25996,6 +26050,7 @@ script "GetStealthChance" (void)
 	
 	if(GetCVar("dvds_rnd_stealth") == 0) { StealthChance = 0; SetResultValue(StealthChance); terminate; }
 	else StealthChance = GetCVar("dvds_rnd_stealthchance");
+
 	if (debugevolvestealth == 1) PrintBold(s:"Stealth Chance [Base]: ",d:StealthChance,s:" - ",s:GetActorClass(0));
 	
 	if (StealthChance < 0) StealthChance = 0;
@@ -26003,36 +26058,66 @@ script "GetStealthChance" (void)
 	
 	if (GetCVar("dvds_rnd_stealth_levels") == 1) 
 	{
-		StealthChance = StealthChance + (SceptreActualLevel * 2 / 50) + (PlayerLevel / 75); 
-		if (debugevolvestealth == 1) PrintBold(s:"Stealth Chance [Level]: ",d:StealthChance,s:" - ",s:GetActorClass(0));
+		TempRatio = GetCVar("dvds_rnd_stealth_levels_ratio");
+		if (TempRatio < 0) TempRatio = 0;
+		if (TempRatio > 1000) TempRatio = 1000;
+		
+		TempStealthChance = (SceptreActualLevel * 2 / 50) + (PlayerLevel / 75); 
+		TempStealthChance = TempStealthChance * TempRatio / 100;
+		StealthChance += TempStealthChance;
+		if (debugevolvestealth == 1) PrintBold(s:"Stealth Chance [Level]: ",d:StealthChance,s:" - ",s:GetActorClass(0),s:" - (",d:TempStealthChance,s:")");
 	}
 	
 	if (GetCVar("dvds_rnd_stealth_chars") == 1) 
 	{
-		if (CharacterClass == 0) StealthChance = StealthChance * 1125 / 1000;
-		else if (CharacterClass == 1) StealthChance = StealthChance * 1000 / 1000;
-		else if (CharacterClass == 2) StealthChance = StealthChance * 875 / 1000;
-		else StealthChance = StealthChance * 1000 / 1000;
-		if (debugevolvestealth == 1) PrintBold(s:"Stealth Chance [Character]: ",d:StealthChance,s:" - ",s:GetActorClass(0));
+		TempRatio = GetCVar("dvds_rnd_stealth_chars_ratio");
+		if (TempRatio < 0) TempRatio = 0;
+		if (TempRatio > 1000) TempRatio = 1000;
+		
+		TempStealthChance = 0;
+		if (CharacterClass == 0) TempStealthChance = 125;
+		else if (CharacterClass == 1) TempStealthChance = 0;
+		else if (CharacterClass == 2) TempStealthChance = -125;
+		else if (CharacterClass == 8) TempStealthChance = -50;
+		else if (CharacterClass == 9) TempStealthChance = 50;
+
+		TempStealthChance = TempStealthChance * TempRatio / 100;
+		TempStealthChance += 1000;
+		StealthChance *= TempStealthChance;
+		StealthChance /= 1000;
+		if (debugevolvestealth == 1) PrintBold(s:"Stealth Chance [Character]: ",d:StealthChance,s:" - ",s:GetActorClass(0),s:" - (",d:TempStealthChance,s:")");
 	}
 		
 	if (GetCVar("dvds_rnd_stealth_skill") == 1) 
 	{
-		if (TrueGameSkill <= SKILL_VERY_EASY) StealthChance = StealthChance * 75 / 100;
-		else if (TrueGameSkill == SKILL_EASY) StealthChance = StealthChance * 90 / 100;
-		else if (TrueGameSkill == SKILL_NORMAL) StealthChance = StealthChance * 100 / 100;
-		else if (TrueGameSkill == SKILL_HARD) StealthChance = StealthChance * 110 / 100;
-		else if (TrueGameSkill == SKILL_VERY_HARD) StealthChance = StealthChance * 125 / 100;
-		else if (TrueGameSkill == SKILL_EXTREME) StealthChance = StealthChance * 135 / 100;
-		else if (TrueGameSkill == SKILL_HORRIBLE) StealthChance = StealthChance * 150 / 100;
-		else if (TrueGameSkill == SKILL_IMPOSSIBLE) StealthChance = StealthChance * 170 / 100;
-		else if (TrueGameSkill >= SKILL_OMEGA) StealthChance = StealthChance * 200 / 100;
-		else StealthChance = StealthChance * 100 / 100;
-		if (debugevolvestealth == 1) PrintBold(s:"Stealth Chance [Skill]: ",d:StealthChance,s:" - ",s:GetActorClass(0));
+		TempRatio = GetCVar("dvds_rnd_stealth_skill_ratio");
+		if (TempRatio < 0) TempRatio = 0;
+		if (TempRatio > 1000) TempRatio = 1000;
+		
+		TempStealthChance = 0;
+		if (TrueGameSkill <= SKILL_VERY_EASY) TempStealthChance = -250;
+		else if (TrueGameSkill == SKILL_EASY) TempStealthChance = -100;
+		else if (TrueGameSkill == SKILL_NORMAL) TempStealthChance = 0;
+		else if (TrueGameSkill == SKILL_HARD) TempStealthChance = 100;
+		else if (TrueGameSkill == SKILL_VERY_HARD) TempStealthChance = 250;
+		else if (TrueGameSkill == SKILL_EXTREME) TempStealthChance = 350;
+		else if (TrueGameSkill == SKILL_HORRIBLE) TempStealthChance = 500;
+		else if (TrueGameSkill == SKILL_IMPOSSIBLE) TempStealthChance = 700;
+		else if (TrueGameSkill >= SKILL_OMEGA) TempStealthChance = 1000;
+
+		TempStealthChance = TempStealthChance * TempRatio / 100;
+		TempStealthChance += 1000;
+		StealthChance *= TempStealthChance;
+		StealthChance /= 1000;
+		if (debugevolvestealth == 1) PrintBold(s:"Stealth Chance [Skill]: ",d:StealthChance,s:" - ",s:GetActorClass(0),s:" - (",d:TempStealthChance,s:")");
 	}
 		
 	if (GetCVar("dvds_rnd_stealth_maps") == 1) 
 	{
+		TempRatio = GetCVar("dvds_rnd_stealth_maps_ratio");
+		if (TempRatio < 0) TempRatio = 0;
+		if (TempRatio > 1000) TempRatio = 1000;
+		
 		if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
 		{
 			if (ClassicDoomType == 1 || ClassicDoomType == 2) // Doom 1 / Heretic
@@ -26087,9 +26172,7 @@ script "GetStealthChance" (void)
 				if (MapCheck >= 91 && MapCheck <= 96) ChanceFactor = (MapCheck * 135);
 				if (MapCheck >= 97 && MapCheck <= 102) ChanceFactor = (MapCheck * 144);
 			}
-			ChanceFactor += 1000;
-			StealthChance = StealthChance * ChanceFactor / 1000;
-			StealthChance = StealthChance * 5 / 8;
+			ChanceFactor = ChanceFactor * 5 / 8;
 		}
 		else if (ModType == 1) // DVI
 		{
@@ -26101,7 +26184,6 @@ script "GetStealthChance" (void)
 			else if (MapCheck == 1102) StealthChance = StealthChance * 1116 / 1000; // MAP02 - Torture Chamber
 			else if (MapCheck == 1103) StealthChance = StealthChance * 1256 / 1000; // MAP03 - Cathedral
 			else if (MapCheck == 1104) StealthChance = StealthChance * 1418 / 1000; // MAP04 - End Of Days
-			else StealthChance = StealthChance * 1000 / 1000; // Any other map
 		}
 		else
 		if (ModType == 2) // DVII
@@ -26110,27 +26192,29 @@ script "GetStealthChance" (void)
 			if (MapCheck < 1201) MapCheck = 1201;
 			if (MapCheck > 1212) MapCheck = 1212;
 		
-			if (MapCheck == 1201) StealthChance = StealthChance * 1000 / 1000; // MAP01 - Entryway Pass
-			else if (MapCheck == 1202) StealthChance = StealthChance * 1070 / 1000; // MAP02 - Mutagen
-			else if (MapCheck == 1203) StealthChance = StealthChance * 1140 / 1000; // MAP03 - Crouching Demon, Hidden Archvile
-			else if (MapCheck == 1204) StealthChance = StealthChance * 1209 / 1000; // MAP04 - Minas Morgul
-			else if (MapCheck == 1205) StealthChance = StealthChance * 1302 / 1000; // MAP05 - Eagle's Nest
-			else if (MapCheck == 1206) StealthChance = StealthChance * 1395 / 1000; // MAP05B - The Manliest Level Ever
-			else if (MapCheck == 1207) StealthChance = StealthChance * 1488 / 1000; // MAP06 - Stargate
-			else if (MapCheck == 1208) StealthChance = StealthChance * 1605 / 1000; // MAP07 - The Desert Temple
-			else if (MapCheck == 1209) StealthChance = StealthChance * 1953 / 1000; // MAP08 - The Unholy Cathedral
-			else if (MapCheck == 1210) StealthChance = StealthChance * 2372 / 1000; // MAP09 - You Shall Not Pass!
-			else if (MapCheck == 1211) StealthChance = StealthChance * 2884 / 1000; // MAP10 - Hell's Vendetta
-			else if (MapCheck == 1212) StealthChance = StealthChance * 3488 / 1000; // MAP10B - attedneV s'lleH
-			else if (MapCheck == 1214) StealthChance = StealthChance * 1465 / 1000; // MAP12 - "The Wings of The Maiar" [DVI combined level remake]
-			else if (MapCheck == 1215) StealthChance = StealthChance * 3488 / 1000; // MAP10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
-			else StealthChance = StealthChance * 1000 / 1000; // All other Maps
+			if (MapCheck == 1201) ChanceFactor = 0; // MAP01 - Entryway Pass
+			else if (MapCheck == 1202) ChanceFactor = 70; // MAP02 - Mutagen
+			else if (MapCheck == 1203) ChanceFactor = 140; // MAP03 - Crouching Demon, Hidden Archvile
+			else if (MapCheck == 1204) ChanceFactor = 209; // MAP04 - Minas Morgul
+			else if (MapCheck == 1205) ChanceFactor = 302; // MAP05 - Eagle's Nest
+			else if (MapCheck == 1206) ChanceFactor = 395; // MAP05B - The Manliest Level Ever
+			else if (MapCheck == 1207) ChanceFactor = 488; // MAP06 - Stargate
+			else if (MapCheck == 1208) ChanceFactor = 605; // MAP07 - The Desert Temple
+			else if (MapCheck == 1209) ChanceFactor = 953; // MAP08 - The Unholy Cathedral
+			else if (MapCheck == 1210) ChanceFactor = 1372; // MAP09 - You Shall Not Pass!
+			else if (MapCheck == 1211) ChanceFactor = 1884; // MAP10 - Hell's Vendetta
+			else if (MapCheck == 1212) ChanceFactor = 2488; // MAP10B - attedneV s'lleH
+			else if (MapCheck == 1214) ChanceFactor = 465; // MAP12 - "The Wings of The Maiar" [DVI combined level remake]
+			else if (MapCheck == 1215) ChanceFactor = 2488; // MAP10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
 		}
-		else StealthChance = StealthChance * 1000 / 1000;
+
+		ChanceFactor = ChanceFactor * TempRatio / 100;
+		ChanceFactor += 1000;
+		StealthChance = StealthChance * ChanceFactor / 1000;
 		if (debugevolvestealth == 1)
 		{
 			PrintBold(s:"\czMapCheck: ",d:MapCheck,s:"\n\n",
-								s:"\c-Stealth Chance [Maps]: ",d:StealthChance,s:" - ",s:GetActorClass(0));
+								s:"\c-Stealth Chance [Maps]: ",d:StealthChance,s:" - ",s:GetActorClass(0),s:" - (",d:ChanceFactor,s:")");
 		}
 	}
 	
@@ -26170,8 +26254,11 @@ script "GetStealthChance" (void)
 	If(CheckActorClass(0,"BarKeepNew") == 1) IsAPeasent ++;
 	If(CheckActorClass(0,"ArmorerNew") == 1) IsAPeasent ++;
 	If(CheckActorClass(0,"MedicNew") == 1) IsAPeasent ++;
-	If(IsAPeasent > 0) StealthChance = 0;
-	if(debugevolvestealth == 1) PrintBold(s:"Stealth Chance [PeasentCheck]: ",d:StealthChance,s:" - ",s:GetActorClass(0));
+	If(IsAPeasent > 0) 
+	{
+		StealthChance = 0;
+		if(debugevolvestealth == 1) PrintBold(s:"Stealth Chance [PeasentCheck]: ",d:StealthChance,s:" - ",s:GetActorClass(0));
+	}
 
 	int IsFullyInvisible = 0;
 	If(CheckActorClass(0,"NightmareNew") == 1) IsFullyInvisible ++;
