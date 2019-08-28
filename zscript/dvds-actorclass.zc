@@ -603,7 +603,6 @@ class AetheriusCustomInventory : CustomInventory
 	int skilllevel;
 	int frametimer;
 	int autousemode;
-	int ManaPickupResult;
 	int NoOfBackPacks;
 	
 	// General
@@ -1724,7 +1723,7 @@ class AetheriusCustomInventory : CustomInventory
 	}
 	
 	// Mana Recovery Items
-	void A_CheckManaLevels(int overmana = 0)
+	int A_CheckManaLevels(int overmana = 0)
 	{
 		int CurrentMana = CallACS("StatCheck",14); 
 		int MaxMana = CallACS("StatCheck",2);
@@ -1734,8 +1733,9 @@ class AetheriusCustomInventory : CustomInventory
 		if (overmana == 0) ManaThreshold = MaxMana;
 		if (overmana == 1) ManaThreshold = MaxManaLimit;
 
-		self.A_SetInventory("ManaPickupResult",0);
-		if (CurrentMana < ManaThreshold) self.A_SetInventory("ManaPickupResult",1);
+		int result = 0;
+		if (CurrentMana < ManaThreshold) result = 1;
+		return result;
 	}
 	
 	// New Soulsphere script :P
@@ -2163,7 +2163,7 @@ class AetheriusCustomInventory : CustomInventory
 	}
 	
 		// Check if Health is above or below normal max [for customized "normal" health item checks] (All games)
-	void A_CheckHealthLevels(int maxhealtype = 0)
+	int A_CheckHealthLevels(int maxhealtype = 0)
 	{
 		int currenthealth = player.mo.health;
 		int MaxHealthTrue = CallACS("StatCheck",1);
@@ -2177,8 +2177,10 @@ class AetheriusCustomInventory : CustomInventory
 		if (maxhealtype > 0) perkhealthlimit *= 2;
 		if (perkhealthlimit > (MaxHealthTrue*2)) perkhealthlimit = (MaxHealthTrue * 2);
 		
-		self.A_SetInventory("HealthPickupResult",0);
-		if (currenthealth < perkhealthlimit) self.A_SetInventory("HealthPickupResult",1);
+		int result = 0;
+		if (currenthealth < perkhealthlimit) result = 1;
+
+		return result;
 	}
 	
 	// Max Health Bonus Script
@@ -2294,24 +2296,25 @@ class AetheriusCustomInventory : CustomInventory
 	}
 
 	// Checks Whether a Full Armor Item can be picked up or not
-	void A_CheckArmorLevels(int ArmorType = 0)
+	int A_CheckArmorLevels(int ArmorType = 0)
 	{
 		int RawArmorValue, ArmorClearValue;
 		int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
 		int CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
 		int CharacterClass = CallACS("CheckCharacterClass");
 		
-		self.A_SetInventory("ArmorPickupResult",0); // Stops Flora from getting armor benefits and sets the item's result value to 0 to make the item fail to pickup
+		int result = 0;
 		if (CharacterClass != 2)
 		{
 			RawArmorValue = player.mo.CountInv("BasicArmor");
-			if (ArmorType == 1 && CurrentArmorClass <= 1 && RawArmorValue < 100) self.A_SetInventory("ArmorPickupResult",1);
-			if (ArmorType == 2 && CurrentArmorClass <= 2 && RawArmorValue < 200) self.A_SetInventory("ArmorPickupResult",1);
-			if (ArmorType == 3 && CurrentArmorClass <= 3 && RawArmorValue < 500) self.A_SetInventory("ArmorPickupResult",1);
-			if (ArmorType == 4 && CurrentArmorClass <= 4 && RawArmorValue < 1250) self.A_SetInventory("ArmorPickupResult",1);
-			if (ArmorType == 5 && CurrentArmorClass <= 5 && RawArmorValue < 2000) self.A_SetInventory("ArmorPickupResult",1);
-			if (ArmorType == 6 && CurrentArmorClass <= 6 && RawArmorValue < 5000) self.A_SetInventory("ArmorPickupResult",1);
+			if (ArmorType == 1 && CurrentArmorClass <= 1 && RawArmorValue < 100) result = 1;
+			if (ArmorType == 2 && CurrentArmorClass <= 2 && RawArmorValue < 200) result = 1;
+			if (ArmorType == 3 && CurrentArmorClass <= 3 && RawArmorValue < 500) result = 1;
+			if (ArmorType == 4 && CurrentArmorClass <= 4 && RawArmorValue < 1250) result = 1;
+			if (ArmorType == 5 && CurrentArmorClass <= 5 && RawArmorValue < 2000) result = 1;
+			if (ArmorType == 6 && CurrentArmorClass <= 6 && RawArmorValue < 5000) result = 1;
 		}
+		return result;
 	}
 
 	// Emulates Main Armor Item Pickups [Applies Only to Deggaris and Illucia]
@@ -2408,31 +2411,34 @@ class AetheriusCustomInventory : CustomInventory
 		}
 	}
 	
-	void A_CheckChainsaw()
+	int A_CheckChainsaw()
 	{
-		if (CountInv("DoubleBladedChainsaw",AAPTR_PLAYER1) > 0) A_SetInventory("ChainsawCheckResult",2); // SetResultValue(2);
-		else if (CountInv("Chainsaw2",AAPTR_PLAYER1) > 0) A_SetInventory("ChainsawCheckResult",1); // SetResultValue(1);
-		else A_SetInventory("ChainsawCheckResult",0);
+		int result = 0;
+		if (CountInv("DoubleBladedChainsaw",AAPTR_PLAYER1) > 0) result = 2;
+		else if (CountInv("Chainsaw2",AAPTR_PLAYER1) > 0) result = 1;
+		return result;
 	}
 	
 	// Makes Armor Bonuses check for Flora's presense in the game in order to change them over to other items [this version is for when playing classic Doom 1/2]
-	void A_ClassicDoom2ArmorCheck()
+	int A_ClassicDoom2ArmorCheck()
 	{
 		int ModType = CallACS("OtherVarCheckDECORATE",8);
 		int CharacterClass = CallACS("CheckCharacterClass");
+		int result = 0;
 		
 		if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
 		{
-			if (CharacterClass == 0) A_SetInventory("ArmorPickupResult",3);
-			if (CharacterClass == 1) A_SetInventory("ArmorPickupResult",4);
-			if (CharacterClass == 2 || CharacterClass == 8 || CharacterClass == 9) A_SetInventory("ArmorPickupResult",5);
+			if (CharacterClass == 0) result = 3;
+			if (CharacterClass == 1) result = 4;
+			if (CharacterClass == 2 || CharacterClass == 8 || CharacterClass == 9) result = 5;
 		}
 		else
 		{
-			if (CharacterClass == 0) A_SetInventory("ArmorPickupResult",0);
-			if (CharacterClass == 1) A_SetInventory("ArmorPickupResult",1);
-			if (CharacterClass == 2 || CharacterClass == 8 || CharacterClass == 9) A_SetInventory("ArmorPickupResult",2);
+			if (CharacterClass == 0) result = 0;
+			if (CharacterClass == 1) result = 1;
+			if (CharacterClass == 2 || CharacterClass == 8 || CharacterClass == 9) result = 2;
 		}
+		return result;
 	}
 	
 	// Checks and Removes "Copies" of Flora's armor items on maps [when she already has these items]
@@ -2528,7 +2534,7 @@ class AetheriusCustomInventory : CustomInventory
 		CallACS("MiscVarSetDECORATE",HellCoreID,HellCoreLevel);
 	}
 	
-	void A_MaxHPDropChance()
+	int A_MaxHPDropChance()
 	{
 		int Chance, roll;
 		int TrueGameSkill = dvds_gendifficultycurve + Skill;
@@ -2546,13 +2552,15 @@ class AetheriusCustomInventory : CustomInventory
 		else Chance = 56;
 		
 		roll = random(1,256);
-		A_SetInventory("MiscResult",0);
-		if (roll <= Chance) A_SetInventory("MiscResult",1);
-		if (ModType == 0 && dvds_canseedsappear == 0) A_SetInventory("MiscResult",0);
+		int result = 0;
+		if (roll <= Chance) result = 1;
+		if (ModType == 0 && dvds_canseedsappear == 0) result = 0;
+		
+		return result;
 	}
 	
 	// Checks the first Chainsaw to become the Sceptre of Empyrea if playing on a Sceptre-less start mode.
-	void A_SawCheckSceptre()
+	int A_SawCheckSceptre()
 	{
 		int Result, SceptreCheck = 0;
 		int CharacterClass = CallACS("CheckCharacterClass");
@@ -2560,14 +2568,14 @@ class AetheriusCustomInventory : CustomInventory
 		ThinkerIterator Test1 = ThinkerIterator.Create("SceptreOfEmpyrea"); Actor mo; while (mo = Actor(Test1.Next())) { SceptreCheck++; }
 
 		if (CharacterClass == 2 && dvds_florastartsceptre == 0 && dvds_florasceptrecandrop != 0 && CountInv("SceptreOfEmpyrea",AAPTR_PLAYER1) == 0 && SceptreCheck < 1) Result = 1;
-		A_SetInventory("MiscResult",Result);
 		
 		//Console.Printf("SceptreOfEmpyrea (BerserkCheck): %d", SceptreCheck);
 		//Console.Printf("Result: %d", Result);
+		return result;
 	}
 	
 	// Checks the Berserk Pack to become the Sceptre of Empyrea if playing on a Sceptre-less start mode.
-	void A_BerserkCheckSceptre()
+	int A_BerserkCheckSceptre()
 	{
 		int Result, SceptreCheck = 0;
 		int CharacterClass = CallACS("CheckCharacterClass");
@@ -2575,10 +2583,10 @@ class AetheriusCustomInventory : CustomInventory
 		ThinkerIterator Test1 = ThinkerIterator.Create("SceptreOfEmpyrea"); Actor mo; while (mo = Actor(Test1.Next())) { SceptreCheck++; }
 
 		if (CharacterClass == 2 && dvds_florastartsceptre == 0 && dvds_florasceptrecandrop != 0 && CountInv("SceptreOfEmpyrea",AAPTR_PLAYER1) == 0 && SceptreCheck < 1) Result = 1;
-		A_SetInventory("MiscResult",Result);
 		
 		//Console.Printf("SceptreOfEmpyrea (BerserkCheck): %d", SceptreCheck);
 		//Console.Printf("Result: %d", Result);
+		return result;
 	}
 	
 	void A_FloraRandomArmorDrop(int type = 0, int OldRand0 = 0, int DVIIMode = 0)
