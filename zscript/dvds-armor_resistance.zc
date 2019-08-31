@@ -4487,14 +4487,16 @@ class PlayerStatItem : Inventory
 			int combolevel2 = basecomboneeded * 3; // B
 			int combolevel3 = basecomboneeded * 7; // A
 			int combolevel4 = basecomboneeded * 12; // S
+			int combolevel5 = basecomboneeded * 18; // Z
 			ComboRank = -1;
 			if (comboamount <= 0) ComboRank = -1;
 			else if (comboamount > 0 && comboamount < combolevel1) ComboRank = 0; // Rank D
 			else if (comboamount >= combolevel1 && comboamount < combolevel2) ComboRank = 1; // Rank C
 			else if (comboamount >= combolevel2 && comboamount < combolevel3) ComboRank = 2; // Rank B
 			else if (comboamount >= combolevel3 && comboamount < combolevel4) ComboRank = 3; // Rank A
-			else if (comboamount >= combolevel4) ComboRank = 4; // Rank S
-			if (dvdsdebug_showexpdebugstuff && comboamount > 0) Console.Printf("Combo Amount: %d, Combo Rank: %d", comboamount, ComboRank);
+			else if (comboamount >= combolevel4 && comboamount < combolevel5) ComboRank = 4; // Rank S
+			else if (comboamount >= combolevel5) ComboRank = 5; // Rank Z
+			if (dvdsdebug_showcombostuff && comboamount > 0) Console.Printf("Combo Amount: %d, Combo Rank: %d", comboamount, ComboRank);
 			
 			if (EXPComboTimer > 0 && UsingInGameMenu == 0)
 			{
@@ -4514,12 +4516,13 @@ class PlayerStatItem : Inventory
 					if (ComboRank == 1) TimerMulti *= 0.334;
 					if (ComboRank == 2) TimerMulti *= 0.25;
 					if (ComboRank == 3) TimerMulti *= 0.167;
-					if (ComboRank >= 4) TimerMulti *= 0.125;
+					if (ComboRank == 4) TimerMulti *= 0.125;
+					if (ComboRank >= 5) TimerMulti *= 0.10;
 					TimerMulti *= 0.8;
 					ComboTimerDelay -= 1;
-					if (dvdsdebug_showexpdebugstuff) Console.Printf("Combo Timer Delay: %d", ComboTimerDelay);
+					if (dvdsdebug_showcombostuff) Console.Printf("Combo Timer Delay: %d", ComboTimerDelay);
 				}
-				if (dvdsdebug_showexpdebugstuff) Console.Printf("Combo Timer Decrement [Step 1 - Base]: %d", TimerMulti);
+				if (dvdsdebug_showcombostuff) Console.Printf("Combo Timer Decrement [Step 1 - Base]: %d", TimerMulti);
 				TimerPart1 = 100;
 				
 				if (CharacterClass == 2)
@@ -4541,16 +4544,16 @@ class PlayerStatItem : Inventory
 				if (owner.CountInv("TheOneRing") > 0) TimerPart1 -= 20;
 				if (TimerPart1 < 40) TimerPart1 = 40;
 				if (TimerPart1 > 250) TimerPart1 = 250;
-				if (dvdsdebug_showexpdebugstuff) Console.Printf("Combo Timer Decrement [Step 2 - Multiplier Base]: %d", TimerPart1);
+				if (dvdsdebug_showcombostuff) Console.Printf("Combo Timer Decrement [Step 2 - Multiplier Base]: %d", TimerPart1);
 
 				if (GoETimer > 0) TimerPart1 /= 5;
-				if (dvdsdebug_showexpdebugstuff) Console.Printf("Combo Timer Decrement [Step 3 - GoE Check]: %d", TimerPart1);
+				if (dvdsdebug_showcombostuff) Console.Printf("Combo Timer Decrement [Step 3 - GoE Check]: %d", TimerPart1);
 
 				TimerMulti = (TimerMulti * TimerPart1) / 100;
 				
 				if (TimeFreezeTimer > 0) TimerMulti = TimerMulti / 15;
 				if (TimerMulti < 1) TimerMulti = 1;
-				if (dvdsdebug_showexpdebugstuff) Console.Printf("Combo Timer Decrement [Step 4 - Decrement Timer]: %d, Timer: %d", TimerMulti, EXPComboTimer);
+				if (dvdsdebug_showcombostuff) Console.Printf("Combo Timer Decrement [Step 4 - Decrement Timer]: %d, Timer: %d", TimerMulti, EXPComboTimer);
 				EXPComboTimer -= TimerMulti;
 			}
 			
@@ -4564,7 +4567,8 @@ class PlayerStatItem : Inventory
 					if (ComboRank == 2) tempaeonpts = (comboamount / basecomboneeded) * 3 / 2;
 					if (ComboRank == 3) tempaeonpts = (comboamount / basecomboneeded) * 5 / 2;
 					if (ComboRank == 4) tempaeonpts = (comboamount / basecomboneeded) * 4;
-					if (dvdsdebug_showexpdebugstuff) Console.Printf("Combo Timer Decrement [Step 5 - Get Combo Amounts]: 1: %d, 2: %d, 3: %d, 4: %d, Current: %d, tempaeonpts: %d", combolevel1, combolevel2, combolevel3, combolevel4, comboamount, tempaeonpts);
+					if (ComboRank == 5) tempaeonpts = (comboamount / basecomboneeded) * 6;
+					if (dvdsdebug_showcombostuff) Console.Printf("Combo Timer Decrement [Step 5 - Get Combo Amounts]: 1: %d, 2: %d, 3: %d, 4: %d, 5: %d, Current: %d, tempaeonpts: %d", combolevel1, combolevel2, combolevel3, combolevel4, combolevel5, comboamount, tempaeonpts);
 					
 					if (tempaeonpts > 0)
 					{
@@ -4620,22 +4624,20 @@ class PlayerStatItem : Inventory
 			if (Owner.CountInv("FistPlayerBlock3") > 0) PlayerFistBlockRDFactor *= 0.25;
 			if (Owner.CountInv("FistPlayerBlockExtra") > 0) PlayerFistBlockRDFactor *= 0.1;
 			
-			double MarineArmorRDFactor = 1.00;
+			double ArmorRDFactor = 1.00;
 			if (CharacterClass == 0 || CharacterClass == 1)
 			{
-				if (Owner.CountInv("DSGreenArmorClass") > 0) MarineArmorRDFactor -= 0.01;
-				if (Owner.CountInv("DSBlueArmorClass") > 0) MarineArmorRDFactor -= 0.04;
-				if (Owner.CountInv("DSStoneArmorClass1") > 0) MarineArmorRDFactor -= 0.15;
-				if (Owner.CountInv("DSDiamondArmorClass1") > 0) MarineArmorRDFactor -= 0.075;
-				if (Owner.CountInv("DSStoneArmorClass2") > 0) MarineArmorRDFactor -= 0.30;
-				if (Owner.CountInv("DSDiamondArmorClass2") > 0) MarineArmorRDFactor -= 0.35;
+				if (Owner.CountInv("DSGreenArmorClass") > 0) ArmorRDFactor -= 0.01;
+				if (Owner.CountInv("DSBlueArmorClass") > 0) ArmorRDFactor -= 0.04;
+				if (Owner.CountInv("DSStoneArmorClass1") > 0) ArmorRDFactor -= 0.15;
+				if (Owner.CountInv("DSDiamondArmorClass1") > 0) ArmorRDFactor -= 0.075;
+				if (Owner.CountInv("DSStoneArmorClass2") > 0) ArmorRDFactor -= 0.30;
+				if (Owner.CountInv("DSDiamondArmorClass2") > 0) ArmorRDFactor -= 0.35;
 			}
-
-			double FloraArmorRDFactor = 1.00;
 			if (CharacterClass == 2)
 			{
-				if (Owner.CountInv("WaterFlyingDress") > 0) FloraArmorRDFactor -= 0.20;
-				if (Owner.CountInv("BalrogRing") > 0) FloraArmorRDFactor -= 0.25;
+				if (Owner.CountInv("WaterFlyingDress") > 0) ArmorRDFactor -= 0.20;
+				if (Owner.CountInv("BalrogRing") > 0) ArmorRDFactor -= 0.25;
 			}
 
 			// "Demolition Expert" Perk
@@ -4674,8 +4676,7 @@ class PlayerStatItem : Inventory
 			TotalRDFactor = 1.00
 										* EWShieldRDFactor
 										* PlayerFistBlockRDFactor
-										* MarineArmorRDFactor
-										* FloraArmorRDFactor
+										* ArmorRDFactor
 										* DemoExpertRDFactor
 										* DeathRageRDFactor
 										* DQBuffRDFactor
@@ -4701,10 +4702,10 @@ class PlayerStatItem : Inventory
 			}
 			if (dvdsdebug_playerdmgdisplays && predmg > 0) 
 			{
-				Console.Printf("    \czRADIUSDAMAGE\c-: \cxTotalRDFactor = %8f\c-, EWShieldRDFactor = %8f, PlayerFistBlockRDFactor = %8f, MarineArmorRDFactor = %8f, FloraArmorRDFactor = %8f, DemoExpertRDFactor = %8f, DeathRageRDFactor = %8f, DQBuffRDFactor = %8f, SceptreDefenseRDFactor = %8f", 
+				Console.Printf("    \czRADIUSDAMAGE\c-: \cxTotalRDFactor = %8f\c-, EWShieldRDFactor = %8f, PlayerFistBlockRDFactor = %8f, ArmorRDFactor = %8f, DemoExpertRDFactor = %8f, DeathRageRDFactor = %8f, DQBuffRDFactor = %8f, SceptreDefenseRDFactor = %8f", 
 				TotalRDFactor, 
 				EWShieldRDFactor, PlayerFistBlockRDFactor, 
-				MarineArmorRDFactor, FloraArmorRDFactor, 
+				ArmorRDFactor, 
 				DemoExpertRDFactor, DeathRageRDFactor, 
 				DQBuffRDFactor, SceptreDefenseRDFactor);
 			}
