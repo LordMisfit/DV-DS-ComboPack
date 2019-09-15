@@ -1197,7 +1197,7 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 		return damage;
 	}
 
-	int A_GetRagingSpiritDMG()
+	int A_GetRagingSpiritDMG(int type = 0)
 	{
 		int lowcap = 1;
 		int lowcaprand = 2;
@@ -1209,29 +1209,69 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 		int PlayerSOR = CallACS("MiscVarCheckDECORATE",34);
 		int PlayerTHE = CallACS("MiscVarCheckDECORATE",36);
 		
-		int basedamage = (((5 + random(0,2)) * random(4,8))); // 5-7 * 4-8 + (0+) / 9-11 = 1.81~-2.22~ to 5.09~-6.22~
-		int extradamage = (((PlayerSOR + PlayerTHE) / 3) * random(5,11) / 8);
-		int damage = basedamage + extradamage;
-		if (DivineAvatarTimer > 0) // Divine Avatar reduces the damage divide [aka even more damage is dealt]
+		int basedamage; 
+		int extradamage;
+		if (type == 0)
 		{
-			damagedivider = random(5,6);
-			lowcap = 6; 
-			lowcaprand = 9; 
+			basedamage = (((5 + random(0,2)) * random(4,8))); // 5-7 * 4-8 + (0+) / 9-11 = 1.81~-2.22~ to 5.09~-6.22~
+			extradamage = (((PlayerSOR + PlayerTHE) / 4) * random(5,11) / 8);
 		}
 		else
 		{
-			damagedivider = random(9,11);
-			lowcap = 2; 
-			lowcaprand = 3; 
+			basedamage = (((6 + random(0,2)) * random(5,8))); // 6-7 * 5-8 + (0+) / 8-11 = 1.81~-2.22~ to 5.09~-6.22~
+			extradamage = (((PlayerSOR + PlayerTHE) / 3) * random(7,13) / 8);
+		}
+		int damage = basedamage + extradamage;
+		if (DivineAvatarTimer > 0) // Divine Avatar reduces the damage divide [aka even more damage is dealt]
+		{
+			if (type == 0)
+			{
+				damagedivider = random(5,6);
+				lowcap = 6; 
+				lowcaprand = 9; 
+			}
+			else
+			{
+				damagedivider = random(4,6);
+				lowcap = 7; 
+				lowcaprand = 10; 
+			}
+		}
+		else
+		{
+			if (type == 0)
+			{
+				damagedivider = random(9,11);
+				lowcap = 2; 
+				lowcaprand = 3; 
+			}
+			else
+			{
+				damagedivider = random(8,11);
+				lowcap = 3; 
+				lowcaprand = 4; 
+			}
 		}
 		
 		int damagedivgain;
-		if (CharacterClass == 0) damagedivgain = (PlayerLevel/56);
-		if (CharacterClass == 1) damagedivgain = (PlayerLevel/48);
-		if (CharacterClass == 2) damagedivgain = (PlayerLevel/40);
-		if (CharacterClass == 8) damagedivgain = (PlayerLevel/52);
-		if (CharacterClass == 9) damagedivgain = (PlayerLevel/44);
-		if (damagedivgain > 5) damagedivgain = 5;
+		if (type == 0)
+		{
+			if (CharacterClass == 0) damagedivgain = (PlayerLevel/56);
+			if (CharacterClass == 1) damagedivgain = (PlayerLevel/48);
+			if (CharacterClass == 2) damagedivgain = (PlayerLevel/40);
+			if (CharacterClass == 8) damagedivgain = (PlayerLevel/52);
+			if (CharacterClass == 9) damagedivgain = (PlayerLevel/44);
+			if (damagedivgain > 5) damagedivgain = 5;
+		}
+		else
+		{
+			if (CharacterClass == 0) damagedivgain = (PlayerLevel/48);
+			if (CharacterClass == 1) damagedivgain = (PlayerLevel/40);
+			if (CharacterClass == 2) damagedivgain = (PlayerLevel/32);
+			if (CharacterClass == 8) damagedivgain = (PlayerLevel/44);
+			if (CharacterClass == 9) damagedivgain = (PlayerLevel/36);
+			if (damagedivgain > 8) damagedivgain = 8;
+		}
 		
 		damagedivider -= damagedivgain;
 		if (damagedivider < 1) damagedivider = 1;
@@ -1240,7 +1280,7 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 		if (damage < lowcap) { damage = random(lowcap,lowcaprand); }
 		int postdamage1 = damage;
 		
-		if (debugplayeratkinfo) Console.Printf("\cxRaging Spirit Damage:\c- FinalDamage: %d, BaseDamage: %d, ExtraDamage: %d, DamageDivGain: %d, DamageDivider: %d, LowCap: %d, LowCapRand: %d", damage, basedamage, extradamage, damagedivgain, damagedivider, lowcap, lowcaprand);
+		if (debugplayeratkinfo) Console.Printf("\cxRaging Spirit Damage (type: %d):\c- FinalDamage: %d, BaseDamage: %d, ExtraDamage: %d, DamageDivGain: %d, DamageDivider: %d, LowCap: %d, LowCapRand: %d", type, damage, basedamage, extradamage, damagedivgain, damagedivider, lowcap, lowcaprand);
 		finaldamagedealt = damage;
 		return damage;
 	}
@@ -2453,6 +2493,12 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 		if (OriginalActor != null) 
 		{ 
 			if (target != OriginalActor && target == AetheriusPlayerPawn(target)) REFLECTEDMONSTERPROJ = true; 
+		}
+		
+		if (REFLECTEDMONSTERPROJ && bDONTREFLECT == false) 
+		{
+			//Console.Printf("REFLECTEDMONSTERPROJ (%d)", level.time);
+			bDONTREFLECT = true;
 		}
 		
 		Super.Tick();
