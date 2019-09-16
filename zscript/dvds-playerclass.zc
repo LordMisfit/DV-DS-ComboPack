@@ -289,7 +289,8 @@ class AetheriusPlayerPawn : PlayerPawn
 
 	override void CheckAirSupply()
 	{
-		int DrownDmg = 2 + ((level.time - player.air_finished) / TICRATE);
+		int DrownDmg = 2 + ((level.maptime - player.air_finished) / TICRATE);
+		if (DrownDmg < 0) DrownDmg = 0;
 		// Handle air supply	
 		//if (level.airsupply > 0)
 		{
@@ -300,13 +301,13 @@ class AetheriusPlayerPawn : PlayerPawn
 			{
 				ResetAirSupply();
 			}
-			else if (player.air_finished <= level.time && !(level.time & 31))
+			else if (player.air_finished <= level.maptime && !(level.maptime & 31))
 			{
 				DamageMobj(NULL, NULL, DrownDmg, 'Drowning');
 			}
 		}
-		int AirTime = max(player.air_finished - level.time, 0);
-		//Console.Printf("    WaterLevel: %d, Level.Time: %d, Player.AirFinished: %d, AirTime: %d / %d, DrownDmg: %d", waterlevel, level.time, player.air_finished, AirTime, level.airsupply, DrownDmg);
+		int AirTime = max(player.air_finished - level.maptime, 0);
+		if (dvdsdebug_showairmeter) Console.Printf("    WaterLevel: %d, Level.Time: %d, Level.MapTime: %d, Player.AirFinished: %d, \cxAirTime: %d / %d\c- (%d), DrownDmg: %d", waterlevel, level.time, level.maptime, player.air_finished, AirTime, level.airsupply, AirCapacity, DrownDmg);
 	}
 
 	override void PostBeginPlay()
@@ -2109,7 +2110,16 @@ class AetheriusPlayerPawn : PlayerPawn
 			String nm = "ThamuzApocalypseDefendMode"; MiscCheck = nm; if (CountInv(MiscCheck)) CritResistChance += ((100.0 - CritResistChance) * 0.4);
 
 			// Ripper Detection
-			if (infl == "RagingSpirit" && random(1,6) != 1) CritResistChance = 200.0;
+			if (infl == "RagingSpirit") 
+			{
+				if (random(1,24) != 1) CritResistChance = 200.0;
+				if (UniqueProjectile && random(1,12) == 1) UniqueProjectile.user_fuse -= 1;
+			}
+			if (infl == "RagingSpirit2")
+			{
+				if (random(1,6) != 1) CritResistChance = 200.0;
+				if (UniqueProjectile && random(1,48) == 1) UniqueProjectile.user_fuse -= 1;
+			}
 			if (inflictor && inflictor.bRIPPER) { if (!singleripproj && !singlefastripproj && random(1,6) != 1) CritResistChance = 200.0; }
 
 			double CritResistRoll = frandom(0.1,100.0);
