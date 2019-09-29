@@ -481,7 +481,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (self.health <= 0 && CountInv("MonsterLevelCalcs") == 1 && !bICECORPSE) 
 		{ 
 			nm = "LDLegendaryMonsterToken"; LDLToken = nm; SetInventory(LDLToken, 0);
-			nm = "LDLegendaryMonsterTransformed"; LDLToken = nm; SetInventory(LDLToken, 0);
 			nm = "LDLegendaryMonsterVisualEffectMaker"; LDLToken = nm; SetInventory(LDLToken, 0);
 			nm = "LDLegendaryMonsterVisualEffectAlternator"; LDLToken = nm; SetInventory(LDLToken, 0);
 			user_willbecomelegendary = 0;
@@ -3035,7 +3034,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						if (LevelCheck < 0) LevelCheck = 0;
 						if (LevelCheck > 2000) LevelCheck = 2000;
 						if (debugstatcalc) Console.Printf("\ckMonsterLevel [final calc]: %d (Previous: %d)", LevelCheck, PreviousLevelCheck);
-						user_monsterlevel = LevelCheck;
+						user_monsterlevel = user_lastmonsterlevel = LevelCheck;
 						
 						AttackFactor = 0.0;
 						if (LevelCheck > 0) AttackFactor += (LevelBaseMulti * (LevelCheck));
@@ -3511,6 +3510,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (Temp > 0) Temp = 0;
 					user_HPXDeathRange = Temp;
 
+					user_legendaryevolved = 0;
+					string nm = "LDLegendaryMonsterTransformed"; LDLToken = nm; SetInventory(LDLToken, 0);
+
 					// Excutes Lifebar-Related Code
 					A_SetInventory("MonsterDisplayDMG",1);
 					ACS_NamedExecuteAlways("DamageDisplays",0,0,0,0);
@@ -3535,7 +3537,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				
 					A_SetInventory("MonsterDisplayDMG",0);
 					A_SetInventory("MonsterLevelCalcs",0);
-					user_legendaryevolved = 0;
 					user_monsterlevel = 0;
 					user_checkmapskill = 0;
 					user_isstealth = 0;
@@ -5339,22 +5340,22 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (random(1,96) <= basedroprate) A_DropItem("RandomSeedDropForcedAlways",1,256);
 					if (random(1,384) <= basedroprate) A_DropItem("RandomSeedDropForcedAlways",1,256);
 				}
-				if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Actor Check]", finalexpamount);
+				if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Actor Check: %s]", finalexpamount, ActorClass);
 				
 				if (fakedeath > 0) // Fake deaths [Death Incarnate, etc] cut EXP gain by 75/87.5%
 				{
 					finalexpamount = finalexpamount * 0.25;
-					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Fake-Death]", finalexpamount);
+					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Fake-Death \cx0.25x\c-]", finalexpamount);
 				}
 				
 				finalexpamount *= KillExpMultiplier;
-				if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Multiplier: %8f]", finalexpamount, KillExpMultiplier);
+				if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [\cxMultiplier: %8f\c-]", finalexpamount, KillExpMultiplier);
 				
 				// Check for Fast Monsters setting
 				if (sv_fastmonsters == 1)
 				{
 					finalexpamount *= 1.375; // [+37.5%]
-					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Fast Monsters On]", finalexpamount);
+					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Fast Monsters On \cx1.375x\c-]", finalexpamount);
 				}
 				
 				// Check Proper Flags
@@ -5367,14 +5368,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (bSTEALTH) // ZDoom Style STEALTH = [+100%]
 				{
 					finalexpamount = finalexpamount * 1.5;
-					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Has ZDoom(tm) Stealth]", finalexpamount);
+					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Has ZDoom(tm) Stealth \cx1.5x\c-]", finalexpamount);
 				}
 				
 				// If LEGENDARY [LDL Compatiblity]
 				If (user_legendaryevolved > 0 || CountInv(LDLCheck))
 				{
 					finalexpamount *= 1.75;
-					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Is a 'Legendary' Monster? (LDL)]", finalexpamount);
+					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [Is a 'Legendary' Monster? (LDL) \cx1.75x\c-]", finalexpamount);
 				}
 				
  
@@ -5383,24 +5384,37 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					finalexpamount *= 1.125;
 					CallACS("MiscVarSetDECORATE",2022,1); // OVERKILL display color
 					CallACS("MiscVarSetDECORATE",2023,39); // OVERKILL Timer Tics
-					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP4a: %d", finalexpamount);
+					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP4a: %d [OVERKILL1 \cx1.125x\c-]", finalexpamount);
 				}
 				if (health <= overkillhp2) // Super-Overkilled [+12.5%]
 				{
 					finalexpamount *= 1.125; 
 					CallACS("MiscVarSetDECORATE",2022,2); // OVERKILL display color 
 					CallACS("MiscVarSetDECORATE",2023,52); // OVERKILL Timer Tics 
-					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP4b: %d", finalexpamount);
+					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP4b: %d [OVERKILL2 \cx1.125x\c-]", finalexpamount);
 				}
 				
 				finalexpamount = A_GetExperience(finalexpamount,A_GetExpMultiFactor()); // FUNCTION CALL
 				if (debugexp) Console.Printf("\cxAddEXP\c- - EXP5: %d", finalexpamount);
 				
-				double levelcheck = 1.000 + (user_monsterlevel * 0.0075); // Lvl 100 = +75% EXP (Lvl 200 = +150% EXP)
+				double levelcheck = 1.000 + (user_lastmonsterlevel * 0.0075); // Lvl 100 = +75% EXP (Lvl 200 = +150% EXP)
 				if (levelcheck < 1.000) levelcheck = 1.000;
-				if (levelcheck > 8.000) levelcheck = 8.000;
+				if (levelcheck > 16.000) levelcheck = 16.000;
 				finalexpamount = finalexpamount * levelcheck;
-				if (debugexp) Console.Printf("\cxAddEXP\c- - EXP6: %d [levelcheck: %8fx]", finalexpamount, levelcheck);
+				if (debugexp) Console.Printf("\cxAddEXP\c- - EXP6: %d [\cxlevelcheck: %8fx\c-] (MonsterLevel: %d)", finalexpamount, levelcheck, user_lastmonsterlevel);
+				
+				double expgainratio = 1.00;
+				double expratiofloor = 1 / 16;
+				double expratioceiling = 1 * 16;
+				// Level Differences
+				if (dvds_expplayervsmonsterlevels)
+				{
+					expgainratio = 1.00 + (((user_lastmonsterlevel + 1) / (PlayerLevel + 1)) * dvds_expplayervsmonsterlevelratio);
+					if (expgainratio <= expratiofloor) expgainratio = expratiofloor;
+					if (expgainratio >= expratioceiling) expgainratio = expratioceiling;
+					finalexpamount = finalexpamount * expgainratio;
+					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP?: %d [\cxexpgainratio: %8fx\c-], MonsterLevel: %d, PlayerLevel: %d, EXPFloor: %8fx, EXPCeiling: %8fx", finalexpamount, expgainratio, user_lastmonsterlevel, PlayerLevel, expratiofloor, expratioceiling);
+				}
 				
 				int PreComboEXP = finalexpamount;
 				// EXP Combo Counter
