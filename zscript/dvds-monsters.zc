@@ -1564,9 +1564,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				ActorDefenseIgnoreFactor += (1.00 * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Suicide Bombers/Kamikaze Enemy Attacks
-			if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") 
+			if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord" || mod == 'Explosive') 
 			{
-				ActorDefenseIgnoreFactor += (0.6667 * (1.00 - ActorDefenseIgnoreFactor));
+				ActorDefenseIgnoreFactor += (frandompick(0.625,0.6667,0.75) * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Chill Touch
 			if (infl == "ChillTouch") 
@@ -1652,7 +1652,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 
 		predirdmg = damage;
-		if (playpawn && (playpawn.player.cheats & CF_FRIGHTENING || playpawn.bFRIGHTENING))
+		if ((playpawn && (playpawn.player.cheats & CF_FRIGHTENING || playpawn.bFRIGHTENING)) && bFRIGHTENED)
 		{
 			damage *= frandom(1.20,1.25);
 			if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP ?? - Fright Check]\c-: \cypredmg = %d\c- / \cydmg = %d\c-)", predirdmg, damage);
@@ -1695,12 +1695,37 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		//************************************************************************
 		let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		//************************************************************************
+		
+		A_DamageMobPostReturn1(inflictor, source, damage, mod, flags, angle, 
+													 ret, oldhealth, nrmldmgfctr, vict, sour, infl, basedmgfactor, drainmaxdmg);
+		
+		return ret;
+	}
+	
+	int A_DamageMobPreReturn1(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	{
+		return damage;
+	}
+
+	int A_DamageMobPostReturn1(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle, int ret, int oldhealth, double nrmldmgfctr, string vict, string sour, string infl, double basedmgfactor, int drainmaxdmg)
+	{
+		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
+		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
+		AetheriusPlayerPawn playpawn;
+		AetheriusMonsterZSC DVDSActor;
+		if (source) 
+		{
+			playpawn = AetheriusPlayerPawn(source);
+			DVDSActor = AetheriusMonsterZSC(source);
+		}
+		
+		// Copied from DamageMobj vvvvvv
 		if (mod == 'dashing' && NORADDMG == 1 && !bNORADIUSDMG) 
 		{
 			bNORADIUSDMG = 1;
 			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP ? - RESET NORADIUSDMG])");
 		}
-
+		
 		int outputdmg = damage;
 		if (playpawn) outputdmg = playpawn.playoutputdmg;
 		double finaldmgfactor = 1.00;
