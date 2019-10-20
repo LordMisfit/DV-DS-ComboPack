@@ -900,6 +900,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int CritChance, CritRoll;
 		int oldhealth = self.health;
 		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
+		int CharacterClass = CallACS("CheckCharacterClass");
 		
 		if (mod == 'dashing')
 		{
@@ -1410,7 +1411,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		double HubBubRand = frandompick(0.45,0.475,0.5,0.525,0.55);
 		double RailRandom = frandompick(0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.50,0.50,0.50,0.50,0.75,0.75,0.9875);
 		double ActorDefenseIgnoreFactor = 0.00;
-		// BFG Ignores roughly half of "normal" damagefactor
+		double dfperkfactor = 0.00;
 		if (inflictor == null && source == null) { }
 		else
 		{
@@ -1420,7 +1421,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					mod == 'KnightFist' || mod == 'BaronFist' || mod == 'BelphegorFist' || mod == 'BruiserFist' || mod == 'ArchonFist' || mod == 'PyroFist' || 
 					mod == 'IncarnateSkull' || mod == 'BalrogFist' || mod == 'DiabloistHand'))
 			{
-				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + (CallACS("MiscVarCheckDECORATE",10033) * frandom(0.0225,0.0275)) +  (CallACS("MiscVarCheckDECORATE",10034) * frandom(0.05625,0.06875))) * (1.00 - ActorDefenseIgnoreFactor));
+				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + (CallACS("MiscVarCheckDECORATE",10033) * frandom(0.0225,0.0275)) + (CallACS("MiscVarCheckDECORATE",10034) * frandom(0.05625,0.06875))) * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Eldritch
 			if (mod == 'Eldritch') 
@@ -1430,22 +1431,40 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// Melee
 			if (mod == 'Melee' || mod == 'Trample' || mod == 'Stomp' || mod == 'Fist' || mod == 'Kick' || mod == 'Chainsaw' || mod == 'Gauntlets')
 			{
-				ActorDefenseIgnoreFactor += ((random(0,10) * 0.01) * (1.00 - ActorDefenseIgnoreFactor));
+				if (playpawn)
+				{
+					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10051) * 0.01) + (CallACS("MiscVarCheckDECORATE",10052) * 0.025));
+					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10035) * 0.01) + (CallACS("MiscVarCheckDECORATE",10036) * 0.025));
+				}
+				ActorDefenseIgnoreFactor += (((random(0,10) * 0.01) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
-			// BFG
+			// BFG Ignores roughly half of "normal" damagefactor
 			if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') 
 			{ 
-				ActorDefenseIgnoreFactor += (frandom(0.45,0.55) * (1.00 - ActorDefenseIgnoreFactor));
+				if (playpawn)
+				{
+					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10023) * 0.01) + (CallACS("MiscVarCheckDECORATE",10024) * 0.025));
+					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10029) * 0.01) + (CallACS("MiscVarCheckDECORATE",10030) * 0.025));
+				}
+				ActorDefenseIgnoreFactor += ((frandom(0.45,0.55) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Plasma Ignores 1/4th of "normal" damagefactor
 			if (mod == 'Plasma') 
 			{ 
-				ActorDefenseIgnoreFactor += (frandom(0.225,0.275) * (1.00 - ActorDefenseIgnoreFactor));
+				if (playpawn)
+				{
+					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10023) * 0.01) + (CallACS("MiscVarCheckDECORATE",10024) * 0.025));
+				}
+				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Railguns
 			if (infl == "DBTRailPuff") 
 			{ 
-				ActorDefenseIgnoreFactor += (RailRandom * (1.00 - ActorDefenseIgnoreFactor));
+				if (playpawn)
+				{
+					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10023) * 0.01) + (CallACS("MiscVarCheckDECORATE",10024) * 0.025));
+				}
+				ActorDefenseIgnoreFactor += ((RailRandom + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Hubble Bubbles
 			if (infl == "HubbleBubbleSmall" || infl == "HubbleBubbleLarge") 
@@ -1483,7 +1502,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// Poison Needle
 			if (mod == 'PoisonNeedle') 
 			{ 
-				ActorDefenseIgnoreFactor += (0.625 * (1.00 - ActorDefenseIgnoreFactor));
+				if (playpawn)
+				{
+					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10035) * 0.01) + (CallACS("MiscVarCheckDECORATE",10036) * 0.025));
+				}
+				ActorDefenseIgnoreFactor += ((0.625 + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Poison Clouds
 			if ((mod == "PoisonElemental" || mod == "Poison") && 
@@ -1567,7 +1590,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// Suicide Bombers/Kamikaze Enemy Attacks
 			if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord" || mod == 'Explosive') 
 			{
-				ActorDefenseIgnoreFactor += (frandompick(0.625,0.6667,0.75) * (1.00 - ActorDefenseIgnoreFactor));
+				if (playpawn)
+				{
+					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10025) * 0.01) + (CallACS("MiscVarCheckDECORATE",10026) * 0.025));
+				}
+				ActorDefenseIgnoreFactor += ((frandompick(0.625,0.6667,0.75) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Chill Touch
 			if (infl == "ChillTouch") 
