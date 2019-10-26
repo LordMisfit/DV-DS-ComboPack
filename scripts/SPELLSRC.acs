@@ -29470,13 +29470,13 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 					if (debuglifebar == 1) PrintBold(s:"Activator [2]: ",d:Activator,s:"");
 					If (CheckActorProperty(0, APROP_Friendly, 0)) 
 					{
-						If (GetUserVariable(0, "user_willbecomelegendary") > 0) SetFont("MLRHPBAR");
-						else SetFont("MNRHPBAR");
+						SetFont("MNRHPBAR");
+						if (CheckActorInventory(0,"LDLegendaryMonsterToken") > 0) SetFont("MLRHPBAR");
 					}
 					else If (CheckActorProperty(0, APROP_Friendly, 1)) 
 					{
-						If (GetUserVariable(0, "user_willbecomelegendary") > 0) SetFont("MLGHPBAR");
-						else SetFont("MNGHPBAR");
+						SetFont("MNGHPBAR");
+						if (CheckActorInventory(0,"LDLegendaryMonsterToken") > 0) SetFont("MLGHPBAR");
 					}
 					int stealthcheck = GetUserVariable(0, "user_isstealth");
 					str stealthcheck2 = ""; if (stealthcheck > 0) stealthcheck2 = "?";
@@ -29499,9 +29499,9 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 						else isfriendly = " \cn(Friend)";
 					}
 					str willbecomelegendary = "";
-					If (GetUserVariable(0, "user_legendaryevolved") == 0 && GetUserVariable(0, "user_willbecomelegendary") > 0) willbecomelegendary = " \c[teal](???)";
+					if (CheckActorInventory(0,"LDLegendaryMonsterToken") == 0 && CheckActorInventory(0,"LDLegendaryMonsterTransformed") > 0) willbecomelegendary = " \c[teal](???)";
 					str islegendary = "";
-					If (GetUserVariable(0, "user_legendaryevolved") > 0) islegendary = " \c[purple](LEGENDARY)";
+					If (CheckActorInventory(0,"LDLegendaryMonsterTransformed") > 0) islegendary = " \c[purple](LEGENDARY)";
 					ypos = MiscFixedVars[1] + 0.0;
 					SetActivator(Activator);
 
@@ -35811,3 +35811,357 @@ script "playerfreeze" (int type)
 	SetUserArray(Player1TID,"user_PlayerDVDSSpecial",9,1); // Prevents Dashing
 }
 
+#define MAX_SKILLS                  9
+
+str monsterChooser[MAX_SKILLS] =
+{
+	"LDLegendaryMonsterChooserEasy",
+	"LDLegendaryMonsterChooserNormal",
+	"LDLegendaryMonsterChooserHard",
+	"LDLegendaryMonsterChooserUV",
+	"LDLegendaryMonsterChooserNightmare",
+	"LDLegendaryMonsterPickupExtreme",
+	"LDLegendaryMonsterPickupHorrible",
+	"LDLegendaryMonsterPickupImpossible",
+	"LDLegendaryMonsterPickupOmega"
+};
+
+// --------------------------------------------------
+// UTILITY FUNCTIONS
+// 
+
+function void TossItem(str item)
+{
+	int xtoss = GetActorX(0) + 4.0;
+	int ytoss = GetActorY(0) + 4.0;
+	int ztoss = GetActorZ(0) + 24.0;
+	int angle = GetActorAngle(0);
+	int tid = UniqueTID();
+	int xspeed = FixedMul(cos(angle), 8.0);
+	int yspeed = FixedMul(sin(angle), 8.0);
+
+	SpawnForced(item, xtoss, ytoss, ztoss, tid, 0);
+	SetActorVelocity(tid, xspeed, yspeed, -4.0, true, false);
+	SetActorAngle(tid, angle);
+	SetActorPosition(tid, xtoss, ytoss, ztoss, 0);
+	Thing_ChangeTID(tid, 0);
+}
+
+function void ClearHudMessage(int id)
+{
+	HudMessage(s:"\n"; HUDMSG_PLAIN, id, CR_WHITE, 0.0, 0.0, 0.0);
+}
+
+// --------------------------------------------------
+// SCRIPTS
+// 
+/*
+script "LDWorldInit" open
+{
+	Delay(1); // Give the world a chance to spawn
+	
+	int skill = GameSkill();
+	int rerolldelay;
+	if (skill == SKILL_VERY_EASY) 	rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 5 / 4);
+	if (skill == SKILL_EASY) 		rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 9 / 8);
+	if (skill == SKILL_NORMAL) 		rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 1 / 1);
+	if (skill == SKILL_HARD) 		rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 7 / 8);
+	if (skill == SKILL_VERY_HARD) 	rerolldelay = 35 * (GetCVar("LD_restartdelayseconds") * 3 / 4);
+	Delay(rerolldelay);
+	
+	if (skill > MAX_SKILLS-1)
+	{
+		log(s:"LDWorldInit: Skill exceeded max ", d:MAX_SKILLS - 1, s:" (was ", d:skill, s:")");
+		skill = MAX_SKILLS - 1;
+	}
+	
+	if (GetCVar("LD_Reroll") > 0)
+	{
+		// Assuming the radius of each chooser is 16384, the total reach is 32768 units each
+		for (int x = -32768; x < 32768; x += 16384)
+			for (int y = -32768; y < 32768; y += 16384)
+				for (int z = -32768; z < 32768; z += 16384)
+					SpawnForced(monsterChooser[skill], x << 16, y << 16, z << 16, 0, false);
+	}
+	
+	restart;
+}
+*/
+script "LDMonsterInit" (void)
+{
+	Delay(1); // Give the monster a chance to calc it's DV-DS stats first
+	int StartTID = ActivatorTID();
+	if (ActivatorTID() != 0) terminate;
+	
+	int DVDSspawnHealth = GetUserVariable(0, "user_MaxHP"); // GetActorProperty(0, APROP_SpawnHealth);;
+	int EvolveHPLevel = DVDSspawnHealth / random(2,4);
+	int spawnHealth = GetUserVariable(0, "user_MaxHP"); // GetActorProperty(0, APROP_SpawnHealth);;
+	SetActorFlag(0,"BUDDHA",1);
+	int realSpawnHealth = spawnHealth;
+	int tid = UniqueTID();
+	tid += 5000;
+	bool evolved = false;
+	
+	if (CheckInventory("LDLegendaryMonsterToken") > 0)
+			terminate;
+	
+	GiveInventory("LDLegendaryMonsterToken", 1);
+	
+	if (GetCVar("LD_legendarydebug"))
+			Log(s:"\cdLD DEBUG\c-: \ca", s:GetActorClass(0), s:" \c-(", d:StartTID, s:" / ", d:tid, s:") has been \cdLEGENDARIFIED\c-");
+	
+	if (!SpawnForced("DRPGLegenDoomActive", 0, 0, 0, tid, 0))
+	{
+			if (CheckFlag(0, "BOSS")) spawnHealth *= GetCVar("LD_legendaryhealthboss") / 100;
+			else spawnHealth *= GetCVar("LD_legendaryhealth") / 100;        
+	}
+	else
+			Thing_Remove(tid);
+	
+	while (true)
+	{
+		int health = GetActorProperty(0, APROP_Health);
+		int olddamagemulti = GetActorProperty(0,APROP_DamageMultiplier);
+		int newdamagemulti;
+		int olddamagereduce = GetActorProperty(0,APROP_DamageFactor);
+		int newdamagereduce;
+		int oldspeed = GetActorProperty(0,APROP_Speed);
+		int newspeed;
+		int oldmass = GetActorProperty(0,APROP_Mass);
+		int newmass;
+        
+		if (evolved)
+		{
+			GiveInventory("LDLegendaryMonsterVisualEffectMaker", 1);
+		}
+		else 
+		if (health > 0 && health <= EvolveHPLevel)
+		{
+			SetActorProperty(0, APROP_Health, spawnHealth);
+			SetUserVariable(0, "user_MaxHP", spawnHealth);
+			SetUserVariable(0, "user_legendaryevolved", 1);
+			SetActorFlag(0,"BUDDHA",0);
+			if (CheckFlag(0, "BOSS"))
+			{
+				GiveInventory("LDLegendaryMonsterBossStatBoost", 1);
+		
+				newdamagemulti = FixedMul(olddamagemulti,GetCVar("LD_legendarydamageboss"));
+				if (GetCVar("LD_legendarydebug")) Log(s:"New DamageMulti: ",f:newdamagemulti);
+				SetActorProperty(0, APROP_DamageMultiplier, newdamagemulti);
+		
+				newdamagereduce = FixedMul(olddamagereduce,GetCVar("LD_legendarydefenseboss"));
+				if (GetCVar("LD_legendarydebug")) Log(s:"New DamageReduce: ",f:newdamagereduce);
+				SetActorProperty(0, APROP_DamageFactor, newdamagereduce);
+		
+				newspeed = FixedMul(oldspeed,GetCVar("LD_legendaryspeedboss"));
+				if (GetCVar("LD_legendarydebug")) Log(s:"New Speed: ",f:newspeed);
+				SetActorProperty(0, APROP_Speed, newspeed);
+		
+				newmass = oldmass * GetCVar("LD_legendarymassboss") / 100; // FixedMul(oldmass,GetCVar("LD_legendarymassboss"));
+				if (GetCVar("LD_legendarydebug")) Log(s:"New Mass: ",d:newmass);
+				SetActorProperty(0, APROP_Mass, newmass);
+			}
+			else
+			{
+				GiveInventory("LDLegendaryMonsterStatBoost", 1);
+		
+				newdamagemulti = FixedMul(olddamagemulti,GetCVar("LD_legendarydamage"));
+				if (GetCVar("LD_legendarydebug")) Log(s:"New DamageMulti: ",f:newdamagemulti);
+				SetActorProperty(0, APROP_DamageMultiplier, newdamagemulti);
+		
+				newdamagereduce = FixedMul(olddamagereduce,GetCVar("LD_legendarydefense"));
+				if (GetCVar("LD_legendarydebug")) Log(s:"New DamageReduce: ",f:newdamagereduce);
+				SetActorProperty(0, APROP_DamageFactor, newdamagereduce);
+		
+				newspeed = FixedMul(oldspeed,GetCVar("LD_legendaryspeed"));
+				if (GetCVar("LD_legendarydebug")) Log(s:"New Speed: ",f:newspeed);
+				SetActorProperty(0, APROP_Speed, newspeed);
+		
+				newmass = oldmass * GetCVar("LD_legendarymass") / 100; // FixedMul(oldmass,GetCVar("LD_legendarymass"));
+				if (GetCVar("LD_legendarydebug")) Log(s:"New Mass: ",d:newmass);
+				SetActorProperty(0, APROP_Mass, newmass);
+			}            
+			evolved = true;
+		}
+
+		if (health <= 0)
+		{
+			if (CheckFlag(0, "BOSS"))
+			{
+				if (evolved) TossItem("LDLiteDVDSBossItem"); // TossItem("LDLiteBossItem");
+				GiveInventory("LDLegendaryMonsterDed", 1);
+			}
+			else
+			{
+				if (evolved) 
+				{
+//						 if (realSpawnHealth >= 1000) TossItem("LDLiteTier5Item");
+//					else if (realSpawnHealth >= 750)  TossItem("LDLiteTier4Item");
+//					else if (realSpawnHealth >= 500)  TossItem("LDLiteTier3Item");
+//					else if (realSpawnHealth >= 250)  TossItem("LDLiteTier2Item");
+//					else                              TossItem("LDLiteTier1Item");
+					TossItem("LDLiteDVDSItem"); // TossItem("LDLiteItem");
+				}
+				GiveInventory("LDLegendaryMonsterDed", 1);
+			}
+			terminate;
+		}
+		
+		Delay(1);
+	}
+}
+
+int isDRLA = 2;
+script "DRLALDLiteCheck" (void)
+{
+	if (isDRLA == 2)
+	{
+		int TID = UniqueTID();
+		int spawned = SpawnForced("RLArsenalThingo", 0, 0, 0, TID, 0);
+		
+		if (spawned)
+		{
+			Thing_Remove(TID);
+			isDRLA = true;
+		}
+		else
+			isDRLA = false;
+	}
+	
+	SetResultValue(isDRLA);
+}
+
+script "Draw_Pentagram" (int pentaradius)
+{
+	int px, py, c_angle, count;
+	int posx, posy, posz;
+	int radius = pentaradius << 16;
+	int angle;
+	int offset = 0;
+	
+	int linepoints_x[5];
+	int linepoints_y[5];
+	int point1, point2;
+	int linepos;
+	int vec;
+	
+	int alpha = 1;
+	bool fadeout = false;
+	
+	posx = GetActorX(0);
+	posy = GetActorY(0);
+	posz = GetActorZ(0);
+	
+	while (true)
+	{
+		// Draw the circle, 360 points
+		for (count = 360; count > 0; count--)
+		{
+			angle = 1.0 / 360 * count;
+			px = posx + FixedMul(cos(angle), radius);
+			py = posy + FixedMul(sin(angle), radius);
+	    
+			SpawnParticle(0xFF0000, true, Random(1, 3), Random(5, 7), px, py, posz, 0, 0, 0, 0, 0, 0, alpha, 255);
+		}
+		
+		// Draw each line, 5 points
+		// First build the point positions
+		for (count = 5; count > 0; count--)
+		{
+			angle = 1.0 / 5 * count;
+			linepoints_x[count - 1] = posx + FixedMul(cos(angle), radius);
+			linepoints_y[count - 1] = posy + FixedMul(sin(angle), radius);
+		}
+		
+		// Now draw 5 line vectors, skipping every second number to draw the star
+		point1 = 0;
+		point2 = 2; // (point1 + 2) % 5
+		for (count = 0; count < 5; count++)
+		{
+			for (linepos = FixedMul(radius, 1.9) >> 16; linepos > 0; linepos--)
+			{
+					vec = VectorAngle(linepoints_x[point2] - linepoints_x[point1], linepoints_y[point2] - linepoints_y[point1]);
+					px = linepoints_x[point1] + linepos * Cos(vec);
+					py = linepoints_y[point1] + linepos * Sin(vec);
+				
+					SpawnParticle(0xFF0000, true, Random(1, 3), Random(5, 7), px, py, posz, 0, 0, 0, 0, 0, 0, alpha, 255);
+			}
+			
+			point1 = point2;
+			point2 = (point1 + 2) % 5;
+		}
+		
+		if (!fadeout)
+		{
+			alpha += 20;
+			
+			if (alpha > 255)
+			{
+				alpha = 255;
+				fadeout = true;
+			}
+		}
+		else
+		{
+			alpha -= 2;
+			
+			if (alpha < 2)
+				terminate;
+		}
+		
+		Delay(1);
+	}
+}
+
+// --------------------------------------------------
+// DECORATE HELPERS
+// 
+
+script "PlayerCount" (void)
+{
+	SetResultValue(PlayerCount());
+}
+
+// --------------------------------------------------
+// CVAR GETTERS
+// 
+
+script "LD_LegendaryHealth" (void)
+{
+	SetResultValue(GetCVar("LD_legendaryhealth"));
+}
+
+script "LD_LegendaryHealthBoss" (void)
+{
+	SetResultValue(GetCVar("LD_legendaryhealthboss"));
+}
+
+script "LD_LegendaryChance" (void)
+{
+	SetResultValue(GetCVar("LD_legendarychance"));
+}
+
+script "LD_DieMode" (void)
+{
+	SetResultValue(GetCVar("LD_diemode"));
+}
+
+script "LD_NoMonsters" (void)
+{
+	SetResultValue(GetCVar("LD_nomonsters"));
+}
+
+script "LD_NoBosses" (void)
+{
+	SetResultValue(GetCVar("LD_nobosses"));
+}
+
+script "LD_LegendaryMarkers" (void)
+{
+	SetResultValue(GetCVar("LD_legendarymarkers"));
+}
+
+script "LD_LegendaryDebug" (void)
+{
+	SetResultValue(GetCVar("LD_legendarydebug"));
+}
