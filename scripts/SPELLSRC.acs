@@ -80,8 +80,6 @@
 			["SetLevelCap"]										-	***DEBUG*** Set Levelcap Manually ***DEBUG***
 			["SetTensionLevel"]								-	Sets Tension level to the specfied amount
 			
-			["GetSceptreLevel"]								-	***WEAPON*** Returns the Sceptre's Level [for A_JumpIf checks in DECORATE]
-
 			["DV1M04-Music1"]									-	***EVENT*** Changes Music for Entering the Fishmouth Temple in MAP04 [DVI-DS] or MAP12 [DVII-DS] ***EVENT***
 			["DVI-M02EyeDead"]								-	***EVENT*** Killed MAP02 Eye [DVI-DS] / MAP12 First Eye [DVII-DS] ***EVENT***
 			["DV1-M04Eye1Dead"]								-	***EVENT*** Killed MAP04 Eye #1 [DVI-DS] / MAP12 Second Eye [DVII-DS] ***EVENT***
@@ -102,7 +100,6 @@
 			["MonsterStatsHP_ATK_DEF_SPD"]		-	Determines Attack/Defense/Speed Bonuses for Monsters [depending on difficulty level and maps and game mode]
 			["DamageDisplays"]								-	Controls DamageIndicators for Non-Players
 			["DoomMonsterDeathEmulation"]			-	Emulates the various special scripts in Doom 1/2 mode [E1M8, MAP07, etc]
-			["SauronGauntletsHit"]						-	Controls the Primary Effect of Sauron's Gauntlets when hitting someone
 			["CheckSceptreAltFire"] 					-	Check if to perform Sceptre's downswing alternate attack while falling.
 			["LifebarDisplayClientSide"]			-	Controls Lifebar Displays [CLIENTSIDE only]
 			["LifebarOptionChecker"]					-	Event Linked to call "LifebarDisplayClientSide" Event
@@ -18174,103 +18171,6 @@ script "EmulateGiveArmorBonus" (int BaseAmount, int GauntletGive)
 				TakeActorInventory(Player1TID,"DSStoneArmorClass2", 0x7FFFFFFF);
 			}
 		}
-	}
-}
-
-// Sauron's Gauntlets Effect
-script "SauronGauntletsHit" (int Amount, int HitType)
-{
-	int GMultiplier;
-	int check;
-	bool gaveAnything = false;
-	
-	if (HitType <= 0) HitType = 1;
-	if (HitType >= 3) HitType = 2;
-	
-	if (HitType == 1) Amount = (Amount / 250) + 1; // Give some life when hurting a monster [1+(Damage/250)]
-	if (HitType == 2) Amount = (Amount / 50) + 5; // Give more life when killing a monster [5+(Damage/50)]
-
-	If (Amount <= 0) Amount = 1;
-	If (Amount >= 65) Amount = 64;
-	
-	// Restore Health & Stamina
-	bool giveHealth = GetCVar("dvds_saurongauntlets_givehealth");
-	bool giveStamina = GetCVar("dvds_saurongauntlets_givestamina");
-	if (giveHealth || giveStamina)
-	{
-		int prevHealth = GetActorProperty(Player1TID,APROP_Health);
-		int prevStamina = MiscellaneousVars[21];
-		int giveStaminaAmount = 50;
-		if (!giveStamina)
-			giveStaminaAmount = 0;
-		
-		ACS_NamedExecuteWithResult("EmulateGiveHealthBonus",Amount,0,giveStaminaAmount,0);
-		
-		if (!giveHealth)
-			SetActorProperty(Player1TID,APROP_Health,prevHealth);
-		else if (!GetCVar("dvds_saurongauntlets_giveoverhealth") && GetActorProperty(Player1TID,APROP_Health) > MaxHealthTrue)
-			SetActorProperty(Player1TID,APROP_Health,MaxHealthTrue);
-		
-		if (prevHealth > GetActorProperty(Player1TID,APROP_Health))
-			SetActorProperty(Player1TID,APROP_Health,prevHealth);
-		
-		if (giveStamina && !GetCVar("dvds_saurongauntlets_giveoverstamina") && MiscellaneousVars[21] > MiscellaneousVars[22])
-			MiscellaneousVars[21] = MiscellaneousVars[22];
-		
-		if (prevStamina > MiscellaneousVars[21])
-			MiscellaneousVars[21] = prevStamina;
-		
-		if (MiscellaneousVars[21] > prevStamina || GetActorProperty(Player1TID,APROP_Health) > prevHealth)
-			gaveAnything = true;
-	}
-	
-	// Restore Armor [Flora Cannot Gain Armor from it though]
-	if (CharacterClass != 2 && GetCVar("dvds_saurongauntlets_givearmor"))
-	{
-		if (CheckActorInventory(Player1TID,"Armor") < GetCVar("dvds_saurongauntlets_givearmorlimit"))
-		{
-			int ArmorAmount = (Amount * random(6,9)) / 15;
-			If (ArmorAmount <= 0) ArmorAmount = 1;
-			ACS_NamedExecuteWithResult("EmulateGiveArmorBonus",ArmorAmount,1,0);
-			gaveAnything = true;
-		}
-	}
-	
-	// Restore Mana
-	if (GetCVar("dvds_saurongauntlets_givemana"))
-	{
-		int MaxManaLimit = MaxMana;
-		if (GetCVar("dvds_saurongauntlets_giveovermana"))
-			MaxManaLimit *= 2;
-		
-		if (CurrentMana < MaxManaLimit)
-		{
-			int prevMana = CurrentMana;
-			int ManaAmount = (Amount * random(6,9)) / 9;
-			GMultiplier = (PlayerLevel * 4) + 100;
-			ManaAmount = Amount;
-			ManaAmount = ManaAmount * GMultiplier / 100;
-			if (CharacterClass == 2) ManaAmount = ManaAmount * random(5,7) / 4; // Flora will gain Extra Mana from a Gauntlet punch to make up for not being able to get armor.
-			else if (CharacterClass == 8) ManaAmount = ManaAmount * random(4,6) / 4; // Ailish will gain Extra Mana from a Gauntlet punch as well.
-			else ManaAmount = ManaAmount * random(9,15) / 12;
-			If (ManaAmount <= 0) ManaAmount = 1;
-			CurrentMana += ManaAmount;
-			if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
-			
-			if (CurrentMana > prevMana)
-				gaveAnything = true;
-		}
-	}
-	
-	if (gaveAnything)
-	{
-		// Only do this if the player actually received something (health, mana, armor, and/or stamina).
-		if (CharacterClass == 2) ActivatorSound("healing_dq",127);
-		else ActivatorSound("HealSpell1",127); 
-		
-		SetActivator(Player1TID); // Set to Player's ID
-		FadeRange(224,224,224,0.33,224,224,224,0,0.5);
-		SetActivator(0); // Set back to worldly activator
 	}
 }
 

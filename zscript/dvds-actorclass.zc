@@ -141,419 +141,434 @@ class AetheriusBaseZSC : Actor
 	}
 	
 	// New Health Bonus Script :P
-	void A_EmulateGiveHealthBonus (int multiplier = 1, int givemanachance = 8, int staminagive = 100, int hellcorecool = 1)
+	void A_EmulateGiveHealthBonus (Actor Source, int multiplier = 1, int givemanachance = 8, int staminagive = 100, int hellcorecool = 1)
 	{
-		int CharacterClass = CallACS("CheckCharacterClass");
-		int PlayerLevel = CallACS("StatCheck",0);
-		int MaxHealthTrue = CallACS("StatCheck",1);
-		int MaxMana = CallACS("StatCheck",2);
-		int CurrentMana = CallACS("StatCheck",14);
-		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
-		int MaxStamina = CallACS("MiscVarCheckDECORATE",22);
-		int MaxStamina5X = MaxStamina * 5;
-		int StamToGain = CallACS("MiscVarCheckDECORATE",165);
-		int RegenStamFastPerkLevel = CallACS("MiscVarCheckDECORATE",10017);
-		int RegenStamFastEXPerkLevel = CallACS("MiscVarCheckDECORATE",10018);
-		int MaxHealthLimit = MaxHealthTrue * 2;
-		int MaxManaLimit = MaxMana * 2;
-		int temp1, temp2;
-		int PerkFactor;
-		int CurrentHealth, TempHealAmount, TempHealAmount2, TempHealAmount3;
-		
-		if (multiplier <= 0) multiplier = 1;
-		CurrentHealth = player.mo.health;
-		
-		if (CurrentHealth < MaxHealthLimit)
+		AetheriusPlayerPawn playpawn;
+		playpawn = AetheriusPlayerPawn(source);
+		if (playpawn)
 		{
-			TempHealAmount = MaxHealthTrue / 100;
-			if (TempHealAmount < 1) TempHealAmount = 1;
-		
-			TempHealAmount2 = PlayerLevel / 25;
-			TempHealAmount += TempHealAmount2;
-			TempHealAmount *= multiplier;
-			CurrentHealth += TempHealAmount;
-			if (CurrentHealth >= MaxHealthLimit) CurrentHealth = MaxHealthLimit;
-
-			player.mo.health = player.health = CurrentHealth;
-		}
-		
-		if (random(1,100) <= givemanachance)
-		{
-			if (CurrentMana < MaxManaLimit)
+			int CharacterClass = CallACS("CheckCharacterClass");
+			int PlayerLevel = CallACS("StatCheck",0);
+			int MaxHealthTrue = CallACS("StatCheck",1);
+			int MaxMana = CallACS("StatCheck",2);
+			int CurrentMana = CallACS("StatCheck",14);
+			int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+			int MaxStamina = CallACS("MiscVarCheckDECORATE",22);
+			int MaxStamina5X = MaxStamina * 5;
+			int StamToGain = CallACS("MiscVarCheckDECORATE",165);
+			int RegenStamFastPerkLevel = CallACS("MiscVarCheckDECORATE",10017);
+			int RegenStamFastEXPerkLevel = CallACS("MiscVarCheckDECORATE",10018);
+			int MaxHealthLimit = MaxHealthTrue * 2;
+			int MaxManaLimit = MaxMana * 2;
+			int temp1, temp2;
+			int PerkFactor;
+			int CurrentHealth, TempHealAmount, TempHealAmount2, TempHealAmount3;
+			
+			if (multiplier <= 0) multiplier = 1;
+			CurrentHealth = playpawn.player.mo.health;
+			
+			if (CurrentHealth < MaxHealthLimit)
 			{
-				TempHealAmount = MaxMana / 100;
+				TempHealAmount = MaxHealthTrue / 100;
 				if (TempHealAmount < 1) TempHealAmount = 1;
 			
 				TempHealAmount2 = PlayerLevel / 25;
 				TempHealAmount += TempHealAmount2;
 				TempHealAmount *= multiplier;
-				CurrentMana += TempHealAmount;
-				if (CurrentMana >= MaxManaLimit) CurrentMana = MaxManaLimit;
+				CurrentHealth += TempHealAmount;
+				if (CurrentHealth >= MaxHealthLimit) CurrentHealth = MaxHealthLimit;
 
-				CallACS("OtherVarSetDECORATE",2,CurrentMana);
+				playpawn.player.mo.health = playpawn.player.health = CurrentHealth;
 			}
-		}
-		
-		if (staminagive >= 0)
-		{
-			// Add 0.5% to Stamina Value [up to 500%]
-			StamToGain = MaxStamina / 200;
-			StamToGain *= multiplier;
-			int perktemp1 = StamToGain;
 			
-			PerkFactor = ((RegenStamFastPerkLevel * 2000) + (RegenStamFastEXPerkLevel * 5000)) + 10000;
-			perktemp1 = perktemp1 * PerkFactor / 10000;
-			if (player.mo.CountInv("WaterFlyingDress") > 0) perktemp1 = perktemp1 * 5 / 3;
-			if (dvdsdebug_healitemdisplays) Console.Printf("Stamina Restored: %d VS [%d]", perktemp1, StamToGain);
-			StamToGain = perktemp1;
-			
-			// Tweaks the multiplier for Stamina Recovery.
-			StamToGain = StamToGain * staminagive / 100;
-			
-			if (CurrentStamina < MaxStamina5X) CurrentStamina += StamToGain; 
-			if (CurrentStamina > MaxStamina5X) CurrentStamina = MaxStamina5X;
-			
-			CallACS("MiscVarSetDECORATE",21,CurrentStamina);
-		}
-		
-		int HellcoreRestored;
-		int HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
-		int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
-		int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
-		if (CharacterClass == 2 && hellcorecool > 0) // Flora's Hellcore Heating will also marginally go down with each Health Bonus grabbed
-		{
-			if (HellcoreOverheatLevel > 0)
+			if (random(1,100) <= givemanachance)
 			{
-				TempHealAmount = 2500; // 0.25% [10000000 is 1000.00% (maximum)]
-				TempHealAmount *= multiplier;
-				TempHealAmount2 = PlayerLevel * 10;
-				TempHealAmount3 = random(-500,500);
-				HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
-				if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
-				if (SoulMasteryPerkLevel >= 0)
+				if (CurrentMana < MaxManaLimit)
 				{
-					if (SoulMasteryPerkLevel == 1) temp1 = 1;
-					if (SoulMasteryPerkLevel == 2) temp1 = 2;
-					if (SoulMasteryPerkLevel == 3) temp1 = 3;
-					if (SoulMasteryPerkLevel == 4) temp1 = 4;
-					if (SoulMasteryPerkLevel == 5) temp1 = 5;
-					if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
-					if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
-					PerkFactor = 16 + (temp1 + temp2);
-					HellcoreRestored = HellcoreRestored * PerkFactor / 16;
-				}
-				if (HellcoreRestored < 1) HellcoreRestored = 1;
-				if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
-			
-				HellcoreOverheatLevel -= HellcoreRestored;
-				if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+					TempHealAmount = MaxMana / 100;
+					if (TempHealAmount < 1) TempHealAmount = 1;
 				
-				CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+					TempHealAmount2 = PlayerLevel / 25;
+					TempHealAmount += TempHealAmount2;
+					TempHealAmount *= multiplier;
+					CurrentMana += TempHealAmount;
+					if (CurrentMana >= MaxManaLimit) CurrentMana = MaxManaLimit;
+
+					CallACS("OtherVarSetDECORATE",2,CurrentMana);
+				}
+			}
+			
+			if (staminagive >= 0)
+			{
+				// Add 0.5% to Stamina Value [up to 500%]
+				StamToGain = MaxStamina / 200;
+				StamToGain *= multiplier;
+				int perktemp1 = StamToGain;
+				
+				PerkFactor = ((RegenStamFastPerkLevel * 2000) + (RegenStamFastEXPerkLevel * 5000)) + 10000;
+				perktemp1 = perktemp1 * PerkFactor / 10000;
+				if (playpawn.player.mo.CountInv("WaterFlyingDress") > 0) perktemp1 = perktemp1 * 5 / 3;
+				if (dvdsdebug_healitemdisplays) Console.Printf("Stamina Restored: %d VS [%d]", perktemp1, StamToGain);
+				StamToGain = perktemp1;
+				
+				// Tweaks the multiplier for Stamina Recovery.
+				StamToGain = StamToGain * staminagive / 100;
+				
+				if (CurrentStamina < MaxStamina5X) CurrentStamina += StamToGain; 
+				if (CurrentStamina > MaxStamina5X) CurrentStamina = MaxStamina5X;
+				
+				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			}
+			
+			int HellcoreRestored;
+			int HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
+			int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
+			int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
+			if (CharacterClass == 2 && hellcorecool > 0) // Flora's Hellcore Heating will also marginally go down with each Health Bonus grabbed
+			{
+				if (HellcoreOverheatLevel > 0)
+				{
+					TempHealAmount = 2500; // 0.25% [10000000 is 1000.00% (maximum)]
+					TempHealAmount *= multiplier;
+					TempHealAmount2 = PlayerLevel * 10;
+					TempHealAmount3 = random(-500,500);
+					HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
+					if (playpawn.player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 5 / 3;
+					if (SoulMasteryPerkLevel >= 0)
+					{
+						if (SoulMasteryPerkLevel == 1) temp1 = 1;
+						if (SoulMasteryPerkLevel == 2) temp1 = 2;
+						if (SoulMasteryPerkLevel == 3) temp1 = 3;
+						if (SoulMasteryPerkLevel == 4) temp1 = 4;
+						if (SoulMasteryPerkLevel == 5) temp1 = 5;
+						if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
+						if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+						PerkFactor = 16 + (temp1 + temp2);
+						HellcoreRestored = HellcoreRestored * PerkFactor / 16;
+					}
+					if (HellcoreRestored < 1) HellcoreRestored = 1;
+					if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
+				
+					HellcoreOverheatLevel -= HellcoreRestored;
+					if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+					
+					CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+				}
 			}
 		}
 	}
 	
-	void A_EmulateGiveArmorBonus(int BaseAmount = 0, int GauntletGive = 0)
+	void A_EmulateGiveArmorBonus(Actor source, int BaseAmount = 0, int GauntletGive = 0)
 	{
-		int CharacterClass = CallACS("CheckCharacterClass");
-		int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
-		int CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
-		int PlayerLevel = CallACS("StatCheck",0);
-		int GauntletsArmorLimit = dvds_saurongauntlets_givearmorlimit;
-		if (GauntletGive > 0)
+		AetheriusPlayerPawn playpawn;
+		playpawn = AetheriusPlayerPawn(source);
+		if (playpawn)
 		{
-			if (!dvds_saurongauntlets_givearmor) return;
-		}
-		
-		int ExtraAPAdd, ExtraAPAdd2;
-		int RawArmorValue, ArmorClearValue;
-		
-		if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) // Stops Flora/Ailish/Petra from getting armor benefits and sets the item's result to 1 to make the item fail to pickup
-		{
-			if (BaseAmount <= 0) BaseAmount = 1;
-		
-			// Saves original raw Armor Value
-			RawArmorValue = player.mo.CountInv("Armor"); // RawArmorValue = CheckActorInventory("Armor");
-			
-			ArmorClearValue = player.mo.CountInv("Armor"); player.mo.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = player.mo.CountInv("ArmorBonusDSGreen"); player.mo.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = player.mo.CountInv("ArmorBonusDSBlue"); player.mo.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = player.mo.CountInv("ArmorBonusDSStone1"); player.mo.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = player.mo.CountInv("ArmorBonusDSStone2"); player.mo.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = player.mo.CountInv("ArmorBonusDSDiamond1"); player.mo.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = player.mo.CountInv("ArmorBonusDSDiamond2"); player.mo.A_TakeInventory("Armor", ArmorClearValue);
-			// Flora and her Spiritual Exoskin spell have no Armor Bonuses
-			// Flora and her Greater Spiritual Exoskin spell have no Armor Bonuses
-			// Flora and her Perfected Spiritual Exoskin spell have no Armor Bonuses
-			
-			if (RawArmorValue == 0) // No Armor
+			int CharacterClass = CallACS("CheckCharacterClass");
+			int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
+			int CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
+			int PlayerLevel = CallACS("StatCheck",0);
+			int GauntletsArmorLimit = dvds_saurongauntlets_givearmorlimit;
+			if (GauntletGive > 0)
 			{
-				//PrintBold(s:"Did Not Have Armor");
-				ExtraAPAdd = 1; // Base Increase to Armor and make it Green class
-				ExtraAPAdd = ExtraAPAdd * BaseAmount;
-				if (GauntletGive > 0)
-				{
-					ExtraAPAdd /= 4;
-					if (ExtraAPAdd < 1) ExtraAPAdd = 1;
-				}
-				RawArmorValue += ExtraAPAdd;
-				if (GauntletGive > 0 && RawArmorValue > GauntletsArmorLimit) RawArmorValue = GauntletsArmorLimit;
-
-				//PrintBold(d:ExtraAPAdd,s:" Armor Given");
-				
-				player.mo.A_GiveInventory("ArmorBonusDSGreen", RawArmorValue);
-				CurrentArmorClass = 1;
-				CurrentMaxArmor = 100;
-				player.mo.A_GiveInventory("DSGreenArmorClass", 1);
-				player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
-				player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
-				player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
-				player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
-				player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
-				player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
+				if (!dvds_saurongauntlets_givearmor) return;
 			}
-			else
-			{
-				//PrintBold(s:"Already Has Armor");
 			
-				ExtraAPAdd = CurrentArmorClass; // Base Increase to Armor and make it Green class
-				ExtraAPAdd = ExtraAPAdd * BaseAmount;
-				RawArmorValue += ExtraAPAdd;
-				ExtraAPAdd2 = RawArmorValue / 100;
-				ExtraAPAdd2 = ExtraAPAdd2 * BaseAmount;
-				RawArmorValue += ExtraAPAdd2;
-				ExtraAPAdd2 = PlayerLevel / 5;
-				ExtraAPAdd2 = ExtraAPAdd2 * BaseAmount;
-				if (GauntletGive > 0)
-				{
-					ExtraAPAdd2 /= 4;
-					if (ExtraAPAdd2 < 1) ExtraAPAdd2 = 1;
-				}
-				RawArmorValue += ExtraAPAdd2;
+			int ExtraAPAdd, ExtraAPAdd2;
+			int RawArmorValue, ArmorClearValue;
+			
+			if (CharacterClass != 2 && CharacterClass != 8 && CharacterClass != 9) // Stops Flora/Ailish/Petra from getting armor benefits and sets the item's result to 1 to make the item fail to pickup
+			{
+				if (BaseAmount <= 0) BaseAmount = 1;
+			
+				// Saves original raw Armor Value
+				RawArmorValue = playpawn.player.mo.CountInv("Armor"); // RawArmorValue = CheckActorInventory("Armor");
 				
-				if (GauntletGive > 0 && RawArmorValue > GauntletsArmorLimit) RawArmorValue = GauntletsArmorLimit;
+				ArmorClearValue = playpawn.player.mo.CountInv("Armor"); playpawn.player.mo.A_TakeInventory("Armor", ArmorClearValue);
+				ArmorClearValue = playpawn.player.mo.CountInv("ArmorBonusDSGreen"); playpawn.player.mo.A_TakeInventory("Armor", ArmorClearValue);
+				ArmorClearValue = playpawn.player.mo.CountInv("ArmorBonusDSBlue"); playpawn.player.mo.A_TakeInventory("Armor", ArmorClearValue);
+				ArmorClearValue = playpawn.player.mo.CountInv("ArmorBonusDSStone1"); playpawn.player.mo.A_TakeInventory("Armor", ArmorClearValue);
+				ArmorClearValue = playpawn.player.mo.CountInv("ArmorBonusDSStone2"); playpawn.player.mo.A_TakeInventory("Armor", ArmorClearValue);
+				ArmorClearValue = playpawn.player.mo.CountInv("ArmorBonusDSDiamond1"); playpawn.player.mo.A_TakeInventory("Armor", ArmorClearValue);
+				ArmorClearValue = playpawn.player.mo.CountInv("ArmorBonusDSDiamond2"); playpawn.player.mo.A_TakeInventory("Armor", ArmorClearValue);
+				// Flora and her Spiritual Exoskin spell have no Armor Bonuses
+				// Flora and her Greater Spiritual Exoskin spell have no Armor Bonuses
+				// Flora and her Perfected Spiritual Exoskin spell have no Armor Bonuses
 				
-				if (RawArmorValue < 101)
+				if (RawArmorValue == 0) // No Armor
 				{
-					if (CurrentArmorClass < 1) CurrentArmorClass = 1;
+					//PrintBold(s:"Did Not Have Armor");
+					ExtraAPAdd = 1; // Base Increase to Armor and make it Green class
+					ExtraAPAdd = ExtraAPAdd * BaseAmount;
+					if (GauntletGive > 0)
+					{
+						ExtraAPAdd /= 4;
+						if (ExtraAPAdd < 1) ExtraAPAdd = 1;
+					}
+					RawArmorValue += ExtraAPAdd;
+					if (GauntletGive > 0 && RawArmorValue > GauntletsArmorLimit) RawArmorValue = GauntletsArmorLimit;
+
+					//PrintBold(d:ExtraAPAdd,s:" Armor Given");
+					
+					playpawn.player.mo.A_GiveInventory("ArmorBonusDSGreen", RawArmorValue);
+					CurrentArmorClass = 1;
+					CurrentMaxArmor = 100;
+					playpawn.player.mo.A_GiveInventory("DSGreenArmorClass", 1);
+					playpawn.player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
+					playpawn.player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
+					playpawn.player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
+					playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
+					playpawn.player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
+					playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
 				}
 				else
 				{
-					if (RawArmorValue < 201)
+					//PrintBold(s:"Already Has Armor");
+				
+					ExtraAPAdd = CurrentArmorClass; // Base Increase to Armor and make it Green class
+					ExtraAPAdd = ExtraAPAdd * BaseAmount;
+					RawArmorValue += ExtraAPAdd;
+					ExtraAPAdd2 = RawArmorValue / 100;
+					ExtraAPAdd2 = ExtraAPAdd2 * BaseAmount;
+					RawArmorValue += ExtraAPAdd2;
+					ExtraAPAdd2 = PlayerLevel / 5;
+					ExtraAPAdd2 = ExtraAPAdd2 * BaseAmount;
+					if (GauntletGive > 0)
 					{
-						if (CurrentArmorClass < 2) CurrentArmorClass = 2;
+						ExtraAPAdd2 /= 4;
+						if (ExtraAPAdd2 < 1) ExtraAPAdd2 = 1;
+					}
+					RawArmorValue += ExtraAPAdd2;
+					
+					if (GauntletGive > 0 && RawArmorValue > GauntletsArmorLimit) RawArmorValue = GauntletsArmorLimit;
+					
+					if (RawArmorValue < 101)
+					{
+						if (CurrentArmorClass < 1) CurrentArmorClass = 1;
 					}
 					else
 					{
-						if (RawArmorValue < 501)
+						if (RawArmorValue < 201)
 						{
-							if (CurrentArmorClass < 3) CurrentArmorClass = 3;
+							if (CurrentArmorClass < 2) CurrentArmorClass = 2;
 						}
 						else
 						{
-							if (RawArmorValue < 1251)
+							if (RawArmorValue < 501)
 							{
-								if (CurrentArmorClass < 4) CurrentArmorClass = 4;
+								if (CurrentArmorClass < 3) CurrentArmorClass = 3;
 							}
 							else
 							{
-								if (RawArmorValue < 2001)
+								if (RawArmorValue < 1251)
 								{
-									if (CurrentArmorClass < 5) CurrentArmorClass = 5;
+									if (CurrentArmorClass < 4) CurrentArmorClass = 4;
 								}
 								else
 								{
-									if (CurrentArmorClass < 6) CurrentArmorClass = 6;
+									if (RawArmorValue < 2001)
+									{
+										if (CurrentArmorClass < 5) CurrentArmorClass = 5;
+									}
+									else
+									{
+										if (CurrentArmorClass < 6) CurrentArmorClass = 6;
+									}
 								}
 							}
 						}
 					}
-				}
-				
-				if (CurrentArmorClass == 0)
-				{
-					CurrentMaxArmor = 0;
-					player.mo.A_GiveInventory("DSNoArmorClass", 1);
-					player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
-				}
-				if (CurrentArmorClass == 1)
-				{
-					player.mo.A_GiveInventory("ArmorBonusDSGreen", RawArmorValue);
-					CurrentMaxArmor = 100;
-					player.mo.A_GiveInventory("DSGreenArmorClass", 1);
-					player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
-				}
-				if (CurrentArmorClass == 2)
-				{
-					player.mo.A_GiveInventory("ArmorBonusDSBlue", RawArmorValue);
-					CurrentMaxArmor = 200;
-					player.mo.A_GiveInventory("DSBlueArmorClass", 1);
-					player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
-				}
-				if (CurrentArmorClass == 3)
-				{
-					player.mo.A_GiveInventory("ArmorBonusDSStone1", RawArmorValue);
-					CurrentMaxArmor = 500;
-					player.mo.A_GiveInventory("DSStoneArmorClass1", 1);
-					player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
-				}
-				if (CurrentArmorClass == 4)
-				{
-					player.mo.A_GiveInventory("ArmorBonusDSDiamond1", RawArmorValue);
-					CurrentMaxArmor = 1250;
-					player.mo.A_GiveInventory("DSDiamondArmorClass1", 1);
-					player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
-				}
-				if (CurrentArmorClass == 5)
-				{
-					player.mo.A_GiveInventory("ArmorBonusDSStone2", RawArmorValue);
-					CurrentMaxArmor = 2000;
-					player.mo.A_GiveInventory("DSStoneArmorClass2", 1);
-					player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
-				}
-				if (CurrentArmorClass >= 6)
-				{
-					player.mo.A_GiveInventory("ArmorBonusDSDiamond2", RawArmorValue);
-					CurrentMaxArmor = 5000;
-					player.mo.A_GiveInventory("DSDiamondArmorClass2", 1);
-					player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
-					player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
+					
+					if (CurrentArmorClass == 0)
+					{
+						CurrentMaxArmor = 0;
+						playpawn.player.mo.A_GiveInventory("DSNoArmorClass", 1);
+						playpawn.player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
+					}
+					if (CurrentArmorClass == 1)
+					{
+						playpawn.player.mo.A_GiveInventory("ArmorBonusDSGreen", RawArmorValue);
+						CurrentMaxArmor = 100;
+						playpawn.player.mo.A_GiveInventory("DSGreenArmorClass", 1);
+						playpawn.player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
+					}
+					if (CurrentArmorClass == 2)
+					{
+						playpawn.player.mo.A_GiveInventory("ArmorBonusDSBlue", RawArmorValue);
+						CurrentMaxArmor = 200;
+						playpawn.player.mo.A_GiveInventory("DSBlueArmorClass", 1);
+						playpawn.player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
+					}
+					if (CurrentArmorClass == 3)
+					{
+						playpawn.player.mo.A_GiveInventory("ArmorBonusDSStone1", RawArmorValue);
+						CurrentMaxArmor = 500;
+						playpawn.player.mo.A_GiveInventory("DSStoneArmorClass1", 1);
+						playpawn.player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
+					}
+					if (CurrentArmorClass == 4)
+					{
+						playpawn.player.mo.A_GiveInventory("ArmorBonusDSDiamond1", RawArmorValue);
+						CurrentMaxArmor = 1250;
+						playpawn.player.mo.A_GiveInventory("DSDiamondArmorClass1", 1);
+						playpawn.player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
+					}
+					if (CurrentArmorClass == 5)
+					{
+						playpawn.player.mo.A_GiveInventory("ArmorBonusDSStone2", RawArmorValue);
+						CurrentMaxArmor = 2000;
+						playpawn.player.mo.A_GiveInventory("DSStoneArmorClass2", 1);
+						playpawn.player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass2", 0x7FFFFFFF);
+					}
+					if (CurrentArmorClass >= 6)
+					{
+						playpawn.player.mo.A_GiveInventory("ArmorBonusDSDiamond2", RawArmorValue);
+						CurrentMaxArmor = 5000;
+						playpawn.player.mo.A_GiveInventory("DSDiamondArmorClass2", 1);
+						playpawn.player.mo.A_TakeInventory("DSNoArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSGreenArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSBlueArmorClass", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSDiamondArmorClass1", 0x7FFFFFFF);
+						playpawn.player.mo.A_TakeInventory("DSStoneArmorClass2", 0x7FFFFFFF);
+					}
 				}
 			}
+			CallACS("OtherVarSetDECORATE",5,CurrentArmorClass);
+			CallACS("OtherVarSetDECORATE",9,CurrentMaxArmor);
 		}
-		CallACS("OtherVarSetDECORATE",5,CurrentArmorClass);
-		CallACS("OtherVarSetDECORATE",9,CurrentMaxArmor);
 	}
 	
-	void A_SauronGauntletsHit(int Amount = 0, int HitType = 0)
+	void A_SauronGauntletsHit(Actor source, int Amount = 0, int HitType = 0)
 	{
-		int GMultiplier;
-		int check;
-		int PlayerLevel = CallACS("StatCheck",0);
-		int CharacterClass = CallACS("CheckCharacterClass");
-		int MaxHealthTrue = CallACS("StatCheck",1);
-		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
-		int MaxStamina = CallACS("MiscVarCheckDECORATE",22);
-		int CurrentMana = CallACS("StatCheck",14);
-		int MaxMana = CallACS("StatCheck",2);
-		int MaxManaLimit = MaxMana * 2;
-		bool gaveAnything = false;
-		
-		if (HitType <= 0) HitType = 1;
-		if (HitType >= 3) HitType = 2;
-		
-		if (HitType == 1) Amount = (Amount / 250) + 1; // Give some life when hurting a monster [1+(Damage/250)]
-		if (HitType == 2) Amount = (Amount / 50) + 5; // Give more life when killing a monster [5+(Damage/50)]
-	
-		If (Amount <= 0) Amount = 1;
-		If (Amount >= 65) Amount = 64;
-			
-		// Restore Health & Stamina
-		bool giveHealth = dvds_saurongauntlets_givehealth;
-		bool giveStamina = dvds_saurongauntlets_givestamina;
-		int previousHealth = player.mo.health;
-		int previousStamina = CurrentStamina;
-		if (giveHealth || giveStamina)
+		AetheriusPlayerPawn playpawn;
+		playpawn = AetheriusPlayerPawn(source);
+		if (playpawn)
 		{
-			int giveStaminaAmount = 50;
-			if (!giveStamina) giveStaminaAmount = 0;
+			int GMultiplier;
+			int check;
+			int PlayerLevel = CallACS("StatCheck",0);
+			int CharacterClass = CallACS("CheckCharacterClass");
+			int MaxHealthTrue = CallACS("StatCheck",1);
+			int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
+			int MaxStamina = CallACS("MiscVarCheckDECORATE",22);
+			int CurrentMana = CallACS("StatCheck",14);
+			int MaxMana = CallACS("StatCheck",2);
+			int MaxManaLimit = MaxMana * 2;
+			bool gaveAnything = false;
 			
-			A_EmulateGiveHealthBonus(Amount,0,giveStaminaAmount,0);
+			if (HitType <= 0) HitType = 1;
+			if (HitType >= 3) HitType = 2;
 			
-			if (!giveHealth) player.mo.health = player.health = previousHealth;
-			else if (!dvds_saurongauntlets_giveoverhealth && player.mo.health > MaxHealthTrue) player.mo.health = player.health = MaxHealthTrue;
-			
-			if (previousHealth > player.mo.health) player.mo.health = player.health = previousHealth;
-			
-			if (giveStamina && !dvds_saurongauntlets_giveoverstamina && CurrentStamina > MaxStamina) CurrentStamina = MaxStamina;
-			
-			if (previousStamina > CurrentStamina) CurrentStamina = previousStamina;
-			
-			if (CurrentStamina > previousStamina || player.mo.health > previousHealth) gaveAnything = true;
-		}
+			if (HitType == 1) Amount = (Amount / 250) + 1; // Give some life when hurting a monster [1+(Damage/250)]
+			if (HitType == 2) Amount = (Amount / 50) + 5; // Give more life when killing a monster [5+(Damage/50)]
 		
-		// Restore Armor [Flora Cannot Gain Armor from it though]
-		if (CharacterClass != 2 && dvds_saurongauntlets_givearmor)
-		{
-			if (player.mo.CountInv("Armor") < dvds_saurongauntlets_givearmorlimit)
-			{
-				int ArmorAmount = (Amount * random(6,9)) / 15;
-				If (ArmorAmount <= 0) ArmorAmount = 1;
-				A_EmulateGiveArmorBonus(ArmorAmount,1);
-				gaveAnything = true;
-			}
-		}
-
-		// Restore Mana
-		if (dvds_saurongauntlets_givemana)
-		{
-			int MaxManaLimit = MaxMana;
-			if (dvds_saurongauntlets_giveovermana) MaxManaLimit *= 2;
-			
-			if (CurrentMana < MaxManaLimit)
-			{
-				int prevMana = CurrentMana;
-				int ManaAmount = (Amount * random(6,9)) / 9;
-				GMultiplier = (PlayerLevel * 4) + 100;
-				ManaAmount = Amount;
-				ManaAmount = ManaAmount * GMultiplier / 100;
-				if (CharacterClass == 2) ManaAmount = ManaAmount * random(5,7) / 4; // Flora will gain Extra Mana from a Gauntlet punch to make up for not being able to get armor.
-				else if (CharacterClass == 8) ManaAmount = ManaAmount * random(4,6) / 4; // Ailish will gain Extra Mana from a Gauntlet punch as well.
-				else ManaAmount = ManaAmount * random(9,15) / 12;
-				If (ManaAmount <= 0) ManaAmount = 1;
-				CurrentMana += ManaAmount;
-				if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
+			If (Amount <= 0) Amount = 1;
+			If (Amount >= 65) Amount = 64;
 				
-				if (CurrentMana > prevMana)
-					gaveAnything = true;
+			// Restore Health & Stamina
+			bool giveHealth = dvds_saurongauntlets_givehealth;
+			bool giveStamina = dvds_saurongauntlets_givestamina;
+			int previousHealth = playpawn.player.mo.health;
+			int previousStamina = CurrentStamina;
+			if (giveHealth || giveStamina)
+			{
+				int giveStaminaAmount = 50;
+				if (!giveStamina) giveStaminaAmount = 0;
+				
+				A_EmulateGiveHealthBonus(playpawn,Amount,0,giveStaminaAmount,0);
+				
+				if (!giveHealth) playpawn.player.mo.health = playpawn.player.health = previousHealth;
+				else if (!dvds_saurongauntlets_giveoverhealth && playpawn.player.mo.health > MaxHealthTrue) playpawn.player.mo.health = playpawn.player.health = MaxHealthTrue;
+				
+				if (previousHealth > playpawn.player.mo.health) playpawn.player.mo.health = playpawn.player.health = previousHealth;
+				
+				if (giveStamina && !dvds_saurongauntlets_giveoverstamina && CurrentStamina > MaxStamina) CurrentStamina = MaxStamina;
+				
+				if (previousStamina > CurrentStamina) CurrentStamina = previousStamina;
+				
+				if (CurrentStamina > previousStamina || playpawn.player.mo.health > previousHealth) gaveAnything = true;
 			}
-		}
-		
-		if (gaveAnything)
-		{
-			// Only do this if the player actually received something (health, mana, armor, and/or stamina).
-			if (CharacterClass == 2) player.mo.A_PlaySound("healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
-			else player.mo.A_PlaySound("HealSpell1",CHAN_BODY,1.0,0,ATTN_NORM); 
 			
-			player.mo.A_SetBlend("E0 E0 E0",0.33,random(17,18),"E0 E0 E0",0.0); // FadeRange(224,224,224,0.33,224,224,224,0,0.5);
+			// Restore Armor [Flora Cannot Gain Armor from it though]
+			if (CharacterClass != 2 && dvds_saurongauntlets_givearmor)
+			{
+				if (playpawn.player.mo.CountInv("Armor") < dvds_saurongauntlets_givearmorlimit)
+				{
+					int ArmorAmount = (Amount * random(6,9)) / 15;
+					If (ArmorAmount <= 0) ArmorAmount = 1;
+					A_EmulateGiveArmorBonus(playpawn,ArmorAmount,1);
+					gaveAnything = true;
+				}
+			}
+
+			// Restore Mana
+			if (dvds_saurongauntlets_givemana)
+			{
+				int MaxManaLimit = MaxMana;
+				if (dvds_saurongauntlets_giveovermana) MaxManaLimit *= 2;
+				
+				if (CurrentMana < MaxManaLimit)
+				{
+					int prevMana = CurrentMana;
+					int ManaAmount = (Amount * random(6,9)) / 9;
+					GMultiplier = (PlayerLevel * 4) + 100;
+					ManaAmount = Amount;
+					ManaAmount = ManaAmount * GMultiplier / 100;
+					if (CharacterClass == 2) ManaAmount = ManaAmount * random(5,7) / 4; // Flora will gain Extra Mana from a Gauntlet punch to make up for not being able to get armor.
+					else if (CharacterClass == 8) ManaAmount = ManaAmount * random(4,6) / 4; // Ailish will gain Extra Mana from a Gauntlet punch as well.
+					else ManaAmount = ManaAmount * random(9,15) / 12;
+					If (ManaAmount <= 0) ManaAmount = 1;
+					CurrentMana += ManaAmount;
+					if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
+					
+					if (CurrentMana > prevMana)
+						gaveAnything = true;
+				}
+			}
+			
+			if (gaveAnything)
+			{
+				// Only do this if the player actually received something (health, mana, armor, and/or stamina).
+				if (CharacterClass == 2) playpawn.player.mo.A_PlaySound("healing_dq",CHAN_BODY,1.0,0,ATTN_NORM);
+				else playpawn.player.mo.A_PlaySound("HealSpell1",CHAN_BODY,1.0,0,ATTN_NORM); 
+				
+				playpawn.player.mo.A_SetBlend("E0 E0 E0",0.33,random(17,18),"E0 E0 E0",0.0); // FadeRange(224,224,224,0.33,224,224,224,0,0.5);
+			}
+			
+			CallACS("OtherVarSetDECORATE",2,CurrentMana);
+			CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 		}
-		
-		CallACS("OtherVarSetDECORATE",2,CurrentMana);
-		CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 	}
 }
 
