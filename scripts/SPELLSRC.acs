@@ -94,13 +94,10 @@
 			["SauravatarDeath"]								-	***EVENT*** Sauravatar's Death [DVI-DS specific version] ***EVENT***
 
 			["Initializer"]										-	Exp Table Setup (& Initial Startup Process [added for DVI/DVII-DS])
-			["ManaRegenerationStuff"]					-	Mana Regeneration
 			["CreateTranslationTables"]				-	Color Translation Tables **new for DV-DS and beyond**
 			["HUDDisplay"]										-	HUD Display
-			["MonsterStatsHP_ATK_DEF_SPD"]		-	Determines Attack/Defense/Speed Bonuses for Monsters [depending on difficulty level and maps and game mode]
 			["DamageDisplays"]								-	Controls DamageIndicators for Non-Players
 			["DoomMonsterDeathEmulation"]			-	Emulates the various special scripts in Doom 1/2 mode [E1M8, MAP07, etc]
-			["CheckSceptreAltFire"] 					-	Check if to perform Sceptre's downswing alternate attack while falling.
 			["LifebarDisplayClientSide"]			-	Controls Lifebar Displays [CLIENTSIDE only]
 			["LifebarOptionChecker"]					-	Event Linked to call "LifebarDisplayClientSide" Event
 			["GetEvolveChance"] 							-	Checks the mapnumber and gametype for Monster Spawners (evolve chance amount [out of 256])
@@ -108,12 +105,8 @@
 			["TunnelVisionControl"]						-	Red Tunnel Vision/Heartbeat Effect when badly injured
 			["DeathTunnelVision"]							-	(related to the tunnel vision effect in death >.>)
 			["CalculateSpellBaseAngles"]			-	Works for auto-determining spreads for Glyph-type spells and Raging Spirits [for now]
-			["GauntletsCheckCharacter"]				-	Checks to see if you already possess Sauron's Gauntlets so they cannot appear more than once.
-			["SceptreTwirlFrameCheck"]				-	Controls the Timer for both Sceptre Twirl sprite animation and for when to make the swinging noise. [Flora Only]
-			["MaxHPBonusPickup"]							-	Max Health Bonus Pickup Script
 			["CheckModType"]									-	Checks the gametype for spawns to determine various drops/monster spawns.
-			["MagicEffects"]									-	Spell Effects // SCRIPT 8'S POSITION IS BEING ERROR-RIDDEN AT THE MOMENT >_<
-			["SeedDrop"]											-	Checks Seed amounts and will randomize dropped seeds.
+			["MagicEffects"]									-	Spell Effects
 			["AeonPointKey"]									-	Overall Aeon Point Handling [combines three once seperated scripts]
 			["ShowArmorStats"]								-	Shows Stats for Armor items
 			["ChangeArmorPage"]								-	Test Script for Toggling pages for armor display lists
@@ -26679,157 +26672,6 @@ script "CalculateSpellBaseAngles" (void)
 	// value = -1*((GetActorPitch(Player1TID)) * 64 >> 16);
 	// Print(d:value); 
 	SetResultValue(value);
-}
-
-// Checks Seed amounts and will randomize dropped seeds.
-script "SeedDrop" (int type, int OldRand0, int Forced)
-{
-	int Rand0, Rand1, Rand2, PX, PY, PZ, FullOnSkill, FullOnSeeds, spawnedaitem, SeedDropChance;
-	
-	if (ModType == 0 && MiscellaneousVars[110005] == 0) terminate;
-	
-	if (ActivatorTID() == 0) Thing_ChangeTID(0,1537);
-	PX = GetActorX(1537);
-	PY = GetActorY(1537);
-	PZ = GetActorZ(1537);
-	
-	if (Forced == 0)
-	{
-		if (MiscellaneousVars[37] >= MiscellaneousVars[28]) FullOnSkill = 1;
-		if (MiscellaneousVars[30] >= MiscellaneousVars[29]) FullOnSeeds = 1;
-	}
-	
-	// Spawn Occurance Rate
-	if (type == 2)
-	{
-		Rand0 = 1;
-	}
-	else
-	if (type == 1)
-	{
-		Rand0 = OldRand0;
-	}
-	else
-	{
-		if (MiscellaneousVars[27] < MiscellaneousVars[26])
-		{
-			// "MiscellaneousVars[6]" is a randomly picked ID number that DV-DS will pick at the Very-First-Run, from (1 to "MiscellaneousVars[7]")
-			if (random(1,MiscellaneousVars[7]) == MiscellaneousVars[6])
-			{
-				if (Forced == 1) SpawnForced("FyggForced",PX,PY,PZ,0,0); else SpawnForced("Fygg",PX,PY,PZ,0,0); 
-				Thing_Remove(1537);
-				terminate;
-			}
-		}
-	
-		if (TrueGameSkill <= SKILL_VERY_EASY) Rand0 = random(1,70); // 92
-		if (TrueGameSkill == SKILL_EASY) Rand0 = random(1,80); // 104
-		if (TrueGameSkill == SKILL_NORMAL) Rand0 = random(1,90); // 116
-		if (TrueGameSkill == SKILL_HARD) Rand0 = random(1,100); // 128
-		if (TrueGameSkill == SKILL_VERY_HARD) Rand0 = random(1,120); // 152 
-		if (TrueGameSkill == SKILL_EXTREME) Rand0 = random(1,132); // 152 
-		if (TrueGameSkill == SKILL_HORRIBLE) Rand0 = random(1,144); // 152 
-		if (TrueGameSkill == SKILL_IMPOSSIBLE) Rand0 = random(1,156); // 152 
-		if (TrueGameSkill >= SKILL_OMEGA) Rand0 = random(1,180); // 152 
-		Rand0 = Rand0 * 5 / 2;
-		//
-	}
-	
-	SeedDropChance = 1 + (MiscellaneousVars[33] / 32);
-	
-	while (spawnedaitem == 0)
-	{
-		if (Rand0 <= SeedDropChance)
-		{
-			if (FullOnSkill == 1)
-			{
-				if (FullOnSeeds == 1) Rand1 = random(31,40);
-				else Rand1 = random(1,40);
-			}
-			else
-			{
-				if (FullOnSeeds == 1) Rand1 = random(31,41);
-				else Rand1 = random(1,41);
-			}
-		
-			if (Rand1 > 0 && Rand1 < 6) // Seed of Agility
-			{
-				if (Forced == 1) SpawnForced("SeedOfAgilityForced",PX,PY,PZ,0,0); else SpawnForced("SeedOfAgility",PX,PY,PZ,0,0);
-				spawnedaitem++;
-				Thing_Remove(1537);
-				terminate;
-			}
-		
-			if (Rand1 > 5 && Rand1 < 11) // Seed of Defense
-			{
-				if (Forced == 1) SpawnForced("SeedOfDefenseForced",PX,PY,PZ,0,0); else SpawnForced("SeedOfDefense",PX,PY,PZ,0,0);
-				spawnedaitem++;
-				Thing_Remove(1537);
-				terminate;
-			}
-		
-			if (Rand1 > 10 && Rand1 < 16) // Seed of Deftness
-			{
-				if (Forced == 1) SpawnForced("SeedOfDeftnessForced",PX,PY,PZ,0,0); else SpawnForced("SeedOfDeftness",PX,PY,PZ,0,0);
-				spawnedaitem++;
-				Thing_Remove(1537);
-				terminate;
-			}
-		
-			if (Rand1 > 15 && Rand1 < 21) // Seed of Sorcery
-			{
-				if (Forced == 1) SpawnForced("SeedOfSorceryForced",PX,PY,PZ,0,0); else SpawnForced("SeedOfSorcery",PX,PY,PZ,0,0);
-				spawnedaitem++;
-				Thing_Remove(1537);
-				terminate;
-			}
-		
-			if (Rand1 > 20 && Rand1 < 26)// Seed of Strength
-			{
-				if (Forced == 1) SpawnForced("SeedOfStrengthForced",PX,PY,PZ,0,0); else SpawnForced("SeedOfStrength",PX,PY,PZ,0,0);
-				spawnedaitem++;
-				Thing_Remove(1537);
-				terminate;
-			}
-		
-			if (Rand1 > 25 && Rand1 < 31) // Seed of Therapeusis
-			{
-				if (Forced == 1) SpawnForced("SeedOfTherapeusisForced",PX,PY,PZ,0,0); else SpawnForced("SeedOfTherapeusis",PX,PY,PZ,0,0);
-				spawnedaitem++;
-				Thing_Remove(1537);
-				terminate;
-			}
-		
-			if (Rand1 > 30 && Rand1 < 36) // Seed of Life
-			{
-				SpawnForced("SeedOfLife",PX,PY,PZ,0,0);
-				spawnedaitem++;
-				Thing_Remove(1537);
-				terminate;
-			}
-		
-			if (Rand1 > 35 && Rand1 < 41) // Seed of Magic
-			{
-				SpawnForced("SeedOfMagic",PX,PY,PZ,0,0);
-				spawnedaitem++;
-				Thing_Remove(1537);
-				terminate;
-			}
-		
-			if (Rand1 == 41) // Seed of Skill
-			{
-				if (Forced == 1) SpawnForced("SeedOfSkillForced",PX,PY,PZ,0,0); else SpawnForced("SeedOfSkill",PX,PY,PZ,0,0);
-				spawnedaitem++;
-				Thing_Remove(1537);
-				terminate;
-			}
-		}
-		else // No spawn
-		{
-			Thing_Remove(1537);
-			terminate;
-		}
-	}
 }
 
 // Overall Aeon Point Handling 
