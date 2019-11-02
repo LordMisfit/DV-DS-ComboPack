@@ -21,6 +21,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int chasetimer;
 	int isamajorboss;
 	int user_icekilledtimes;
+	int basereactiontime;
+	int maxreactiontime;
+	int levelsperreacttic;
 
 	// General
 	const SKILL_VERY_EASY = 0;
@@ -3633,6 +3636,24 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (Temp > 0) Temp = 0;
 					user_HPXDeathRange = Temp;
 
+					// Reaction Time
+					basereactiontime = reactiontime;
+					if (dvds_monsterstatcalc_reactiontime)
+					{
+						double reactdivfactor = 0.5;
+						if (TrueGameSkill >= 0 && TrueGameSkill <= 1) reactdivfactor = 0.375;
+						if (TrueGameSkill >= 2 && TrueGameSkill <= 3) reactdivfactor = 0.3125;
+						if (TrueGameSkill >= 4 && TrueGameSkill <= 5) reactdivfactor = 0.25;
+						if (TrueGameSkill >= 6 && TrueGameSkill <= 7) reactdivfactor = 0.1875;
+						if (TrueGameSkill >= 8 && TrueGameSkill <= 9) reactdivfactor = 0.125;
+						maxreactiontime = basereactiontime * reactdivfactor;
+						if (maxreactiontime < 1) maxreactiontime = 1;
+						levelsperreacttic = 300 / (basereactiontime - maxreactiontime);
+						reactiontime -= (user_monsterlevel / levelsperreacttic);
+						if (reactiontime < maxreactiontime) reactiontime = maxreactiontime;
+						if (debugstatcalc) Console.Printf("\cy(%s)\c- \cxReactionTime: %d\c-, basereactiontime: %d, maxreactiontime: %d, level: %d (/ %d), reactdivfactor: %8f", GetClassName(), reactiontime, basereactiontime, maxreactiontime, user_monsterlevel, levelsperreacttic, reactdivfactor);
+					}
+
 					user_legendaryevolved = 0;
 					SetInventory("LDLegendaryMonsterTransformed", 0);
 
@@ -3657,6 +3678,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (bFRIENDLY) Thing_ChangeTID(0,0);
 					self.speed = user_basespeed;
 					self.mass = user_basemass;
+
+					// Reaction Time
+					reactiontime = basereactiontime;
+					if (debugstatcalc) Console.Printf("\cy(%s)\c- \cxReactionTime: %d\c-, basereactiontime: %d", GetClassName(), reactiontime, basereactiontime);
 				
 					A_SetInventory("MonsterDisplayDMG",0);
 					A_SetInventory("MonsterLevelCalcs",0);
