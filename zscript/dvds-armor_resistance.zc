@@ -2956,13 +2956,14 @@ class PlayerStatItem : Inventory
 			// Accelerates HP Regen when Tension is Boosted
 			SkillFactor = 20;
 			if (TensionLevel >= 1) SkillFactor += 1; // "5" = +1 [+5%]
-			if (TensionLevel >= 2) SkillFactor += 1; // "20" = +2 [+10%]
-			if (TensionLevel >= 3) SkillFactor += 2; // "50" = +4 [+20%]
-			if (TensionLevel >= 4) SkillFactor += 2; // "100" = +6 [+30%]
-			if (TensionLevel >= 5) SkillFactor += 3; // "250" = +9 [+45%]
-			if (TensionLevel >= 6) SkillFactor += 4; // "500" = +13 [+65%]
-			if (TensionLevel >= 7) SkillFactor += 5; // "500" = +18 [+90%]
+			if (TensionLevel >= 2) SkillFactor += 2; // "20" = +3 [+15%]
+			if (TensionLevel >= 3) SkillFactor += 2; // "50" = +5 [+25%]
+			if (TensionLevel >= 4) SkillFactor += 3; // "100" = +8 [+40%]
+			if (TensionLevel >= 5) SkillFactor += 3; // "250" = +11 [+55%]
+			if (TensionLevel >= 6) SkillFactor += 4; // "500" = +15 [+75%]
+			if (TensionLevel >= 7) SkillFactor += 5; // "500" = +20 [+100%]
 			delaycount = (delaycount * SkillFactor) / 20;
+			if (TensionLevel >= 5 && CallACS("MiscVarCheckDECORATE",184) == 0) delaycount *= frandompick(1.0,1.05,1.1,1.15,1.2,1.25); // +~25%
 			if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < RegenMaxHealth) Console.Printf("    \caHP Regen [Step 9 - Get Tension RegenTimer Inc]: %d\c-, Multiplier: %d / 20", delaycount, SkillFactor);
 			
 			// Focusing will slightly accelerate HP regeneration on Strife Mode
@@ -3257,10 +3258,11 @@ class PlayerStatItem : Inventory
 				if (TensionLevel >= 2) SkillFactor -= 1; // "20" = -1 [-5%]
 				if (TensionLevel >= 3) SkillFactor -= 1; // "50" = -2 [-10%]
 				if (TensionLevel >= 4) SkillFactor -= 1; // "100" = -3 [-15%]
-				if (TensionLevel >= 5) SkillFactor -= 1; // "250" = -4 [-20%]
-				if (TensionLevel >= 6) SkillFactor -= 2; // "500" = -6 [-30%]
-				if (TensionLevel >= 7) SkillFactor -= 3; // "500" = -9 [-45%]
+				if (TensionLevel >= 5) SkillFactor -= 2; // "250" = -5 [-25%]
+				if (TensionLevel >= 6) SkillFactor -= 2; // "500" = -7 [-35%]
+				if (TensionLevel >= 7) SkillFactor -= 3; // "500" = -10 [-50%]
 				delaycount = (delaycount * SkillFactor) / 20;
+				if (TensionLevel >= 5 && CallACS("MiscVarCheckDECORATE",184) == 0) delaycount *= frandompick(1.0,0.95,0.9,0.85,0.8,0.75); // +~25%
 				if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth > RegenMaxHealth) Console.Printf("    \caHP Degen [Step 9 - Get Tension RegenTimer Inc]: %d\c-, Multiplier: %d / 20", delaycount, SkillFactor);
 				
 				// Check Musou Power Trip Mode
@@ -3477,69 +3479,72 @@ class PlayerStatItem : Inventory
 			// Check for Poison [-Invuln]
 			if (PoisonedTimer > 0 && InvulnerabilityTimer == 0) // Being invulnerable will prevent poison damage from occuring.
 			{
-				// Base Increment
-				PoisonIncrement = 20;
-				if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 3 - Count Interval Base]: %d\c-", PoisonIncrement);
-		
-				// Input Alterations
-				previousdelaycount = PoisonIncrement;
-				SkillFactor = 100;
-				if (MenuModeToggle > 0) FreezePlayer += 1;
-				if (SleepTimer > 0) FreezePlayer += 1;
-				if (FreezePlayer == 0)
+				if (UsingInGameMenu != 0) 
 				{
-					if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) SkillFactor = SkillFactor * 125 / 100;
-					if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) SkillFactor = SkillFactor * random(112,113) / 100;
-					if (buttons & BT_JUMP) SkillFactor = SkillFactor * 125 / 100;
-					if (buttons & BT_CROUCH) SkillFactor = SkillFactor * 75 / 100;
-					PoisonIncrement = PoisonIncrement * SkillFactor / 100;
-				}
-				if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (\cyInput: %d\cu)]: %d\c-, Previous: %d, InputFactor: %d / 100, Frozen?: %d", buttons, PoisonIncrement, previousdelaycount, SkillFactor, FreezePlayer);
-		
-				// Check Characters & Armor
-				previousdelaycount = PoisonIncrement;
-				if (CharacterClass == 2)
-				{
-					SkillFactor = 1000;
-					if (Owner.CountInv("PearlyCorset") > 0) SkillFactor -= 83;
-					if (Owner.CountInv("DoveRibbon") > 0) SkillFactor -= 334;
-					if (Owner.CountInv("DivineShield") > 0) SkillFactor -= 83;
-					PoisonIncrement = PoisonIncrement * SkillFactor / 1000;
-					if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (Armor, Flora)]: %d\c-, Previous: %d, InputFactor: %d / 1000", PoisonIncrement, previousdelaycount, SkillFactor);
-				}
-				else
-				if (CharacterClass == 0 || CharacterClass == 1)
-				{
+					// Base Increment
+					PoisonIncrement = 20;
+					if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 3 - Count Interval Base]: %d\c-", PoisonIncrement);
+			
+					// Input Alterations
+					previousdelaycount = PoisonIncrement;
 					SkillFactor = 100;
-					if (Owner.CountInv("DSGreenArmorClass") > 0) SkillFactor -= 2; // (-2% for Green Armor)
-					if (Owner.CountInv("DSBlueArmorClass") > 0) SkillFactor -= 4; // (-4% for Blue Armor)
-					if (Owner.CountInv("DSStoneArmorClass1") > 0) SkillFactor -= 5; // (-5% for Stone Armor 1)
-					if (Owner.CountInv("DSDiamondArmorClass1") > 0) SkillFactor -= 7; // (-7% for Diamond Armor 1)
-					if (Owner.CountInv("DSStoneArmorClass2") > 0) SkillFactor -= 6; // (-6% for Stone Armor 2)
-					if (Owner.CountInv("DSDiamondArmorClass2") > 0) SkillFactor -= 8; // (-8% for Diamond Armor 2)
-					PoisonIncrement = PoisonIncrement * SkillFactor / 100;
-					if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (Armor, Marines)]: %d\c-, Previous: %d, InputFactor: %d / 100", PoisonIncrement, previousdelaycount, SkillFactor);
+					if (MenuModeToggle > 0) FreezePlayer += 1;
+					if (SleepTimer > 0) FreezePlayer += 1;
+					if (FreezePlayer == 0)
+					{
+						if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) SkillFactor = SkillFactor * 125 / 100;
+						if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) SkillFactor = SkillFactor * random(112,113) / 100;
+						if (buttons & BT_JUMP) SkillFactor = SkillFactor * 125 / 100;
+						if (buttons & BT_CROUCH) SkillFactor = SkillFactor * 75 / 100;
+						PoisonIncrement = PoisonIncrement * SkillFactor / 100;
+					}
+					if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (\cyInput: %d\cu)]: %d\c-, Previous: %d, InputFactor: %d / 100, Frozen?: %d", buttons, PoisonIncrement, previousdelaycount, SkillFactor, FreezePlayer);
+			
+					// Check Characters & Armor
+					previousdelaycount = PoisonIncrement;
+					if (CharacterClass == 2)
+					{
+						SkillFactor = 1000;
+						if (Owner.CountInv("PearlyCorset") > 0) SkillFactor -= 83;
+						if (Owner.CountInv("DoveRibbon") > 0) SkillFactor -= 334;
+						if (Owner.CountInv("DivineShield") > 0) SkillFactor -= 83;
+						PoisonIncrement = PoisonIncrement * SkillFactor / 1000;
+						if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (Armor, Flora)]: %d\c-, Previous: %d, InputFactor: %d / 1000", PoisonIncrement, previousdelaycount, SkillFactor);
+					}
+					else
+					if (CharacterClass == 0 || CharacterClass == 1)
+					{
+						SkillFactor = 100;
+						if (Owner.CountInv("DSGreenArmorClass") > 0) SkillFactor -= 2; // (-2% for Green Armor)
+						if (Owner.CountInv("DSBlueArmorClass") > 0) SkillFactor -= 4; // (-4% for Blue Armor)
+						if (Owner.CountInv("DSStoneArmorClass1") > 0) SkillFactor -= 5; // (-5% for Stone Armor 1)
+						if (Owner.CountInv("DSDiamondArmorClass1") > 0) SkillFactor -= 7; // (-7% for Diamond Armor 1)
+						if (Owner.CountInv("DSStoneArmorClass2") > 0) SkillFactor -= 6; // (-6% for Stone Armor 2)
+						if (Owner.CountInv("DSDiamondArmorClass2") > 0) SkillFactor -= 8; // (-8% for Diamond Armor 2)
+						PoisonIncrement = PoisonIncrement * SkillFactor / 100;
+						if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (Armor, Marines)]: %d\c-, Previous: %d, InputFactor: %d / 100", PoisonIncrement, previousdelaycount, SkillFactor);
+					}
+					
+					// Buffs
+					previousdelaycount = PoisonIncrement;
+					if (DQAcceleratleTimer > 0) PoisonIncrement = PoisonIncrement * 6 / 5; // Acceleratle = 120% Speed
+					if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 5a - Count Interval (Acceleratle)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+
+					previousdelaycount = PoisonIncrement;
+					if (DQDeceleratleTimer > 0) PoisonIncrement = PoisonIncrement * 4 / 5; // Deceleratle = 80% Speed
+					if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 5b - Count Interval (Deceleratle)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+
+					previousdelaycount = PoisonIncrement;
+					if (FatigueTimer > 0) PoisonIncrement = PoisonIncrement * 9 / 5; // Fatigue = 180% Speed
+					if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 6 - Count Interval (Fatigue)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+					
+					previousdelaycount = PoisonIncrement;
+					if (SleepTimer > 0) PoisonIncrement = PoisonIncrement * 1 / 5; // Sleep = 20% Speed
+					if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 7 - Count Interval (Sleep)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+
+					PoisonTimer += PoisonIncrement;
+					if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 8 - Timer]: %d / %d\c-, Increment: %d", PoisonTimer, PoisonMaxInterval, PoisonIncrement);
 				}
-				
-				// Buffs
-				previousdelaycount = PoisonIncrement;
-				if (DQAcceleratleTimer > 0) PoisonIncrement = PoisonIncrement * 6 / 5; // Acceleratle = 120% Speed
-				if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 5a - Count Interval (Acceleratle)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
-
-				previousdelaycount = PoisonIncrement;
-				if (DQDeceleratleTimer > 0) PoisonIncrement = PoisonIncrement * 4 / 5; // Deceleratle = 80% Speed
-				if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 5b - Count Interval (Deceleratle)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
-
-				previousdelaycount = PoisonIncrement;
-				if (FatigueTimer > 0) PoisonIncrement = PoisonIncrement * 9 / 5; // Fatigue = 180% Speed
-				if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 6 - Count Interval (Fatigue)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
-				
-				previousdelaycount = PoisonIncrement;
-				if (SleepTimer > 0) PoisonIncrement = PoisonIncrement * 1 / 5; // Sleep = 20% Speed
-				if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 7 - Count Interval (Sleep)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
-
-				PoisonTimer += PoisonIncrement;
-				if (dvdsdebug_poisonailmentdisplays) Console.Printf("    \cuPoison Damage [Step 8 - Timer]: %d / %d\c-, Increment: %d", PoisonTimer, PoisonMaxInterval, PoisonIncrement);
 
 				// Poison Damage
 				if (PoisonTimer >= PoisonMaxInterval)
@@ -3660,12 +3665,12 @@ class PlayerStatItem : Inventory
 						// Accelerates MP Regen when Tension is Boosted
 						previousdelaycount = delaycount;
 						if (TensionLevel >= 1) delaycount += 1; // "5" = +1 [+5%]
-						if (TensionLevel >= 2) delaycount += 1; // "20" = +2 [+10%]
-						if (TensionLevel >= 3) delaycount += 2; // "50" = +4 [+20%]
-						if (TensionLevel >= 4) delaycount += 2; // "100" = +6 [+30%]
-						if (TensionLevel >= 5) delaycount += 3; // "250" = +9 [+45%]
-						if (TensionLevel >= 6) delaycount += 4; // "500" = +13 [+65%]
-						if (TensionLevel >= 7) delaycount += 5; // "1000" = +18 [+90%]
+						if (TensionLevel >= 2) delaycount += 2; // "20" = +3 [+15%]
+						if (TensionLevel >= 3) delaycount += 2; // "50" = +5 [+25%]
+						if (TensionLevel >= 4) delaycount += 3; // "100" = +8 [+40%]
+						if (TensionLevel >= 5) delaycount += 3; // "250" = +11 [+55%]
+						if (TensionLevel >= 6) delaycount += 4; // "500" = +15 [+75%]
+						if (TensionLevel >= 7) delaycount += 5; // "1000" = +20 [+100%]
 						if (TensionLevel >= 5 && CallACS("MiscVarCheckDECORATE",184) == 0) delaycount *= frandompick(1.0,1.05,1.1,1.15,1.2,1.25); // +~25%
 						if (dvdsdebug_showmanaregenstuff) Console.Printf("    \cnMP Regen [Step 3 - Tension]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 
@@ -4260,13 +4265,13 @@ class PlayerStatItem : Inventory
 				
 				// Tension
 				staminaregenbase = staminaregenfinal;
-				if (TensionLevel == 1) staminaregenfinal = staminaregenfinal * 1025 / 1000;
-				if (TensionLevel == 2) staminaregenfinal = staminaregenfinal * 105 / 100;
-				if (TensionLevel == 3) staminaregenfinal = staminaregenfinal * 110 / 100;
-				if (TensionLevel == 4) staminaregenfinal = staminaregenfinal * 125 / 100;
-				if (TensionLevel == 5) staminaregenfinal = staminaregenfinal * 150 / 100;
-				if (TensionLevel == 6) staminaregenfinal = staminaregenfinal * 250 / 100;
-				if (TensionLevel == 7) staminaregenfinal = staminaregenfinal * 500 / 100;
+				if (TensionLevel == 1) staminaregenfinal *= 1.025;
+				if (TensionLevel == 2) staminaregenfinal *= 1.05;
+				if (TensionLevel == 3) staminaregenfinal *= 1.1;
+				if (TensionLevel == 4) staminaregenfinal *= 1.25;
+				if (TensionLevel == 5) staminaregenfinal *= 1.5;
+				if (TensionLevel == 6) staminaregenfinal *= 2.5;
+				if (TensionLevel == 7) staminaregenfinal *= 5.0;
 				if (dvdsdebug_showstaminaregenstuff) Console.Printf("    \cdStamina Regeneration [Step 7: Tension (%d)]: %d\c-, Previous: %d", TensionLevel, staminaregenfinal, staminaregenbase);
 				
 				// Divine Avatar = +100% Regen
@@ -4501,13 +4506,13 @@ class PlayerStatItem : Inventory
 				
 				// Tension
 				staminaregenbase = staminaregenfinal;
-				if (TensionLevel == 1) staminaregenfinal = staminaregenfinal * 990 / 1000;
-				if (TensionLevel == 2) staminaregenfinal = staminaregenfinal * 975 / 1000;
-				if (TensionLevel == 3) staminaregenfinal = staminaregenfinal * 950 / 1000;
-				if (TensionLevel == 4) staminaregenfinal = staminaregenfinal * 900 / 1000;
-				if (TensionLevel == 5) staminaregenfinal = staminaregenfinal * 750 / 1000;
-				if (TensionLevel == 6) staminaregenfinal = staminaregenfinal * 500 / 1000;
-				if (TensionLevel == 7) staminaregenfinal = staminaregenfinal * 200 / 1000;
+				if (TensionLevel == 1) staminaregenfinal *= 0.990;
+				if (TensionLevel == 2) staminaregenfinal *= 0.975;
+				if (TensionLevel == 3) staminaregenfinal *= 0.950;
+				if (TensionLevel == 4) staminaregenfinal *= 0.900;
+				if (TensionLevel == 5) staminaregenfinal *= 0.750;
+				if (TensionLevel == 6) staminaregenfinal *= 0.500;
+				if (TensionLevel == 7) staminaregenfinal *= 0.200;
 				if (dvdsdebug_showstaminaregenstuff) Console.Printf("    \cdStamina Degeneration [Step 7: Tension (%d)]: %d\c-, Previous: %d", TensionLevel, staminaregenfinal, staminaregenbase);
 				
 				// Divine Avatar = -50% Degen
