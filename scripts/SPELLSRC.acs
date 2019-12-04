@@ -32249,49 +32249,52 @@ bool players_returned[8];
 
 Script "NNSigilMonitor" ENTER
 {
-	int current_pieces;
-	int previous_pieces = GetSigilPieces(); //Takes care of first time visits
-																			//(related to bug #3 mentioned in EDIT4)
-	int player = PlayerNumber();
-  
-	if ( monitoring_players[player] )   //Make sure there's only one instance
-		terminate;                        //of this script running per player.
-	monitoring_players[player] = true;   //(as some goof might try to puke this)
-  
-	while( monitoring_players[player] )
+	if (CheckActorInventory(Player1TID,"PlayingStrife") > 0)
 	{
-		players_returned[player] = false;
-		Delay(1);
-    
-		if ( GetActorProperty(0, APROP_Health) <= 0 )
-				continue; //Don't terminate if dead (could be a COOP or DM game)
-    
-		current_pieces = GetSigilPieces();
-		//If you find this next part undesirable, you can
-		//just put 'continue;' right after the 'if' statement.
-		if ( !current_pieces )
-		{
-			if ( CheckInventory("NNSigil") )   //If you don't have the real one
-					TakeInventory("NNSigil", 1);   //you can't have the NN one
-			continue;
-		}
-		else if ( !CheckInventory("NNSigil") )
-							GiveInventory("NNSigil", 1);
+		int current_pieces;
+		int previous_pieces = GetSigilPieces(); //Takes care of first time visits
+																				//(related to bug #3 mentioned in EDIT4)
+		int player = PlayerNumber();
 		
-		if ( CheckWeapon("Sigil") )
+		if ( monitoring_players[player] )   //Make sure there's only one instance
+			terminate;                        //of this script running per player.
+		monitoring_players[player] = true;   //(as some goof might try to puke this)
+		
+		while( monitoring_players[player] )
 		{
-			SetWeapon("NNSigil");
-			continue;
-		}
-    
-		if ( previous_pieces != current_pieces )
-		{
-			previous_pieces = current_pieces;
-			if ( players_returned[player] ) //Takes care of subsequent visits
-					continue;                    //(related to bug #3 mentioned in EDIT4)
-    
-			if ( CheckWeapon("NNSigil") ) //Don't run upgrade animation hack
-					SetWeapon("Sigil");   //if player is holding another weapon.
+			players_returned[player] = false;
+			Delay(1);
+			
+			if ( GetActorProperty(0, APROP_Health) <= 0 )
+					continue; //Don't terminate if dead (could be a COOP or DM game)
+			
+			current_pieces = GetSigilPieces();
+			//If you find this next part undesirable, you can
+			//just put 'continue;' right after the 'if' statement.
+			if ( !current_pieces )
+			{
+				if ( CheckInventory("NNSigil") )   //If you don't have the real one
+						TakeInventory("NNSigil", 1);   //you can't have the NN one
+				continue;
+			}
+			else if ( !CheckInventory("NNSigil") )
+								GiveInventory("NNSigil", 1);
+			
+			if ( CheckWeapon("Sigil") )
+			{
+				SetWeapon("NNSigil");
+				continue;
+			}
+			
+			if ( previous_pieces != current_pieces )
+			{
+				previous_pieces = current_pieces;
+				if ( players_returned[player] ) //Takes care of subsequent visits
+						continue;                    //(related to bug #3 mentioned in EDIT4)
+			
+				if ( CheckWeapon("NNSigil") ) //Don't run upgrade animation hack
+						SetWeapon("Sigil");   //if player is holding another weapon.
+			}
 		}
 	}
 }
