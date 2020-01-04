@@ -357,7 +357,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [81] is the Player's XPos [for locking player during menu freezes]
 	// [82] is the Player's YPos [for locking player during menu freezes]
 	// [83] is the Player's ZPos [for locking player during menu freezes]
-	// [84 to 85] are undefined
+	// [84] is undefined
+	// [85] is DashDelay
 	// [86] is storage for Aeon Points Multiplier [Menu CVar]
 	// [87] is storage for Seed Multiplier [Menu CVar]
 	// [88] is storage for SceptreXP Multiplier [Menu CVar]
@@ -2319,7 +2320,7 @@ script "HUDDISPLAY" ENTER
 			7533-7633	-	Tension-OverPsyche Meter Notches [Tension-OverPsyche]
 			7635		-	Tension-OverPsyche Meter Glass [Tension-OverPsyche]
 
-			7796 		- 	Level Up Icon 
+			7791 		- 	Level Up Icon 
 			7797-7820 	- 	Character Portrait Pieces
 
 			7854-7864 	- 	QuickSpell Text Costs [Quickspell]
@@ -2930,9 +2931,10 @@ script "HUDDISPLAY" ENTER
 			//****************
 			ScreenYOffset = GetCVar("dvdsnewhud_widescreenyoffset") * 1.0; // Lower-Side Means Positive Y
 			//**************************
-			//**"LEVEL UP" Icon [7796]**
+			//**"LEVEL UP" Icon [7791]**
 			//**************************
-			// 7796 - Level Up Icon 
+			// 7791 - Level Up Icon
+			// 7795 - Dash Available Icon
 			// 7797-7820 - Character Portrait Pieces
 			// 7854-7864 - QuickSpell Text Costs, 
 			// 7865-7875 - QuickSpell Bind Key Display
@@ -2967,10 +2969,21 @@ script "HUDDISPLAY" ENTER
 				if (MiscellaneousVars[tempvar1] >= 35) MiscellaneousVars[tempvar1] = 1;
 				msgalpha = FixedMul(msgalpha,overallhudalpha);
 				SetFont("LEVELUP");
-				HudMessage(s:"A";HUDMSG_ALPHA,7796,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+				HudMessage(s:"A";HUDMSG_ALPHA,7791,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 			}
 			else { msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha); MiscellaneousVars[tempvar1] = 0; }
 			
+			//******************************
+			//**Dash Available Icon [7795]**
+			//******************************
+			xpos = ScreenXOffset + 64.0; // 60.0
+			ypos = ScreenYOffset + 784.0; // 784.0;
+			if (MiscellaneousVars[85] != -1 && GetActorProperty(Player1TID,APROP_HEALTH) > 0) 
+			{
+				SetFont("DASHICON");
+				HudMessage(s:"A";HUDMSG_ALPHA,7795,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+			}
+
 			//**********************************
 			//**Character Portrait [7797-7824]**
 			//**********************************
@@ -28807,7 +28820,7 @@ script "LifebarOptionChecker" ENTER
 	If(GetCVar("dvds_actorlifebars") == 1) ACS_NamedExecuteAlways ("LifebarDisplayClientSide",0,0,0,0);
 }
 
-str dvds_monsternames[457][3] =
+str dvds_monsternames[458][3] =
 {
 	{"PracticeTarget", "Practicing Target", ""},
 	{"PracticeTarget2", "Practicing Target", ""},
@@ -29046,6 +29059,7 @@ str dvds_monsternames[457][3] =
 	{"FBanshee", "Abyssal Banshee", ""},
 	{"FIronlich", "Iron Lich", ""},
 	{"FClink", "Sabreclaw", ""},
+	{"FDarkClink", "Sabreblade", ""},
 	{"FBeast", "Were-Dragon", ""},
 	{"FMaulotaur", "Maulotaur", ""},
 	{"FSnake", "Ophidian", ""},
@@ -29372,7 +29386,7 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 		str monstertag = GetActorProperty(0, APROP_NameTag);
 		str monstername;
 
-		for (int i = 0; i < 457; i++)
+		for (int i = 0; i < 458; i++)
 		{
 			if (CheckActorClass(0, dvds_monsternames[i][0])) class_index = i;
 		}
@@ -31946,6 +31960,7 @@ script "KD-SideDodge" enter
 		dashcooldown -= cooldownreductionagl;
 		if (dashcooldown < 4) dashcooldown = 4;
 		if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) dashcooldown = dashcooldown * 3 / 4; // Dash-Cooldown time cut by 25%
+		MiscellaneousVars[85] = dashcooldown;
 	
 		if (GetActorZ(0) - GetActorFloorZ(0) > 0) { dashstamina = 625; } else { dashstamina = 500; }
 		if (powertripmode == 1) dashstamina = dashstamina / 5;
@@ -32033,6 +32048,7 @@ script "KD-SideDodge" enter
 							PlaySound(0, dashSound, CHAN_BODY, dashsoundvolume);
 							if (random(1,100) <= GetCVar("dvds_dashgruntchance")) PlaySound(0, dashGruntSound, CHAN_VOICE, dashgruntsoundvolume);
 							MiscellaneousVars[166] = dashtimer; // Set Dash Timer 
+							MiscellaneousVars[85] = -1;
 							Delay(dashcooldown);
 						}
 						while(GetActorVelZ(0) < 0.0) { Delay(const:1); }
