@@ -2134,6 +2134,11 @@ class PlayerStatItem : Inventory
 		
 		A_PSI1DoEffectUnspecPerks();
 		
+		
+		
+		
+		A_PSI1DoEffectDashControl();
+		
 		// Final Stuff
 		owner.Stamina = CallACS("StatCheck",1) - owner.SpawnHealth();
 		
@@ -11314,6 +11319,48 @@ class PlayerStatItem : Inventory
 				}
 			}
 			owner.A_SetInventory("TryingToRepecAeonPts", 0);
+		}
+	}
+	
+	void A_PSI1DoEffectDashControl()
+	{
+		int dashcooldown;
+		int dashstamina, cooldownreduction, cooldownreductionlvl, cooldownreductionagl;
+		int AGLCheck = CallACS("MiscVarCheckDECORATE",31);
+		
+		if (owner.health > 0)
+		{
+			dashcooldown = 30;
+			cooldownreduction = 0;
+			if (PlayerLevel >= 25) cooldownreductionlvl = 1 + ((PlayerLevel - 25) / 50); // Max of -8 [22 left]
+			if (AGLCheck >= 32) cooldownreductionagl = (AGLCheck / 32); // Agility
+			dashcooldown -= cooldownreductionlvl;
+			dashcooldown -= cooldownreductionagl;
+			if (dashcooldown < 4) dashcooldown = 4;
+			if (owner.CountInv("SafeTeaShoes") > 0) dashcooldown = dashcooldown * 3 / 4; // Dash-Cooldown time cut by 25%
+			CallACS("MiscVarSetDECORATE",85,dashcooldown);
+			
+			if (owner.pos.z - owner.GetZAt() > 0) { dashstamina = 625; } else { dashstamina = 500; }
+			if (dvds_musou_powertripmode == 1) dashstamina = dashstamina / 5;
+			if (dvds_musou_powertripmode == 2) dashstamina = dashstamina / 10; 
+			if (CharacterClass == 0) dashstamina -= ((AGLCheck * 5) / 6);
+			if (CharacterClass == 1) dashstamina -= ((AGLCheck * 6) / 6);
+			if (CharacterClass == 2) dashstamina -= ((AGLCheck * 7) / 6);
+			if (CharacterClass == 8) dashstamina -= ((AGLCheck * 8) / 6);
+			if (CharacterClass == 9) dashstamina -= ((AGLCheck * 5) / 6);
+			if (owner.pos.z - owner.GetZAt() > 0) { if (dashstamina < 50) dashstamina = 50; }
+			else { if (dashstamina < 40) dashstamina = 40; }
+			if (owner.CountInv("SafeTeaShoes") > 0) dashstamina = dashstamina * 2 / 5; // Stamina require for dash/air-dash cut by 60%
+			if (owner.CountInv("FalconKnifeEarrings") > 0) dashstamina = dashstamina * 3 / 4;
+			if (dvdsdebug_showdashinformation) Console.Printf("dashstamina: %d", dashstamina);
+			
+			int candash = 1;
+			if (CallACS("DVDSSpecialArrayCheckDECORATE",0) == 1) candash--; // If Player is "Conscious"
+			if (CallACS("DVDSSpecialArrayCheckDECORATE",9) == 1) candash--;
+
+			CallACS("MiscVarSetDECORATE",637,dashcooldown);
+			CallACS("MiscVarSetDECORATE",638,dashstamina);
+			CallACS("MiscVarSetDECORATE",639,candash);
 		}
 	}
 	

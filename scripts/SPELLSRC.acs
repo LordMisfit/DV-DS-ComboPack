@@ -613,7 +613,10 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [634] is for the number of Seeds of Sorcery carried by your character [Magic Damage] [for resetting stats]
 	// [635] is for the number of Seeds of Strength carried by your character [Overall Damage] [for resetting stats]
 	// [636] is for the number of Seeds of Therapeusis carried by your character [Magic Defense] [for resetting stats]
-		// [637 to 1998] are undefined so far :P
+	// [637] is dashcooldown
+	// [638] is dashstamina
+	// [639] is candash
+		// [640 to 1998] are undefined so far :P
 	// [1501] Misc Var #1
 	// [1502] Misc Var #2
 	// [1503] Misc Var #3
@@ -31885,16 +31888,13 @@ function int IsButtonPressed (int input, int oldInput, int mask)
 script "KD-SideDodge" enter
 {
 	int input, oldInput, taps, tics, last, angle, velX, velY, velZ;
-	int dashstamina, cooldownreduction, cooldownreductionlvl, cooldownreductionagl;
 	
 	int dashtapwindow = 8;			// Same type of var/define as SD_TIMEFRAME, but made to be editable
-	int dashcooldown = 30;			// Same type of var/define as SD_DASHDELAY, but made to be editable
 	int airdashvel = 20.0;			// Same type of var/define as SD_DASHSPEED, but made to be editable 
 	int dashjumpstrength = 5.0;	// Same type of var/define as SD_DASHJUMP, but made to be editable
 	int floordashvel = 25.0;		// Same type of var/define as SD_DASHSTRONG, but made to be editable
 	int dashsoundvolume = 0.67;	// Same type of var/define as SD_SOUNDVOLUME, but made to be editable
 	int dashgruntsoundvolume = 1.0;
-	int powertripmode = GetCVar("dvds_musou_powertripmode");
 	int dashtimer = MiscellaneousVars[91];
 	
 	while(GetActorProperty(0, APROP_HEALTH) > 0)
@@ -31902,48 +31902,19 @@ script "KD-SideDodge" enter
 		input = GetPlayerInput(-1, INPUT_BUTTONS);
 		oldInput = GetPlayerInput(-1, INPUT_OLDBUTTONS);
 	
-		dashcooldown = 30;
-		cooldownreduction = 0;
-		if (PlayerLevel >= 25) cooldownreductionlvl = 1 + ((PlayerLevel - 25) / 50); // Max of -8 [22 left]
-		if (MiscellaneousVars[31] >= 32) cooldownreductionagl = (MiscellaneousVars[31] / 32); // Agility
-		dashcooldown -= cooldownreductionlvl;
-		dashcooldown -= cooldownreductionagl;
-		if (dashcooldown < 4) dashcooldown = 4;
-		if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) dashcooldown = dashcooldown * 3 / 4; // Dash-Cooldown time cut by 25%
-					MiscellaneousVars[85] = dashcooldown;
-	
-		if (GetActorZ(0) - GetActorFloorZ(0) > 0) { dashstamina = 625; } else { dashstamina = 500; }
-		if (powertripmode == 1) dashstamina = dashstamina / 5;
-		if (powertripmode == 2) dashstamina = dashstamina / 10; 
-		if (CharacterClass == 0) dashstamina -= ((MiscellaneousVars[31] * 5) / 6);
-		if (CharacterClass == 1) dashstamina -= ((MiscellaneousVars[31] * 6) / 6);
-		if (CharacterClass == 2) dashstamina -= ((MiscellaneousVars[31] * 7) / 6);
-		if (CharacterClass == 8) dashstamina -= ((MiscellaneousVars[31] * 8) / 6);
-		if (CharacterClass == 9) dashstamina -= ((MiscellaneousVars[31] * 5) / 6);
-		if (GetActorZ(0) - GetActorFloorZ(0) > 0) 
-		{
-			if (dashstamina < 50) dashstamina = 50;
-		}
-		else 
-		{
-			if (dashstamina < 40) dashstamina = 40;
-		}
-		if (CheckActorInventory(Player1TID,"SafeTeaShoes") > 0) dashstamina = dashstamina * 2 / 5; // Stamina require for dash/air-dash cut by 60%
-		if (CheckActorInventory(Player1TID,"FalconKnifeEarrings") > 0) dashstamina = dashstamina * 3 / 4;
-	
-		int candash = 1;
-		if (DVDSSpecialArrayValue[0] == 1) candash--; // If Player is "Conscious"
-		if (DVDSSpecialArrayValue[9] == 1) candash--;
+		if (MiscellaneousVars[637] <= 4) MiscellaneousVars[637] = 4;
+		if (MiscellaneousVars[638] < 40) MiscellaneousVars[638] = 40;
+
 		for (int i = 0; i < 4; i++)
 		{
 			//**********************
-			if (candash > 0)
+			if (MiscellaneousVars[639] > 0)
 			{
 				// BTW, argv added in the option for using a dedicated dash button instead of double-tapping. 
 				// Thank him if you're one of the ones who hates double-tapping and perfer the "Demonsteele" type of dashing. :V
 				int chordDashing = (input & (settings[i][0] | BT_USER3)) == (settings[i][0] | BT_USER3);
 					
-				if ((chordDashing || IsButtonPressed(input, oldInput, settings[i][0])) && MiscellaneousVars[21] >= dashstamina && GetCVar("dvds_allowdashing") > 0) // DV-DS version also requires a minimal amount of Stamina and the Dash option on to perform
+				if ((chordDashing || IsButtonPressed(input, oldInput, settings[i][0])) && MiscellaneousVars[21] >= MiscellaneousVars[638] && GetCVar("dvds_allowdashing") > 0) // DV-DS version also requires a minimal amount of Stamina and the Dash option on to perform
 				{
 					if (GetCVar("dvds_doubledash"))
 					{
@@ -31985,9 +31956,9 @@ script "KD-SideDodge" enter
 				
 						if (MiscellaneousVars[4] == 0)
 						{
-							MiscellaneousVars[21] -= dashstamina;
-							int whole = dashstamina / 100; 
-							int modulus = dashstamina % 100;
+							MiscellaneousVars[21] -= MiscellaneousVars[638];
+							int whole = MiscellaneousVars[638] / 100; 
+							int modulus = MiscellaneousVars[638] % 100;
 							if (MiscellaneousVars[100005] > 0)
 							{
 								if (modulus > -1 && modulus < 10) PrintBold(s:"Stamina Used: ",d:whole,s:".0",d:modulus,s:"%");
@@ -31999,7 +31970,7 @@ script "KD-SideDodge" enter
 							if (random(1,100) <= GetCVar("dvds_dashgruntchance")) PlaySound(0, dashGruntSound, CHAN_VOICE, dashgruntsoundvolume);
 							MiscellaneousVars[166] = dashtimer; // Set Dash Timer 
 							MiscellaneousVars[85] = -1;
-							Delay(dashcooldown);
+							Delay(MiscellaneousVars[637]);
 						}
 						while(GetActorVelZ(0) < 0.0) { Delay(const:1); }
 					}
@@ -32020,14 +31991,12 @@ script "KD-SideDodge" enter
 		if (GetCVar("dvdsdebug_showdashinformation") > 0)
 		{
 			PrintBold(s:"i: ",d:i,
-								s:"\ncandash?: ",d:candash,
+								s:"\ncandash?: ",d:MiscellaneousVars[638],
 								s:"\ninput: ",d:input,
 								s:"\noldInput: ",d:oldInput,
 								s:"\ntics: ",d:tics,
 								s:"\nlast: ",d:last,
 								s:"\ntaps: ",d:taps,
-								s:"\ncooldownreductionlvl: ",d:cooldownreductionlvl,
-								s:"\ncooldownreductionagl: ",d:cooldownreductionagl,
 								s:"\ndashtimer: ",d:MiscellaneousVars[166],
 								s:"\ndashcooldown: ",d:MiscellaneousVars[85]);
 		}
