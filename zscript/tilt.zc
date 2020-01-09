@@ -1,3 +1,29 @@
+// Copyright 2017-2019 Nash Muhandes
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+// 3. The name of the author may not be used to endorse or promote products
+//    derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+// IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+// NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 //===========================================================================
 //
 // Tilt++.pk3
@@ -6,7 +32,7 @@
 //
 // Written by Nash Muhandes
 //
-// Feel free to use this in your mods. You don't have to ask my permission!
+// Feel free to use this in your mods. No need to ask for my permission!
 //
 //===========================================================================
 
@@ -75,19 +101,28 @@ class Z_TiltMe : CustomInventory
 		// CVARS ///////////////////////////////////////////////////////////////
 		bool strafeTiltEnabled = sv_strafetilt;
 		bool moveTiltEnabled = sv_movetilt;
+		bool turnTiltEnabled = sv_turntilt;
 		bool underwaterTiltEnabled = sv_underwatertilt;
 		bool deathTiltEnabled = sv_deathtilt;
+
 		double strafeTiltSpeed = sv_strafetiltspeed;
 		double strafeTiltAngle = sv_strafetiltangle;
-		bool strafeTiltReversed = sv_strafetiltreversed;
+		bool strafeTiltReversed = sv_strafetiltinvert;
+
 		double moveTiltScalar = sv_movetiltscalar;
 		double moveTiltAngle = sv_movetiltangle;
 		double moveTiltSpeed = sv_movetiltspeed;
+
+		double turnTiltScalar = sv_turntiltscalar;
+		bool turnTiltReversed = sv_turntiltinvert;
+
 		double underwaterTiltSpeed = sv_underwatertiltspeed;
 		double underwaterTiltAngle = sv_underwatertiltangle;
 		double underwaterTiltScalar = sv_underwatertiltscalar;
+
 		double deathtiltangle2 = sv_deathtiltangle;
 		double deathtiltangle2err = sv_deathtiltangleerror;
+
 		int UsingInGameMenu = CallACS("MenuVarCheckDECORATE",0);
 
 		// Shared variables we'll need later
@@ -105,7 +140,7 @@ class Z_TiltMe : CustomInventory
 			int dir;
 			if (strafeTiltReversed) dir = -1;
 			else dir = 1;
-			strafeInput = strafeTiltSpeed * (Owner.GetPlayerInput(INPUT_SIDEMOVE) / 10240.0);
+			strafeInput = strafeTiltSpeed * (Owner.GetPlayerInput(MODINPUT_SIDEMOVE) / 10240.0);
 			strafeInput *= strafeTiltAngle;
 			strafeInput *= dir;
 		}
@@ -137,6 +172,23 @@ class Z_TiltMe : CustomInventory
 			r = Sin(moveTiltOsc);
 			r *= moveTiltAngle;
 			r *= v;
+		}
+
+		// tilt!
+		lastRoll += r;
+
+		//===========================================================================
+		//
+		// Turn Tilting
+		//
+		//===========================================================================
+
+		if (turnTiltEnabled && bIsPlayerAlive() && UsingInGameMenu == 0)
+		{
+			// get player look input
+			double xinput = PlayerPawn(Owner).GetPlayerInput(MODINPUT_YAW) * (turnTiltReversed ? -1 : 1);
+			xinput = turnTiltScalar * xinput / 32767.0;
+			r = xinput;
 		}
 
 		// tilt!
@@ -216,11 +268,11 @@ class Z_TiltMe : CustomInventory
 		{
 			// Stabilize tilt
 			lastRoll *= 0.75;
-
-			// Apply the sum of all rolling routines
-			// (including after stabilization)
-			Owner.A_SetRoll(lastRoll, SPF_INTERPOLATE);
 		}
+
+		// Apply the sum of all rolling routines
+		// (including after stabilization)
+		Owner.A_SetRoll((Owner.Roll + lastRoll) * 0.5, SPF_INTERPOLATE);
 	}
 
 	override void Tick(void)
