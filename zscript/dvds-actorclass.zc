@@ -663,6 +663,12 @@ class AetheriusCustomInventory : CustomInventory
 		int RegenStamFastEXPerkLevel = CallACS("MiscVarCheckDECORATE",10018);
 		int MedicinalProwessPerkLevel = CallACS("MiscVarCheckDECORATE",10049);
 		int CharacterClass = CallACS("CheckCharacterClass");
+		int PlayerLevel = CallACS("StatCheck",0);
+		int HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
+		int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
+		int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
+		int TempHealAmount, TempHealAmount2, TempHealAmount3;
+		int HellcoreRestored;
 		
 		nm = "SurgeryKitNew"; iDTech1Check = nm;
 		if (type == -10 && player.mo.CountInv(iDTech1Check) > 0) // Medical Kit [Strife]
@@ -1553,7 +1559,7 @@ class AetheriusCustomInventory : CustomInventory
 			perkhealthlimit = perkhealthlimit * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
 			perkmanalimit = perkmanalimit * (perkbasemulti + MedicinalProwessPerkLevel) / perkbasemulti;
 		
-			if (CurrentHealth >= perkhealthlimit && (CurrentMana >= perkmanalimit))
+			if (CurrentHealth >= perkhealthlimit && (CurrentMana >= perkmanalimit) && HellcoreOverheatLevel <= 0)
 			{
 				player.mo.A_StartSound("inv_fail",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
 			}
@@ -1564,7 +1570,37 @@ class AetheriusCustomInventory : CustomInventory
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
 				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp3, temp2);
-			
+				
+				// Hellcore
+				if (HellcoreOverheatLevel > 0)
+				{
+					TempHealAmount = 1250000; // 100% [10000000 is 1000.00% (maximum)]
+					TempHealAmount2 = PlayerLevel * 1250;
+					TempHealAmount3 = random(-62500,62500);
+					HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
+					if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored *= 1.667;
+					if (SoulMasteryPerkLevel >= 0)
+					{
+						if (SoulMasteryPerkLevel == 1) temp1 = 1;
+						if (SoulMasteryPerkLevel == 2) temp1 = 2;
+						if (SoulMasteryPerkLevel == 3) temp1 = 3;
+						if (SoulMasteryPerkLevel == 4) temp1 = 4;
+						if (SoulMasteryPerkLevel == 5) temp1 = 5;
+						if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
+						if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+						PerkFactor = 16 + (temp1 + temp2);
+						HellcoreRestored = HellcoreRestored * PerkFactor / 16;
+					}
+					if (HellcoreRestored < 1) HellcoreRestored = 1;
+					if (HellcoreRestored > 10000000) HellcoreRestored = 10000000;
+				
+					HellcoreOverheatLevel -= HellcoreRestored;
+					if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+					
+					CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+				}
+
+				
 				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_SetBlend("0C FF 0C",0.43,19,"10 FF 10",0.01); // FadeRange(12,255,12,0.43,16,255,16,0.01,0.55);
