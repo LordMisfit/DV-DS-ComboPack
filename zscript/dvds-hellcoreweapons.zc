@@ -13,7 +13,7 @@ class BaseHellcorePickup : AetheriusCustomInventory
 	int sparktimermax;
 	int scaletimer;
 
-	override void PostBeginPlay() // invoker is not needed in non-action functions
+	override void PostBeginPlay() // "invoker." is not needed in non-action functions
 	{
 		if (Owner == NULL) // Powerups cannot exist outside an inventory
 		{
@@ -25,7 +25,7 @@ class BaseHellcorePickup : AetheriusCustomInventory
 		Super.PostBeginPlay();
 	}
 	
-	override void Tick() // invoker is not needed in non-action functions
+	override void Tick() // "invoker." is not needed in non-action functions
 	{
 		if (Owner == NULL) // Powerups cannot exist outside an inventory
 		{
@@ -116,6 +116,38 @@ class HellSoulSpark : AetheriusBaseZSC
 
 class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 {
+	double soulbobxbasex;
+	double soulbobxrandxmin;
+	double soulbobxrandxmax;
+	double soulbobxetimemulmin;
+	double soulbobxetimemulmax;
+	double soulbobxspeedmod;
+	double soulbobxheightmodmin;
+	double soulbobxheightmodmax;
+
+	double soulbobybasey;
+	double soulbobyrandymin;
+	double soulbobyrandymax;
+	double soulbobyspeedmod;
+	double soulbobyheightmodmin;
+	double soulbobyheightmodmax;
+
+	double soulbobx;
+	double soulboby;
+	
+	int shotsfired;
+
+	property bobxbasex: soulbobxbasex;
+	property bobxrandx: soulbobxrandxmin, soulbobxrandxmax;
+	property bobxetimemul: soulbobxetimemulmin, soulbobxetimemulmax;
+	property bobxspeedmod: soulbobxspeedmod;
+	property bobxheightmod: soulbobxheightmodmin, soulbobxheightmodmax;
+
+	property bobybasey: soulbobybasey;
+	property bobyrandy: soulbobyrandymin, soulbobyrandymax;
+	property bobyspeedmod: soulbobyspeedmod;
+	property bobyheightmod: soulbobyheightmodmin, soulbobyheightmodmax;
+
 	Default
 	{
 		+FLOATBOB;
@@ -127,12 +159,44 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 		Weapon.BobRangeY 0.1;
 		Weapon.BobSpeed 0.1;
 		Weapon.BobStyle "Smooth";
+
+		BaseHellcoreWeapon.bobxbasex 0.0;
+		BaseHellcoreWeapon.bobxrandx 0.0, 0.0;
+		BaseHellcoreWeapon.bobxetimemul 0.2475, 0.2525;
+		BaseHellcoreWeapon.bobxspeedmod 1.0;
+		BaseHellcoreWeapon.bobxheightmod 4.875, 5.125;
+		BaseHellcoreWeapon.bobybasey 0.0;
+		BaseHellcoreWeapon.bobyrandy 0.0, 0.0;
+		BaseHellcoreWeapon.bobyspeedmod 8.0;
+		BaseHellcoreWeapon.bobyheightmod 8.0, 8.0;
 	}
 	
-	action void A_HellSoulFire1(string sndname = "", int heatamt = 0, string name1 = "", string name2 = "", int checknum = 0, bool usetension = true)
+	action void A_HellSoulOverlayReady()
+	{
+		A_Overlay(4,"SoulUnderLayer",true);
+		A_Overlay(5,"SoulImage",true);
+		A_Overlay(6,"SoulOverLayer",true);
+		A_Overlay(-63,"LayerFloatControl",true);
+	}
+	
+	action void A_HellSoulClearOverlays()
+	{
+		A_Overlay(4,"EndLayer",false);
+		A_Overlay(5,"EndLayer",false);
+		A_Overlay(6,"EndLayer",false);
+		A_Overlay(-63,"EndLayer",false);
+	}
+	
+	action void A_HellSoulSpark()
+	{
+		A_Overlay(3,"SoulSparkUnder",false);
+		A_Overlay(7,"SoulSparkUnder",false);
+	}
+	
+	action void A_HellSoulFire1(string sndname = "", int heatamt = 0, string name1 = "", string name2 = "", int checknum = 0, bool usetension = true, bool hurtplayeroh = true)
 	{
 		A_StartSound(sndname);
-		A_IncreaseHellcoreHeat(heatamt,1); // +1.0% Hellcore Heat, Deal Damage if already above 100% Heat
+		A_IncreaseHellcoreHeat(heatamt,hurtplayeroh); // +1.0% Hellcore Heat, Deal Damage if already above 100% Heat
 		if (usetension) CallACS("StartTensionCountDown");
 
 		if (A_HellCoreCrisisCheck() > 0)
@@ -168,57 +232,6 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 
 	States
 	{
-		// Dummy Layers
-		Dummy:
-			HCL1 A 0 bright;
-			HCL1 B 0 bright;
-			HCL1 C 0 bright;
-			HCL1 D 0 bright;
-			HCL1 E 0 bright;
-			HCL1 F 0 bright;
-			HCL1 G 0 bright;
-			HCL1 H 0 bright;
-			HCL1 I 0 bright;
-			HCL1 J 0 bright;
-			HCL1 K 0 bright;
-			HCL1 L 0 bright;
-			HCL1 M 0 bright;
-			HCL1 N 0 bright;
-			HCL1 O 0 bright;
-			HCL1 P 0 bright;
-			HCL1 Q 0 bright;
-			HCL1 R 0 bright;
-			HCL1 S 0 bright;
-			HCL1 T 0 bright;
-			HCL1 U 0 bright;
-			HCL1 V 0 bright;
-			HCL2 A 0 bright;
-			HCL2 B 0 bright;
-			HCL3 A 0 bright;
-			HCL3 B 0 bright;
-			HCL3 C 0 bright;
-			HCL3 D 0 bright;
-			HCL3 E 0 bright;
-			HCL3 F 0 bright;
-			HCL3 G 0 bright;
-			HCL3 H 0 bright;
-			HCL3 I 0 bright;
-			HCL3 J 0 bright;
-			HCL3 K 0 bright;
-			HCL3 L 0 bright;
-			HCL3 M 0 bright;
-			HCL3 N 0 bright;
-			HCL3 O 0 bright;
-			HCL3 P 0 bright;
-			HCL3 Q 0 bright;
-			HCL4 A 0 bright;
-			HCL4 B 0 bright;
-			HCL4 C 0 bright;
-			HCL4 D 0 bright;
-			HCL4 E 0 bright;
-			HCL4 F 0 bright;
-			stop;
-
 		// Bonus Layers
 		SoulOverLayer: // Layer 6
 			HCL2 A 0 bright
@@ -298,6 +311,25 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 		EndLayer:
 			TNT1 A 0;
 			stop;
+		// Contols the Float/Bobbing of the Soul itself
+		LayerFloatControl: // layer -63
+			TNT1 A 1
+			{
+				invoker.soulbobx = invoker.soulbobxbasex + frandom(invoker.soulbobxrandxmin,invoker.soulbobxrandxmax) + (sin ((level.time + (level.time * frandom(invoker.soulbobxetimemulmin,invoker.soulbobxetimemulmax))) * invoker.soulbobxspeedmod) * frandom(invoker.soulbobxheightmodmin,invoker.soulbobxheightmodmax));
+				invoker.soulboby = invoker.soulbobybasey + frandom(invoker.soulbobyrandymin,invoker.soulbobyrandymax) + (sin (level.time * invoker.soulbobyspeedmod) * frandom(invoker.soulbobyheightmodmin,invoker.soulbobyheightmodmax));
+				if (dvdsdebug_hellcorepickups) 
+				{
+					Console.Printf("soulbobx: %8f, xbasex: %2f, xrandx: %2f-%2f, xetimemul: %2f-%2f, xspeedmod: %2f, xheightmod: %2f-%2f", invoker.soulbobx, invoker.soulbobxbasex, invoker.soulbobxrandxmin, invoker.soulbobxrandxmax, invoker.soulbobxetimemulmin, invoker.soulbobxetimemulmax, invoker.soulbobxspeedmod, invoker.soulbobxheightmodmin, invoker.soulbobxheightmodmax);
+					Console.Printf("soulboby: %8f, ybasey: %2f, yrandy: %2f-%2f, yspeedmod: %2f, yheightmod: %2f-%2f", invoker.soulboby, invoker.soulbobybasey, invoker.soulbobyrandymin, invoker.soulbobyrandymax, invoker.soulbobyspeedmod, invoker.soulbobyheightmodmin, invoker.soulbobyheightmodmax);
+				}
+				// A_OverlayOffset (<layer>, 0, 32 + (sin (level.time * <speed modifier>) * <height modifier>), WOF_INTERPOLATE)
+				A_OverlayOffset(3, invoker.soulbobx, invoker.soulboby, WOF_INTERPOLATE);
+				A_OverlayOffset(4, invoker.soulbobx, invoker.soulboby, WOF_INTERPOLATE);
+				A_OverlayOffset(5, invoker.soulbobx, invoker.soulboby, WOF_INTERPOLATE);
+				A_OverlayOffset(6, invoker.soulbobx, invoker.soulboby, WOF_INTERPOLATE);
+				A_OverlayOffset(7, invoker.soulbobx, invoker.soulboby, WOF_INTERPOLATE);
+			}
+			loop;
 
 		// 
 		Ready:
@@ -606,6 +638,7 @@ class ImpSoul : BaseHellcoreWeapon
 		+WEAPON.NOALERT;
 		Inventory.PickupMessage "You got an Imp's Soul! \cx[Slot 4]\c-";
 		Tag "Imp's Soul";
+
 	}
 
 	States
@@ -631,15 +664,13 @@ class ImpSoul : BaseHellcoreWeapon
 			loop;
 			
 		Spawn:
-			HLC2 A 1 bright NoDelay;
+			HCSL A 1 bright NoDelay;
 			Loop;
 
 		Ready: 
 			HCL1 A 0
 			{
-				A_Overlay(4,"SoulUnderLayer",true);
-				A_Overlay(5,"SoulImage",true);
-				A_Overlay(6,"SoulOverLayer",true);
+				A_HellSoulOverlayReady();
 			}
 		Idle: 
 			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1);
@@ -647,9 +678,7 @@ class ImpSoul : BaseHellcoreWeapon
 		Deselect: 
 			HCL1 A 1
 			{
-				A_Overlay(4,"EndLayer",false);
-				A_Overlay(5,"EndLayer",false);
-				A_Overlay(6,"EndLayer",false);
+				A_HellSoulClearOverlays();
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10033)*3);
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10034)*7.5);
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*2);
@@ -660,9 +689,7 @@ class ImpSoul : BaseHellcoreWeapon
 		Select: 
 			HCL1 A 1 
 			{
-				A_Overlay(4,"EndLayer",false);
-				A_Overlay(5,"EndLayer",false);
-				A_Overlay(6,"EndLayer",false);
+				A_HellSoulClearOverlays();
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10033)*3);
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10034)*7.5);
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*2);
@@ -697,11 +724,10 @@ class ImpSoul : BaseHellcoreWeapon
 			}
 			HCL1 G 4 bright
 			{
-				A_Overlay(3,"SoulSparkUnder",false);
-				A_Overlay(7,"SoulSparkOver",false);
+				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-				A_HellSoulFire1("imp/attack",100,"DoomImpBall-Claw","DoomImpBallCrisis-Claw",96,true);
+				A_HellSoulFire1("imp/attack",100,"DoomImpBall-Claw","DoomImpBallCrisis-Claw",96,true,true);
 			}
 			HCL1 H 4 bright
 			{
@@ -732,11 +758,10 @@ class ImpSoul : BaseHellcoreWeapon
 			}
 			HCL1 K 4 bright
 			{
-				A_Overlay(3,"SoulSparkUnder",false);
-				A_Overlay(7,"SoulSparkOver",false);
+				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-				A_HellSoulFire1("imp/attack",100,"DoomImpBall-Claw","DoomImpBallCrisis-Claw",96,true);
+				A_HellSoulFire1("imp/attack",100,"DoomImpBall-Claw","DoomImpBallCrisis-Claw",96,true,true);
 			}
 			HCL1 L 4 bright
 			{
@@ -770,7 +795,7 @@ class DarkImpSoulCI : BaseHellcorePickup //32223
 		//$NotAngled
 		//$Color 14
 		//$Category "DV-DS Weapons/Flora/Hellcore Souls"
-		//$Sprite "HLC2B0"
+		//$Sprite "HCSLB0"
 		Tag "Dark Imp's Soul: [Hellcore] Launches Dark Imp Fireballs";
 		Inventory.PickupMessage "You got a Dark Imp's Soul! \cx[Slot 4]\c-";
 	}
@@ -800,7 +825,7 @@ class DarkImpSoul : BaseHellcoreWeapon
 {
 	Default
 	{
-		//$Sprite "HLC2B0"
+		//$Sprite "HCSLB0"
 		Scale 0.625;
 		+FLOATBOB;
 		+DONTGIB;
@@ -840,15 +865,13 @@ class DarkImpSoul : BaseHellcoreWeapon
 			loop;
 			
 		Spawn:
-			HLC2 B 1 bright NoDelay;
+			HCSL B 1 bright NoDelay;
 			Loop;
 
 		Ready: 
 			HCL1 A 0
 			{
-				A_Overlay(4,"SoulUnderLayer",true);
-				A_Overlay(5,"SoulImage",true);
-				A_Overlay(6,"SoulOverLayer",true);
+				A_HellSoulOverlayReady();
 			}
 		Idle: 
 			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1);
@@ -856,9 +879,7 @@ class DarkImpSoul : BaseHellcoreWeapon
 		Deselect: 
 			HCL1 A 1
 			{
-				A_Overlay(4,"EndLayer",false);
-				A_Overlay(5,"EndLayer",false);
-				A_Overlay(6,"EndLayer",false);
+				A_HellSoulClearOverlays();
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10033)*3);
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10034)*7.5);
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*2);
@@ -869,9 +890,7 @@ class DarkImpSoul : BaseHellcoreWeapon
 		Select: 
 			HCL1 A 1 
 			{
-				A_Overlay(4,"EndLayer",false);
-				A_Overlay(5,"EndLayer",false);
-				A_Overlay(6,"EndLayer",false);
+				A_HellSoulClearOverlays();
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10033)*3);
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10034)*7.5);
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*2);
@@ -906,11 +925,10 @@ class DarkImpSoul : BaseHellcoreWeapon
 			}
 			HCL1 G 4 bright
 			{
-				A_Overlay(3,"SoulSparkUnder",false);
-				A_Overlay(7,"SoulSparkOver",false);
+				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-				A_HellSoulFire1("imp/attack",250,"DarkSeeker-Claw","DarkSeekerCrisis-Claw",97,true);
+				A_HellSoulFire1("imp/attack",250,"DarkSeeker-Claw","DarkSeekerCrisis-Claw",97,true,true);
 			}
 			HCL1 H 4 bright
 			{
@@ -941,11 +959,10 @@ class DarkImpSoul : BaseHellcoreWeapon
 			}
 			HCL1 K 4 bright
 			{
-				A_Overlay(3,"SoulSparkUnder",false);
-				A_Overlay(7,"SoulSparkOver",false);
+				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-				A_HellSoulFire1("imp/attack",250,"DarkSeeker-Claw","DarkSeekerCrisis-Claw",97,true);
+				A_HellSoulFire1("imp/attack",250,"DarkSeeker-Claw","DarkSeekerCrisis-Claw",97,true,true);
 			}
 			HCL1 L 4 bright
 			{
@@ -973,8 +990,602 @@ class DarkImpSoul : BaseHellcoreWeapon
 }
 
 // Cacodemon's Soul [Slot 4] (Weapon)
+class CacodemonSoulCI : BaseHellcorePickup //32224
+{
+	Default
+	{
+		//$NotAngled
+		//$Color 14
+		//$Category "DV-DS Weapons/Flora/Hellcore Souls"
+		//$Sprite "HCSLC0"
+		Tag "Cacodemon's Soul: [Hellcore] Launches Cacodemon Lightning Balls";
+		Inventory.PickupMessage "You got a Cacodemon's Soul! \cx[Slot 4]\c-";
+	}
+
+	States
+	{
+		Spawn:
+			HCSL C 1 NoDelay bright
+			{
+				A_HellCoreSoulPickupPulse(1.5,1.5);
+				A_HellcoreWeaponCheckCharacter(2);
+			}
+			Loop;
+		Pickup:
+			TNT1 A 0 
+			{
+				A_GiveInventory("CacodemonSoul", 1);
+				A_StartSound("pickuphellcore");
+				A_IncreaseHellcoreLevel(3);
+			}
+			Stop;
+	}
+}
+
+class CacodemonSoul : BaseHellcoreWeapon
+{
+	Default
+	{
+		//$Sprite "HCSLC0"
+		Scale 0.625;
+		+FLOATBOB;
+		+DONTGIB;
+		+INVENTORY.ALWAYSPICKUP;
+		+WEAPON.NOAUTOAIM;
+		+WEAPON.NOALERT;
+		Inventory.PickupMessage "You got a Cacodemon's Soul! \cx[Slot 4]\c-";
+		Tag "Cacodemon's Soul";
+	}
+
+	States
+	{
+		// Bonus Layers
+		SoulImage: // Layer 5
+			HCL3 C 0 bright
+			{ 
+				A_OverlayFlags(5, PSPF_ALPHA, true); 
+				A_OverlayFlags(5, PSPF_RENDERSTYLE, true); 
+				A_OverlayRenderStyle(5, STYLE_Translucent); 
+			}
+			HCL3 C 1 bright { A_OverlayAlpha(5, 0.125); }
+			HCL3 C 1 bright { A_OverlayAlpha(5, 0.25); }
+			HCL3 C 1 bright { A_OverlayAlpha(5, 0.375); }
+			HCL3 C 1 bright { A_OverlayAlpha(5, 0.5); }
+			HCL3 C 1 bright { A_OverlayAlpha(5, 0.625); }
+			HCL3 C 1 bright { A_OverlayAlpha(5, 0.75); }
+			HCL3 C 1 bright { A_OverlayAlpha(5, 0.875); }
+			HCL3 C 1 bright { A_OverlayAlpha(5, 1.0); }
+			HCL3 C 0 bright 
+			{ 
+				A_OverlayFlags(5, PSPF_ALPHA, false); 
+				A_OverlayFlags(5, PSPF_RENDERSTYLE, false); 
+				A_OverlayRenderStyle(5, STYLE_Normal); 
+			}
+		SoulImage2: // Layer 5
+			HCL3 C 1 bright;
+			loop;
+			
+		Spawn:
+			HCSL C 1 bright NoDelay;
+			Loop;
+
+		Ready: 
+			HCL1 A 0
+			{
+				A_HellSoulOverlayReady();
+			}
+		Idle: 
+			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1);
+			Loop;
+		Deselect: 
+			HCL1 A 1
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSLower(18);
+			}
+			Loop;
+		Select: 
+			HCL1 A 1 
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSRaise(18);
+			}
+			Loop;
+
+		Fire:
+			HCL1 CD 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			HCL1 D 0
+			{
+				if (random(1,2) == 1) { return resolvestate("Fire2"); }
+				else { return resolvestate("Fire1"); }
+				return resolvestate(null);
+			}
+		Fire1:
+			HCL1 E 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim1:
+			HCL1 F 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 G 4 bright
+			{
+				A_HellSoulSpark();
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+
+				A_HellSoulFire1("caco/attack",150,"CacodemonBall-Claw","CacodemonBallCrisis-Claw",98,true,true);
+			}
+			HCL1 H 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 E 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim1"); }
+				else { A_Refire("ReFireAnim2"); }
+			}
+			HCL1 E 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		Fire2:
+			HCL1 I 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim2:
+			HCL1 J 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 K 4 bright
+			{
+				A_HellSoulSpark();
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+
+				A_HellSoulFire1("caco/attack",150,"CacodemonBall-Claw","CacodemonBallCrisis-Claw",98,true,true);
+			}
+			HCL1 L 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 I 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim2"); }
+				else { A_Refire("ReFireAnim1"); }
+			}
+			HCL1 I 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		FireEnd:
+			HCL1 DC 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			Goto Ready;
+	}
+}
+
 // Cacolantern's Soul [Slot 4] (Weapon)
+class CacolanternSoulCI : BaseHellcorePickup //32225
+{
+	Default
+	{
+		//$NotAngled
+		//$Color 14
+		//$Category "DV-DS Weapons/Flora/Hellcore Souls"
+		//$Sprite "HCSLD0"
+		Tag "Cacolantern's Soul: [Hellcore] Launches Cacolantern Lightning Balls";
+		Inventory.PickupMessage "You got a Cacolantern's Soul! \cx[Slot 4]\c-";
+	}
+	
+	States
+	{
+		Spawn:
+			HCSL D 1 NoDelay bright
+			{
+				A_HellCoreSoulPickupPulse(1.5,1.5);
+				A_HellcoreWeaponCheckCharacter(3);
+			}
+			Loop;
+		Pickup:
+			TNT1 A 0 
+			{
+				A_GiveInventory("CacolanternSoul", 1);
+				A_StartSound("pickuphellcore");
+				A_IncreaseHellcoreLevel(4);
+			}
+			Stop;
+	}
+}
+
+class CacolanternSoul : BaseHellcoreWeapon
+{
+	Default
+	{
+		//$Sprite "HCSLD0"
+		Tag "Cacolantern's Soul";
+		Scale 0.625;
+		+FLOATBOB;
+		+DONTGIB;
+		+WEAPON.NOAUTOAIM;
+		+INVENTORY.ALWAYSPICKUP;
+		+WEAPON.NOALERT;
+		Inventory.PickupMessage "You got a Cacolantern's Soul! \cx[Slot 4]\c-";
+	}
+
+	States
+	{
+		// Bonus Layers
+		SoulImage: // Layer 5
+			HCL3 D 0 bright
+			{ 
+				A_OverlayFlags(5, PSPF_ALPHA, true); 
+				A_OverlayFlags(5, PSPF_RENDERSTYLE, true); 
+				A_OverlayRenderStyle(5, STYLE_Translucent); 
+			}
+			HCL3 D 1 bright { A_OverlayAlpha(5, 0.125); }
+			HCL3 D 1 bright { A_OverlayAlpha(5, 0.25); }
+			HCL3 D 1 bright { A_OverlayAlpha(5, 0.375); }
+			HCL3 D 1 bright { A_OverlayAlpha(5, 0.5); }
+			HCL3 D 1 bright { A_OverlayAlpha(5, 0.625); }
+			HCL3 D 1 bright { A_OverlayAlpha(5, 0.75); }
+			HCL3 D 1 bright { A_OverlayAlpha(5, 0.875); }
+			HCL3 D 1 bright { A_OverlayAlpha(5, 1.0); }
+		SoulImage2: // Layer 5
+			HCL3 D 1 bright;
+			loop;
+			
+		Spawn:
+			HCSL D 1 bright NoDelay;
+			Loop;
+
+		Ready: 
+			HCL1 A 0
+			{
+				A_HellSoulOverlayReady();
+			}
+		Idle: 
+			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1);
+			Loop;
+		Deselect: 
+			HCL1 A 1
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSLower(18);
+			}
+			Loop;
+		Select: 
+			HCL1 A 1 
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSRaise(18);
+			}
+			Loop;
+
+		Fire:
+			HCL1 CD 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			HCL1 D 0
+			{
+				if (random(1,2) == 1) { return resolvestate("Fire2"); }
+				else { return resolvestate("Fire1"); }
+				return resolvestate(null);
+			}
+		Fire1:
+			HCL1 E 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim1:
+			HCL1 F 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 G 4 bright
+			{
+				A_HellSoulSpark();
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+
+				A_HellSoulFire1("caco/attack",200,"CacolanternBall-Claw","CacolanternBallCrisis-Claw",99,true,true);
+			}
+			HCL1 H 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 E 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim1"); }
+				else { A_Refire("ReFireAnim2"); }
+			}
+			HCL1 E 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		Fire2:
+			HCL1 I 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim2:
+			HCL1 J 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 K 4 bright
+			{
+				A_HellSoulSpark();
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+
+				A_HellSoulFire1("caco/attack",200,"CacolanternBall-Claw","CacolanternBallCrisis-Claw",99,true,true);
+			}
+			HCL1 L 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 I 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim2"); }
+				else { A_Refire("ReFireAnim1"); }
+			}
+			HCL1 I 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		FireEnd:
+			HCL1 DC 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			Goto Ready;
+	}
+}
+
 // Abaddon's Soul [Slot 4] (Weapon)
+class AbaddonSoulCI : BaseHellcorePickup //32226
+{
+	Default
+	{
+		//$NotAngled
+		//$Color 14
+		//$Category "DV-DS Weapons/Flora/Hellcore Souls"
+		//$Sprite "HCSLE0"
+		Tag "Abaddon's Eye: [Hellcore] Launches Abaddon Fireballs";
+		Inventory.PickupMessage "You got the Abaddon's Eye! \cx[Slot 4]\c-";
+	}
+
+	States
+	{
+		Spawn:
+			HCSL E 1 NoDelay bright
+			{
+				A_HellCoreSoulPickupPulse(1.5,1.5);
+				A_HellcoreWeaponCheckCharacter(4);
+			}
+			Loop;
+		Pickup:
+			TNT1 A 0 
+			{
+				A_GiveInventory("AbaddonSoul", 1);
+				A_StartSound("pickuphellcore");
+				A_IncreaseHellcoreLevel(5);
+			}
+			Stop;
+	}
+}
+class AbaddonSoul : BaseHellcoreWeapon
+{
+	Default
+	{
+		//$NotAngled
+		//$Color 14
+		//$Category "DV-DS Weapons/Flora/Hellcore Souls"
+		//$Sprite "HCSLE0"
+		Tag "Abaddon's Eye: [Hellcore] Launches Abaddon Fireballs";
+		Inventory.PickupMessage "You got the Abaddon's Eye! \cx[Slot 4]\c-";
+	}
+
+	States
+	{
+		// Bonus Layers
+		SoulImage: // Layer 5
+			HCL3 E 0 bright
+			{ 
+				A_OverlayFlags(5, PSPF_ALPHA, true); 
+				A_OverlayFlags(5, PSPF_RENDERSTYLE, true); 
+				A_OverlayRenderStyle(5, STYLE_Translucent); 
+			}
+			HCL3 E 1 bright { A_OverlayAlpha(5, 0.125); }
+			HCL3 E 1 bright { A_OverlayAlpha(5, 0.25); }
+			HCL3 E 1 bright { A_OverlayAlpha(5, 0.375); }
+			HCL3 E 1 bright { A_OverlayAlpha(5, 0.5); }
+			HCL3 E 1 bright { A_OverlayAlpha(5, 0.625); }
+			HCL3 E 1 bright { A_OverlayAlpha(5, 0.75); }
+			HCL3 E 1 bright { A_OverlayAlpha(5, 0.875); }
+			HCL3 E 1 bright { A_OverlayAlpha(5, 1.0); }
+		SoulImage2: // Layer 5
+			HCL3 E 1 bright;
+			loop;
+			
+		Spawn:
+			HCSL E 1 bright NoDelay;
+			Loop;
+
+		Ready: 
+			HCL1 A 0
+			{
+				A_HellSoulOverlayReady();
+			}
+		Idle: 
+			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1);
+			Loop;
+		Deselect: 
+			HCL1 A 1
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSLower(18);
+			}
+			Loop;
+		Select: 
+			HCL1 A 1 
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSRaise(18);
+			}
+			Loop;
+
+		Fire:
+			HCL1 CD 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			HCL1 D 0
+			{
+				if (random(1,2) == 1) { return resolvestate("Fire2"); }
+				else { return resolvestate("Fire1"); }
+				return resolvestate(null);
+			}
+		Fire1:
+			HCL1 E 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim1:
+			HCL1 F 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 GG 2 bright
+			{
+				A_HellSoulSpark();
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 3) { A_SetTics(1); }
+
+				invoker.shotsfired++;
+				if (invoker.shotsfired > 1) { invoker.shotsfired = 0; }
+				if (invoker.shotsfired == 0) { A_HellSoulFire1("caco/attack",125,"AbaddonBall-Claw","AbaddonBallCrisis-Claw",100,true,true); }
+				else { A_HellSoulFire1("caco/attack",125,"AbaddonBall-Claw","AbaddonBallCrisis-Claw",100,true,false); }
+			}
+			HCL1 H 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 E 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim1"); }
+				else { A_Refire("ReFireAnim2"); }
+			}
+			HCL1 E 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		Fire2:
+			HCL1 I 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim2:
+			HCL1 J 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 KK 2 bright
+			{
+				A_HellSoulSpark();
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 3) { A_SetTics(1); }
+
+				invoker.shotsfired++;
+				if (invoker.shotsfired > 1) { invoker.shotsfired = 0; }
+				if (invoker.shotsfired == 0) { A_HellSoulFire1("caco/attack",125,"AbaddonBall-Claw","AbaddonBallCrisis-Claw",100,true,true); }
+				else { A_HellSoulFire1("caco/attack",125,"AbaddonBall-Claw","AbaddonBallCrisis-Claw",100,true,false); }
+			}
+			HCL1 L 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 I 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim2"); }
+				else { A_Refire("ReFireAnim1"); }
+			}
+			HCL1 I 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		FireEnd:
+			HCL1 DC 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			Goto Ready;
+	}
+}
+
 
 // Hell Knight's Soul [Slot 5] (Weapon)
 // Baron of Hell's Soul [Slot 5] (Weapon)
@@ -1023,7 +1634,7 @@ class ArchvileSoul : BaseHellcoreWeapon
 {
 	Default
 	{
-		//$Sprite "HLC2N0"
+		//$Sprite "HCSLM0"
 		Scale 0.625;
 		+FLOATBOB;
 		+DONTGIB;
@@ -1032,6 +1643,16 @@ class ArchvileSoul : BaseHellcoreWeapon
 		+WEAPON.NOALERT;
 		Inventory.PickupMessage "You got an Archvile's Soul! \cx[Slot 6]\c-";
 		Tag "Archvile's Soul";
+		
+		BaseHellcoreWeapon.bobxbasex 0.0;
+		BaseHellcoreWeapon.bobxrandx 0.0, 0.0;
+		BaseHellcoreWeapon.bobxetimemul 0.3675, 0.3825;
+		BaseHellcoreWeapon.bobxspeedmod 1.125;
+		BaseHellcoreWeapon.bobxheightmod 4.25, 5.75;
+		BaseHellcoreWeapon.bobybasey 0.0;
+		BaseHellcoreWeapon.bobyrandy 0.0, 0.0;
+		BaseHellcoreWeapon.bobyspeedmod 10.0;
+		BaseHellcoreWeapon.bobyheightmod 7.8, 8.2;
 	}
 	
 	action void A_HellSoulVileTarget(string type1 = "ArchvileFire", string typecrisis = "ArchvileFireCrisis")
@@ -1424,15 +2045,13 @@ class ArchvileSoul : BaseHellcoreWeapon
 			loop;
 			
 		Spawn:
-			HLC2 N 1 bright NoDelay;
+			HCSL M 1 bright NoDelay;
 			Loop;
 
 		Ready: 
 			HCL1 A 0
 			{
-				A_Overlay(4,"SoulUnderLayer",true);
-				A_Overlay(5,"SoulImage",true);
-				A_Overlay(6,"SoulOverLayer",true);
+				A_HellSoulOverlayReady();
 			}
 		Idle: 
 			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1);
@@ -1440,9 +2059,7 @@ class ArchvileSoul : BaseHellcoreWeapon
 		Deselect: 
 			HCL1 A 1
 			{
-				A_Overlay(4,"EndLayer",false);
-				A_Overlay(5,"EndLayer",false);
-				A_Overlay(6,"EndLayer",false);
+				A_HellSoulClearOverlays();
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10033)*3);
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10034)*7.5);
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*2);
@@ -1453,9 +2070,7 @@ class ArchvileSoul : BaseHellcoreWeapon
 		Select: 
 			HCL1 A 1 
 			{
-				A_Overlay(4,"EndLayer",false);
-				A_Overlay(5,"EndLayer",false);
-				A_Overlay(6,"EndLayer",false);
+				A_HellSoulClearOverlays();
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10033)*3);
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10034)*7.5);
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*2);
@@ -1497,8 +2112,7 @@ class ArchvileSoul : BaseHellcoreWeapon
 			}
 			HCL1 G 4 bright
 			{
-				A_Overlay(3,"SoulSparkUnder",false);
-				A_Overlay(7,"SoulSparkOver",false);
+				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
 
@@ -1539,8 +2153,7 @@ class ArchvileSoul : BaseHellcoreWeapon
 			}
 			HCL1 K 4 bright
 			{
-				A_Overlay(3,"SoulSparkUnder",false);
-				A_Overlay(7,"SoulSparkOver",false);
+				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
 
@@ -1596,8 +2209,7 @@ class ArchvileSoul : BaseHellcoreWeapon
 			}
 			HCL1 Q 4 bright
 			{
-				A_Overlay(3,"SoulSparkUnder",false);
-				A_Overlay(7,"SoulSparkOver",false);
+				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
 
@@ -1643,8 +2255,7 @@ class ArchvileSoul : BaseHellcoreWeapon
 			}
 			HCL1 U 4 bright 
 			{
-				A_Overlay(3,"SoulSparkUnder",false);
-				A_Overlay(7,"SoulSparkOver",false);
+				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
 
