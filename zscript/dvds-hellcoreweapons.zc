@@ -135,7 +135,10 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 	double soulbobx;
 	double soulboby;
 	
+	double baseangle;
+
 	int shotsfired;
+	int bruiseraltdirection;
 
 	property bobxbasex: soulbobxbasex;
 	property bobxrandx: soulbobxrandxmin, soulbobxrandxmax;
@@ -193,12 +196,13 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 		A_Overlay(7,"SoulSparkUnder",false);
 	}
 	
-	action void A_HellSoulFire1(string sndname = "", int heatamt = 0, string name1 = "", string name2 = "", int checknum = 0, bool usetension = true, bool hurtplayeroh = true)
+	action void A_HellSoulFire1(string sndname = "", int heatamt = 0, string name1 = "", string name2 = "", int checknum = 0, bool usetension = true, bool hurtplayeroh = true, double altangle = 0.0)
 	{
 		A_StartSound(sndname,101);
 		A_IncreaseHellcoreHeat(heatamt,hurtplayeroh); // +1.0% Hellcore Heat, Deal Damage if already above 100% Heat
 		if (usetension) CallACS("StartTensionCountDown");
 
+		A_SetAngle(angle-altangle);
 		if (A_HellCoreCrisisCheck() > 0)
 		{
 			A_PlayCrisisAtkSound();
@@ -228,6 +232,7 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 				A_SpreadAuraFireProjectile(name1,0+30,0,"",0,0,0,0); 
 			}
 		}
+		A_SetAngle(angle+altangle);
 	}
 
 	action void A_HellSoulFire2(string sndname = "", int heatamt = 0, string name1 = "DIPuff-Claw", int checknum = 0, bool usetension = true, bool hurtplayeroh = true)
@@ -380,7 +385,6 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 			}
 			loop;
 
-		// 
 		Ready:
 			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1);
 			loop;
@@ -404,9 +408,92 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 				A_DVDSRaise(18);
 			}
 			Loop;
+
 		Fire:
-			HCL1 A 1;
-			goto Ready;
+			HCL1 CD 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			HCL1 D 0
+			{
+				if (random(1,2) == 1) { return resolvestate("Fire2"); }
+				else { return resolvestate("Fire1"); }
+				return resolvestate(null);
+			}
+		Fire1:
+			HCL1 E 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim1:
+			HCL1 F 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 G 4 bright
+			{
+				A_HellSoulSpark();
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 H 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 E 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim1"); }
+				else { A_Refire("ReFireAnim2"); }
+			}
+			HCL1 I 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		Fire2:
+			HCL1 I 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim2:
+			HCL1 J 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 K 4 bright
+			{
+				A_HellSoulSpark();
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 L 4 bright
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+			HCL1 I 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim2"); }
+				else { A_Refire("ReFireAnim1"); }
+			}
+			HCL1 I 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		FireEnd:
+			HCL1 DC 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			Goto Ready;
 
 		// Quick Kick
 		User1: // Kick - Most Weapons
@@ -2283,6 +2370,358 @@ class BruiserSoulCI : BaseHellcorePickup //32230
 				A_IncreaseHellcoreLevel(9);
 			}
 			Stop;
+	}
+}
+class BruiserSoul : BaseHellcoreWeapon
+{
+	Default
+	{
+		//$Sprite "HCSLI0"
+		Tag "Bruiser Demon's Soul";
+		Scale 0.625;
+		+FLOATBOB;
+		+DONTGIB;
+		+WEAPON.NOAUTOAIM;
+		+INVENTORY.ALWAYSPICKUP;
+		+WEAPON.NOALERT;
+		Inventory.PickupMessage "You got a Bruiser Demon's Soul! \cx[Slot 5]\c-";
+	}
+	
+
+	States
+	{
+		// Bonus Layers
+		SoulImage: // Layer 5
+			HCL3 I 0 bright
+			{ 
+				A_OverlayFlags(5, PSPF_ALPHA, true); 
+				A_OverlayFlags(5, PSPF_RENDERSTYLE, true); 
+				A_OverlayRenderStyle(5, STYLE_Translucent); 
+			}
+			#### # 1 bright { A_OverlayAlpha(5, 0.125); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.25); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.375); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.5); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.625); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.75); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.875); }
+			#### # 1 bright { A_OverlayAlpha(5, 1.0); }
+		SoulImage2: // Layer 5
+			#### # 1 bright;
+			loop;
+			
+		Spawn:
+			HCSL I 1 bright NoDelay;
+			Loop;
+
+		Ready: 
+			HCL1 A 0
+			{
+				A_HellSoulOverlayReady();
+			}
+		Idle: 
+			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1|WRF_ALLOWUSER4);
+			Loop;
+		Deselect: 
+			HCL1 A 1
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSLower(18);
+			}
+			Loop;
+		Select: 
+			HCL1 A 1 
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSRaise(18);
+			}
+			Loop;
+
+		Fire:
+			HCL1 CD 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			HCL1 D 0
+			{
+				if (random(1,2) == 1) { return resolvestate("Fire2"); }
+				else { return resolvestate("Fire1"); }
+				return resolvestate(null);
+			}
+		Fire1:
+			HCL1 E 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim1:
+			HCL1 F 4 bright
+			{
+				invoker.shotsfired = 0;
+				if (CallACS("HellcoreFireMode",1,0) == 0) // If Alterating Fire Wave Mode is set
+				{
+					invoker.bruiseraltdirection = 0;
+					if (random(1,2) == 1) { invoker.bruiseraltdirection = 1; }
+					A_SetTics(3);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 3) { A_SetTics(2); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+				}
+				if (CallACS("HellcoreFireMode",1,0) == 1) // If Bruiser Blast Mode is set
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,0) == 2) // If Ground Wave Mode is set
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+			}
+			HCL1 GGGGGGG 1 bright
+			{
+				A_SetTics(0); 
+				if (CallACS("HellcoreFireMode",1,0) == 0) // If Alterating Fire Wave Mode is set
+				{
+					A_SetTics(1);
+					invoker.baseangle = (-50 + (invoker.shotsfired * 10));
+					if (invoker.bruiseraltdirection == 0) { invoker.baseangle *= 1; }
+					if (invoker.bruiseraltdirection == 1) { invoker.baseangle *= -1; }
+					invoker.shotsfired++;
+					if (dvdsdebug_hellcorepickups) Console.Printf("shotsfired: %d / 7", invoker.shotsfired);
+					if (dvdsdebug_hellcorepickups) Console.Printf("baseangle: %8f", invoker.baseangle);
+					if (invoker.shotsfired > 7) { invoker.shotsfired = 0; }
+					if (invoker.shotsfired == 1) 
+					{ 
+						A_HellSoulSpark();
+						A_HellSoulFire1("baron/attack",71,"BruiserBall2-Claw","BruiserBall2Crisis-Claw",104,true,true,invoker.baseangle);
+					}
+					else 
+					{ 
+						A_HellSoulFire1("",71,"BruiserBall2-Claw","BruiserBall2Crisis-Claw",104,true,false,invoker.baseangle);
+					}
+				}
+			}
+			HCL1 G 4 bright
+			{
+				A_SetTics(0); 
+				if (CallACS("HellcoreFireMode",1,0) == 1) // If Bruiser Blast Mode is set
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+					
+					A_HellSoulSpark();
+					A_HellSoulFire1("baron/attack",400,"BruiserBall-Claw","BruiserBallCrisis-Claw",104,true,true,0.0);
+				}
+			}
+			HCL1 GGGG 1 bright
+			{
+				A_SetTics(0);
+				if (CallACS("HellcoreFireMode",1,0) == 2) // If Ground Wave Mode is set
+				{
+					A_SetTics(1);
+					
+					invoker.shotsfired++;
+					if (dvdsdebug_hellcorepickups) Console.Printf("shotsfired: %d / 4", invoker.shotsfired);
+					if (invoker.shotsfired == 1)
+					{
+						A_HellSoulSpark();
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,true,15.0);
+					}
+					else
+					if (invoker.shotsfired == 2)
+					{
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,false,0.0);
+					}
+					else
+					if (invoker.shotsfired == 3)
+					{
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,false,-15.0);
+					}
+				}
+			}
+			HCL1 H 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,0) == 0) // If Alterating Fire Wave Mode is set
+				{
+					A_SetTics(3);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 3) { A_SetTics(2); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+				}
+				if (CallACS("HellcoreFireMode",1,0) == 1) // If Bruiser Blast Mode is set
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,0) == 2) // If Ground Wave Mode is set
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+			}
+			HCL1 E 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim1"); }
+				else { A_Refire("ReFireAnim2"); }
+			}
+			HCL1 E 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		Fire2:
+			HCL1 I 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim2:
+			HCL1 J 4 bright
+			{
+				invoker.shotsfired = 0;
+				if (CallACS("HellcoreFireMode",1,0) == 0) // If Alterating Fire Wave Mode is set
+				{
+					invoker.bruiseraltdirection = 0;
+					if (random(1,2) == 1) { invoker.bruiseraltdirection = 1; }
+					A_SetTics(3);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 3) { A_SetTics(2); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+				}
+				if (CallACS("HellcoreFireMode",1,0) == 1) // If Bruiser Blast Mode is set
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,0) == 2) // If Ground Wave Mode is set
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+			}
+			HCL1 KKKKKKK 1 bright
+			{
+				A_SetTics(0); 
+				if (CallACS("HellcoreFireMode",1,0) == 0) // If Alterating Fire Wave Mode is set
+				{
+					A_SetTics(1);
+					invoker.baseangle = (-50 + (invoker.shotsfired * 10));
+					if (invoker.bruiseraltdirection == 0) { invoker.baseangle *= 1; }
+					if (invoker.bruiseraltdirection == 1) { invoker.baseangle *= -1; }
+					invoker.shotsfired++;
+					if (dvdsdebug_hellcorepickups) Console.Printf("shotsfired: %d / 7", invoker.shotsfired);
+					if (dvdsdebug_hellcorepickups) Console.Printf("baseangle: %8f", invoker.baseangle);
+					if (invoker.shotsfired > 7) { invoker.shotsfired = 0; }
+					if (invoker.shotsfired == 1) 
+					{ 
+						A_HellSoulSpark();
+						A_HellSoulFire1("baron/attack",71,"BruiserBall2-Claw","BruiserBall2Crisis-Claw",104,true,true,invoker.baseangle);
+					}
+					else 
+					{ 
+						A_HellSoulFire1("",71,"BruiserBall2-Claw","BruiserBall2Crisis-Claw",104,true,false,invoker.baseangle);
+					}
+				}
+			}
+			HCL1 K 4 bright
+			{
+				A_SetTics(0); 
+				if (CallACS("HellcoreFireMode",1,0) == 1) // If Bruiser Blast Mode is set
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+					
+					A_HellSoulSpark();
+					A_HellSoulFire1("baron/attack",400,"BruiserBall-Claw","BruiserBallCrisis-Claw",104,true,true,0.0);
+				}
+			}
+			HCL1 KKKK 1 bright
+			{
+				A_SetTics(0);
+				if (CallACS("HellcoreFireMode",1,0) == 2) // If Ground Wave Mode is set
+				{
+					A_SetTics(1);
+					
+					invoker.shotsfired++;
+					if (dvdsdebug_hellcorepickups) Console.Printf("shotsfired: %d / 4", invoker.shotsfired);
+					if (invoker.shotsfired == 1)
+					{
+						A_HellSoulSpark();
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,true,15.0);
+					}
+					else
+					if (invoker.shotsfired == 2)
+					{
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,false,0.0);
+					}
+					else
+					if (invoker.shotsfired == 3)
+					{
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,false,-15.0);
+					}
+				}
+			}
+			HCL1 L 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,0) == 0) // If Alterating Fire Wave Mode is set
+				{
+					A_SetTics(3);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 3) { A_SetTics(2); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+				}
+				if (CallACS("HellcoreFireMode",1,0) == 1) // If Bruiser Blast Mode is set
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,0) == 2) // If Ground Wave Mode is set
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+			}
+			HCL1 I 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim2"); }
+				else { A_Refire("ReFireAnim1"); }
+			}
+			HCL1 I 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		FireEnd:
+			HCL1 DC 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			Goto Ready;
+
+		User4:
+			HCL1 A 5 
+			{
+				A_StartSound("elecstun",102, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(1.25,1.75));
+				ACS_NamedExecuteAlways("HellcoreFireMode",0,0,0);
+			}
+			Goto Ready;
 	}
 }
 
