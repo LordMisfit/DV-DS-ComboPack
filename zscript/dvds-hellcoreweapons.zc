@@ -139,6 +139,7 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 
 	int shotsfired;
 	int bruiseraltdirection;
+	int crisisatkresult;
 
 	property bobxbasex: soulbobxbasex;
 	property bobxrandx: soulbobxrandxmin, soulbobxrandxmax;
@@ -202,46 +203,51 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 		A_Overlay(7,"SoulSparkUnder",false);
 	}
 	
-	action void A_HellSoulFire1(string sndname = "", int heatamt = 0, string name1 = "", string name2 = "", int checknum = 0, bool usetension = true, bool hurtplayeroh = true, double altangle = 0.0)
+	action void A_HellSoulCrisisCheck()
+	{
+		invoker.crisisatkresult = A_HellCoreCrisisCheck();
+	}
+	
+	action void A_HellSoulFire1(string sndname = "", int heatamt = 0, string name1 = "", string name2 = "", int checknum = 0, bool usetension = true, bool hurtplayeroh = true, double altangle = 0.0, int spawnheight = 0, double spawnoffset = 0.0, double altpitch = 0.0)
 	{
 		A_StartSound(sndname,101);
 		A_IncreaseHellcoreHeat(heatamt,hurtplayeroh); // +1.0% Hellcore Heat, Deal Damage if already above 100% Heat
 		if (usetension) CallACS("StartTensionCountDown");
 
 		A_SetAngle(angle-altangle);
-		if (A_HellCoreCrisisCheck() > 0)
+		if (invoker.crisisatkresult > 0)
 		{
 			A_PlayCrisisAtkSound();
-			A_SpreadAuraFireProjectile(name2,0,0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile(name2,0,0,"",0+spawnoffset,0+spawnheight,0,0+altpitch); 
 			if (CallACS("MiscVarCheckDECORATE",checknum) >= 4) 
 			{
-				A_SpreadAuraFireProjectile(name2,0-15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile(name2,0+15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile(name2,0-15,0,"",0+spawnoffset,0+spawnheight,0,0+altpitch);
+				A_SpreadAuraFireProjectile(name2,0+15,0,"",0+spawnoffset,0+spawnheight,0,0+altpitch);
 			}
 			if (CallACS("MiscVarCheckDECORATE",checknum) >= 7) 
 			{
-				A_SpreadAuraFireProjectile(name2,0-30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile(name2,0+30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile(name2,0-30,0,"",0+spawnoffset,0+spawnheight,0,0+altpitch);
+				A_SpreadAuraFireProjectile(name2,0+30,0,"",0+spawnoffset,0+spawnheight,0,0+altpitch);
 			}
 		}
 		else
 		{
-			A_SpreadAuraFireProjectile(name1,0,0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile(name1,0,0,"",0+spawnoffset,0+spawnheight,0,0+altpitch); 
 			if (CallACS("MiscVarCheckDECORATE",checknum) >= 4) 
 			{
-				A_SpreadAuraFireProjectile(name1,0-15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile(name1,0+15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile(name1,0-15,0,"",0+spawnoffset,0+spawnheight,0,0+altpitch);
+				A_SpreadAuraFireProjectile(name1,0+15,0,"",0+spawnoffset,0+spawnheight,0,0+altpitch);
 			}
 			if (CallACS("MiscVarCheckDECORATE",checknum) >= 7) 
 			{
-				A_SpreadAuraFireProjectile(name1,0-30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile(name1,0+30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile(name1,0-30,0,"",0+spawnoffset,0+spawnheight,0,0+altpitch);
+				A_SpreadAuraFireProjectile(name1,0+30,0,"",0+spawnoffset,0+spawnheight,0,0+altpitch);
 			}
 		}
 		A_SetAngle(angle+altangle);
 	}
 
-	action void A_HellSoulFire2(string sndname = "", int heatamt = 0, string name1 = "DIPuff-Claw", int checknum = 0, bool usetension = true, bool hurtplayeroh = true)
+	action void A_HellSoulFire2(string sndname = "", int heatamt = 0, string name1 = "DIPuff-Soul", int checknum = 0, bool usetension = true, bool hurtplayeroh = true)
 	{
 		A_StartSound(sndname,101);
 		A_IncreaseHellcoreHeat(heatamt,hurtplayeroh); // +6.0% Hellcore Heat, Deal Damage if already above 100% Heat
@@ -292,6 +298,12 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 
 	States
 	{
+		// Dummy Sprites
+		Dummy:
+			HCL1 ABCDEFGHIJKLMNOPQRSTUV 0 bright;
+			HCL2 AB 0 bright;
+			HCL3 ABCDEFGHIJKLMNOPQ 0 bright;
+
 		// Bonus Layers
 		SoulOverLayer: // Layer 6
 			HCL2 A 0 bright
@@ -392,6 +404,11 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 			loop;
 
 		Ready:
+			HCL1 B 0
+			{
+				A_HellSoulOverlayReady();
+			}
+		Idle: 
 			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1);
 			loop;
 		Deselect: 
@@ -779,7 +796,6 @@ class ImpSoul : BaseHellcoreWeapon
 		+WEAPON.NOALERT;
 		Inventory.PickupMessage "You got an Imp's Soul! \cx[Slot 4]\c-";
 		Tag "Imp's Soul";
-
 	}
 
 	States
@@ -868,7 +884,8 @@ class ImpSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-				A_HellSoulFire1("imp/attack",100,"DoomImpBall-Claw","DoomImpBallCrisis-Claw",96,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("imp/attack",100,"DoomImpBall-Soul","DoomImpBallCrisis-Soul",96,true,true);
 			}
 			HCL1 H 4 bright
 			{
@@ -902,7 +919,8 @@ class ImpSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-				A_HellSoulFire1("imp/attack",100,"DoomImpBall-Claw","DoomImpBallCrisis-Claw",96,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("imp/attack",100,"DoomImpBall-Soul","DoomImpBallCrisis-Soul",96,true,true);
 			}
 			HCL1 L 4 bright
 			{
@@ -1062,7 +1080,8 @@ class DarkImpSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-				A_HellSoulFire1("imp/attack",250,"DarkSeeker-Claw","DarkSeekerCrisis-Claw",97,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("imp/attack",250,"DarkSeeker-Soul","DarkSeekerCrisis-Soul",97,true,true);
 			}
 			HCL1 H 4 bright
 			{
@@ -1096,7 +1115,8 @@ class DarkImpSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-				A_HellSoulFire1("imp/attack",250,"DarkSeeker-Claw","DarkSeekerCrisis-Claw",97,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("imp/attack",250,"DarkSeeker-Soul","DarkSeekerCrisis-Soul",97,true,true);
 			}
 			HCL1 L 4 bright
 			{
@@ -1256,8 +1276,8 @@ class CacodemonSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-
-				A_HellSoulFire1("caco/attack",150,"CacodemonBall-Claw","CacodemonBallCrisis-Claw",98,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("caco/attack",150,"CacodemonBall-Soul","CacodemonBallCrisis-Soul",98,true,true);
 			}
 			HCL1 H 4 bright
 			{
@@ -1291,8 +1311,8 @@ class CacodemonSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-
-				A_HellSoulFire1("caco/attack",150,"CacodemonBall-Claw","CacodemonBallCrisis-Claw",98,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("caco/attack",150,"CacodemonBall-Soul","CacodemonBallCrisis-Soul",98,true,true);
 			}
 			HCL1 L 4 bright
 			{
@@ -1452,8 +1472,8 @@ class CacolanternSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-
-				A_HellSoulFire1("caco/attack",200,"CacolanternBall-Claw","CacolanternBallCrisis-Claw",99,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("caco/attack",200,"CacolanternBall-Soul","CacolanternBallCrisis-Soul",99,true,true);
 			}
 			HCL1 H 4 bright
 			{
@@ -1487,8 +1507,8 @@ class CacolanternSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-
-				A_HellSoulFire1("caco/attack",200,"CacolanternBall-Claw","CacolanternBallCrisis-Claw",99,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("caco/attack",200,"CacolanternBall-Soul","CacolanternBallCrisis-Soul",99,true,true);
 			}
 			HCL1 L 4 bright
 			{
@@ -1651,11 +1671,13 @@ class AbaddonSoul : BaseHellcoreWeapon
 				if (invoker.shotsfired == 1) 
 				{ 
 					A_HellSoulSpark();
-					A_HellSoulFire1("caco/attack",125,"AbaddonBall-Claw","AbaddonBallCrisis-Claw",100,true,true); 
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("caco/attack",125,"AbaddonBall-Soul","AbaddonBallCrisis-Soul",100,true,true); 
 				}
 				else 
 				{ 
-					A_HellSoulFire1("caco/attack",125,"AbaddonBall-Claw","AbaddonBallCrisis-Claw",100,true,false); 
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("caco/attack",125,"AbaddonBall-Soul","AbaddonBallCrisis-Soul",100,true,false); 
 				}
 			}
 			HCL1 H 4 bright
@@ -1697,11 +1719,13 @@ class AbaddonSoul : BaseHellcoreWeapon
 				if (invoker.shotsfired == 1) 
 				{ 
 					A_HellSoulSpark();
-					A_HellSoulFire1("caco/attack",125,"AbaddonBall-Claw","AbaddonBallCrisis-Claw",100,true,true); 
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("caco/attack",125,"AbaddonBall-Soul","AbaddonBallCrisis-Soul",100,true,true); 
 				}
 				else 
 				{ 
-					A_HellSoulFire1("caco/attack",125,"AbaddonBall-Claw","AbaddonBallCrisis-Claw",100,true,false); 
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("caco/attack",125,"AbaddonBall-Soul","AbaddonBallCrisis-Soul",100,true,false); 
 				}
 			}
 			HCL1 L 4 bright
@@ -1861,8 +1885,8 @@ class KnightSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-
-				A_HellSoulFire1("baron/attack",225,"HellKnightBall-Claw","HellKnightBallCrisis-Claw",101,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("baron/attack",225,"HellKnightBall-Soul","HellKnightBallCrisis-Soul",101,true,true);
 			}
 			HCL1 H 4 bright
 			{
@@ -1896,8 +1920,8 @@ class KnightSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-
-				A_HellSoulFire1("baron/attack",225,"HellKnightBall-Claw","HellKnightBallCrisis-Claw",101,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("baron/attack",225,"HellKnightBall-Soul","HellKnightBallCrisis-Soul",101,true,true);
 			}
 			HCL1 L 4 bright
 			{
@@ -2055,8 +2079,8 @@ class BaronSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-
-				A_HellSoulFire1("baron/attack",275,"BaronofHellBall-Claw","BaronofHellBallCrisis-Claw",102,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("baron/attack",275,"BaronofHellBall-Soul","BaronofHellBallCrisis-Soul",102,true,true);
 			}
 			HCL1 H 4 bright
 			{
@@ -2090,8 +2114,8 @@ class BaronSoul : BaseHellcoreWeapon
 				A_HellSoulSpark();
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
-
-				A_HellSoulFire1("baron/attack",275,"BaronofHellBall-Claw","BaronofHellBallCrisis-Claw",102,true,true);
+				A_HellSoulCrisisCheck();
+				A_HellSoulFire1("baron/attack",275,"BaronofHellBall-Soul","BaronofHellBallCrisis-Soul",102,true,true);
 			}
 			HCL1 L 4 bright
 			{
@@ -2254,16 +2278,22 @@ class BelphegorSoul : BaseHellcoreWeapon
 				if (invoker.shotsfired == 1) 
 				{
 					A_HellSoulSpark();
-					A_HellSoulFire1("baron/attack",125,"BelphegorBall-Claw","BelphegorBallCrisis-Claw",103,true,true); 
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("baron/attack",125,"BelphegorBall-Soul","BelphegorBallCrisis-Soul",103,true,true); 
 				}
 				else 
 				if (invoker.shotsfired == 2 || invoker.shotsfired == 3) 
 				{ 
-					A_HellSoulFire1("baron/attack",125,"BelphegorBall-Claw","BelphegorBallCrisis-Claw",103,true,false); 
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("baron/attack",125,"BelphegorBall-Soul","BelphegorBallCrisis-Soul",103,true,false); 
 				}
 				else
 				{
-					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_HellSoulFire1("baron/attack",0,"BelphegorBall-Claw","BelphegorBallCrisis-Claw",103,true,false); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) 
+					{ 
+						A_HellSoulCrisisCheck();
+						A_HellSoulFire1("baron/attack",0,"BelphegorBall-Soul","BelphegorBallCrisis-Soul",103,true,false); 
+					}
 				}
 			}
 			HCL1 H 4 bright
@@ -2302,16 +2332,22 @@ class BelphegorSoul : BaseHellcoreWeapon
 				if (invoker.shotsfired == 1) 
 				{
 					A_HellSoulSpark();
-					A_HellSoulFire1("baron/attack",125,"BelphegorBall-Claw","BelphegorBallCrisis-Claw",103,true,true); 
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("baron/attack",125,"BelphegorBall-Soul","BelphegorBallCrisis-Soul",103,true,true); 
 				}
 				else 
 				if (invoker.shotsfired == 2 || invoker.shotsfired == 3) 
 				{ 
-					A_HellSoulFire1("baron/attack",125,"BelphegorBall-Claw","BelphegorBallCrisis-Claw",103,true,false); 
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("baron/attack",125,"BelphegorBall-Soul","BelphegorBallCrisis-Soul",103,true,false); 
 				}
 				else
 				{
-					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_HellSoulFire1("baron/attack",0,"BelphegorBall-Claw","BelphegorBallCrisis-Claw",103,true,false); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) 
+					{ 
+						A_HellSoulCrisisCheck();
+						A_HellSoulFire1("baron/attack",0,"BelphegorBall-Soul","BelphegorBallCrisis-Soul",103,true,false); 
+					}
 				}
 			}
 			HCL1 L 4 bright
@@ -2492,6 +2528,7 @@ class BruiserSoul : BaseHellcoreWeapon
 				if (CallACS("HellcoreFireMode",1,0) == 0) // If Alterating Fire Wave Mode is set
 				{
 					A_SetTics(1);
+					if (invoker.shotsfired == 0) { A_HellSoulCrisisCheck(); }
 					invoker.baseangle = (-50 + (invoker.shotsfired * 10));
 					if (invoker.bruiseraltdirection == 0) { invoker.baseangle *= 1; }
 					if (invoker.bruiseraltdirection == 1) { invoker.baseangle *= -1; }
@@ -2502,11 +2539,11 @@ class BruiserSoul : BaseHellcoreWeapon
 					if (invoker.shotsfired == 1) 
 					{ 
 						A_HellSoulSpark();
-						A_HellSoulFire1("baron/attack",71,"BruiserBall2-Claw","BruiserBall2Crisis-Claw",104,true,true,invoker.baseangle);
+						A_HellSoulFire1("baron/attack",71,"BruiserBall2-Soul","BruiserBall2Crisis-Soul",104,true,true,invoker.baseangle);
 					}
 					else 
 					{ 
-						A_HellSoulFire1("",71,"BruiserBall2-Claw","BruiserBall2Crisis-Claw",104,true,false,invoker.baseangle);
+						A_HellSoulFire1("",71,"BruiserBall2-Soul","BruiserBall2Crisis-Soul",104,true,false,invoker.baseangle);
 					}
 				}
 			}
@@ -2520,7 +2557,8 @@ class BruiserSoul : BaseHellcoreWeapon
 					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
 					
 					A_HellSoulSpark();
-					A_HellSoulFire1("baron/attack",400,"BruiserBall-Claw","BruiserBallCrisis-Claw",104,true,true,0.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("baron/attack",400,"BruiserBall-Soul","BruiserBallCrisis-Soul",104,true,true,0.0);
 				}
 			}
 			HCL1 GGGG 1 bright
@@ -2529,23 +2567,24 @@ class BruiserSoul : BaseHellcoreWeapon
 				if (CallACS("HellcoreFireMode",1,0) == 2) // If Ground Wave Mode is set
 				{
 					A_SetTics(1);
-					
+					if (invoker.shotsfired == 0) { A_HellSoulCrisisCheck(); }
 					invoker.shotsfired++;
 					if (dvdsdebug_hellcorepickups) Console.Printf("shotsfired: %d / 4", invoker.shotsfired);
 					if (invoker.shotsfired == 1)
 					{
 						A_HellSoulSpark();
-						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,true,15.0);
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Soul","BruiserFireSpawnerCrisis-Soul",104,true,true,15.0);
 					}
 					else
 					if (invoker.shotsfired == 2)
 					{
-						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,false,0.0);
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Soul","BruiserFireSpawnerCrisis-Soul",104,true,false,0.0);
 					}
 					else
 					if (invoker.shotsfired == 3)
 					{
-						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,false,-15.0);
+						A_HellSoulCrisisCheck();
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Soul","BruiserFireSpawnerCrisis-Soul",104,true,false,-15.0);
 					}
 				}
 			}
@@ -2617,6 +2656,7 @@ class BruiserSoul : BaseHellcoreWeapon
 				if (CallACS("HellcoreFireMode",1,0) == 0) // If Alterating Fire Wave Mode is set
 				{
 					A_SetTics(1);
+					if (invoker.shotsfired == 0) { A_HellSoulCrisisCheck(); }
 					invoker.baseangle = (-50 + (invoker.shotsfired * 10));
 					if (invoker.bruiseraltdirection == 0) { invoker.baseangle *= 1; }
 					if (invoker.bruiseraltdirection == 1) { invoker.baseangle *= -1; }
@@ -2627,11 +2667,11 @@ class BruiserSoul : BaseHellcoreWeapon
 					if (invoker.shotsfired == 1) 
 					{ 
 						A_HellSoulSpark();
-						A_HellSoulFire1("baron/attack",71,"BruiserBall2-Claw","BruiserBall2Crisis-Claw",104,true,true,invoker.baseangle);
+						A_HellSoulFire1("baron/attack",71,"BruiserBall2-Soul","BruiserBall2Crisis-Soul",104,true,true,invoker.baseangle);
 					}
 					else 
 					{ 
-						A_HellSoulFire1("",71,"BruiserBall2-Claw","BruiserBall2Crisis-Claw",104,true,false,invoker.baseangle);
+						A_HellSoulFire1("",71,"BruiserBall2-Soul","BruiserBall2Crisis-Soul",104,true,false,invoker.baseangle);
 					}
 				}
 			}
@@ -2645,7 +2685,8 @@ class BruiserSoul : BaseHellcoreWeapon
 					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
 					
 					A_HellSoulSpark();
-					A_HellSoulFire1("baron/attack",400,"BruiserBall-Claw","BruiserBallCrisis-Claw",104,true,true,0.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("baron/attack",400,"BruiserBall-Soul","BruiserBallCrisis-Soul",104,true,true,0.0);
 				}
 			}
 			HCL1 KKKK 1 bright
@@ -2654,23 +2695,23 @@ class BruiserSoul : BaseHellcoreWeapon
 				if (CallACS("HellcoreFireMode",1,0) == 2) // If Ground Wave Mode is set
 				{
 					A_SetTics(1);
-					
+					if (invoker.shotsfired == 0) { A_HellSoulCrisisCheck(); }
 					invoker.shotsfired++;
 					if (dvdsdebug_hellcorepickups) Console.Printf("shotsfired: %d / 4", invoker.shotsfired);
 					if (invoker.shotsfired == 1)
 					{
 						A_HellSoulSpark();
-						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,true,15.0);
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Soul","BruiserFireSpawnerCrisis-Soul",104,true,true,15.0);
 					}
 					else
 					if (invoker.shotsfired == 2)
 					{
-						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,false,0.0);
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Soul","BruiserFireSpawnerCrisis-Soul",104,true,false,0.0);
 					}
 					else
 					if (invoker.shotsfired == 3)
 					{
-						A_HellSoulFire1("",250,"BruiserFireSpawner-Claw","BruiserFireSpawnerCrisis-Claw",104,true,false,-15.0);
+						A_HellSoulFire1("",250,"BruiserFireSpawner-Soul","BruiserFireSpawnerCrisis-Soul",104,true,false,-15.0);
 					}
 				}
 			}
@@ -2875,9 +2916,10 @@ class ArchonSoul : BaseHellcoreWeapon
 					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
 					
 					A_HellSoulSpark();
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,-4.0);
-					A_HellSoulFire1("baron/attack",400,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,true,0.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,4.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,-4.0);
+					A_HellSoulFire1("baron/attack",400,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,true,0.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,4.0);
 				}
 				if (CallACS("HellcoreFireMode",1,1) == 1) // Plasma Wave
 				{
@@ -2886,13 +2928,14 @@ class ArchonSoul : BaseHellcoreWeapon
 					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
 					
 					A_HellSoulSpark();
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,-6.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,-4.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,-2.0);
-					A_HellSoulFire1("baron/attack",750,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,true,0.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,2.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,4.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,6.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,-6.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,-4.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,-2.0);
+					A_HellSoulFire1("baron/attack",750,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,true,0.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,2.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,4.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,6.0);
 				}
 				if (CallACS("HellcoreFireMode",1,1) == 2) // Comet Blast
 				{
@@ -2904,7 +2947,8 @@ class ArchonSoul : BaseHellcoreWeapon
 					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(4); }
 					
 					A_HellSoulSpark();
-					A_HellSoulFire1("weapons/firbfi",650,"ArchonComet-Claw","ArchonCometCrisis-Claw",105,true,true,0.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("weapons/firbfi",650,"ArchonComet-Soul","ArchonCometCrisis-Soul",105,true,true,0.0);
 				}
 			}
 			HCL1 H 4 bright
@@ -2975,9 +3019,10 @@ class ArchonSoul : BaseHellcoreWeapon
 					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
 					
 					A_HellSoulSpark();
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,-4.0);
-					A_HellSoulFire1("baron/attack",400,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,true,0.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,4.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,-4.0);
+					A_HellSoulFire1("baron/attack",400,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,true,0.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,4.0);
 				}
 				if (CallACS("HellcoreFireMode",1,1) == 1) // Plasma Wave
 				{
@@ -2986,13 +3031,14 @@ class ArchonSoul : BaseHellcoreWeapon
 					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
 					
 					A_HellSoulSpark();
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,-6.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,-4.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,-2.0);
-					A_HellSoulFire1("baron/attack",750,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,true,0.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,2.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,4.0);
-					A_HellSoulFire1("",0,"ArchonOfHellBall-Claw","ArchonOfHellBallCrisis-Claw",105,true,false,6.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,-6.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,-4.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,-2.0);
+					A_HellSoulFire1("baron/attack",750,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,true,0.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,2.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,4.0);
+					A_HellSoulFire1("",0,"ArchonOfHellBall-Soul","ArchonOfHellBallCrisis-Soul",105,true,false,6.0);
 				}
 				if (CallACS("HellcoreFireMode",1,1) == 2) // Comet Blast
 				{
@@ -3004,7 +3050,8 @@ class ArchonSoul : BaseHellcoreWeapon
 					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(4); }
 					
 					A_HellSoulSpark();
-					A_HellSoulFire1("weapons/firbfi",650,"ArchonComet-Claw","ArchonCometCrisis-Claw",105,true,true,0.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("weapons/firbfi",650,"ArchonComet-Soul","ArchonCometCrisis-Soul",105,true,true,0.0);
 				}
 			}
 			HCL1 L 4 bright
@@ -3120,23 +3167,23 @@ class PyroDemonSoul : BaseHellcoreWeapon
 			{
 				A_PlayCrisisAtkSound();
 
-				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
-				A_SetAngle(angle-angle2); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle2);
-				A_SetAngle(angle-angle3); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle3);
-				A_SetAngle(angle-angle4); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle4);
-				A_SetAngle(angle-angle5); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle5);
-				A_SetAngle(angle-angle6); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle6);
-				A_SetAngle(angle-angle7); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle6);
+				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
+				A_SetAngle(angle-angle2); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle2);
+				A_SetAngle(angle-angle3); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle3);
+				A_SetAngle(angle-angle4); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle4);
+				A_SetAngle(angle-angle5); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle5);
+				A_SetAngle(angle-angle6); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle6);
+				A_SetAngle(angle-angle7); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle6);
 			}
 			else
 			{
-				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosion-Claw",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
-				A_SetAngle(angle-angle2); A_FireProjectile("EscapeExplosion-Claw",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle2);
-				A_SetAngle(angle-angle3); A_FireProjectile("EscapeExplosion-Claw",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle3);
-				A_SetAngle(angle-angle4); A_FireProjectile("EscapeExplosion-Claw",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle4);
-				A_SetAngle(angle-angle5); A_FireProjectile("EscapeExplosion-Claw",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle5);
-				A_SetAngle(angle-angle6); A_FireProjectile("EscapeExplosion-Claw",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle6);
-				A_SetAngle(angle-angle7); A_FireProjectile("EscapeExplosion-Claw",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle6);
+				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosion-Soul",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
+				A_SetAngle(angle-angle2); A_FireProjectile("EscapeExplosion-Soul",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle2);
+				A_SetAngle(angle-angle3); A_FireProjectile("EscapeExplosion-Soul",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle3);
+				A_SetAngle(angle-angle4); A_FireProjectile("EscapeExplosion-Soul",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle4);
+				A_SetAngle(angle-angle5); A_FireProjectile("EscapeExplosion-Soul",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle5);
+				A_SetAngle(angle-angle6); A_FireProjectile("EscapeExplosion-Soul",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle6);
+				A_SetAngle(angle-angle7); A_FireProjectile("EscapeExplosion-Soul",0.0,0,offset2,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle6);
 			}
 		}
 		else
@@ -3145,15 +3192,15 @@ class PyroDemonSoul : BaseHellcoreWeapon
 			if (A_HellCoreCrisisCheck() > 0)
 			{
 				A_PlayCrisisAtkSound();
-				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
-				A_SetAngle(angle-angle2); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle2);
-				A_SetAngle(angle-angle3); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle3);
+				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
+				A_SetAngle(angle-angle2); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle2);
+				A_SetAngle(angle-angle3); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle3);
 			}
 			else
 			{
-				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosion-Claw",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
-				A_SetAngle(angle-angle2); A_FireProjectile("EscapeExplosion-Claw",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle2);
-				A_SetAngle(angle-angle3); A_FireProjectile("EscapeExplosion-Claw",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle3);
+				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosion-Soul",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
+				A_SetAngle(angle-angle2); A_FireProjectile("EscapeExplosion-Soul",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle2);
+				A_SetAngle(angle-angle3); A_FireProjectile("EscapeExplosion-Soul",0.0,0,offset1,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle3);
 			}
 		}
 		else
@@ -3161,11 +3208,11 @@ class PyroDemonSoul : BaseHellcoreWeapon
 			if (A_HellCoreCrisisCheck() > 0)
 			{
 				A_PlayCrisisAtkSound();
-				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosionCrisis-Claw",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
+				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosionCrisis-Soul",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
 			}
 			else
 			{
-				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosion-Claw",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
+				A_SetAngle(angle-angle1); A_FireProjectile("EscapeExplosion-Soul",0.0,0,0.0,0,FPF_NOAUTOAIM,0.0); A_SetAngle(angle+angle1);
 			}
 		}
 	}
@@ -3179,60 +3226,60 @@ class PyroDemonSoul : BaseHellcoreWeapon
 		if (A_HellCoreCrisisCheck() > 0)
 		{
 			A_PlayCrisisAtkSound();
-			A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",  0,0,"",0,0,0,0); 
-			A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw", 90,0,"",0,0,0,0); 
-			A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",180,0,"",0,0,0,0); 
-			A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",270,0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",  0,0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul", 90,0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",180,0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",270,0,"",0,0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",106) >= 4) 
 			{
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",0-15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",0+15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",90-15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",90+15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",180-15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",180+15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",270-15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",270+15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",0-15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",0+15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",90-15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",90+15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",180-15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",180+15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",270-15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",270+15,0,"",0,0,0,0); 
 			}
 			if (CallACS("MiscVarCheckDECORATE",106) >= 7) 
 			{
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",0-30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",0+30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",90-30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",90+30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",180-30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",180+30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",270-30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNullCrisis-Claw",270+30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",0-30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",0+30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",90-30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",90+30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",180-30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",180+30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",270-30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNullCrisis-Soul",270+30,0,"",0,0,0,0); 
 			}
 		}
 		else
 		{
-			A_SpreadAuraFireProjectile("RainCometNull-Claw",  0,0,"",0,0,0,0); 
-			A_SpreadAuraFireProjectile("RainCometNull-Claw", 90,0,"",0,0,0,0); 
-			A_SpreadAuraFireProjectile("RainCometNull-Claw",180,0,"",0,0,0,0); 
-			A_SpreadAuraFireProjectile("RainCometNull-Claw",270,0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("RainCometNull-Soul",  0,0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("RainCometNull-Soul", 90,0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("RainCometNull-Soul",180,0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("RainCometNull-Soul",270,0,"",0,0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",106) >= 4) 
 			{
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",0-15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",0+15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",90-15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",90+15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",180-15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",180+15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",270-15,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",270+15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",0-15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",0+15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",90-15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",90+15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",180-15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",180+15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",270-15,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",270+15,0,"",0,0,0,0); 
 			}
 			if (CallACS("MiscVarCheckDECORATE",106) >= 7) 
 			{
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",0-30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",0+30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",90-30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",90+30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",180-30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",180+30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",270-30,0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("RainCometNull-Claw",270+30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",0-30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",0+30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",90-30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",90+30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",180-30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",180+30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",270-30,0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("RainCometNull-Soul",270+30,0,"",0,0,0,0); 
 			}
 		}
 	}
@@ -3342,14 +3389,16 @@ class PyroDemonSoul : BaseHellcoreWeapon
 				if (CallACS("HellcoreFireMode",1,2) == 0) // Pyromatic Shot
 				{
 					A_HellSoulSpark();
-					A_HellSoulFire1("",0,"FireShot-Claw","FireShotCrisis-Claw",106,true,false,-4.0);
-					A_HellSoulFire1("caco/attack",350,"FireShot-Claw","FireShotCrisis-Claw",106,true,true,0.0);
-					A_HellSoulFire1("",0,"FireShot-Claw","FireShotCrisis-Claw",106,true,false,4.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",0,"FireShot-Soul","FireShotCrisis-Soul",106,true,false,-4.0);
+					A_HellSoulFire1("caco/attack",350,"FireShot-Soul","FireShotCrisis-Soul",106,true,true,0.0);
+					A_HellSoulFire1("",0,"FireShot-Soul","FireShotCrisis-Soul",106,true,false,4.0);
 				}
 				if (CallACS("HellcoreFireMode",1,2) == 1) // Pyroball
 				{
 					A_HellSoulSpark();
-					A_HellSoulFire1("caco/attack",450,"PyroBlast-Claw","PyroBlastCrisis-Claw",106,true,true,0.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("caco/attack",450,"PyroBlast-Soul","PyroBlastCrisis-Soul",106,true,true,0.0);
 				}
 				if (CallACS("HellcoreFireMode",1,2) == 2) // Pyromatic Firebomb
 				{
@@ -3424,14 +3473,16 @@ class PyroDemonSoul : BaseHellcoreWeapon
 				if (CallACS("HellcoreFireMode",1,2) == 0) // Pyromatic Shot
 				{
 					A_HellSoulSpark();
-					A_HellSoulFire1("",0,"FireShot-Claw","FireShotCrisis-Claw",106,true,false,-4.0);
-					A_HellSoulFire1("caco/attack",350,"FireShot-Claw","FireShotCrisis-Claw",106,true,true,0.0);
-					A_HellSoulFire1("",0,"FireShot-Claw","FireShotCrisis-Claw",106,true,false,4.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",0,"FireShot-Soul","FireShotCrisis-Soul",106,true,false,-4.0);
+					A_HellSoulFire1("caco/attack",350,"FireShot-Soul","FireShotCrisis-Soul",106,true,true,0.0);
+					A_HellSoulFire1("",0,"FireShot-Soul","FireShotCrisis-Soul",106,true,false,4.0);
 				}
 				if (CallACS("HellcoreFireMode",1,2) == 1) // Pyroball
 				{
 					A_HellSoulSpark();
-					A_HellSoulFire1("caco/attack",450,"PyroBlast-Claw","PyroBlastCrisis-Claw",106,true,true,0.0);
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("caco/attack",450,"PyroBlast-Soul","PyroBlastCrisis-Soul",106,true,true,0.0);
 				}
 				if (CallACS("HellcoreFireMode",1,2) == 2) // Pyromatic Firebomb
 				{
@@ -3776,7 +3827,7 @@ class IncarnateSoul : BaseHellcoreWeapon
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
 
-				A_HellSoulFire2("monster/incatk",360,"DIPuff-Claw",107,true,true);
+				A_HellSoulFire2("monster/incatk",360,"DIPuff-Soul",107,true,true);
 			}
 			HCL1 H 4 bright
 			{
@@ -3811,7 +3862,7 @@ class IncarnateSoul : BaseHellcoreWeapon
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
 				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
 
-				A_HellSoulFire2("monster/incatk",360,"DIPuff-Claw",107,true,true);
+				A_HellSoulFire2("monster/incatk",360,"DIPuff-Soul",107,true,true);
 			}
 			HCL1 L 4 bright
 			{
@@ -4808,51 +4859,51 @@ class DiabloistSoul : BaseHellcoreWeapon
 		if (A_HellCoreCrisisCheck() > 0)
 		{
 			A_PlayCrisisAtkSound();
-			A_SpreadAuraFireProjectile("DTracerCrisis-Claw",0,0,"",-40,0,0,0); 
-			A_SpreadAuraFireProjectile("DTracerCrisis-Claw",0,0,"", 40,0,0,0); 
+			A_SpreadAuraFireProjectile("DTracerCrisis-Soul",0,0,"",-40,0,0,0); 
+			A_SpreadAuraFireProjectile("DTracerCrisis-Soul",0,0,"", 40,0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",109) >= 4) 
 			{
 				A_SetAngle(angle-15);
-				A_SpreadAuraFireProjectile("DTracerCrisis-Claw",0,0,"",-40,0,0,0); 
-				A_SpreadAuraFireProjectile("DTracerCrisis-Claw",0,0,"", 40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracerCrisis-Soul",0,0,"",-40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracerCrisis-Soul",0,0,"", 40,0,0,0); 
 				A_SetAngle(angle+30);
-				A_SpreadAuraFireProjectile("DTracerCrisis-Claw",0,0,"",-40,0,0,0); 
-				A_SpreadAuraFireProjectile("DTracerCrisis-Claw",0,0,"", 40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracerCrisis-Soul",0,0,"",-40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracerCrisis-Soul",0,0,"", 40,0,0,0); 
 				A_SetAngle(angle-15);
 			}
 			if (CallACS("MiscVarCheckDECORATE",109) >= 7) 
 			{
 				A_SetAngle(angle-30);
-				A_SpreadAuraFireProjectile("DTracerCrisis-Claw",0,0,"",-40,0,0,0); 
-				A_SpreadAuraFireProjectile("DTracerCrisis-Claw",0,0,"", 40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracerCrisis-Soul",0,0,"",-40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracerCrisis-Soul",0,0,"", 40,0,0,0); 
 				A_SetAngle(angle+60);
-				A_SpreadAuraFireProjectile("DTracerCrisis-Claw",0,0,"",-40,0,0,0); 
-				A_SpreadAuraFireProjectile("DTracerCrisis-Claw",0,0,"", 40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracerCrisis-Soul",0,0,"",-40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracerCrisis-Soul",0,0,"", 40,0,0,0); 
 				A_SetAngle(angle-30);
 			}
 		}
 		else
 		{
-			A_SpreadAuraFireProjectile("DTracer-Claw",0,0,"",-40,0,0,0); 
-			A_SpreadAuraFireProjectile("DTracer-Claw",0,0,"", 40,0,0,0); 
+			A_SpreadAuraFireProjectile("DTracer-Soul",0,0,"",-40,0,0,0); 
+			A_SpreadAuraFireProjectile("DTracer-Soul",0,0,"", 40,0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",109) >= 4) 
 			{
 				A_SetAngle(angle-15);
-				A_SpreadAuraFireProjectile("DTracer-Claw",0,0,"",-40,0,0,0); 
-				A_SpreadAuraFireProjectile("DTracer-Claw",0,0,"", 40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracer-Soul",0,0,"",-40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracer-Soul",0,0,"", 40,0,0,0); 
 				A_SetAngle(angle+30);
-				A_SpreadAuraFireProjectile("DTracer-Claw",0,0,"",-40,0,0,0); 
-				A_SpreadAuraFireProjectile("DTracer-Claw",0,0,"", 40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracer-Soul",0,0,"",-40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracer-Soul",0,0,"", 40,0,0,0); 
 				A_SetAngle(angle-15);
 			}
 			if (CallACS("MiscVarCheckDECORATE",109) >= 7) 
 			{
 				A_SetAngle(angle-30);
-				A_SpreadAuraFireProjectile("DTracer-Claw",0,0,"",-40,0,0,0); 
-				A_SpreadAuraFireProjectile("DTracer-Claw",0,0,"", 40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracer-Soul",0,0,"",-40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracer-Soul",0,0,"", 40,0,0,0); 
 				A_SetAngle(angle+60);
-				A_SpreadAuraFireProjectile("DTracer-Claw",0,0,"",-40,0,0,0); 
-				A_SpreadAuraFireProjectile("DTracer-Claw",0,0,"", 40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracer-Soul",0,0,"",-40,0,0,0); 
+				A_SpreadAuraFireProjectile("DTracer-Soul",0,0,"", 40,0,0,0); 
 				A_SetAngle(angle-30);
 			}
 		}
@@ -4867,49 +4918,49 @@ class DiabloistSoul : BaseHellcoreWeapon
 		if (A_HellCoreCrisisCheck() > 0)
 		{
 			A_PlayCrisisAtkSound();
-			A_SpreadAuraFireProjectile("DMissileCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("DMissileCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",109) >= 4) 
 			{
 				A_SetAngle(angle-15);
-				A_SpreadAuraFireProjectile("DMissileCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DMissileCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissileCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissileCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle+30);
-				A_SpreadAuraFireProjectile("DMissileCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DMissileCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissileCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissileCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle-15);
 			}
 			if (CallACS("MiscVarCheckDECORATE",109) >= 7) 
 			{
 				A_SetAngle(angle-30);
-				A_SpreadAuraFireProjectile("DMissileCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DMissileCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissileCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissileCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle+60);
-				A_SpreadAuraFireProjectile("DMissileCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DMissileCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissileCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissileCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle-30);
 			}
 		}
 		else
 		{
-			A_SpreadAuraFireProjectile("DMissile-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("DMissile-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",109) >= 4) 
 			{
 				A_SetAngle(angle-15);
-				A_SpreadAuraFireProjectile("DMissile-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DMissile-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissile-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissile-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle+30);
-				A_SpreadAuraFireProjectile("DMissile-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DMissile-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissile-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissile-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle-15);
 			}
 			if (CallACS("MiscVarCheckDECORATE",109) >= 7) 
 			{
 				A_SetAngle(angle-30);
-				A_SpreadAuraFireProjectile("DMissile-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DMissile-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissile-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissile-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle+60);
-				A_SpreadAuraFireProjectile("DMissile-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DMissile-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissile-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DMissile-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle-30);
 			}
 		}
@@ -4922,49 +4973,49 @@ class DiabloistSoul : BaseHellcoreWeapon
 		if (A_HellCoreCrisisCheck() > 0)
 		{
 			A_PlayCrisisAtkSound();
-			A_SpreadAuraFireProjectile("DFlareCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("DFlareCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",109) >= 4) 
 			{
 				A_SetAngle(angle-15);
-				A_SpreadAuraFireProjectile("DFlareCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DFlareCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlareCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlareCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle+30);
-				A_SpreadAuraFireProjectile("DFlareCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DFlareCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlareCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlareCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle-15);
 			}
 			if (CallACS("MiscVarCheckDECORATE",109) >= 7) 
 			{
 				A_SetAngle(angle-30);
-				A_SpreadAuraFireProjectile("DFlareCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DFlareCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlareCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlareCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle+60);
-				A_SpreadAuraFireProjectile("DFlareCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DFlareCrisis-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlareCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlareCrisis-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle-30);
 			}
 		}
 		else
 		{
-			A_SpreadAuraFireProjectile("DFlare-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+			A_SpreadAuraFireProjectile("DFlare-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",109) >= 4) 
 			{
 				A_SetAngle(angle-15);
-				A_SpreadAuraFireProjectile("DFlare-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DFlare-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlare-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlare-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle+30);
-				A_SpreadAuraFireProjectile("DFlare-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DFlare-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlare-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlare-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle-15);
 			}
 			if (CallACS("MiscVarCheckDECORATE",109) >= 7) 
 			{
 				A_SetAngle(angle-30);
-				A_SpreadAuraFireProjectile("DFlare-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DFlare-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlare-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlare-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle+60);
-				A_SpreadAuraFireProjectile("DFlare-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
-				A_SpreadAuraFireProjectile("DFlare-Claw",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlare-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
+				A_SpreadAuraFireProjectile("DFlare-Soul",frandom(-4.0,4.0),0,"",0,0,0,0); 
 				A_SetAngle(angle-30);
 			}
 		}
@@ -5310,7 +5361,7 @@ class DiabloistSoul : BaseHellcoreWeapon
 					A_StartSound("vile/start");
 					A_IncreaseHellcoreHeat(600,1);
 					A_Light2();
-					A_HellSoulDiabTarget("DFire-Claw","DFireCrisis-Claw");
+					A_HellSoulDiabTarget("DFire-Soul","DFireCrisis-Soul");
 				}
 				if (CallACS("HellcoreFireMode",1,3) == 2) // If Fire Thrower Mode is set
 				{
@@ -5463,7 +5514,7 @@ class DiabloistSoul : BaseHellcoreWeapon
 					A_StartSound("vile/start");
 					A_IncreaseHellcoreHeat(600,1);
 					A_Light2();
-					A_HellSoulDiabTarget("DFire-Claw","DFireCrisis-Claw");
+					A_HellSoulDiabTarget("DFire-Soul","DFireCrisis-Soul");
 				}
 				if (CallACS("HellcoreFireMode",1,3) == 2) // If Fire Thrower Mode is set
 				{
@@ -5807,81 +5858,81 @@ class BalrogSoul : BaseHellcoreWeapon
 		if (A_HellCoreCrisisCheck() > 0)
 		{
 			A_PlayCrisisAtkSound();
-			A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",  0,0,"",  0,0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",  0,0,"",  0,0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",110) >= 4) 
 			{
 				A_SetAngle(angle-15);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",  0,0,"",  0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",  0,0,"",  0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
 				A_SetAngle(angle+30);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",  0,0,"",  0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",  0,0,"",  0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
 				A_SetAngle(angle-15);
 			}
 			if (CallACS("MiscVarCheckDECORATE",110) >= 7) 
 			{
 				A_SetAngle(angle-30);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",  0,0,"",  0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",  0,0,"",  0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
 				A_SetAngle(angle+60);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",  0,0,"",  0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Claw",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",  0,0,"",  0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1Crisis-Soul",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
 				A_SetAngle(angle-30);
 			}
 		}
 		else
 		{
-			A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",  0,0,"",  0,0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",  0,0,"",  0,0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",110) >= 4) 
 			{
 				A_SetAngle(angle-15);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",  0,0,"",  0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",  0,0,"",  0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
 				A_SetAngle(angle+30);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",  0,0,"",  0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",  0,0,"",  0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
 				A_SetAngle(angle-15);
 			}
 			if (CallACS("MiscVarCheckDECORATE",110) >= 7) 
 			{
 				A_SetAngle(angle-30);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",  0,0,"",  0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",  0,0,"",  0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
 				A_SetAngle(angle+60);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",  0,0,"",  0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Claw",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(shot1offset*3),0,"",(shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(shot1offset*2),0,"",(shot1angle*3),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",  0,0,"",  0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(-shot1offset*2),0,"",(-shot1angle*2),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot1-Soul",(-shot1offset*3),0,"",(-shot1angle*3),0,0,0); 
 				A_SetAngle(angle-30);
 			}
 		}
@@ -5898,61 +5949,61 @@ class BalrogSoul : BaseHellcoreWeapon
 		if (A_HellCoreCrisisCheck() > 0)
 		{
 			A_PlayCrisisAtkSound();
-			A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",(shot2offset),0,"",(shot2angle),0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",  0,0,"", 0,0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",(-shot2offset),0,"",(-shot2angle),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",(shot2offset),0,"",(shot2angle),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",  0,0,"", 0,0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",(-shot2offset),0,"",(-shot2angle),0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",110) >= 4) 
 			{
 				A_SetAngle(angle-15);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",(shot2offset),0,"",(shot2angle),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",  0,0,"", 0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",(-shot2offset),0,"",(-shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",(shot2offset),0,"",(shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",  0,0,"", 0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",(-shot2offset),0,"",(-shot2angle),0,0,0); 
 				A_SetAngle(angle+30);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",(shot2offset),0,"",(shot2angle),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",  0,0,"", 0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",(-shot2offset),0,"",(-shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",(shot2offset),0,"",(shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",  0,0,"", 0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",(-shot2offset),0,"",(-shot2angle),0,0,0); 
 				A_SetAngle(angle-15);
 			}
 			if (CallACS("MiscVarCheckDECORATE",110) >= 7) 
 			{
 				A_SetAngle(angle-30);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",(shot2offset),0,"",(shot2angle),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",  0,0,"", 0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",(-shot2offset),0,"",(-shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",(shot2offset),0,"",(shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",  0,0,"", 0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",(-shot2offset),0,"",(-shot2angle),0,0,0); 
 				A_SetAngle(angle+60);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",(shot2offset),0,"",(shot2angle),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",  0,0,"", 0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Claw",(-shot2offset),0,"",(-shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",(shot2offset),0,"",(shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",  0,0,"", 0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2Crisis-Soul",(-shot2offset),0,"",(-shot2angle),0,0,0); 
 				A_SetAngle(angle-30);
 			}
 		}
 		else
 		{
-			A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",(shot2offset),0,"",(shot2angle),0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",  0,0,"", 0,0,0,0); 
-			A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",(-shot2offset),0,"",(-shot2angle),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",(shot2offset),0,"",(shot2angle),0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",  0,0,"", 0,0,0,0); 
+			A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",(-shot2offset),0,"",(-shot2angle),0,0,0); 
 			if (CallACS("MiscVarCheckDECORATE",110) >= 4) 
 			{
 				A_SetAngle(angle-15);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",(shot2offset),0,"",(shot2angle),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",  0,0,"", 0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",(-shot2offset),0,"",(-shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",(shot2offset),0,"",(shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",  0,0,"", 0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",(-shot2offset),0,"",(-shot2angle),0,0,0); 
 				A_SetAngle(angle+30);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",(shot2offset),0,"",(shot2angle),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",  0,0,"", 0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",(-shot2offset),0,"",(-shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",(shot2offset),0,"",(shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",  0,0,"", 0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",(-shot2offset),0,"",(-shot2angle),0,0,0); 
 				A_SetAngle(angle-15);
 			}
 			if (CallACS("MiscVarCheckDECORATE",110) >= 7) 
 			{
 				A_SetAngle(angle-30);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",(shot2offset),0,"",(shot2angle),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",  0,0,"", 0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",(-shot2offset),0,"",(-shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",(shot2offset),0,"",(shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",  0,0,"", 0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",(-shot2offset),0,"",(-shot2angle),0,0,0); 
 				A_SetAngle(angle+60);
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",(shot2offset),0,"",(shot2angle),0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",  0,0,"", 0,0,0,0); 
-				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Claw",(-shot2offset),0,"",(-shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",(shot2offset),0,"",(shot2angle),0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",  0,0,"", 0,0,0,0); 
+				A_SpreadAuraFireProjectile("FlyingBalrogShot2-Soul",(-shot2offset),0,"",(-shot2angle),0,0,0); 
 				A_SetAngle(angle-30);
 			}
 		}
@@ -6128,4 +6179,573 @@ class BalrogSoul : BaseHellcoreWeapon
 }
 
 // Hades Elemental's Soul (eventually???)
+class HElementalSoulCI : BaseHellcorePickup //32237
+{
+	Default
+	{
+		//$Sprite "HCSLP0"
+		//$NotAngled
+		//$Color 14
+		//$Category "DV-DS Weapons/Flora/Hellcore Souls"
+		Tag "Hades Elemental's Soul: [Hellcore] Use Hades Elemental attacks.";
+		Inventory.PickupMessage "You got a Hades Elemental's Soul! \cx[Slot 7]\c-";
+	}
+	States
+	{
+		Spawn:
+			HCSL P 1 NoDelay bright
+			{
+				A_HellCoreSoulPickupPulse(1.5,1.5);
+				A_HellcoreWeaponCheckCharacter(15);
+			}
+			Loop;
+		Pickup:
+			TNT1 A 0 
+			{
+				A_GiveInventory("HElementalSoul", 1);
+				A_StartSound("pickuphellcore");
+				A_IncreaseHellcoreLevel(16);
+			}
+			Stop;
+	}
+}
+class HElementalSoul : BaseHellCoreWeapon
+{
+	Default
+	{
+		//$Sprite "HCSLP0"
+		+FLOATBOB;
+		+DONTGIB;
+		+INVENTORY.ALWAYSPICKUP;
+		+WEAPON.NOAUTOAIM;
+		+WEAPON.NOALERT;
+		Inventory.PickupMessage "You got a Hades Elemental's Soul! \cx[Slot 7]\c-";
+		Tag "Hades Elemental's Soul";
+	}
+	
+	States
+	{
+		// Bonus Layers
+		SoulImage: // Layer 5
+			HCL3 P 0 bright 
+			{ 
+				A_OverlayFlags(5, PSPF_ALPHA, true); 
+				A_OverlayFlags(5, PSPF_RENDERSTYLE, true); 
+				A_OverlayRenderStyle(5, STYLE_Translucent); 
+			}
+			#### # 1 bright { A_OverlayAlpha(5, 0.125); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.25); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.375); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.5); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.625); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.75); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.875); }
+			#### # 1 bright { A_OverlayAlpha(5, 1.0); }
+		SoulImage2: // Layer 5
+			#### # 1 bright;
+			loop;
+			
+		Spawn:
+			HCSL P 1 bright NoDelay;
+			Loop;
+
+		Ready:
+			HCL1 A 0
+			{
+				A_HellSoulOverlayReady();
+			}
+		Idle: 
+			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1|WRF_ALLOWUSER4);
+			loop;
+		Deselect: 
+			HCL1 A 1
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSLower(18);
+			}
+			Loop;
+		Select: 
+			HCL1 A 1 
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSRaise(18);
+			}
+			Loop;
+			
+		Fire:
+			HCL1 CD 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			HCL1 D 0
+			{
+				if (random(1,2) == 1) { return resolvestate("Fire2"); }
+				else { return resolvestate("Fire1"); }
+				return resolvestate(null);
+			}
+		Fire1:
+			HCL1 E 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim1:
+			HCL1 F 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,4) == 0) // Spread Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,4) == 1) // Hades Bolt Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+			}
+			HCL1 G 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,4) == 0) // Spread Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+					
+					A_HellSoulSpark();
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",0,"HadesElementalBall-Soul","HadesElementalBallCrisis-Soul",111,true,false,-10.0);
+					A_HellSoulFire1("",0,"HadesElementalBall-Soul","HadesElementalBallCrisis-Soul",111,true,false,-5.0);
+					A_HellSoulFire1("",625,"HadesElementalBall-Soul","HadesElementalBallCrisis-Soul",111,true,true,0.0);
+					A_HellSoulFire1("",0,"HadesElementalBall-Soul","HadesElementalBallCrisis-Soul",111,true,false,5.0);
+					A_HellSoulFire1("",0,"HadesElementalBall-Soul","HadesElementalBallCrisis-Soul",111,true,false,10.0);
+				}
+				if (CallACS("HellcoreFireMode",1,4) == 1) // Hades Bolt Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+					
+					A_HellSoulSpark();
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",0,"HadesBolt-Soul","HadesBoltCrisis-Soul",111,true,false,-16.0);
+					A_HellSoulFire1("",1125,"HadesBolt-Soul","HadesBoltCrisis-Soul",111,true,true,0.0);
+					A_HellSoulFire1("",0,"HadesBolt-Soul","HadesBoltCrisis-Soul",111,true,false,16.0);
+				}
+			}
+			HCL1 H 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,4) == 0) // Spread Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,4) == 1) // Hades Bolt Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+			}
+			HCL1 E 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim1"); }
+				else { A_Refire("ReFireAnim2"); }
+			}
+			HCL1 I 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		Fire2:
+			HCL1 I 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim2:
+			HCL1 J 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,4) == 0) // Spread Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,4) == 1) // Hades Bolt Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+			}
+			HCL1 K 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,4) == 0) // Spread Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+					
+					A_HellSoulSpark();
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",0,"HadesElementalBall-Soul","HadesElementalBallCrisis-Soul",111,true,false,-10.0);
+					A_HellSoulFire1("",0,"HadesElementalBall-Soul","HadesElementalBallCrisis-Soul",111,true,false,-5.0);
+					A_HellSoulFire1("",625,"HadesElementalBall-Soul","HadesElementalBallCrisis-Soul",111,true,true,0.0);
+					A_HellSoulFire1("",0,"HadesElementalBall-Soul","HadesElementalBallCrisis-Soul",111,true,false,5.0);
+					A_HellSoulFire1("",0,"HadesElementalBall-Soul","HadesElementalBallCrisis-Soul",111,true,false,10.0);
+				}
+				if (CallACS("HellcoreFireMode",1,4) == 1) // Hades Bolt Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+					
+					A_HellSoulSpark();
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",0,"HadesBolt-Soul","HadesBoltCrisis-Soul",111,true,false,-16.0);
+					A_HellSoulFire1("",1125,"HadesBolt-Soul","HadesBoltCrisis-Soul",111,true,true,0.0);
+					A_HellSoulFire1("",0,"HadesBolt-Soul","HadesBoltCrisis-Soul",111,true,false,16.0);
+				}
+			}
+			HCL1 L 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,4) == 0) // Spread Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,4) == 1) // Hades Bolt Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+			}
+			HCL1 I 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim2"); }
+				else { A_Refire("ReFireAnim1"); }
+			}
+			HCL1 I 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		FireEnd:
+			HCL1 DC 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			Goto Ready;
+
+		User4:
+			HCL1 A 5 
+			{
+				A_StartSound("elecstun",102, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(1.25,1.75));
+				CallACS("HellcoreFireMode",0,4);
+			}
+			Goto Ready;
+	}
+}
+
 // Hades Overlord's Soul (eventually???)
+class HOverlordSoulCI : BaseHellcorePickup //32237
+{
+	Default
+	{
+		//$Sprite "HCSLQ0"
+		//$NotAngled
+		//$Color 14
+		//$Category "DV-DS Weapons/Flora/Hellcore Souls"
+		Tag "Hades Overlord's Soul: [Hellcore] Use Hades Overlord attacks.";
+		Inventory.PickupMessage "You got a Hades Overlord's Soul! \cx[Slot 7]\c-";
+	}
+	
+	States
+	{
+		Spawn:
+			HCSL Q 1 NoDelay bright
+			{
+				A_HellCoreSoulPickupPulse(1.5,1.5);
+				A_HellcoreWeaponCheckCharacter(16);
+			}
+			Loop;
+		Pickup:
+			TNT1 A 0 
+			{
+				A_GiveInventory("HOverlordSoul", 1);
+				A_StartSound("pickuphellcore");
+				A_IncreaseHellcoreLevel(17);
+			}
+			Stop;
+	}
+}
+class HOverlordSoul : BaseHellCoreWeapon
+{
+	Default
+	{
+		//$Sprite "HCSLQ0"
+		+FLOATBOB;
+		+DONTGIB;
+		+INVENTORY.ALWAYSPICKUP;
+		+WEAPON.NOAUTOAIM;
+		+WEAPON.NOALERT;
+		Inventory.PickupMessage "You got a Hades Overlord's Soul! \cx[Slot 7]\c-";
+		Tag "Hades Overlord's Soul";
+	}
+	
+	int heightoffset;
+	
+	States
+	{
+		// Bonus Layers
+		SoulImage: // Layer 5
+			HCL3 Q 0 bright 
+			{ 
+				A_OverlayFlags(5, PSPF_ALPHA, true); 
+				A_OverlayFlags(5, PSPF_RENDERSTYLE, true); 
+				A_OverlayRenderStyle(5, STYLE_Translucent); 
+			}
+			#### # 1 bright { A_OverlayAlpha(5, 0.125); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.25); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.375); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.5); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.625); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.75); }
+			#### # 1 bright { A_OverlayAlpha(5, 0.875); }
+			#### # 1 bright { A_OverlayAlpha(5, 1.0); }
+		SoulImage2: // Layer 5
+			#### # 1 bright;
+			loop;
+			
+		Spawn:
+			HCSL Q 1 bright NoDelay;
+			Loop;
+
+		Ready:
+			HCL1 A 0
+			{
+				A_HellSoulOverlayReady();
+			}
+		Idle: 
+			HCL1 B 1 A_WeaponReady(WRF_ALLOWUSER1|WRF_ALLOWUSER4);
+			loop;
+		Deselect: 
+			HCL1 A 1
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSLower(18);
+			}
+			Loop;
+		Select: 
+			HCL1 A 1 
+			{
+				A_HellSoulClearOverlays();
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10033)*3);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10034)*7.5);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*2);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10036)*5);
+				A_DVDSRaise(18);
+			}
+			Loop;
+		Fire:
+			HCL1 CD 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			HCL1 D 0
+			{
+				if (random(1,2) == 1) { return resolvestate("Fire2"); }
+				else { return resolvestate("Fire1"); }
+				return resolvestate(null);
+			}
+		Fire1:
+			HCL1 E 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim1:
+			HCL1 F 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,5) == 0) // Storm Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,5) == 1) // Hyper Spread Shot Mode
+				{
+					A_SetTics(3);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+				}
+			}
+			HCL1 G 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,5) == 0) // Storm Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+					
+					A_HellSoulSpark();
+					A_HellSoulCrisisCheck();
+					if (CountInv("LowHealth",AAPTR_PLAYER1) > 0 || CountInv("CriticalHealth",AAPTR_PLAYER1) > 0) { A_HellSoulFire1("",1625,"StormShot2-Soul","StormShot2Crisis-Soul",112,true,true,0.0); }
+					else { A_HellSoulFire1("",1375,"StormShot1-Soul","StormShot1Crisis-Soul",112,true,true,0.0); }
+				}
+				if (CallACS("HellcoreFireMode",1,5) == 1) // Hyper Spread Shot Mode
+				{
+					A_SetTics(3);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+					
+					invoker.heightoffset = -30;
+					A_HellSoulSpark();
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",40,"HadesOverlordBall-Soul","HadesOverlordBallCrisis-Soul",112,true,false,frandom(-3.0,3.0),59+invoker.heightoffset,-16.77,frandom(-3.0,3.0));
+					A_HellSoulFire1("",40,"HadesOverlordBall-Soul","HadesOverlordBallCrisis-Soul",112,true,false,frandom(-3.0,3.0),5+invoker.heightoffset,-16.77,frandom(-3.0,3.0));
+					A_HellSoulFire1("",40,"HadesOverlordBall-Soul","HadesOverlordBallCrisis-Soul",112,true,false,frandom(-3.0,3.0),59+invoker.heightoffset,16.77,frandom(-3.0,3.0));
+					A_HellSoulFire1("",40,"HadesOverlordBall-Soul","HadesOverlordBallCrisis-Soul",112,true,false,frandom(-3.0,3.0),5+invoker.heightoffset,16.77,frandom(-3.0,3.0));
+					A_HellSoulFire1("",40,"OverBall-Soul","OverBallCrisis-Soul",112,true,false,frandom(-3.0,3.0),random(34,35)+invoker.heightoffset,-20.97,frandom(-3.0,3.0));
+					A_HellSoulFire1("",40,"OverBall-Soul","OverBallCrisis-Soul",112,true,true,frandom(-3.0,3.0),random(34,35)+invoker.heightoffset,20.97,frandom(-3.0,3.0));
+				}
+			}
+			HCL1 H 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,5) == 0) // Storm Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,5) == 1) // Hyper Spread Shot Mode
+				{
+					A_SetTics(3);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+				}
+			}
+			HCL1 E 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim1"); }
+				else { A_Refire("ReFireAnim2"); }
+			}
+			HCL1 I 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		Fire2:
+			HCL1 I 4
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+			}
+		ReFireAnim2:
+			HCL1 J 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,5) == 0) // Storm Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,5) == 1) // Hyper Spread Shot Mode
+				{
+					A_SetTics(3);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+				}
+			}
+			HCL1 K 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,5) == 0) // Storm Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+					
+					A_HellSoulSpark();
+					if (CountInv("LowHealth",AAPTR_PLAYER1) > 0 || CountInv("CriticalHealth",AAPTR_PLAYER1) > 0) { A_HellSoulFire1("",1625,"StormShot2-Soul","StormShot2Crisis-Soul",112,true,true,0.0); }
+					else { A_HellSoulFire1("",1375,"StormShot1-Soul","StormShot1Crisis-Soul",112,true,true,0.0); }
+				}
+				if (CallACS("HellcoreFireMode",1,5) == 1) // Hyper Spread Shot Mode
+				{
+					A_SetTics(3);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+					
+					invoker.heightoffset = -30;
+					A_HellSoulSpark();
+					A_HellSoulCrisisCheck();
+					A_HellSoulFire1("",40,"HadesOverlordBall-Soul","HadesOverlordBallCrisis-Soul",112,true,false,frandom(-3.0,3.0),59+invoker.heightoffset,-16.77,frandom(-3.0,3.0));
+					A_HellSoulFire1("",40,"HadesOverlordBall-Soul","HadesOverlordBallCrisis-Soul",112,true,false,frandom(-3.0,3.0),5+invoker.heightoffset,-16.77,frandom(-3.0,3.0));
+					A_HellSoulFire1("",40,"HadesOverlordBall-Soul","HadesOverlordBallCrisis-Soul",112,true,false,frandom(-3.0,3.0),59+invoker.heightoffset,16.77,frandom(-3.0,3.0));
+					A_HellSoulFire1("",40,"HadesOverlordBall-Soul","HadesOverlordBallCrisis-Soul",112,true,false,frandom(-3.0,3.0),5+invoker.heightoffset,16.77,frandom(-3.0,3.0));
+					A_HellSoulFire1("",40,"OverBall-Soul","OverBallCrisis-Soul",112,true,false,frandom(-3.0,3.0),random(34,35)+invoker.heightoffset,-20.97,frandom(-3.0,3.0));
+					A_HellSoulFire1("",40,"OverBall-Soul","OverBallCrisis-Soul",112,true,true,frandom(-3.0,3.0),random(34,35)+invoker.heightoffset,20.97,frandom(-3.0,3.0));
+				}
+			}
+			HCL1 L 4 bright
+			{
+				if (CallACS("HellcoreFireMode",1,5) == 0) // Storm Shot Mode
+				{
+					A_SetTics(4);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(3); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 4) { A_SetTics(2); }
+				}
+				if (CallACS("HellcoreFireMode",1,5) == 1) // Hyper Spread Shot Mode
+				{
+					A_SetTics(3);
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+					if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+				}
+			}
+			HCL1 I 0
+			{
+				if (random(1,6) == 1) { A_Refire("ReFireAnim2"); }
+				else { A_Refire("ReFireAnim1"); }
+			}
+			HCL1 I 0
+			{
+				return resolvestate("FireEnd");
+			}
+
+		FireEnd:
+			HCL1 DC 3
+			{
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 2) { A_SetTics(2); }
+				if (CallACS("MiscVarCheckDECORATE",10033) >= 5) { A_SetTics(1); }
+			}
+			Goto Ready;
+
+		User4:
+			HCL1 A 5 
+			{
+				A_StartSound("elecstun",102, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(1.25,1.75));
+				CallACS("HellcoreFireMode",0,5);
+			}
+			Goto Ready;
+	}
+}
+
