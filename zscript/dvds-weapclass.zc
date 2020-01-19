@@ -43,6 +43,9 @@ class AetheriusBaseWeaponZSC : Weapon
 
 	action void A_DVDSLower (double movespeed = 6.0)
 	{
+		A_KickBonusOff();
+		A_SetMartialArtsMastery(0);
+
 		double basespeed = movespeed;
 
 		if (CallACS("GetBuffTimer",12) > 0) movespeed *= 1.5; // Acceleratle
@@ -4174,8 +4177,42 @@ class AetheriusBaseWeaponZSC : Weapon
 // To allow class gathering for weapons that allow Quick-Kicking :V
 class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 {
+	action void A_QMWKickInit()
+	{
+		A_GunFlash("LightDone",GFF_NOEXTCHANGE); // A_ClearFlash;
+		if (random(1,256) >= 253)
+		{
+			if (CountInv("PlayingStrife",AAPTR_PLAYER1) > 0) { } // Strife mode makes the punch work like the Punch Dagger where it NEVER makes sound
+			else { A_AlertMonsters(); } // Sometimes a swing will be enough to wake up all monsters in the area.
+		}
+		CallACS("StartTensionCountDown");
+		if (CallACS("CheckCharacterClass") == 2)
+		{
+			if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_GiveInventory("KickAttackDEFLvl2",1); } else { A_GiveInventory("KickAttackDEFLvl1",1); }
+			A_SetMartialArtsMastery(1);
+		}
+		else
+		{
+			if (CallACS("MiscVarCheckDECORATE",10051) >= 4) { A_GiveInventory("KickAttackDEFLvl2",1); } else { A_GiveInventory("KickAttackDEFLvl1",1); }
+		}
+		if (random(1,256) > 64) { A_GiveInventory("KickCritBonus1",1,AAPTR_PLAYER1); } else { A_GiveInventory("KickCritBonus2",1,AAPTR_PLAYER1); }
+		A_GiveInventory("UsingMeleeAttack",1);
+	}
+	
+	action void A_QMVClearKickFlags()
+	{
+	}
+
 	States
 	{
+		BlankKick: // Clears Layer -2 [kicking]
+			TNT1 A 1
+			{
+				A_KickBonusOff();
+				A_SetMartialArtsMastery(0);
+			}
+			stop;
+
 		GrandControlLayer: // layer -1000
 			TNT1 A 1
 			{
