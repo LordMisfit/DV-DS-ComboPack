@@ -2170,6 +2170,20 @@ class PlayerStatItem : Inventory
 		
 		A_PSI1DoEffectDashControl();
 		
+		
+		
+		
+		A_PSI1DoEffectInGameMenuDebug();
+		
+		
+		
+		
+		A_PSIDoEffectRapidCastDelay();
+		
+		
+		
+		
+		
 		// Final Stuff
 		owner.Stamina = CallACS("StatCheck",1) - owner.SpawnHealth();
 		
@@ -2186,6 +2200,57 @@ class PlayerStatItem : Inventory
 	//*****************************************
 	//*Extra Functions to play from DoEffect()*
 	//*****************************************
+	// Rapid Cast Delay
+	void A_PSIDoEffectRapidCastDelay()
+	{
+		int DQAcceleratleTimer = CallACS("GetBuffTimer",12);
+		int DQDeceleratleTimer = CallACS("GetBuffTimer",15);
+
+		CharacterClass = CallACS("CheckCharacterClass");
+		double rapidcastdelay = 11.0;
+		let playeractor = AetheriusPlayerPawn(owner);
+		if (playeractor && dvds_rapidcast)
+		{
+			if (CharacterClass == 0 || CharacterClass == 9) rapidcastdelay = 12;
+			if (CharacterClass == 1) rapidcastdelay = 11;
+			if (CharacterClass == 2 || CharacterClass == 8) rapidcastdelay = 10;
+			if (dvdsdebug_rapidcastdisplays) Console.Printf("RapidCastDelay [Base]: %8f", rapidcastdelay);
+			
+			// Stats
+			rapidcastdelay -= ((CallACS("MiscVarCheckDECORATE",34) + CallACS("MiscVarCheckDECORATE",36)) * (1.0 / 80)); // Max of -6
+			if (dvdsdebug_rapidcastdisplays) Console.Printf("RapidCastDelay [Sor+The]: %8f", rapidcastdelay);
+
+			// Perks
+			rapidcastdelay -= (CallACS("MiscVarCheckDECORATE",10003) * 0.5); // Max of -2.5
+			rapidcastdelay -= (CallACS("MiscVarCheckDECORATE",10004) * 1.25); // Max of -2.5
+			if (dvdsdebug_rapidcastdisplays) Console.Printf("RapidCastDelay [MagiUp+Ex]: %8f", rapidcastdelay);
+			rapidcastdelay -= (CallACS("MiscVarCheckDECORATE",10053) * 0.4); // Max of -2
+			if (dvdsdebug_rapidcastdisplays) Console.Printf("RapidCastDelay [WandMastery]: %8f", rapidcastdelay);
+
+			// Buffs
+			if (DQAcceleratleTimer) rapidcastdelay *= 0.67;
+			if (DQDeceleratleTimer) rapidcastdelay *= 1.5;
+			if (dvdsdebug_rapidcastdisplays) Console.Printf("RapidCastDelay [Buffs]: %8f", rapidcastdelay);
+
+			if (rapidcastdelay < 2.0) rapidcastdelay = 2.0;
+			int truerapidcastdelay = round(rapidcastdelay);
+			if (dvds_rapidcast) CallACS("MiscVarSetDECORATE",48,truerapidcastdelay);
+			if (dvdsdebug_rapidcastdisplays) Console.Printf("TrueRapidCastDelay: %d", truerapidcastdelay);
+		}
+	}
+	// InGameMenu Debug
+	void A_PSI1DoEffectInGameMenuDebug()
+	{
+		let playeractor = AetheriusPlayerPawn(owner);
+		if (playeractor)
+		{
+			if (dvdsdebug_ingamemenudisplay && CallACS("MenuVarCheckDECORATE",0) != 0)
+			{
+				Console.Printf("[0] Main Menu = %d; [1] Main Selection = %d; [2] Secondary Selection = %d; [3] Tritary Selection = %d; [4] Menu Type = %d; [5] SubMenu Type = %d; [6] SubSubMenu Type = %d; [10001] Use Tic Timer = %d; [10002] Up Tic Timer = %d; [10003] Down Tic Timer = %d; [10004] Left Tic Timer = %d; [10005] Right Tic Timer = %d; [10006] Back Tic Timer = %d", CallACS("MenuVarCheckDECORATE",0), CallACS("MenuVarCheckDECORATE",1), CallACS("MenuVarCheckDECORATE",2), CallACS("MenuVarCheckDECORATE",3), CallACS("MenuVarCheckDECORATE",4), CallACS("MenuVarCheckDECORATE",5), CallACS("MenuVarCheckDECORATE",6), CallACS("MenuVarCheckDECORATE",10001), CallACS("MenuVarCheckDECORATE",10002), CallACS("MenuVarCheckDECORATE",10003), CallACS("MenuVarCheckDECORATE",10004), CallACS("MenuVarCheckDECORATE",10005), CallACS("MenuVarCheckDECORATE",10006));
+			}
+		}
+	}
+
 	// HUD/Weapon Mana Costs
 	void A_PSI1DoEffectWeaponManaCostCheck()
 	{
