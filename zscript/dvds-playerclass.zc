@@ -1719,6 +1719,46 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (dvdsdebug_showmoveinformation) Console.Printf("\czPosX: %d, PosY: %d, PosZ: %d\c-, \cyVelX: %8f (%d), VelY: %8f (%d), VelZ: %8f (%d)\c-", pos.x, pos.y, pos.z, vel.x, (vel.x * 65536), vel.y, (vel.y * 65536), vel.z, (vel.z * 65536));
 		}
 		
+		// Recall
+		if (dvdsdebug_recalldisplays && AimTarget()) Console.Printf("Name: %s", AimTarget().GetClassName());
+		if (CountInv("RecallAlly") > 0)
+		{
+			if (dvdsdebug_recalldisplays) Console.Printf("Recall Attempt");
+			AetheriusMonsterZSC recallee;
+			recallee = AetheriusMonsterZSC(AimTarget());
+			if (recallee)
+			{
+				if (dvdsdebug_recalldisplays) Console.Printf("Name: %s (TID: %d, FRIENDLY: %d, Charmed: %d)", recallee.GetClassName(), recallee.tid, recallee.bFRIENDLY, recallee.user_charmed);
+				int WhistleStamUse = 200;
+				if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
+
+				if (((recallee.bFRIENDLY && recallee.tid == 1000) || recallee.user_charmed > 0) && CallACS("MiscVarCheckDECORATE",21) >= WhistleStamUse)
+				{
+					Vector3 savedpos = (pos.x, pos.y, pos.z);
+					recallee.SetXYZ(savedpos);
+					
+					A_StartSound("monstersummon", 161, CHANF_DEFAULT);
+					A_SpawnItemEx("PlayerWhistle",0.0,0.0,32.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+					A_SpawnItemEx("TeleportFog",0.0,0.0,frandom(12.0,20.0),0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+					
+					CallACS("MiscVarSetDECORATE",21,WhistleStamUse,2);
+					CallACS("MiscVarSetDECORATE",168,24); // Set's cooldown for whistling
+				}
+				else
+				{
+					A_StartSound("inv_fail", 160, CHANF_DEFAULT);
+				}
+			}
+			A_SetInventory("RecallAlly",0);
+		}
+		// Recall All
+		if (CountInv("RecallAllAllies") > 0)
+		{
+			if (dvdsdebug_recalldisplays) Console.Printf("Recall All Attempt");
+
+			A_SetInventory("RecallAllAllies",0);
+		}
+		
 		lastvelx = vel.x;
 		lastvely = vel.y;
 		lastvelz = vel.z;
