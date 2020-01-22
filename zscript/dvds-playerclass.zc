@@ -1779,6 +1779,57 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (dvdsdebug_recalldisplays) Console.Printf("Recall All Attempt");
 
 			A_SetInventory("RecallAllAllies",0);
+
+			int WhistleStamUse = 500;
+			if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
+			if (CallACS("MiscVarCheckDECORATE",21) >= WhistleStamUse)
+			{
+				int numberrecalled = 0;
+				ActorIterator it = Level.CreateActorIterator(1000);
+				Actor recallee;
+				while (recallee = it.Next())
+				{
+					if (recallee.bFRIENDLY)
+					{
+						if (dvdsdebug_recalldisplays) Console.Printf("\cx(Recall All)\c- Name: %s (TID: %d)", recallee.GetClassName(), recallee.tid);
+						Vector3 savedpos = (pos.x, pos.y, (pos.z + random(6.0,12.0)));
+						recallee.SetOrigin(savedpos,false);
+						recallee.angle += frandom(0.0,360.0);
+						recallee.vel.x += frandom(-4.0,4.0);
+						recallee.vel.y += frandom(-4.0,4.0);
+						recallee.vel.z += frandom(4.0,8.0);
+						numberrecalled++;
+					}
+				}
+				
+				if (numberrecalled > 0)
+				{
+					A_StartSound("monstersummon", 161, CHANF_DEFAULT);
+					A_SpawnItemEx("PlayerWhistle",0.0,0.0,32.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+					Vector3 savedpos2 = (pos.x, pos.y, pos.z+(height*0.25));
+					Actor fog = Spawn("TeleportFog", savedpos2, ALLOW_REPLACE); 
+					if (fog != null)
+					{
+						fog.scale.x *= frandom(0.375, 0.625);
+						fog.scale.y *= frandom(0.375, 0.625);
+						fog.A_SetRenderStyle(frandom(0.375, 0.625),STYLE_Add);
+					}
+					
+					A_PrintBold(String.Format("\cfRecalled all allies to your location!"));
+					CallACS("MiscVarSetDECORATE",21,WhistleStamUse,2);
+					CallACS("MiscVarSetDECORATE",168,24); // Set's cooldown for whistling
+				}
+				else
+				{
+					A_StartSound("inv_fail", 160, CHANF_DEFAULT);
+					A_PrintBold(String.Format("\cgRecall Failed: No creatures available to recall!"));
+				}
+			}
+			else
+			{
+				A_StartSound("inv_fail", 160, CHANF_DEFAULT);
+				A_PrintBold(String.Format("\cgRecall Failed: Stamina Needed to Recall All Creatures!", WhistleStamUse));
+			}
 		}
 		
 		lastvelx = vel.x;
