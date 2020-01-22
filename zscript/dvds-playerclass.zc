@@ -1732,40 +1732,44 @@ class AetheriusPlayerPawn : PlayerPawn
 				int WhistleStamUse = 200;
 				if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
 
-				if (((recallee.bFRIENDLY && recallee.tid == 1000) || recallee.user_charmed > 0) && CallACS("MiscVarCheckDECORATE",21) >= WhistleStamUse)
+				if (((recallee.bFRIENDLY && recallee.tid == 1000) || recallee.user_charmed > 0))
 				{
-					Vector3 savedpos = (pos.x, pos.y, (pos.z + random(6.0,12.0)));
-					recallee.Teleport(savedpos,angle,0); //SetXYZ(savedpos);
-					//recallee.A_DVDSChase();
-					//recallee.vel.x += frandom(-0.25,0.25);
-					//recallee.vel.y += frandom(-0.25,0.25);
-					//recallee.vel.z += frandom(4.0,8.0);
-					//if (dvdsdebug_recalldisplays) Console.Printf("VelX: %8f, VelY: %8f, VelZ: %8f", recallee.vel.x, recallee.vel.y, recallee.vel.z);
-					
-					A_StartSound("monstersummon", 161, CHANF_DEFAULT);
-					A_SpawnItemEx("PlayerWhistle",0.0,0.0,32.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
-					//A_SpawnItemEx("TeleportFog",0.0,0.0,frandom(12.0,20.0),0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
-					
-					Vector3 savedpos2 = (pos.x, pos.y, (pos.z + 16.0));
-					Actor fog = Spawn("TeleportFog", savedpos2, ALLOW_REPLACE); 
-					if (fog != null)
+					if (CallACS("MiscVarCheckDECORATE",21) >= WhistleStamUse)
 					{
-						fog.scale.x *= frandom(0.375, 0.625);
-						fog.scale.y *= frandom(0.375, 0.625);
-						fog.A_SetRenderStyle(frandom(0.375, 0.625),STYLE_Add);
+						Vector3 savedpos = (pos.x, pos.y, (pos.z + random(6.0,12.0)));
+						recallee.SetOrigin(savedpos,false); //Teleport(savedpos,angle,0); //SetXYZ(savedpos);
+						
+						A_StartSound("monstersummon", 161, CHANF_DEFAULT);
+						A_SpawnItemEx("PlayerWhistle",0.0,0.0,32.0,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
+						Vector3 savedpos2 = (pos.x, pos.y, pos.z+(height*0.25));
+						Actor fog = Spawn("TeleportFog", savedpos2, ALLOW_REPLACE); 
+						if (fog != null)
+						{
+							fog.scale.x *= frandom(0.375, 0.625);
+							fog.scale.y *= frandom(0.375, 0.625);
+							fog.A_SetRenderStyle(frandom(0.375, 0.625),STYLE_Add);
+						}
+						
+						A_PrintBold(String.Format("\cfRecall Successful!"));
+						CallACS("MiscVarSetDECORATE",21,WhistleStamUse,2);
+						CallACS("MiscVarSetDECORATE",168,24); // Set's cooldown for whistling
 					}
-					
-					CallACS("MiscVarSetDECORATE",21,WhistleStamUse,2);
-					CallACS("MiscVarSetDECORATE",168,24); // Set's cooldown for whistling
+					else
+					{
+						A_StartSound("inv_fail", 160, CHANF_DEFAULT);
+						A_PrintBold(String.Format("\cgRecall Failed: Stamina Needed to Recall Creature!", WhistleStamUse));
+					}
 				}
 				else
 				{
 					A_StartSound("inv_fail", 160, CHANF_DEFAULT);
+					A_PrintBold(String.Format("\cgRecall Failed: Not an allied creature!"));
 				}
 			}
 			else
 			{
 				A_StartSound("inv_fail", 160, CHANF_DEFAULT);
+				A_PrintBold(String.Format("\cgRecall Failed: No creature in line of sight!"));
 			}
 			A_SetInventory("RecallAlly",0);
 		}
