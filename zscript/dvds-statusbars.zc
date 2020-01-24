@@ -142,12 +142,15 @@ class AetheriusStatusBar : BaseStatusBar
 
 		int i = 0;
 		Inventory item;
-		double inviconalpha, inviconalphapulse;
+		double inviconalpha, inviconalphapulse, inviconscalex, inviconscaley;
 		int inviconalphatimer = level.time % 35;
 		CPlayer.inventorytics = 0; // Makes it you can immediately "use" items after selecting through them.
 		
 		int texttranslation = font.CR_UNTRANSLATED;
 		//Console.Printf("%d", CPlayer.inventorytics);
+		AetheriusPlayerPawn cplayerpawn;
+		cplayerpawn = AetheriusPlayerPawn(CPlayer.mo);
+		//if (cplayerpawn) Console.Printf("test");
 		for(item = CPlayer.mo.InvFirst; item != NULL && i < numfields; item = item.NextInv())
 		{
 			for(int j = 0; j < 2; j++)
@@ -163,6 +166,8 @@ class AetheriusStatusBar : BaseStatusBar
 				}
 				else
 				{
+					inviconscalex = 1.0;
+					inviconscaley = 1.0;
 					if (item is "Coin")
 					{
 						inviconalpha = 0.875;
@@ -172,6 +177,8 @@ class AetheriusStatusBar : BaseStatusBar
 						if (item.Amount <= 0) 
 						{
 							inviconalpha = 0.4375; 
+							inviconscalex *= 0.875;
+							inviconscaley *= 0.875;
 						}
 						else 
 						if (item.Amount >= item.MaxAmount) 
@@ -199,14 +206,43 @@ class AetheriusStatusBar : BaseStatusBar
 							if (inviconalphatimer == 20) inviconalphapulse = 0.1375;
 							inviconalphapulse *= 2;
 							inviconalpha = 0.75 + inviconalphapulse;
+							inviconscalex *= 1.0 + ((inviconalphapulse * 0.25));
+							inviconscaley *= 1.0 + ((inviconalphapulse * 0.25));
 						}
 						else 
 						{
 							inviconalpha = 0.875;
+							inviconscalex *= 0.9375;
+							inviconscaley *= 0.9375;
+						}
+						if (cplayerpawn && cplayerpawn.buttons & BT_ZOOM) 
+						{
+							if (item.GetClassName() == "MedicinalHerb" ||
+									item.GetClassName() == "StrongMedicine" ||
+									item.GetClassName() == "SpecialMedicine" ||
+									item.GetClassName() == "YggdrasilDew" ||
+									item.GetClassName() == "MiraclePotion" ||
+									item.GetClassName() == "ArtiHealthNew" ||
+									item.GetClassName() == "ArtiHealingRadiusNew" ||
+									item.GetClassName() == "ArtiSuperHealthNew" ||
+									item.GetClassName() == "MedPatchNew" ||
+									item.GetClassName() == "MedicalKitNew" ||
+									item.GetClassName() == "SurgeryKitNew") 
+							{
+								inviconalpha *= 4; 
+								inviconscalex *= 1.25;
+								inviconscaley *= 1.25;
+							}
+							else 
+							{
+								inviconalpha *= 0.25;
+								inviconscalex *= 0.8;
+								inviconscaley *= 0.8;
+							}
 						}
 					}
 
-					DrawInventoryIcon(item, itempos + (boxsize.X * i, 0), flags | DI_ITEM_CENTER, inviconalpha );
+					DrawInventoryIcon(item, itempos + (boxsize.X * i, 0), flags | DI_ITEM_CENTER, inviconalpha, (-1, -1), (inviconscalex, inviconscaley) );
 				}
 			}
 			
