@@ -31,6 +31,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int basereactiontime;
 	int maxreactiontime;
 	int levelsperreacttic;
+	double actorbasespeed;
 
 	// General
 	const SKILL_VERY_EASY = 0;
@@ -541,10 +542,26 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 			}
 		}
+		
+		
+		if (health > 0)
+		{
+			Speed = actorbasespeed;
+			for (Inventory item = Inv; item != NULL; item = item.Inv)
+			{
+				let sitem = PowerSpeed(item);
+				if (sitem != null)
+				{
+					double prevspeed = Speed;
+					Speed *= sitem.speed;
+					if (dvdsdebug_monsterspeeditemdisplays) Console.Printf("Actor: %s, invname: %s, speed: %8f (prevspeed: %8f (basespeed: %8f))", GetClassName(), sitem.GetClassName(), speed, prevspeed, actorbasespeed);
+				}
+			}
 
-		if (health > 0 && hitsoundtimer > 0) hitsoundtimer--;
-		if (health > 0 && hitweaksoundtimer > 0) hitweaksoundtimer--;
-
+			if (hitsoundtimer > 0) hitsoundtimer--;
+			if (hitweaksoundtimer > 0) hitweaksoundtimer--;
+		}
+		
 		//This space for rent.
 		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
 	}
@@ -1154,7 +1171,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		AetheriusMonsterZSC DVDSActor;
 		AetheriusProjectileZSC UniqueProjectile;
 		AetheriusEffectProjectile ailmentproj;
-		AetheriusEffectFastProjectile ailmentproj2;
+		AetheriusEffectFastProjectile ailmentprojfast;
 		SingleDamageRipper singleripproj;
 		SingleDamageFastRipper singlefastripproj;
 
@@ -1208,7 +1225,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			UniqueProjectile = AetheriusProjectileZSC(inflictor);
 			ailmentproj = AetheriusEffectProjectile(inflictor);
-			ailmentproj2 = AetheriusEffectFastProjectile(inflictor);
+			ailmentprojfast = AetheriusEffectFastProjectile(inflictor);
 			singleripproj = SingleDamageRipper(inflictor);
 			singlefastripproj = SingleDamageFastRipper(inflictor);
 		}
@@ -1433,11 +1450,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// "Villain Killer" Perk [for extra damage specifically against Legendaries]
 			preldldmg = damage;
 			ldldmgmulti = 1.0;
-			if (CountInv("LDLegendaryMonsterTransformed") && (CallACS("MiscVarCheckDECORATE",10057) + CallACS("MiscVarCheckDECORATE",10058) > 0))
+			double ldlbasemod = 1.0;
+			if (CountInv("LDLegendaryMonsterTransformed"))
 			{
-				double ldlbasemod;
-				if (bBOSS) ldlbasemod = frandom(0.30,0.40);
-							else ldlbasemod = frandom(0.20,0.25);
+				if (bBOSS) ldlbasemod = frandom(0.15,0.20);
+							else ldlbasemod = frandom(0.30,0.40);
 
 				// DamageType Modifiers
 				if (mod == 'Sceptre') ldlbasemod *= 1.5;
@@ -1457,9 +1474,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// Dealing with Critical hits from other Monsters
 			precritdmg = damage;
 			string AilmentProjClass;
-			string AilmentProj2Class;
+			string ailmentprojfastClass;
 			if (ailmentproj) AilmentProjClass = ailmentproj.GetClassName();
-			if (ailmentproj2) AilmentProj2Class = ailmentproj2.GetClassName();
+			if (ailmentprojfast) ailmentprojfastClass = ailmentprojfast.GetClassName();
 			string ActorClass;
 			ActorClass = DVDSActor.GetClassName();
 			int meleeattack = 0;
@@ -1659,7 +1676,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		else
 		{
 			// Hellcore
-			if (IsHellCoreAttack) ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + (CallACS("MiscVarCheckDECORATE",10033) * frandom(0.0225,0.0275)) + (CallACS("MiscVarCheckDECORATE",10034) * frandom(0.05625,0.06875))) * (1.00 - ActorDefenseIgnoreFactor));
+			if (IsHellCoreAttack) 
+			{
+				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + (CallACS("MiscVarCheckDECORATE",10033) * frandom(0.0225,0.0275)) + (CallACS("MiscVarCheckDECORATE",10034) * frandom(0.05625,0.06875))) * (1.00 - ActorDefenseIgnoreFactor));
+			}
 
 			// Eldritch
 			if (mod == 'Eldritch') 
@@ -1757,68 +1777,28 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				else
 				{
 					if (CountInv("PoisonCloudSpeedPenalty1b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty1b",1);
-					else
-					{
-						if (CountInv("PoisonCloudSpeedPenalty1c") < 1) A_GiveInventory("PoisonCloudSpeedPenalty1c",1);
-					}
 				}
 				A_GiveInventory("PoisonCloudATKPenalty1",1);
 				A_GiveInventory("PoisonCloudDEFPenalty1",1);
-				if (random(1,3) == 1) 
+				if (random(1,5) == 1) 
 				{
 					if (CountInv("PoisonCloudSpeedPenalty2") < 1) A_GiveInventory("PoisonCloudSpeedPenalty2",1);
 					else
 					{
 						if (CountInv("PoisonCloudSpeedPenalty2b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty2b",1);
-						else
-						{
-							if (CountInv("PoisonCloudSpeedPenalty2c") < 1) A_GiveInventory("PoisonCloudSpeedPenalty2c",1);
-						}
 					}
 					A_GiveInventory("PoisonCloudATKPenalty2",1);
 					A_GiveInventory("PoisonCloudDEFPenalty2",1);
 				}
-				if (random(1,9) == 1) 
+				if (random(1,25) == 1) 
 				{
 					if (CountInv("PoisonCloudSpeedPenalty3") < 1) A_GiveInventory("PoisonCloudSpeedPenalty3",1);
 					else
 					{
 						if (CountInv("PoisonCloudSpeedPenalty3b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty3b",1);
-						else
-						{
-							if (CountInv("PoisonCloudSpeedPenalty3c") < 1) A_GiveInventory("PoisonCloudSpeedPenalty3c",1);
-						}
 					}
 					A_GiveInventory("PoisonCloudATKPenalty3",1);
 					A_GiveInventory("PoisonCloudDEFPenalty3",1);
-				}
-				if (random(1,27) == 1) 
-				{
-					if (CountInv("PoisonCloudSpeedPenalty4") < 1) A_GiveInventory("PoisonCloudSpeedPenalty4",1);
-					else
-					{
-						if (CountInv("PoisonCloudSpeedPenalty4b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty4b",1);
-						else
-						{
-							if (CountInv("PoisonCloudSpeedPenalty4c") < 1) A_GiveInventory("PoisonCloudSpeedPenalty4c",1);
-						}
-					}
-					A_GiveInventory("PoisonCloudATKPenalty4",1);
-					A_GiveInventory("PoisonCloudDEFPenalty4",1);
-				}
-				if (random(1,81) == 1) 
-				{
-					if (CountInv("PoisonCloudSpeedPenalty5") < 1) A_GiveInventory("PoisonCloudSpeedPenalty5",1);
-					else
-					{
-						if (CountInv("PoisonCloudSpeedPenalty5b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty5b",1);
-						else
-						{
-							if (CountInv("PoisonCloudSpeedPenalty5c") < 1) A_GiveInventory("PoisonCloudSpeedPenalty5c",1);
-						}
-					}
-					A_GiveInventory("PoisonCloudATKPenalty5",1);
-					A_GiveInventory("PoisonCloudDEFPenalty5",1);
 				}
 			}
 			if (mod == 'Drowning') 
@@ -1882,6 +1862,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		//**********************************************************************
 		//*This ignores damage factors [similar to how DQ crits ignore defense]*
 		//**********************************************************************
+		if (CallACS("GetBuffTimer",7) > 0) ActorDefenseIgnoreFactor *= 1.25;
+		if (CallACS("GetBuffTimer",10) > 0) ActorDefenseIgnoreFactor *= 1.05;
+		if (CallACS("GetBuffTimer",13) > 0) ActorDefenseIgnoreFactor *= 0.9524;
+		if (ActorDefenseIgnoreFactor > 1.00) ActorDefenseIgnoreFactor = 1.00;
+
 		prevDamageFactor = DamageFactor;
 		if (DamageFactor < 1.00) 
 		{
@@ -1910,6 +1895,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				damage *= 4;
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 3c - Player-Deflection Pre-Check [DivAvatar]\c-: \cypredmg = %d\c- / \cydmg = %d\c-)", predirdmg, damage);
 			}
+			if (CallACS("GetBuffTimer",10) > 0)
+			{
+				damage *= 2;
+				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 3d - Player-Deflection Pre-Check [Oomph]\c-: \cypredmg = %d\c- / \cydmg = %d\c-)", predirdmg, damage);
+			}
+			if (CallACS("GetBuffTimer",13) > 0)
+			{
+				damage *= 0.5;
+				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 3d - Player-Deflection Pre-Check [Blunt]\c-: \cypredmg = %d\c- / \cydmg = %d\c-)", predirdmg, damage);
+			}
 
 			double randomdmgmax = 1.50 + (random(0,50) * 0.01);
 			if (DamageFactor < randomdmgmax) DamageFactor += ((randomdmgmax - DamageFactor) * frandompick(0.75,0.875,1.00,1.125,1.25));
@@ -1918,7 +1913,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 
 		predirdmg = damage;
-		if ((playpawn && (playpawn.player.cheats & CF_FRIGHTENING || playpawn.bFRIGHTENING)) && bFRIGHTENED)
+		if ((playpawn && (playpawn.player.cheats & CF_FRIGHTENING || playpawn.bFRIGHTENING)) && (bFRIGHTENED && !bFRIENDLY))
 		{
 			damage *= frandom(1.20,1.25);
 			if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP ?? - Fright Check]\c-: \cypredmg = %d\c- / \cydmg = %d\c-)", predirdmg, damage);
@@ -3589,7 +3584,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					
 						double SpeedErrorRange = (MSpeed * dvds_monsterspeedvarience);
 						MSpeed += frandom(-SpeedErrorRange,SpeedErrorRange);
-						Speed = MSpeed; //Set's Final Speed values
+						actorbasespeed = self.Speed = MSpeed; //Set's Final Speed values
+						
 					
 						double AttackErrorRange = (Attack * dvds_monsterattackvarience);
 						Attack += frandom(-AttackErrorRange,AttackErrorRange);
