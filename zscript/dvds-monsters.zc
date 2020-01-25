@@ -32,6 +32,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int maxreactiontime;
 	int levelsperreacttic;
 	double actorbasespeed;
+	double actorbasespeedLDL;
+	double prevspeed;
 
 	// General
 	const SKILL_VERY_EASY = 0;
@@ -420,97 +422,69 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			A_LegendaryCheck();
 		}
 		
-		//******************
-		//*"Stealth" Checks*
-		//******************
-		int stealthcheckinterval = dvds_rnd_stealth_refreshrate;
-		if (stealthcheckinterval < 1) stealthcheckinterval = 1;
-		if (stealthcheckinterval > 35) stealthcheckinterval = 35;
-		if (user_isstealth && (gametic % stealthcheckinterval) == 0)
-		{
-			if (InStateSequence(curstate,ResolveState("See")) || 
-				  InStateSequence(curstate,ResolveState("Spawn")) || 
-				  InStateSequence(curstate,ResolveState("Idle")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Charm")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Heal1")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Heal2")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Heal3")) || 
-				  InStateSequence(curstate,ResolveState("Raise")) ) 
+			//******************
+			//*"Stealth" Checks*
+			//******************
+			int stealthcheckinterval = dvds_rnd_stealth_refreshrate;
+			if (stealthcheckinterval < 1) stealthcheckinterval = 1;
+			if (stealthcheckinterval > 35) stealthcheckinterval = 35;
+			if (user_isstealth && ((gametic % stealthcheckinterval) == 0))
 			{
-				A_RefreshStealthInfo(0);
-				if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 0)", gametic);
-			}
-
-			if (InStateSequence(curstate,ResolveState("Melee")) || 
-				  InStateSequence(curstate,ResolveState("Missile")) ||
-				  InStateSequence(curstate,ResolveState("Heal")) ||
-				  InStateSequence(curstate,ResolveState("Pain")) || 
-				  InStateSequence(curstate,ResolveState("Pain.DoomSpell")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Magic")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Holy")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Dark")) ||
-				  InStateSequence(curstate,ResolveState("Pain.Eldritch")) ||
-				  InStateSequence(curstate,ResolveState("Pain.Fire")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Ice")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Plasma")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Thunder")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Electric")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Lightning")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Shock")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Sceptre")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Fist")) || 
-				  InStateSequence(curstate,ResolveState("Pain.Kick")) ||
-				  InStateSequence(curstate,ResolveState("Pain.PoisonNeedle")) ||
-				  InStateSequence(curstate,ResolveState("Pain.Deadlight")) ||
-				  InStateSequence(curstate,ResolveState("Pain.Gauntlets")) ) 
-			{
-				A_RefreshStealthInfo(1);
-				if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 1)", gametic);
-			}
-
-			if (InStateSequence(curstate,ResolveState("Death")) || 
-				  InStateSequence(curstate,ResolveState("XDeath")) || 
-				  InStateSequence(curstate,ResolveState("Crash")) || 
-				  InStateSequence(curstate,ResolveState("Burn")) || 
-				  InStateSequence(curstate,ResolveState("Disintergrate")) || 
-				  InStateSequence(curstate,ResolveState("Ice")) ) 
-			{
-				A_RefreshStealthInfo(2);
-				if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 2)", gametic);
-			}
-		}
-
-		//*********************************************************
-		//*Ally/Charm Sparkle Code [for easily identifying allies]*
-		//*********************************************************
-		if (dvdsdebug_charmdisplays && user_charmed) Console.Printf("(%s) FRIENDLY = %d, user_charmed = %d", GetClassName(), bFRIENDLY, user_charmed);
-		if (((gametic + (ActorRandomBits & 15)) & 15) == 1)
-		{
-			if (bFRIENDLY > 0 && health > 0 && !isFrozen())
-			{
-				let glitterheight = height / 2;
-				let glitterheight2 = height / 4;
-				let glitterwidth = radius * 5 / 4;
-				
-				for (int i = 1; i < 3; i++)
+				if (InStateSequence(curstate,ResolveState("See")) || 
+						InStateSequence(curstate,ResolveState("Spawn")) || 
+						InStateSequence(curstate,ResolveState("Idle")) || 
+						InStateSequence(curstate,ResolveState("Pain.Charm")) || 
+						InStateSequence(curstate,ResolveState("Pain.Heal1")) || 
+						InStateSequence(curstate,ResolveState("Pain.Heal2")) || 
+						InStateSequence(curstate,ResolveState("Pain.Heal3")) || 
+						InStateSequence(curstate,ResolveState("Raise")) ) 
 				{
-					A_SpawnItemEx("FyggGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
-					if (user_charmed <= 0 && random(1,15) == 1) A_SpawnItemEx("FyggGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
-					if (user_charmed <= 0 && random(1,15) == 1) A_SpawnItemEx("FyggGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
+					A_RefreshStealthInfo(0);
+					if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 0)", gametic);
 				}
-				if (user_charmed > 0)
+
+				if (InStateSequence(curstate,ResolveState("Melee")) || 
+						InStateSequence(curstate,ResolveState("Missile")) ||
+						InStateSequence(curstate,ResolveState("Heal")) ||
+						InStateSequence(curstate,ResolveState("Pain")) || 
+						InStateSequence(curstate,ResolveState("Pain.DoomSpell")) || 
+						InStateSequence(curstate,ResolveState("Pain.Magic")) || 
+						InStateSequence(curstate,ResolveState("Pain.Holy")) || 
+						InStateSequence(curstate,ResolveState("Pain.Dark")) ||
+						InStateSequence(curstate,ResolveState("Pain.Eldritch")) ||
+						InStateSequence(curstate,ResolveState("Pain.Fire")) || 
+						InStateSequence(curstate,ResolveState("Pain.Ice")) || 
+						InStateSequence(curstate,ResolveState("Pain.Plasma")) || 
+						InStateSequence(curstate,ResolveState("Pain.Thunder")) || 
+						InStateSequence(curstate,ResolveState("Pain.Electric")) || 
+						InStateSequence(curstate,ResolveState("Pain.Lightning")) || 
+						InStateSequence(curstate,ResolveState("Pain.Shock")) || 
+						InStateSequence(curstate,ResolveState("Pain.Sceptre")) || 
+						InStateSequence(curstate,ResolveState("Pain.Fist")) || 
+						InStateSequence(curstate,ResolveState("Pain.Kick")) ||
+						InStateSequence(curstate,ResolveState("Pain.PoisonNeedle")) ||
+						InStateSequence(curstate,ResolveState("Pain.Deadlight")) ||
+						InStateSequence(curstate,ResolveState("Pain.Gauntlets")) ) 
 				{
-					if (CountInv("CharmMonsterAttack") <= 0) A_SetInventory("CharmMonsterAttack",1);
-					if (CountInv("CharmMonsterDefense") <= 0) A_SetInventory("CharmMonsterDefense",1);
-					for (int i = 1; i < 3; i++)
-					{
-						A_SpawnItemEx("ArmorGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
-						if (random(1,15) == 1) A_SpawnItemEx("ArmorGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
-						if (random(1,15) == 1) A_SpawnItemEx("ArmorGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
-					}
+					A_RefreshStealthInfo(1);
+					if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 1)", gametic);
+				}
+
+				if (InStateSequence(curstate,ResolveState("Death")) || 
+						InStateSequence(curstate,ResolveState("XDeath")) || 
+						InStateSequence(curstate,ResolveState("Crash")) || 
+						InStateSequence(curstate,ResolveState("Burn")) || 
+						InStateSequence(curstate,ResolveState("Disintergrate")) || 
+						InStateSequence(curstate,ResolveState("Ice")) ) 
+				{
+					A_RefreshStealthInfo(2);
+					if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 2)", gametic);
 				}
 			}
 
+
+		if (!(isFrozen() || CountInv("AetheriusTimeFreezer",AAPTR_PLAYER1) || CountInv("AetheriusTimeFreezerMenu",AAPTR_PLAYER1)))
+		{
 			if (CountInv("LDLegendaryMonsterToken") > 0) user_willbecomelegendary = 1;
 
 			// Undoes LDLite Tokens if the var is set to !0
@@ -518,14 +492,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 			// Unsets BUDDHA from a transformed legendary [in the rare case a monster doesn't get it removed by the initial transformation]
 			if (CountInv("LDLegendaryMonsterTransformed")) bBuddha = false;
-		}
 
-		//********************************************************
-		//*Sets Fading for monster corpses if option is turned on*
-		//********************************************************
-		if (health <= 0) 
-		{
-			if (dvds_deadwillfade)
+			//********************************************************
+			//*Sets Fading for monster corpses if option is turned on*
+			//********************************************************
+			if (health <= 0 && dvds_deadwillfade) 
 			{
 				if (deathcounter >= (dvds_deadbeforefadetimer*35))
 				{
@@ -541,27 +512,72 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (dvdsdebug_deathgibfadedisplays) Console.Printf("\cy%s\c- deathcounter: \cx%d\c-", GetClassName(), deathcounter);
 				}
 			}
-		}
-		
-		
-		if (health > 0)
-		{
-			Speed = actorbasespeed;
-			for (Inventory item = Inv; item != NULL; item = item.Inv)
-			{
-				let sitem = PowerSpeed(item);
-				if (sitem != null)
-				{
-					double prevspeed = Speed;
-					Speed *= sitem.speed;
-					if (dvdsdebug_monsterspeeditemdisplays) Console.Printf("Actor: %s, invname: %s, speed: %8f (prevspeed: %8f (basespeed: %8f))", GetClassName(), sitem.GetClassName(), speed, prevspeed, actorbasespeed);
-				}
-			}
 
-			if (hitsoundtimer > 0) hitsoundtimer--;
-			if (hitweaksoundtimer > 0) hitweaksoundtimer--;
+			if (health > 0)
+			{
+				//*********************************************************
+				//*Ally/Charm Sparkle Code [for easily identifying allies]*
+				//*********************************************************
+				if (dvdsdebug_charmdisplays && user_charmed) Console.Printf("(%s) FRIENDLY = %d, user_charmed = %d", GetClassName(), bFRIENDLY, user_charmed);
+				if (((gametic + (ActorRandomBits & 15)) & 15) == 1)
+				{
+					if (bFRIENDLY > 0 && health > 0)
+					{
+						let glitterheight = height / 2;
+						let glitterheight2 = height / 4;
+						let glitterwidth = radius * 5 / 4;
+						
+						for (int i = 1; i < 3; i++)
+						{
+							A_SpawnItemEx("ArmorGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
+							if (random(1,15) == 1) A_SpawnItemEx("ArmorGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
+							if (random(1,15) == 1) A_SpawnItemEx("ArmorGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
+						}
+						if (user_charmed > 0)
+						{
+							if (CountInv("CharmMonsterAttack") <= 0) A_SetInventory("CharmMonsterAttack",1);
+							if (CountInv("CharmMonsterDefense") <= 0) A_SetInventory("CharmMonsterDefense",1);
+							for (int i = 1; i < 3; i++)
+							{
+								A_SpawnItemEx("FyggGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
+								if (user_charmed <= 0 && random(1,15) == 1) A_SpawnItemEx("FyggGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
+								if (user_charmed <= 0 && random(1,15) == 1) A_SpawnItemEx("FyggGlitter", random[TeleGlitter](-glitterwidth,glitterwidth), random[TeleGlitter](-glitterwidth,glitterwidth), glitterheight+random(-glitterheight2,glitterheight2)+random[TeleGlitter](0,31)-16,frandom(-0.75,0.75),frandom(-0.75,0.75),frandom(-0.75,0.75));
+							}
+						}
+					}
+				}
+
+				if ((gametic % 2) == 0)
+				{
+					Speed = actorbasespeed;
+					
+					if (user_legendaryevolved && !bBOSS) 
+					{
+						Speed *= LD_legendaryspeed;
+						actorbasespeedLDL = actorbasespeed * LD_legendaryspeed;
+					}
+					if (user_legendaryevolved && bBOSS) 
+					{
+						Speed *= LD_legendaryspeedboss;
+						actorbasespeedLDL = actorbasespeed * LD_legendaryspeedboss;
+					}
+					for (Inventory item = Inv; item != NULL; item = item.Inv)
+					{
+						let sitem = PowerSpeed(item);
+						if (sitem != null)
+						{
+							prevspeed = Speed;
+							Speed *= sitem.speed;
+							if (dvdsdebug_monsterspeeditemdisplays) Console.Printf("Actor: %s, invname: %s, speed: %8f (prevspeed: %8f (basespeed: %8f))", GetClassName(), sitem.GetClassName(), speed, prevspeed, actorbasespeed);
+						}
+					}
+				}
+				if (hitsoundtimer > 0) hitsoundtimer--;
+				if (hitweaksoundtimer > 0) hitweaksoundtimer--;
+			}
+			
 		}
-		
+
 		//This space for rent.
 		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
 	}
