@@ -745,6 +745,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 			}
 		}
+		if (other.GetClassName() == "HubbleBubbleSmall" || other.GetClassName() == "HubbleBubbleLarge") return false;
+
 		// We don't really care about others making the check.
 		return true;
 	}
@@ -1261,6 +1263,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		AetheriusPlayerPawn playpawn;
 		AetheriusMonsterZSC DVDSActor;
 		AetheriusProjectileZSC UniqueProjectile;
+		AetheriusFastProjectileZSC UniqueProjectileFast;
 		AetheriusEffectProjectile ailmentproj;
 		AetheriusEffectFastProjectile ailmentprojfast;
 		SingleDamageRipper singleripproj;
@@ -1315,6 +1318,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (inflictor)
 		{
 			UniqueProjectile = AetheriusProjectileZSC(inflictor);
+			UniqueProjectileFast = AetheriusFastProjectileZSC(inflictor);
 			ailmentproj = AetheriusEffectProjectile(inflictor);
 			ailmentprojfast = AetheriusEffectFastProjectile(inflictor);
 			singleripproj = SingleDamageRipper(inflictor);
@@ -1503,7 +1507,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			//****************************
 			precritdmg = damage;
 			
-			
+			// Crit Damage
 			if (CountInv("DealCriticalHit", AAPTR_PLAYER1) > 0 && CritResistRoll > CritResistChance)
 			{
 				if (CountInv("AnubisCufflinksFear", AAPTR_PLAYER1) > 0) critdmgmulti *= 1.25;
@@ -1925,14 +1929,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				ActorDefenseIgnoreFactor += (1.00 * (1.00 - ActorDefenseIgnoreFactor));
 			}
-			// Suicide Bombers/Kamikaze Enemy Attacks
-			if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord" || mod == 'Explosive') 
+			// Suicide Bombers/Kamikaze Enemy Attacks/RockBomb Shards
+			if (infl == "RockBombShardProj" || infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord" || mod == 'Explosive' || flags & DMG_EXPLOSION) 
 			{
 				if (playpawn)
 				{
 					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10025) * 0.01) + (CallACS("MiscVarCheckDECORATE",10026) * 0.025));
 				}
-				ActorDefenseIgnoreFactor += ((frandompick(0.625,0.6667,0.75) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+				if (infl == "RockBombShardProj") ActorDefenseIgnoreFactor += ((frandompick(0.50,0.5334,0.60) + (dfperkfactor * 0.5)) * (1.00 - ActorDefenseIgnoreFactor));
+																		else ActorDefenseIgnoreFactor += ((frandompick(0.625,0.6667,0.75) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
 			// Chill Touch
 			if (infl == "ChillTouch") 
@@ -2452,6 +2457,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				AetheriusProjectileZSC UniqueProjectile; //
 				UniqueProjectile = AetheriusProjectileZSC(missile); //
+				AetheriusFastProjectileZSC UniqueProjectileFast;
+				UniqueProjectileFast = AetheriusFastProjectileZSC(missile);
 				if (IsACrisisComboAttack && UniqueProjectile) UniqueProjectile.IsACrisisAttack = true; //
     
 				// automatic handling of seeker missiles
@@ -2869,10 +2876,36 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (CountInv("HubbleBubbleSpeedPenalty2")) NoAtkChance += 125;
 		if (CountInv("HubbleBubbleSpeedPenalty2b")) NoAtkChance += 125;
 		
+		AetheriusPlayerPawn playpawn;
+		if (target) playpawn = AetheriusPlayerPawn(target);
+		if (playpawn)
+		{
+			if (playpawn.CountInv("PowerInvisibility") > 0 || playpawn.CountInv("InvisiblitySpell") > 0)
+			{
+				int PerkFactor = 167;
+				PerkFactor += ((CallACS("MiscVarCheckDECORATE",10007) * 6) + (CallACS("MiscVarCheckDECORATE",10008) * 15));
+				int SkillFactor = (1000 - NoAtkChance) * PerkFactor / 1000;
+				NoAtkChance += SkillFactor;
+			}
+			if (playpawn.CountInv("PlayerDashing") > 0)
+			{
+				int PerkFactor = 875;
+				//PerkFactor += ((CallACS("MiscVarCheckDECORATE",10007) * 6) + (CallACS("MiscVarCheckDECORATE",10008) * 15));
+				int SkillFactor = (1000 - NoAtkChance) * PerkFactor / 1000;
+				NoAtkChance += SkillFactor;
+			}
+		}
+		
+		if (dvdsdebug_showactormoveinformation && NoAtkChance > 0) 
+		{
+			if (target) Console.Printf("\cx(%s)[A_DVDSChase]\c- NoAtkChance: %d / 1000, Target: %s", GetClassName(), NoAtkChance, target.GetClassName());
+						 else Console.Printf("\cx(%s)[A_DVDSChase]\c- NoAtkChance: %d / 1000", GetClassName(), NoAtkChance);
+		}
 		if (random(1,1000) <= NoAtkChance)
 		{
 			if (flags & CHF_FASTCHASE) flags &= ~CHF_FASTCHASE;
 			A_Chase(null,null,flags);
+			if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_DVDSChase]\c- NoAtkChance Succeed", GetClassName());
 		}
 		else
 		{
@@ -2956,6 +2989,241 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 	
+	int A_GetStealthChance()
+	{
+		int TempRatio;
+		int StealthChance, TempStealthChance, ChanceFactor, LevelCheck, MapCheck;
+		int debugevolvestealth = dvdsdebug_evolvestealthstuff;
+		int deathkingsmapcalcmod = dvds_deathkingsmapcalcmod;
+		int mapcalcfactorexact = 0;
+		int mapcalcfactorpercent = 100;
+		int PlayerLevel = CallACS("StatCheck",0);
+		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		int ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		
+		StealthChance = dvds_rnd_stealth;
+		if (StealthChance <= 0) { return StealthChance; }
+
+		if (debugevolvestealth) Console.Printf("Stealth Chance [Base]: %d - %s", StealthChance, GetClassName());
+		
+		if (StealthChance < 0) StealthChance = 0;
+		if (StealthChance > 512) StealthChance = 512;
+
+		TempRatio = dvds_rnd_stealth_levels;
+		if (TempRatio > 0) 
+		{
+			if (TempRatio > 1000) TempRatio = 1000;
+			
+			TempStealthChance = (SceptreActualLevel * 2 / 50) + (PlayerLevel / 75); 
+			TempStealthChance = TempStealthChance * TempRatio / 100;
+			StealthChance += TempStealthChance;
+			if (debugevolvestealth) Console.Printf("Stealth Chance [Level]: %d - %s - (+%d)", StealthChance, GetClassName(), TempStealthChance);
+		}
+
+		TempRatio = dvds_rnd_stealth_chars;
+		if (TempRatio > 0) 
+		{
+			if (TempRatio > 1000) TempRatio = 1000;
+			
+			TempStealthChance = 0;
+			if (CharacterClass == 0) TempStealthChance = 125;
+			else if (CharacterClass == 1) TempStealthChance = 0;
+			else if (CharacterClass == 2) TempStealthChance = -125;
+			else if (CharacterClass == 8) TempStealthChance = -50;
+			else if (CharacterClass == 9) TempStealthChance = 50;
+	
+			TempStealthChance = TempStealthChance * TempRatio / 100;
+			TempStealthChance += 1000;
+			StealthChance *= TempStealthChance;
+			StealthChance /= 1000;
+			if (debugevolvestealth) Console.Printf("Stealth Chance [Character]: %d - %s - (%d / 1000)", StealthChance, GetClassName(), TempStealthChance);
+		}
+		
+		TempRatio = dvds_rnd_stealth_skill;
+		if (TempRatio > 0) 
+		{
+			if (TempRatio > 1000) TempRatio = 1000;
+			
+			TempStealthChance = 0;
+			if (TrueGameSkill <= SKILL_VERY_EASY) TempStealthChance = -250;
+			else if (TrueGameSkill == SKILL_EASY) TempStealthChance = -100;
+			else if (TrueGameSkill == SKILL_NORMAL) TempStealthChance = 0;
+			else if (TrueGameSkill == SKILL_HARD) TempStealthChance = 100;
+			else if (TrueGameSkill == SKILL_VERY_HARD) TempStealthChance = 250;
+			else if (TrueGameSkill == SKILL_EXTREME) TempStealthChance = 350;
+			else if (TrueGameSkill == SKILL_HORRIBLE) TempStealthChance = 500;
+			else if (TrueGameSkill == SKILL_IMPOSSIBLE) TempStealthChance = 700;
+			else if (TrueGameSkill >= SKILL_OMEGA) TempStealthChance = 1000;
+	
+			TempStealthChance = TempStealthChance * TempRatio / 100;
+			TempStealthChance += 1000;
+			StealthChance *= TempStealthChance;
+			StealthChance /= 1000;
+			if (debugevolvestealth) Console.Printf("Stealth Chance [Skill]: %d - %s - (%d / 1000)", StealthChance, GetClassName(), TempStealthChance);
+		}
+
+		TempRatio = dvds_rnd_stealth_maps;
+		if (TempRatio > 0) 
+		{
+			if (TempRatio > 1000) TempRatio = 1000;
+			
+			if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
+			{
+				if (ClassicDoomType == 1 || ClassicDoomType == 2) // Doom 1 / Heretic
+				{
+					MapCheck = level.levelnum;
+					if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+					MapCheck += CallACS("MiscVarCheckDECORATE",54); // Map Inflation [Evolve/Stealth - Exact]
+					MapCheck += CallACS("MiscVarCheckDECORATE",169); // Map Inflation [Overall - Exact]
+					MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",3) / 100; // Map Inflation [Evolve/Stealth - Percentile]
+					MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",5) / 100; // Map Inflation [Overall - Percentile]
+					if (MapCheck < 1) MapCheck = 1;
+					if (MapCheck > 100) MapCheck = 100;
+			
+					if (MapCheck >= 1 && MapCheck <= 10) ChanceFactor = (MapCheck * 25); // Episode 1
+					if (MapCheck >= 11 && MapCheck <= 20) ChanceFactor = (MapCheck * 31); // Episode 2
+					if (MapCheck >= 21 && MapCheck <= 30) ChanceFactor = (MapCheck * 38); // Episode 3
+					if (MapCheck >= 31 && MapCheck <= 40) ChanceFactor = (MapCheck * 46); // Episode 4
+					if (MapCheck >= 41 && MapCheck <= 50) ChanceFactor = (MapCheck * 55); // Episode 5
+					if (MapCheck >= 51 && MapCheck <= 60) ChanceFactor = (MapCheck * 65); // Episode 6
+					if (MapCheck >= 61 && MapCheck <= 70) ChanceFactor = (MapCheck * 76); // Episode 7
+					if (MapCheck >= 71 && MapCheck <= 80) ChanceFactor = (MapCheck * 88); // Episode 8
+					if (MapCheck >= 81 && MapCheck <= 90) ChanceFactor = (MapCheck * 101); // Episode 9
+					if (MapCheck >= 91 && MapCheck <= 100) ChanceFactor = (MapCheck * 115); // Episode 10
+				}
+				else // Doom / Hexen / Strife / Doom64
+				{
+					MapCheck = level.levelnum;
+					if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+					MapCheck += CallACS("MiscVarCheckDECORATE",54); // Map Inflation [Evolve/Stealth - Exact]
+					MapCheck += CallACS("MiscVarCheckDECORATE",169); // Map Inflation [Overall - Exact]
+					MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",3) / 100; // Map Inflation [Evolve/Stealth - Percentile]
+					MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",5) / 100; // Map Inflation [Overall - Percentile]
+					if (MapCheck < 1) MapCheck = 1;
+					if (MapCheck > 100) MapCheck = 100;
+			
+					if (MapCheck >= 1 && MapCheck <= 5) ChanceFactor = (MapCheck * 30);
+					if (MapCheck >= 6 && MapCheck <= 10) ChanceFactor = (MapCheck * 35);
+					if (MapCheck >= 11 && MapCheck <= 15) ChanceFactor = (MapCheck * 40);
+					if (MapCheck >= 16 && MapCheck <= 20) ChanceFactor = (MapCheck * 45);
+					if (MapCheck >= 21 && MapCheck <= 25) ChanceFactor = (MapCheck * 55);
+					if (MapCheck >= 26 && MapCheck <= 30) ChanceFactor = (MapCheck * 60);
+					if (MapCheck >= 31 && MapCheck <= 36) ChanceFactor = (MapCheck * 66);
+					if (MapCheck >= 37 && MapCheck <= 42) ChanceFactor = (MapCheck * 72);
+					if (MapCheck >= 43 && MapCheck <= 48) ChanceFactor = (MapCheck * 78);
+					if (MapCheck >= 49 && MapCheck <= 54) ChanceFactor = (MapCheck * 84);
+					if (MapCheck >= 55 && MapCheck <= 60) ChanceFactor = (MapCheck * 90);
+					if (MapCheck >= 61 && MapCheck <= 66) ChanceFactor = (MapCheck * 96);
+					if (MapCheck >= 67 && MapCheck <= 72) ChanceFactor = (MapCheck * 103);
+					if (MapCheck >= 73 && MapCheck <= 78) ChanceFactor = (MapCheck * 110);
+					if (MapCheck >= 79 && MapCheck <= 84) ChanceFactor = (MapCheck * 118);
+					if (MapCheck >= 85 && MapCheck <= 90) ChanceFactor = (MapCheck * 126);
+					if (MapCheck >= 91 && MapCheck <= 96) ChanceFactor = (MapCheck * 135);
+					if (MapCheck >= 97 && MapCheck <= 102) ChanceFactor = (MapCheck * 144);
+				}
+				ChanceFactor = ChanceFactor * 5 / 8;
+			}
+			else if (ModType == 1) // DVI
+			{
+				MapCheck = level.levelnum;
+				if (MapCheck < 1101) MapCheck = 1101;
+				if (MapCheck > 1104) MapCheck = 1104;
+			
+				if (MapCheck == 1101) StealthChance = StealthChance * 1000 / 1000; // MAP01 - Insurgents
+				else if (MapCheck == 1102) StealthChance = StealthChance * 1116 / 1000; // MAP02 - Torture Chamber
+				else if (MapCheck == 1103) StealthChance = StealthChance * 1256 / 1000; // MAP03 - Cathedral
+				else if (MapCheck == 1104) StealthChance = StealthChance * 1418 / 1000; // MAP04 - End Of Days
+			}
+			else
+			if (ModType == 2) // DVII
+			{
+				MapCheck = level.levelnum;
+				if (MapCheck < 1201) MapCheck = 1201;
+				if (MapCheck > 1212) MapCheck = 1212;
+			
+				if (MapCheck == 1201) ChanceFactor = 0; // MAP01 - Entryway Pass
+				else if (MapCheck == 1202) ChanceFactor = 70; // MAP02 - Mutagen
+				else if (MapCheck == 1203) ChanceFactor = 140; // MAP03 - Crouching Demon, Hidden Archvile
+				else if (MapCheck == 1204) ChanceFactor = 209; // MAP04 - Minas Morgul
+				else if (MapCheck == 1205) ChanceFactor = 302; // MAP05 - Eagle's Nest
+				else if (MapCheck == 1206) ChanceFactor = 395; // MAP05B - The Manliest Level Ever
+				else if (MapCheck == 1207) ChanceFactor = 488; // MAP06 - Stargate
+				else if (MapCheck == 1208) ChanceFactor = 605; // MAP07 - The Desert Temple
+				else if (MapCheck == 1209) ChanceFactor = 953; // MAP08 - The Unholy Cathedral
+				else if (MapCheck == 1210) ChanceFactor = 1372; // MAP09 - You Shall Not Pass!
+				else if (MapCheck == 1211) ChanceFactor = 1884; // MAP10 - Hell's Vendetta
+				else if (MapCheck == 1212) ChanceFactor = 2488; // MAP10B - attedneV s'lleH
+				else if (MapCheck == 1214) ChanceFactor = 465; // MAP12 - "The Wings of The Maiar" [DVI combined level remake]
+				else if (MapCheck == 1215) ChanceFactor = 2488; // MAP10C - attedneV s'lleH: The True End of All Things... [resurrected Sauron rematch] (if worser endings occur)
+			}
+	
+			ChanceFactor = ChanceFactor * TempRatio / 100;
+			ChanceFactor += 1000;
+			StealthChance = StealthChance * ChanceFactor / 1000;
+			if (debugevolvestealth)
+			{
+				Console.Printf("\czMapCheck: %d\n\c-Stealth Chance [Maps]: %d - %s - (%d / 1000)", MapCheck, StealthChance, GetClassName(), ChanceFactor);
+			}
+		}
+
+		// Check if the actor is one of Strife's Peasents [and if so, sets Stealth Chance to 0]
+		int IsAPeasent = 0;
+		If (GetClassName() == "PeasantNew") IsAPeasent++;
+		If (GetClassName() == "Peasant1New") IsAPeasent++;
+		If (GetClassName() == "Peasant2New") IsAPeasent++;
+		If (GetClassName() == "Peasant3New") IsAPeasent++;
+		If (GetClassName() == "Peasant4New") IsAPeasent++;
+		If (GetClassName() == "Peasant5New") IsAPeasent++;
+		If (GetClassName() == "Peasant6New") IsAPeasent++;
+		If (GetClassName() == "Peasant7New") IsAPeasent++;
+		If (GetClassName() == "Peasant8New") IsAPeasent++;
+		If (GetClassName() == "Peasant9New") IsAPeasent++;
+		If (GetClassName() == "Peasant10New") IsAPeasent++;
+		If (GetClassName() == "Peasant11New") IsAPeasent++;
+		If (GetClassName() == "Peasant12New") IsAPeasent++;
+		If (GetClassName() == "Peasant13New") IsAPeasent++;
+		If (GetClassName() == "Peasant14New") IsAPeasent++;
+		If (GetClassName() == "Peasant15New") IsAPeasent++;
+		If (GetClassName() == "Peasant16New") IsAPeasent++;
+		If (GetClassName() == "Peasant17New") IsAPeasent++;
+		If (GetClassName() == "Peasant18New") IsAPeasent++;
+		If (GetClassName() == "Peasant19New") IsAPeasent++;
+		If (GetClassName() == "Peasant20New") IsAPeasent++;
+		If (GetClassName() == "Peasant21New") IsAPeasent++;
+		If (GetClassName() == "Peasant22New") IsAPeasent++;
+		If (GetClassName() == "BeggarNew") IsAPeasent++;
+		If (GetClassName() == "Beggar1New") IsAPeasent++;
+		If (GetClassName() == "Beggar2New") IsAPeasent++;
+		If (GetClassName() == "Beggar3New") IsAPeasent++;
+		If (GetClassName() == "Beggar4New") IsAPeasent++;
+		If (GetClassName() == "Beggar5New") IsAPeasent++;
+		If (GetClassName() == "MerchantNew") IsAPeasent++;
+		If (GetClassName() == "WeaponSmithNew") IsAPeasent++;
+		If (GetClassName() == "BarKeepNew") IsAPeasent++;
+		If (GetClassName() == "ArmorerNew") IsAPeasent++;
+		If (GetClassName() == "MedicNew") IsAPeasent++;
+		If (IsAPeasent > 0) 
+		{
+			StealthChance = 0;
+			if (debugevolvestealth) Console.Printf("Stealth Chance [PeasentCheck]: %d - %s", StealthChance, GetClassName());
+		}
+
+		int IsFullyInvisible = 0;
+		If (GetClassName() == "NightmareNew") IsFullyInvisible++;
+		If (GetClassName() == "SirenNightmareNew") IsFullyInvisible++;
+		If (IsFullyInvisible > 0) 
+		{
+			StealthChance = 0;
+			if (debugevolvestealth) Console.Printf("Stealth Chance [GhostStealthCheck]: %d - %s", StealthChance, GetClassName());
+		}
+
+		if (debugevolvestealth) Console.Printf("Stealth Chance [Final]: %d - %s", StealthChance, GetClassName());
+		return StealthChance;
+	}
+	
 	void A_MonsterStatsHP_ATK_DEF_SPD(int type = 0, int extraflags = 0)
 	{
 		double MaxHP, MSpeed, Attack, Defense, Balance;
@@ -2999,7 +3267,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					string ActorName = GetClassName();
 					if (debugstatcalc) Console.Printf("\ckActorName: %s", ActorName);
 
-					StealthChance = ACS_NamedExecuteWithResult("GetStealthChance");
+					StealthChance = A_GetStealthChance(); // ACS_NamedExecuteWithResult("GetStealthChance");
+					if (dvdsdebug_evolvestealthstuff) Console.Printf("Stealth Chance: %d", StealthChance);
 
 					nonstatmonster = 0;
 					if (ActorName == "PracticeTarget") nonstatmonster = 1;

@@ -54,6 +54,8 @@ class AetheriusBaseZSC : Actor
 		DVDSActor = AetheriusMonsterZSC(tracer);
 		AetheriusProjectileZSC UniqueProjectile;
 		UniqueProjectile = AetheriusProjectileZSC(self);
+		AetheriusFastProjectileZSC UniqueProjectileFast;
+		UniqueProjectileFast = AetheriusFastProjectileZSC(self);
 		int CheckForCrisis = 0;
 
 		IsACrisisExplosion = false;
@@ -4201,7 +4203,7 @@ class ShieldPartBase : AetheriusBaseZSC
 		+NEVERTARGET;
 		+BUDDHA;
 		+DONTBLAST;
-		+SHOOTABLE;
+		+SOLID; //+SHOOTABLE;
 		+NOGRAVITY;
 		+NOTELEPORT;
 		+NODAMAGE;
@@ -4213,6 +4215,71 @@ class ShieldPartBase : AetheriusBaseZSC
 		+NOTIMEFREEZE;
 		+THRUSPECIES;
 		+MTHRUSPECIES;
+	}
+	
+	override void Tick()
+	{
+		if (level.time % 2 == 0) bSOLID = true; else bSOLID = false;
+		Super.Tick();
+	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		AetheriusPlayerPawn playpawn;
+		AetheriusMonsterZSC DVDSActor;
+		AetheriusProjectileZSC UniqueProjectile;
+		AetheriusFastProjectileZSC UniqueProjectileFast;
+		playpawn = AetheriusPlayerPawn(other);
+		DVDSActor = AetheriusMonsterZSC(other);
+		UniqueProjectile = AetheriusProjectileZSC(other);
+		UniqueProjectileFast = AetheriusFastProjectileZSC(other);
+
+		if (passive)
+		{
+			if (dvdsdebug_shieldactorghosts) Console.Printf("passive: %s", GetClassName());
+			if (dvdsdebug_shieldactorghosts) Console.Printf("other: %s", other.GetClassName());
+			// Pass through different species of select types.
+			if (playpawn) return false; // Player Checking
+			// Monster Checking
+			if (DVDSActor)
+			{
+				if (DVDSActor.bFRIENDLY) return false;
+				return true;
+			}
+			// Projectile Checking
+			if (UniqueProjectile)
+			{
+				if (dvdsdebug_shieldactorghosts) Console.Printf("UniqueProjectile: %s", UniqueProjectile.GetClassName());
+				if (UniqueProjectile.projtouchedshieldactor == 0) 
+				{
+					UniqueProjectile.projtouchedshieldactor++;
+					if (random(1,256) <= 252) A_StartSound("SceptreBlocked");
+					if (dvdsdebug_shieldactorghosts) Console.Printf("UniqueProjectile.touched: %d", UniqueProjectile.projtouchedshieldactor);
+					return true;
+				}
+				else return false;
+			}
+			// Fast Projectile Checking
+			if (UniqueProjectileFast)
+			{
+				if (dvdsdebug_shieldactorghosts) Console.Printf("UniqueProjectileFast: %s", UniqueProjectileFast.GetClassName());
+				if (UniqueProjectileFast.projtouchedshieldactor == 0) 
+				{
+					UniqueProjectileFast.projtouchedshieldactor++;
+					if (random(1,256) <= 252) A_StartSound("SceptreBlocked");
+					if (dvdsdebug_shieldactorghosts) Console.Printf("UniqueProjectileFast.touched: %d", UniqueProjectileFast.projtouchedshieldactor);
+					return true;
+				}
+				else return false;
+			}
+		}
+		else // Non-passive means the one moving into the other is performing the checks.
+		{
+			//Console.Printf("%s", other.GetClassName());
+			return true;
+		}
+		// We don't really care about others making the check.
+		return true;
 	}
 }
 
