@@ -4808,8 +4808,8 @@ class ShieldPartBase : AetheriusBaseZSC
 
 		if (passive)
 		{
-			if (dvdsdebug_shieldactorghosts) Console.Printf("passive: %s", GetClassName());
-			if (dvdsdebug_shieldactorghosts) Console.Printf("other: %s", other.GetClassName());
+			if (dvdsdebug_shieldactorghosts) Console.Printf("\cyShieldPart:\c- passive: %s", GetClassName());
+			if (dvdsdebug_shieldactorghosts) Console.Printf("\cyShieldPart:\c- other: %s", other.GetClassName());
 			// Pass through different species of select types.
 			if (playpawn) return false; // Player Checking
 			// Monster Checking
@@ -4821,7 +4821,7 @@ class ShieldPartBase : AetheriusBaseZSC
 			// Projectile Checking
 			if (UniqueProjectile)
 			{
-				if (dvdsdebug_shieldactorghosts) Console.Printf("UniqueProjectile: %s", UniqueProjectile.GetClassName());
+				if (dvdsdebug_shieldactorghosts) Console.Printf("\cyShieldPart:\c- UniqueProjectile: %s", UniqueProjectile.GetClassName());
 				playpawn = AetheriusPlayerPawn(other.target);
 				playpawn2 = AetheriusPlayerPawn(master);
 				if (playpawn && playpawn2) return false;
@@ -4830,10 +4830,10 @@ class ShieldPartBase : AetheriusBaseZSC
 				{
 					if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked");
 					UniqueProjectile.projtouchedshieldactor++;
-					if (dvdsdebug_shieldactorghosts) Console.Printf("UniqueProjectile.touched: %d", UniqueProjectile.projtouchedshieldactor);
+					if (dvdsdebug_shieldactorghosts) Console.Printf("\cyShieldPart:\c- UniqueProjectile.touched: %d", UniqueProjectile.projtouchedshieldactor);
 					return true;
 				}
-				else return false;
+				//else return false;
 			}
 			// Fast Projectile Checking
 			if (UniqueProjectileFast)
@@ -5010,7 +5010,7 @@ class DiarisArrowGuard : AetheriusBaseZSC
 		Scale 0.25;
 		RenderStyle "Add"; // Add
 		Alpha 0.0; // 0.003125
-		-SOLID
+		+SOLID
 		+THRUSPECIES
 		+SHOOTABLE
 		+BUDDHA
@@ -5022,6 +5022,85 @@ class DiarisArrowGuard : AetheriusBaseZSC
 		+DONTTHRUST
 	}
 	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		AetheriusPlayerPawn playpawn;
+		AetheriusPlayerPawn playpawn2;
+		AetheriusMonsterZSC DVDSActor;
+		AetheriusProjectileZSC UniqueProjectile;
+		AetheriusFastProjectileZSC UniqueProjectileFast;
+		playpawn = AetheriusPlayerPawn(other);
+		DVDSActor = AetheriusMonsterZSC(other);
+		UniqueProjectile = AetheriusProjectileZSC(other);
+		UniqueProjectileFast = AetheriusFastProjectileZSC(other);
+
+		if (passive)
+		{
+			if (dvdsdebug_shieldactorghosts) Console.Printf("\cyDiarisArrowGuard:\c- passive: %s", GetClassName());
+			if (dvdsdebug_shieldactorghosts) Console.Printf("\cyDiarisArrowGuard:\c- other: %s", other.GetClassName());
+			// Pass through different species of select types.
+			if (playpawn) return false; // Player Checking
+			// Monster Checking
+			if (DVDSActor)
+			{
+				if (DVDSActor.bFRIENDLY) return false;
+				return true;
+			}
+			// Projectile Checking
+			if (UniqueProjectile)
+			{
+				if (dvdsdebug_shieldactorghosts) Console.Printf("\cyDiarisArrowGuard:\c- UniqueProjectile: %s", UniqueProjectile.GetClassName());
+				playpawn = AetheriusPlayerPawn(other.target);
+				playpawn2 = AetheriusPlayerPawn(master);
+				if (playpawn && playpawn2) return false;
+
+				//Console.Printf("BFGShot (%d)", passive);
+				BFGBallBase bfgshot;
+				bfgshot = BFGBallBase(other);
+				if (bfgshot)
+				{
+					//Console.Printf("ShotDown");
+					bfgshot.SetStateLabel("ShotDown");
+					return false;
+				}
+
+				if (!UniqueProjectile.projtouchedshieldactor) 
+				{
+					if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked");
+					UniqueProjectile.projtouchedshieldactor++;
+					if (dvdsdebug_shieldactorghosts) Console.Printf("UniqueProjectile.touched: %d", UniqueProjectile.projtouchedshieldactor);
+					return true;
+				}
+				//else return false;
+			}
+			// Fast Projectile Checking
+			if (UniqueProjectileFast)
+			{
+				if (dvdsdebug_shieldactorghosts) Console.Printf("UniqueProjectileFast: %s", UniqueProjectileFast.GetClassName());
+				playpawn = AetheriusPlayerPawn(other.target);
+				playpawn2 = AetheriusPlayerPawn(master);
+				if (playpawn && playpawn2) return false;
+
+				if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked");
+				UniqueProjectileFast.projtouchedshieldactor++;
+				if (dvdsdebug_shieldactorghosts) Console.Printf("UniqueProjectileFast.touched: %d", UniqueProjectileFast.projtouchedshieldactor);
+				return true;
+			}
+			playpawn = AetheriusPlayerPawn(other.target);
+			playpawn2 = AetheriusPlayerPawn(master);
+			if (playpawn && playpawn2) return false;
+		}
+		else // Non-passive means the one moving into the other is performing the checks.
+		{
+			if (dvdsdebug_shieldactorghosts) Console.Printf("non-passive: %s", GetClassName());
+			if (dvdsdebug_shieldactorghosts) Console.Printf("other: %s", other.GetClassName());
+			playpawn = AetheriusPlayerPawn(other.target);
+			playpawn2 = AetheriusPlayerPawn(master);
+			if (playpawn && playpawn2) return false;
+		}
+
+		return true;
+	}
 /*
 	override bool CanCollideWith(Actor other, bool passive)
 	{
