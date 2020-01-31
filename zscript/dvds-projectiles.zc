@@ -6474,8 +6474,64 @@ class GravityHPBall : AetheriusFastProjectileZSC
 	}
 }
 
+class BaseWandMissile : SingleDamageFastRipper
+{
+	bool wandmissleeraseproj;
+
+	void A_WandMissileGuard()
+	{
+		if (!(CountInv("AetheriusTimeFreezer",AAPTR_PLAYER1) || CountInv("AetheriusTimeFreezerMenu",AAPTR_PLAYER1) || isFrozen()))
+		{
+			double newradius = 8.0 * (1.0 + (0.2 * CallACS("MiscVarCheckDECORATE",10053)));
+			double ahead = -184.0 - (newradius * 2); // 184 speed
+
+			double xpos;
+			double zpos;
+			int maxgoes = ((-ahead)) / (newradius * 2);
+			round(maxgoes);
+			maxgoes += random(0,1);
+			if (dvdsdebug_shieldactorghosts) Console.Printf("maxgoes: %d, newradius: %.2f", maxgoes, newradius);
+
+			double zrand = frandom(-8.0,8.0);
+
+			for (int i; i < maxgoes; i++)
+			{
+				ahead += (newradius * 2);
+				xpos = 0 + (cos(pitch) * (0 + ahead));
+				zpos = 0 - (sin(pitch) * (0 + ahead));
+				A_SpawnItemEx("MageWandGuard",xpos,0,zpos,0,0,0,0,SXF_NOCHECKPOSITION|SXF_TRANSFERPITCH);
+				if (dvdsdebug_shieldactorghosts) Console.Printf("i: %d, pitch: %.8f, ahead: %.8f, xpos: %.8f, zpos: %.8f", i, pitch, ahead, xpos, zpos);
+			}
+		}
+	}
+	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		if (wandmissleeraseproj) A_WandMissileGuard();
+	}
+
+	override void Die(Actor source, Actor inflictor, int dmgflags)
+	{
+		if (wandmissleeraseproj) A_WandMissileGuard();
+		Super.Die(source, inflictor, dmgflags);
+	}
+
+	override void Tick()
+	{
+		if (wandmissleeraseproj) A_WandMissileGuard();
+		Super.Tick();
+	}
+}
+
 class BaseDiarisHolyArrow : SingleDamageFastRipper
 {
+
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
@@ -6498,17 +6554,19 @@ class BaseDiarisHolyArrow : SingleDamageFastRipper
 	{
 		if (!(CountInv("AetheriusTimeFreezer",AAPTR_PLAYER1) || CountInv("AetheriusTimeFreezerMenu",AAPTR_PLAYER1) || isFrozen()))
 		{
-			int ahead = -176;
-			//Console.Printf("%d", ahead);
-
+			double newradius = 16.0 * (1.0 + (0.2 * CallACS("MiscVarCheckDECORATE",10031)));
+			int ahead = -320 - (newradius * 2);
 			double xpos;
 			double zpos;
+			int maxgoes = ((-ahead)) / (newradius * 2);
+			round(maxgoes);
+			if (dvdsdebug_shieldactorghosts) Console.Printf("maxgoes: %d, newradius: %.2f", maxgoes, newradius);
 
-			for (int i; i < 21; i++)
+			for (int i; i < maxgoes; i++)
 			{
-				ahead += 16;
-				xpos = 0 + (cos(pitch) * (0 + ahead));				
-				zpos = -8 - (sin(pitch) * (0 + ahead));				
+				ahead += (newradius * 2);
+				xpos = 0 + (cos(pitch) * (0 + ahead));
+				zpos = -8 - (sin(pitch) * (0 + ahead));
 				A_SpawnItemEx("DiarisArrowGuard",xpos,0,zpos,0,0,0,0,SXF_NOCHECKPOSITION|SXF_TRANSFERPITCH);
 				if (dvdsdebug_shieldactorghosts) Console.Printf("i: %d, pitch: %.8f, ahead: %.8f, xpos: %.8f, zpos: %.8f", i, pitch, ahead, xpos, zpos);
 			}
