@@ -3,8 +3,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 {
 	// Gargoyle
 	bool extremecrash;
-	bool targetsplayer;
-	bool targetsnonplayer;
 	bool droppedtheirsoul;
 	// Afrit
 	const FIREDEMON_ATTACK_RANGE = 64*8.;
@@ -37,7 +35,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	double actorbasespeed;
 	double actorbasespeedLDL;
 	double prevspeed;
-	
+
 	int hastetimer;
 	int slowtimer;
 	int poisontimer;
@@ -45,7 +43,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int blunttimer;
 	int bufftimer;
 	int saptimer;
-
+	
+	bool ActorDisplayDMG;
+	bool ActorLevelCalcs;
+	
 	// General
 	const SKILL_VERY_EASY = 0;
 	const SKILL_EASY = 1;
@@ -353,22 +354,20 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	override void PostBeginPlay()
 	{
 		int TrueGameSkill = dvds_gendifficultycurve + Skill;
-		/*
-		STYLE_None (0)
-		STYLE_Normal (1)
-		STYLE_Fuzzy (2)
-		STYLE_SoulTrans (3)
-		STYLE_OptFuzzy (4)
-		STYLE_Stencil (5)
-		STYLE_Translucent (6)
-		STYLE_Add (7)
-		STYLE_Shaded (8)
-		STYLE_TranslucentStencil (9)
-		STYLE_Shadow (10)
-		STYLE_Subtract (11)
-		STYLE_AddStencil (12)
-		STYLE_AddShaded (13)
-		*/
+		//STYLE_None (0)
+		//STYLE_Normal (1)
+		//STYLE_Fuzzy (2)
+		//STYLE_SoulTrans (3)
+		//STYLE_OptFuzzy (4)
+		//STYLE_Stencil (5)
+		//STYLE_Translucent (6)
+		//STYLE_Add (7)
+		//STYLE_Shaded (8)
+		//STYLE_TranslucentStencil (9)
+		//STYLE_Shadow (10)
+		//STYLE_Subtract (11)
+		//STYLE_AddStencil (12)
+		//STYLE_AddShaded (13)
 		
 		if (GetAge() < 1) // SO APPEARANTLY RELOADING HUB MAPS WILL RERUN PostBeginPlay() CODE, MEANING MONSTERS WITH STEALTH BECOME HARDER AND HARDER TO SEE UNLESS AN AGE CHECK IS RAN >__________>;
 		{
@@ -412,7 +411,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 		}
 
-		if (self.health > 0 && CountInv("MonsterLevelCalcs") == 0) 
+		if (self.health > 0 && !ActorLevelCalcs) 
 		{ 
 			A_AetheriusStats(0); 
 			if (self.health <= User_MaxHP) self.health = User_MaxHP;
@@ -430,13 +429,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		deathcounter = 0;
 
 		string classname = GetClassName();
-
-		/*
-		if (classname == "AlienSpectre1New" || classname == "AlienSpectre2New" || classname == "AlienSpectre3New" ||
-				classname == "AlienSpectre4New" || classname == "AlienSpectre5New" || classname == "Macil1New" ||
-				classname == "Macil2New" || classname == "EntityBossNew" || classname == "EntitySecondNew" || 
-				classname == "EntityAscended") A_SetInventory("SpecterDefense",1);
-		*/
 
 		if (classname == "Benellus1DS") isamajorboss = 16;
 		if (classname == "Benellus2DS") isamajorboss = 16;
@@ -495,7 +487,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		levelbehavior = dvds_monsterlevelbehavior;
 		gfxeffectlevel = dvds_gfxeffectlevel;
 		
-		if (self.health > 0 && CountInv("MonsterLevelCalcs") == 0) 
+		if (self.health > 0 && !ActorLevelCalcs) 
 		{ 
 			A_AetheriusStats(0); 
 			if (self.health <= User_MaxHP) self.health = User_MaxHP;
@@ -503,67 +495,79 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// LDL
 			A_LegendaryCheck();
 		}
-		
-			//******************
-			//*"Stealth" Checks*
-			//******************
-			int stealthcheckinterval = dvds_rnd_stealth_refreshrate;
-			if (stealthcheckinterval < 1) stealthcheckinterval = 1;
-			if (stealthcheckinterval > 35) stealthcheckinterval = 35;
-			if (user_isstealth && ((gametic % stealthcheckinterval) == 0))
+
+		if (self.health > 0)
+		{
+			if (dvds_dmgindicator && !ActorDisplayDMG) 
 			{
-				if (InStateSequence(curstate,ResolveState("See")) || 
-						InStateSequence(curstate,ResolveState("Spawn")) || 
-						InStateSequence(curstate,ResolveState("Idle")) || 
-						InStateSequence(curstate,ResolveState("Pain.Charm")) || 
-						InStateSequence(curstate,ResolveState("Pain.Heal1")) || 
-						InStateSequence(curstate,ResolveState("Pain.Heal2")) || 
-						InStateSequence(curstate,ResolveState("Pain.Heal3")) || 
-						InStateSequence(curstate,ResolveState("Raise")) ) 
-				{
-					A_RefreshStealthInfo(0);
-					if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 0)", gametic);
-				}
-
-				if (InStateSequence(curstate,ResolveState("Melee")) || 
-						InStateSequence(curstate,ResolveState("Missile")) ||
-						InStateSequence(curstate,ResolveState("Heal")) ||
-						InStateSequence(curstate,ResolveState("Pain")) || 
-						InStateSequence(curstate,ResolveState("Pain.DoomSpell")) || 
-						InStateSequence(curstate,ResolveState("Pain.Magic")) || 
-						InStateSequence(curstate,ResolveState("Pain.Holy")) || 
-						InStateSequence(curstate,ResolveState("Pain.Dark")) ||
-						InStateSequence(curstate,ResolveState("Pain.Eldritch")) ||
-						InStateSequence(curstate,ResolveState("Pain.Fire")) || 
-						InStateSequence(curstate,ResolveState("Pain.Ice")) || 
-						InStateSequence(curstate,ResolveState("Pain.Plasma")) || 
-						InStateSequence(curstate,ResolveState("Pain.Thunder")) || 
-						InStateSequence(curstate,ResolveState("Pain.Electric")) || 
-						InStateSequence(curstate,ResolveState("Pain.Lightning")) || 
-						InStateSequence(curstate,ResolveState("Pain.Shock")) || 
-						InStateSequence(curstate,ResolveState("Pain.Sceptre")) || 
-						InStateSequence(curstate,ResolveState("Pain.Fist")) || 
-						InStateSequence(curstate,ResolveState("Pain.Kick")) ||
-						InStateSequence(curstate,ResolveState("Pain.PoisonNeedle")) ||
-						InStateSequence(curstate,ResolveState("Pain.Deadlight")) ||
-						InStateSequence(curstate,ResolveState("Pain.Gauntlets")) ) 
-				{
-					A_RefreshStealthInfo(1);
-					if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 1)", gametic);
-				}
-
-				if (InStateSequence(curstate,ResolveState("Death")) || 
-						InStateSequence(curstate,ResolveState("XDeath")) || 
-						InStateSequence(curstate,ResolveState("Crash")) || 
-						InStateSequence(curstate,ResolveState("Burn")) || 
-						InStateSequence(curstate,ResolveState("Disintergrate")) || 
-						InStateSequence(curstate,ResolveState("Ice")) ) 
-				{
-					A_RefreshStealthInfo(2);
-					if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 2)", gametic);
-				}
+				ActorDisplayDMG = true;
+				ACS_NamedExecuteAlways("DamageDisplays",0,0,0,0);
 			}
-
+			else
+			{
+				if (!dvds_dmgindicator && ActorDisplayDMG) ActorDisplayDMG = false;
+			}
+		}
+		
+		//******************
+		//*"Stealth" Checks*
+		//******************
+		int stealthcheckinterval = dvds_rnd_stealth_refreshrate;
+		if (stealthcheckinterval < 1) stealthcheckinterval = 1;
+		if (stealthcheckinterval > 35) stealthcheckinterval = 35;
+		if (user_isstealth && ((gametic % stealthcheckinterval) == 0))
+		{
+			if (InStateSequence(curstate,ResolveState("See")) || 
+					InStateSequence(curstate,ResolveState("Spawn")) || 
+					InStateSequence(curstate,ResolveState("Idle")) || 
+					InStateSequence(curstate,ResolveState("Pain.Charm")) || 
+					InStateSequence(curstate,ResolveState("Pain.Heal1")) || 
+					InStateSequence(curstate,ResolveState("Pain.Heal2")) || 
+					InStateSequence(curstate,ResolveState("Pain.Heal3")) || 
+					InStateSequence(curstate,ResolveState("Raise")) ) 
+			{
+				A_RefreshStealthInfo(0);
+				if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 0)", gametic);
+			}
+		
+			if (InStateSequence(curstate,ResolveState("Melee")) || 
+					InStateSequence(curstate,ResolveState("Missile")) ||
+					InStateSequence(curstate,ResolveState("Heal")) ||
+					InStateSequence(curstate,ResolveState("Pain")) || 
+					InStateSequence(curstate,ResolveState("Pain.DoomSpell")) || 
+					InStateSequence(curstate,ResolveState("Pain.Magic")) || 
+					InStateSequence(curstate,ResolveState("Pain.Holy")) || 
+					InStateSequence(curstate,ResolveState("Pain.Dark")) ||
+					InStateSequence(curstate,ResolveState("Pain.Eldritch")) ||
+					InStateSequence(curstate,ResolveState("Pain.Fire")) || 
+					InStateSequence(curstate,ResolveState("Pain.Ice")) || 
+					InStateSequence(curstate,ResolveState("Pain.Plasma")) || 
+					InStateSequence(curstate,ResolveState("Pain.Thunder")) || 
+					InStateSequence(curstate,ResolveState("Pain.Electric")) || 
+					InStateSequence(curstate,ResolveState("Pain.Lightning")) || 
+					InStateSequence(curstate,ResolveState("Pain.Shock")) || 
+					InStateSequence(curstate,ResolveState("Pain.Sceptre")) || 
+					InStateSequence(curstate,ResolveState("Pain.Fist")) || 
+					InStateSequence(curstate,ResolveState("Pain.Kick")) ||
+					InStateSequence(curstate,ResolveState("Pain.PoisonNeedle")) ||
+					InStateSequence(curstate,ResolveState("Pain.Deadlight")) ||
+					InStateSequence(curstate,ResolveState("Pain.Gauntlets")) ) 
+			{
+				A_RefreshStealthInfo(1);
+				if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 1)", gametic);
+			}
+		
+			if (InStateSequence(curstate,ResolveState("Death")) || 
+					InStateSequence(curstate,ResolveState("XDeath")) || 
+					InStateSequence(curstate,ResolveState("Crash")) || 
+					InStateSequence(curstate,ResolveState("Burn")) || 
+					InStateSequence(curstate,ResolveState("Disintergrate")) || 
+					InStateSequence(curstate,ResolveState("Ice")) ) 
+			{
+				A_RefreshStealthInfo(2);
+				if (dvdsdebug_evolvestealthstuff) Console.Printf("gametic: %d (stealth type: 2)", gametic);
+			}
+		}
 
 		if (!(isFrozen() || CountInv("AetheriusTimeFreezer",AAPTR_PLAYER1) || CountInv("AetheriusTimeFreezerMenu",AAPTR_PLAYER1)))
 		{
@@ -680,7 +684,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 			
 		}
-
 		//This space for rent.
 		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
 	}
@@ -694,7 +697,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			Alpha = InitAlpha;
 		}
 
-		if (self.health <= 0 && CountInv("MonsterLevelCalcs") == 1 && !bICECORPSE) 
+		if (self.health <= 0 && ActorLevelCalcs && !bICECORPSE) 
 		{ 
 			SetInventory("LDLegendaryMonsterToken", 0);
 			SetInventory("LDLegendaryMonsterVisualEffectMaker", 0);
@@ -3380,7 +3383,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (type == 0) // Giving Stats
 		{
-			if (CountInv("MonsterLevelCalcs") != 0) { if (debugstatcalc) Console.Printf("MonsterLevelCalcs [1]: %d", CountInv("MonsterLevelCalcs")); }
+			if (ActorLevelCalcs) { if (debugstatcalc) Console.Printf("ActorLevelCalcs [1]: %d", ActorLevelCalcs); }
 			else
 			{
 				if (user_checkmapskill > 0) { if (debugstatcalc) Console.Printf("user_checkmapskill [2]: %d", user_checkmapskill); }
@@ -4499,6 +4502,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					Temp = MaxHP * -1; // -100.0%
 					if (Temp > 0) Temp = 0;
 					user_HPXDeathRange = Temp;
+					if (GetClassName() == "BloodZombieNew") user_HPXDeathRange2 = user_HPXDeathRange / 2;
 
 					// Reaction Time
 					basereactiontime = reactiontime;
@@ -4522,10 +4526,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					SetInventory("LDLegendaryMonsterTransformed", 0);
 
 					// Excutes Lifebar-Related Code
-					A_SetInventory("MonsterDisplayDMG",1);
+					ActorDisplayDMG = true;
 					ACS_NamedExecuteAlways("DamageDisplays",0,0,0,0);
+					
 				
-					A_SetInventory("MonsterLevelCalcs",1);
+					ActorLevelCalcs = true;
 					user_checkmapskill += 1;
 					if (bFRIENDLY) 
 					{
@@ -4540,7 +4545,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 		else
 		{
-			if (CountInv("MonsterLevelCalcs") <= 0) { }
+			if (!ActorLevelCalcs) { }
 			else
 			{
 				if (user_checkmapskill < 1) { }
@@ -4554,8 +4559,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					reactiontime = basereactiontime;
 					if (debugstatcalc) Console.Printf("\cy(%s)\c- \cxReactionTime: %d\c-, basereactiontime: %d", GetClassName(), reactiontime, basereactiontime);
 				
-					A_SetInventory("MonsterDisplayDMG",0);
-					A_SetInventory("MonsterLevelCalcs",0);
+					ActorDisplayDMG = false;
+					ActorLevelCalcs = false;
 					user_monsterlevel = 0;
 					user_checkmapskill = 0;
 					user_isstealth = 0;
@@ -4571,7 +4576,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		// 1 = Unset special stats
 		int flagsbaselevel;
 		levelbehavior = dvds_monsterlevelbehavior;
-		if (type == 0 && CountInv("MonsterLevelCalcs") == 0) 
+		if (type == 0 && !ActorLevelCalcs) 
 		{
 			if (debugstatcalc) Console.Printf("StatCalc type %d!", type);
 			A_MonsterStatsHP_ATK_DEF_SPD(type);
@@ -4585,7 +4590,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			timesrevivedamonster = 0;
 		}
 
-		if (type != 0 && CountInv("MonsterLevelCalcs") > 0) 
+		if (type != 0 && ActorLevelCalcs) 
 		{
 			if (debugstatcalc) Console.Printf("StatCalc type %d!", type);
 			A_MonsterStatsHP_ATK_DEF_SPD(type);
