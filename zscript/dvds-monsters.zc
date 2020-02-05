@@ -569,15 +569,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 		}
 
+		// Unsets BUDDHA from a transformed legendary [in the rare case a monster doesn't get it removed by the initial transformation]
+		if (user_legendaryevolved) bBuddha = false;
+
 		if (!(isFrozen() || CountInv("AetheriusTimeFreezer",AAPTR_PLAYER1) || CountInv("AetheriusTimeFreezerMenu",AAPTR_PLAYER1)))
 		{
-			if (CountInv("LDLegendaryMonsterToken") > 0) user_willbecomelegendary = 1;
-
 			// Undoes LDLite Tokens if the var is set to !0
-			if (user_nolegendarytrans) SetInventory("LDLegendaryMonsterToken", 0);
+			if (user_nolegendarytrans) user_willbecomelegendary = 0;
 
-			// Unsets BUDDHA from a transformed legendary [in the rare case a monster doesn't get it removed by the initial transformation]
-			if (CountInv("LDLegendaryMonsterTransformed")) bBuddha = false;
+			if (user_legendaryevolved) GiveInventory("LDLegendaryMonsterVisualEffectMaker", 1);
 
 			//********************************************************
 			//*Sets Fading for monster corpses if option is turned on*
@@ -699,7 +699,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (self.health <= 0 && ActorLevelCalcs && !bICECORPSE) 
 		{ 
-			SetInventory("LDLegendaryMonsterToken", 0);
 			SetInventory("LDLegendaryMonsterVisualEffectMaker", 0);
 			SetInventory("LDLegendaryMonsterVisualEffectAlternator", 0);
 			user_willbecomelegendary = 0;
@@ -1646,7 +1645,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// Attacks/Etc That Have More/Less Effect on Legendaries
 			preldldmg = damage;
 			ldldmgmulti = 1.0;
-			if (CountInv("LDLegendaryMonsterTransformed"))
+			if (user_legendaryevolved)
 			{
 				if (infl == "SonicNail") ldldmgmulti = 1.25;
 				damage *= ldldmgmulti;
@@ -1657,7 +1656,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			preldldmg = damage;
 			ldldmgmulti = 1.0;
 			double ldlbasemod = 1.0;
-			if (CountInv("LDLegendaryMonsterTransformed"))
+			if (user_legendaryevolved)
 			{
 				if (bBOSS) ldlbasemod = frandom(0.15,0.20);
 							else ldlbasemod = frandom(0.30,0.40);
@@ -2333,7 +2332,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czINFO:\c- \cyComboTimerDelayIncrease [Base]\c-: \cy%.8f\c-)", ComboTimerDelayIncrease);
 			// "Legendary" Check
-			if (CountInv("LDLegendaryMonsterTransformed")) ComboTimerDelayIncrease *= 1.375; //2.5;
+			if (user_legendaryevolved) ComboTimerDelayIncrease *= 1.375; //2.5;
 			// BOSS Flag Check
 			if (bBOSS) ComboTimerDelayIncrease *= 1.125; //1.5;
 			// STEALTH Flag Check
@@ -4523,7 +4522,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					}
 
 					user_legendaryevolved = 0;
-					SetInventory("LDLegendaryMonsterTransformed", 0);
 
 					// Excutes Lifebar-Related Code
 					ActorDisplayDMG = true;
@@ -4604,7 +4602,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		user_golddrop += goldamt;
 		
 		int LDLMulti = 2; // 2 = 100%
-		if (CountInv("LDLegendaryMonsterTransformed")) LDLMulti = random(4,6);
+		if (user_legendaryevolved) LDLMulti = random(4,6);
 		user_golddrop = (user_golddrop * LDLMulti) / 2;
 		
 		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
@@ -5446,7 +5444,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 				
 		MaxDropTimes = 1;
-		If (user_legendaryevolved > 0 || CountInv("LDLegendaryMonsterTransformed")) 
+		If (user_legendaryevolved) 
 		{
 			if (bBOSS) MaxDropTimes = random(4,6); else MaxDropTimes = 3;
 		}
@@ -5612,7 +5610,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (CountInv("BalrogRing", AAPTR_PLAYER1) > 0) HellCoreRuinousDropChance += 8;
 			if (CountInv("RuinousShield", AAPTR_PLAYER1) > 0) HellCoreRuinousDropChance *= 3; // Ruinous Shield triples drop rate
 			if (CallACS("DVDSSpecialArrayCheckDECORATE",3) > 0) HellCoreRuinousDropChance *= 4; // Playing Unloved sets this to drop 4x as often
-			If (user_legendaryevolved > 0 || CountInv("LDLegendaryMonsterTransformed")) HellCoreRuinousDropChance *= 4; // Being a Legendary quadruples drop rate.
+			If (user_legendaryevolved) HellCoreRuinousDropChance *= 4; // Being a Legendary quadruples drop rate.
 			if (CharacterClass != 2) HellCoreRuinousDropChance = 0;
 			if (debugexp) Console.Printf("\cxAddEXP\c- - HellCoreRuinousDropChance [first]: %d / 1024", HellCoreRuinousDropChance);
 			// Monster Unique Drop Rates [Hellcore weapons]
@@ -5715,7 +5713,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (fakedeath == 0) 
 			{
 				int maxarmordrops = 1;
-				if (CountInv("LDLegendaryMonsterTransformed")) maxarmordrops += 2;
+				if (user_legendaryevolved) maxarmordrops += 2;
 				for (int i = 0; i < maxarmordrops; i++)
 				{
 					A_DropItem("FloraRandomArmor",1,(256 * dvds_flora_armordropkcmnfactor));
@@ -6331,7 +6329,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						}
 					
 						// "Legendary" Check
-						if (CountInv("LDLegendaryMonsterTransformed")) { EXPTimerIncrease *= 2.5; ComboTimerDelayIncrease *= 2.5; }
+						if (user_legendaryevolved) { EXPTimerIncrease *= 2.5; ComboTimerDelayIncrease *= 2.5; }
 						// BOSS Flag Check
 						if (bBOSS) { EXPTimerIncrease *= 1.5; ComboTimerDelayIncrease *= 1.5; }
 						// STEALTH Flag Check
@@ -6465,7 +6463,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 				
 				// If LEGENDARY [LDL Compatiblity]
-				If (user_legendaryevolved > 0 || CountInv("LDLegendaryMonsterTransformed"))
+				If (user_legendaryevolved)
 				{
 					finalexpamount *= 1.75;
 					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP: %d [\cxIs a 'Legendary' Monster? (LDL) (1.75x)\c-]", finalexpamount);
@@ -6619,6 +6617,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvds_expcombosystem == 1 && incrementcombo == 1) CallACS("MiscVarSetDECORATE",160,finalexpamount,1);
 			}
 		}
+		user_legendaryevolved = 0;
 	}
 
 	// Stealth Calculations
@@ -9121,7 +9120,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		int splittype = 0; // 0;
 		int splittype2 = 0; // 0;
-		if (CountInv("LDLegendaryMonsterTransformed")) minchance *= frandompick(1.25,1.5,1.75,2.0);
+		if (user_legendaryevolved) minchance *= frandompick(1.25,1.5,1.75,2.0);
 
 		int RandRoll = random(1,1024);
 		if (levelbehavior > 0)
@@ -9207,7 +9206,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	
 	void A_ActorShadowSplit(int minlevel = 60, int minchance = 256)
 	{
-		if (CountInv("LDLegendaryMonsterTransformed")) minchance *= frandompick(1.25,1.5,1.75,2.0);
+		if (user_legendaryevolved) minchance *= frandompick(1.25,1.5,1.75,2.0);
 
 		int splittype = 0; // 0;
 		int splittype2 = 0; // 0;
