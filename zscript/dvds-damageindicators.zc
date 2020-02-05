@@ -1,0 +1,133 @@
+class DamageIndicators : StaticEventHandler
+{
+	override void WorldThingDamaged(WorldEvent e)
+	{
+		if (self.ShouldSpawn(e.Thing) && e.DamageType != 'Massacre')
+		{
+			// Since WorldThingDamaged is (oddly) called after the actor's officially dead,
+			// we need to account for the case where the actor's height has been quartered.
+			double targetHeight = (e.Thing.health > 0) ? e.Thing.height : (e.Thing.height * 4);
+			Vector3 spawnPos = e.Thing.pos + (0, 0, targetHeight-16);
+			//DamNum.spawnDamageNumbers(spawnPos, e.Damage, e.DamageType);
+
+			//Console.Printf("%d", e.Thing.health);
+		}
+	}
+
+	/*
+	 * Create a DamageTracker when an actor spawns or is revived. - Xaser
+	 */
+	override void WorldThingSpawned(WorldEvent e)
+	{
+		if (self.ShouldSpawn(e.Thing))
+		{
+			DamageTracker.Create(e.thing);
+		}
+	}
+	override void WorldThingRevived(WorldEvent e)
+	{
+		if (self.ShouldSpawn(e.Thing))
+		{
+			DamageTracker.Create(e.thing);
+		}
+	}
+
+
+	/*
+	 * Determine if we should spawn/track a particular thing. - Xaser
+	 */
+	bool ShouldSpawn(Actor thing) 
+	{
+		return thing && (thing.bIsMonster || (dam_shootable && thing.bShootable));
+	}
+}
+
+class DamageTracker : Inventory
+{
+	int currentHealth;
+
+	/*
+	 * Create & set up Tracker for the specified actor. - Xaser
+	 *
+	 * TODO: remove this function if it turns out it isn't needed. - Xaser
+	 */
+	static void Create(Actor thing)
+	{
+		if (thing) 
+		{
+			thing.GiveInventoryType('DamageTracker');
+		}
+	}
+
+	/*
+	 * Initialize the tracker just before its first tic.
+	 */
+	override void PostBeginPlay()
+	{
+		// Don't spawn a tracker if the tracked thing is gone or already dead.
+		// This stops numbers from spawning for PE-spawned Lost Souls that die
+		// instantly due to being in a wall. Was amusing, but unintentional. :P - Xaser
+		if (!self.owner || self.owner.health < 1) 
+		{
+			self.Destroy();
+		}
+
+		self.currentHealth = self.owner.health;
+
+		Super.PostBeginPlay();
+	}
+	
+
+	/*
+	 * Track damage and spawn stuff while the actor is alive.
+	 */
+	override void Tick()
+	{
+		if (self.owner) 
+		{
+			if (self.owner.health != self.currentHealth) 
+			{
+				self.SpawnNumbers();
+				self.currentHealth = self.owner.health;
+			}
+		} 
+		else 
+		{
+			// clean up after oneself just in case an actor gets
+			// Thing_Remove'd or similar.
+			self.Destroy();
+		}
+		Super.Tick();
+	}
+	
+
+	/*
+	 * Upon owner death, spawn the last round of numbers. This is necessary to
+	 * cover the case where an actor is removed immediately upon death. 
+	 */
+	override void OwnerDied()
+	{
+		self.SpawnNumbers();
+		self.owner.RemoveInventory(self);
+	}
+	
+
+	/*
+	 * Do the actual number spawn. There's a bit of calculation and checking
+	 * that's common to all Tracker spawns, so it's done here for convenience.
+	 */
+	void SpawnNumbers()
+	{
+		if (self.owner && self.owner.DamageTypeReceived != 'Massacre')
+		{
+			Vector3 position = self.owner.pos + (0, 0, self.owner.height - 16);
+			int totalDamage = self.currentHealth - self.owner.health;
+
+			// don't show negative damage (healing) for now. May change later as a feature addition.
+			if (totalDamage > 0) 
+			{
+				//DamNum.spawnDamageNumbers(position, totalDamage, self.owner.DamageTypeReceived);
+			}
+		}
+	}
+}
