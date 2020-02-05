@@ -1,19 +1,5 @@
 class DamageIndicators : StaticEventHandler
 {
-	override void WorldThingDamaged(WorldEvent e)
-	{
-		if (self.ShouldSpawn(e.Thing) && e.DamageType != 'Massacre')
-		{
-			// Since WorldThingDamaged is (oddly) called after the actor's officially dead,
-			// we need to account for the case where the actor's height has been quartered.
-			double targetHeight = (e.Thing.health > 0) ? e.Thing.height : (e.Thing.height * 4);
-			Vector3 spawnPos = e.Thing.pos + (0, 0, targetHeight-16);
-			//DamNum.spawnDamageNumbers(spawnPos, e.Damage, e.DamageType);
-
-			//Console.Printf("%d", e.Thing.health);
-		}
-	}
-
 	/*
 	 * Create a DamageTracker when an actor spawns or is revived. - Xaser
 	 */
@@ -31,14 +17,19 @@ class DamageIndicators : StaticEventHandler
 			DamageTracker.Create(e.thing);
 		}
 	}
-
-
+	
 	/*
 	 * Determine if we should spawn/track a particular thing. - Xaser
 	 */
 	bool ShouldSpawn(Actor thing) 
 	{
-		return thing && (thing.bIsMonster || (dam_shootable && thing.bShootable));
+		AetheriusMonsterZSC type;
+		if (thing)
+		{
+			type = AetheriusMonsterZSC(thing);
+			if (type) return true;
+		}
+		return false;
 	}
 }
 
@@ -85,7 +76,7 @@ class DamageTracker : Inventory
 	{
 		if (self.owner) 
 		{
-			if (self.owner.health != self.currentHealth) 
+			if (A_DmgIndNew && self.owner.health != self.currentHealth) 
 			{
 				self.SpawnNumbers();
 				self.currentHealth = self.owner.health;
@@ -116,17 +107,300 @@ class DamageTracker : Inventory
 	 * Do the actual number spawn. There's a bit of calculation and checking
 	 * that's common to all Tracker spawns, so it's done here for convenience.
 	 */
+	int pow (int x, int n)
+	{
+		int y = 1;
+		while (n-- > 0) y *= x;
+		return y;
+	}
+
+	int GetDigit(int Num, int Digit) 
+	{
+		return (Num / pow(10, Digit)) % 10 ;
+	}
+
 	void SpawnNumbers()
 	{
-		if (self.owner && self.owner.DamageTypeReceived != 'Massacre')
+		if (A_DmgIndNew && self.owner && self.owner.DamageTypeReceived != 'Massacre')
 		{
-			Vector3 position = self.owner.pos + (0, 0, self.owner.height - 16);
+			double targetX = frandom((self.owner.radius/2),-(self.owner.radius/2));
+			double targetY = frandom((self.owner.radius/2),-(self.owner.radius/2));
+			double targetHeight = self.owner.height - frandom(-4.0,4.0);
+			Vector3 position = self.owner.pos + (targetX, targetY, targetHeight);
 			int totalDamage = self.currentHealth - self.owner.health;
+			double xvel, yvel, zvel;
+			double veltest;
+			int Digit1;
+			int Digit2;
+			int Digit3;
+			int Digit4;
+			int Digit5;
+			int Digit6;
+			int Digit7;
+			
+			int PlayerCrit = 0;
+			if (self.owner.CountInv("TookCriticalHit") > 0) 
+			{ 
+				self.owner.A_TakeInventory("TookCriticalHit",0x7FFFFFFF); 
+				PlayerCrit = 1; 
+			}
 
-			// don't show negative damage (healing) for now. May change later as a feature addition.
-			if (totalDamage > 0) 
+			if (totalDamage != 0) 
 			{
-				//DamNum.spawnDamageNumbers(position, totalDamage, self.owner.DamageTypeReceived);
+				int DmgIndDisplayValue = totalDamage;
+
+				int DmgIndDisplayType = 0; // 0 = Damage, 1 = Healing.
+				If (DmgIndDisplayValue < 0)
+				{
+					DmgIndDisplayValue *= -1;
+					DmgIndDisplayType = 1;
+				}
+				
+				if (DmgIndDisplayValue > 9999999) DmgIndDisplayValue = 9999999;
+				
+				If (DmgIndDisplayValue > 0)
+				{
+					Digit1 = GetDigit(DmgIndDisplayValue, 0);
+					Digit2 = GetDigit(DmgIndDisplayValue, 1);
+					Digit3 = GetDigit(DmgIndDisplayValue, 2);
+					Digit4 = GetDigit(DmgIndDisplayValue, 3);
+					Digit5 = GetDigit(DmgIndDisplayValue, 4);
+					Digit6 = GetDigit(DmgIndDisplayValue, 5);
+					Digit7 = GetDigit(DmgIndDisplayValue, 6);
+					
+					targetX = frandom((self.owner.radius/2),-(self.owner.radius/2));
+					targetY = frandom((self.owner.radius/2),-(self.owner.radius/2));
+					targetHeight = self.owner.height - frandom(-4.0,4.0);
+					position = self.owner.pos + (targetX, targetY, targetHeight);
+					//Console.Printf("%d%d%d%d%d%d%d", Digit7, Digit6, Digit5, Digit4, Digit3, Digit2, Digit1);
+				}
+				
+				int NumberID = Random(7000, 8000);
+				int NumberID2 = NumberID + 1;
+				
+				string DigitSpawn = "";
+				if (DmgIndDisplayType == 1) // Healing
+				{
+					if (DmgIndDisplayValue >= 0) DigitSpawn = "HealBurst1";
+					if (DmgIndDisplayValue >= 10) DigitSpawn = "HealBurst2";
+					if (DmgIndDisplayValue >= 100) DigitSpawn = "HealBurst3";
+					if (DmgIndDisplayValue >= 1000) DigitSpawn = "HealBurst4";
+					if (DmgIndDisplayValue >= 10000) DigitSpawn = "HealBurst5";
+					if (DmgIndDisplayValue >= 100000) DigitSpawn = "HealBurst6";
+					if (DmgIndDisplayValue >= 1000000) DigitSpawn = "HealBurst7";
+				}
+				else // Damage
+				{
+					if (PlayerCrit > 0)
+					{
+						if (DmgIndDisplayValue >= 0) DigitSpawn = "DamageBurstCritical1";
+						if (DmgIndDisplayValue >= 10) DigitSpawn = "DamageBurstCritical2";
+						if (DmgIndDisplayValue >= 100) DigitSpawn = "DamageBurstCritical3";
+						if (DmgIndDisplayValue >= 1000) DigitSpawn = "DamageBurstCritical4";
+						if (DmgIndDisplayValue >= 10000) DigitSpawn = "DamageBurstCritical5";
+						if (DmgIndDisplayValue >= 100000) DigitSpawn = "DamageBurstCritical6";
+						if (DmgIndDisplayValue >= 1000000) DigitSpawn = "DamageBurstCritical7";
+					}
+					else
+					{
+						if (DmgIndDisplayValue >= 0) DigitSpawn = "DamageBurst1";
+						if (DmgIndDisplayValue >= 10) DigitSpawn = "DamageBurst2";
+						if (DmgIndDisplayValue >= 100) DigitSpawn = "DamageBurst3";
+						if (DmgIndDisplayValue >= 1000) DigitSpawn = "DamageBurst4";
+						if (DmgIndDisplayValue >= 10000) DigitSpawn = "DamageBurst5";
+						if (DmgIndDisplayValue >= 100000) DigitSpawn = "DamageBurst6";
+						if (DmgIndDisplayValue >= 1000000) DigitSpawn = "DamageBurst7";
+					}
+				}
+
+				veltest = dvds_dmgind_burstvelsxy;
+				xvel = frandom(-veltest,veltest); 
+				yvel = frandom(-veltest,veltest); 
+				veltest = dvds_dmgind_burstvelszbase;
+				zvel = frandom((veltest/2),veltest); // Healing cannot be critical'd
+				if (PlayerCrit > 0 && DmgIndDisplayType == 0)
+				{
+					owner.A_StartSound("player/criticalhit", 256, CHANF_DEFAULT, 1.0, ATTN_NONE, 1.0);
+					if (DmgIndDisplayType != 1) { xvel /= 2; yvel /= 2; zvel *= -1; }
+				}
+				if (random(1,4) == 1) xvel /= 2;
+				if (random(1,4) == 1) yvel /= 2;
+				if (random(1,4) == 1) zvel /= 2;
+				vector3 nvel = (xvel, yvel, zvel);
+
+				let damindspawn = Spawn(DigitSpawn, position, ALLOW_REPLACE);
+				if (damindspawn)
+				{
+					damindspawn.vel = nvel;
+					damindspawn.ChangeTID(NumberID);
+					damindspawn.angle = 0;
+				}
+				
+				// Digit ######1
+				if (DmgIndDisplayType == 1) 
+				{
+					DigitSpawn = "HealDigit1Num"; // Healing
+				}
+				else // Damage
+				{ 
+					if (PlayerCrit > 0)  DigitSpawn = "DigitCritical1Num"; 
+					else DigitSpawn = "DmgDigit1Num"; 
+				}
+				if (DmgIndDisplayValue >= 0) 
+				{
+					DigitSpawn = (DigitSpawn..""..Digit1);
+					//Console.Printf("%s", DigitSpawn);
+					let damindspawn1 = Spawn(DigitSpawn, position, ALLOW_REPLACE);
+					if (damindspawn1)
+					{
+						damindspawn1.vel = nvel;
+						damindspawn1.ChangeTID(NumberID2);
+						damindspawn1.angle = 0;
+					}
+				}
+				
+				// Digit #####2#
+				if (DmgIndDisplayType == 1) 
+				{
+					DigitSpawn = "HealDigit2Num"; // Healing
+				}
+				else // Damage
+				{ 
+					if (PlayerCrit > 0)  DigitSpawn = "DigitCritical2Num"; 
+					else DigitSpawn = "DmgDigit2Num"; 
+				}
+				if (DmgIndDisplayValue >= 10) 
+				{
+					DigitSpawn = (DigitSpawn..""..Digit2);
+					//Console.Printf("%s", DigitSpawn);
+					let damindspawn2 = Spawn(DigitSpawn, position, ALLOW_REPLACE);
+					if (damindspawn2)
+					{
+						damindspawn2.vel = nvel;
+						damindspawn2.ChangeTID(NumberID2);
+						damindspawn2.angle = 0;
+					}
+				}
+				
+				// Digit ####3##
+				if (DmgIndDisplayType == 1) 
+				{
+					DigitSpawn = "HealDigit3Num"; // Healing
+				}
+				else // Damage
+				{ 
+					if (PlayerCrit > 0)  DigitSpawn = "DigitCritical3Num"; 
+					else DigitSpawn = "DmgDigit3Num"; 
+				}
+				if (DmgIndDisplayValue >= 100) 
+				{
+					DigitSpawn = (DigitSpawn..""..Digit3);
+					//Console.Printf("%s", DigitSpawn);
+					let damindspawn3 = Spawn(DigitSpawn, position, ALLOW_REPLACE);
+					if (damindspawn3)
+					{
+						damindspawn3.vel = nvel;
+						damindspawn3.ChangeTID(NumberID2);
+						damindspawn3.angle = 0;
+					}
+				}
+				
+				// Digit ###4###
+				if (DmgIndDisplayType == 1) 
+				{
+					DigitSpawn = "HealDigit4Num"; // Healing
+				}
+				else // Damage
+				{ 
+					if (PlayerCrit > 0)  DigitSpawn = "DigitCritical4Num"; 
+					else DigitSpawn = "DmgDigit4Num"; 
+				}
+				if (DmgIndDisplayValue >= 1000) 
+				{
+					DigitSpawn = (DigitSpawn..""..Digit4);
+					//Console.Printf("%s", DigitSpawn);
+					let damindspawn4 = Spawn(DigitSpawn, position, ALLOW_REPLACE);
+					if (damindspawn4)
+					{
+						damindspawn4.vel = nvel;
+						damindspawn4.ChangeTID(NumberID2);
+						damindspawn4.angle = 0;
+					}
+				}
+				
+				// Digit ##5####
+				if (DmgIndDisplayType == 1) 
+				{
+					DigitSpawn = "HealDigit5Num"; // Healing
+				}
+				else // Damage
+				{ 
+					if (PlayerCrit > 0)  DigitSpawn = "DigitCritical5Num"; 
+					else DigitSpawn = "DmgDigit5Num"; 
+				}
+				if (DmgIndDisplayValue >= 10000) 
+				{
+					DigitSpawn = (DigitSpawn..""..Digit5);
+					//Console.Printf("%s", DigitSpawn);
+					let damindspawn5 = Spawn(DigitSpawn, position, ALLOW_REPLACE);
+					if (damindspawn5)
+					{
+						damindspawn5.vel = nvel;
+						damindspawn5.ChangeTID(NumberID2);
+						damindspawn5.angle = 0;
+					}
+				}
+				
+				// Digit #6#####
+				if (DmgIndDisplayType == 1) 
+				{
+					DigitSpawn = "HealDigit6Num"; // Healing
+				}
+				else // Damage
+				{ 
+					if (PlayerCrit > 0)  DigitSpawn = "DigitCritical6Num"; 
+					else DigitSpawn = "DmgDigit6Num"; 
+				}
+				if (DmgIndDisplayValue >= 100000) 
+				{
+					DigitSpawn = (DigitSpawn..""..Digit6);
+					//Console.Printf("%s", DigitSpawn);
+					let damindspawn6 = Spawn(DigitSpawn, position, ALLOW_REPLACE);
+					if (damindspawn6)
+					{
+						damindspawn6.vel = nvel;
+						damindspawn6.ChangeTID(NumberID2);
+						damindspawn6.angle = 0;
+					}
+				}
+				
+				// Digit 7######
+				if (DmgIndDisplayType == 1) 
+				{
+					DigitSpawn = "HealDigit7Num"; // Healing
+				}
+				else // Damage
+				{ 
+					if (PlayerCrit > 0)  DigitSpawn = "DigitCritical7Num"; 
+					else DigitSpawn = "DmgDigit7Num"; 
+				}
+				if (DmgIndDisplayValue >= 1000000) 
+				{
+					DigitSpawn = (DigitSpawn..""..Digit7);
+					//Console.Printf("%s", DigitSpawn);
+					let damindspawn7 = Spawn(DigitSpawn, position, ALLOW_REPLACE);
+					if (damindspawn7)
+					{
+						damindspawn7.vel = nvel;
+						damindspawn7.ChangeTID(NumberID2);
+						damindspawn7.angle = 0;
+					}
+				}
+
+			}
+			else
+			{
+				if (self.owner.CountInv("TookCriticalHit")) { self.owner.A_SetInventory("TookCriticalHit",0); PlayerCrit = 0; }
 			}
 		}
 	}
