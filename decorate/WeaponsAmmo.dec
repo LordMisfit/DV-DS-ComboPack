@@ -2512,9 +2512,11 @@ actor FistFlora : FloraWeapon
 		Fire:
 			TNT1 A 0 
 			{
-				if (A_UseStaminaAttack(A_GetPunchStaminaUse(0),2) == 0) { return state("Ready"); }
+				if (A_UseStaminaAttack(A_GetPunchStaminaUse(0),2) == 1) { return state("PunchSuccess"); }
 				return state("");
 			}
+			goto Ready
+		PunchSuccess:
 			TNT1 A 0
 			{
 				A_SetMartialArtsMastery(1);
@@ -2790,7 +2792,7 @@ actor FistFlora : FloraWeapon
 			}
 			goto Ready
 
-		User1: // Kick - Flora Punch version
+		User1:
 			TNT1 A 0 
 			{
 				A_Overlay(-2,"Kick",true);
@@ -2802,7 +2804,7 @@ actor FistFlora : FloraWeapon
 				if (A_UseStaminaAttack(A_GetKickStaminaUse(0),2) == 0)
 				{
 					if (CountInv("FistPlayerBlockHold",AAPTR_PLAYER1) > 0) { return state("User4Hold"); } 
-					return state("Ready"); 
+					return state("KickEnd"); 
 				}
 				return state(""); 
 			}
@@ -12739,53 +12741,210 @@ ACTOR EvilWarriorShield : KDIZDWeapon 25221
 			EWSH I -1
 			Stop
 
-		User1: // Kick - Hell Warrior version
-			TNT1 A 0 
-			{
-				A_Overlay(-2,"Kick",true);
-
-				if (CallACS("CheckCharacterClass") != 2) 
-				{
-					if (CountInv("HWShieldBlockHold",AAPTR_PLAYER1) > 0) 
-					{ 
-						if (CallACS("CheckCharacterClass") == 0) { return state("AltHold1"); }
-						if (CallACS("CheckCharacterClass") == 1) { return state("AltHold2"); }
-						return state("Ready"); 
-					}
-					else
-					{
-						return state("Ready"); 
-					}
-					return state("Ready");
-				}
-				if (CountInv("HWShieldBlockHold",AAPTR_PLAYER1) > 0) { return state("AltHold3"); }
-				return state("Ready");
-			}
 		Kick:
 			TNT1 A 0
 			{
-				if (CallACS("CheckCharacterClass") != 2) 
-				{
-					if (CountInv("HWShieldBlockHold",AAPTR_PLAYER1) > 0) 
-					{ 
-						return state("KickEnd"); 
-					}
-					else
-					{
-						return state("KickEnd"); 
-					}
-				}
-				if (A_UseStaminaAttack(A_GetKickStaminaUse(0),2) == 0)
-				{
-					return state("KickEnd"); 
-				}
+				if (A_UseStaminaAttack(A_GetKickStaminaUse(0),2) == 0) { return state("KickEnd"); }
 				return state(""); 
 			}
 			TNT1 A 0
 			{
 				A_QMWKickInit;
+				if (CallACS("CheckCharacterClass") != 2) { return state("KickStart2"); }
+				return state(""); 
 			}
 			goto KickStart
+		KickStart2: // 19/13 (Deg/Illu) Tics, 13/7 (-6) [MAMlv3], 12/6 (-1) [MAMlv5]
+			LEG2 A 2 
+			{
+				if (CallACS("CheckCharacterClass") == 1) 
+				{
+					if (CallACS("MiscVarCheckDECORATE",10051) >= 3) 
+					{ 
+						A_SetTics(0); 
+					} 
+					else 
+					{
+						A_SetTics(1); 
+					}
+				}
+				else
+				{
+					if (CallACS("MiscVarCheckDECORATE",10051) >= 3) 
+					{ 
+						A_SetTics(1); 
+					}
+				}
+			}
+			LEG2 B 2
+			{
+				if (CallACS("MiscVarCheckDECORATE",10051) >= 3) 
+				{ 
+					A_SetTics(1); 
+				}
+				else
+				{
+					if (A_WeaponCheckDoubleFireRate > 0)
+					{
+						A_SetTics(0); 
+					}
+				}
+				if (CallACS("MiscVarCheckDECORATE",10051) >= 3) { A_PlaySound("fistswingheavy0",1); } else { A_PlaySound("fistswingmedium0",1); }
+			}
+			LEG2 C 1
+			{
+				if (random(1,256) >= 128) 
+				{
+					if (CallACS("CheckCharacterClass") == 0) { A_PlaySound("*grunt",CHAN_VOICE,10.0); }
+					if (CallACS("CheckCharacterClass") == 1) { A_PlaySound("GauntletIlluciaSwing",CHAN_VOICE,10.0); }
+				}
+			}
+			LEG2 D 1
+			{
+				if (A_WeaponCheckDoubleFireRate > 0)
+				{
+					A_SetTics(0); 
+				}
+			}
+			LEG2 E 2 
+			{
+				if (CallACS("CheckCharacterClass") == 1) 
+				{
+					if (CallACS("MiscVarCheckDECORATE",10051) >= 3) 
+					{ 
+						A_SetTics(0); 
+					} 
+					else 
+					{
+						A_SetTics(1); 
+						if (A_WeaponCheckDoubleFireRate > 0)
+						{
+							A_SetTics(0); 
+						}
+					}
+				}
+				else
+				{
+					if (CallACS("MiscVarCheckDECORATE",10051) >= 3) 
+					{ 
+						A_SetTics(1); 
+					}
+					else 
+					{
+						if (A_WeaponCheckDoubleFireRate > 0)
+						{
+							A_SetTics(0); 
+						}
+					}
+				}
+				A_GetKickSwingRecoil(0);
+				A_SpreadAuraCustomPunch(A_GetKickDamage(0),1,CPF_NOTURN,"KickPuff",A_GetMeleeRange(4),0,0,"","","");
+	
+				if (A_CheckMeleeDestroyProj(1) > 0)
+				{
+					if (random(1,8) <= 1)
+					{
+						A_SetInventory("ActorVar1",28);
+						if (CallACS("CheckCharacterClass") == 1) { A_SetInventory("ActorVar1",26); }
+
+						A_MeleeShieldPiece("ShieldPartPunchAttackReflect",CountInv("ActorVar1"),24);
+						A_MeleeShieldPiece("ShieldPartPunchAttackReflect",CountInv("ActorVar1"),56);
+						A_MeleeShieldPiece("ShieldPartPunchAttackReflect",CountInv("ActorVar1"),88);
+					}
+					else
+					{
+						A_SetInventory("ActorVar1",28);
+						if (CallACS("CheckCharacterClass") == 1) { A_SetInventory("ActorVar1",26); }
+
+						A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",CountInv("ActorVar1"),24);
+						A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",CountInv("ActorVar1"),56);
+						A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",CountInv("ActorVar1"),88);
+					}
+				}
+			}
+			LEG2 F 5 
+			{
+				if (CallACS("CheckCharacterClass") == 1) 
+				{
+					if (CallACS("MiscVarCheckDECORATE",10051) >= 3) 
+					{ 
+						A_SetTics(2); 
+					} 
+					else 
+					{ 
+						A_SetTics(3); 
+					}
+				}
+				else
+				{
+					if (CallACS("MiscVarCheckDECORATE",10051) >= 3) 
+					{ 
+						A_SetTics(3); 
+					}
+				}
+			}
+			LEG2 E 2 
+			{
+				if (CallACS("CheckCharacterClass") == 1) 
+				{
+					if (CallACS("MiscVarCheckDECORATE",10051) >= 3) 
+					{ 
+						A_SetTics(0); 
+					} 
+					else 
+					{
+						A_SetTics(1); 
+						if (A_WeaponCheckDoubleFireRate > 0)
+						{
+							A_SetTics(0); 
+						}
+					}
+				}
+				else
+				{
+					if (CallACS("MiscVarCheckDECORATE",10051) >= 3) 
+					{ 
+						A_SetTics(1); 
+					}
+					else 
+					{
+						if (A_WeaponCheckDoubleFireRate > 0)
+						{
+							A_SetTics(0); 
+						}
+					}
+				}
+			}
+			LEG2 D 1 
+			{ 
+				if (CallACS("MiscVarCheckDECORATE",10051) >= 3) 
+				{ 
+					A_SetTics(0); 
+				} 
+				else
+				{
+					if (A_WeaponCheckDoubleFireRate > 0)
+					{
+						A_SetTics(0); 
+					}
+				}
+			}
+			LEG2 C 1 
+			{ 
+				if (CallACS("CheckCharacterClass") == 1) { A_SetTics(0); } 
+			}
+			LEG2 B 1
+			{
+				if (A_WeaponCheckDoubleFireRate > 0)
+				{
+					A_SetTics(0); 
+				}
+			}
+			LEG2 A 1 
+			{ 
+				if (CallACS("MiscVarCheckDECORATE",10051) >= 5) { A_SetTics(0); } 
+			}
+			LEG2 A 0 { return state("KickEnd"); }
 		KickEnd:
 			TNT1 A 0
 			{
@@ -13448,10 +13607,7 @@ actor PoisonNeedle : FloraWeapon 31253
 		Kick:
 			TNT1 A 0
 			{
-				if (A_UseStaminaAttack(A_GetKickStaminaUse(0),2) == 0)
-				{
-					return state("KickEnd"); 
-				}
+				if (A_UseStaminaAttack(A_GetKickStaminaUse(0),2) == 0) { return state("KickEnd"); }
 				return state(""); 
 			}
 			TNT1 A 0

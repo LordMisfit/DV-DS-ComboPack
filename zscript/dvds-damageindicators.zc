@@ -70,9 +70,10 @@ class DamageTracker : Inventory
 		if (!self.owner || self.owner.health < 1) 
 		{
 			self.Destroy();
+			return;
 		}
 
-		self.currentHealth = self.owner.health;
+		if (self && self.owner) self.currentHealth = self.owner.health;
 
 		Super.PostBeginPlay();
 	}
@@ -175,6 +176,18 @@ class DamageTracker : Inventory
 				self.owner.A_TakeInventory("TookCriticalHit",0x7FFFFFFF); 
 				PlayerCrit = 1; 
 			}
+			int HitWeakness = 0;
+			if (self.owner.CountInv("TookWeaknessHit") > 0) 
+			{ 
+				self.owner.A_TakeInventory("TookWeaknessHit",0x7FFFFFFF); 
+				HitWeakness = 1; 
+			}
+			int HitResistance = 0;
+			if (self.owner.CountInv("TookResistanceHit") > 0) 
+			{ 
+				self.owner.A_TakeInventory("TookResistanceHit",0x7FFFFFFF); 
+				HitResistance = 1; 
+			}
 
 			if (totalDamage != 0) 
 			{
@@ -234,13 +247,26 @@ class DamageTracker : Inventory
 					}
 					else
 					{
-						if (DmgIndDisplayValue >= 0) DigitSpawn = "DamageBurst1";
-						if (DmgIndDisplayValue >= 10) DigitSpawn = "DamageBurst2";
-						if (DmgIndDisplayValue >= 100) DigitSpawn = "DamageBurst3";
-						if (DmgIndDisplayValue >= 1000) DigitSpawn = "DamageBurst4";
-						if (DmgIndDisplayValue >= 10000) DigitSpawn = "DamageBurst5";
-						if (DmgIndDisplayValue >= 100000) DigitSpawn = "DamageBurst6";
-						if (DmgIndDisplayValue >= 1000000) DigitSpawn = "DamageBurst7";
+						if (HitWeakness > 0)
+						{
+							if (DmgIndDisplayValue >= 0) DigitSpawn = "DamageBurstWeak1";
+							if (DmgIndDisplayValue >= 10) DigitSpawn = "DamageBurstWeak2";
+							if (DmgIndDisplayValue >= 100) DigitSpawn = "DamageBurstWeak3";
+							if (DmgIndDisplayValue >= 1000) DigitSpawn = "DamageBurstWeak4";
+							if (DmgIndDisplayValue >= 10000) DigitSpawn = "DamageBurstWeak5";
+							if (DmgIndDisplayValue >= 100000) DigitSpawn = "DamageBurstWeak6";
+							if (DmgIndDisplayValue >= 1000000) DigitSpawn = "DamageBurstWeak7";
+						}
+						else
+						{
+							if (DmgIndDisplayValue >= 0) DigitSpawn = "DamageBurst1";
+							if (DmgIndDisplayValue >= 10) DigitSpawn = "DamageBurst2";
+							if (DmgIndDisplayValue >= 100) DigitSpawn = "DamageBurst3";
+							if (DmgIndDisplayValue >= 1000) DigitSpawn = "DamageBurst4";
+							if (DmgIndDisplayValue >= 10000) DigitSpawn = "DamageBurst5";
+							if (DmgIndDisplayValue >= 100000) DigitSpawn = "DamageBurst6";
+							if (DmgIndDisplayValue >= 1000000) DigitSpawn = "DamageBurst7";
+						}
 					}
 				}
 
@@ -252,11 +278,15 @@ class DamageTracker : Inventory
 				if (PlayerCrit > 0 && DmgIndDisplayType == 0)
 				{
 					owner.A_StartSound("player/criticalhit", 256, CHANF_DEFAULT, 1.0, ATTN_NONE, 1.0);
-					if (DmgIndDisplayType != 1) { xvel /= 2; yvel /= 2; zvel *= -1; }
+					if (DmgIndDisplayType != 1) { xvel *= 0.5; yvel *= 0.5; zvel *= -1.0; }
 				}
-				if (random(1,4) == 1) xvel /= 2;
-				if (random(1,4) == 1) yvel /= 2;
-				if (random(1,4) == 1) zvel /= 2;
+				if (HitWeakness > 0)
+				{
+					if (DmgIndDisplayType != 1) { xvel *= 0.75; yvel *= 0.75; zvel *= 0.75; }
+				}
+				if (random(1,4) == 1) xvel *= frandompick(0.5,2.0);
+				if (random(1,4) == 1) yvel *= frandompick(0.5,2.0);
+				if (random(1,4) == 1) zvel *= frandompick(0.5,2.0);
 				vector3 nvel = (xvel, yvel, zvel);
 
 				let damindspawn = Spawn(DigitSpawn, position, ALLOW_REPLACE);
@@ -265,6 +295,13 @@ class DamageTracker : Inventory
 					damindspawn.vel = nvel;
 					damindspawn.ChangeTID(NumberID);
 					damindspawn.angle = 0;
+					if (!PlayerCrit && HitResistance > 0)
+					{
+						damindspawn.scale.x = 0.25;
+						damindspawn.scale.y = 0.25;
+						damindspawn.gravity = 0.334;
+						damindspawn.stamina = 1;
+					}
 				}
 				
 				// Digit ######1
@@ -274,7 +311,7 @@ class DamageTracker : Inventory
 				}
 				else // Damage
 				{ 
-					if (PlayerCrit > 0)  DigitSpawn = "DigitCritical1Num"; 
+					if (PlayerCrit > 0) DigitSpawn = "DigitCritical1Num"; 
 					else DigitSpawn = "DmgDigit1Num"; 
 				}
 				if (DmgIndDisplayValue >= 0) 
@@ -287,6 +324,19 @@ class DamageTracker : Inventory
 						damindspawn1.vel = nvel;
 						damindspawn1.ChangeTID(NumberID2);
 						damindspawn1.angle = 0;
+						if (!PlayerCrit && HitWeakness)
+						{
+							damindspawn1.scale.x = 0.875;
+							damindspawn1.scale.y = 0.875;
+							damindspawn1.gravity = 0.625;
+						}
+						if (!PlayerCrit && HitResistance > 0)
+						{
+							damindspawn1.scale.x = 0.5;
+							damindspawn1.scale.y = 0.5;
+							damindspawn1.gravity = 0.334;
+							damindspawn1.stamina = 1;
+						}
 					}
 				}
 				
@@ -310,6 +360,19 @@ class DamageTracker : Inventory
 						damindspawn2.vel = nvel;
 						damindspawn2.ChangeTID(NumberID2);
 						damindspawn2.angle = 0;
+						if (!PlayerCrit && HitWeakness)
+						{
+							damindspawn2.scale.x = 0.875;
+							damindspawn2.scale.y = 0.875;
+							damindspawn2.gravity = 0.625;
+						}
+						if (!PlayerCrit && HitResistance > 0)
+						{
+							damindspawn2.scale.x = 0.5;
+							damindspawn2.scale.y = 0.5;
+							damindspawn2.gravity = 0.334;
+							damindspawn2.stamina = 1;
+						}
 					}
 				}
 				
@@ -333,6 +396,19 @@ class DamageTracker : Inventory
 						damindspawn3.vel = nvel;
 						damindspawn3.ChangeTID(NumberID2);
 						damindspawn3.angle = 0;
+						if (!PlayerCrit && HitWeakness)
+						{
+							damindspawn3.scale.x = 0.875;
+							damindspawn3.scale.y = 0.875;
+							damindspawn3.gravity = 0.625;
+						}
+						if (!PlayerCrit && HitResistance > 0)
+						{
+							damindspawn3.scale.x = 0.5;
+							damindspawn3.scale.y = 0.5;
+							damindspawn3.gravity = 0.334;
+							damindspawn3.stamina = 1;
+						}
 					}
 				}
 				
@@ -356,6 +432,19 @@ class DamageTracker : Inventory
 						damindspawn4.vel = nvel;
 						damindspawn4.ChangeTID(NumberID2);
 						damindspawn4.angle = 0;
+						if (!PlayerCrit && HitWeakness)
+						{
+							damindspawn4.scale.x = 0.875;
+							damindspawn4.scale.y = 0.875;
+							damindspawn4.gravity = 0.625;
+						}
+						if (!PlayerCrit && HitResistance > 0)
+						{
+							damindspawn4.scale.x = 0.5;
+							damindspawn4.scale.y = 0.5;
+							damindspawn4.gravity = 0.334;
+							damindspawn4.stamina = 1;
+						}
 					}
 				}
 				
@@ -379,6 +468,19 @@ class DamageTracker : Inventory
 						damindspawn5.vel = nvel;
 						damindspawn5.ChangeTID(NumberID2);
 						damindspawn5.angle = 0;
+						if (!PlayerCrit && HitWeakness)
+						{
+							damindspawn5.scale.x = 0.875;
+							damindspawn5.scale.y = 0.875;
+							damindspawn5.gravity = 0.625;
+						}
+						if (!PlayerCrit && HitResistance > 0)
+						{
+							damindspawn5.scale.x = 0.5;
+							damindspawn5.scale.y = 0.5;
+							damindspawn5.gravity = 0.334;
+							damindspawn5.stamina = 1;
+						}
 					}
 				}
 				
@@ -402,6 +504,19 @@ class DamageTracker : Inventory
 						damindspawn6.vel = nvel;
 						damindspawn6.ChangeTID(NumberID2);
 						damindspawn6.angle = 0;
+						if (!PlayerCrit && HitWeakness)
+						{
+							damindspawn6.scale.x = 0.875;
+							damindspawn6.scale.y = 0.875;
+							damindspawn6.gravity = 0.625;
+						}
+						if (!PlayerCrit && HitResistance > 0)
+						{
+							damindspawn6.scale.x = 0.5;
+							damindspawn6.scale.y = 0.5;
+							damindspawn6.gravity = 0.334;
+							damindspawn6.stamina = 1;
+						}
 					}
 				}
 				
@@ -425,6 +540,19 @@ class DamageTracker : Inventory
 						damindspawn7.vel = nvel;
 						damindspawn7.ChangeTID(NumberID2);
 						damindspawn7.angle = 0;
+						if (!PlayerCrit && HitWeakness)
+						{
+							damindspawn7.scale.x = 0.875;
+							damindspawn7.scale.y = 0.875;
+							damindspawn7.gravity = 0.625;
+						}
+						if (!PlayerCrit && HitResistance > 0)
+						{
+							damindspawn7.scale.x = 0.5;
+							damindspawn7.scale.y = 0.5;
+							damindspawn7.gravity = 0.334;
+							damindspawn7.stamina = 1;
+						}
 					}
 				}
 
@@ -432,6 +560,8 @@ class DamageTracker : Inventory
 			else
 			{
 				if (self.owner.CountInv("TookCriticalHit")) { self.owner.A_SetInventory("TookCriticalHit",0); PlayerCrit = 0; }
+				if (self.owner.CountInv("TookWeaknessHit")) { self.owner.A_SetInventory("TookWeaknessHit",0); HitWeakness = 0; }
+				if (self.owner.CountInv("TookResistanceHit")) { self.owner.A_SetInventory("TookWeaknessHit",0); HitResistance = 0; }
 			}
 		}
 	}
