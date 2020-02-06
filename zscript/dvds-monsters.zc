@@ -4,6 +4,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	// Gargoyle
 	bool extremecrash;
 	bool droppedtheirsoul;
+	bool diedasafriendly;
 	// Afrit
 	const FIREDEMON_ATTACK_RANGE = 64*8.;
 	int fdstrafecount;
@@ -267,14 +268,65 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			else
 			{
 				ResSucceed = true;
+				if (diedasafriendly)
+				{
+					if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cyFriend Resurrect? [non-passive side]\c-");
+					if (other == self) 
+					{
+						self.bFRIENDLY = true;
+						if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cySelf-Resurrection [Friendly] [non-passive side]\c-");
+					}
+					else if (other.bFRIENDLY) 
+					{
+						self.bFRIENDLY = true;
+						if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cySelf-Resurrection [Ally Res'd?] [non-passive side]\c-");
+					}
+					else
+					{
+						diedasafriendly = 0;
+						self.bFRIENDLY = false;
+						if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cySelf-Resurrection [Enemy Res'd?] [non-passive side]\c-");
+					}
+				}
+				else
+				{
+					if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cyNon-Friend Resurrect? [non-passive side]\c-");
+				}
 			}
 			if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cxResurrector\c-: \cx%s\c-, \cyResurrectee\c-: \cy%s\c- -- ResSucceed: %d, timesrevivedamonster: %d", GetClassName(), other.GetClassName(), ResSucceed, timesrevivedamonster);
 		}
 		else // Monster is the one BEING REVIVED...
 		{
-			if (cannotres) ResSucceed = false; else ResSucceed = true;
+			if (cannotres) 
+			{
+				ResSucceed = false; 
+			}
+			else 
+			{
+				ResSucceed = true;
+				if (diedasafriendly)
+				{
+					if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cyFriend Resurrect? [passive side]\c-");
+					if (other.bFRIENDLY) 
+					{
+						self.bFRIENDLY = true;
+						if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cySelf-Resurrection [Ally Res'd?] [passive side]\c-");
+					}
+					else
+					{
+						diedasafriendly = 0;
+						self.bFRIENDLY = false;
+						if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cySelf-Resurrection [Enemy Res'd?] [passive side]\c-");
+					}
+				}
+				else
+				{
+					if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cyNon-Friend Resurrect? [passive side]\c-");
+				}
+			}
 		}
 
+		//Console.Printf("Resurrect Attempt");
 		return ResSucceed;
 	}
 	
@@ -415,6 +467,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{ 
 			A_AetheriusStats(0); 
 			if (self.health <= User_MaxHP) self.health = User_MaxHP;
+			if (diedasafriendly && !bFRIENDLY)
+			{
+				bFRIENDLY = true;
+				diedasafriendly = 0;
+			}
 			
 			// LDL
 			A_LegendaryCheck();
@@ -491,6 +548,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{ 
 			A_AetheriusStats(0); 
 			if (self.health <= User_MaxHP) self.health = User_MaxHP;
+			if (diedasafriendly && !bFRIENDLY)
+			{
+				bFRIENDLY = true;
+				diedasafriendly = 0;
+			}
 			
 			// LDL
 			A_LegendaryCheck();
@@ -702,6 +764,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			SetInventory("LDLegendaryMonsterVisualEffectMaker", 0);
 			SetInventory("LDLegendaryMonsterVisualEffectAlternator", 0);
 			user_willbecomelegendary = 0;
+			if (bFRIENDLY) 
+			{
+				diedasafriendly = 1;
+				//Console.Printf("diedasafriendly: %d", diedasafriendly);
+			}
 
 			A_AetheriusStats(1); 
 		}
