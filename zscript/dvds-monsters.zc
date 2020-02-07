@@ -46,6 +46,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int bufftimer;
 	int saptimer;
 	
+	int SauravatarFirstDMG;
+	int SauravatarSecondDMG;
+	int SauravatarAtkType;
+	int SauravatarRegenTic;
+	int SauravatarRegenState;
+	
 	bool ActorDisplayDMG;
 	bool ActorLevelCalcs;
 	
@@ -471,7 +477,20 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (self.health > 0 && !ActorLevelCalcs) 
 		{ 
-			A_AetheriusStats(0); 
+			if (GetClassName() == "Sauravatar")
+			{
+				if (!bDORMANT)
+				{
+					Thing_ChangeTID(0,1124);
+					Thing_SetTranslation(1124,16);
+					A_SetSauravatarHealth();
+					A_AetheriusStats(0); 
+				}
+			}
+			else
+			{
+				A_AetheriusStats(0); 
+			}
 			if (self.health <= User_MaxHP) self.health = User_MaxHP;
 			if (diedasafriendly && !bFRIENDLY)
 			{
@@ -558,7 +577,20 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		
 		if (self.health > 0 && !ActorLevelCalcs) 
 		{ 
-			A_AetheriusStats(0); 
+			if (GetClassName() == "Sauravatar")
+			{
+				if (!bDORMANT)
+				{
+					Thing_ChangeTID(0,1124);
+					Thing_SetTranslation(1124,16);
+					A_SetSauravatarHealth();
+					A_AetheriusStats(0); 
+				}
+			}
+			else
+			{
+				A_AetheriusStats(0); 
+			}
 			if (self.health <= User_MaxHP) self.health = User_MaxHP;
 			if (diedasafriendly && !bFRIENDLY)
 			{
@@ -578,6 +610,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (self.health > 0)
 		{
+			if (GetClassName() == "Sauravatar" && !bDORMANT) A_SauravatarRegenMode();
+
 			if (dvds_dmgindicator && !ActorDisplayDMG) 
 			{
 				ActorDisplayDMG = true;
@@ -759,10 +793,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						}
 					}
 				}
-				if (hitsoundtimer > 0) hitsoundtimer--;
-				if (hitweaksoundtimer > 0) hitweaksoundtimer--;
 			}
-			
+		}
+		if (health > 0)
+		{
+			if (hitsoundtimer > 0) hitsoundtimer--;
+			if (hitweaksoundtimer > 0) hitweaksoundtimer--;
 		}
 		//This space for rent.
 		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
@@ -1497,8 +1533,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (moddedDMG >= (tempdmgval * 1.5) && moddedDMG <= (tempdmgval * 2.4999999)) playweaksound = 1;
 					if (moddedDMG >= (tempdmgval * 2.5) && moddedDMG <= (tempdmgval * 3.9999999)) playweaksound = 2;
 					if (moddedDMG >= (tempdmgval * 4.0)) playweaksound = 3;
-					if (playweaksound > 0) A_SetInventory("TookWeaknessHit",1);
-					else if (playweaksound < 0) A_SetInventory("TookResistanceHit",1);
+					if (playweaksound > 0) A_SetInventory("TookWeaknessHit",playweaksound);
+					else if (playweaksound < 0) A_SetInventory("TookResistanceHit",(playweaksound*-1));
 					if (dvdsdebug_actordmgdisplays) Console.Printf("moddedDMG: %d (%.8f) (%s), playweaksound: %d, damagefactor: %.8f", moddedDMG, outputdmgfactor, mod, playweaksound, damagefactor);
 				}
 			}
@@ -3515,11 +3551,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					double DefenseFactor = 0.0;
 					double MaxHPFactor = 0.0;
 					double BalanceFactor = 0.0;
-					MSpeed = Speed;
+					if (GetClassName() == "Sauravatar") MSpeed = 32.0; else MSpeed = Speed;
 					Attack = 1.0; 
 					Defense = 1.0; 
-					Balance = Mass; 
-					MaxHP = SpawnHealth();
+					Balance = Mass;
+					if (GetClassName() == "Sauravatar") MaxHP = user_MaxHP; else MaxHP = SpawnHealth();
 					PreMSpeed = MSpeed;
 					PreAttack = Attack; 
 					PreDefense = Defense; 
@@ -4508,10 +4544,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					
 					//** Set's Final MaxHP and Current HP values **
 					self.health = MaxHP;
-					//self.SpawnHealth() = MaxHP;
 					if (debugstatcalc) Console.Printf("\chFinal Speed: %.8f, \cgFinal Attack: %.8f, \cdFinal Defense: %.8f, \caFinal Max HP: %d, \cpFinal Balance: %d, \ck[Actor-Check: %s]", MSpeed, Attack, Defense, MaxHP, Balance, ActorName);
 					
-					if (ActorName != "Sauravatar") user_MaxHP = MaxHP; 
+					user_MaxHP = MaxHP; 
 					if (ActorName == "HeresiarchNew") Score = MaxHP;
 					
 					// Sets the monster's "Buff" level. The level it must fall below in order to gain it's unique buffs
@@ -9476,6 +9511,191 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 	}
 	
+	void A_SetSauravatarHealth()
+	{
+		int debugstatcalc = dvdsdebug_showstatcalcstuff;
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int PlayerLevel = CallACS("StatCheck",0);
+		double MonstKillHealthMulti;
+		int MonsterKillHealth;
+		double SkillMulti;
+		int basehealth;
+		int finalhealth;
+
+		if (TrueGameSkill <= SKILL_VERY_EASY) basehealth = 111375; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_EASY) basehealth = 141750; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_NORMAL) basehealth = 162000; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_HARD) basehealth = 182250; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_VERY_HARD) basehealth = 212625; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_EXTREME) basehealth = 243000; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_HORRIBLE) basehealth = 263250; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_IMPOSSIBLE) basehealth = 263250; // Sauravatar [DVI-DS]
+		if (TrueGameSkill >= SKILL_OMEGA) basehealth = 283500; // Sauravatar [DVI-DS]
+		finalhealth = basehealth;
+		if (debugstatcalc) Console.Printf("Phase1 - First Value: %d", finalhealth);
+
+		if (TrueGameSkill <= SKILL_VERY_EASY) SkillMulti = 0.30;
+		else if (TrueGameSkill == SKILL_EASY) SkillMulti = 0.35;
+		else if (TrueGameSkill == SKILL_NORMAL) SkillMulti = 0.40;
+		else if (TrueGameSkill == SKILL_HARD) SkillMulti = 0.45;
+		else if (TrueGameSkill == SKILL_VERY_HARD) SkillMulti = 0.50;
+		else if (TrueGameSkill == SKILL_EXTREME) SkillMulti = 0.55;
+		else if (TrueGameSkill == SKILL_HORRIBLE) SkillMulti = 0.60;
+		else if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillMulti = 0.65;
+		else if (TrueGameSkill >= SKILL_OMEGA) SkillMulti = 0.70;
+		int SkillHealthAdd = (finalhealth * SkillMulti);
+		finalhealth += SkillHealthAdd;
+		if (debugstatcalc) Console.Printf("Phase2 - Difficulty Add: %d, SkillHealthAdd: %d", finalhealth, SkillHealthAdd);
+
+		if (modtype == 1)
+		{
+			MonsterKillHealth = (CallACS("ArrayVarSetDECORATE",0,1101,0,-1) * 192);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1101,0,-1) * 24);
+			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1101]: %d", MonsterKillHealth);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",0,1102,0,-1) * 160);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1102,0,-1) * 36);
+			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1102]: %d", MonsterKillHealth);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",0,1103,0,-1) * 128);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1103,0,-1) * 48);
+			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1103]: %d", MonsterKillHealth);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",0,1104,0,-1) * 96);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1104,0,-1) * 60);
+			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1104]: %d", MonsterKillHealth);
+
+			if (TrueGameSkill <= SKILL_VERY_EASY) MonstKillHealthMulti = 0.70;
+			else if (TrueGameSkill == SKILL_EASY) MonstKillHealthMulti = 0.88;
+			else if (TrueGameSkill == SKILL_NORMAL) MonstKillHealthMulti = 1.00;
+			else if (TrueGameSkill == SKILL_HARD) MonstKillHealthMulti = 1.12;
+			else if (TrueGameSkill == SKILL_VERY_HARD) MonstKillHealthMulti = 1.24;
+			else if (TrueGameSkill == SKILL_EXTREME) MonstKillHealthMulti = 1.36;
+			else if (TrueGameSkill == SKILL_HORRIBLE) MonstKillHealthMulti = 1.48;
+			else if (TrueGameSkill == SKILL_IMPOSSIBLE) MonstKillHealthMulti = 1.60;
+			else if (TrueGameSkill >= SKILL_OMEGA) MonstKillHealthMulti = 1.72;
+		
+			finalhealth += (MonsterKillHealth * MonstKillHealthMulti);
+			if (debugstatcalc) Console.Printf("Phase3 - Level Kills Add: %d, MonsterKillHealth: %d, MonstKillHealthMulti: %.8f", finalhealth, MonsterKillHealth, MonstKillHealthMulti);
+
+			double SecretsFoundHealth;
+			SecretsFoundHealth = CallACS("ArrayVarSetDECORATE",2,1101,0,-1);
+			SecretsFoundHealth -= CallACS("ArrayVarSetDECORATE",2,1102,0,-1);
+			SecretsFoundHealth -= CallACS("ArrayVarSetDECORATE",2,1103,0,-1);
+			SecretsFoundHealth -= CallACS("ArrayVarSetDECORATE",2,1104,0,-1);
+			if (TrueGameSkill <= SKILL_VERY_EASY) SecretsFoundHealth *= 1.5; // 150%
+			else if (TrueGameSkill == SKILL_EASY) SecretsFoundHealth *= 1.25; // 125%
+			else if (TrueGameSkill == SKILL_NORMAL) SecretsFoundHealth *= 1.0;  // 100%
+			else if (TrueGameSkill == SKILL_HARD) SecretsFoundHealth *= 0.75; // 75%
+			else if (TrueGameSkill == SKILL_VERY_HARD) SecretsFoundHealth *= 0.5;  // 50%
+			else if (TrueGameSkill == SKILL_EXTREME) SecretsFoundHealth *= 0.3334;  // 33%
+			else if (TrueGameSkill == SKILL_HORRIBLE) SecretsFoundHealth *= 0.2;  // 20%
+			else if (TrueGameSkill == SKILL_IMPOSSIBLE) SecretsFoundHealth *= 0.1667;  // 16.6%
+			else if (TrueGameSkill >= SKILL_OMEGA) SecretsFoundHealth *= 0.125;  // 12.5%
+		
+			int SecrFoundHealthMulti = 100;
+			SecrFoundHealthMulti -= SecretsFoundHealth;
+			finalhealth = finalhealth * SecrFoundHealthMulti / 100;
+			if (debugstatcalc) Console.Printf("Phase4 - SecretsFound Add: %d, SecretsFoundHealth: %d, SecrFoundHealthMulti: %d", finalhealth, SecretsFoundHealth, SecrFoundHealthMulti);
+		}
+		
+		double PLevelHealthMulti = PlayerLevel * 0.09;
+		PLevelHealthMulti += 1.0;
+		finalhealth *= PLevelHealthMulti;
+		if (debugstatcalc) Console.Printf("Phase5 - PlayerLevel Add: %d, PLevelHealthMulti: %.8f", finalhealth, PLevelHealthMulti);
+		
+
+		if (CountInv("SauronHelmet",AAPTR_PLAYER1) > 0)
+		{
+			finalhealth *= 1.25; 
+			if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: Found Helmet: %d", finalhealth);
+		}
+		if (CountInv("SauronGauntletsItem",AAPTR_PLAYER1) > 0)
+		{
+			finalhealth *= 1.25; 
+			if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: Found Gauntlets: %d", finalhealth);
+		}
+		if (CountInv("TheOneRing",AAPTR_PLAYER1) > 0)
+		{
+			finalhealth *= 2;
+			if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: Found Ring: %d", finalhealth);
+		}
+		if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: %d", finalhealth);
+
+		SauravatarFirstDMG = finalhealth * 0.6667;
+		SauravatarSecondDMG = finalhealth * 0.3334;
+		health = finalhealth;
+		user_MaxHP = finalhealth;
+
+		if (modtype == 1) Thing_Damage(666, 999999, 1000);
+	}
+	
+	void A_SauravatarRegenMode()
+	{
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int SkillHealthAdd;
+		double SkillMulti;
+		int RegenBaseTics = 63;
+		
+		if (SauravatarRegenState == 4) GetAge() % RegenBaseTics * 64;
+		else if (SauravatarRegenState == 3) SauravatarRegenTic = GetAge() % RegenBaseTics * 16;
+		else if (SauravatarRegenState == 2) SauravatarRegenTic = GetAge() % RegenBaseTics * 4;
+		else SauravatarRegenTic = GetAge() % RegenBaseTics;
+		Console.Printf("SauravatarRegenTic: %d, RegenState: %d", SauravatarRegenTic, SauravatarRegenState);
+		
+		if (SauravatarRegenTic == 0)
+		{
+			if (health < user_MaxHP)
+			{
+				if (TrueGameSkill <= SKILL_VERY_EASY) SkillMulti = 6;
+				if (TrueGameSkill == SKILL_EASY) SkillMulti = 7;
+				if (TrueGameSkill == SKILL_NORMAL) SkillMulti = 8;
+				if (TrueGameSkill == SKILL_HARD) SkillMulti = 9;
+				if (TrueGameSkill == SKILL_VERY_HARD) SkillMulti = 10;
+				if (TrueGameSkill == SKILL_EXTREME) SkillMulti = 11;
+				if (TrueGameSkill == SKILL_HORRIBLE) SkillMulti = 12;
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillMulti = 13;
+				if (TrueGameSkill >= SKILL_OMEGA) SkillMulti = 14;
+				if (SauravatarRegenState == 0) SkillMulti *= 1;
+				if (SauravatarRegenState == 1) SkillMulti *= 4;
+				if (SauravatarRegenState == 2) SkillMulti *= 0.25;
+				if (SauravatarRegenState == 3) SkillMulti *= 0.0625;
+				if (SauravatarRegenState == 4) SkillMulti *= 0.0;
+				
+				if (health <= SauravatarFirstDMG)
+				{
+					if (health <= SauravatarSecondDMG) SkillMulti *= 1.375; 
+					else SkillMulti *= 1.125;
+				}
+				SkillHealthAdd = user_MaxHP * SkillMulti / 131072;
+				if (health <= SauravatarFirstDMG)
+				{
+					if (health <= SauravatarSecondDMG)
+					{
+						SkillHealthAdd += random(-7,7);
+					}
+					else
+					{
+						SkillHealthAdd += random(-5,5);
+					}
+				}
+				else
+				{
+					SkillHealthAdd += random(-4,4);
+				}
+				if (SkillHealthAdd < 1) SkillHealthAdd = 1;
+				health += SkillHealthAdd;
+				if (health > user_MaxHP) health = user_MaxHP;
+				Console.Printf("SkillHealthAdd: %d, SkillMulti: %d, RegenState: %d", SkillHealthAdd, SkillMulti, SauravatarRegenState);
+			}
+		}
+		
+		if (health <= SauravatarFirstDMG)
+		{
+			if (health <= SauravatarSecondDMG) SauravatarAtkType = 2;
+			else SauravatarAtkType = 1;
+		}
+		else SauravatarAtkType = 0;
+	}
 }
 
 class AetheriusBossZSC : AetheriusMonsterZSC
