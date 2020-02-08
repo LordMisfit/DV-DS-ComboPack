@@ -476,21 +476,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 
 		if (self.health > 0 && !ActorLevelCalcs) 
-		{ 
-			if (GetClassName() == "Sauravatar")
-			{
-				if (!bDORMANT)
-				{
-					Thing_ChangeTID(0,1124);
-					Thing_SetTranslation(1124,16);
-					A_SetSauravatarHealth();
-					A_AetheriusStats(0); 
-				}
-			}
-			else
-			{
-				A_AetheriusStats(0); 
-			}
+		{
+			if (GetClassName() != "Sauravatar") A_AetheriusStats(0); 
+
 			if (self.health <= User_MaxHP) self.health = User_MaxHP;
 			if (diedasafriendly && !bFRIENDLY)
 			{
@@ -576,21 +564,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		gfxeffectlevel = dvds_gfxeffectlevel;
 		
 		if (self.health > 0 && !ActorLevelCalcs) 
-		{ 
-			if (GetClassName() == "Sauravatar")
-			{
-				if (!bDORMANT)
-				{
-					Thing_ChangeTID(0,1124);
-					Thing_SetTranslation(1124,16);
-					A_SetSauravatarHealth();
-					A_AetheriusStats(0); 
-				}
-			}
-			else
-			{
-				A_AetheriusStats(0); 
-			}
+		{
+			if (GetClassName() != "Sauravatar") A_AetheriusStats(0); 
+
 			if (self.health <= User_MaxHP) self.health = User_MaxHP;
 			if (diedasafriendly && !bFRIENDLY)
 			{
@@ -610,8 +586,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (self.health > 0)
 		{
-			if (GetClassName() == "Sauravatar" && !bDORMANT) A_SauravatarRegenMode();
-
 			if (dvds_dmgindicator && !ActorDisplayDMG) 
 			{
 				ActorDisplayDMG = true;
@@ -1490,6 +1464,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		// Player/Actor Check
 		AetheriusPlayerPawn playpawn;
 		AetheriusMonsterZSC DVDSActor;
+		AetheriusMonsterZSC DVDSVictim;
 		AetheriusProjectileZSC UniqueProjectile;
 		AetheriusFastProjectileZSC UniqueProjectileFast;
 		AetheriusEffectProjectile ailmentproj;
@@ -1508,6 +1483,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				vict == "Magmantis" || vict == "Zakachi" ||
 				vict == "Nyarlathotep" || vict == "NyarlathotepLesser" || vict == "StarSpawn" || vict == "SpiderGod" || vict == "SpiderGodling") 
 				PoisonNeedleBossCheck = 1;
+				
 				
 		int playweaksound = 0;
 		//*******************
@@ -1796,6 +1772,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2d - Player-LDLPerk Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \caldldmgmulti = %3f\c-)", preldldmg, damage, ldldmgmulti);
 			}
 			if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2x - Player Dmg]\c-: \cxprefdmg = %d\c-, \cxprefrienddmg = %d\c-, \cxprecritdmg = %d\c-, \cxpreldldmg = %d\c-, \cydmg = %d\c-, \cbCritResist: (%.8f) / %.8f\c-)", preplayerdmg, prefriendlydmg, precritdmg, preldldmg, damage, CritResistRoll, CritResistChance);
+
+			if (vict == "Sauravatar" && mod == 'Gauntlets')
+			{
+				predamage = damage;
+				damage += (user_MaxHP) * frandom(0.003125,0.009375);
+				if (dvdsdebug_actordmgdisplays) Console.Printf("[Sauravatar Gauntlet Damage] - %d (%d)", damage, predamage);
+			}
 		}
 		else
 		if (DVDSActor && damage > 0 && dvds_monstercrits != 0)
@@ -9511,205 +9494,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 	}
 	
-	void A_SetSauravatarHealth()
-	{
-		int debugstatcalc = dvdsdebug_showstatcalcstuff;
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
-		int ModType = CallACS("OtherVarCheckDECORATE",8);
-		int PlayerLevel = CallACS("StatCheck",0);
-		double MonstKillHealthMulti;
-		int MonsterKillHealth;
-		double SkillMulti;
-		int basehealth;
-		int finalhealth;
-
-		if (TrueGameSkill <= SKILL_VERY_EASY) basehealth = 111375; // Sauravatar [DVI-DS]
-		if (TrueGameSkill == SKILL_EASY) basehealth = 141750; // Sauravatar [DVI-DS]
-		if (TrueGameSkill == SKILL_NORMAL) basehealth = 162000; // Sauravatar [DVI-DS]
-		if (TrueGameSkill == SKILL_HARD) basehealth = 182250; // Sauravatar [DVI-DS]
-		if (TrueGameSkill == SKILL_VERY_HARD) basehealth = 212625; // Sauravatar [DVI-DS]
-		if (TrueGameSkill == SKILL_EXTREME) basehealth = 243000; // Sauravatar [DVI-DS]
-		if (TrueGameSkill == SKILL_HORRIBLE) basehealth = 263250; // Sauravatar [DVI-DS]
-		if (TrueGameSkill == SKILL_IMPOSSIBLE) basehealth = 263250; // Sauravatar [DVI-DS]
-		if (TrueGameSkill >= SKILL_OMEGA) basehealth = 283500; // Sauravatar [DVI-DS]
-		finalhealth = basehealth;
-		if (debugstatcalc) Console.Printf("Phase1 - First Value: %d", finalhealth);
-
-		if (TrueGameSkill <= SKILL_VERY_EASY) SkillMulti = 0.30;
-		else if (TrueGameSkill == SKILL_EASY) SkillMulti = 0.35;
-		else if (TrueGameSkill == SKILL_NORMAL) SkillMulti = 0.40;
-		else if (TrueGameSkill == SKILL_HARD) SkillMulti = 0.45;
-		else if (TrueGameSkill == SKILL_VERY_HARD) SkillMulti = 0.50;
-		else if (TrueGameSkill == SKILL_EXTREME) SkillMulti = 0.55;
-		else if (TrueGameSkill == SKILL_HORRIBLE) SkillMulti = 0.60;
-		else if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillMulti = 0.65;
-		else if (TrueGameSkill >= SKILL_OMEGA) SkillMulti = 0.70;
-		int SkillHealthAdd = (finalhealth * SkillMulti);
-		finalhealth += SkillHealthAdd;
-		if (debugstatcalc) Console.Printf("Phase2 - Difficulty Add: %d, SkillHealthAdd: %d", finalhealth, SkillHealthAdd);
-
-		if (modtype == 1)
-		{
-			MonsterKillHealth = (CallACS("ArrayVarSetDECORATE",0,1101,0,-1) * 192);
-			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1101,0,-1) * 24);
-			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1101]: %d", MonsterKillHealth);
-			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",0,1102,0,-1) * 160);
-			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1102,0,-1) * 36);
-			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1102]: %d", MonsterKillHealth);
-			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",0,1103,0,-1) * 128);
-			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1103,0,-1) * 48);
-			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1103]: %d", MonsterKillHealth);
-			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",0,1104,0,-1) * 96);
-			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1104,0,-1) * 60);
-			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1104]: %d", MonsterKillHealth);
-
-			if (TrueGameSkill <= SKILL_VERY_EASY) MonstKillHealthMulti = 0.70;
-			else if (TrueGameSkill == SKILL_EASY) MonstKillHealthMulti = 0.88;
-			else if (TrueGameSkill == SKILL_NORMAL) MonstKillHealthMulti = 1.00;
-			else if (TrueGameSkill == SKILL_HARD) MonstKillHealthMulti = 1.12;
-			else if (TrueGameSkill == SKILL_VERY_HARD) MonstKillHealthMulti = 1.24;
-			else if (TrueGameSkill == SKILL_EXTREME) MonstKillHealthMulti = 1.36;
-			else if (TrueGameSkill == SKILL_HORRIBLE) MonstKillHealthMulti = 1.48;
-			else if (TrueGameSkill == SKILL_IMPOSSIBLE) MonstKillHealthMulti = 1.60;
-			else if (TrueGameSkill >= SKILL_OMEGA) MonstKillHealthMulti = 1.72;
-		
-			finalhealth += (MonsterKillHealth * MonstKillHealthMulti);
-			if (debugstatcalc) Console.Printf("Phase3 - Level Kills Add: %d, MonsterKillHealth: %d, MonstKillHealthMulti: %.8f", finalhealth, MonsterKillHealth, MonstKillHealthMulti);
-
-			double SecretsFoundHealth;
-			SecretsFoundHealth = CallACS("ArrayVarSetDECORATE",2,1101,0,-1);
-			SecretsFoundHealth -= CallACS("ArrayVarSetDECORATE",2,1102,0,-1);
-			SecretsFoundHealth -= CallACS("ArrayVarSetDECORATE",2,1103,0,-1);
-			SecretsFoundHealth -= CallACS("ArrayVarSetDECORATE",2,1104,0,-1);
-			if (TrueGameSkill <= SKILL_VERY_EASY) SecretsFoundHealth *= 1.5; // 150%
-			else if (TrueGameSkill == SKILL_EASY) SecretsFoundHealth *= 1.25; // 125%
-			else if (TrueGameSkill == SKILL_NORMAL) SecretsFoundHealth *= 1.0;  // 100%
-			else if (TrueGameSkill == SKILL_HARD) SecretsFoundHealth *= 0.75; // 75%
-			else if (TrueGameSkill == SKILL_VERY_HARD) SecretsFoundHealth *= 0.5;  // 50%
-			else if (TrueGameSkill == SKILL_EXTREME) SecretsFoundHealth *= 0.3334;  // 33%
-			else if (TrueGameSkill == SKILL_HORRIBLE) SecretsFoundHealth *= 0.2;  // 20%
-			else if (TrueGameSkill == SKILL_IMPOSSIBLE) SecretsFoundHealth *= 0.1667;  // 16.6%
-			else if (TrueGameSkill >= SKILL_OMEGA) SecretsFoundHealth *= 0.125;  // 12.5%
-		
-			int SecrFoundHealthMulti = 100;
-			SecrFoundHealthMulti -= SecretsFoundHealth;
-			finalhealth = finalhealth * SecrFoundHealthMulti / 100;
-			if (debugstatcalc) Console.Printf("Phase4 - SecretsFound Add: %d, SecretsFoundHealth: %d, SecrFoundHealthMulti: %d", finalhealth, SecretsFoundHealth, SecrFoundHealthMulti);
-		}
-		
-		double PLevelHealthMulti = PlayerLevel * 0.09;
-		PLevelHealthMulti += 1.0;
-		finalhealth *= PLevelHealthMulti;
-		if (debugstatcalc) Console.Printf("Phase5 - PlayerLevel Add: %d, PLevelHealthMulti: %.8f", finalhealth, PLevelHealthMulti);
-		
-
-		if (CountInv("SauronHelmet",AAPTR_PLAYER1) > 0)
-		{
-			finalhealth *= 1.25; 
-			if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: Found Helmet: %d", finalhealth);
-		}
-		if (CountInv("SauronGauntletsItem",AAPTR_PLAYER1) > 0)
-		{
-			finalhealth *= 1.25; 
-			if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: Found Gauntlets: %d", finalhealth);
-		}
-		if (CountInv("TheOneRing",AAPTR_PLAYER1) > 0)
-		{
-			finalhealth *= 2;
-			if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: Found Ring: %d", finalhealth);
-		}
-		if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: %d", finalhealth);
-
-		SauravatarFirstDMG = finalhealth * 0.6667;
-		SauravatarSecondDMG = finalhealth * 0.3334;
-		health = finalhealth;
-		user_MaxHP = finalhealth;
-
-		if (modtype == 1) Thing_Damage(666, 999999, 1000);
-	}
-	
-	void A_SauravatarRegenMode()
-	{
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
-		int ModType = CallACS("OtherVarCheckDECORATE",8);
-		int SkillHealthAdd;
-		double SkillMulti;
-		int regendebug = dvdsdebug_actorregendisplays;
-
-		int RegenBaseTics = 49;
-		if (TrueGameSkill <= SKILL_VERY_EASY) RegenBaseTics *= 1.24;
-		else if (TrueGameSkill == SKILL_EASY) RegenBaseTics *= 1.12;
-		else if (TrueGameSkill == SKILL_NORMAL) RegenBaseTics *= 1.00;
-		else if (TrueGameSkill == SKILL_HARD) RegenBaseTics *= 0.94;
-		else if (TrueGameSkill == SKILL_VERY_HARD) RegenBaseTics *= 0.88;
-		else if (TrueGameSkill == SKILL_EXTREME) RegenBaseTics *= 0.76;
-		else if (TrueGameSkill == SKILL_HORRIBLE) RegenBaseTics *= 0.64;
-		else if (TrueGameSkill == SKILL_IMPOSSIBLE) RegenBaseTics *= 0.46;
-		else if (TrueGameSkill >= SKILL_OMEGA) RegenBaseTics *= 0.28;
-		if (health <= SauravatarFirstDMG) RegenBaseTics *= 0.75;
-		if (health <= SauravatarSecondDMG) RegenBaseTics *= 0.75;
-		
-		if (SauravatarRegenState == 4) GetAge() % RegenBaseTics * 27;
-		else if (SauravatarRegenState == 3) SauravatarRegenTic = GetAge() % RegenBaseTics * 9;
-		else if (SauravatarRegenState == 2) SauravatarRegenTic = GetAge() % RegenBaseTics * 3;
-		else SauravatarRegenTic = GetAge() % RegenBaseTics;
-		if (regendebug) Console.Printf("SauravatarRegenTic: %d, RegenState: %d", SauravatarRegenTic, SauravatarRegenState);
-		
-		if (SauravatarRegenTic == 0)
-		{
-			if (health < user_MaxHP)
-			{
-				if (TrueGameSkill <= SKILL_VERY_EASY) SkillMulti = 6;
-				if (TrueGameSkill == SKILL_EASY) SkillMulti = 7;
-				if (TrueGameSkill == SKILL_NORMAL) SkillMulti = 8;
-				if (TrueGameSkill == SKILL_HARD) SkillMulti = 9;
-				if (TrueGameSkill == SKILL_VERY_HARD) SkillMulti = 10;
-				if (TrueGameSkill == SKILL_EXTREME) SkillMulti = 11;
-				if (TrueGameSkill == SKILL_HORRIBLE) SkillMulti = 12;
-				if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillMulti = 13;
-				if (TrueGameSkill >= SKILL_OMEGA) SkillMulti = 14;
-
-				if (SauravatarRegenState == 0) SkillMulti *= 1;
-				if (SauravatarRegenState == 1) SkillMulti *= 4;
-				if (SauravatarRegenState == 2) SkillMulti *= 0.25;
-				if (SauravatarRegenState == 3) SkillMulti *= 0.0625;
-				if (SauravatarRegenState == 4) SkillMulti *= 0.0;
-				
-				if (health <= SauravatarFirstDMG)
-				{
-					if (health <= SauravatarSecondDMG) SkillMulti *= 2.5; 
-					else SkillMulti *= 1.75;
-				}
-				SkillHealthAdd = user_MaxHP * SkillMulti / 131072;
-				if (health <= SauravatarFirstDMG)
-				{
-					if (health <= SauravatarSecondDMG)
-					{
-						SkillHealthAdd += random(-7,7);
-					}
-					else
-					{
-						SkillHealthAdd += random(-5,5);
-					}
-				}
-				else
-				{
-					SkillHealthAdd += random(-4,4);
-				}
-				if (SkillHealthAdd < 1) SkillHealthAdd = 1;
-				health += SkillHealthAdd;
-				if (health > user_MaxHP) health = user_MaxHP;
-				if (regendebug) Console.Printf("SkillHealthAdd: %d, SkillMulti: %d, RegenState: %d", SkillHealthAdd, SkillMulti, SauravatarRegenState);
-			}
-		}
-		
-		if (health <= SauravatarFirstDMG)
-		{
-			if (health <= SauravatarSecondDMG) SauravatarAtkType = 2;
-			else SauravatarAtkType = 1;
-		}
-		else SauravatarAtkType = 0;
-	}
 }
 
 class AetheriusBossZSC : AetheriusMonsterZSC
@@ -10159,6 +9943,1093 @@ class AetheriusMorphedMonster : AetheriusMonsterZSC
 	}
 }
 
+//********************************
+//** ACTUAL Boss Definitions V: **
+//********************************
+
+// Sauron makes one final effort to kill your ass with a Cyberdemon-like avatar. [DVI-DS]
+class Sauravatar : AetheriusBossZSC //32201
+{
+	default
+	{
+		//$Angled
+		//$Color 12
+		//$Category "DV-DS Monsters/Boss Type"
+		Tag "Greater Sauravatar";
+
+		health 243000; // His BASE health, but not his actual maximum. [revised from 162000]
+		radius 29;
+		height 77;
+		Scale 0.75;
+		mass 208000; // Revised from 78000
+		speed 32;
+		MeleeRange 135;
+		DamageFactor 0.25;
+		DamageFactor "Explosive", 1.0;
+		RadiusDamageFactor 1.0;
+		DamageFactor "Gauntlets", 20;
+		DamageFactor "Sceptre", 10;
+		DamageFactor "Magic", 9.332;
+		DamageFactor "Crush", 5.6;
+		DamageFactor "Holy", 12; // Sauron-Class = +300% Holy Damage
+		DamageFactor "Eldritch", 4; // Sauron-Class = +300% Holy Damage
+		Painchance "Holy", 120;
+		Painchance "Eldritch", 40;
+		Painchance "Sceptre", 100;
+		Painchance "Magic", 93;
+		Painchance "Explosive", 20;
+		Painchance 2;
+		Painchance "Gauntlets", 255;
+		species "Sauron";
+		Monster;
+		MinMissileChance 160;
+		+BOSS
+		+MISSILEMORE
+		+FLOORCLIP
+		+DONTMORPH
+		+BOSSDEATH
+		+AVOIDMELEE
+		+DONTHARMSPECIES
+		+DROPOFF;
+		+FLOORHUGGER;
+		+NOBLOCKMONST;
+		+MISSILEEVENMORE;
+		+NOTARGETSWITCH;
+		+NOINFIGHTING;
+		+NOTARGET;
+		+NOTELEFRAG;
+		+NOTIMEFREEZE;
+		+SHADOW;
+		+LOOKALLAROUND;
+		-NORADIUSDMG;
+		seesound "SauronSight";
+		painsound "null";
+		deathsound "SauronDeath";
+		activesound "null";
+		obituary "%o was obliterated by an avatar of the Almighty Sauron.";
+		translation "64:79=88:103", "48:63=103:88", "144:151=88:103", "32:47=224:231", "168:191=224:231", "224:231=[255, 255, 255]:[128, 255, 128]", "208:223=112:127";
+		dropitem "NoItemSpawn", 1;
+	}
+	
+	
+	void A_SetSauravatarHealth()
+	{
+		int debugstatcalc = dvdsdebug_showstatcalcstuff;
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int PlayerLevel = CallACS("StatCheck",0);
+		double MonstKillHealthMulti;
+		int MonsterKillHealth;
+		double SkillMulti;
+		int basehealth;
+		int finalhealth;
+
+		if (TrueGameSkill <= SKILL_VERY_EASY) basehealth = 111375; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_EASY) basehealth = 141750; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_NORMAL) basehealth = 162000; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_HARD) basehealth = 182250; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_VERY_HARD) basehealth = 212625; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_EXTREME) basehealth = 243000; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_HORRIBLE) basehealth = 263250; // Sauravatar [DVI-DS]
+		if (TrueGameSkill == SKILL_IMPOSSIBLE) basehealth = 263250; // Sauravatar [DVI-DS]
+		if (TrueGameSkill >= SKILL_OMEGA) basehealth = 283500; // Sauravatar [DVI-DS]
+		finalhealth = basehealth;
+		if (debugstatcalc) Console.Printf("Phase1 - First Value: %d", finalhealth);
+
+		if (TrueGameSkill <= SKILL_VERY_EASY) SkillMulti = 0.30;
+		else if (TrueGameSkill == SKILL_EASY) SkillMulti = 0.35;
+		else if (TrueGameSkill == SKILL_NORMAL) SkillMulti = 0.40;
+		else if (TrueGameSkill == SKILL_HARD) SkillMulti = 0.45;
+		else if (TrueGameSkill == SKILL_VERY_HARD) SkillMulti = 0.50;
+		else if (TrueGameSkill == SKILL_EXTREME) SkillMulti = 0.55;
+		else if (TrueGameSkill == SKILL_HORRIBLE) SkillMulti = 0.60;
+		else if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillMulti = 0.65;
+		else if (TrueGameSkill >= SKILL_OMEGA) SkillMulti = 0.70;
+		int SkillHealthAdd = (finalhealth * SkillMulti);
+		finalhealth += SkillHealthAdd;
+		if (debugstatcalc) Console.Printf("Phase2 - Difficulty Add: %d, SkillHealthAdd: %d", finalhealth, SkillHealthAdd);
+
+		if (modtype == 1)
+		{
+			MonsterKillHealth = (CallACS("ArrayVarSetDECORATE",0,1101,0,-1) * 192);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1101,0,-1) * 24);
+			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1101]: %d", MonsterKillHealth);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",0,1102,0,-1) * 160);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1102,0,-1) * 36);
+			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1102]: %d", MonsterKillHealth);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",0,1103,0,-1) * 128);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1103,0,-1) * 48);
+			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1103]: %d", MonsterKillHealth);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",0,1104,0,-1) * 96);
+			MonsterKillHealth += (CallACS("ArrayVarSetDECORATE",1,1104,0,-1) * 60);
+			if (debugstatcalc) Console.Printf("Phase3 - MonsterKillHealth [1104]: %d", MonsterKillHealth);
+
+			if (TrueGameSkill <= SKILL_VERY_EASY) MonstKillHealthMulti = 0.70;
+			else if (TrueGameSkill == SKILL_EASY) MonstKillHealthMulti = 0.88;
+			else if (TrueGameSkill == SKILL_NORMAL) MonstKillHealthMulti = 1.00;
+			else if (TrueGameSkill == SKILL_HARD) MonstKillHealthMulti = 1.12;
+			else if (TrueGameSkill == SKILL_VERY_HARD) MonstKillHealthMulti = 1.24;
+			else if (TrueGameSkill == SKILL_EXTREME) MonstKillHealthMulti = 1.36;
+			else if (TrueGameSkill == SKILL_HORRIBLE) MonstKillHealthMulti = 1.48;
+			else if (TrueGameSkill == SKILL_IMPOSSIBLE) MonstKillHealthMulti = 1.60;
+			else if (TrueGameSkill >= SKILL_OMEGA) MonstKillHealthMulti = 1.72;
+		
+			finalhealth += (MonsterKillHealth * MonstKillHealthMulti);
+			if (debugstatcalc) Console.Printf("Phase3 - Level Kills Add: %d, MonsterKillHealth: %d, MonstKillHealthMulti: %.8f", finalhealth, MonsterKillHealth, MonstKillHealthMulti);
+
+			double SecretsFoundHealth;
+			SecretsFoundHealth = CallACS("ArrayVarSetDECORATE",2,1101,0,-1);
+			SecretsFoundHealth -= CallACS("ArrayVarSetDECORATE",2,1102,0,-1);
+			SecretsFoundHealth -= CallACS("ArrayVarSetDECORATE",2,1103,0,-1);
+			SecretsFoundHealth -= CallACS("ArrayVarSetDECORATE",2,1104,0,-1);
+			if (TrueGameSkill <= SKILL_VERY_EASY) SecretsFoundHealth *= 1.5; // 150%
+			else if (TrueGameSkill == SKILL_EASY) SecretsFoundHealth *= 1.25; // 125%
+			else if (TrueGameSkill == SKILL_NORMAL) SecretsFoundHealth *= 1.0;  // 100%
+			else if (TrueGameSkill == SKILL_HARD) SecretsFoundHealth *= 0.75; // 75%
+			else if (TrueGameSkill == SKILL_VERY_HARD) SecretsFoundHealth *= 0.5;  // 50%
+			else if (TrueGameSkill == SKILL_EXTREME) SecretsFoundHealth *= 0.3334;  // 33%
+			else if (TrueGameSkill == SKILL_HORRIBLE) SecretsFoundHealth *= 0.2;  // 20%
+			else if (TrueGameSkill == SKILL_IMPOSSIBLE) SecretsFoundHealth *= 0.1667;  // 16.6%
+			else if (TrueGameSkill >= SKILL_OMEGA) SecretsFoundHealth *= 0.125;  // 12.5%
+		
+			int SecrFoundHealthMulti = 100;
+			SecrFoundHealthMulti -= SecretsFoundHealth;
+			finalhealth = finalhealth * SecrFoundHealthMulti / 100;
+			if (debugstatcalc) Console.Printf("Phase4 - SecretsFound Add: %d, SecretsFoundHealth: %d, SecrFoundHealthMulti: %d", finalhealth, SecretsFoundHealth, SecrFoundHealthMulti);
+		}
+		
+		double PLevelHealthMulti = PlayerLevel * 0.09;
+		PLevelHealthMulti += 1.0;
+		finalhealth *= PLevelHealthMulti;
+		if (debugstatcalc) Console.Printf("Phase5 - PlayerLevel Add: %d, PLevelHealthMulti: %.8f", finalhealth, PLevelHealthMulti);
+		
+
+		if (CountInv("SauronHelmet",AAPTR_PLAYER1) > 0)
+		{
+			finalhealth *= 1.25; 
+			if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: Found Helmet: %d", finalhealth);
+		}
+		if (CountInv("SauronGauntletsItem",AAPTR_PLAYER1) > 0)
+		{
+			finalhealth *= 1.25; 
+			if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: Found Gauntlets: %d", finalhealth);
+		}
+		if (CountInv("TheOneRing",AAPTR_PLAYER1) > 0)
+		{
+			finalhealth *= 2;
+			if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: Found Ring: %d", finalhealth);
+		}
+		if (debugstatcalc) Console.Printf("Phase6 - SauronItems Add: %d", finalhealth);
+
+		health = finalhealth;
+		user_MaxHP = finalhealth;
+
+		if (modtype == 1) Thing_Damage(666, 9999999, 1000);
+	}
+
+	void A_SauravatarRegenMode()
+	{
+		SauravatarFirstDMG = user_MaxHP * 0.6667;
+		SauravatarSecondDMG = user_MaxHP * 0.3334;
+
+		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int SkillHealthAdd;
+		double SkillMulti;
+		int regendebug = dvdsdebug_actorregendisplays;
+
+		int RegenBaseTics = 49;
+		if (TrueGameSkill <= SKILL_VERY_EASY) RegenBaseTics *= 1.24;
+		else if (TrueGameSkill == SKILL_EASY) RegenBaseTics *= 1.12;
+		else if (TrueGameSkill == SKILL_NORMAL) RegenBaseTics *= 1.00;
+		else if (TrueGameSkill == SKILL_HARD) RegenBaseTics *= 0.94;
+		else if (TrueGameSkill == SKILL_VERY_HARD) RegenBaseTics *= 0.88;
+		else if (TrueGameSkill == SKILL_EXTREME) RegenBaseTics *= 0.76;
+		else if (TrueGameSkill == SKILL_HORRIBLE) RegenBaseTics *= 0.64;
+		else if (TrueGameSkill == SKILL_IMPOSSIBLE) RegenBaseTics *= 0.46;
+		else if (TrueGameSkill >= SKILL_OMEGA) RegenBaseTics *= 0.28;
+		if (health <= SauravatarFirstDMG) RegenBaseTics *= 0.667;
+		if (health <= SauravatarSecondDMG) RegenBaseTics *= 0.667;
+		
+		if (SauravatarRegenState == 4) GetAge() % RegenBaseTics * 27;
+		else if (SauravatarRegenState == 3) SauravatarRegenTic = GetAge() % RegenBaseTics * 9;
+		else if (SauravatarRegenState == 2) SauravatarRegenTic = GetAge() % RegenBaseTics * 3;
+		else SauravatarRegenTic = GetAge() % RegenBaseTics;
+		if (regendebug) Console.Printf("SauravatarRegenTic: %d, RegenState: %d", SauravatarRegenTic, SauravatarRegenState);
+		
+		if (SauravatarRegenTic == 0)
+		{
+			if (health < user_MaxHP)
+			{
+				if (TrueGameSkill <= SKILL_VERY_EASY) SkillMulti = 6;
+				if (TrueGameSkill == SKILL_EASY) SkillMulti = 7;
+				if (TrueGameSkill == SKILL_NORMAL) SkillMulti = 8;
+				if (TrueGameSkill == SKILL_HARD) SkillMulti = 9;
+				if (TrueGameSkill == SKILL_VERY_HARD) SkillMulti = 10;
+				if (TrueGameSkill == SKILL_EXTREME) SkillMulti = 11;
+				if (TrueGameSkill == SKILL_HORRIBLE) SkillMulti = 12;
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillMulti = 13;
+				if (TrueGameSkill >= SKILL_OMEGA) SkillMulti = 14;
+
+				if (SauravatarRegenState == 0) SkillMulti *= 1;
+				if (SauravatarRegenState == 1) SkillMulti *= 4;
+				if (SauravatarRegenState == 2) SkillMulti *= 0.25;
+				if (SauravatarRegenState == 3) SkillMulti *= 0.0625;
+				if (SauravatarRegenState == 4) SkillMulti *= 0.0;
+				
+				if (health <= SauravatarFirstDMG)
+				{
+					if (health <= SauravatarSecondDMG) SkillMulti *= 5.0; 
+					else SkillMulti *= 3.0;
+				}
+				SkillHealthAdd = user_MaxHP * SkillMulti / randompick(262144,131072,131072,131072,131072,131072,131072,131072,131072,131072,131072,65536);
+				if (health <= SauravatarSecondDMG) SkillHealthAdd += random((-7-TrueGameSkill),(7+TrueGameSkill));
+				if (health <= SauravatarFirstDMG) SkillHealthAdd += random((-5-TrueGameSkill),(5+TrueGameSkill));
+				SkillHealthAdd += random((-4-TrueGameSkill),(4+TrueGameSkill));
+
+				if (SkillHealthAdd < TrueGameSkill) SkillHealthAdd = TrueGameSkill;
+				health += SkillHealthAdd;
+				if (health > user_MaxHP) health = user_MaxHP;
+				if (regendebug) Console.Printf("SkillHealthAdd: %d, SkillMulti: %d, RegenState: %d", SkillHealthAdd, SkillMulti, SauravatarRegenState);
+			}
+		}
+		
+		if (health <= SauravatarFirstDMG)
+		{
+			if (health <= SauravatarSecondDMG) SauravatarAtkType = 2;
+			else SauravatarAtkType = 1;
+		}
+		else SauravatarAtkType = 0;
+		if (regendebug) Console.Printf("SauravatarAtkType: %d, (1st: %d, 2nd: %d)", SauravatarAtkType, SauravatarFirstDMG, SauravatarSecondDMG);
+	}
+
+	override void Tick()
+	{
+		if (self.health > 0 && !ActorLevelCalcs && !bDORMANT) 
+		{
+			A_SetSauravatarHealth();
+			A_AetheriusStats(0); 
+		}
+		if (self.health > 0 && ActorLevelCalcs && !bDORMANT) A_SauravatarRegenMode();
+
+		AetheriusBossZSC.Tick();
+	}
+
+	States
+	{
+		Pain.Charm: goto See;
+		Spawn:
+			CYBS A 0 NoDelay
+			{
+				Thing_ChangeTID(0,1124);
+				Thing_SetTranslation(1124,16);
+			}
+			CYBS A 1;
+			goto Idle;
+		Idle:
+			CYBR AB 3
+			{
+				A_Look();
+				SauravatarRegenState = 1;
+			}
+			loop;
+
+		See:
+			CYBR A 0
+			{
+				A_QuakeEx(random(1,2),random(1,2),random(2,3),random(14,17),0,random(960,1088));
+				user_random1 = random(1,4);
+				if (user_random1 == 1) { A_StartSound("SauronStomp1",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 2) { A_StartSound("SauronStomp2",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 3) { A_StartSound("SauronStomp3",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 4) { A_StartSound("SauronStomp4",101,CHANF_DEFAULT,1); }
+	
+				if (random(1,8) == 1)
+				{
+					user_random1 = random(1,4);
+					if (user_random1 == 1) { A_StartSound("SauronActive1",102,CHANF_DEFAULT,1); }
+					else if (user_random1 == 2) { A_StartSound("SauronActive2",102,CHANF_DEFAULT,1); }
+					else if (user_random1 == 3) { A_StartSound("SauronActive3",102,CHANF_DEFAULT,1); }
+					else if (user_random1 == 4) { A_StartSound("SauronActive4",102,CHANF_DEFAULT,1); }
+				}
+				A_SetInventory("SauravatarGauntResist",0);
+				bNOPAIN = false;
+			}
+			CYBR AAB 3
+			{
+				A_DVDSChase("Melee","Missile",0);
+				SauravatarRegenState = 0;
+				A_SetInventory("SauravatarGauntResist",0);
+				bNOPAIN = false;
+			}
+			CYBR B 3
+			{
+				A_DVDSChase(null,"Missile",CHF_FASTCHASE);
+				SauravatarRegenState = 0;
+				A_SetInventory("SauravatarGauntResist",0);
+				bNOPAIN = false;
+			}
+			CYBR CCD 3
+			{
+				A_DVDSChase("Melee","Missile",0);
+				SauravatarRegenState = 0;
+				A_SetInventory("SauravatarGauntResist",0);
+				bNOPAIN = false;
+			}
+			CYBR D 3
+			{
+				A_DVDSChase(null,"Missile",CHF_FASTCHASE);
+				SauravatarRegenState = 0;
+				A_SetInventory("SauravatarGauntResist",0);
+				bNOPAIN = false;
+			}
+			loop;
+		MissileHealthLow:
+			CYBR E 4 
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 9
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall3",45,0,45);
+				A_SpawnProjectile("SauronBFGBall3",45,0,0);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-45);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 9
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 9
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall3",45,0,30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,0);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-30);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 9
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 9
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall3",45,0,60);
+				A_SpawnProjectile("SauronBFGBall3",45,0,0);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-60);
+				SauravatarRegenState = 2;
+			}
+			goto See;
+		MissileHealthMod:
+			CYBR E 5
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 11
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall2",45,0,22.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,0);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 11
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 11
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall2",45,0,-22.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,0);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 11
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 11
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall2",45,0,-11.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,11.25);
+				SauravatarRegenState = 2;
+			}
+			goto See;
+
+		Melee:
+		Missile:
+			TNT1 A 0 A_JumpIfCloser(135, "Stomp");
+			CYBR A 0 A_JumpIf(SauravatarAtkType >= 2,"MissileHealthLow");
+			CYBR A 0 A_JumpIf(SauravatarAtkType == 1,"MissileHealthMod");
+			CYBR E 6
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 12
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall",45,0,0);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 12
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 12
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall",45,0,0);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 12
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 12
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall",45,0,0);
+				SauravatarRegenState = 2;
+			}
+			goto See;
+
+		Stomp:
+			CYBR Z 5
+			{
+				if (levelbehavior > 0 && user_monsterlevel > 120) { A_SetTics(3); }
+				else if (levelbehavior > 0 && user_monsterlevel > 60) { A_SetTics(4); }
+	
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYMA A 7
+			{
+				if (levelbehavior > 0 && user_monsterlevel > 180) { A_SetTics(4); }
+				else if (levelbehavior > 0 && user_monsterlevel > 120) { A_SetTics(5); }
+				else if (levelbehavior > 0 && user_monsterlevel > 60) { A_SetTics(6); }
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYMA B 7
+			{
+				if (levelbehavior > 0 && user_monsterlevel > 180) { A_SetTics(4); }
+				else if (levelbehavior > 0 && user_monsterlevel > 120) { A_SetTics(5); }
+				else if (levelbehavior > 0 && user_monsterlevel > 60) { A_SetTics(6); }
+				A_FaceTarget();
+				
+				A_MonsterCrisisCheck(); // Single Projectile
+				A_CrisisSpawnProjectile("SauravatarStomp","SauravatarStompCrisis",10,0,0,0);
+				if (user_canusecrisisatk == 1) { A_Quake(5,21,0,512,"nosound/silent"); }
+				else { A_Quake(2,21,0,512,"nosound/silent"); }
+				SauravatarRegenState = 2;
+			}
+			CYMA B 7
+			{
+				if (levelbehavior > 0 && user_monsterlevel > 180) { A_SetTics(4); }
+				else if (levelbehavior > 0 && user_monsterlevel > 120) { A_SetTics(5); }
+				else if (levelbehavior > 0 && user_monsterlevel > 60) { A_SetTics(6); }
+				SauravatarRegenState = 2;
+			}
+			CYMA B 0 A_Jump(64,2);
+			CYMA B 0 A_JumpIfCloser(135, "Stomp");
+			CYMA B 0
+			{
+				SauravatarRegenState = 2;
+			}
+			Goto See;
+
+		Pain:
+			CYBR G 0
+			{
+				SauravatarRegenState = 3;
+			}
+			CYBR G 10
+			{
+				user_random1 = random(1,4);
+				if (user_random1 == 1) { A_StartSound("SauronPain1",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 2) { A_StartSound("SauronPain2",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 3) { A_StartSound("SauronPain3",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 4) { A_StartSound("SauronPain4",101,CHANF_DEFAULT,1); }
+				SauravatarRegenState = 3;
+			}
+			goto See;
+		PainCounterHealthLow:
+			CYBR G 10
+			{
+				A_SetTranslucent(0.50, 0);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 2 
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 4 
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall3",45,0,3);
+				A_SpawnProjectile("SauronBFGBall3",45,0,9);
+				A_SpawnProjectile("SauronBFGBall3",45,0,15);
+				A_SpawnProjectile("SauronBFGBall3",45,0,21);
+				A_SpawnProjectile("SauronBFGBall3",45,0,27);
+				A_SpawnProjectile("SauronBFGBall3",45,0,33);
+				A_SpawnProjectile("SauronBFGBall3",45,0,39);
+				A_SpawnProjectile("SauronBFGBall3",45,0,45);
+				A_SpawnProjectile("SauronBFGBall3",45,0,51);
+				A_SpawnProjectile("SauronBFGBall3",45,0,57);
+				A_SpawnProjectile("SauronBFGBall3",45,0,63);
+				A_SpawnProjectile("SauronBFGBall3",45,0,69);
+				A_SpawnProjectile("SauronBFGBall3",45,0,75);
+				A_SpawnProjectile("SauronBFGBall3",45,0,81);
+				A_SpawnProjectile("SauronBFGBall3",45,0,87);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-42);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-36);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-24);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-18);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-12);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-6);
+				A_SpawnProjectile("SauronBFGBall3",45,0,0);
+				A_SpawnProjectile("SauronBFGBall3",45,0,6);
+				A_SpawnProjectile("SauronBFGBall3",45,0,12);
+				A_SpawnProjectile("SauronBFGBall3",45,0,18);
+				A_SpawnProjectile("SauronBFGBall3",45,0,24);
+				A_SpawnProjectile("SauronBFGBall3",45,0,30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,36);
+				A_SpawnProjectile("SauronBFGBall3",45,0,42);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-87);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-81);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-75);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-69);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-63);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-57);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-51);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-45);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-39);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-33);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-27);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-21);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-15);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-9);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-3);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 5
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 4 
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall3",45,0,-12);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-6);
+				A_SpawnProjectile("SauronBFGBall3",45,0,0);
+				A_SpawnProjectile("SauronBFGBall3",45,0,6);
+				A_SpawnProjectile("SauronBFGBall3",45,0,12);
+				A_SpawnProjectile("SauronBFGBall3",45,0,18);
+				A_SpawnProjectile("SauronBFGBall3",45,0,24);
+				A_SpawnProjectile("SauronBFGBall3",45,0,30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,36);
+				A_SpawnProjectile("SauronBFGBall3",45,0,42);
+				A_SpawnProjectile("SauronBFGBall3",45,0,48);
+				A_SpawnProjectile("SauronBFGBall3",45,0,54);
+				A_SpawnProjectile("SauronBFGBall3",45,0,60);
+				A_SpawnProjectile("SauronBFGBall3",45,0,66);
+				A_SpawnProjectile("SauronBFGBall3",45,0,72);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-42);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-36);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-24);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-18);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-12);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-6);
+				A_SpawnProjectile("SauronBFGBall3",45,0,0);
+				A_SpawnProjectile("SauronBFGBall3",45,0,6);
+				A_SpawnProjectile("SauronBFGBall3",45,0,12);
+				A_SpawnProjectile("SauronBFGBall3",45,0,18);
+				A_SpawnProjectile("SauronBFGBall3",45,0,24);
+				A_SpawnProjectile("SauronBFGBall3",45,0,30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,36);
+				A_SpawnProjectile("SauronBFGBall3",45,0,42);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-72);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-66);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-60);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-54);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-48);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-42);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-36);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-24);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-18);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-12);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-6);
+				A_SpawnProjectile("SauronBFGBall3",45,0,0);
+				A_SpawnProjectile("SauronBFGBall3",45,0,6);
+				A_SpawnProjectile("SauronBFGBall3",45,0,12);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 5
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 4 
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall3",45,0,18);
+				A_SpawnProjectile("SauronBFGBall3",45,0,24);
+				A_SpawnProjectile("SauronBFGBall3",45,0,30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,36);
+				A_SpawnProjectile("SauronBFGBall3",45,0,42);
+				A_SpawnProjectile("SauronBFGBall3",45,0,48);
+				A_SpawnProjectile("SauronBFGBall3",45,0,54);
+				A_SpawnProjectile("SauronBFGBall3",45,0,60);
+				A_SpawnProjectile("SauronBFGBall3",45,0,66);
+				A_SpawnProjectile("SauronBFGBall3",45,0,72);
+				A_SpawnProjectile("SauronBFGBall3",45,0,78);
+				A_SpawnProjectile("SauronBFGBall3",45,0,84);
+				A_SpawnProjectile("SauronBFGBall3",45,0,90);
+				A_SpawnProjectile("SauronBFGBall3",45,0,96);
+				A_SpawnProjectile("SauronBFGBall3",45,0,102);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-42);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-36);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-24);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-18);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-12);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-6);
+				A_SpawnProjectile("SauronBFGBall3",45,0,0);
+				A_SpawnProjectile("SauronBFGBall3",45,0,6);
+				A_SpawnProjectile("SauronBFGBall3",45,0,12);
+				A_SpawnProjectile("SauronBFGBall3",45,0,18);
+				A_SpawnProjectile("SauronBFGBall3",45,0,24);
+				A_SpawnProjectile("SauronBFGBall3",45,0,30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,36);
+				A_SpawnProjectile("SauronBFGBall3",45,0,42);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-102);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-96);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-90);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-84);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-78);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-72);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-66);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-60);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-54);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-48);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-42);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-36);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-30);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-24);
+				A_SpawnProjectile("SauronBFGBall3",45,0,-18);
+				SauravatarRegenState = 2;
+			}
+			goto PainGauntEnd;
+
+		PainCounterHealthMod:
+			CYBR G 10
+			{
+				A_SetTranslucent(0.50, 0);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 2 
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 5 
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall2",45,0,-19.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-13.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-7.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-1.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,4.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,10.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,16.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,22.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,28.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,34.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,40.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,46.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,52.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,58.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,64.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-42);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-36);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-30);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-24);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-18);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-12);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-6);
+				A_SpawnProjectile("SauronBFGBall2",45,0,0);
+				A_SpawnProjectile("SauronBFGBall2",45,0,6);
+				A_SpawnProjectile("SauronBFGBall2",45,0,12);
+				A_SpawnProjectile("SauronBFGBall2",45,0,18);
+				A_SpawnProjectile("SauronBFGBall2",45,0,24);
+				A_SpawnProjectile("SauronBFGBall2",45,0,30);
+				A_SpawnProjectile("SauronBFGBall2",45,0,36);
+				A_SpawnProjectile("SauronBFGBall2",45,0,42);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 6
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 5 
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall2",45,0,-42);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-36);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-30);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-24);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-18);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-12);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-6);
+				A_SpawnProjectile("SauronBFGBall2",45,0,0);
+				A_SpawnProjectile("SauronBFGBall2",45,0,6);
+				A_SpawnProjectile("SauronBFGBall2",45,0,12);
+				A_SpawnProjectile("SauronBFGBall2",45,0,18);
+				A_SpawnProjectile("SauronBFGBall2",45,0,24);
+				A_SpawnProjectile("SauronBFGBall2",45,0,30);
+				A_SpawnProjectile("SauronBFGBall2",45,0,36);
+				A_SpawnProjectile("SauronBFGBall2",45,0,42);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-64.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-58.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-52.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-46.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-40.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-34.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-28.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-22.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-16.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-10.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-4.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,1.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,7.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,13.5);
+				A_SpawnProjectile("SauronBFGBall2",45,0,19.5);
+			}
+			CYBR E 6
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 5 
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall2",45,0,-30.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-24.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-18.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-12.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-6.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-0.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,5.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,11.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,17.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,23.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,29.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,35.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,41.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,47.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,53.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-53.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-47.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-41.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-35.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-29.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-23.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-17.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-11.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,-5.25);
+				A_SpawnProjectile("SauronBFGBall2",45,0,0.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,6.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,12.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,18.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,24.75);
+				A_SpawnProjectile("SauronBFGBall2",45,0,30.75);
+				SauravatarRegenState = 2;
+			}
+			goto PainGauntEnd;
+		PainCounter:
+			CYBR G 10
+			{
+				A_SetTranslucent(0.50, 0);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 3 
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 6 
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall",45,0,-42);
+				A_SpawnProjectile("SauronBFGBall",45,0,-36);
+				A_SpawnProjectile("SauronBFGBall",45,0,-30);
+				A_SpawnProjectile("SauronBFGBall",45,0,-24);
+				A_SpawnProjectile("SauronBFGBall",45,0,-18);
+				A_SpawnProjectile("SauronBFGBall",45,0,-12);
+				A_SpawnProjectile("SauronBFGBall",45,0,-6);
+				A_SpawnProjectile("SauronBFGBall",45,0,0);
+				A_SpawnProjectile("SauronBFGBall",45,0,6);
+				A_SpawnProjectile("SauronBFGBall",45,0,12);
+				A_SpawnProjectile("SauronBFGBall",45,0,18);
+				A_SpawnProjectile("SauronBFGBall",45,0,24);
+				A_SpawnProjectile("SauronBFGBall",45,0,30);
+				A_SpawnProjectile("SauronBFGBall",45,0,36);
+				A_SpawnProjectile("SauronBFGBall",45,0,42);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 6
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 6 
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall",45,0,-42);
+				A_SpawnProjectile("SauronBFGBall",45,0,-36);
+				A_SpawnProjectile("SauronBFGBall",45,0,-30);
+				A_SpawnProjectile("SauronBFGBall",45,0,-24);
+				A_SpawnProjectile("SauronBFGBall",45,0,-18);
+				A_SpawnProjectile("SauronBFGBall",45,0,-12);
+				A_SpawnProjectile("SauronBFGBall",45,0,-6);
+				A_SpawnProjectile("SauronBFGBall",45,0,0);
+				A_SpawnProjectile("SauronBFGBall",45,0,6);
+				A_SpawnProjectile("SauronBFGBall",45,0,12);
+				A_SpawnProjectile("SauronBFGBall",45,0,18);
+				A_SpawnProjectile("SauronBFGBall",45,0,24);
+				A_SpawnProjectile("SauronBFGBall",45,0,30);
+				A_SpawnProjectile("SauronBFGBall",45,0,36);
+				A_SpawnProjectile("SauronBFGBall",45,0,42);
+				SauravatarRegenState = 2;
+			}
+			CYBR E 6
+			{
+				A_FaceTarget();
+				SauravatarRegenState = 2;
+			}
+			CYBR F 6 
+			{
+				A_StartSound("weapons/bfgf");
+				A_SpawnProjectile("SauronBFGBall",45,0,-42);
+				A_SpawnProjectile("SauronBFGBall",45,0,-36);
+				A_SpawnProjectile("SauronBFGBall",45,0,-30);
+				A_SpawnProjectile("SauronBFGBall",45,0,-24);
+				A_SpawnProjectile("SauronBFGBall",45,0,-18);
+				A_SpawnProjectile("SauronBFGBall",45,0,-12);
+				A_SpawnProjectile("SauronBFGBall",45,0,-6);
+				A_SpawnProjectile("SauronBFGBall",45,0,0);
+				A_SpawnProjectile("SauronBFGBall",45,0,6);
+				A_SpawnProjectile("SauronBFGBall",45,0,12);
+				A_SpawnProjectile("SauronBFGBall",45,0,18);
+				A_SpawnProjectile("SauronBFGBall",45,0,24);
+				A_SpawnProjectile("SauronBFGBall",45,0,30);
+				A_SpawnProjectile("SauronBFGBall",45,0,36);
+				A_SpawnProjectile("SauronBFGBall",45,0,42);
+				SauravatarRegenState = 2;
+			}
+			goto PainGauntEnd;
+
+		Pain.Sceptre:
+			CYBR G 0 { SauravatarRegenState = 3; }
+			CYBR G 10
+			{
+				user_random1 = random(1,4);
+				if (user_random1 == 1) { A_StartSound("SauronPain1",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 2) { A_StartSound("SauronPain2",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 3) { A_StartSound("SauronPain3",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 4) { A_StartSound("SauronPain4",101,CHANF_DEFAULT,1); }
+				SauravatarRegenState = 3;
+				A_SetTics(random(8,12));
+			}
+			CYBR GGGG 10 A_SetTics(random(8,12));
+			goto See;
+
+		Pain.Gauntlets:
+			CYBR G 1
+			{
+				user_random1 = random(1,4);
+				if (user_random1 == 1) { A_StartSound("SauronPain1",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 2) { A_StartSound("SauronPain2",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 3) { A_StartSound("SauronPain3",101,CHANF_DEFAULT,1); }
+				else if (user_random1 == 4) { A_StartSound("SauronPain4",101,CHANF_DEFAULT,1); }
+				SauravatarRegenState = 4;
+				A_SetTics(random(0,1));
+			}
+			CYBR G 0 A_SetReflectiveInvulnerable;
+			CYBR G 0 A_UnSetShootable;
+			CYBR G 10 
+			{
+				A_SetTranslucent (0.50, 0);
+				SauravatarRegenState = 4;
+			}
+			CYBR G 10
+			{
+				A_SetTranslucent (0.33, 0);
+				SauravatarRegenState = 4;
+			}
+			CYBR G 10
+			{
+				A_SetTranslucent (0.50, 0);
+				SauravatarRegenState = 4;
+			}
+			CYBR G 10
+			{
+				A_SetTranslucent (0.33, 0);
+				SauravatarRegenState = 4;
+			}
+			CYBR G 10
+			{
+				A_SetTranslucent (0.50, 0);
+				SauravatarRegenState = 4;
+			}
+			CYBR G 10
+			{
+				A_SetTranslucent (0.33, 0);
+				SauravatarRegenState = 4;
+			}
+			CYBR G 10
+			{
+				A_SetTranslucent (0.50, 0);
+				SauravatarRegenState = 4;
+			}
+			CYBR G 10
+			{
+				A_SetTranslucent (0.33, 0);
+				SauravatarRegenState = 4;
+			}
+			CYBR G 0 A_SetShootable;
+			CYBR G 0 A_UnSetReflectiveInvulnerable;
+			CYBR G 0 
+			{
+				A_SetInventory("SauravatarGauntResist",1);
+				bNOPAIN = true;
+			}
+			CYBR A 0 A_JumpIf(SauravatarAtkType >= 2,"PainCounterHealthLow");
+			CYBR A 0 A_JumpIf(SauravatarAtkType == 1,"PainCounterHealthMod");
+			CYBR A 0 A_JumpIf(SauravatarAtkType <= 0,"PainCounter");
+			goto PainCounter;
+		PainGauntEnd:
+			CYBR G 0 
+			{
+				A_SetTranslucent (1.0, 0);
+				A_SetInventory("SauravatarGauntResist",0);
+				bNOPAIN = false;
+			}
+			goto See;
+		XDeath:
+		Death:
+			CYBR G 0 { SauravatarRegenState = 4; }
+			TNT1 A 0 A_DVDSNormalDeath((864000+user_MaxHP),0,1);
+			CYBR H 5 A_SetTranslucent (0.9775, 0);
+			CYBR H 5 A_SetTranslucent (0.955, 0);
+			CYBR I 0 ACS_NamedExecute("SauravatarDeath",0,0,0,0);
+			CYBR I 0 A_StartSound("SauronDeath",101,CHANF_DEFAULT,2);
+			CYBR I 5 A_SetTranslucent (0.9325, 0);
+			CYBR I 5 A_SetTranslucent (0.91, 0);
+			CYBR J 5 A_SetTranslucent (0.8875, 0);
+			CYBR J 5 A_SetTranslucent (0.865, 0);
+			CYBR K 5 A_SetTranslucent (0.8425, 0);
+			CYBR K 5 A_SetTranslucent (0.82, 0);
+			CYBR L 5 A_SetTranslucent (0.7975, 0);
+			CYBR L 5 A_SetTranslucent (0.775, 0);
+			CYBR M 0 A_NoBlocking;
+			CYBR M 5 A_SetTranslucent (0.7525, 0);
+			CYBR M 5 A_SetTranslucent (0.73, 0);
+			CYBR N 5 A_SetTranslucent (0.7075, 0);
+			CYBR N 5 A_SetTranslucent (0.685, 0);
+			CYBR O 5 A_SetTranslucent (0.6625, 0);
+			CYBR O 5 A_SetTranslucent (0.64, 0);
+			CYBR P 5 A_SetTranslucent (0.6175, 0);
+			CYBR P 5 A_SetTranslucent (0.595, 0);
+			CYBR P 5 A_SetTranslucent (0.5725, 0);
+			CYBR P 5 A_SetTranslucent (0.55, 0);
+			CYBR P 5 A_SetTranslucent (0.5275, 0);
+			CYBR P 5 A_SetTranslucent (0.505, 0);
+			CYBR P 5 A_SetTranslucent (0.4825, 0);
+			CYBR P 5 A_SetTranslucent (0.46, 0);
+			CYBR P 5 A_SetTranslucent (0.4375, 0);
+			CYBR P 5 A_SetTranslucent (0.415, 0);
+			CYBR P 5 A_SetTranslucent (0.3925, 0);
+			CYBR P 5 A_SetTranslucent (0.37, 0);
+			CYBR P 5 A_SetTranslucent (0.3475, 0);
+			CYBR P 5 A_SetTranslucent (0.325, 0);
+			CYBR P 5 A_SetTranslucent (0.3025, 0);
+			CYBR P 5 A_SetTranslucent (0.28, 0);
+			CYBR P 5 A_SetTranslucent (0.2575, 0);
+			CYBR P 5 A_SetTranslucent (0.235, 0);
+			CYBR P 5 A_SetTranslucent (0.2125, 0);
+			CYBR P 5 A_SetTranslucent (0.19, 0);
+			CYBR P 5 A_SetTranslucent (0.1675, 0);
+			CYBR P 5 A_SetTranslucent (0.145, 0);
+			CYBR P 5 A_SetTranslucent (0.1225, 0);
+			CYBR P 5 A_SetTranslucent (0.10, 0);
+			CYBR P 5 A_SetTranslucent (0.0775, 0);
+			CYBR P 5 A_SetTranslucent (0.055, 0);
+			CYBR P 0 
+			{
+				if (CallACS("OtherVarCheckDECORATE",8) == 1) { A_StartSound("SauronDeathS",102,CHANF_DEFAULT,2); }
+			}
+			CYBR P 5 A_SetTranslucent (0.0325, 0);
+			CYBR P 5 A_SetTranslucent (0.01, 0);
+			CYBR P 875
+			{
+				if (CallACS("OtherVarCheckDECORATE",8) != 1) { A_SetTics(0); }
+			}
+			// 1095 total time
+			CYBR P -1 
+			{
+				if (CallACS("OtherVarCheckDECORATE",8) == 1) { A_BrainDie(); } else { A_SetTics(0); }
+			}
+			stop;
+	}
+}
+
+// Sauravatar "Still"
+class SauravatarStill : Sauravatar
+{
+	default
+	{
+		mass 50000000;
+		species "Sauron";
+		-SHOOTABLE;
+		-ISMONSTER;
+	}
+
+	States
+	{
+		Spawn:
+			CYBS A 0 NoDelay
+			{
+				Thing_ChangeTID(0,1124);
+				Thing_SetTranslation(1124,16);
+				Thing_ChangeTID(1124,1124);
+			}
+			goto Idle;
+		Idle:
+			CYBR ABCD 35;
+			loop;
+	}
+}
+
+// TODO - Lesser Sauravatar [BOSS]
+
 //***********************************
 //** ACTUAL Monster Definitions V: **
 //***********************************
@@ -10198,6 +11069,7 @@ class PracticeTarget : AetheriusMonsterZSC //21333
 		Death:
 				TNT1 A -1 A_SpawnItemEx("PracticeTarget", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION);
 				Stop;
+
 		Pain: goto See;
 		Pain.Charm: goto See;
 		Pain.Heal1: goto See;
