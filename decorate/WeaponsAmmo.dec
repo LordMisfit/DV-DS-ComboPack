@@ -2488,8 +2488,15 @@ actor FistFlora : FloraWeapon
 			FLHN F 1
 			{
 				A_WeaponReady(WRF_ALLOWUSER4); // A [Left] or F [Right]
-				//if (random(1,100) <= 35) { A_ChangeFlag("WEAPON.MELEEWEAPON", TRUE); } else { A_ChangeFlag("WEAPON.MELEEWEAPON", FALSE); }
-				if (CountInv("FistPlayerBlockItem") > 0) { return state("User4Hold"); }
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { return state("Ready2"); }
+				return state("");
+			}
+			loop
+		Ready2:
+			FLHF A 1
+			{
+				A_WeaponReady(WRF_ALLOWUSER4); // A [Left] or F [Right]
+				if (CallACS("MiscVarCheckDECORATE",10035) < 4) { return state("Ready"); }
 				return state("");
 			}
 			loop
@@ -2499,6 +2506,18 @@ actor FistFlora : FloraWeapon
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*3);
 				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10036)*7.5);
 				A_DVDSLower(18);
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { return state("Deselect2"); }
+				return state("");
+			}
+			loop
+		Deselect2:
+			FLHF A 1
+			{
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10035)*3);
+				A_DVDSLower(CallACS("MiscVarCheckDECORATE",10036)*7.5);
+				A_DVDSLower(18);
+				if (CallACS("MiscVarCheckDECORATE",10035) < 4) { return state("Deselect"); }
+				return state("");
 			}
 			loop
 		Select: 
@@ -2507,6 +2526,18 @@ actor FistFlora : FloraWeapon
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*3);
 				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10036)*7.5);
 				A_DVDSRaise(18);
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { return state("Select2"); }
+				return state("");
+			}
+			loop
+		Select2: 
+			FLHN F 1
+			{
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10035)*3);
+				A_DVDSRaise(CallACS("MiscVarCheckDECORATE",10036)*7.5);
+				A_DVDSRaise(18);
+				if (CallACS("MiscVarCheckDECORATE",10035) < 4) { return state("Select"); }
+				return state("");
 			}
 			loop
 		Fire:
@@ -2547,6 +2578,8 @@ actor FistFlora : FloraWeapon
 			// 13 Tics [10 (MAMlv2), 8 (MAMlv3), 5 (MAMlv4), 3 (MAMlv5)]
 			FLHN G 3 // B [Left] or G [Right]
 			{
+				A_SetMartialArtsMastery(1);
+				A_SetInventory("UsingMeleeAttack",1);
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 2) { A_SetTics(2); }
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { A_SetTics(1); }
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 5 && A_WeaponCheckDoubleFireRate > 0) { A_SetTics(0); }
@@ -2557,39 +2590,7 @@ actor FistFlora : FloraWeapon
 			{
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(1); }
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_SetTics(0); }
-				CallACS("StartTensionCountDown");
-				A_GetPunchSwingRecoil(0);
-				A_SpreadAuraCustomPunch(A_GetPunchDamage(0),1,CPF_NOTURN,"FistPuff",A_GetMeleeRange(0),0,0,"","","");
-	
-				if (A_CheckMeleeDestroyProj(0) > 0)
-				{
-					if (CallACS("MiscVarCheckDECORATE",10035) >= 5)
-					{
-						if (random(1,8) <= 3)
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,16);
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,48);
-						}
-						else
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,16);
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,48);
-						}
-					}
-					else
-					{
-						if (random(1,8) <= 1)
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,16);
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,48);
-						}
-						else
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,16);
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,48);
-						}
-					}
-				}
+				A_FloraPunch(0);
 			}
 			FLHN I 3 // D [Left] or I [Right]
 			{
@@ -2607,14 +2608,17 @@ actor FistFlora : FloraWeapon
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { A_SetTics(1); }
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 5 && A_WeaponCheckDoubleFireRate > 0) { A_SetTics(0); }
 				A_SetMartialArtsMastery(0);
+				A_SetInventory("UsingMeleeAttack",0);
 				A_ReFire;
 			}
-			FLHN G 0 A_SetInventory("UsingMeleeAttack",0)
+			FLHN G 0 
 			goto Ready
 		RightPunch:
 			// 13 Tics [10 (MAMlv2), 8 (MAMlv3), 5 (MAMlv4), 3 (MAMlv5)]
 			FLHN B 3 // B [Left] or G [Right]
 			{
+				A_SetMartialArtsMastery(1);
+				A_SetInventory("UsingMeleeAttack",1);
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 2) { A_SetTics(2); }
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { A_SetTics(1); }
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 5 && A_WeaponCheckDoubleFireRate > 0) { A_SetTics(0); }
@@ -2625,39 +2629,7 @@ actor FistFlora : FloraWeapon
 			{
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 3) { A_SetTics(1); }
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 5) { A_SetTics(0); }
-				CallACS("StartTensionCountDown");
-				A_GetPunchSwingRecoil(0);
-				A_SpreadAuraCustomPunch(A_GetPunchDamage(0),1,CPF_NOTURN,"FistPuff",A_GetMeleeRange(0),0,0,"","","");
-
-				if (A_CheckMeleeDestroyProj(0) > 0)
-				{
-					if (CallACS("MiscVarCheckDECORATE",10035) >= 5)
-					{
-						if (random(1,8) <= 3)
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,16);
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,48);
-						}
-						else
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,16);
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,48);
-						}
-					}
-					else
-					{
-						if (random(1,8) <= 1)
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,16);
-							A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,48);
-						}
-						else
-						{
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,16);
-							A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,48);
-						}
-					}
-				}
+				A_FloraPunch(0);
 			}
 			FLHN D 3 // D [Left] or I [Right]
 			{
@@ -2675,9 +2647,10 @@ actor FistFlora : FloraWeapon
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 4) { A_SetTics(1); }
 				if (CallACS("MiscVarCheckDECORATE",10035) >= 5 && A_WeaponCheckDoubleFireRate > 0) { A_SetTics(0); }
 				A_SetMartialArtsMastery(0);
+				A_SetInventory("UsingMeleeAttack",0);
 				A_ReFire;
 			}
-			FLHN B 0 A_SetInventory("UsingMeleeAttack",0)
+			FLHN B 0 
 			goto Ready
 
 		AltFire:
