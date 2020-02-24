@@ -6,6 +6,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	bool droppedtheirsoul;
 	bool diedasafriendly;
 	bool diedasacharmed;
+	bool damagedbyplayer;
 	// Afrit
 	const FIREDEMON_ATTACK_RANGE = 64*8.;
 	int fdstrafecount;
@@ -2338,7 +2339,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 		
 		int outputdmg = damage;
-		if (playpawn) outputdmg = playpawn.playoutputdmg;
+		if (playpawn) 
+		{
+			if (damage > 0) damagedbyplayer = true;
+			outputdmg = playpawn.playoutputdmg;
+		}
 		double finaldmgfactor = 1.00;
 		if (outputdmg > 0) finaldmgfactor = 1.00 * ret / outputdmg;
 		if (dvdsdebug_actordmgdisplays && outputdmg > 0) 
@@ -5674,10 +5679,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (lastattacker && lastattacker.bFRIENDLY)
 			{
 				KilledByPlayer = 0;
-				KillExpMultiplier = frandom(0.65,0.90); // [65 to 90%]
+				KillExpMultiplier = random(65,90) * 0.01; // [65 to 90%]
+				double tempval1 = 0.5;
+				double tempval2 = (1.0 - KillExpMultiplier) * tempval1;
 				if (CountInv("AnubisCufflinks", AAPTR_PLAYER1) > 0) KillExpMultiplier += 0.10;
+				if (damagedbyplayer) KillExpMultiplier += tempval2; // If the player also directly contribued to damaging the monster, they gain 50% more share of the EXP than otherwise
 				if (KillExpMultiplier >= 1.0) KillExpMultiplier = 1.0;
-				if (debugexp) Console.Printf("\cxAddEXP\c- - Passed Player/Friendly-Monster Credit Check: YES, \cxKillMultiplier: %.8f\c-", KillExpMultiplier);
+				if (debugexp) Console.Printf("\cxAddEXP\c- - Passed Player/Friendly-Monster Credit Check: YES, \cxDamagedByPlayer: %d (%.8f)\c-, \cxKillMultiplier: %.8f\c-", DamagedByPlayer, tempval2, KillExpMultiplier);
 			}
 			else
 			{
@@ -9521,6 +9529,30 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 	}
 	
+	void A_HETeleport(statelabel tele = "TeleportChoose")
+	{
+		if (!CountInv("HadesTeleportCooldown") && target && CheckIfTargetInLOS(0, JLOSF_DEADNOJUMP))
+		{
+			if (levelbehavior > 0 && user_monsterlevel > 180) { if (random(1,256) <= 144) { SetStateLabel(tele); } }
+			else if (levelbehavior > 0 && user_monsterlevel > 120) { if (random(1,256) <= 120) { SetStateLabel(tele); } }
+			else if (levelbehavior > 0 && user_monsterlevel > 60) { if (random(1,256) <= 96) { SetStateLabel(tele); } }
+			else if (levelbehavior > 0 && user_monsterlevel <= 60) { if (random(1,256) <= 72) { SetStateLabel(tele); } }
+			else { if (random(1,256) <= 72) { SetStateLabel(tele); } }
+		}
+	}
+
+	void A_HOTeleport(statelabel tele = "TeleportChoose")
+	{
+		if (!CountInv("HadesTeleportCooldown") && target && CheckIfTargetInLOS(0, JLOSF_DEADNOJUMP))
+		{
+			if (levelbehavior > 0 && user_monsterlevel > 180) { if (random(1,256) <= 68) { SetStateLabel(tele); } }
+			else if (levelbehavior > 0 && user_monsterlevel > 120) { if (random(1,256) <= 56) { SetStateLabel(tele); } }
+			else if (levelbehavior > 0 && user_monsterlevel > 60) { if (random(1,256) <= 44) { SetStateLabel(tele); } }
+			else if (levelbehavior > 0 && user_monsterlevel <= 60) { if (random(1,256) <= 32) { SetStateLabel(tele); } }
+			else { if (random(1,256) <= 32) { SetStateLabel(tele); } }
+		}
+	}
+
 	void A_HadesSphereTeleport(statelabel tele = "Teleport", int chance = 128, int chancemax = 1024)
 	{
 		if (!CountInv("HSphereTeleportCooldown") && target && CheckIfTargetInLOS(0, JLOSF_DEADNOJUMP))
