@@ -89,7 +89,6 @@
 			["DVI-AwakenSauravatar"]					-	***EVENT*** Awakens the Stone Cyberdemon that becomes Sauravatar [DVI-DS & DVII-DS] ***EVENT***
 			{"UnsetFishmouthMusic"}						-	***LINETRIGGER-EVENT*** Changes Music back when exiting the Fishmouth Temple in MAP04 [DVI-DS] or MAP12 [DVII-DS] ***LINETRIGGER-EVENT***
 			{"SetFishmouthMusic"}							-	***LINETRIGGER-EVENT*** Changes Music for Entering the Fishmouth Temple in MAP04 [DVI-DS] or MAP12 [DVII-DS] ***LINETRIGGER-EVENT***
-			["SauravatarRegenMode"]						-	***EVENT*** Health Regeneration for Main Sauravatar [only runs when it walks around] [DVI-DS & DVII-DS] ***EVENT***
 			["SauravatarDeath"]								-	***EVENT*** Sauravatar's Death [DVI-DS specific version] ***EVENT***
 
 			["Initializer"]										-	Exp Table Setup (& Initial Startup Process [added for DVI/DVII-DS])
@@ -449,7 +448,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [177] Shows "ArmorDiffRatio" in the new HUD for Player's "Damage/Healing" bursts.
 	// [178] Shows "NewArmorValue" in the new HUD for the Player's "Damage/Healing" bursts. 
 	// [179] Shows "You Died" animation after dying... :V
-	// [180] is for level up dialouge timer
+	// [180] is for level up dialogue timer
 	// [181] Tension Level
 	// [182] Tension Level Compare
 	// [183] Tension Timer
@@ -684,6 +683,8 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [2500] Menu mode toggle. 0 = Off, 1 = On
 		// [2501] is undefined
 	// [2502] Unfreeze Player
+
+	// [2601 - 2614] Armor Item Drop Checkers #1-#14
 
 	// ***[5001-5500] Are likely reserved for Petra-specfic vars***
 	// [5001] Arcana Points [Petra]
@@ -9037,14 +9038,21 @@ script "HUDDISPLAY" ENTER
 			{
 				showmanabar = 1;
 			}
-			If(StrIcmp(weapon, "64UnmakerPetra") == 0) //Petra's version of the Unmaker runs on Cell ammo instead of MP.
+			If(StrIcmp(weapon, "64Unmaker") == 0) // Marines' version of the Unmaker runs on MP/Cells instead of MP.
 			{
-				ammo = CheckActorInventory(Player1TID,"Cell");
-				maxammo = GetAmmoCapacity("Cell");
-			}
-			If(StrIcmp(weapon, "64UnmakerFlora") == 0) //Flora's version of the Unmaker runs off of MP instead of Cell ammo.
-			{
-				showmanabar = 1;
+				if (CheckActorInventory(Player1TID,"UnmakerAmmoType") == 0)
+				{
+					showmanabar = 1;
+				}
+				else
+				if (CheckActorInventory(Player1TID,"UnmakerAmmoType") == 1)
+				{
+					if (CharacterClass != 2)
+					{
+						ammo = CheckActorInventory(Player1TID,"Cell");
+						maxammo = GetAmmoCapacity("Cell");
+					}
+				}
 			}
 			If(StrIcmp(weapon, "SapphireWandNew" ) == 0 || StrIcmp(weapon, "DualSapphireWandsNew" ) == 0)
 			{
@@ -9244,8 +9252,8 @@ script "HUDDISPLAY" ENTER
 			If(StrIcmp(weapon, "DualScepterOfSouls") == 0) SetFont("WISCPS2");
 
 			// Doom 64 Weapons
-			If(StrIcmp(weapon, "64UnmakerFlora") == 0) SetFont("WIUNMAKE");
-			If(StrIcmp(weapon, "64UnmakerPetra") == 0) SetFont("WIUNMAKE");
+			If(StrIcmp(weapon, "64Unmaker") == 0) SetFont("WIUNMAKE");
+			If(StrIcmp(weapon, "64UnmakerDual") == 0) SetFont("WIUNMAK2");
 
 			// Actual Weapon Icon Display
 			xpos = ScreenXOffset + 1288.0; // 1288.0
@@ -32905,7 +32913,7 @@ script "DVI-M04MonsterTags" (void)
 	{
 		if (GetLevelInfo(LEVELINFO_LEVELNUM) == 1104)
 		{
-			Thing_ChangeTID (0, 666);
+			Thing_ChangeTID(0, 666);
 		}
 	}
 	else
@@ -32915,195 +32923,6 @@ script "DVI-M04MonsterTags" (void)
 		{
 			Thing_ChangeTID (0, 666);
 		}
-	}
-}
-
-// Used later to configure the full max health of the [Greater] Sauravatar and set it to its proper Health to start the fight [instead of its predefined DECORATE amount] [DVI-DS]
-script "SetSauravatarHealth" (void)
-{
-	int MonstKillHealthMulti, MonsterKillHealth;
-	int SkillMulti;
-
-	if (TrueGameSkill <= SKILL_VERY_EASY) SpecialGameFlags[10002] = 111375; // Sauravatar [DVI-DS]
-	if (TrueGameSkill == SKILL_EASY) SpecialGameFlags[10002] = 141750; // Sauravatar [DVI-DS]
-	if (TrueGameSkill == SKILL_NORMAL) SpecialGameFlags[10002] = 162000; // Sauravatar [DVI-DS]
-	if (TrueGameSkill == SKILL_HARD) SpecialGameFlags[10002] = 182250; // Sauravatar [DVI-DS]
-	if (TrueGameSkill == SKILL_VERY_HARD) SpecialGameFlags[10002] = 212625; // Sauravatar [DVI-DS]
-	if (TrueGameSkill == SKILL_EXTREME) SpecialGameFlags[10002] = 243000; // Sauravatar [DVI-DS]
-	if (TrueGameSkill == SKILL_HORRIBLE) SpecialGameFlags[10002] = 263250; // Sauravatar [DVI-DS]
-	if (TrueGameSkill == SKILL_IMPOSSIBLE) SpecialGameFlags[10002] = 263250; // Sauravatar [DVI-DS]
-	if (TrueGameSkill >= SKILL_OMEGA) SpecialGameFlags[10002] = 283500; // Sauravatar [DVI-DS]
-	SpecialGameFlags[10001] = SpecialGameFlags[10002];
-	// PrintBold(s:"Phase1 - First Value: ",d:SpecialGameFlags[10001]);
-
-	if (TrueGameSkill <= SKILL_VERY_EASY) SkillMulti = 30;
-	else if (TrueGameSkill == SKILL_EASY) SkillMulti = 35;
-	else if (TrueGameSkill == SKILL_NORMAL) SkillMulti = 40;
-	else if (TrueGameSkill == SKILL_HARD) SkillMulti = 45;
-	else if (TrueGameSkill == SKILL_VERY_HARD) SkillMulti = 50;
-	else if (TrueGameSkill == SKILL_EXTREME) SkillMulti = 55;
-	else if (TrueGameSkill == SKILL_HORRIBLE) SkillMulti = 60;
-	else if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillMulti = 65;
-	else if (TrueGameSkill >= SKILL_OMEGA) SkillMulti = 70;
-
-	int SkillHealthAdd = SpecialGameFlags[10001] * SkillMulti / 100;
-	SpecialGameFlags[10001] += SkillHealthAdd;
-	// PrintBold(s:"Phase2 - Difficulty Add: ",d:SpecialGameFlags[10001],s:"\nSkillHealthAdd: ",d:SkillHealthAdd);
-
-	MonsterKillHealth = MonstersAlive[1101] * 192;
-	MonsterKillHealth += MonstersKilled[1101] * 24;
-	MonsterKillHealth += MonstersAlive[1102] * 160;
-	MonsterKillHealth += MonstersKilled[1102] * 36;
-	MonsterKillHealth += MonstersAlive[1103] * 128;
-	MonsterKillHealth += MonstersKilled[1103] * 48;
-	MonsterKillHealth += MonstersAlive[1104] * 96;
-	MonsterKillHealth += MonstersKilled[1104] * 60;
-	if (TrueGameSkill <= SKILL_VERY_EASY) MonstKillHealthMulti = 70;
-	else if (TrueGameSkill == SKILL_EASY) MonstKillHealthMulti = 88;
-	else if (TrueGameSkill == SKILL_NORMAL) MonstKillHealthMulti = 100;
-	else if (TrueGameSkill == SKILL_HARD) MonstKillHealthMulti = 112;
-	else if (TrueGameSkill == SKILL_VERY_HARD) MonstKillHealthMulti = 124;
-	else if (TrueGameSkill == SKILL_EXTREME) MonstKillHealthMulti = 136;
-	else if (TrueGameSkill == SKILL_HORRIBLE) MonstKillHealthMulti = 148;
-	else if (TrueGameSkill == SKILL_IMPOSSIBLE) MonstKillHealthMulti = 160;
-	else if (TrueGameSkill >= SKILL_OMEGA) MonstKillHealthMulti = 172;
-
-	MonsterKillHealth = MonsterKillHealth * MonstKillHealthMulti / 100;
-	SpecialGameFlags[10001] += MonsterKillHealth;
-	//PrintBold(s:"Phase3 - Level Kills Add: ",d:SpecialGameFlags[10001],s:"\nMonsterKillHealth: ",d:MonsterKillHealth,s:"\nMonstKillHealthMulti: ",d:MonstKillHealthMulti);
-
-	int SecretsFoundHealth;
-	SecretsFoundHealth = SecretsFound[1101];
-	SecretsFoundHealth -= SecretsFound[1102];
-	SecretsFoundHealth -= SecretsFound[1103];
-	SecretsFoundHealth -= SecretsFound[1104];
-	if (TrueGameSkill <= SKILL_VERY_EASY) SecretsFoundHealth = SecretsFoundHealth * 3 / 2; // 150%
-	else if (TrueGameSkill == SKILL_EASY) SecretsFoundHealth = SecretsFoundHealth * 5 / 4; // 125%
-	else if (TrueGameSkill == SKILL_NORMAL) SecretsFoundHealth = SecretsFoundHealth / 2;  // 100%
-	else if (TrueGameSkill == SKILL_HARD) SecretsFoundHealth = SecretsFoundHealth * 3 / 4; // 75%
-	else if (TrueGameSkill == SKILL_VERY_HARD) SecretsFoundHealth = SecretsFoundHealth / 2;  // 50%
-	else if (TrueGameSkill == SKILL_EXTREME) SecretsFoundHealth = SecretsFoundHealth / 3;  // 33%
-	else if (TrueGameSkill == SKILL_HORRIBLE) SecretsFoundHealth = SecretsFoundHealth / 5;  // 20%
-	else if (TrueGameSkill == SKILL_IMPOSSIBLE) SecretsFoundHealth = SecretsFoundHealth / 6;  // 16.6%
-	else if (TrueGameSkill >= SKILL_OMEGA) SecretsFoundHealth = SecretsFoundHealth / 8;  // 12.5%
-
-	int SecrFoundHealthMulti = 100;
-	SecrFoundHealthMulti -= SecretsFoundHealth;
-	SpecialGameFlags[10001] = SpecialGameFlags[10001] * SecrFoundHealthMulti / 100;
-	//PrintBold(s:"Phase4 - SecretsFound Add: ",d:SpecialGameFlags[10001],s:"\nSecretsFoundHealth: ",d:SecretsFoundHealth,s:"\nSecrFoundHealthMulti: ",d:SecrFoundHealthMulti);
-
-	int PLevelHealthMulti = PlayerLevel / 4;
-	PLevelHealthMulti += 100;
-	SpecialGameFlags[10001] = SpecialGameFlags[10001] * PLevelHealthMulti / 100;
-	//PrintBold(s:"Phase5 - PlayerLevel Add: ",d:SpecialGameFlags[10001],s:"\nPLevelHealthMulti: ",d:PLevelHealthMulti);
-
-	if (CheckActorInventory(Player1TID,"SauronHelmet") > 0)
-	{
-		SpecialGameFlags[10001] = SpecialGameFlags[10001] * 5 / 4;
-		//PrintBold(s:"Phase6 - SauronItems Add: Found Helmet ",d:SpecialGameFlags[10001]);
-	}
-	if (CheckActorInventory(Player1TID,"SauronGauntlets") > 0)
-	{
-		SpecialGameFlags[10001] = SpecialGameFlags[10001] * 5 / 4; 
-		//PrintBold(s:"Phase6 - SauronItems Add: Found Gauntlets [Deggaris] ",d:SpecialGameFlags[10001]);
-	}
-	if (CheckActorInventory(Player1TID,"SauronGauntletsIllucia") > 0)
-	{
-		SpecialGameFlags[10001] = SpecialGameFlags[10001] * 5 / 4; 
-		//PrintBold(s:"Phase6 - SauronItems Add: Found Gauntlets [Illucia] ",d:SpecialGameFlags[10001]);
-	}
-	if (CheckActorInventory(Player1TID,"SauronGauntletsFlora") > 0)
-	{
-		SpecialGameFlags[10001] = SpecialGameFlags[10001] * 5 / 4; 
-		//PrintBold(s:"Phase6 - SauronItems Add: Found Gauntlets [Flora] ",d:SpecialGameFlags[10001]);
-	}
-	if (CheckActorInventory(Player1TID,"SauronGauntletsAilish") > 0)
-	{
-		SpecialGameFlags[10001] = SpecialGameFlags[10001] * 5 / 4; 
-		//PrintBold(s:"Phase6 - SauronItems Add: Found Gauntlets [Ailish] ",d:SpecialGameFlags[10001]);
-	}
-	if (CheckActorInventory(Player1TID,"SauronGauntletsPetra") > 0)
-	{
-		SpecialGameFlags[10001] = SpecialGameFlags[10001] * 5 / 4; 
-		//PrintBold(s:"Phase6 - SauronItems Add: Found Gauntlets [Petra] ",d:SpecialGameFlags[10001]);
-	}
-	if (CheckActorInventory(Player1TID,"TheOneRing") > 0)
-	{
-		SpecialGameFlags[10001] = SpecialGameFlags[10001] * 2;
-		//PrintBold(s:"Phase6 - SauronItems Add: Found Ring ",d:SpecialGameFlags[10001]);
-	}
-	//PrintBold(s:"Phase6 - SauronItems Add: ",d:SpecialGameFlags[10001]);
-
-	SpecialGameFlags[10003] = SpecialGameFlags[10001] * 2 / 3;
-	SpecialGameFlags[10004] = SpecialGameFlags[10001] * 1 / 3;
-
-	SetActorProperty(1124,APROP_Health,SpecialGameFlags[10001]);
-	SetActorProperty(1124,APROP_SpawnHealth,SpecialGameFlags[10001]);
-	//SetInventory("CurrentMaxHealth", SpecialGameFlags[10001]);
-	SetUserVariable(1124,"user_MaxHP",SpecialGameFlags[10001]);
-
-	Thing_Damage2(666,999999,"Massacre"); 
-}
-
-// Health Regeneration [only runs when Sauravatar walks around] [DVI-DS]
-script "SauravatarRegenMode" (int RegenType)
-{
-	int SkillHealthAdd, SkillMulti;
-
-	if (TrueGameSkill <= SKILL_VERY_EASY) SkillMulti = 6;
-	if (TrueGameSkill == SKILL_EASY) SkillMulti = 7;
-	if (TrueGameSkill == SKILL_NORMAL) SkillMulti = 8;
-	if (TrueGameSkill == SKILL_HARD) SkillMulti = 9;
-	if (TrueGameSkill == SKILL_VERY_HARD) SkillMulti = 10;
-	if (TrueGameSkill == SKILL_EXTREME) SkillMulti = 11;
-	if (TrueGameSkill == SKILL_HORRIBLE) SkillMulti = 12;
-	if (TrueGameSkill == SKILL_IMPOSSIBLE) SkillMulti = 13;
-	if (TrueGameSkill >= SKILL_OMEGA) SkillMulti = 14;
-	if (RegenType == 1) SkillMulti *= 4;
-
-	int BossCurrentHealth;
-	if (BossCurrentHealth <= SpecialGameFlags[10003])
-	{
-		if (BossCurrentHealth <= SpecialGameFlags[10004]) SkillMulti = SkillMulti * 11 / 8; else SkillMulti = SkillMulti * 9 / 8;
-	}
-	SkillHealthAdd = SpecialGameFlags[10001] * SkillMulti / 131072;
-	if (BossCurrentHealth <= SpecialGameFlags[10003])
-	{
-		if (BossCurrentHealth <= SpecialGameFlags[10004])
-		{
-			SkillHealthAdd += random(-7,7);
-		}
-		else
-		{
-			SkillHealthAdd += random(-5,5);
-		}
-	}
-	else
-	{
-		SkillHealthAdd += random(-4,4);
-	}
-	if (SkillHealthAdd < 1) SkillHealthAdd = 1;
-
-	BossCurrentHealth = GetActorProperty(1124,APROP_Health);
-	BossCurrentHealth += SkillHealthAdd;
-	if (BossCurrentHealth > SpecialGameFlags[10001]) BossCurrentHealth = SpecialGameFlags[10001];
-
-	SetActorProperty(1124,APROP_Health,BossCurrentHealth);
-
-	if (BossCurrentHealth <= SpecialGameFlags[10003])
-	{
-		if (BossCurrentHealth <= SpecialGameFlags[10004])
-		{
-			SetThingSpecial(1124,0,2,0,0,0,0); // Set's args[0] to 2 in order to make the Sauravatar shoot his OmniBFG balls in threes [the white BFG balls]
-		}
-		else
-		{
-			SetThingSpecial(1124,0,1,0,0,0,0); // Set's args[0] to 1 in order to make the Sauravatar shoot his MegaBFG balls in twos [the yellow BFG balls]
-		}
-	}
-	else
-	{
-		SetThingSpecial(1124,0,0,0,0,0,0); // Set's args[0] to 0 in order to make the Sauravatar shoot his SuperBFG balls [the red BFG balls]
 	}
 }
 
