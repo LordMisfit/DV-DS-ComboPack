@@ -2168,6 +2168,7 @@ class AetheriusBaseWeaponZSC : Weapon
 		int DQBluntTimer = CallACS("GetBuffTimer",13);
 		int DQSapTimer = CallACS("GetBuffTimer",14);
 		int DQDeceleratleTimer = CallACS("GetBuffTimer",15);
+		int UsingInGameMenu = CallACS("MenuVarCheckDECORATE",0);
 
 		int whole = amount / 100;
 		int modulus = amount % 100;
@@ -2211,31 +2212,39 @@ class AetheriusBaseWeaponZSC : Weapon
 		}
 
 		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
-		if (check > 0)
+		if (UsingInGameMenu == 0)
 		{
-			if (CurrentStamina >= amount)
+			if (check > 0)
 			{
-				if (check > 1)
+				if (CurrentStamina >= amount)
 				{
-					CurrentStamina -= amount;
-					if (CurrentStamina < 1) CurrentStamina = 0;
-					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+					if (check > 1)
+					{
+						CurrentStamina -= amount;
+						if (CurrentStamina < 1) CurrentStamina = 0;
+						CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+					}
+					StamUsed = 1;
+					if (stamusedebug) Console.Printf("Stamina to be Used: Yes");
 				}
-				StamUsed = 1;
-				if (stamusedebug) Console.Printf("Stamina to be Used: Yes");
+				else
+				{
+					StamUsed = 0;
+					if (stamusedebug) Console.Printf("Stamina to be Used: No");
+				}
 			}
 			else
 			{
-				StamUsed = 0;
-				if (stamusedebug) Console.Printf("Stamina to be Used: No");
+				CurrentStamina -= amount;
+				if (CurrentStamina < 1) CurrentStamina = 0;
+				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 			}
 		}
 		else
 		{
-			CurrentStamina -= amount;
-			if (CurrentStamina < 1) CurrentStamina = 0;
-			CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			if (stamusedebug) Console.Printf("MENU ON: No Stamina Used.");
 		}
+
 		return StamUsed;
 	}
 
@@ -4326,7 +4335,17 @@ class AetheriusBaseWeaponZSC : Weapon
 		{
 			if (CallACS("CheckCharacterClass") != 2)
 			{
-				if (CountInv("Cell",AAPTR_PLAYER1) < celluse) { return ResolveState("Ready"); } else { A_TakeInventory("Cell",celluse,AAPTR_PLAYER1); }
+				if (CountInv("Cell",AAPTR_PLAYER1) < celluse) 
+				{ 
+					return ResolveState("Ready"); 
+				} 
+				else 
+				{ 
+					if (A_WeaponCheckInfiniteAmmo() > 0) { } else 
+					{
+						A_TakeInventory("Cell",celluse,TIF_NOTAKEINFINITE,AAPTR_PLAYER1); 
+					}
+				}
 			}
 			else
 			{
