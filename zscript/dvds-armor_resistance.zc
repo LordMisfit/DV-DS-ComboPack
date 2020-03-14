@@ -2674,7 +2674,7 @@ class PlayerStatItem : Inventory
 			HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
 			if (HellcoreOverheatLevel > 0 && PlayerCurrentHealth)
 			{
-				HellcoreCoolRatio = 400;
+				HellcoreCoolRatio = 400; // 0.04%
 				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 1 - Cooldown Increment (Base)]: %d\c-, Heat Level:", HellcoreCoolRatio, HellcoreOverheatLevel);
 
 				// Dove Ribbon quickly cools down Hellcore meter.
@@ -2687,7 +2687,7 @@ class PlayerStatItem : Inventory
 				if (DivineAvatarTimer > 0) HellcoreCoolRatio *= 2;
 				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 3 - Cooldown Increment (Divine Avatar)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 
-				// Divine Avatar speeds up cooldown by 400%
+				// ????? speeds up cooldown by 400%
 				previousdelaycount = HellcoreCoolRatio;
 				if (GoETimer > 0) HellcoreCoolRatio *= 5;
 				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 3a - Cooldown Increment (GoE)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
@@ -2738,23 +2738,35 @@ class PlayerStatItem : Inventory
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",3) > 0) HellcoreCoolRatio = HellcoreCoolRatio * 2;
 				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 10a - Cooldown Increment (Playing Unloved)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 
-				// Playing The City of the Damned: Apocalypse [1.25x Cooldown Speed]
+				// Playing The City of the Damned: Apocalypse [5x Cooldown Speed]
 				previousdelaycount = HellcoreCoolRatio;
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",4) > 0) HellcoreCoolRatio = (HellcoreCoolRatio * 5) / 4;
 				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 10b - Cooldown Increment (Playing TCOTD:A)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 
-				// Playing Happy Time Circus 2 [1.5x Cooldown Speed]
+				// Playing Happy Time Circus 2 [3x Cooldown Speed]
 				previousdelaycount = HellcoreCoolRatio;
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",5) > 0) HellcoreCoolRatio = (HellcoreCoolRatio * 3) / 2;
 				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 10c - Cooldown Increment (Playing Happy Time Circus 2)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 				
+				// Using Focus
+				previousdelaycount = HellcoreCoolRatio;
+				double tempdouble;
+				if (IsFocusOn > 0)
+				{
+					tempdouble = (0.000285714 * FocusTimer);
+					if (CallACS("DVDSSpecialArrayCheckDECORATE",3) > 0) tempdouble *= 2;
+					if (CallACS("DVDSSpecialArrayCheckDECORATE",4) > 0) tempdouble *= 5;
+					if (CallACS("DVDSSpecialArrayCheckDECORATE",5) > 0) tempdouble *= 3;
+					HellcoreCoolRatio *= (1.0 + (0.25 + tempdouble));
+					if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 11 - Cooldown Increments]: %d\c-, New Heat Level: %d\c-, Old Heat Level: %d", HellcoreCoolRatio,  HellcoreOverheatLevel, previousdelaycount);
+				}
 				
 				if (UsingInGameMenu != 0) HellcoreCoolRatio = 0; // If using In-Game Menus
 				if (UsingInGameMenu == 0)
 				{
 					previousdelaycount = HellcoreOverheatLevel;
 					HellcoreOverheatLevel -= HellcoreCoolRatio;
-					if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 11 - Cooldown Increments]: New Heat Level: %d\c-, Old Heat Level: %d", HellcoreOverheatLevel, previousdelaycount);
+					if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 12 - Cooldown Increments]: New Heat Level: %d\c-, Old Heat Level: %d", HellcoreOverheatLevel, previousdelaycount);
 				}
 			}
 			if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
@@ -12079,7 +12091,7 @@ class PlayerStatItem : Inventory
 		// **Defensive Code**
 		// ******************
 		// ******************
-		if (passive && damage > 0) // If the owner [usually the player] of the item is the DEFENDER
+		if (passive && damageType != 'HellcoreDrain' && damage > 0) // If the owner [usually the player] of the item is the DEFENDER
 		{
 			int predmg = damage;
 			if (playeractor) predmg = playeractor.mobjdmg;
@@ -13511,6 +13523,8 @@ class Resistances : Inventory
 
 	override void AbsorbDamage(int damage, Name damageType, out int newdamage) 
 	{
+		if (damageType == 'HellcoreDrain') { return; }
+
 		let playeractor = AetheriusPlayerPawn(owner);
 		if (playeractor && playeractor.saveddamage > 0 && damage == 0) 
 		{

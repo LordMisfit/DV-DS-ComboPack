@@ -992,7 +992,7 @@ class AetheriusBaseWeaponZSC : Weapon
 			}
 			damage = baserand1 * random(1,8);
 
-			double randmult = frandompick(0.0375,0.05,0.625);
+			double randmult = frandompick(0.075,0.10,0.125);
 			double numupgrades = ((CountInv("UnmakerUpgrades",AAPTR_PLAYER1) * 4) / 3);
 			double totalartfiactmulti = (randmult * numupgrades);
 			damage *= (1.0 + totalartfiactmulti);
@@ -1002,6 +1002,14 @@ class AetheriusBaseWeaponZSC : Weapon
 			extradmg4 *= (1.0 + totalartfiactmulti);
 			extradmg5 *= (1.0 + totalartfiactmulti);
 			extradmg6 *= (1.0 + totalartfiactmulti);
+			
+			damage *= 0.6;
+			extradmg1 *= 0.6;
+			extradmg2 *= 0.6;
+			extradmg3 *= 0.6;
+			extradmg4 *= 0.6;
+			extradmg5 *= 0.6;
+			extradmg6 *= 0.6;
 		}
 
 
@@ -4391,6 +4399,19 @@ class AetheriusBaseWeaponZSC : Weapon
 		self.Destroy();
 	}
 
+	
+	action void A_WeaponReady(int flags = 0)
+	{
+		if (!player) return;
+														DoReadyWeaponToSwitch(player, !(flags & WRF_NoSwitch));
+		if ((flags & WRF_NoFire) != WRF_NoFire)			DoReadyWeaponToFire(player.mo, !(flags & WRF_NoPrimary), !(flags & WRF_NoSecondary));
+		if (!(flags & WRF_NoBob))						DoReadyWeaponToBob(player);
+
+		A_Overlay(-1000,"GrandControlLayer",true);
+		player.WeaponState |= GetButtonStateFlags(flags);														
+		DoReadyWeaponDisableSwitch(player, flags & WRF_DisableSwitch);
+	}
+
 	States
 	{
 		GrandControlLayer: // layer -1000
@@ -4428,26 +4449,26 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 			{
 				if (random(1,8) <= 3)
 				{
-					A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,16);
-					A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,48);
+					A_MeleeShieldPiece("ShieldPartMeleeReflect",33,16);
+					A_MeleeShieldPiece("ShieldPartMeleeReflect",33,48);
 				}
 				else
 				{
-					A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,16);
-					A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,48);
+					A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,16);
+					A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,48);
 				}
 			}
 			else
 			{
 				if (random(1,8) <= 1)
 				{
-					A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,16);
-					A_MeleeShieldPiece("ShieldPartPunchAttackReflect",33,48);
+					A_MeleeShieldPiece("ShieldPartMeleeReflect",33,16);
+					A_MeleeShieldPiece("ShieldPartMeleeReflect",33,48);
 				}
 				else
 				{
-					A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,16);
-					A_MeleeShieldPiece("ShieldPartPunchAttackNoReflect",33,48);
+					A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,16);
+					A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,48);
 				}
 			}
 		}
@@ -4474,6 +4495,18 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 		if (random(1,256) > 64) { A_GiveInventory("KickCritBonus1",1,AAPTR_PLAYER1); } else { A_GiveInventory("KickCritBonus2",1,AAPTR_PLAYER1); }
 		A_GiveInventory("UsingMeleeAttack",1);
 	}
+	
+	action void A_WeaponReady(int flags = 0)
+	{
+		if (!player) return;
+														DoReadyWeaponToSwitch(player, !(flags & WRF_NoSwitch));
+		if ((flags & WRF_NoFire) != WRF_NoFire)			DoReadyWeaponToFire(player.mo, !(flags & WRF_NoPrimary), !(flags & WRF_NoSecondary));
+		if (!(flags & WRF_NoBob))						DoReadyWeaponToBob(player);
+
+		A_Overlay(-1000,"GrandControlLayer",true);
+		player.WeaponState |= GetButtonStateFlags(flags);														
+		DoReadyWeaponDisableSwitch(player, flags & WRF_DisableSwitch);
+	}
 
 	States
 	{
@@ -4488,10 +4521,13 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 		GrandControlLayer: // layer -1000
 			TNT1 A 1
 			{
+				if (dvdsdebug_weaponstatdisplays) Console.Printf("GrandControlLayer - 1");
 				if (player.mo.health > 0)
 				{
+					if (dvdsdebug_weaponstatdisplays) Console.Printf("GrandControlLayer - 2a");
 					if (GetPlayerInput(INPUT_BUTTONS) & BT_USER1)
 					{
+						if (dvdsdebug_weaponstatdisplays) Console.Printf("GrandControlLayer - 3a");
 						//Console.Printf("Kick");
 						if (CountInv("UsingSceptreAltFire"))
 						{
@@ -4508,6 +4544,7 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 					}
 					if (CountInv("UsingSceptreAltFire"))
 					{
+						if (dvdsdebug_weaponstatdisplays) Console.Printf("GrandControlLayer - 3b");
 						A_ClearOverlays(-2,-2,true);
 						A_KickBonusOff();
 						A_SetMartialArtsMastery(0);
@@ -4515,6 +4552,7 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 				}
 				else
 				{
+					if (dvdsdebug_weaponstatdisplays) Console.Printf("GrandControlLayer - 2b");
 					A_ClearOverlays(-2,-2,true);
 					A_KickBonusOff();
 					A_SetMartialArtsMastery(0);
