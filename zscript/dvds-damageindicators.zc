@@ -29,11 +29,13 @@ class DamageIndicators : StaticEventHandler
 			AetheriusPlayerPawn type2;
 			ExplosiveBarrel type3;
 			Pod type4;
+			ExplosiveBarrel2 type5;
 
 			if (type = AetheriusMonsterZSC(thing)) return true;
 			if (type2 = AetheriusPlayerPawn(thing)) return true;
 			if (type3 = ExplosiveBarrel(thing)) return true;
 			if (type4 = Pod(thing)) return true;
+			if (type5 = ExplosiveBarrel2(thing)) return true;
 		}
 		
 		//if (thing && (thing.bIsMonster || thing.bShootable)) return true;
@@ -160,11 +162,16 @@ class DamageTracker : Inventory
 
 				Pod type4;
 				if (type4 = Pod(self.owner)) return;
+
+				ExplosiveBarrel2 type5;
+				if (type5 = ExplosiveBarrel2(self.owner)) return;
 			}
 
+			int OnCeiling = self.owner.CountInv("OnCeiling");
 			double targetX = frandom((self.owner.radius/2),-(self.owner.radius/2));
 			double targetY = frandom((self.owner.radius/2),-(self.owner.radius/2));
 			double targetHeight = self.owner.height - frandom(-4.0,4.0);
+			if (OnCeiling) targetHeight *= -2;
 			Vector3 position = self.owner.pos + (targetX, targetY, targetHeight);
 			int totalDamage = self.currentHealth - self.owner.health;
 			double xvel, yvel, zvel;
@@ -282,10 +289,15 @@ class DamageTracker : Inventory
 				yvel = frandom(-veltest,veltest); 
 				veltest = dvds_dmgind_burstvelszbase;
 				zvel = frandom((veltest/2),veltest); // Healing cannot be critical'd
+				if (OnCeiling) { xvel *= -1.0; yvel *= -1.0; zvel *= -2.0; }
 				if (PlayerCrit > 0 && DmgIndDisplayType == 0)
 				{
 					owner.A_StartSound("player/criticalhit", 256, CHANF_DEFAULT, 1.0, ATTN_NONE, 1.0);
-					if (DmgIndDisplayType != 1) { xvel *= 0.5; yvel *= 0.5; zvel *= -1.0; }
+					if (DmgIndDisplayType != 1) 
+					{ 
+						xvel *= 0.5; yvel *= 0.5; 
+						if (!OnCeiling) zvel *= -1.0; else zvel *= 2.0;
+					}
 				}
 				if (HitWeakness > 0)
 				{
