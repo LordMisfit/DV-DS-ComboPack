@@ -548,9 +548,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (classname == "ThamuzNew") isamajorboss = 24; // 32
 		if (classname == "TchernobogNew") isamajorboss = 24; // 32
 		if (classname == "PennywiseBoss") isamajorboss = 32; // 32
-		if (classname == "Nyarlathotep") isamajorboss = 32; // 32
 		if (classname == "NyarlathotepLesser") isamajorboss = 32; // 32
 		if (classname == "TheSource") isamajorboss = 32; // 128
+		if (classname == "Nyarlathotep") isamajorboss = 64; // 64
 		if (classname == "Magmantis") isamajorboss = 64; // 32
 		if (classname == "AdolfHitlerDS") isamajorboss = 64; // 32
 		if (classname == "Sauravatar") isamajorboss = 96; // 128
@@ -1060,9 +1060,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (vict == "ThamuzNew") DivAmount *= 24; // 32
 			if (vict == "TchernobogNew") DivAmount *= 24; // 32
 			if (vict == "PennywiseBoss") DivAmount *= 32; // 32
-			if (vict == "Nyarlathotep") DivAmount *= 32; // 32
 			if (vict == "NyarlathotepLesser") DivAmount *= 32; // 32
 			if (vict == "TheSource") DivAmount *= 32; // 128
+			if (vict == "Nyarlathotep") DivAmount *= 64; // 32
 			if (vict == "Magmantis") DivAmount *= 64; // 32
 			if (vict == "AdolfHitlerDS") DivAmount *= 64; // 32
 			if (vict == "Sauravatar") DivAmount *= 96; // 128
@@ -1183,8 +1183,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	
 	double A_DamageMobCheckShielding(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle) // (Actor inflictor, int damage)
 	{
-		string infl;
+		string infl, sour, vict;
 		if (inflictor == null) infl = "NONE"; else infl = inflictor.GetClassName();
+		if (source == null) sour = "NONE"; else sour = source.GetClassName();
 
 		int finaldmg = damage;
 		double shieldfactor;
@@ -1210,20 +1211,28 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		shieldfactor += 1.0;
 
 		if (infl == "HubbleBubbleSmall" || infl == "HubbleBubbleLarge") shieldfactor *= (random(0,1) * 0.01);
-		if (mod == 'Sceptre') shieldfactor *= (random(75,80) * 0.01);
+		if (mod == 'Sceptre')
+		{
+			if (infl == "SceptrePuff-Spinning" || infl == "SceptrePuff-SpinningSilent") shieldfactor *= (random(75,80) * 0.005);
+			else shieldfactor *= (random(75,80) * 0.01);
+		}
+
 		shieldfactor *= -1;
 		shieldfactor += 1.0;
+		if (shieldfactor >= 1.0) shieldfactor = 1.0;
 		
 		finaldmg *= shieldfactor;
-		if (dvdsdebug_actordmgdisplays) Console.Printf("finaldmg: %d (prevdamage: %d), shieldfactor: %4f", finaldmg, damage, shieldfactor);
+		if (finaldmg < 1) finaldmg = 1;
+		if (dvdsdebug_actordmgdisplays && shieldfactor >= 0.01) Console.Printf("    (\czActor Defensive Input [STEP ?? - Shielding Monsters]\c-: finaldmg: %d (prevdamage: %d), shieldfactor: %4f", finaldmg, damage, shieldfactor);
 
 		return finaldmg;
 	}
 	
-	int A_DamageMobjCheckHellCore(Actor inflictor)
+	int A_DamageMobjCheckHellCore(Actor inflictor, Actor source)
 	{
-		string infl;
+		string infl, sour, vict;
 		if (inflictor == null) infl = "NONE"; else infl = inflictor.GetClassName();
+		if (source == null) sour = "NONE"; else sour = source.GetClassName();
 
 		int type;
 		if (
@@ -1346,8 +1355,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	
 	int A_CheckHellcoreVsAtk(Actor inflictor, Actor source, int damage)
 	{
-		string infl = inflictor.GetClassName();
-		string vict = GetClassName();
+		string infl, sour, vict;
+		if (inflictor == null) infl = "NONE"; else infl = inflictor.GetClassName();
+		if (source == null) sour = "NONE"; else sour = source.GetClassName();
+		vict = GetClassName();
 		bool increasedmg = false;
 		int checkval;
 
@@ -1416,7 +1427,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		double HellcoreBaseMulti = 1.0;
 		double HellcoreLevelFactor = 1.0;
 		int HellcoreLevel;
-		int IsHellCoreAttack = A_DamageMobjCheckHellCore(inflictor);
+		int IsHellCoreAttack = A_DamageMobjCheckHellCore(inflictor, source);
 		int HellcoreType; 
 		if (IsHellCoreAttack > 0) HellcoreType = IsHellCoreAttack + 95;
 		if (dvdsdebug_actordmgdisplays && IsHellCoreAttack) Console.Printf("    (\czIsHellCoreAttack?: %d, HellcoreType: %d", IsHellCoreAttack, HellcoreType);
@@ -1826,7 +1837,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						ActorClass == "TNTSpider" || ActorClass == "SourceGuardian" || ActorClass == "AdolfHitlerDS") CritChance *= 6;
 				if (ActorClass == "DSparilUnmountedNew" || ActorClass == "KoraxNew" || ActorClass == "PennywiseBoss" ||
 						ActorClass == "EntityBossNew" || ActorClass == "EntitySecondNew" || ActorClass == "EntityAscended" || ActorClass == "ThamuzNew" || ActorClass == "TchernobogNew" ||
-						ActorClass == "Magmantis" || ActorClass == "Zakachi" || vict == "Nyarlathotep") CritChance *= 8;
+						ActorClass == "Magmantis" || ActorClass == "Zakachi") CritChance *= 8;
+				if (ActorClass == "Nyarlathotep") CritChance *= 12;
 		
 				// Unique Checks
 				if (meleeattack && (ActorClass == "WraithNew" || ActorClass == "WraithBuriedNew" || ActorClass == "FWraith")) 
@@ -2408,10 +2420,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		// Checks Buffs on Monsters based on their Health Levels
 		if (health <= user_HPBuffRange)
 		{
-					 if (vict == "DSparilUnmountedNew" || vict == "KoraxNew" || vict == "PennywiseBoss" ||
+					 if (vict == "Nyarlathotep") buffdamagemulti = 0.375;
+			else if (vict == "DSparilUnmountedNew" || vict == "KoraxNew" || vict == "PennywiseBoss" ||
 							 vict == "EntityBossNew" || vict == "EntitySecondNew" || vict == "EntityAscended" || 
 							 vict == "ThamuzNew" || vict == "TchernobogNew" ||
-							 vict == "Magmantis" || vict == "Nyarlathotep" || vict == "NyarlathotepLesser" || vict == "StarSpawn" || vict == "SpiderGod" || vict == "SpiderGodling") buffdamagemulti = 0.625;
+							 vict == "Magmantis" || vict == "NyarlathotepLesser" || vict == "StarSpawn" || vict == "SpiderGod" || vict == "SpiderGodling") buffdamagemulti = 0.625;
 			else if (vict == "AlienSpectre1New" || vict == "AlienSpectre2New" || vict == "AlienSpectre3New" || 
 							 vict == "AlienSpectre4New" || vict == "AlienSpectre5New" ||
 							 vict == "DSCyberdemon" || vict == "FCyberdemon" || vict == "Annihilator" || vict == "FAnnihilator" ||
@@ -2440,10 +2453,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		buffdamagemulti = 1.0;
 		if (DVDSActor && DVDSActor.health <= DVDSActor.user_HPBuffRange)
 		{
-					 if (sour == "DSparilUnmountedNew" || sour == "KoraxNew" || sour == "PennywiseBoss" ||
+					 if (vict == "Nyarlathotep") buffdamagemulti = 2.875;
+			else if (sour == "DSparilUnmountedNew" || sour == "KoraxNew" || sour == "PennywiseBoss" ||
 							 sour == "EntityBossNew" || sour == "EntitySecondNew" || sour == "EntityAscended" || 
 							 sour == "ThamuzNew" || sour == "TchernobogNew" ||
-							 sour == "Magmantis" || vict == "Nyarlathotep" || vict == "NyarlathotepLesser" || vict == "StarSpawn" || vict == "SpiderGod" || vict == "SpiderGodling") buffdamagemulti = 1.75;
+							 sour == "Magmantis" || vict == "NyarlathotepLesser" || vict == "StarSpawn" || vict == "SpiderGod" || vict == "SpiderGodling") buffdamagemulti = 1.75;
 			else if (sour == "AlienSpectre1New" || sour == "AlienSpectre2New" || sour == "AlienSpectre3New" || 
 							 sour == "AlienSpectre4New" || sour == "AlienSpectre5New" ||
 							 sour == "DSCyberdemon" || sour == "FCyberdemon" || sour == "Annihilator" || sour == "FAnnihilator" ||
@@ -2665,7 +2679,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					A_SauronGauntletsHit(playpawn,drainamt,(health > 0? 1 : 2));
 				}
 				// Sceptre EXP Gain
-				else if (infl == "SceptrePuff-Normal" || infl == "SceptrePuff-Spinning")
+				else if (infl == "SceptrePuff-Normal" || infl == "SceptrePuff-Silent" || infl == "SceptrePuff-Spinning")
 				{
 					A_AddSceptreEXP_M(0,(health > 0? randompick(4,5,5,5,6) : 1));
 				}
@@ -4218,9 +4232,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 							if (ActorName == "PennywiseBoss") LevelCheck += random(37,75);
 							if (ActorName == "Sauravatar") LevelCheck += random(37,75);
 							if (ActorName == "TheSource") LevelCheck += random(37,75);
-							if (ActorName == "Nyarlathotep") LevelCheck += random(37,75);
 							// Tier 5 Boss
 							if (ActorName == "EntityAscended") LevelCheck += random(75,112);
+							if (ActorName == "Nyarlathotep") LevelCheck += random(75,112);
 							// Oddball Tier Boss
 							if (ActorName == "Benellus1DS") LevelCheck += random(37,75);
 							if (ActorName == "Benellus2DS") LevelCheck += random(42,80);
@@ -4521,7 +4535,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					// Strange Aeons
 					if (ActorName == "Nyarlathotep" || ActorName == "NyarlathotepLesser")
 					{
-						MaxHP = (MaxHP * 3) / 2;
+						MaxHP = (MaxHP * random(6,7)) / 4;
 						if (debugstatcalc) Console.Printf("\caMaxHP (Nyarlathotep): %d (%d)", MaxHP, OldMaxHP);
 					}
 					if (ActorName == "StarSpawn")
@@ -9830,6 +9844,24 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_SetInventory("75PercentDMGWeakness",0);
 		A_SetInventory("50PercentDMGWeakness",0);
 		A_SetInventory("20PercentDMGWeakness",0);
+	}
+	
+	void A_CheckIfTargetDead(statelabel statel = null)
+	{
+		if (!target)
+		{
+			if (dvdsdebug_monsterspecialaidisplays) Console.Printf("NoTarget");
+			SetStateLabel(statel);
+		}
+		else
+		{
+			if (target.health <= 0)
+			{
+				if (dvdsdebug_monsterspecialaidisplays) Console.Printf("TargetDead");
+				target = null;
+				SetStateLabel(statel);
+			}
+		}
 	}
 }
 
