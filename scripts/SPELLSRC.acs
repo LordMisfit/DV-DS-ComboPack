@@ -278,7 +278,7 @@ global int 18:MiscFixedVars[]; // ***ARRAY*** For various permenant fixed-point 
 global int 19:HellcoreOverheatLevel; // Every 1% is times 25 tics [1 tics of time equals 4 units]
 
 global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in scripts [AKA THIS IS THE BIG VAR ARRAY OF THIS ACS SCRIPT]
-		// [0] is unused for now :V
+	// [0] is ?
 	// [1] is for Artificial Map Inflation (EXP) [Percentile] [to increase/decrease the difficulty of levels by a % of maps]
 	// [2] is for Artificial Map Inflation (Stats) [Percentile] [to increase/decrease the difficulty of levels by a % of maps]
 	// [3] is for Artificial Map Inflation (Spawn/Stealth) [Percentile] [to increase/decrease the difficulty of levels by a % of maps]
@@ -616,7 +616,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [637] is dashcooldown
 	// [638] is dashstamina
 	// [639] is candash
-		// [640 to 1998] are undefined so far :P
+		// [640 to 999] are undefined so far :P
+	// [1000] is Number of Maps Visited
+		// [1001 to 1998] are undefined so far :P
 	// [1501] Misc Var #1
 	// [1502] Misc Var #2
 	// [1503] Misc Var #3
@@ -2039,6 +2041,8 @@ script "INITIALIZER" OPEN
 	Player1TID = 1001;
 	if (MiscellaneousVars[199] == 0) // Only on the very first tic of a new game, and never on loading of new maps past the first map.
 	{
+		MiscellaneousVars[1000] -= 1;
+
 		TrueGameSkill = GetCVar("dvds_gendifficultycurve") + GameSkill();
 		if (TrueGameSkill < 0) TrueGameSkill = 0;
 		if (TrueGameSkill > 8) TrueGameSkill = 8;
@@ -2116,6 +2120,11 @@ function void PrintBuffMessage (int buffid)
 	if (buffid == 19) { MiscellaneousVars[2040] = 70; MiscellaneousVars[2045] = 14; } // Blind
 	if (buffid == 20) { MiscellaneousVars[2040] = 70; MiscellaneousVars[2045] = 15; } // Sleep
 	if (buffid == 21) { MiscellaneousVars[2040] = 70; MiscellaneousVars[2045] = 16; } // Silence
+}
+
+script "LevelCounter" ENTER
+{
+	MiscellaneousVars[1000] += 1;
 }
 
 //*****************
@@ -9273,7 +9282,7 @@ script "HUDDISPLAY" ENTER
 			msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 			HudMessage(s:"A";HUDMSG_ALPHA,6206,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha); // 6206
 
-			// Tome of Power Spell Cost [Heretic] (5899)
+			// Tome of Power Spell Cost [Heretic] (5899 & 5898)
 			int TomeCost = 0;
 			int TomeCost2 = 0;
 			// Other Weapons [MP Costs only for Normal and Alt-Fires]
@@ -9293,7 +9302,7 @@ script "HUDDISPLAY" ENTER
 				HudMessage(d:TomeCost2;HUDMSG_ALPHA,5898,cr_lightblue,xpos,ypos,HUDMsgDelayFixed,msgalpha); 
 			}
 
-			// Ammo [1] / SceptreLevel Label
+			// Ammo [1] / SceptreLevel Label (5901)
 			int HellcoreLevel;
 			Keyname = "+attack";
 			str Keyname2 = "+moveleft";
@@ -26480,6 +26489,8 @@ script "GetEvolveChance" (void)
 		if (debugevolvestealth == 1) PrintBold(s:"Evolve Chance [SauronGauntlets]: ",d:SpawnChance,s:" - ",s:GetActorClass(0),s:" - (",d:TempSpawnChance,s:" / 1000)");
 	}
 
+	int mapdifficultytype = GetCVar("dvds_mapdifficultytype");
+
 	TempRatio = GetCVar("dvds_rnd_evolve_maps");
 	if (TempRatio > 0)
 	{
@@ -26490,7 +26501,9 @@ script "GetEvolveChance" (void)
 		{
 			if (ClassicDoomType == 1 || ClassicDoomType == 2) // Doom 1 / Heretic
 			{
-				MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
+				if (mapdifficultytype == 0) MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
+				else MapCheck = MiscellaneousVars[1000];
+
 				if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
 				MapCheck += MiscellaneousVars[54]; // Map Inflation [Evolve/Stealth - Exact]
 				MapCheck += MiscellaneousVars[169]; // Map Inflation [Overall - Exact]
@@ -26512,7 +26525,9 @@ script "GetEvolveChance" (void)
 			}
 			else // Doom 2 / Hexen / Strife / Doom64
 			{
-				MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
+				if (mapdifficultytype == 0) MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
+				else MapCheck = MiscellaneousVars[1000];
+
 				if (MiscellaneousVars[259] > 0) MapCheck += deathkingsmapcalcmod;
 				MapCheck += MiscellaneousVars[54]; // Map Inflation [Evolve/Stealth - Exact]
 				MapCheck += MiscellaneousVars[169]; // Map Inflation [Overall - Exact]
@@ -26544,6 +26559,7 @@ script "GetEvolveChance" (void)
 		else if (ModType == 1) // DVI
 		{
 			MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
+
 			if (MapCheck < 1101) MapCheck = 1101;
 			if (MapCheck > 1104) MapCheck = 1104;
 			
@@ -26556,6 +26572,7 @@ script "GetEvolveChance" (void)
 		else if (ModType == 2) // DVII
 		{
 			MapCheck = GetLevelInfo(LEVELINFO_LEVELNUM);
+
 			if (MapCheck < 1201) MapCheck = 1201;
 			if (MapCheck > 1212) MapCheck = 1212;
 		
@@ -28885,7 +28902,7 @@ str dvds_monsternames[459][3] =
 	{"StarVampire", "Star Vampire", ""},
 	{"PurpleTentacle", "Purple Tentacle", ""},
 	{"DShambler", "Dimensional Shambler", ""},
-	{"NyarlathotepLesser", "\cfNyarlathotep, The Crawling Chaos\c-", ""},
+	{"NyarlathotepLesser", "\cfThe Crawling Chaos?\c-", ""},
 	{"Nyarlathotep", "\cfNyarlathotep, The Crawling Chaos\c-", ""},
 	{"StarSpawn", "\cfStar Spawn of Cthulhu\c-", ""},
 
