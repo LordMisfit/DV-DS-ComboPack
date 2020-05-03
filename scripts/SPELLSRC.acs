@@ -882,6 +882,10 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [25030] RecallAllAllies
 	// [25031] Magnetize
 	// [25032] Immune to Toxin Damage [DV2-M04/M05]
+	// [25033] TryingToRepecAeonPtsPerks
+	// [25034] TryingToRepecAeonPts
+	// [25035] TryingToQuickUseVimstone
+	// [25036] Give Foresight
 
 	// [25101] Has "SauronHelmet"
 	// [25102] Has "SauronGauntletsItem"
@@ -913,6 +917,12 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [25212] FloraEnterHighTension2
 	// [25213] FloraEnterHighTension3
 	// [25214] tensionrevert
+	
+	// [25301] TookCriticalHit [player]
+	// [25302] Missed [player]
+	// [25303] TookNoDamage [player]
+	// [25304] TookNoDamageInvuln [player]
+	// [25305] AbsorbedDamage [player]
 
 global int 22:MenuSystemVars[]; // Goto "MENUKEY" for array list.
 
@@ -2509,19 +2519,19 @@ script "HUDDISPLAY" ENTER
 			if (Timer() > 3)
 			{
 				// Check to see if Player took a Critical Hit [not a CRISIS attack, those are different :V]
-				if (CheckActorInventory(Player1TID,"TookCriticalHit") > 0) 
+				if (MiscellaneousVars[25301] > 0)
 				{
 					MonsterCrit = 1;
 					if (ClassicDoomType != 3)
 					{
-						TakeActorInventory(Player1TID,"TookCriticalHit",0x7FFFFFFF);
+						MiscellaneousVars[25301] = 0;
 					}
 					else // If in Hexen, do this dumb hacky-method because the displays are refreshed a tic AFTER verses other game modes x.x
 					{
 						MiscellaneousVars[187] += 1;
 						if (MiscellaneousVars[187] >= 2)
 						{
-							TakeActorInventory(Player1TID,"TookCriticalHit",0x7FFFFFFF);
+							MiscellaneousVars[25301] = 0;
 							MiscellaneousVars[187] = 0;
 						}
 					}
@@ -2628,27 +2638,27 @@ script "HUDDISPLAY" ENTER
 				else
 				{
 					nodmgcheck = 0;
-					if (CheckActorInventory(Player1TID,"Missed") > 0)
+					if (MiscellaneousVars[25302] > 0)
 					{
-						TakeActorInventory(Player1TID,"Missed",0x7FFFFFFF);
+						MiscellaneousVars[25302] = 0;
 						SetFont("BBURMIS3"); // BBURMISS
 						nodmgcheck++;
 					}
-					if (CheckActorInventory(Player1TID,"TookNoDamage") > 0)
+					if (MiscellaneousVars[25303] > 0)
 					{
-						TakeActorInventory(Player1TID,"TookNoDamage",0x7FFFFFFF);
+						MiscellaneousVars[25303] = 0;
 						SetFont("BBURNDM2");
 						nodmgcheck++;
 					}
-					if (CheckActorInventory(Player1TID,"TookNoDamageInvuln") > 0)
+					if (MiscellaneousVars[25304] > 0)
 					{
-						TakeActorInventory(Player1TID,"TookNoDamageInvuln",0x7FFFFFFF);
+						MiscellaneousVars[25304] = 0;
 						SetFont("BBURINV2");
 						nodmgcheck++;
 					}
-					if (CheckActorInventory(Player1TID,"AbsorbedDamage") > 0)
+					if (MiscellaneousVars[25305] > 0)
 					{
-						TakeActorInventory(Player1TID,"AbsorbedDamage",0x7FFFFFFF);
+						MiscellaneousVars[25305] = 0;
 						SetFont("BBURASR2");
 						nodmgcheck++;
 					}
@@ -17990,8 +18000,7 @@ script "MagicEffects" (int Type, int Strength)
 	if (Type == 12) // Computer Map
 	{
 		ActivatorSound("CastFarsight",127);
-		GiveActorInventory(Player1TID, "Allmap", 1);
-		GiveActorInventory(Player1TID, "FarsightScanner", 1);
+		MiscellaneousVars[25036]++;
 	}
 
 	if (Type == 13) // Freeze Time
@@ -26654,12 +26663,12 @@ script "AeonPointKey" (int type)
 
 script "AeonPtsResetPerks" (void)
 {
-	GiveActorInventory(Player1TID,"TryingToRepecAeonPtsPerks", 1);
+	MiscellaneousVars[25033]++;
 }
 
 script "AeonPtsResetStats" (void)
 {
-	GiveActorInventory(Player1TID,"TryingToRepecAeonPts", 1);
+	MiscellaneousVars[25034]++;
 }
 
 script "SetShieldPieceDist" (int basedist)
@@ -29097,15 +29106,10 @@ Script "LifebarDisplayClientSide" (void) CLIENTSIDE
 	If(GetCVar("dvds_actorlifebars") == 1 && MiscellaneousVars[25001] > 0) Restart;
 }
 
-script "QuickKick" (void)
-{
-	GiveActorInventory(Player1TID,"KickPrompt", 1);
-}
-
 // Quickuse a Vimstone
 script "QuickuseVimstone" (void)
 {
-	GiveActorInventory(Player1TID,"TryingToQuickUseVimstone", 1);
+	MiscellaneousVars[25035]++;
 }
 
 //*******************************
@@ -31679,92 +31683,6 @@ script "ManaDrain" (int baseamount, int draintype, int ignoredefense, int exceed
 								s:"\n");
 	}
 }
-
-// STRIFE Compatibility [Stamina Upgrades]
-script "StrifeStaminaUpgrade" (void)
-{
-	int OldStamina = MiscellaneousVars[317] * 10;
-	
-	MiscellaneousVars[317] += 1;
-	if (MiscellaneousVars[317] < 0) MiscellaneousVars[317] = 0;
-	if (MiscellaneousVars[317] > 10) MiscellaneousVars[317] = 10;
-	
-	int NewStamina = MiscellaneousVars[317] * 10;
-	
-	PrintBold(s:"Stamina Level increased from ",d:OldStamina,s:" to ",d:NewStamina,s:"!");
-}
-
-// STRIFE Compatibility [Accuracy Upgrades]
-script "StrifeAccuracyUpgrade" (void)
-{
-	int OldAccuracy = GetActorProperty(Player1TID,APROP_Accuracy);
-	int NewAccuracy = OldAccuracy+10;
-	int tempaeonpts;
-	MiscellaneousVars[318] += 1;
-	if (MiscellaneousVars[318] < 0) MiscellaneousVars[318] = 0;
-	if (MiscellaneousVars[318] > 11) MiscellaneousVars[318] = 11;
-	
-	if (MiscellaneousVars[318] == 1) tempaeonpts += 11;
-	if (MiscellaneousVars[318] == 2) tempaeonpts += 13;
-	if (MiscellaneousVars[318] == 3) tempaeonpts += 15;
-	if (MiscellaneousVars[318] == 4) tempaeonpts += 17;
-	if (MiscellaneousVars[318] == 5) tempaeonpts += 19;
-	if (MiscellaneousVars[318] == 6) tempaeonpts += 21;
-	if (MiscellaneousVars[318] == 7) tempaeonpts += 23;
-	if (MiscellaneousVars[318] == 8) tempaeonpts += 25;
-	if (MiscellaneousVars[318] == 9) tempaeonpts += 27;
-	if (MiscellaneousVars[318] == 10) tempaeonpts += 29;
-	
-	tempaeonpts *= MiscellaneousVars[86];
-	MiscellaneousVars[25] += tempaeonpts;
-	MiscellaneousVars[2033] = 105;
-	
-	SetActorProperty(Player1TID,APROP_Accuracy,NewAccuracy);
-	if (GetActorProperty(Player1TID,APROP_Accuracy) > 100) { SetActorProperty(Player1TID,APROP_Accuracy,100); NewAccuracy = 100; }
-	
-	PrintBold(s:"Accuracy Level increased from ",d:OldAccuracy,s:" to ",d:NewAccuracy,s:"!");
-}
-
-// STRIFE Compatibility [Stamina/Accuracy Combo Upgrades]
-script "StrifeComboUpgrade" (void)
-{
-	int OldStamina = MiscellaneousVars[317] * 10;
-	
-	MiscellaneousVars[317] += 1;
-	if (MiscellaneousVars[317] < 0) MiscellaneousVars[317] = 0;
-	if (MiscellaneousVars[317] > 10) MiscellaneousVars[317] = 10;
-	
-	int NewStamina = MiscellaneousVars[317] * 10;
-	
-	int OldAccuracy = GetActorProperty(Player1TID,APROP_Accuracy);
-	int NewAccuracy = OldAccuracy+10;
-	int tempaeonpts;
-	MiscellaneousVars[318] += 1;
-	if (MiscellaneousVars[318] < 0) MiscellaneousVars[318] = 0;
-	if (MiscellaneousVars[318] > 11) MiscellaneousVars[318] = 11;
-	
-	if (MiscellaneousVars[318] == 1) tempaeonpts += 11;
-	if (MiscellaneousVars[318] == 2) tempaeonpts += 13;
-	if (MiscellaneousVars[318] == 3) tempaeonpts += 15;
-	if (MiscellaneousVars[318] == 4) tempaeonpts += 17;
-	if (MiscellaneousVars[318] == 5) tempaeonpts += 19;
-	if (MiscellaneousVars[318] == 6) tempaeonpts += 21;
-	if (MiscellaneousVars[318] == 7) tempaeonpts += 23;
-	if (MiscellaneousVars[318] == 8) tempaeonpts += 25;
-	if (MiscellaneousVars[318] == 9) tempaeonpts += 27;
-	if (MiscellaneousVars[318] == 10) tempaeonpts += 29;
-	
-	tempaeonpts *= MiscellaneousVars[86];
-	MiscellaneousVars[25] += tempaeonpts;
-	MiscellaneousVars[2033] = 105;
-	
-	SetActorProperty(Player1TID,APROP_Accuracy,NewAccuracy);
-	if (GetActorProperty(Player1TID,APROP_Accuracy) > 100) { SetActorProperty(Player1TID,APROP_Accuracy,100); NewAccuracy = 100; }
-	
-	PrintBold(s:"Stamina Level increased from ",d:OldStamina,s:" to ",d:NewStamina,s:"!\n",
-						s:"Accuracy Level increased from ",d:OldAccuracy,s:" to ",d:NewAccuracy,s:"!");
-}
-
 
 //**********************************************************
 //*SIGIL STUFF - Code by "FishyClockwork" from ZDoom forums*
