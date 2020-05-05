@@ -14,6 +14,8 @@ class PlayerStatItem : Inventory
 	const minxymovepos = 3.814697266;
 	const minzmoveneg = -1.907348633;
 	const minzmovepos = 1.907348633;
+	
+	mixin Tension;
 
 	int gametick;
 	int PrevTimeFreezeTimer;
@@ -184,6 +186,10 @@ class PlayerStatItem : Inventory
 		Player1TID = 1001;
 		let playeractor = AetheriusPlayerPawn(owner);
 		if (!playeractor) { owner.A_SetInventory("PlayerStatItem",0); super.DoEffect(); } // Removes itself if given to a non-Aetherius Player Class
+		else 
+		{
+			if (level.time == 0) owner.ChangeTID(Player1TID);
+		}
 
 		gametick++;
 		let weapon = owner.player.ReadyWeapon;
@@ -7252,23 +7258,41 @@ class PlayerStatItem : Inventory
 						
 						if (TensionLevel >= 0 && TensionLevel <= 2) // to 5,20,50
 						{
+							owner.A_StopSound(CHAN_7);
 							owner.A_StartSound("tensionincrease",CHAN_7,CHANF_DEFAULT,1.0,ATTN_NORM);
 						}
 						if (TensionLevel >= 3 && TensionLevel <= 4)  // to 100,250 [Super High Tension]
 						{
+							owner.A_StopSound(CHAN_7);
 							owner.A_StartSound("tensionhigh1",CHAN_7,CHANF_DEFAULT,1.0,ATTN_NORM);
-							if (CharacterClass == 2 && TensionLevel == 3 && random[statitem](1,3) == 1) owner.A_StartSound("FloraEnterHighTension1",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
-							if (CharacterClass == 2 && TensionLevel == 4 && random[statitem](1,2) == 1) owner.A_StartSound("FloraEnterHighTension2",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+							if (CharacterClass == 2 && TensionLevel == 3 && random[statitem](1,3) == 1) 
+							{
+								owner.A_StopSound(CHAN_VOICE);
+								owner.A_StartSound("FloraEnterHighTension1",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+							}
+							if (CharacterClass == 2 && TensionLevel == 4 && random[statitem](1,2) == 1) 
+							{
+								owner.A_StopSound(CHAN_VOICE);
+								owner.A_StartSound("FloraEnterHighTension2",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+							}
 						}
 						if (TensionLevel == 5) // to 500
 						{
 							owner.A_StartSound("tensionhigh2",CHAN_7,CHANF_DEFAULT,1.0,ATTN_NORM);
-							if (CharacterClass == 2) owner.A_StartSound("FloraEnterHighTension2",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+							if (CharacterClass == 2) 
+							{
+								owner.A_StopSound(CHAN_VOICE);
+								owner.A_StartSound("FloraEnterHighTension2",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+							}
 						}
 						if (TensionLevel == 6) // to 1000
 						{
 							owner.A_StartSound("tensionhigh3",CHAN_7,CHANF_DEFAULT,1.0,ATTN_NORM);
-							if (CharacterClass == 2) owner.A_StartSound("FloraEnterHighTension3",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+							if (CharacterClass == 2) 
+							{
+								owner.A_StopSound(CHAN_VOICE);
+								owner.A_StartSound("FloraEnterHighTension3",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+							}
 						}
 						
 						double project_RealZ = (owner.player.viewHeight * 39 / 50) + 8.0;
@@ -7280,8 +7304,7 @@ class PlayerStatItem : Inventory
 						if (TensionLevel == 4) blastwavetype = "PlayerTension250BlastRadius";
 						if (TensionLevel == 5) blastwavetype = "PlayerTension500BlastRadius";
 						if (TensionLevel == 6) blastwavetype = "PlayerTension1000BlastRadius";
-						owner.A_SpawnProjectile(blastwavetype,project_RealZ,0,0,CMF_TRACKOWNER,0);
-						if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 21 - BlastWave SpawnZ]: %.8f", project_RealZ);
+						owner.A_SpawnItemEx(blastwavetype,0.0,0.0,project_RealZ,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
 
 						TensionLevel += 1;
 						
@@ -11626,7 +11649,7 @@ class PlayerStatItem : Inventory
 					{
 						if (owner.CountInv("GreaterVimstone") > 0) 
 						{
-							ACS_NamedExecuteAlways("SetTensionLevel",0,4,2);
+							A_SetTensionLevel(4,2,true,owner);
 							owner.A_StartSound("use_greatervimstone",CHANF_DEFAULT,CHAN_BODY,1.0,ATTN_NORM);
 							owner.A_TakeInventory("GreaterVimstone",1);
 						}
@@ -11636,7 +11659,7 @@ class PlayerStatItem : Inventory
 					{
 						if (owner.CountInv("LesserVimstone") > 0) 
 						{
-							ACS_NamedExecuteAlways("SetTensionLevel",0,2,1);
+							A_SetTensionLevel(2,1,true,owner);
 							owner.A_StartSound("use_lesservimstone",CHANF_DEFAULT,CHAN_BODY,1.0,ATTN_NORM);
 							owner.A_TakeInventory("LesserVimstone",1);
 						}
@@ -11644,7 +11667,7 @@ class PlayerStatItem : Inventory
 						{
 							if (owner.CountInv("GreaterVimstone") > 0) 
 							{
-								ACS_NamedExecuteAlways("SetTensionLevel",0,4,2);
+								A_SetTensionLevel(4,2,true,owner);
 								owner.A_StartSound("use_greatervimstone",CHANF_DEFAULT,CHAN_BODY,1.0,ATTN_NORM);
 								owner.A_TakeInventory("GreaterVimstone",1);
 							}
