@@ -17,7 +17,6 @@ class PlayerStatItem : Inventory
 	
 	mixin Tension;
 
-	int gametick;
 	int PrevTimeFreezeTimer;
 	int InitEXPTables;
 	int ClassCheck;
@@ -186,12 +185,8 @@ class PlayerStatItem : Inventory
 		Player1TID = 1001;
 		let playeractor = AetheriusPlayerPawn(owner);
 		if (!playeractor) { owner.A_SetInventory("PlayerStatItem",0); super.DoEffect(); } // Removes itself if given to a non-Aetherius Player Class
-		else 
-		{
-			if (level.time == 0) owner.ChangeTID(Player1TID);
-		}
+		else if (level.time == 0) owner.ChangeTID(Player1TID);
 
-		gametick++;
 		let weapon = owner.player.ReadyWeapon;
 		buttons = owner.GetPlayerInput(INPUT_BUTTONS);
 		
@@ -1380,16 +1375,18 @@ class PlayerStatItem : Inventory
 			// DVDSSpecialArrayValue[8] = Remove all weapons [TITLEMAP]
 			if (CallACS("DVDSSpecialArrayCheckDECORATE",8) > 0 || owner.CountInv("RemoveAllWeapons") > 0) 
 			{
+				owner.A_SetInventory("RemoveAllWeapons",0);
 				owner.ClearInventory();
 				owner.A_SetInventory("SceptreOfEmpyrea",0);
 				CallACS("DVDSSpecialArraySetDECORATE",8,0);
 				playeractor.user_PlayerDVDSSpecial[8] = 0;
-				owner.A_SetInventory("RemoveAllWeapons",0);
 			}
 			
 			// DVDSSpecialArrayValue[9] = Prevents Dashing
 
 			// DVDSSpecialArrayValue[10] = KDIZD Specfic
+
+			// DVDSSpecialArrayValue[11] = TUTNT Specfic
 		}
 		
 		
@@ -2368,6 +2365,9 @@ class PlayerStatItem : Inventory
 		
 		
 		A_PSI1DoEffectFinalCalls();
+		
+		// Class Check is done six times for randomization purposes.
+		if (CallACS("OtherVarCheckDECORATE",4) < 6) CallACS("OtherVarSetDECORATE",4,1,1);
 		super.DoEffect();
 	}
 	
@@ -6662,14 +6662,37 @@ class PlayerStatItem : Inventory
 			if (dvdsdebug_showevadestuff > 0) Console.Printf("    \cwEvasion Rate % [STEP 9 - Vel Checks]: IsMoving?: %d, x%.8f / y%.8f / z%.8f", IsMoving, owner.vel.x, owner.vel.y, owner.vel.z);
 			if (OTMPerkLvl > 0 && IsMoving > 0) // "On The Move" Perk
 			{
+				double tempmsboost = 1.0;
 				if (OTMPerkLvl == 1) { SkillFactor = 250 + ((PlayerAGL * 100) / 40); }
 				if (OTMPerkLvl == 2) { SkillFactor = 400 + ((PlayerAGL * 100) / 32); }
 				if (OTMPerkLvl == 3) { SkillFactor = 550 + ((PlayerAGL * 100) / 24); }
 				if (OTMPerkLvl == 4) { SkillFactor = 700 + ((PlayerAGL * 100) / 16); }
 				if (OTMPerkLvl >= 5) { SkillFactor = 850 + ((PlayerAGL * 100) / 8); }
+				int basemoveboost = SkillFactor;
+				int mamlevels = CallACS("MiscVarCheckDECORATE",10035) + CallACS("MiscVarCheckDECORATE",10051);
+				int mamlevels2 = CallACS("MiscVarCheckDECORATE",10036) + CallACS("MiscVarCheckDECORATE",10052);
+				if (mamlevels > 0 || mamlevels2 > 0)
+				{
+					if (weapon is "PoisonNeedle")
+					{
+						tempmsboost += (mamlevels * 0.5);
+						tempmsboost += (mamlevels2 * (0.5 * 2.5));
+					}
+					if (weapon is "Fist" || weapon is "FistDeggaris" || weapon is "FistIllucia" || weapon is "FistFlora")
+					{
+						tempmsboost += (mamlevels * 0.334);
+						tempmsboost += (mamlevels2 * (0.334 * 2.5));
+					}
+					if (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora")
+					{
+						tempmsboost += (mamlevels * 0.125);
+						tempmsboost += (mamlevels2 * (0.125 * 2.5));
+					}
+					SkillFactor *= tempmsboost;
+				}
 		
 				EvasionRate += SkillFactor;
-				if (dvdsdebug_showevadestuff > 0) Console.Printf("    \cwEvasion Rate % [STEP 10 - On The Move]: %d,\c- Added: %d", EvasionRate, SkillFactor);
+				if (dvdsdebug_showevadestuff > 0) Console.Printf("    \cwEvasion Rate % [STEP 10 - On The Move]: %d,\c- Added: %d (Base: %d [%.8f])", EvasionRate, SkillFactor, basemoveboost, tempmsboost);
 			}
 
 			// Caps Evasion Chances out at 75% [unless you have the Dove's Ribbon, which it caps at 92.5%]
