@@ -115,7 +115,7 @@ class PlayerStatItem : Inventory
 	int Player1TID;
 	
 	int EvasionRate; // Based on 0.1% to 100.0% [though the displays only show full %]
-	int AglEvadeCheck, DftEvadeCheck;
+	double AglEvadeCheck, DftEvadeCheck;
 
 	int ArmorResistance;
 	int BasePerkFactor;
@@ -6511,27 +6511,34 @@ class PlayerStatItem : Inventory
 		if (playeractor)
 		{
 			// Set's The Base increase from each point of Agility
-			if (CharacterClass == 0) { AglEvadeCheck = 9;  DftEvadeCheck = 0; } // Deggaris
-			if (CharacterClass == 1) { AglEvadeCheck = 10; DftEvadeCheck = 0; } // Illucia
-			if (CharacterClass == 2) { AglEvadeCheck = 11; DftEvadeCheck = 0; } // Flora
-			if (CharacterClass == 8) { AglEvadeCheck = 8;  DftEvadeCheck = 0; } // Ailish
-			if (CharacterClass == 9) { AglEvadeCheck = 22; DftEvadeCheck = 0; } // Petra (Has double of Flora's)
+			if (CharacterClass == 0) { AglEvadeCheck = 8.6;  DftEvadeCheck = 0.4; } // Deggaris
+			if (CharacterClass == 1) { AglEvadeCheck = 9.8;  DftEvadeCheck = 0.2; } // Illucia
+			if (CharacterClass == 2) { AglEvadeCheck = 11.0; DftEvadeCheck = 0.1; } // Flora
+			if (CharacterClass == 8) { AglEvadeCheck = 9.2;  DftEvadeCheck = 2.4; } // Ailish (is the only one with a proper initial Deftness bonus)
+			if (CharacterClass == 9) { AglEvadeCheck = 16.5; DftEvadeCheck = 0.067; } // Petra (Has 1.5x of Flora's AGL bonsu)
 
-			if (Owner.CountInv("SauronHelmet") > 0) { AglEvadeCheck += 1; DftEvadeCheck += 1; }
-			if (CharacterClass == 0 && Owner.CountInv("SauronGauntlets") > 0) { AglEvadeCheck += 2; DftEvadeCheck += 2; }
-			if (CharacterClass == 1 && Owner.CountInv("SauronGauntletsIllucia") > 0) { AglEvadeCheck += 2; DftEvadeCheck += 2; }
-			if (CharacterClass == 2 && Owner.CountInv("SauronGauntletsFlora") > 0) { AglEvadeCheck += 2; DftEvadeCheck += 2; }
-			nm = "SauronGauntletsAilish"; APPackCheck = nm;
-			if (CharacterClass == 8 && Owner.CountInv(APPackCheck) > 0) { AglEvadeCheck += 2; DftEvadeCheck += 2; }
-			nm = "SauronGauntletsPetra"; APPackCheck = nm;
-			if (CharacterClass == 9 && Owner.CountInv(APPackCheck) > 0) { AglEvadeCheck += 2; DftEvadeCheck += 2; }
-			if (Owner.CountInv("TheOneRing") > 0) { AglEvadeCheck += 6; DftEvadeCheck += 6; }
-			if (dvdsdebug_showevadestuff > 0) Console.Printf("    \cwEvasion Rate [STEP 0 - Agl/Def Evade Check]: %d / %d\c-", AglEvadeCheck, DftEvadeCheck);
+			if (Owner.CountInv("SauronHelmet") > 0) 
+			{ 
+				AglEvadeCheck += 1.1; 
+				DftEvadeCheck += 1.1; 
+				if (CharacterClass == 8) DftEvadeCheck += 0.55;
+			}
+			if (Owner.CountInv("SauronGauntletsItem") > 0) 
+			{
+				AglEvadeCheck += 2.2;
+				DftEvadeCheck += 2.2;
+				if (CharacterClass == 8) DftEvadeCheck += 1.1;
+			}
+			if (Owner.CountInv("TheOneRing") > 0) 
+			{ 
+				AglEvadeCheck += 6.6; 
+				DftEvadeCheck += 6.6;
+				if (CharacterClass == 8) DftEvadeCheck += 3.3;
+			}
+			if (dvdsdebug_showevadestuff > 0) Console.Printf("    \cwEvasion Rate [STEP 0 - Agl/Def Evade Check]: %.4f / %.4f\c-", AglEvadeCheck, DftEvadeCheck);
 
-			SkillFactor = 0;
-			SkillFactor = ((PlayerAGL * AglEvadeCheck) + (PlayerDFT * DftEvadeCheck)) / 2;
-			EvasionRate = SkillFactor;
-			if (dvdsdebug_showevadestuff > 0) Console.Printf("    \cwEvasion Rate [STEP 1 - Base (Agl/Evade)]: %d\c-", EvasionRate);
+			EvasionRate = ((PlayerAGL * AglEvadeCheck) + (PlayerDFT * DftEvadeCheck)) * 0.5;
+			if (dvdsdebug_showevadestuff > 0) Console.Printf("    \cwEvasion Rate [STEP 1 - Base (Agl/Evade, Dft/Evade)]: %d\c-", EvasionRate);
 
 			// Divine Avatar
 			SkillFactor = 0;
@@ -6572,7 +6579,7 @@ class PlayerStatItem : Inventory
 			SkillFactor = 0;
 			// Checks Evasion Based on Level
 			SkillFactor = PlayerLevel * 5;
-			if (DivineAvatarTimer > 0) SkillFactor = SkillFactor * 7 / 5;
+			if (DivineAvatarTimer > 0) SkillFactor *= 1.4;
 			EvasionRate += SkillFactor;
 			if (dvdsdebug_showevadestuff > 0) Console.Printf("    \cwEvasion Rate % [STEP 5a - Level Check]: %d,\c- Added: %d", EvasionRate, SkillFactor);
 
@@ -6638,7 +6645,7 @@ class PlayerStatItem : Inventory
 				// Ruinous Shield [Evade reduced by 5/8ths]
 				if (Owner.CountInv("RuinousShield") > 0)
 				{
-					SkillFactor = EvasionRate * 5 / 8;
+					SkillFactor = EvasionRate * 0.625;
 					EvasionRate -= SkillFactor;
 					if (EvasionRate < 0) EvasionRate = 0;
 					if (dvdsdebug_showevadestuff > 0) Console.Printf("    \cwEvasion Rate % [STEP 8 - Ruinous Shield Check]: %d,\c- Subtracted: %d", EvasionRate, SkillFactor);
@@ -6647,7 +6654,7 @@ class PlayerStatItem : Inventory
 				// Divine Shield [Evade Increased by 1/4ths]
 				if (Owner.CountInv("DivineShield") > 0)
 				{
-					SkillFactor = EvasionRate * 1 / 4;
+					SkillFactor = EvasionRate * 0.25;
 					EvasionRate += SkillFactor;
 					if (dvdsdebug_showevadestuff > 0) Console.Printf("    \cwEvasion Rate % [STEP 8 - Divine Shield Check]: %d,\c- Added: %d", EvasionRate, SkillFactor);
 				}
@@ -6678,12 +6685,16 @@ class PlayerStatItem : Inventory
 						tempmsboost += (mamlevels * 0.5);
 						tempmsboost += (mamlevels2 * (0.5 * 2.5));
 					}
-					if (weapon is "Fist" || weapon is "FistDeggaris" || weapon is "FistIllucia" || weapon is "FistFlora")
+					no = "FistAilish"; APPackCheck3 = no;
+					np = "FistPetra"; APPackCheck4 = np;
+					if (weapon is "Fist" || weapon is "FistDeggaris" || weapon is "FistIllucia" || weapon is "FistFlora" || weapon is APPackCheck3 || weapon is APPackCheck4)
 					{
 						tempmsboost += (mamlevels * 0.334);
 						tempmsboost += (mamlevels2 * (0.334 * 2.5));
 					}
-					if (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora")
+					nm = "SauronGauntletsAilish"; APPackCheck = nm;
+					nn = "SauronGauntletsPetra"; APPackCheck2 = nn;
+					if (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora" || weapon is APPackCheck || weapon is APPackCheck2)
 					{
 						tempmsboost += (mamlevels * 0.125);
 						tempmsboost += (mamlevels2 * (0.125 * 2.5));
@@ -6734,12 +6745,12 @@ class PlayerStatItem : Inventory
 				BasePerkFactor = -156;
 			}
 
-			no = "FistAilish"; APPackCheck3 = no;
-			np = "FistPetra"; APPackCheck4 = np;
 			If (weapon is "Chainsaw2" || weapon is "DoubleBladedChainsaw") BasePerkFactor = -78;
 			If (weapon is "Minigun") BasePerkFactor = -78;
 			If (weapon is "EvilWarriorShield") BasePerkFactor = -63;
 			If (weapon is "Chaingun2") BasePerkFactor = -39;
+			no = "FistAilish"; APPackCheck3 = no;
+			np = "FistPetra"; APPackCheck4 = np;
 			If (weapon is "FistDeggaris" || 
 					weapon is "FistIllucia" || 
 					weapon is "FistFlora" || 
