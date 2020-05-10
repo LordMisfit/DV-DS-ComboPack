@@ -154,6 +154,7 @@ mixin class EGArmorBonus
 	// Emulates Armor Bonuses for all four types of normal armor in DVI[I]-DS. [Applies Only to Deggaris and Illucia] (also one part of the Sauron's Gauntlet hit effect)
 	action void A_EmulateGiveArmorBonus(int BaseAmount = 0, int GauntletGive = 0, bool hassource = false, Actor Source = null)
 	{
+		int debug = 0;
 		Actor playpawn;
 		if (hassource) playpawn = AetheriusPlayerPawn(source);
 							else playpawn = null;
@@ -170,7 +171,7 @@ mixin class EGArmorBonus
 			if (GauntletsArmorLimit <= 0) return;
 		}
 		
-		int ExtraAPAdd, ExtraAPAdd2;
+		int ExtraAPAdd, ExtraAPAdd2, ExtraAPAdd3;
 		int RawArmorValue, ArmorClearValue;
 		
 		int CharacterClass = CallACS("CheckCharacterClass");
@@ -179,23 +180,24 @@ mixin class EGArmorBonus
 			if (BaseAmount <= 0) BaseAmount = 1;
 		
 			// Saves original raw Armor Value
-			RawArmorValue = check.CountInv("Armor");
+			RawArmorValue = check.CountInv("BasicArmor");
+			if (debug) check.A_PrintBold(String.Format("Has %d Armor [base]", RawArmorValue));
 			
 			// Clears Armor Types
-			ArmorClearValue = check.CountInv("Armor"); check.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = check.CountInv("ArmorBonusDSGreen"); check.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = check.CountInv("ArmorBonusDSBlue"); check.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = check.CountInv("ArmorBonusDSStone1"); check.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = check.CountInv("ArmorBonusDSStone2"); check.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = check.CountInv("ArmorBonusDSDiamond1"); check.A_TakeInventory("Armor", ArmorClearValue);
-			ArmorClearValue = check.CountInv("ArmorBonusDSDiamond2"); check.A_TakeInventory("Armor", ArmorClearValue);
+			check.A_SetInventory("BasicArmor", 0);
+			check.A_SetInventory("ArmorBonusDSGreen",0);
+			check.A_SetInventory("ArmorBonusDSBlue",0);
+			check.A_SetInventory("ArmorBonusDSStone1",0);
+			check.A_SetInventory("ArmorBonusDSStone2",0);
+			check.A_SetInventory("ArmorBonusDSDiamond1",0);
+			check.A_SetInventory("ArmorBonusDSDiamond2",0);
 			// Flora and her Spiritual Exoskin spell have no Armor Bonuses
 			// Flora and her Greater Spiritual Exoskin spell have no Armor Bonuses
 			// Flora and her Perfected Spiritual Exoskin spell have no Armor Bonuses
 
 			if (RawArmorValue == 0) // No Armor
 			{
-				//PrintBold(s:"Did Not Have Armor");
+				if (debug) check.A_PrintBold(String.Format("Did Not Have Armor"));
 	
 				ExtraAPAdd = 1; // Base Increase to Armor and make it Green class
 				ExtraAPAdd = ExtraAPAdd * BaseAmount;
@@ -207,11 +209,11 @@ mixin class EGArmorBonus
 				RawArmorValue += ExtraAPAdd;
 				if (GauntletGive > 0 && RawArmorValue > GauntletsArmorLimit) RawArmorValue = GauntletsArmorLimit;
 	
-				//PrintBold(d:ExtraAPAdd,s:" Armor Given");
+				if (debug) check.A_PrintBold(String.Format("%d Armor Given", ExtraAPAdd));
 	
 				CurrentArmorClass = 1;
 				CurrentMaxArmor = 100;
-				check.A_SetInventory("ArmorBonusDSGreen", RawArmorValue);
+				for (int i = 0; i < RawArmorValue; i++) { check.A_GiveInventory("ArmorBonusDSGreen", 1); }
 				check.A_SetInventory("DSGreenArmorClass", 1);
 				check.A_SetInventory("DSNoArmorClass", 0);
 				check.A_SetInventory("DSBlueArmorClass", 0);
@@ -222,22 +224,24 @@ mixin class EGArmorBonus
 			}
 			else // Have some kind of existing Armor
 			{
-				//PrintBold(s:"Already Has Armor");
+				if (debug) check.A_PrintBold(String.Format("Already Has Armor"));
 	
 				ExtraAPAdd = CurrentArmorClass; // Base Increase to Armor and make it Green class
 				ExtraAPAdd = ExtraAPAdd * BaseAmount;
-				RawArmorValue += ExtraAPAdd;
 				ExtraAPAdd2 = RawArmorValue / 100;
 				ExtraAPAdd2 = ExtraAPAdd2 * BaseAmount;
-				RawArmorValue += ExtraAPAdd2;
-				ExtraAPAdd2 = PlayerLevel / 5;
-				ExtraAPAdd2 = ExtraAPAdd2 * BaseAmount;
+				ExtraAPAdd3 = PlayerLevel / 5;
+				ExtraAPAdd3 = ExtraAPAdd3 * BaseAmount;
 				if (GauntletGive > 0)
 				{
+					ExtraAPAdd /= 4;
 					ExtraAPAdd2 /= 4;
-					if (ExtraAPAdd2 < 1) ExtraAPAdd2 = 1;
+					ExtraAPAdd3 /= 4;
 				}
-				RawArmorValue += ExtraAPAdd2;
+				int combinedarmor = (ExtraAPAdd + ExtraAPAdd2 + ExtraAPAdd3);
+				if (combinedarmor < 1) combinedarmor = 1;
+				RawArmorValue += combinedarmor;
+				if (debug) check.A_PrintBold(String.Format("%d + %d + %d (= %d) Armor Given [%d Armor Class]", ExtraAPAdd, ExtraAPAdd2, ExtraAPAdd3, combinedarmor, CurrentArmorClass));
 				
 				if (GauntletGive > 0 && RawArmorValue > GauntletsArmorLimit) RawArmorValue = GauntletsArmorLimit;
 	
@@ -277,9 +281,7 @@ mixin class EGArmorBonus
 						}
 					}
 				}
-			
-				//PrintBold(d:ExtraAPAdd2,s:" Armor Given [",d:CurrentArmorClass,s:" Armor Class]");
-			
+				
 				if (CurrentArmorClass == 0)
 				{
 					CurrentMaxArmor = 0;
@@ -294,7 +296,7 @@ mixin class EGArmorBonus
 				if (CurrentArmorClass == 1)
 				{
 					CurrentMaxArmor = 100;
-					check.A_SetInventory("ArmorBonusDSGreen", RawArmorValue);
+					for (int i = 0; i < RawArmorValue; i++) { check.A_GiveInventory("ArmorBonusDSGreen", 1); }
 					check.A_SetInventory("DSGreenArmorClass", 1);
 					check.A_SetInventory("DSNoArmorClass", 0);
 					check.A_SetInventory("DSBlueArmorClass", 0);
@@ -306,7 +308,7 @@ mixin class EGArmorBonus
 				if (CurrentArmorClass == 2)
 				{
 					CurrentMaxArmor = 200;
-					check.A_SetInventory("ArmorBonusDSBlue", RawArmorValue);
+					for (int i = 0; i < RawArmorValue; i++) { check.A_GiveInventory("ArmorBonusDSBlue", 1); }
 					check.A_SetInventory("DSBlueArmorClass", 1);
 					check.A_SetInventory("DSNoArmorClass", 0);
 					check.A_SetInventory("DSGreenArmorClass", 0);
@@ -318,7 +320,7 @@ mixin class EGArmorBonus
 				if (CurrentArmorClass == 3)
 				{
 					CurrentMaxArmor = 500;
-					check.A_SetInventory("ArmorBonusDSStone1", RawArmorValue);
+					for (int i = 0; i < RawArmorValue; i++) { check.A_GiveInventory("ArmorBonusDSStone1", 1); }
 					check.A_SetInventory("DSStoneArmorClass1", 1);
 					check.A_SetInventory("DSNoArmorClass", 0);
 					check.A_SetInventory("DSGreenArmorClass", 0);
@@ -330,7 +332,7 @@ mixin class EGArmorBonus
 				if (CurrentArmorClass == 4)
 				{
 					CurrentMaxArmor = 1250;
-					check.A_SetInventory("ArmorBonusDSDiamond1", RawArmorValue);
+					for (int i = 0; i < RawArmorValue; i++) { check.A_GiveInventory("ArmorBonusDSDiamond1", 1); }
 					check.A_SetInventory("DSDiamondArmorClass1", 1);
 					check.A_SetInventory("DSNoArmorClass", 0);
 					check.A_SetInventory("DSGreenArmorClass", 0);
@@ -342,7 +344,7 @@ mixin class EGArmorBonus
 				if (CurrentArmorClass == 5)
 				{
 					CurrentMaxArmor = 2000;
-					check.A_SetInventory("ArmorBonusDSStone2", RawArmorValue);
+					for (int i = 0; i < RawArmorValue; i++) { check.A_GiveInventory("ArmorBonusDSStone2", 1); }
 					check.A_SetInventory("DSStoneArmorClass2", 1);
 					check.A_SetInventory("DSNoArmorClass", 0);
 					check.A_SetInventory("DSGreenArmorClass", 0);
@@ -354,7 +356,7 @@ mixin class EGArmorBonus
 				if (CurrentArmorClass >= 6)
 				{
 					CurrentMaxArmor = 5000;
-					check.A_SetInventory("ArmorBonusDSDiamond2", RawArmorValue);
+					for (int i = 0; i < RawArmorValue; i++) { check.A_GiveInventory("ArmorBonusDSDiamond2", 1); }
 					check.A_SetInventory("DSDiamondArmorClass2", 1);
 					check.A_SetInventory("DSNoArmorClass", 0);
 					check.A_SetInventory("DSGreenArmorClass", 0);
