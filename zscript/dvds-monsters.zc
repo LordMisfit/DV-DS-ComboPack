@@ -1181,7 +1181,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 	
-	double A_DamageMobCheckShielding(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle) // (Actor inflictor, int damage)
+	double A_DamageMobCheckShielding(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
 		string infl, sour, vict;
 		if (inflictor == null) infl = "NONE"; else infl = inflictor.GetClassName();
@@ -1221,7 +1221,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		shieldfactor += 1.0;
 		if (shieldfactor >= 1.0) shieldfactor = 1.0;
 		
-		finaldmg *= shieldfactor;
+		finaldmg = ceil(finaldmg * shieldfactor);
 		if (finaldmg < 1) finaldmg = 1;
 		if (dvdsdebug_actordmgdisplays && shieldfactor >= 0.01) Console.Printf("    (\czActor Defensive Input [STEP ?? - Shielding Monsters]\c-: finaldmg: %d (prevdamage: %d), shieldfactor: %4f", finaldmg, damage, shieldfactor);
 
@@ -1408,7 +1408,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		//Console.Printf("increasedmg: %d", increasedmg);
 		if (increasedmg) 
 		{
-			damage *= (1.0 + (CallACS("MiscVarCheckDECORATE",checkval) * frandom(0.15,0.2)));
+			damage = floor(damage * (1.0 + (CallACS("MiscVarCheckDECORATE",checkval) * frandom(0.15,0.2))));
 		}
 		return damage;
 	}
@@ -1489,14 +1489,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (HellcoreLevel >= 7) HellcoreLevelFactor *= HellcoreBaseMulti;
 				if (HellcoreLevel >= 8) HellcoreLevelFactor *= HellcoreBaseMulti;
 				if (HellcoreLevel >= 9) HellcoreLevelFactor *= HellcoreBaseMulti;
-				damage *= HellcoreLevelFactor;
+				damage = floor(damage * HellcoreLevelFactor);
 			}
 			if (dvdsdebug_actordmgdisplays) Console.Printf("    (input: HellcoreLevelFactor [%d, LVL %d] = %10f)  (damage: \cy%d\c- (\cx%d\c-))", HellcoreType, HellcoreLevel, HellcoreLevelFactor, damage, olddmg);
 			
 			olddmg = damage;
 			double SoulMasteryFactor = 1.0;
 			SoulMasteryFactor = 1.00 + ((CallACS("MiscVarCheckDECORATE",10033) * .10) + (CallACS("MiscVarCheckDECORATE",10034) * .25));
-			damage *= SoulMasteryFactor;
+			damage = floor(damage * SoulMasteryFactor);
 			if (dvdsdebug_actordmgdisplays) Console.Printf("    (input: SoulMasteryFactor [%d, %d] = %10f)  (damage: \cy%d\c- (\cx%d\c-))", CallACS("MiscVarCheckDECORATE",10033), CallACS("MiscVarCheckDECORATE",10034), SoulMasteryFactor, damage, olddmg);
 		}
 		if (IsHellCoreAttack != 0)
@@ -1504,7 +1504,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (CharacterClass == 2 && CountInv("RuinousShield", AAPTR_PLAYER1) > 0)
 			{
 				olddmg = damage;
-				damage *= 2.56;
+				damage = floor(damage * 2.56);
 				if (dvdsdebug_actordmgdisplays) Console.Printf("    (input: Ruinous Shield)  (damage: \cy%d\c- (\cx%d\c-))", damage, olddmg);
 			}
 		}
@@ -1615,9 +1615,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			prefriendlydmg = damage;
 			if (bFRIENDLY)
 			{
-				damage /= 4;
-				if (user_summoned > 0) damage /= 4;
-				if (user_charmed > 0) damage /= 4;
+				damage = ceil(damage * 0.25);
+				if (user_summoned > 0) damage = ceil(damage * 0.25);
+				if (user_charmed > 0) damage = ceil(damage * 0.25);
 				if (damage < 1) damage = 1;
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2a - Player-Friendly Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-)", prefriendlydmg, damage);
 			}
@@ -1720,14 +1720,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (CountInv("AnubisCufflinksFear", AAPTR_PLAYER1) > 0) critdmgmulti *= 1.25;
 				if (CountInv("RuinousShield", AAPTR_PLAYER1) > 0) critdmgmulti *= 0.8;
 				if (infl == "SonicNail") critdmgmulti *= frandompick(2.0,2.125,2.25,2.375,2.5);
+
+				damage = floor(damage * critdmgmulti);
+				A_SetInventory("TookCriticalHit",1);
+				dealtcrit = true;
 				if (mod == 'PoisonNeedle') 
 				{
-					damage *= critdmgmulti;
 					if (PoisonNeedleBossCheck) damage += ((self.User_MaxHP * random(1,2)) / 8); 
 																else damage += (self.User_MaxHP * random(3,5));
 
-					A_SetInventory("TookCriticalHit",1);
-					dealtcrit = true;
 					flags |= DMG_NO_ARMOR;
 					flags |= DMG_NO_FACTOR;
 					flags |= DMG_NO_PROTECT;
@@ -1735,9 +1736,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 				else
 				{
-					damage *= critdmgmulti;
-					A_SetInventory("TookCriticalHit",1);
-					dealtcrit = true;
 					if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Player-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti);
 				}
 			}
@@ -1750,7 +1748,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (infl == "SonicNail") ldldmgmulti = 1.25;
 				if (infl == "UnmakerLaser" || infl == "UnmakerLaserCrisis") ldldmgmulti = frandompick(1.375,1.5,1.625);
 				if (UniqueProjectileFast) UniqueProjectileFast.timesrippedoverall--;
-				damage *= ldldmgmulti;
+				if (ldldmgmulti >= 1.0000) damage = floor(damage * ldldmgmulti);
+															else damage = ceil(damage * ldldmgmulti);
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2c - Player-LDL Other Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \caldldmgmulti = %3f\c-)", preldldmg, damage, ldldmgmulti);
 			}
 			else
@@ -1775,7 +1774,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 				ldldmgmulti += (ldlbasemod * CallACS("MiscVarCheckDECORATE",10057));
 				ldldmgmulti += ((ldlbasemod * 2.5) * CallACS("MiscVarCheckDECORATE",10058));
-				damage *= ldldmgmulti;
+				if (ldldmgmulti >= 1.0000) damage = floor(damage * ldldmgmulti);
+															else damage = ceil(damage * ldldmgmulti);
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2d - Player-LDLPerk Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \caldldmgmulti = %3f\c-)", preldldmg, damage, ldldmgmulti);
 			}
 			if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2x - Player Dmg]\c-: \cxprefdmg = %d\c-, \cxprefrienddmg = %d\c-, \cxprecritdmg = %d\c-, \cxpreldldmg = %d\c-, \cydmg = %d\c-, \cbCritResist: (%.8f) / %.8f\c-)", preplayerdmg, prefriendlydmg, precritdmg, preldldmg, damage, CritResistRoll, CritResistChance);
@@ -1783,7 +1783,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (vict == "Sauravatar" && mod == 'Gauntlets')
 			{
 				predamage = damage;
-				damage += (user_MaxHP) * frandom(0.003125,0.009375);
+				damage = floor(damage + ((user_MaxHP) * frandom(0.003125,0.009375)));
 				if (dvdsdebug_actordmgdisplays) Console.Printf("[Sauravatar Gauntlet Damage] - %d (%d)", damage, predamage);
 			}
 		}
@@ -1976,7 +1976,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				
 				if (criticalhit) 
 				{
-					damage *= critdmgmulti;
+					damage = floor(damage * critdmgmulti);
 					A_SetInventory("TookCriticalHit",1);
 					dealtcrit = true;
 					if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-, \cbCritResist: (%.8f) / %.8f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti, CritResistRoll, CritResistChance);
@@ -2289,22 +2289,22 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			predirdmg = damage;
 			if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) 
 			{
-				damage *= 2;
+				damage = floor(damage * 2);
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 3b - Player-Deflection Pre-Check [Earrings]\c-: \cypredmg = %d\c- / \cydmg = %d\c-)", predirdmg, damage);
 			}
 			if (CallACS("GetBuffTimer",7) > 0)
 			{
-				damage *= 4;
+				damage = floor(damage * 4);
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 3c - Player-Deflection Pre-Check [DivAvatar]\c-: \cypredmg = %d\c- / \cydmg = %d\c-)", predirdmg, damage);
 			}
 			if (CallACS("GetBuffTimer",10) > 0)
 			{
-				damage *= 2;
+				damage = floor(damage * 2);
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 3d - Player-Deflection Pre-Check [Oomph]\c-: \cypredmg = %d\c- / \cydmg = %d\c-)", predirdmg, damage);
 			}
 			if (CallACS("GetBuffTimer",13) > 0)
 			{
-				damage *= 0.5;
+				damage = ceil(damage * 0.5);
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 3d - Player-Deflection Pre-Check [Blunt]\c-: \cypredmg = %d\c- / \cydmg = %d\c-)", predirdmg, damage);
 			}
 
@@ -2317,7 +2317,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		predirdmg = damage;
 		if ((playpawn && (playpawn.player.cheats & CF_FRIGHTENING || playpawn.bFRIGHTENING)) && (bFRIGHTENED && !bFRIENDLY))
 		{
-			damage *= frandom(1.20,1.25);
+			damage = floor(damage * frandom(1.20,1.25));
 			if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP ?? - Fright Check]\c-: \cypredmg = %d\c- / \cydmg = %d\c-)", predirdmg, damage);
 		}
 
@@ -2332,7 +2332,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis" ||
 				infl == "Demon5Jet" || infl == "Demon5JetCrisis")
 		{
-			damage *= 1.125;
+			damage = floor(damage * 1.125);
 		}
 		if (dvdsdebug_actordmgdisplays && damage > 0) 
 		{
@@ -2348,7 +2348,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			if (damage > 0)
 			{
-				damage *= cheatnpcdmgtaken;
+				if (random(0,1) == 0) damage = floor(damage * cheatnpcdmgtaken);
+												 else damage = ceil(damage * cheatnpcdmgtaken);
 				if (damage < 1) damage = 1;
 				if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP C1 - Direct Dmg Changes]:\c- \cypredmg = %d\c-, \cydmg = %d\c-, \cxcheatnpcdmgtaken = %2f)", predirdmg, damage, cheatnpcdmgtaken);
 			}
@@ -2410,7 +2411,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (UniqueProjectile && UniqueProjectile.IsACrisisAttack)
 		{
 			olddmg = damage;
-			damage *= dvds_monstercrisismulti;
+			damage = floor(damage * dvds_monstercrisismulti);
 			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP 1a1 - Crisis Projectile Check [%s]]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \czdmgmulti: %.8f\c-)", sour, olddmg, damage, dvds_monstercrisismulti);
 			UniqueProjectile.IsACrisisAttack = false;
 		}
@@ -2446,7 +2447,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 			if (health <= user_HPLowBuffRange) buffdamagemulti *= 0.875;
 			if (user_legendaryevolved) buffdamagemulti *= frandom(0.925,0.975);
-			damage *= buffdamagemulti;
+			damage = ceil(damage * buffdamagemulti);
 			if (damage <= 0) damage = 1;
 			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP 1a1 - Attacker Monster Buffs/Debuffs [%s]]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \czdmgmulti: %.8f\c-)", sour, olddmg, damage, buffdamagemulti);
 		}
@@ -2479,7 +2480,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 			if (DVDSActor.health <= DVDSActor.user_HPLowBuffRange) buffdamagemulti *= 1.25;
 			if (DVDSActor.user_legendaryevolved) buffdamagemulti *= frandom(1.05,1.15);
-			damage *= buffdamagemulti;
+			damage = floor(damage * buffdamagemulti);
 			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP 1a2 - Defender Monster Buffs/Debuffs [%s]]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \czdmgmulti: %.8f\c-)", vict, olddmg, damage, buffdamagemulti);
 		}
 		return damage;

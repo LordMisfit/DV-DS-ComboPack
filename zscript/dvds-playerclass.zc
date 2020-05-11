@@ -30,6 +30,9 @@ class AetheriusPlayerPawn : PlayerPawn
 	const spread2pitch2 = 7.5;
 	const spread2height1 = 0.0;
 	const spread2height2 = 0.0;
+	
+	// Other Consts
+	const maxmovevel = 30.0;
 
 	int user_PlayerDVDSSpecial[256];
 
@@ -45,6 +48,7 @@ class AetheriusPlayerPawn : PlayerPawn
 	double lastvelx;
 	double lastvely;
 	double lastvelz;
+	double truespeed;
 	int breathframe;
 	int user_hittaken;
 	
@@ -62,7 +66,6 @@ class AetheriusPlayerPawn : PlayerPawn
 	{
 		String nm;
 		int CharacterClass = CallACS("CheckCharacterClass");
-		//double LevelAirControl = level.aircontrol; // Saves a value
 		int PlayerLevel = CallACS("StatCheck",0);
 		int PlayerAGL = CallACS("StatCheck",3);
 
@@ -163,9 +166,8 @@ class AetheriusPlayerPawn : PlayerPawn
 		
 		if (dvdsdebug_showmoveinformation > 0)
 		{
-			Console.Printf("    \czSV_AirControl:\c- \cz%.8f\c-", sv_aircontrol); 
-			Console.Printf("    \cwTotalAirControl:\c- \cw%.8f\c-, \cyAirControlBase:\c- \cy%.8f\c-, LVLAirControl: %.8f, AGLAirControl: %.8f, ArmorAirControl: %.8f, SauronArmorAirControl: %.8f, BuffAirControl: %.8f, SceptreAirControl: %.8f, PerkFactorAirControl: %.8f, DashingAirControl: %.8f, DivineAvatarAirControl: %.8f", 
-													level.aircontrol, AirControlBase,
+			Console.Printf("    \czSV_AirControl:\c- \cz%.8f\c-  \cwTotalAirControl:\c- \cw%.8f\c-, \cyAirControlBase:\c- \cy%.8f\c-, LVLAirControl: %.8f, AGLAirControl: %.8f, ArmorAirControl: %.8f, SauronArmorAirControl: %.8f, BuffAirControl: %.8f, SceptreAirControl: %.8f, PerkFactorAirControl: %.8f, DashingAirControl: %.8f, DivineAvatarAirControl: %.8f", 
+													sv_aircontrol, level.aircontrol, AirControlBase,
 													LVLAirControl, AGLAirControl,
 													ArmorAirControl, SauronArmorAirControl,
 													BuffAirControl, SceptreAirControl,
@@ -370,13 +372,15 @@ class AetheriusPlayerPawn : PlayerPawn
 
 		int CharacterClass = CallACS("CheckCharacterClass");
 		int ClassCheck = CallACS("OtherVarCheckDECORATE",4);
-		int basespeedvels;
-		double basespeedvelsd;
-		if (CharacterClass == 0) { basespeedvels = 1092266; basespeedvelsd = 16.666667; }
-		if (CharacterClass == 1) { basespeedvels = 1228799; basespeedvelsd = 18.750000; }
-		if (CharacterClass == 2) { basespeedvels = 1365333; basespeedvelsd = 20.833333; }
-		if (CharacterClass == 8) { basespeedvels = 1092266; basespeedvelsd = 16.666667; }
-		if (CharacterClass == 9) { basespeedvels = 1228799; basespeedvelsd = 18.750000; }
+		int basespeedvelsx;
+		int basespeedvelsy;
+		double basespeedvelsxd = 16.66666667;
+		double basespeedvelsyd = 16.66666667;
+
+		basespeedvelsxd *= ForwardMove2;
+		basespeedvelsyd *= SideMove2;
+		basespeedvelsx = (basespeedvelsxd * 65536);
+		basespeedvelsy = (basespeedvelsyd * 65536);
 		
 		if (CountInv("SauronHelmet") > 0 && !dvds_sauronhelmetdrops) A_SetInventory("SauronHelmet", 0);
 		if (!dvds_saurongauntletsdrops)
@@ -1886,14 +1890,19 @@ class AetheriusPlayerPawn : PlayerPawn
 			bVISIBILITYPULSE = 0;
 			bTHRUACTORS = 0;
 		}
+		
+		double newspeedvelsxd = basespeedvelsxd * truespeed;
+		double newspeedvelsyd = basespeedvelsyd * truespeed;
+		int newspeedvelsx = newspeedvelsxd * 65536;
+		int newspeedvelsy = newspeedvelsyd * 65536;
 		if (dvdsdebug_showdashinformation) 
 		{
-			Console.Printf("\cxfirsttic: %d\c-, \czPosX: %d, PosY: %d, PosZ: %d\c-, \cnGetZAt: %d\c-, \cyVelX: %.8f (%d), VelY: %.8f (%d), VelZ: %.8f (%d)\c-", firsttic, pos.x, pos.y, pos.z, GetZAt(), vel.x, (vel.x * 65536), vel.y, (vel.y * 65536), vel.z, (vel.z * 65536));
+			Console.Printf("\cxfirsttic: %d (waterlevel: %d)\c-, \czPosX: %d, PosY: %d, PosZ: %d\c-, \cnGetZAt: %d\c-, VelX: %.8f/\cx%.8f\c- (%d/\cx%d\c-), VelY: %.8f/\cx%.8f\c- (%d/\cx%d\c-), VelZ: %.8f (%d)\c-", firsttic, waterlevel, pos.x, pos.y, pos.z, GetZAt(), vel.x, newspeedvelsxd, (vel.x * 65536), newspeedvelsx, vel.y, newspeedvelsyd, (vel.y * 65536), newspeedvelsy, vel.z, (vel.z * 65536));
 			Console.Printf("DashTimer: %d / %d (%d), DashVelTimer: %d / 2, DashVelTimer2: %d / 1", CallACS("MiscVarCheckDECORATE",166), CallACS("MiscVarCheckDECORATE",91), CallACS("MiscVarCheckDECORATE",85), dashveltimer, dashveltimer2);
 		}
 		else
 		{
-			if (dvdsdebug_showmoveinformation) Console.Printf("\cz Angle: %.8f, Pitch: %.8f\c-, \czPosX: %d, PosY: %d, PosZ: %d\c-, \cyVelX: %.8f (%d), VelY: %.8f (%d), VelZ: %.8f (%d)\c-", (angle % 360), pitch, pos.x, pos.y, pos.z, vel.x, (vel.x * 65536), vel.y, (vel.y * 65536), vel.z, (vel.z * 65536));
+			if (dvdsdebug_showmoveinformation) Console.Printf("\cz WaterLevel: %d\c-, \cz Angle: %.8f, Pitch: %.8f\c-, \czPosX: %d, PosY: %d, PosZ: %d\c-, VelX: %.8f/\cx%.8f\c- (%d/\cx%d\c-), VelY: %.8f/\cx%.8f\c- (%d/\cx%d\c-), VelZ: %.8f (%d)\c-", waterlevel, (angle % 360), pitch, pos.x, pos.y, pos.z, vel.x, newspeedvelsxd, (vel.x * 65536), newspeedvelsx, vel.y, newspeedvelsyd, (vel.y * 65536), newspeedvelsy, vel.z, (vel.z * 65536));
 		}
 		
 		if (dvdsdebug_shieldactorghosts) Console.Printf("(player) Angle: %.8f, Pitch: %.8f", (angle % 360), pitch);
@@ -2370,7 +2379,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		//Console.Printf("reducedmg: %d", reducedmg);
 		if (reducedmg) 
 		{
-			damage *= (1.0 - (CallACS("MiscVarCheckDECORATE",checkval) * frandom(0.075,0.1)));
+			damage = ceil(damage * (1.0 - (CallACS("MiscVarCheckDECORATE",checkval) * frandom(0.075,0.1))));
 		}
 		return damage;
 	}
@@ -2488,7 +2497,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (UniqueProjectile && UniqueProjectile.IsACrisisAttack)
 			{
 				predamage = damage;
-				damage *= dvds_monstercrisismulti;
+				damage = floor(damage * dvds_monstercrisismulti);
 				if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP -4] player-damagemobj input [\cyCrisis Projectile Check: %s\c-]\c-: %d, [prev: %d], [dmgmulti: %f])", sour, damage, predamage, dvds_monstercrisismulti);
 				UniqueProjectile.IsACrisisAttack = false;
 			}
@@ -2496,7 +2505,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (UniqueProjectile && UniqueProjectile.projtouchedshieldactor)
 			{
 				predamage = damage;
-				damage *= 0.05;
+				damage = ceil(damage * 0.05);
 				if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP -3] player-damagemobj input [\cyProjectile Hit Shield Check: %s\c-]\c-: %d, [prev: %d])", sour, damage, predamage);
 			}
 			
@@ -2534,7 +2543,7 @@ class AetheriusPlayerPawn : PlayerPawn
 
 				if (DVDSActor.health <= DVDSActor.user_HPLowBuffRange) buffdamagemulti *= 1.25;
 				if (DVDSActor.user_legendaryevolved) buffdamagemulti *= frandom(1.05,1.15);
-				damage *= buffdamagemulti;
+				damage = floor(damage * buffdamagemulti);
 				if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP -2] player-damagemobj input [\cyMonster Buffs: %s\c-]\c-: %d, [prev: %d], [dmgmulti: %f])", sour, damage, predamage, buffdamagemulti);
 			}
 		}
@@ -2859,9 +2868,9 @@ class AetheriusPlayerPawn : PlayerPawn
 			{
 				if (DVDSActor.bFRIENDLY)
 				{
-					damage /= 4;
-					if (DVDSActor.user_summoned > 0) damage /= 4;
-					if (DVDSActor.user_charmed > 0) damage /= 4;
+					damage = ceil(damage * 0.25);
+					if (DVDSActor.user_summoned > 0) damage = ceil(damage * 0.25);
+					if (DVDSActor.user_charmed > 0) damage = ceil(damage * 0.25);
 					if (damage < 1) damage = 1;
 					if (dvdsdebug_playerdmgdisplays && damage > 0) Console.Printf("    (\cz[STEP 2] player-damagemobj input [Hit By Friendly]\c-: \cypredmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-)", prefriendlydmg, damage);
 				}
@@ -2869,7 +2878,7 @@ class AetheriusPlayerPawn : PlayerPawn
 				{
 					if (DVDSActor.bFRIGHTENED) // Attacker is frightened, AND the Player is the one that is doing the frightening
 					{
-						if (player.cheats & CF_FRIGHTENING || bFRIGHTENING) damage *= frandompick(0.625,0.6875,0.75); else damage *= frandompick(0.9375,0.95,0.9625);
+						if (player.cheats & CF_FRIGHTENING || bFRIGHTENING) damage = ceil(damage * frandompick(0.625,0.6875,0.75)); else damage = ceil(damage * frandompick(0.9375,0.95,0.9625));
 						if (damage < 1) damage = 1;
 					}
 					if (dvdsdebug_playerdmgdisplays && damage > 0) Console.Printf("    (\cz[STEP 2] player-damagemobj input [Hit By Defined Enemy]\c-: \caSKIPPED\c-, \cydmg = %d\c-)", damage);
@@ -2923,18 +2932,18 @@ class AetheriusPlayerPawn : PlayerPawn
 						if (CallACS("GetBuffTimer",11) > 0) 
 						{
 							defense *= 0.5; // Total Defense is only 50% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
-							damage = damage * frandom(0.9,1.5);
+							damage = ceil(damage * frandom(0.9,1.5));
 						}
 						else 
 						if (CallACS("GetBuffTimer",14) > 0) 
 						{
 							defense *= 0.02; // Total Defense is only 2% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
-							damage = damage * frandom(2.4,4.0);
+							damage = ceil(damage * frandom(2.4,4.0));
 						}
 						else 
 						{
 							defense *= 0.1; // Total Defense is only 10% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
-							damage = damage * frandom(1.5,2.5);
+							damage = ceil(damage * frandom(1.5,2.5));
 						}
 					}
 				}
@@ -2979,7 +2988,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			// Critical Hits?
 			if (criticalhit) 
 			{
-				damage *= dmgmulti;
+				damage = floor(damage * dmgmulti);
 				defense = 0;
 			}
 
@@ -3195,7 +3204,7 @@ class AetheriusPlayerPawn : PlayerPawn
 					infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis" ||
 					infl == "Demon5Jet" || infl == "Demon5JetCrisis")
 			{
-				damage *= 1.125;
+				damage = floor(damage * 1.125);
 			}
 			if (dvdsdebug_playerdmgdisplays && damage > 0) 
 			{
@@ -3212,7 +3221,9 @@ class AetheriusPlayerPawn : PlayerPawn
 		{
 			if (damage > 0)
 			{
-				damage *= cheatplayerdmgtaken;
+				if (random(0,1) == 0) damage = floor(damage * cheatplayerdmgtaken);
+												 else damage = ceil(damage * cheatplayerdmgtaken);
+				
 				if (damage < 1) damage = 1;
 				if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP C1] Direct Dmg Changes\c-: \cypredmg = %d\c-, \cydmg = %d\c-, \cxcheatplayerdmgtaken = %2f)", predirdmg, damage, cheatplayerdmgtaken);
 			}
