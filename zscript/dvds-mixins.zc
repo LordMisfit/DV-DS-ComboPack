@@ -1466,15 +1466,13 @@ mixin class HellcoreChecker
 	}
 }
 
-/*
 mixin class AtkTypeChecker
 {
-	private class<Inventory> APPackToken, APPackCheck, APPackCheck2, APPackCheck3, APPackCheck4, iDTech1Check, iDTech1Check2, iDTech1Check3, iDTech1Check4;
-	int finaldamagedealt;
-	int finaldamagedealt2;
-
 	action int A_GetPlayerAttackDamage(int type = 0, int puff = 0, int isinvoker = 0)
 	{
+		int finaldamagedealt;
+		class<Inventory> ExternalCheck1;
+
 		string nm;
 		int debugplayeratkinfo = dvdsdebug_showplayeratkinformation;
 		int flagchecktype = 0;
@@ -1491,6 +1489,7 @@ mixin class AtkTypeChecker
 		int PlayerSOR = CallACS("MiscVarCheckDECORATE",34);
 		int PlayerSTR = CallACS("MiscVarCheckDECORATE",35);
 		int PlayerTHE = CallACS("MiscVarCheckDECORATE",36);
+		int PlayerLVL = CallACS("StatCheck",0);
 		int MagiUpPerkLevel = CallACS("MiscVarCheckDECORATE",10003);
 		int MagiUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10004);
 		int BulletAccuracyPerkLevel = CallACS("MiscVarCheckDECORATE",10019);
@@ -1540,8 +1539,10 @@ mixin class AtkTypeChecker
 				type == 58)
 				perkfactor += ((PlasmaAccuracyPerkLevel * 0.05) + (PlasmaAccuracyEXPerkLevel * 0.125));
 		// Demolition
-		if (type == 8 || 
-				type == 9)
+		if (type == 8 ||
+				type == 9 ||
+				type == 69 ||
+				type == 70)
 				perkfactor += ((DemolitionsExpertPerkLevel * frandom(0.07,0.14)) + (DemolitionsExpertEXPerkLevel * frandom(0.175,0.35)));
 		// Karasawa
 		if (type == 16 || 
@@ -2099,10 +2100,10 @@ mixin class AtkTypeChecker
 		if (type == 63) // SonicNail [Strange Aeons]
 		{
 			damage = 16 + random(-8,8); // 8 to 24 damage
-			nm = "ImpalerBowZoom"; APPackToken = nm;
-			if (CountInv(APPackToken, AAPTR_PLAYER1) == 1) damage *= 1.25;
-			if (CountInv(APPackToken, AAPTR_PLAYER1) == 2) damage *= 1.625;
-			if (CountInv(APPackToken, AAPTR_PLAYER1) == 3) damage *= 2.5625;
+			nm = "ImpalerBowZoom"; ExternalCheck1 = nm;
+			if (CountInv(ExternalCheck1, AAPTR_PLAYER1) == 1) damage *= 1.25;
+			if (CountInv(ExternalCheck1, AAPTR_PLAYER1) == 2) damage *= 1.625;
+			if (CountInv(ExternalCheck1, AAPTR_PLAYER1) == 3) damage *= 2.5625;
 			extradmg1 = (PlayerAGL * 3.0); // 300% of Agility
 			extradmg2 = (PlayerSTR * 0.625); // 62.5% of Strength
 			extradmg3 = (PlayerSOR * 1.25); // 125% of Sorcery
@@ -2111,10 +2112,10 @@ mixin class AtkTypeChecker
 		if (type == 64) // SonicNail AoE [Strange Aeons]
 		{
 			damage = 16 + random(-8,8); // 8 to 24 damage
-			nm = "ImpalerBowZoom"; APPackToken = nm;
-			if (CountInv(APPackToken, AAPTR_PLAYER1) == 1) damage *= 1.25;
-			if (CountInv(APPackToken, AAPTR_PLAYER1) == 2) damage *= 1.625;
-			if (CountInv(APPackToken, AAPTR_PLAYER1) == 3) damage *= 2.5625;
+			nm = "ImpalerBowZoom"; ExternalCheck1 = nm;
+			if (CountInv(ExternalCheck1, AAPTR_PLAYER1) == 1) damage *= 1.25;
+			if (CountInv(ExternalCheck1, AAPTR_PLAYER1) == 2) damage *= 1.625;
+			if (CountInv(ExternalCheck1, AAPTR_PLAYER1) == 3) damage *= 2.5625;
 			extradmg1 = (PlayerAGL * 3.0); // 300% of Agility
 			extradmg2 = (PlayerSTR * 0.625); // 62.5% of Strength
 			extradmg3 = (PlayerSOR * 1.25); // 125% of Sorcery
@@ -2141,6 +2142,110 @@ mixin class AtkTypeChecker
 				extradmg3 /= 4;
 				extradmg4 /= 4;
 			}
+		}
+		if (type == 69) // RockBomb Shard Projectile [direct hit]
+		{
+			baserand1 = 1 + DemolitionsExpertPerkLevel;
+			baserand2 = 8 + (DemolitionsExpertPerkLevel * 0.50) + (DemolitionsExpertEXPerkLevel * 1.25);
+
+			damage = random(baserand1,baserand2) * 10; // 10 to 80
+			extradmg1 = PlayerAGL * 1.25; // 125% of Agility
+			extradmg2 = PlayerSTR * 0.5625; // 56.25% of Strength
+		}
+		if (type == 70) // RockBomb Shard Projectile [base explosion]
+		{
+			damage = 64 + (DemolitionsExpertPerkLevel * 6) + (DemolitionsExpertEXPerkLevel * 15);
+			extradmg1 = PlayerAGL * 1.25; // 125% of Agility
+			extradmg2 = PlayerSTR * 0.5625; // 56.25% of Strength
+		}
+		if (type == 71) // UnmakerLaser [direct hit]
+		{
+			perkfactor += (MagiUpPerkLevel * 0.05) + (MagiUpEXPerkLevel * 0.125);
+			baserand1 = 10 + (MagiUpPerkLevel * 0.625) + (MagiUpEXPerkLevel * 1.5625);
+			extradmg5 = PlayerLVL * 1.25; // 125% of Level
+
+			if (CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 0) // MP
+			{
+				perkfactor += (WandMasteryPerkLevel * 0.025) + ( WandMasteryEXPerkLevel * 0.0625);
+				baserand1 += (WandMasteryPerkLevel * 0.625) + ( WandMasteryEXPerkLevel * 1.5625);
+				extradmg1 = PlayerAGL * 0.625; // 62.5% of Agility
+				extradmg2 = PlayerSTR * 0.3125; // 31.25% of Strength
+				extradmg3 = PlayerSOR * 1.25; // 125% of Sorcery
+				extradmg4 = PlayerTHE * 0.625; // 62.5% of Therapeusis
+			}
+			else
+			if (CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 1) // Hellcore/Cells
+			{
+				if (CallACS("CheckCharacterClass") == 2) // Hellcore
+				{
+					perkfactor += (SoulMasteryPerkLevel * 0.025) + (SoulMasteryEXPerkLevel * 0.0625);
+					baserand1 += (SoulMasteryPerkLevel * 0.0625) + (SoulMasteryEXPerkLevel * 0.15625);
+					extradmg1 = PlayerAGL * 0.625; // 62.5% of Agility
+					extradmg2 = PlayerSTR * 0.3125; // 31.25% of Strength
+					extradmg3 = PlayerSOR * 1.25; // 125% of Sorcery
+					extradmg4 = PlayerTHE * 0.625; // 62.5% of Therapeusis
+				}
+				else // Cells
+				{
+					perkfactor += (PlasmaAccuracyPerkLevel * 0.025) + (PlasmaAccuracyEXPerkLevel * 0.0625);
+					baserand1 += (PlasmaAccuracyPerkLevel * 0.0625) + (PlasmaAccuracyEXPerkLevel * 0.15625);
+					extradmg1 = PlayerAGL * 1.25; // 125% of Agility
+					extradmg2 = PlayerSTR * 0.625; // 62.5% of Strength
+					extradmg3 = PlayerSOR * 0.625; // 62.5% of Sorcery
+					extradmg4 = PlayerTHE * 0.3125; // 31.25% of Therapeusis
+				}
+			}
+			else
+			if (CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 2) // MP & Hellcore/Cells
+			{
+				perkfactor += (WandMasteryPerkLevel * 0.025) + (WandMasteryEXPerkLevel * 0.0625);
+				baserand1 += (WandMasteryPerkLevel * 0.9375) + (WandMasteryEXPerkLevel * 2.34375);
+				if (CallACS("CheckCharacterClass") == 2)
+				{
+					perkfactor += ((SoulMasteryPerkLevel * 0.025) + (SoulMasteryEXPerkLevel * 0.0625));
+					baserand1 += (SoulMasteryPerkLevel * 0.9375) + (SoulMasteryEXPerkLevel * 2.34375);
+				}
+				else
+				{
+					perkfactor += (PlasmaAccuracyPerkLevel * 0.025) + (PlasmaAccuracyEXPerkLevel * 0.0625);
+					baserand1 += (PlasmaAccuracyPerkLevel * 0.9375) + (PlasmaAccuracyEXPerkLevel * 2.34375);
+				}
+				extradmg1 = PlayerAGL * 1.25; // 125% of Agility
+				extradmg2 = PlayerSTR * 0.625; // 62.5% of Strength
+				extradmg3 = PlayerSOR * 1.25; // 125% of Sorcery
+				extradmg4 = PlayerTHE * 0.625; // 62.5% of Therapeusis
+				extradmg1 *= 1.25;
+				extradmg2 *= 1.25;
+				extradmg3 *= 1.25;
+				extradmg4 *= 1.25;
+				extradmg5 *= 1.25;
+				extradmg6 *= 1.25;
+			}
+			int randpick1 = randompick(0,0,0,1);
+			if (CountInv("UnmakerUpgrades",AAPTR_PLAYER1) == 1) randpick1 = randompick(0,1);
+			if (CountInv("UnmakerUpgrades",AAPTR_PLAYER1) == 2) randpick1 = randompick(0,1,1,1);
+			if (CountInv("UnmakerUpgrades",AAPTR_PLAYER1) == 3) randpick1 = 1;
+			damage = baserand1 * (random(1,7) + randpick1);
+
+			double randmult = frandompick(0.025,0.0375,0.05,0.0625,0.075);
+			double numupgrades = ((CountInv("UnmakerUpgrades",AAPTR_PLAYER1) * 1.25));
+			double totalartfiactmulti = (randmult * numupgrades);
+			damage *= (1.0 + totalartfiactmulti);
+			extradmg1 *= (1.0 + totalartfiactmulti);
+			extradmg2 *= (1.0 + totalartfiactmulti);
+			extradmg3 *= (1.0 + totalartfiactmulti);
+			extradmg4 *= (1.0 + totalartfiactmulti);
+			extradmg5 *= (1.0 + totalartfiactmulti);
+			extradmg6 *= (1.0 + totalartfiactmulti);
+			
+			double randmulvalue = random(12,16) * 0.05;
+			damage *= randmulvalue;
+			extradmg1 *= randmulvalue;
+			extradmg2 *= randmulvalue;
+			extradmg3 *= randmulvalue;
+			extradmg4 *= randmulvalue;
+			extradmg5 *= randmulvalue;
+			extradmg6 *= randmulvalue;
 		}
 		
 		
@@ -2201,7 +2306,7 @@ mixin class AtkTypeChecker
 				if (finaldmg < 1) finaldmg = 1;
 			}
 
-			if (debugplayeratkinfo) Console.Printf("Actor Class: %s, Type#: %d, Puff?: %d, Base Dmg: %d, Extra Dmg #1: %d, Extra Dmg #2: %d, Extra Dmg #3: %d, Extra Dmg #4: %d, Extra Dmg #5: %d, Extra Dmg #6: %d, Random: %d - %d, BaseRandom: %d - %d, Perkfactor: %.8f, ChargeFactor: %.8f, Misc1: %d, Misc2: %d, \cyFinal Damage: %d\c-", 
+			if (debugplayeratkinfo) Console.Printf("\cxActor Class: %s\c-, \cyType#: %d\c-, Puff?: %d, Base Dmg: %d, Extra Dmg #1: %d, Extra Dmg #2: %d, Extra Dmg #3: %d, Extra Dmg #4: %d, Extra Dmg #5: %d, Extra Dmg #6: %d, Random: %d - %d, BaseRandom: %d - %d, Perkfactor: %.8f, ChargeFactor: %.8f, Misc1: %d, Misc2: %d, \cyFinal Damage: %d\c-", 
 											 												actorname, type, puff,
 																							damage, extradmg1, extradmg2, extradmg3, extradmg4, extradmg5, extradmg6,
 																							rand1, rand2,
@@ -2230,5 +2335,576 @@ mixin class AtkTypeChecker
 		finaldamagedealt = finaldmg;
 		return finaldmg;
 	}
+	
+	action int A_GetPunchDamage(int altfire = 0, int shockwave = 0, bool istarget = false)
+	{
+		Weapon weapon;
+		if (istarget && target) weapon = target.player.ReadyWeapon;
+		else weapon = player.ReadyWeapon;
+
+		string weaponname;
+		weaponname = weapon.GetClassName();
+		string actorname = GetClassName();
+		int damage;
+		int previousdamage;
+		int strengthcounter;
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int debugmelee = dvdsdebug_showmeleeinformation;
+		String nm, nn, no, np;
+		nm = "FistAilish";
+		nn = "FistPetra";
+		no = "SauronGauntletsAilish";
+		np = "SauronGauntletsPetra";
+
+		// Character Check [base damage]
+		If (weapon is "FistDeggaris" || weapon is "FistIllucia" || weapon is "FistFlora" || weapon is nm || weapon is nn)
+		{
+			if (altfire == 0)
+			{
+				if (CharacterClass == 0) damage = random(18,24);
+				if (CharacterClass == 1) damage = random(10,16);
+				if (CharacterClass == 2) damage = random(6,12);
+				if (CharacterClass == 9) damage = random(6,12);
+			}
+			else
+			if (altfire == 1)
+			{
+				if (CharacterClass == 0) damage = random(126,148);
+				if (CharacterClass == 1) damage = random(70,112);
+				if (CharacterClass == 2) damage = random(42,84);
+				if (CharacterClass == 9) damage = random(42,84);
+			}
+		}
+		else
+		{
+			If (weapon is "PoisonNeedle")
+			{
+				if (CharacterClass == 0) damage = random(18,24);
+				if (CharacterClass == 1) damage = random(10,16);
+				if (CharacterClass == 2) damage = random(6,12);
+				if (CharacterClass == 9) damage = random(6,12);
+				damage += random(1,2);
+			}
+			else
+			{
+				if (CharacterClass == 0) damage = random(18,24);
+				if (CharacterClass == 1) damage = random(10,16);
+				if (CharacterClass == 2) damage = random(6,12);
+				if (CharacterClass == 9) damage = random(6,12);
+			}
+		}
+		if (debugmelee) Console.Printf("BaseDmg: %d", damage);
+
+		// Gauntlet Check #1 [base damage]
+		previousdamage = damage;
+		If (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora" || weapon is no || weapon is np)
+		{
+			if (CharacterClass == 0) damage += random(14,18);
+			if (CharacterClass == 1) damage += random(10,14);
+			if (CharacterClass == 2) damage += random(8,12);
+			if (CharacterClass == 9) damage += random(8,12);
+
+			if (debugmelee) Console.Printf("GauntDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+		}
+
+		// [STRIFE] Stamina Upgrades
+		int stamdamagefactor = CallACS("MiscVarCheckDECORATE",317);
+		previousdamage = damage;
+		damage = (damage * (2 + stamdamagefactor) / 2);
+		if (debugmelee) Console.Printf("StaminaDmg: %d, StamUpgrades: %d - (Previous Dmg: %d)", damage, stamdamagefactor, previousdamage);
+
+		// Strength Stat Check [7 pts = roughly double the character's base punch damage]
+		int PlayerSTR = CallACS("StatCheck",7);
+		previousdamage = damage;
+		for (strengthcounter = 0; strengthcounter < PlayerSTR; strengthcounter++)
+		{
+			If (weapon is "FistDeggaris" || weapon is "FistIllucia" || weapon is "FistFlora" || weapon is nm || weapon is nn)
+			{
+				if (altfire == 0)
+				{
+					if (CharacterClass == 0) damage += random(1,3);
+					if (CharacterClass == 1) damage += random(1,2);
+					if (CharacterClass == 2) damage += random(0,2);
+					if (CharacterClass == 9) damage += random(0,2);
+				}
+				if (altfire == 1)
+				{
+					if (CharacterClass == 0) damage += random(8,12);
+					if (CharacterClass == 1) damage += random(8,11);
+					if (CharacterClass == 2) damage += random(6,10);
+					if (CharacterClass == 9) damage += random(6,10);
+				}
+			}
+			else
+			{
+				If (weapon is "PoisonNeedle")
+				{
+					if (CharacterClass == 0) damage += random(1,3);
+					if (CharacterClass == 1) damage += random(1,2);
+					if (CharacterClass == 2) damage += random(0,2);
+					if (CharacterClass == 9) damage += random(0,2);
+					damage += random(0,1);
+				}
+				else
+				{
+					if (CharacterClass == 0) damage += random(1,3);
+					if (CharacterClass == 1) damage += random(1,2);
+					if (CharacterClass == 2) damage += random(0,2);
+					if (CharacterClass == 9) damage += random(0,2);
+				}
+			}
+		}
+		if (debugmelee) Console.Printf("StrDmg: %d - (Strength: %d) - (Previous Dmg: %d)", damage, PlayerSTR, previousdamage);
+
+		// Gauntlet Check #2 [strength stat check] [7 pts = roughly double the character's base gauntlet punch damage]
+		previousdamage = damage;
+		If (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora" || weapon is no || weapon is np)
+		{
+			for (strengthcounter = 0; strengthcounter < PlayerSTR; strengthcounter++)
+			{
+				if (CharacterClass == 0) damage += random(2,3);
+				if (CharacterClass == 1) damage += random(1,3);
+				if (CharacterClass == 2) damage += random(1,2);
+				if (CharacterClass == 9) damage += random(1,2);
+			}
+			if (debugmelee) Console.Printf("Gaunt2Dmg: %d - (Strength: %d) - (Previous Dmg: %d)", damage, PlayerSTR, previousdamage);
+		}
+
+		// Berserk Check
+		previousdamage = damage;
+		if (CountInv("AetheriusPowerStrength", AAPTR_PLAYER1) > 0) damage = damage * 10;
+		if (debugmelee) Console.Printf("BerserkDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+
+		// Flora Armor Checks
+		previousdamage = damage;
+		if (CharacterClass == 2)
+		{
+			if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) Damage = Damage * 4 / 3; // +33.3~% Punch Damage
+			if (CountInv("AnubisCufflinks", AAPTR_PLAYER1) > 0) Damage = Damage * 7 / 4; // +75% Punch Damage
+			if (debugmelee) Console.Printf("FloArmorDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+		}
+
+		// Gauntlet Check #3
+		previousdamage = damage;
+		If (weapon is "SauronGauntlets" || weapon is "SauronGauntletsIllucia" || weapon is "SauronGauntletsFlora" || weapon is no || weapon is np)
+		{
+			if (altfire == 0) damage *= 10;
+			if (altfire == 1) damage *= 25;
+			if (debugmelee) Console.Printf("Gaunt3Dmg: %d - (Strength: %d) - (Previous Dmg: %d)", damage, PlayerSTR, previousdamage);
+		}
+
+		int PerkFactor;
+		int temp1, temp2;
+
+		int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+		int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+		int BerserkerFit = CallACS("MiscVarCheckDECORATE",10051);
+		int BerserkerFitEX = CallACS("MiscVarCheckDECORATE",10052);
+		previousdamage = damage;
+		if (shockwave > 0)
+		{
+			if (altfire == 0) damage = damage / 6;
+			if (altfire == 1) damage = damage / 5;
+			if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Shockwave) (Lvl: %d + %d)]", weaponname, damage, previousdamage, MartialArtsMastery, MartialArtsMasteryEX);
+
+			previousdamage = damage;
+			if (MartialArtsMastery > 0)
+			{
+				temp1 = 0;
+				if (MartialArtsMastery == 1) temp1 = 50;
+				if (MartialArtsMastery == 2) temp1 = 150;
+				if (MartialArtsMastery == 3) temp1 = 450;
+				if (MartialArtsMastery == 4) temp1 = 1350;
+				if (MartialArtsMastery >= 5) temp1 = 4050;
+				temp2 = 0;
+				if (MartialArtsMasteryEX == 1) temp2 = 1500;
+				if (MartialArtsMasteryEX == 2) temp2 = 3000;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Shockwave) (Lvl: %d + %d)]", weaponname, damage, previousdamage, MartialArtsMastery, MartialArtsMasteryEX);
+			}
+			if (BerserkerFit > 0)
+			{
+				temp1 = 0;
+				if (BerserkerFit == 1) temp1 = 50;
+				if (BerserkerFit == 2) temp1 = 150;
+				if (BerserkerFit == 3) temp1 = 450;
+				if (BerserkerFit == 4) temp1 = 1350;
+				if (BerserkerFit >= 5) temp1 = 4050;
+				temp1 /= 2;
+				temp2 = 0;
+				if (BerserkerFitEX == 1) temp2 = 1500;
+				if (BerserkerFitEX == 2) temp2 = 3000;
+				temp2 /= 2;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Berserker Fit Perk (Shockwave) (Lvl: %d + %d)]", weaponname, damage, previousdamage, MartialArtsMastery, MartialArtsMasteryEX);
+			}
+		}
+		else
+		{
+			previousdamage = damage;
+			if (MartialArtsMastery > 0)
+			{
+				temp1 = 0;
+				if (MartialArtsMastery == 1) temp1 = 25;
+				if (MartialArtsMastery == 2) temp1 = 75;
+				if (MartialArtsMastery == 3) temp1 = 225;
+				if (MartialArtsMastery == 4) temp1 = 675;
+				if (MartialArtsMastery >= 5) temp1 = 2025;
+				temp2 = 0;
+				if (MartialArtsMasteryEX == 1) temp2 = 500;
+				if (MartialArtsMasteryEX == 2) temp2 = 1000;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Lvl: %d + %d)]", weaponname, damage, previousdamage, MartialArtsMastery, MartialArtsMasteryEX);
+			}
+			if (BerserkerFit > 0)
+			{
+				temp1 = 0;
+				if (BerserkerFit == 1) temp1 = 25;
+				if (BerserkerFit == 2) temp1 = 75;
+				if (BerserkerFit == 3) temp1 = 225;
+				if (BerserkerFit == 4) temp1 = 675;
+				if (BerserkerFit >= 5) temp1 = 2025;
+				temp1 /= 2;
+				temp2 = 0;
+				if (BerserkerFitEX == 1) temp2 = 500;
+				if (BerserkerFitEX == 2) temp2 = 1000;
+				temp2 /= 2;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg: (%s) %d - (Previous Dmg: %d [Berserker Fit Perk (Lvl: %d + %d)]", weaponname, damage, previousdamage, MartialArtsMastery, MartialArtsMasteryEX);
+			}
+		}
+
+		previousdamage = damage;
+		If (weapon is "FistDeggaris" || weapon is "FistIllucia" || weapon is "FistFlora" || weapon is nm || weapon is nn)
+		{
+			if (altfire == 0) damage = damage;
+			//if (altfire == 1) damage = damage / 4;
+		}
+
+		if (debugmelee && altfire == 0) Console.Printf("MeleeDmgAltCheck: (%s) %d - (Previous Dmg: %d) [Punch]", weaponname, damage, previousdamage);
+		if (debugmelee && altfire == 1) Console.Printf("MeleeDmgAltCheck: (%s) %d - (Previous Dmg: %d) [Uppercut]", weaponname, damage, previousdamage);
+
+		// StamUp Check
+		previousdamage = damage;
+		int StamUpPerkLevel = CallACS("MiscVarCheckDECORATE",10005);
+		int StamUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10006);
+		if (StamUpPerkLevel > 0)
+		{
+			PerkFactor = ((StamUpPerkLevel * 30) + (StamUpEXPerkLevel * 75)) + 400;
+			damage = damage * PerkFactor / 400;
+		}
+
+		if (istarget)
+		{
+			if (debugmelee && altfire == 0) Console.Printf("\cyFinalMeleeDmg: (Weapon: %s - Puff: %s) %d\c- - \cx(Previous Dmg: %d) [Punch]\c-", weaponname, actorname, damage, previousdamage);
+			if (debugmelee && altfire == 1) Console.Printf("\cyFinalMeleeDmg: (Weapon: %s - Puff: %s) %d\c- - \cx(Previous Dmg: %d) [Uppercut]\c-", weaponname, actorname, damage, previousdamage);
+		}
+		else
+		{
+			if (debugmelee && altfire == 0) Console.Printf("\cyFinalMeleeDmg: (Weapon: %s - Source: %s) %d\c- - \cx(Previous Dmg: %d) [Punch]\c-", weaponname, actorname, damage, previousdamage);
+			if (debugmelee && altfire == 1) Console.Printf("\cyFinalMeleeDmg: (Weapon: %s - Source: %s) %d\c- - \cx(Previous Dmg: %d) [Uppercut]\c-", weaponname, actorname, damage, previousdamage);
+		}
+		
+		return damage;
+	}
+
+	action int A_GetKickDamage(int altfire = 0, int shockwave = 0, bool istarget = false)
+	{
+		Weapon weapon;
+		if (istarget && target)  weapon = target.player.ReadyWeapon;
+		else weapon = player.ReadyWeapon;
+
+		string weaponname = weapon.GetClassName();
+		string actorname = GetClassName();
+		int damage;
+		int previousdamage;
+		int strengthcounter;
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int debugmelee = dvdsdebug_showmeleeinformation;
+
+		if (CharacterClass == 0) damage = random(45,60); // 2.5x
+		if (CharacterClass == 1) damage = random(25,40); // 2.5x
+		if (CharacterClass == 2) damage = random(26,51); // 4.25x
+		if (CharacterClass == 8) damage = random(21,46); // 4.25x
+		if (CharacterClass == 9) damage = random(35,60); //
+		if (debugmelee) Console.Printf("BaseDmg: %d", damage);
+
+		// [STRIFE] Stamina Upgrades
+		int stamdamagefactor = CallACS("MiscVarCheckDECORATE",317);
+		previousdamage = damage;
+		damage = (damage * (4 + (stamdamagefactor * 3)) / 4);
+		if (debugmelee) Console.Printf("StaminaDmg: %d, StamUpgrades: %d - (Previous Dmg: %d)", damage, stamdamagefactor, previousdamage);
+
+		// Strength Stat Check [7 pts = roughly double the character's base punch damage]
+		int PlayerSTR = CallACS("StatCheck",7);
+		previousdamage = damage;
+		for (strengthcounter = 0; strengthcounter < PlayerSTR; strengthcounter++)
+		{
+			if (CharacterClass == 0) damage += random(2,8); // 2.5x
+			if (CharacterClass == 1) damage += random(2,5); // 2.5x
+			if (CharacterClass == 2) damage += random(3,9); // 4.25x
+			if (CharacterClass == 8) damage += random(2,8); // 4.25x
+			if (CharacterClass == 9) damage += random(4,12); //
+		}
+		if (debugmelee) Console.Printf("StrDmg: %d - (Strength: %d) - (Previous Dmg: %d)", damage, PlayerSTR, previousdamage);
+
+		// Reduce Check
+		previousdamage = damage;
+		if (altfire == 0) damage = (damage * random(5,6)) / 5;
+		if (debugmelee) Console.Printf("ReduceDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+
+		// Berserk Check
+		previousdamage = damage;
+		if (CountInv("AetheriusPowerStrength", AAPTR_PLAYER1) > 0) damage = damage * 10;
+		if (debugmelee) Console.Printf("BerserkDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+
+		// Flora Armor Checks
+		previousdamage = damage;
+		if (CharacterClass == 2)
+		{
+			if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) Damage = Damage * 4 / 3; // +33.3~% Kick Damage
+			if (CountInv("SafeTeaShoes", AAPTR_PLAYER1) > 0) Damage = Damage * 7 / 4; // +75% Kick Damage
+			if (debugmelee) Console.Printf("FloArmorDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+		}
+
+		int PerkFactor;
+		int temp1, temp2;
+
+		int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+		int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+		int BerserkerFit = CallACS("MiscVarCheckDECORATE",10051);
+		int BerserkerFitEX = CallACS("MiscVarCheckDECORATE",10052);
+		previousdamage = damage;
+		if (shockwave > 0)
+		{
+			if (altfire == 0) damage = damage / 6;
+			if (altfire == 1) damage = damage / 5;
+			if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Shockwave) (Lvl: %d + %d)]", weaponname, damage, previousdamage, MartialArtsMastery, MartialArtsMasteryEX);
+
+			previousdamage = damage;
+			if (MartialArtsMastery > 0)
+			{
+				temp1 = 0;
+				if (MartialArtsMastery == 1) temp1 = 50;
+				if (MartialArtsMastery == 2) temp1 = 150;
+				if (MartialArtsMastery == 3) temp1 = 450;
+				if (MartialArtsMastery == 4) temp1 = 1350;
+				if (MartialArtsMastery >= 5) temp1 = 4050;
+				temp2 = 0;
+				if (MartialArtsMasteryEX == 1) temp2 = 1500;
+				if (MartialArtsMasteryEX == 2) temp2 = 3000;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Shockwave) (Lvl: %d + %d)]", weaponname, damage, previousdamage, MartialArtsMastery, MartialArtsMasteryEX);
+			}
+			if (BerserkerFit > 0)
+			{
+				temp1 = 0;
+				if (BerserkerFit == 1) temp1 = 50;
+				if (BerserkerFit == 2) temp1 = 150;
+				if (BerserkerFit == 3) temp1 = 450;
+				if (BerserkerFit == 4) temp1 = 1350;
+				if (BerserkerFit >= 5) temp1 = 4050;
+				temp1 /= 2;
+				temp2 = 0;
+				if (BerserkerFitEX == 1) temp2 = 1500;
+				if (BerserkerFitEX == 2) temp2 = 3000;
+				temp2 /= 2;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg [Shockwave]: (%s) %d - (Previous Dmg: %d [Berserker Fit Perk (Shockwave) (Lvl: %d + %d)]", weaponname, damage, previousdamage, MartialArtsMastery, MartialArtsMasteryEX);
+			}
+		}
+		else
+		{
+			previousdamage = damage;
+			if (MartialArtsMastery > 0)
+			{
+				temp1 = 0;
+				if (MartialArtsMastery == 1) temp1 = 25;
+				if (MartialArtsMastery == 2) temp1 = 75;
+				if (MartialArtsMastery == 3) temp1 = 225;
+				if (MartialArtsMastery == 4) temp1 = 675;
+				if (MartialArtsMastery >= 5) temp1 = 2025;
+				temp2 = 0;
+				if (MartialArtsMasteryEX == 1) temp2 = 500;
+				if (MartialArtsMasteryEX == 2) temp2 = 1000;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg: (%s) %d - (Previous Dmg: %d [Martial Arts Mastery Perk (Lvl: %d + %d)]", weaponname, damage, previousdamage, MartialArtsMastery, MartialArtsMasteryEX);
+			}
+			if (BerserkerFit > 0)
+			{
+				temp1 = 0;
+				if (BerserkerFit == 1) temp1 = 25;
+				if (BerserkerFit == 2) temp1 = 75;
+				if (BerserkerFit == 3) temp1 = 225;
+				if (BerserkerFit == 4) temp1 = 675;
+				if (BerserkerFit >= 5) temp1 = 2025;
+				temp1 /= 2;
+				temp2 = 0;
+				if (BerserkerFitEX == 1) temp2 = 500;
+				if (BerserkerFitEX == 2) temp2 = 1000;
+				temp2 /= 2;
+				PerkFactor = 1000 + (temp1 + temp2);
+				damage = damage * PerkFactor / 1000;
+				if (debugmelee) Console.Printf("MeleeDmg: (%s) %d - (Previous Dmg: %d [Berserker Fit Perk (Lvl: %d + %d)]", weaponname, damage, previousdamage, MartialArtsMastery, MartialArtsMasteryEX);
+			}
+		}
+
+		previousdamage = damage;
+		if (altfire == 0) damage = damage;
+		if (altfire == 1) damage = damage / 4;
+		if (debugmelee && altfire == 0) Console.Printf("MeleeDmgAltCheck: (%s) %d - (Previous Dmg: %d) [Kick]", weaponname, damage, previousdamage);
+		if (debugmelee && altfire == 1) Console.Printf("MeleeDmgAltCheck: (%s) %d - (Previous Dmg: %d) [Roundhouse Kick]", weaponname, damage, previousdamage);
+
+		// StamUp Check
+		previousdamage = damage;
+		int StamUpPerkLevel = CallACS("MiscVarCheckDECORATE",10005);
+		int StamUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10006);
+		if (StamUpPerkLevel > 0)
+		{
+			PerkFactor = ((StamUpPerkLevel * 30) + (StamUpEXPerkLevel * 75)) + 400;
+			damage = damage * PerkFactor / 400;
+		}
+
+		if (istarget)
+		{
+			if (debugmelee && altfire == 0) Console.Printf("\cyFinalMeleeDmg: (Weapon: %s - Puff: %s) %d\c- - \cx(Previous Dmg: %d) [Kick]\c-", weaponname, actorname, damage, previousdamage);
+			if (debugmelee && altfire == 1) Console.Printf("\cyFinalMeleeDmg: (Weapon: %s - Puff: %s) %d\c- - \cx(Previous Dmg: %d) [Roundhouse Kick]\c-", weaponname, actorname, damage, previousdamage);
+		}
+		else
+		{
+			if (debugmelee && altfire == 0) Console.Printf("\cyFinalMeleeDmg: (Weapon: %s - Source: %s) %d\c- - \cx(Previous Dmg: %d) [Kick]\c-", weaponname, actorname, damage, previousdamage);
+			if (debugmelee && altfire == 1) Console.Printf("\cyFinalMeleeDmg: (Weapon: %s - Source: %s) %d\c- - \cx(Previous Dmg: %d) [Roundhouse Kick]\c-", weaponname, actorname, damage, previousdamage);
+		}
+
+		return damage;
+	}
+	
+	action int A_GetSceptreDamage(int attacktype = 0, int attacklevel = 0, int shockwave = 0, bool istarget = false)
+	{
+		Weapon weapon;
+		if (istarget && target)  weapon = target.player.ReadyWeapon;
+		else weapon = player.ReadyWeapon;
+		
+		string weaponname = weapon.GetClassName();
+		string actorname = GetClassName();
+		int damage;
+		int previousdamage;
+		int strengthcounter;
+		int sceptrestrbase;
+		int sceptrestrmin;
+		int sceptrestrmax;
+		int PerkFactor;
+		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		int debugmelee = dvdsdebug_showmeleeinformation;
+
+		if (SceptreActualLevel <= 0) damage = random(275,325); // Base Damage Range
+		if (SceptreActualLevel == 1) damage = random(280,330); // +5 Damage Range
+		if (SceptreActualLevel == 2) damage = random(290,340); // +10 Damage Range
+		if (SceptreActualLevel == 3) damage = random(320,370); // +30 Damage Range
+		if (SceptreActualLevel == 4) damage = random(340,390); // +20 Damage Range
+		if (SceptreActualLevel == 5) damage = random(365,415); // +25 Damage Range
+		if (SceptreActualLevel == 6) damage = random(425,475); // +60 Damage Range
+		if (SceptreActualLevel == 7) damage = random(425,475); // +0 Damage Range
+		if (SceptreActualLevel == 8) damage = random(545,595); // +120 Damage Range
+		if (SceptreActualLevel == 9) damage = random(590,640); // +45 Damage Range
+		if (SceptreActualLevel == 10) damage = random(640,690); // +50 Damage Range
+		if (SceptreActualLevel == 11) damage = random(750,800); // +110 Damage Range
+		if (SceptreActualLevel == 12) damage = random(810,860); // +60 Damage Range
+		if (SceptreActualLevel == 13) damage = random(875,925); // +65 Damage Range
+		if (SceptreActualLevel == 14) damage = random(1015,1065); // +140 Damage Range
+		if (SceptreActualLevel == 15) damage = random(1015,1065); // +0 Damage Range
+		if (SceptreActualLevel >= 16) damage = random(1255,1305); // +240 Damage Range
+		if (debugmelee) Console.Printf("BaseDmg: %d", damage);
+		
+		// [STRIFE] Stamina Upgrades
+		int stamdamagefactor = CallACS("MiscVarCheckDECORATE",317);
+		previousdamage = damage;
+		damage = (damage * (4 + stamdamagefactor) / 4);
+		if (debugmelee) Console.Printf("StaminaDmg: %d, StamUpgrades: %d - (Previous Dmg: %d)", damage, stamdamagefactor, previousdamage);
+
+		// Strength Stat Check [7 pts = roughly double the character's base punch damage]
+		int PlayerSTR = CallACS("StatCheck",7);
+		previousdamage = damage;
+		for (strengthcounter = 0; strengthcounter < PlayerSTR; strengthcounter++)
+		{
+			sceptrestrbase = ((SceptreActualLevel * (4 + (PlayerSTR / 32))) + (16 + (SceptreActualLevel * (2 + (PlayerSTR / 64)))));
+			sceptrestrmin = sceptrestrbase - (16 + (SceptreActualLevel * (2 + (PlayerSTR / 64))));
+			sceptrestrmax = sceptrestrbase + (16 + (SceptreActualLevel * (2 + (PlayerSTR / 64))));
+
+			if (debugmelee) Console.Printf("StrBase: %d, StrMin: %d, StrMax: %d", sceptrestrbase, sceptrestrmin, sceptrestrmax);
+
+			damage += random(sceptrestrmin,sceptrestrmax);
+		}
+		if (debugmelee) Console.Printf("StrDmg: %d - (Strength: %d) - (Previous Dmg: %d)", damage, PlayerSTR, previousdamage);
+		
+		if (attacktype == 1) damage = damage * 5 / 2; // If performing the Aireal Attack
+		if (attacktype == 2)
+		{
+			if (attacklevel < 0)
+			{
+				if (SceptreActualLevel <= 0) attacklevel = 0;
+				if (SceptreActualLevel == 1) attacklevel = 0;
+				if (SceptreActualLevel == 2) attacklevel = 0;
+				if (SceptreActualLevel == 3) attacklevel = 0;
+				if (SceptreActualLevel == 4) attacklevel = 0;
+				if (SceptreActualLevel == 5) attacklevel = 1;
+				if (SceptreActualLevel == 6) attacklevel = 1;
+				if (SceptreActualLevel == 7) attacklevel = 1;
+				if (SceptreActualLevel == 8) attacklevel = 1;
+				if (SceptreActualLevel == 9) attacklevel = 1;
+				if (SceptreActualLevel == 10) attacklevel = 2;
+				if (SceptreActualLevel == 11) attacklevel = 2;
+				if (SceptreActualLevel == 12) attacklevel = 2;
+				if (SceptreActualLevel == 13) attacklevel = 2;
+				if (SceptreActualLevel == 14) attacklevel = 2;
+				if (SceptreActualLevel == 15) attacklevel = 3;
+				if (SceptreActualLevel >= 16) attacklevel = 3;
+			}
+
+			if (attacklevel == 0) damage = damage / 2; // If performing the Spinning Attack [50%]
+			else if (attacklevel == 1) damage = damage * 3 / 4; // If performing the Spinning Attack [75%]
+			else if (attacklevel == 2) damage = damage * 7 / 8; // If performing the Spinning Attack [87.5%]
+			else if (attacklevel == 3) damage = damage * 15 / 16; // If performing the Spinning Attack [93.25%]
+
+			damage = damage / 4;
+		}
+		if (debugmelee) Console.Printf("BaseDmg: %d", damage);
+		
+		// Berserk Check
+		previousdamage = damage;
+		if (CountInv("AetheriusPowerStrength", AAPTR_PLAYER1) > 0) damage = damage * 10;
+		if (debugmelee) Console.Printf("BerserkDmg: %d - (Previous Dmg: %d)", damage, previousdamage);
+
+		if (shockwave == 1) damage = damage / 6;
+		if (debugmelee) Console.Printf("ShockWave: (%s) %d", weaponname, damage);
+
+		// StamUp Check
+		previousdamage = damage;
+		int StamUpPerkLevel = CallACS("MiscVarCheckDECORATE",10005);
+		int StamUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10006);
+		if (StamUpPerkLevel > 0)
+		{
+			PerkFactor = ((StamUpPerkLevel * 30) + (StamUpEXPerkLevel * 75)) + 400;
+			damage = damage * PerkFactor / 400;
+		}
+
+		if (istarget)
+		{
+			if (debugmelee) Console.Printf("\cyFinalMeleeDmg: (Weapon: %s - Puff: %s) %d\c- - \cx(Previous Dmg: %d) [Sceptre]\c-", weaponname, actorname, damage, previousdamage);
+		}
+		else
+		{
+			if (debugmelee) Console.Printf("\cyFinalMeleeDmg: (Weapon: %s - Source: %s) %d\c- - \cx(Previous Dmg: %d) [Sceptre]\c-", weaponname, actorname, damage, previousdamage);
+		}
+
+		return damage;
+	}
 }
-*/
