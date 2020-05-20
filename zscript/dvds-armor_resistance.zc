@@ -16,6 +16,8 @@ class PlayerStatItem : Inventory
 	const minzmovepos = 1.907348633;
 	
 	mixin Tension;
+	
+	Array<int> SpellCostsBase;
 
 	int PrevTimeFreezeTimer;
 	int InitEXPTables;
@@ -27,6 +29,8 @@ class PlayerStatItem : Inventory
 	int LevelupSpeechTimer1;
 	int LevelupSpeechTimer2;
 	int PrevBackPacksCollected;
+	int optimizefactortics;
+	int optimizefactortics2;
 
 	// Strife Flag Checks
 	int StrifeQuestFlag25, StrifeQuestFlag26, StrifeQuestFlag29;
@@ -189,6 +193,8 @@ class PlayerStatItem : Inventory
 	override void DoEffect()
 	{
 		Player1TID = 1001;
+		optimizefactortics = dvdsdebug_optimizefactortics;
+		optimizefactortics2 = dvdsdebug_optimizefactortics2;
 		let playeractor = AetheriusPlayerPawn(owner);
 		if (!playeractor) { owner.A_SetInventory("PlayerStatItem",0); super.DoEffect(); } // Removes itself if given to a non-Aetherius Player Class
 		else if (level.time == 0) owner.ChangeTID(Player1TID);
@@ -293,12 +299,9 @@ class PlayerStatItem : Inventory
 		//**********************
 		if (playeractor)
 		{
+			if (level.totaltime == 0 || (level.time % 2050) == 0) A_PSI1DoEffectSetSpellCostBase(); // initializes the Spell Cost Tables at the start of a new game, once each time you start a map, or every 30 minutes into a single map
+
 			if (ClassCheck == 0) // Will run the check only once at the beginning of a new game
-			{
-				CallACS("MiscVarSetDECORATE",1999,-1);
-			}
-			// Check for HUD type settings
-			if (CallACS("MiscVarCheckDECORATE",1999) == -1)
 			{
 			}
 			if (ClassCheck == 1) // Will run the check only once at the beginning of a new game
@@ -1858,43 +1861,46 @@ class PlayerStatItem : Inventory
 		//******************************************************
 		if (playeractor)
 		{
-			// Check if player has specific Hellcore Souls, but has 0 for their level
-			if (Owner.CountInv("ImpSoul") > 0 && CallACS("MiscVarCheckDECORATE",96) <= 0) CallACS("MiscVarSetDECORATE",96,1);
-			if (Owner.CountInv("DarkImpSoul") > 0 && CallACS("MiscVarCheckDECORATE",97) <= 0) CallACS("MiscVarSetDECORATE",97,1);
-			if (Owner.CountInv("CacodemonSoul") > 0 && CallACS("MiscVarCheckDECORATE",98) <= 0) CallACS("MiscVarSetDECORATE",98,1);
-			if (Owner.CountInv("CacolanternSoul") > 0 && CallACS("MiscVarCheckDECORATE",99) <= 0) CallACS("MiscVarSetDECORATE",99,1);
-			if (Owner.CountInv("AbaddonSoul") > 0 && CallACS("MiscVarCheckDECORATE",100) <= 0) CallACS("MiscVarSetDECORATE",100,1);
-			if (Owner.CountInv("KnightSoul") > 0 && CallACS("MiscVarCheckDECORATE",101) <= 0) CallACS("MiscVarSetDECORATE",101,1);
-			if (Owner.CountInv("BaronSoul") > 0 && CallACS("MiscVarCheckDECORATE",102) <= 0) CallACS("MiscVarSetDECORATE",102,1);
-			if (Owner.CountInv("BelphegorSoul") > 0 && CallACS("MiscVarCheckDECORATE",103) <= 0) CallACS("MiscVarSetDECORATE",103,1);
-			if (Owner.CountInv("BruiserSoul") > 0 && CallACS("MiscVarCheckDECORATE",104) <= 0) CallACS("MiscVarSetDECORATE",104,1);
-			if (Owner.CountInv("ArchonSoul") > 0 && CallACS("MiscVarCheckDECORATE",105) <= 0) CallACS("MiscVarSetDECORATE",105,1);
-			if (Owner.CountInv("PyroDemonSoul") > 0 && CallACS("MiscVarCheckDECORATE",106) <= 0) CallACS("MiscVarSetDECORATE",106,1);
-			if (Owner.CountInv("IncarnateSoul") > 0 && CallACS("MiscVarCheckDECORATE",107) <= 0) CallACS("MiscVarSetDECORATE",107,1);
-			if (Owner.CountInv("ArchvileSoul") > 0 && CallACS("MiscVarCheckDECORATE",108) <= 0) CallACS("MiscVarSetDECORATE",108,1);
-			if (Owner.CountInv("DiabloistSoul") > 0 && CallACS("MiscVarCheckDECORATE",109) <= 0) CallACS("MiscVarSetDECORATE",109,1);
-			if (Owner.CountInv("BalrogSoul") > 0 && CallACS("MiscVarCheckDECORATE",110) <= 0) CallACS("MiscVarSetDECORATE",110,1);
-			if (Owner.CountInv("HElementalSoul") > 0 && CallACS("MiscVarCheckDECORATE",111) <= 0) CallACS("MiscVarSetDECORATE",111,1);
-			if (Owner.CountInv("HOverlordSoul") > 0 && CallACS("MiscVarCheckDECORATE",112) <= 0) CallACS("MiscVarSetDECORATE",112,1);
+			if ((level.totaltime % optimizefactortics) == 0)
+			{
+				// Check if player has specific Hellcore Souls, but has 0 for their level
+				if (Owner.CountInv("ImpSoul") > 0 && CallACS("MiscVarCheckDECORATE",96) <= 0) CallACS("MiscVarSetDECORATE",96,1);
+				if (Owner.CountInv("DarkImpSoul") > 0 && CallACS("MiscVarCheckDECORATE",97) <= 0) CallACS("MiscVarSetDECORATE",97,1);
+				if (Owner.CountInv("CacodemonSoul") > 0 && CallACS("MiscVarCheckDECORATE",98) <= 0) CallACS("MiscVarSetDECORATE",98,1);
+				if (Owner.CountInv("CacolanternSoul") > 0 && CallACS("MiscVarCheckDECORATE",99) <= 0) CallACS("MiscVarSetDECORATE",99,1);
+				if (Owner.CountInv("AbaddonSoul") > 0 && CallACS("MiscVarCheckDECORATE",100) <= 0) CallACS("MiscVarSetDECORATE",100,1);
+				if (Owner.CountInv("KnightSoul") > 0 && CallACS("MiscVarCheckDECORATE",101) <= 0) CallACS("MiscVarSetDECORATE",101,1);
+				if (Owner.CountInv("BaronSoul") > 0 && CallACS("MiscVarCheckDECORATE",102) <= 0) CallACS("MiscVarSetDECORATE",102,1);
+				if (Owner.CountInv("BelphegorSoul") > 0 && CallACS("MiscVarCheckDECORATE",103) <= 0) CallACS("MiscVarSetDECORATE",103,1);
+				if (Owner.CountInv("BruiserSoul") > 0 && CallACS("MiscVarCheckDECORATE",104) <= 0) CallACS("MiscVarSetDECORATE",104,1);
+				if (Owner.CountInv("ArchonSoul") > 0 && CallACS("MiscVarCheckDECORATE",105) <= 0) CallACS("MiscVarSetDECORATE",105,1);
+				if (Owner.CountInv("PyroDemonSoul") > 0 && CallACS("MiscVarCheckDECORATE",106) <= 0) CallACS("MiscVarSetDECORATE",106,1);
+				if (Owner.CountInv("IncarnateSoul") > 0 && CallACS("MiscVarCheckDECORATE",107) <= 0) CallACS("MiscVarSetDECORATE",107,1);
+				if (Owner.CountInv("ArchvileSoul") > 0 && CallACS("MiscVarCheckDECORATE",108) <= 0) CallACS("MiscVarSetDECORATE",108,1);
+				if (Owner.CountInv("DiabloistSoul") > 0 && CallACS("MiscVarCheckDECORATE",109) <= 0) CallACS("MiscVarSetDECORATE",109,1);
+				if (Owner.CountInv("BalrogSoul") > 0 && CallACS("MiscVarCheckDECORATE",110) <= 0) CallACS("MiscVarSetDECORATE",110,1);
+				if (Owner.CountInv("HElementalSoul") > 0 && CallACS("MiscVarCheckDECORATE",111) <= 0) CallACS("MiscVarSetDECORATE",111,1);
+				if (Owner.CountInv("HOverlordSoul") > 0 && CallACS("MiscVarCheckDECORATE",112) <= 0) CallACS("MiscVarSetDECORATE",112,1);
 
-			// Check if player LACKS specific Hellcore Souls, but has >0 for their level [i.e. Death Exits]
-			if (Owner.CountInv("ImpSoul") <= 0 && CallACS("MiscVarCheckDECORATE",96) > 0) CallACS("MiscVarSetDECORATE",96,0);
-			if (Owner.CountInv("DarkImpSoul") <= 0 && CallACS("MiscVarCheckDECORATE",97) > 0) CallACS("MiscVarSetDECORATE",97,0);
-			if (Owner.CountInv("CacodemonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",98) > 0) CallACS("MiscVarSetDECORATE",98,0);
-			if (Owner.CountInv("CacolanternSoul") <= 0 && CallACS("MiscVarCheckDECORATE",99) > 0) CallACS("MiscVarSetDECORATE",99,0);
-			if (Owner.CountInv("AbaddonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",100) > 0) CallACS("MiscVarSetDECORATE",100,0);
-			if (Owner.CountInv("KnightSoul") <= 0 && CallACS("MiscVarCheckDECORATE",101) > 0) CallACS("MiscVarSetDECORATE",101,0);
-			if (Owner.CountInv("BaronSoul") <= 0 && CallACS("MiscVarCheckDECORATE",102) > 0) CallACS("MiscVarSetDECORATE",102,0);
-			if (Owner.CountInv("BelphegorSoul") <= 0 && CallACS("MiscVarCheckDECORATE",103) > 0) CallACS("MiscVarSetDECORATE",103,0);
-			if (Owner.CountInv("BruiserSoul") <= 0 && CallACS("MiscVarCheckDECORATE",104) > 0) CallACS("MiscVarSetDECORATE",104,0);
-			if (Owner.CountInv("ArchonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",105) > 0) CallACS("MiscVarSetDECORATE",105,0);
-			if (Owner.CountInv("PyroDemonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",106) > 0) CallACS("MiscVarSetDECORATE",106,0);
-			if (Owner.CountInv("IncarnateSoul") <= 0 && CallACS("MiscVarCheckDECORATE",107) > 0) CallACS("MiscVarSetDECORATE",107,0);
-			if (Owner.CountInv("ArchvileSoul") <= 0 && CallACS("MiscVarCheckDECORATE",108) > 0) CallACS("MiscVarSetDECORATE",108,0);
-			if (Owner.CountInv("DiabloistSoul") <= 0 && CallACS("MiscVarCheckDECORATE",109) > 0) CallACS("MiscVarSetDECORATE",109,0);
-			if (Owner.CountInv("BalrogSoul") <= 0 && CallACS("MiscVarCheckDECORATE",110) > 0) CallACS("MiscVarSetDECORATE",110,0);
-			if (Owner.CountInv("HElementalSoul") <= 0 && CallACS("MiscVarCheckDECORATE",111) > 0) CallACS("MiscVarSetDECORATE",111,0);
-			if (Owner.CountInv("HOverlordSoul") <= 0 && CallACS("MiscVarCheckDECORATE",112) > 0) CallACS("MiscVarSetDECORATE",112,0);
+				// Check if player LACKS specific Hellcore Souls, but has >0 for their level [i.e. Death Exits]
+				if (Owner.CountInv("ImpSoul") <= 0 && CallACS("MiscVarCheckDECORATE",96) > 0) CallACS("MiscVarSetDECORATE",96,0);
+				if (Owner.CountInv("DarkImpSoul") <= 0 && CallACS("MiscVarCheckDECORATE",97) > 0) CallACS("MiscVarSetDECORATE",97,0);
+				if (Owner.CountInv("CacodemonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",98) > 0) CallACS("MiscVarSetDECORATE",98,0);
+				if (Owner.CountInv("CacolanternSoul") <= 0 && CallACS("MiscVarCheckDECORATE",99) > 0) CallACS("MiscVarSetDECORATE",99,0);
+				if (Owner.CountInv("AbaddonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",100) > 0) CallACS("MiscVarSetDECORATE",100,0);
+				if (Owner.CountInv("KnightSoul") <= 0 && CallACS("MiscVarCheckDECORATE",101) > 0) CallACS("MiscVarSetDECORATE",101,0);
+				if (Owner.CountInv("BaronSoul") <= 0 && CallACS("MiscVarCheckDECORATE",102) > 0) CallACS("MiscVarSetDECORATE",102,0);
+				if (Owner.CountInv("BelphegorSoul") <= 0 && CallACS("MiscVarCheckDECORATE",103) > 0) CallACS("MiscVarSetDECORATE",103,0);
+				if (Owner.CountInv("BruiserSoul") <= 0 && CallACS("MiscVarCheckDECORATE",104) > 0) CallACS("MiscVarSetDECORATE",104,0);
+				if (Owner.CountInv("ArchonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",105) > 0) CallACS("MiscVarSetDECORATE",105,0);
+				if (Owner.CountInv("PyroDemonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",106) > 0) CallACS("MiscVarSetDECORATE",106,0);
+				if (Owner.CountInv("IncarnateSoul") <= 0 && CallACS("MiscVarCheckDECORATE",107) > 0) CallACS("MiscVarSetDECORATE",107,0);
+				if (Owner.CountInv("ArchvileSoul") <= 0 && CallACS("MiscVarCheckDECORATE",108) > 0) CallACS("MiscVarSetDECORATE",108,0);
+				if (Owner.CountInv("DiabloistSoul") <= 0 && CallACS("MiscVarCheckDECORATE",109) > 0) CallACS("MiscVarSetDECORATE",109,0);
+				if (Owner.CountInv("BalrogSoul") <= 0 && CallACS("MiscVarCheckDECORATE",110) > 0) CallACS("MiscVarSetDECORATE",110,0);
+				if (Owner.CountInv("HElementalSoul") <= 0 && CallACS("MiscVarCheckDECORATE",111) > 0) CallACS("MiscVarSetDECORATE",111,0);
+				if (Owner.CountInv("HOverlordSoul") <= 0 && CallACS("MiscVarCheckDECORATE",112) > 0) CallACS("MiscVarSetDECORATE",112,0);
+			}
 		}
 		
 		
@@ -2409,96 +2415,51 @@ class PlayerStatItem : Inventory
 		
 		if (type == 0) // Minor Healing
 		{
-			if (MinOrMax == 0) // Min
-			{
-				value = 1;
-				value += (PlayerLevel / 8);
-			}
-			if (MinOrMax == 1) // Max
-			{
-				value = 3;
-				value += (PlayerLevel / 8);
-			}
+			if (MinOrMax == 0) value = 1; // Min
+			if (MinOrMax == 1) value = 3; // Max
+			value += (PlayerLevel / 8);
 			if (CharacterClass == 2) value = value * 3 / 2;
 		}
 		
 		if (type == 1) // Healing
 		{
-			if (MinOrMax == 0) // Min
-			{
-				value = 7; 
-				value += (PlayerLevel / 6);
-			}
-			if (MinOrMax == 1) // Max
-			{
-				value = 12; 
-				value += (PlayerLevel / 6);
-			}
+			if (MinOrMax == 0) value = 7; // Min
+			if (MinOrMax == 1) value = 12; // Max
+			value += (PlayerLevel / 6);
 			if (CharacterClass == 2) value = value * 7 / 4;
 		}
 	
 	
 		if (type == 2) // Major Healing
 		{
-			if (MinOrMax == 0) // Min
-			{
-				value = 18; 
-				value += (PlayerLevel / 3);
-			}
-			if (MinOrMax == 1) // Max
-			{
-				value = 31; 
-				value += (PlayerLevel / 3);
-			}
+			if (MinOrMax == 0) value = 18; // Min
+			if (MinOrMax == 1) value = 31; // Max
+			value += (PlayerLevel / 3);
 			if (CharacterClass == 2) value = value * 5 / 2;
 		}
 	
 		if (type == 3) // Heal [DQ]
 		{
-			if (MinOrMax == 0) // Min
-			{
-				value = 24; 
-				value += (PlayerLevel / 5);
-			}
-			if (MinOrMax == 1) // Max
-			{
-				value = 36; 
-				value += (PlayerLevel / 5);
-			}
+			if (MinOrMax == 0) value = 24; // Min
+			if (MinOrMax == 1) value = 36; // Max
+			value += (PlayerLevel / 5);
 		}
 	
 		if (type == 4) // MidHeal [DQ]
 		{
-			if (MinOrMax == 0) // Min
-			{
-				value = 60; 
-				value += (PlayerLevel / 4);
-			}
-			if (MinOrMax == 1) // Max
-			{
-				value = 90; 
-				value += (PlayerLevel / 4);
-			}
+			if (MinOrMax == 0) value = 60; // Min
+			if (MinOrMax == 1) value = 90; // Max
+			value += (PlayerLevel / 4);
 		}
 	
 		if (type == 5) // MoreHeal [DQ]
 		{
-			if (MinOrMax == 0) // Min
-			{
-				value = 135; 
-				value += (PlayerLevel / 4);
-			}
-			if (MinOrMax == 1) // Max
-			{
-				value = 210; 
-				value += (PlayerLevel / 4);
-			}
+			if (MinOrMax == 0) value = 135; // Min
+			if (MinOrMax == 1) value = 210; // Max
+			value += (PlayerLevel / 4);
 		}
 		
-		if (type == 6) // FullHeal [DQ]
-		{
-			value = MaxHealthTrue; 
-		}
+		if (type == 6) value = MaxHealthTrue; // FullHeal [DQ]
 
 		// Stat Alternations
 		value = value * (16 + (PlayerLevel / 25)) / 16;
@@ -2529,16 +2490,6 @@ class PlayerStatItem : Inventory
 		HealSorcRatio += 100;
 		value = (value * HealSorcRatio) / 100;
 		
-		string TensionItem;
-		if (TensionLevel == 0) TensionItem = "0";
-		if (TensionLevel == 1) TensionItem = "5";
-		if (TensionLevel == 2) TensionItem = "20";
-		if (TensionLevel == 3) TensionItem = "50";
-		if (TensionLevel == 4) TensionItem = "100";
-		if (TensionLevel == 5) TensionItem = "250";
-		if (TensionLevel == 6) TensionItem = "500";
-		if (TensionLevel == 7) TensionItem = "1000";
-		//PrintBold(s:"Pre-Tension [Heal] (",s:TensionItem,s:"): ",d:value);
 		if (TensionLevel == 1) value = value * 17 / 10; // 1.7x
 		if (TensionLevel == 2) value = value * 3; // 3x
 		if (TensionLevel == 3) value = value * 5; // 5x
@@ -2546,29 +2497,99 @@ class PlayerStatItem : Inventory
 		if (TensionLevel == 5) value = value * 45 / 4; // 11.25x
 		if (TensionLevel == 6) value = value * 35 / 2; // 17.5x
 		if (TensionLevel == 7) value = value * 25; // 25x
-		//PrintBold(s:"Post-Tension [Heal] (",s:TensionItem,s:"): ",d:value);
 
 		return value;
 	}
 	
 	void A_PSI1DoEffectHealValueCheck()
 	{
-		CallACS("MiscVarSetDECORATE",281,F_GetHealingValue(0,0));
-		CallACS("MiscVarSetDECORATE",282,F_GetHealingValue(0,1));
-		CallACS("MiscVarSetDECORATE",283,F_GetHealingValue(1,0));
-		CallACS("MiscVarSetDECORATE",284,F_GetHealingValue(1,1));
-		CallACS("MiscVarSetDECORATE",285,F_GetHealingValue(2,0));
-		CallACS("MiscVarSetDECORATE",286,F_GetHealingValue(2,1));
+		if ((level.totaltime % optimizefactortics) == 0)
+		{
+			CallACS("MiscVarSetDECORATE",281,F_GetHealingValue(0,0));
+			CallACS("MiscVarSetDECORATE",282,F_GetHealingValue(0,1));
+			CallACS("MiscVarSetDECORATE",283,F_GetHealingValue(1,0));
+			CallACS("MiscVarSetDECORATE",284,F_GetHealingValue(1,1));
+			CallACS("MiscVarSetDECORATE",285,F_GetHealingValue(2,0));
+			CallACS("MiscVarSetDECORATE",286,F_GetHealingValue(2,1));
+		}
 	}
 	
-	int F_SpellCostCheck(int checktype)
+	void A_PSI1DoEffectSetSpellCostBase()
 	{
+		//Console.Printf("SpellCostsBase");
+		SpellCostsBase.Resize(59);
+		SpellCostsBase[0] = 1;			// Minor Magic Missile
+		SpellCostsBase[1] = 5;			// Minor Healing
+		SpellCostsBase[2] = 5;			// Minor Night Vision
+		SpellCostsBase[3] = 5;			// Chill Touch
+		SpellCostsBase[4] = 15;			// Minor Invisibility
+		SpellCostsBase[5] = 10;			// Minor Flight
+		SpellCostsBase[6] = 15;			// Minor Poison Cloud
+		SpellCostsBase[7] = 10;			// Minor Fireball
+		SpellCostsBase[8] = 50;			// Enhanced Strength
+		SpellCostsBase[9] = 15;			// Minor Ice Blast
+		SpellCostsBase[10] = 50;			// Summon Weak Monster
+		SpellCostsBase[11] = 20;			// Magic Missile
+		SpellCostsBase[12] = 20;			// Fireball
+		SpellCostsBase[13] = 30;			// Explosive Glyph
+		SpellCostsBase[14] = 15;			// Healing
+		SpellCostsBase[15] = 40;			// Fireball Nova
+		SpellCostsBase[16] = 125;		// Attack Booster
+		SpellCostsBase[17] = 75;			// Minor Raging Spirits
+		SpellCostsBase[18] = 75;			// Invisibility
+		SpellCostsBase[19] = 25;			// Acid Rain
+		SpellCostsBase[20] = 85;			// Minor Terrorization Aura
+		SpellCostsBase[21] = 40;			// Night-Vision
+		SpellCostsBase[22] = 75;			// Flight
+		SpellCostsBase[23] = 50;			// Major Magic Missile
+		SpellCostsBase[24] = 125;		// Summon Monster
+		SpellCostsBase[25] = 100;		// Ice Nova
+		SpellCostsBase[26] = 75;			// Poison Cloud
+		SpellCostsBase[27] = 75;			// Minor Lightning
+		SpellCostsBase[28] = 100;		// Stone Skin
+		SpellCostsBase[29] = 55;			// Major Healing
+		SpellCostsBase[30] = 100;		// Major Night-Vision
+		SpellCostsBase[31] = 50;			// Ice Blast
+		SpellCostsBase[32] = 150;		// Farsight
+		SpellCostsBase[33] = 150;		// Lightning Nova
+		SpellCostsBase[34] = 120;		// Minor Time Freeze
+		SpellCostsBase[35] = 125;			// Defense Booster
+		SpellCostsBase[36] = 150;		// Major Invisibility
+		SpellCostsBase[37] = 150;		// Major Flight
+		SpellCostsBase[38] = 125;		// Lightning
+		SpellCostsBase[39] = 220;		// Summon Strong Monster
+		SpellCostsBase[40] = 200;		// Diamond Skin
+		SpellCostsBase[41] = 50;			// Major Fireball
+		SpellCostsBase[42] = 75;			// Major Ice Blast
+		SpellCostsBase[43] = 130;		// Major Poison Cloud
+		SpellCostsBase[44] = 175;		// Major Lightning
+		SpellCostsBase[45] = 200;		// Invulnerability
+		SpellCostsBase[46] = 125;		// Speed Booster
+		SpellCostsBase[47] = 150;		// Raging Spirits
+		SpellCostsBase[48] = 250;		// Summon Archvile
+		SpellCostsBase[49] = 160;		// Ultra Magic Missile
+		SpellCostsBase[50] = 325;		// Time Freezer
+		SpellCostsBase[51] = 225;		// Terror Aura
+		SpellCostsBase[52] = 300;		// Create Lotso Ammo
+		SpellCostsBase[53] = 0;			// Divine Avatar [value doesn't matter since it auto-calculates based on max MP]
+		SpellCostsBase[54] = 500;		// Summon Cyberdemon
+		SpellCostsBase[55] = 1025;		// Spreader Aura Lv. 2
+		SpellCostsBase[56] = 80;			// Oomph
+		SpellCostsBase[57] = 30;			// Buff
+		SpellCostsBase[58] = 80;			// Desperato Damsel
+	}
+
+	int F_SpellCostCheck(int checktype = 0, int initialcost = 0)
+	{
+		if (checktype < 0) return 0;
+
 		int SpellIsSelected = checktype;
 		int FinalSpellCost, DivineAvatarPercentCost, SpellCostDeclineLevelsNeeded, LevelSpellCostReductionFactor, LvlSpellCostReducePercent, SecretSplCostReduceBonus, Check1, Check2;
 		int OriginalSpellCost, StatManaCostReduction;
 		int spellcostdebug = dvdsdebug_showspellcoststuff;
 		int DivineAvatarTimer = CallACS("GetBuffTimer",7);
 		PlayerLevel = CallACS("StatCheck",0);
+		MaxMana = CallACS("StatCheck",2);
 		CharacterClass = CallACS("CheckCharacterClass");
 		ModType = CallACS("OtherVarCheckDECORATE",8);
 		
@@ -2863,26 +2884,113 @@ class PlayerStatItem : Inventory
 	
 	void A_PSI1DoEffectSpellCostCheck()
 	{
+		if ((level.totaltime % optimizefactortics2) == 0) 
+		{
+			if (CallACS("MenuVarCheckDECORATE",0) == 0)
+			{
+				CallACS("MiscVarSetDECORATE",2989,F_SpellCostCheck(CallACS("OtherVarCheckDECORATE",15),SpellCostsBase[CallACS("OtherVarCheckDECORATE",15)])); // Selected Spell
+				if ((CallACS("QuickSpellCheckDECORATE",0) - 1) >= 0) CallACS("MiscVarSetDECORATE",2990,F_SpellCostCheck((CallACS("QuickSpellCheckDECORATE",0) - 1),SpellCostsBase[CallACS("QuickSpellCheckDECORATE",0 - 1)])); // QuickSpell 1
+				if ((CallACS("QuickSpellCheckDECORATE",1) - 1) >= 0) CallACS("MiscVarSetDECORATE",2991,F_SpellCostCheck((CallACS("QuickSpellCheckDECORATE",1) - 1),SpellCostsBase[CallACS("QuickSpellCheckDECORATE",1 - 1)])); // QuickSpell 2
+				if ((CallACS("QuickSpellCheckDECORATE",2) - 1) >= 0) CallACS("MiscVarSetDECORATE",2992,F_SpellCostCheck((CallACS("QuickSpellCheckDECORATE",2) - 1),SpellCostsBase[CallACS("QuickSpellCheckDECORATE",2 - 1)])); // QuickSpell 3
+				if ((CallACS("QuickSpellCheckDECORATE",3) - 1) >= 0) CallACS("MiscVarSetDECORATE",2993,F_SpellCostCheck((CallACS("QuickSpellCheckDECORATE",3) - 1),SpellCostsBase[CallACS("QuickSpellCheckDECORATE",3 - 1)])); // QuickSpell 4
+				if ((CallACS("QuickSpellCheckDECORATE",4) - 1) >= 0) CallACS("MiscVarSetDECORATE",2994,F_SpellCostCheck((CallACS("QuickSpellCheckDECORATE",4) - 1),SpellCostsBase[CallACS("QuickSpellCheckDECORATE",4 - 1)])); // QuickSpell 5
+				if ((CallACS("QuickSpellCheckDECORATE",5) - 1) >= 0) CallACS("MiscVarSetDECORATE",2995,F_SpellCostCheck((CallACS("QuickSpellCheckDECORATE",5) - 1),SpellCostsBase[CallACS("QuickSpellCheckDECORATE",5 - 1)])); // QuickSpell 6
+				if ((CallACS("QuickSpellCheckDECORATE",6) - 1) >= 0) CallACS("MiscVarSetDECORATE",2996,F_SpellCostCheck((CallACS("QuickSpellCheckDECORATE",6) - 1),SpellCostsBase[CallACS("QuickSpellCheckDECORATE",6 - 1)])); // QuickSpell 7
+				if ((CallACS("QuickSpellCheckDECORATE",7) - 1) >= 0) CallACS("MiscVarSetDECORATE",2997,F_SpellCostCheck((CallACS("QuickSpellCheckDECORATE",7) - 1),SpellCostsBase[CallACS("QuickSpellCheckDECORATE",7 - 1)])); // QuickSpell 7
+				if ((CallACS("QuickSpellCheckDECORATE",8) - 1) >= 0) CallACS("MiscVarSetDECORATE",2998,F_SpellCostCheck((CallACS("QuickSpellCheckDECORATE",8) - 1),SpellCostsBase[CallACS("QuickSpellCheckDECORATE",8 - 1)])); // QuickSpell 8
+				if ((CallACS("QuickSpellCheckDECORATE",9) - 1) >= 0) CallACS("MiscVarSetDECORATE",2999,F_SpellCostCheck((CallACS("QuickSpellCheckDECORATE",9) - 1),SpellCostsBase[CallACS("QuickSpellCheckDECORATE",9 - 1)])); // QuickSpell 9
+				/*
+				Console.Printf("Selected: %d", CallACS("MiscVarCheckDECORATE",2989));
+				Console.Printf("QS1: %d", CallACS("MiscVarCheckDECORATE",2990));
+				Console.Printf("QS2: %d", CallACS("MiscVarCheckDECORATE",2991));
+				Console.Printf("QS3: %d", CallACS("MiscVarCheckDECORATE",2992));
+				Console.Printf("QS4: %d", CallACS("MiscVarCheckDECORATE",2993));
+				Console.Printf("QS5: %d", CallACS("MiscVarCheckDECORATE",2994));
+				Console.Printf("QS6: %d", CallACS("MiscVarCheckDECORATE",2995));
+				Console.Printf("QS7: %d", CallACS("MiscVarCheckDECORATE",2996));
+				Console.Printf("QS8: %d", CallACS("MiscVarCheckDECORATE",2997));
+				Console.Printf("QS9: %d", CallACS("MiscVarCheckDECORATE",2998));
+				Console.Printf("QS0: %d", CallACS("MiscVarCheckDECORATE",2999));
+				*/
+			}
+			if (CallACS("MenuVarCheckDECORATE",4) == 2) 
+			{
+				if (CallACS("MenuVarCheckDECORATE",5) == 0)
+				{
+					for (int i = 0; i <= 8; i++)
+					{
+						CallACS("MiscVarSetDECORATE",(i+3000),F_SpellCostCheck(i,SpellCostsBase[i]));
+					}
+				}
+				if (CallACS("MenuVarCheckDECORATE",5) == 1)
+				{
+					for (int i = 9; i <= 17; i++)
+					{
+						CallACS("MiscVarSetDECORATE",(i+3000),F_SpellCostCheck(i,SpellCostsBase[i]));
+					}
+					CallACS("MiscVarSetDECORATE",(58+3000),F_SpellCostCheck(58,SpellCostsBase[58]));
+				}
+				if (CallACS("MenuVarCheckDECORATE",5) == 2)
+				{
+					for (int i = 18; i <= 26; i++)
+					{
+						CallACS("MiscVarSetDECORATE",(i+3000),F_SpellCostCheck(i,SpellCostsBase[i]));
+					}
+				}
+				if (CallACS("MenuVarCheckDECORATE",5) == 3)
+				{
+					for (int i = 27; i <= 35; i++)
+					{
+						CallACS("MiscVarSetDECORATE",(i+3000),F_SpellCostCheck(i,SpellCostsBase[i]));
+					}
+				}
+				if (CallACS("MenuVarCheckDECORATE",5) == 4)
+				{
+					for (int i = 36; i <= 44; i++)
+					{
+						CallACS("MiscVarSetDECORATE",(i+3000),F_SpellCostCheck(i,SpellCostsBase[i]));
+					}
+				}
+				if (CallACS("MenuVarCheckDECORATE",5) == 5)
+				{
+					for (int i = 45; i <= 53; i++)
+					{
+						CallACS("MiscVarSetDECORATE",(i+3000),F_SpellCostCheck(i,SpellCostsBase[i]));
+					}
+				}
+				if (CallACS("MenuVarCheckDECORATE",5) == 6)
+				{
+					for (int i = 54; i <= 55; i++)
+					{
+						CallACS("MiscVarSetDECORATE",(i+3000),F_SpellCostCheck(i,SpellCostsBase[i]));
+					}
+				}
+			}
+		}
 	}
 
 	void A_PSI1DoEffectFinalCalls()
 	{
 		int temp;
-		CallACS("MiscVarSetDECORATE",25001,PlayerCurrentHealth);
 		
-		CallACS("MiscVarSetDECORATE",25003,Owner.WaterLevel);
-		CallACS("MiscVarSetDECORATE",25004,Owner.CountInv("RLMode"));
-		CallACS("MiscVarSetDECORATE",25005,Owner.CountInv("PRMode"));
-		CallACS("MiscVarSetDECORATE",25006,Owner.CountInv("UnmakerAmmoType"));
-		CallACS("MiscVarSetDECORATE",25007,Owner.CountInv("UnmakerUpgrades"));
-		pm = "EtherStock"; iDTech1Check = pm; CallACS("MiscVarSetDECORATE",25008,Owner.CountInv(iDTech1Check));
-		CallACS("MiscVarSetDECORATE",25009,Owner.CountInv("MinigunHeat"));
-		CallACS("MiscVarSetDECORATE",25010,Owner.CountInv("RailgunCharge"));
-		CallACS("MiscVarSetDECORATE",25011,Owner.CountInv("FlameCount"));
-		CallACS("MiscVarSetDECORATE",25012,Owner.CountInv("DualFlameCount"));
-		CallACS("MiscVarSetDECORATE",25013,Owner.CountInv("FistPlayerBlockItem"));
-		CallACS("MiscVarSetDECORATE",25014,Owner.CountInv("InvulnerabilitySpell"));
-		CallACS("MiscVarSetDECORATE",25037,Owner.CountInv("BasicArmor"));
+		if ((level.totaltime % optimizefactortics) == 0)
+		{
+			CallACS("MiscVarSetDECORATE",25001,PlayerCurrentHealth);
+			
+			CallACS("MiscVarSetDECORATE",25003,Owner.WaterLevel);
+			CallACS("MiscVarSetDECORATE",25004,Owner.CountInv("RLMode"));
+			CallACS("MiscVarSetDECORATE",25005,Owner.CountInv("PRMode"));
+			CallACS("MiscVarSetDECORATE",25006,Owner.CountInv("UnmakerAmmoType"));
+			CallACS("MiscVarSetDECORATE",25007,Owner.CountInv("UnmakerUpgrades"));
+			pm = "EtherStock"; iDTech1Check = pm; CallACS("MiscVarSetDECORATE",25008,Owner.CountInv(iDTech1Check));
+			CallACS("MiscVarSetDECORATE",25009,Owner.CountInv("MinigunHeat"));
+			CallACS("MiscVarSetDECORATE",25010,Owner.CountInv("RailgunCharge"));
+			CallACS("MiscVarSetDECORATE",25011,Owner.CountInv("FlameCount"));
+			CallACS("MiscVarSetDECORATE",25012,Owner.CountInv("DualFlameCount"));
+			CallACS("MiscVarSetDECORATE",25013,Owner.CountInv("FistPlayerBlockItem"));
+			CallACS("MiscVarSetDECORATE",25014,Owner.CountInv("InvulnerabilitySpell"));
+			CallACS("MiscVarSetDECORATE",25037,Owner.CountInv("BasicArmor"));
+		}
 
 		temp = 25036;
 		if (CallACS("MiscVarCheckDECORATE",temp) > 0)
@@ -2905,21 +3013,24 @@ class PlayerStatItem : Inventory
 			CallACS("MiscVarSetDECORATE",25032,0);
 		}
 
-		CallACS("MiscVarSetDECORATE",25101,owner.CountInv("SauronHelmet"));
-		CallACS("MiscVarSetDECORATE",25102,owner.CountInv("SauronGauntletsItem"));
-		CallACS("MiscVarSetDECORATE",25103,owner.CountInv("TheOneRing"));
-		CallACS("MiscVarSetDECORATE",25104,owner.CountInv("SafeTeaShoes"));
-		CallACS("MiscVarSetDECORATE",25105,owner.CountInv("PearlyCorset"));
-		CallACS("MiscVarSetDECORATE",25106,owner.CountInv("WaterFlyingDress"));
-		CallACS("MiscVarSetDECORATE",25107,owner.CountInv("EvenstarNecklace"));
-		CallACS("MiscVarSetDECORATE",25108,owner.CountInv("CloakofEvasion"));
-		CallACS("MiscVarSetDECORATE",25109,owner.CountInv("AnubisCufflinks"));
-		CallACS("MiscVarSetDECORATE",25110,owner.CountInv("KissaBra"));
-		CallACS("MiscVarSetDECORATE",25111,owner.CountInv("DivineShield"));
-		CallACS("MiscVarSetDECORATE",25112,owner.CountInv("RuinousShield"));
-		CallACS("MiscVarSetDECORATE",25113,owner.CountInv("BalrogRing"));
-		CallACS("MiscVarSetDECORATE",25114,owner.CountInv("DoveRibbon"));
-		CallACS("MiscVarSetDECORATE",25115,owner.CountInv("FalconKnifeEarrings"));
+		if ((level.totaltime % optimizefactortics) == 0)
+		{
+			CallACS("MiscVarSetDECORATE",25101,owner.CountInv("SauronHelmet"));
+			CallACS("MiscVarSetDECORATE",25102,owner.CountInv("SauronGauntletsItem"));
+			CallACS("MiscVarSetDECORATE",25103,owner.CountInv("TheOneRing"));
+			CallACS("MiscVarSetDECORATE",25104,owner.CountInv("SafeTeaShoes"));
+			CallACS("MiscVarSetDECORATE",25105,owner.CountInv("PearlyCorset"));
+			CallACS("MiscVarSetDECORATE",25106,owner.CountInv("WaterFlyingDress"));
+			CallACS("MiscVarSetDECORATE",25107,owner.CountInv("EvenstarNecklace"));
+			CallACS("MiscVarSetDECORATE",25108,owner.CountInv("CloakofEvasion"));
+			CallACS("MiscVarSetDECORATE",25109,owner.CountInv("AnubisCufflinks"));
+			CallACS("MiscVarSetDECORATE",25110,owner.CountInv("KissaBra"));
+			CallACS("MiscVarSetDECORATE",25111,owner.CountInv("DivineShield"));
+			CallACS("MiscVarSetDECORATE",25112,owner.CountInv("RuinousShield"));
+			CallACS("MiscVarSetDECORATE",25113,owner.CountInv("BalrogRing"));
+			CallACS("MiscVarSetDECORATE",25114,owner.CountInv("DoveRibbon"));
+			CallACS("MiscVarSetDECORATE",25115,owner.CountInv("FalconKnifeEarrings"));
+		}
 		
 		temp = 25201;
 		if (CallACS("MiscVarCheckDECORATE",temp) > 0)
@@ -3088,7 +3199,7 @@ class PlayerStatItem : Inventory
 		CallACS("MiscVarSetDECORATE",1501,0);
 		CallACS("MiscVarSetDECORATE",1502,0);
 		double resextra = 0.0;
-		if (playeractor)
+		if (playeractor && optimizefactortics2)
 		{
 			// Weapon Checks
 			nm = "EvilWarriorShield"; APPackCheck = nm;
@@ -3354,42 +3465,43 @@ class PlayerStatItem : Inventory
 		int FatigueTimer = CallACS("GetBuffTimer",18);
 		int SleepTimer = CallACS("GetBuffTimer",20);
 		int GoETimer = CallACS("GetBuffTimer",129);
+		int hellcoreheatdebug = dvdsdebug_hellcoreheatdisplay;
 		
 		//******************************************************
 		//*Hellcore Cooldown Process [25 tics = 1% of cooldown]*
 		//******************************************************
-		if (playeractor)
+		if (playeractor && UsingInGameMenu == 0)
 		{
 			HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
 			if (HellcoreOverheatLevel > 0 && PlayerCurrentHealth)
 			{
 				HellcoreCoolRatio = 400; // 0.04%
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 1 - Cooldown Increment (Base)]: %d\c-, Heat Level:", HellcoreCoolRatio, HellcoreOverheatLevel);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 1 - Cooldown Increment (Base)]: %d\c-, Heat Level:", HellcoreCoolRatio, HellcoreOverheatLevel);
 
 				// Dove Ribbon quickly cools down Hellcore meter.
 				previousdelaycount = HellcoreCoolRatio;
 				if (Owner.CountInv("DoveRibbon") > 0) HellcoreCoolRatio *= 3;
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 2 - Cooldown Increment (Dove Ribbon)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 2 - Cooldown Increment (Dove Ribbon)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 				
 				// Divine Avatar speeds up cooldown by 100%
 				previousdelaycount = HellcoreCoolRatio;
 				if (DivineAvatarTimer > 0) HellcoreCoolRatio *= 2;
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 3 - Cooldown Increment (Divine Avatar)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 3 - Cooldown Increment (Divine Avatar)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 
 				// ????? speeds up cooldown by 400%
 				previousdelaycount = HellcoreCoolRatio;
 				if (GoETimer > 0) HellcoreCoolRatio *= 5;
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 3a - Cooldown Increment (GoE)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 3a - Cooldown Increment (GoE)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 				
 				// Fatigue = 0.2x cooldown speed
 				previousdelaycount = HellcoreCoolRatio;
 				if (FatigueTimer > 0) HellcoreCoolRatio /= 5;
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 4 - Cooldown Increment (Fatigue)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 4 - Cooldown Increment (Fatigue)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 				
 				// Sleep VERY quickly cools down Hellcore meter.
 				previousdelaycount = HellcoreCoolRatio;
 				if (SleepTimer > 0) HellcoreCoolRatio *= 5; 
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 5 - Cooldown Increment (Sleep)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 5 - Cooldown Increment (Sleep)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 				
 				// Soul Mastery
 				PerkFactor = 200;
@@ -3399,7 +3511,7 @@ class PlayerStatItem : Inventory
 					PerkFactor = 200 + ((CallACS("MiscVarCheckDECORATE",10033) * 6) + (CallACS("MiscVarCheckDECORATE",10034) * 15));
 					HellcoreCoolRatio = HellcoreCoolRatio * PerkFactor / 200;
 				}
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 6 - Cooldown Increment (Soul Mastery)]: %d\c-, Previous: %d, PerkFactor %d / 200", HellcoreCoolRatio, previousdelaycount, PerkFactor);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 6 - Cooldown Increment (Soul Mastery)]: %d\c-, Previous: %d, PerkFactor %d / 200", HellcoreCoolRatio, previousdelaycount, PerkFactor);
 				
 				// "Cleared of Mind: Perk
 				PerkFactor = 80;
@@ -3409,33 +3521,33 @@ class PlayerStatItem : Inventory
 					PerkFactor = 80 + ((ClearMindPerkLvl * 6) + (ClearMindEXPerkLvl * 15));
 					HellcoreCoolRatio = HellcoreCoolRatio * PerkFactor / 80;
 				}
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 7 - Cooldown Increment (Cleared of Mind)]: %d\c-, Previous: %d, PerkFactor %d / 80", HellcoreCoolRatio, previousdelaycount, PerkFactor);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 7 - Cooldown Increment (Cleared of Mind)]: %d\c-, Previous: %d, PerkFactor %d / 80", HellcoreCoolRatio, previousdelaycount, PerkFactor);
 				
 				// Check Hellcore Cooldown Multiplier in Options
 				previousdelaycount = HellcoreCoolRatio;
 				HellcoreCoolRatio = (HellcoreCoolRatio * dvds_helccoolmultiplier) / 100;
 				if (HellcoreCoolRatio < 1) HellcoreCoolRatio = 1;
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 8 - Cooldown Increment (Menu Option)]: %d\c-, Previous: %d, Multiplier %d%", HellcoreCoolRatio, previousdelaycount, dvds_helccoolmultiplier);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 8 - Cooldown Increment (Menu Option)]: %d\c-, Previous: %d, Multiplier %d%", HellcoreCoolRatio, previousdelaycount, dvds_helccoolmultiplier);
 				
 				// ???????
 				previousdelaycount = HellcoreCoolRatio;
 				if (Owner.CountInv("IsHaSatanNow") > 0) HellcoreCoolRatio = HellcoreCoolRatio * 16;
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 9 - Cooldown Increment (???????)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 9 - Cooldown Increment (???????)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 				
 				// Playing Unloved [2x Cooldown Speed]
 				previousdelaycount = HellcoreCoolRatio;
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",3) > 0 || Owner.CountInv("PlayingUnloved") > 0) HellcoreCoolRatio = HellcoreCoolRatio * 2;
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 10a - Cooldown Increment (Playing Unloved)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 10a - Cooldown Increment (Playing Unloved)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 
 				// Playing The City of the Damned: Apocalypse [5x Cooldown Speed]
 				previousdelaycount = HellcoreCoolRatio;
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",4) > 0 || Owner.CountInv("PlayingTCOTDA") > 0) HellcoreCoolRatio = (HellcoreCoolRatio * 5) / 4;
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 10b - Cooldown Increment (Playing TCOTD:A)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 10b - Cooldown Increment (Playing TCOTD:A)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 
 				// Playing Happy Time Circus 2 [3x Cooldown Speed]
 				previousdelaycount = HellcoreCoolRatio;
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",5) > 0 || Owner.CountInv("PlayingCircus2") > 0) HellcoreCoolRatio = (HellcoreCoolRatio * 3) / 2;
-				if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 10c - Cooldown Increment (Playing Happy Time Circus 2)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 10c - Cooldown Increment (Playing Happy Time Circus 2)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 				
 				// Using Focus
 				previousdelaycount = HellcoreCoolRatio;
@@ -3447,16 +3559,12 @@ class PlayerStatItem : Inventory
 					if (CallACS("DVDSSpecialArrayCheckDECORATE",4) > 0 || Owner.CountInv("PlayingTCOTDA") > 0) tempdouble *= 5;
 					if (CallACS("DVDSSpecialArrayCheckDECORATE",5) > 0 || Owner.CountInv("PlayingCircus2") > 0) tempdouble *= 3;
 					HellcoreCoolRatio *= (1.0 + (0.25 + tempdouble));
-					if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 11 - Cooldown Increments]: %d\c-, New Heat Level: %d\c-, Old Heat Level: %d", HellcoreCoolRatio,  HellcoreOverheatLevel, previousdelaycount);
+					if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 11 - Cooldown Increments]: %d\c-, New Heat Level: %d\c-, Old Heat Level: %d", HellcoreCoolRatio,  HellcoreOverheatLevel, previousdelaycount);
 				}
 				
-				if (UsingInGameMenu != 0) HellcoreCoolRatio = 0; // If using In-Game Menus
-				if (UsingInGameMenu == 0)
-				{
-					previousdelaycount = HellcoreOverheatLevel;
-					HellcoreOverheatLevel -= HellcoreCoolRatio;
-					if (dvdsdebug_hellcoreheatdisplay) Console.Printf("    \crHellcore Cooldown [Step 12 - Cooldown Increments]: New Heat Level: %d\c-, Old Heat Level: %d", HellcoreOverheatLevel, previousdelaycount);
-				}
+				previousdelaycount = HellcoreOverheatLevel;
+				HellcoreOverheatLevel -= HellcoreCoolRatio;
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 12 - Cooldown Increments]: New Heat Level: %d\c-, Old Heat Level: %d", HellcoreOverheatLevel, previousdelaycount);
 			}
 			if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
 			CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
@@ -3591,7 +3699,7 @@ class PlayerStatItem : Inventory
 		int staminaregenbase, staminaregenfinal;
 		int defenddivisor;
 
-		if (playeractor)
+		if (playeractor && UsingInGameMenu == 0)
 		{
 			//***********************
 			//*Check for Magic Focus*
@@ -3703,14 +3811,10 @@ class PlayerStatItem : Inventory
 				if (dvdsdebug_cursedmgdisplay) Console.Printf("    \cnCurse Degeneration [Step 3 - Degen Intervals (Post-Armor)]: %d, Factor: %d / 200", CursedShieldDegenInterval, SkillFactor);
 				
 				// Final Degen Interval
-				if (UsingInGameMenu != 0) CursedShieldDegenInterval = 0;
 				if (dvdsdebug_cursedmgdisplay) Console.Printf("    \cnCurse Degeneration [Step 4 - Degen Intervals (MenuCheck)]: %d", CursedShieldDegenInterval);
 
-				if (UsingInGameMenu == 0) 
-				{
-					RuinousShieldDegenTimer += CursedShieldDegenInterval;
-					if (dvdsdebug_cursedmgdisplay) Console.Printf("    \cnCurse Degeneration [Step 5 - Degen Intervals Timer]: %d / %d", RuinousShieldDegenTimer, CursedShieldDegenTimer);
-				}
+				RuinousShieldDegenTimer += CursedShieldDegenInterval;
+				if (dvdsdebug_cursedmgdisplay) Console.Printf("    \cnCurse Degeneration [Step 5 - Degen Intervals Timer]: %d / %d", RuinousShieldDegenTimer, CursedShieldDegenTimer);
 
 				// Curse Effect Execution
 				if (RuinousShieldDegenTimer >= CursedShieldDegenTimer)
@@ -3783,50 +3887,43 @@ class PlayerStatItem : Inventory
 			//***************************
 			if (PlayerCurrentHealth > 0 && DivineAvatarTimer > 0)
 			{
-				if (UsingInGameMenu != 0) 
+				delaycount = 20;
+				if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < MaxHealthLimit) Console.Printf("    \caDivineAvatar HP Regen [Step 1 - Base Interval Delay]: %d\c-", delaycount);
+				
+				previousdelaycount = delaycount;
+				if (GoETimer > 0) delaycount *= 5;
+				if (dvdsdebug_showhpregenstuff && delaycount != previousdelaycount) Console.Printf("    \caDivineAvatar HP Regen [Step 1b - Interval Delay (GoE)]: %d, Previous: %d\c-", delaycount, previousdelaycount);
+				
+				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) > 0 || Owner.CountInv("IsUnconscious") > 0) { }
+				else // If Player is "Conscious", allow their HP regen timer to count
 				{
-					delaycount = 0;
+					DivineRegenTimer += delaycount;
+					if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < MaxHealthLimit) Console.Printf("    \caDivineAvatar HP Regen [Step 2 - Increment Count]: %d / %d\c-, DelayCount: %d", DivineRegenTimer, DivineRegenInterval, delaycount);
 				}
-				else
+				
+				if (PlayerCurrentHealth > 0 && DivineRegenTimer >= DivineRegenInterval && PlayerCurrentHealth < MaxHealthLimit)
 				{
-					delaycount = 20;
-					if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < MaxHealthLimit) Console.Printf("    \caDivineAvatar HP Regen [Step 1 - Base Interval Delay]: %d\c-", delaycount);
-					
-					previousdelaycount = delaycount;
-					if (GoETimer > 0) delaycount *= 5;
-					if (dvdsdebug_showhpregenstuff && delaycount != previousdelaycount) Console.Printf("    \caDivineAvatar HP Regen [Step 1b - Interval Delay (GoE)]: %d, Previous: %d\c-", delaycount, previousdelaycount);
-					
-					if (CallACS("DVDSSpecialArrayCheckDECORATE",0) > 0 || Owner.CountInv("IsUnconscious") > 0) { }
-					else // If Player is "Conscious", allow their HP regen timer to count
-					{
-						DivineRegenTimer += delaycount;
-						if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < MaxHealthLimit) Console.Printf("    \caDivineAvatar HP Regen [Step 2 - Increment Count]: %d / %d\c-, DelayCount: %d", DivineRegenTimer, DivineRegenInterval, delaycount);
-					}
-
-					if (PlayerCurrentHealth > 0 && DivineRegenTimer >= DivineRegenInterval && PlayerCurrentHealth < MaxHealthLimit)
-					{
-						DivineRegenAmount = MaxHealthLimit * frandompick[statitem2](0.015,0.012,0.01,0.0085,0.0075);
-						if (DivineRegenAmount < 1) DivineRegenAmount = 1;
-						if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < MaxHealthLimit) Console.Printf("    \caDivineAvatar HP Regen [Step R1 - Base Regen Amount]: %d\c-", DivineRegenAmount);
-
-						previousdelaycount = DivineRegenAmount;
-						if (Owner.CountInv("SauronGauntletsItem") > 0) DivineRegenAmount *= 1.0625;
-						if (dvdsdebug_showhpregenstuff && DivineRegenAmount != previousdelaycount) Console.Printf("    \caDivineAvatar HP Regen [Step R2 - Regen Amount (Gauntlets)]: %d\c-, Previous: %d", DivineRegenAmount, previousdelaycount);
-
-						previousdelaycount = DivineRegenAmount;
-						if (Owner.CountInv("TheOneRing") > 0) DivineRegenAmount *= 1.125;
-						if (dvdsdebug_showhpregenstuff && DivineRegenAmount != previousdelaycount) Console.Printf("    \caDivineAvatar HP Regen [Step R3 - Regen Amount (The One Ring)]: %d\c-, Previous: %d", DivineRegenAmount, previousdelaycount);
-
-						PlayerCurrentHealth = owner.health;
-						PlayerCurrentHealth += DivineRegenAmount;
-						if (PlayerCurrentHealth >= MaxHealthLimit) PlayerCurrentHealth = MaxHealthLimit;
-						owner.player.health = owner.player.mo.health = PlayerCurrentHealth;
-						CallACS("MiscVarSetDECORATE",241,PlayerCurrentHealth);
-						CallACS("MiscVarSetDECORATE",175,PlayerCurrentHealth);
-
-						DivineRegenTimer = 0;
-						DivineRegenInterval = random[statitem](30,35) * 20;
-					}
+					DivineRegenAmount = MaxHealthLimit * frandompick[statitem2](0.015,0.012,0.01,0.0085,0.0075);
+					if (DivineRegenAmount < 1) DivineRegenAmount = 1;
+					if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < MaxHealthLimit) Console.Printf("    \caDivineAvatar HP Regen [Step R1 - Base Regen Amount]: %d\c-", DivineRegenAmount);
+				
+					previousdelaycount = DivineRegenAmount;
+					if (Owner.CountInv("SauronGauntletsItem") > 0) DivineRegenAmount *= 1.0625;
+					if (dvdsdebug_showhpregenstuff && DivineRegenAmount != previousdelaycount) Console.Printf("    \caDivineAvatar HP Regen [Step R2 - Regen Amount (Gauntlets)]: %d\c-, Previous: %d", DivineRegenAmount, previousdelaycount);
+				
+					previousdelaycount = DivineRegenAmount;
+					if (Owner.CountInv("TheOneRing") > 0) DivineRegenAmount *= 1.125;
+					if (dvdsdebug_showhpregenstuff && DivineRegenAmount != previousdelaycount) Console.Printf("    \caDivineAvatar HP Regen [Step R3 - Regen Amount (The One Ring)]: %d\c-, Previous: %d", DivineRegenAmount, previousdelaycount);
+				
+					PlayerCurrentHealth = owner.health;
+					PlayerCurrentHealth += DivineRegenAmount;
+					if (PlayerCurrentHealth >= MaxHealthLimit) PlayerCurrentHealth = MaxHealthLimit;
+					owner.player.health = owner.player.mo.health = PlayerCurrentHealth;
+					CallACS("MiscVarSetDECORATE",241,PlayerCurrentHealth);
+					CallACS("MiscVarSetDECORATE",175,PlayerCurrentHealth);
+				
+					DivineRegenTimer = 0;
+					DivineRegenInterval = random[statitem](30,35) * 20;
 				}
 			}
 			else
@@ -3861,12 +3958,8 @@ class PlayerStatItem : Inventory
 					if (dvdsdebug_showhpregenstuff && delaycount != previousdelaycount) Console.Printf("    \caDoveRibbon HP Regen [Step 1c - Interval Delay (GoE)]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					
-					if (UsingInGameMenu != 0) delaycount = 0; // If using In-Game Menus
-					if (UsingInGameMenu == 0)
-					{
-						DoveRegenTimer += delaycount;
-						if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < MaxHealthLimit) Console.Printf("    \caDoveRibbon HP Regen [Step 2 - Increment Count]: %d / %d\c-, DelayCount: %d", DoveRegenTimer, DivineRegenInterval, delaycount);
-					}
+					DoveRegenTimer += delaycount;
+					if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < MaxHealthLimit) Console.Printf("    \caDoveRibbon HP Regen [Step 2 - Increment Count]: %d / %d\c-, DelayCount: %d", DoveRegenTimer, DivineRegenInterval, delaycount);
 				}
 	
 				if (PlayerCurrentHealth > 0 && DoveRegenTimer >= DoveRegenInterval && PlayerCurrentHealth < MaxHealthLimit)
@@ -4151,7 +4244,6 @@ class PlayerStatItem : Inventory
 				if (delaycount < 1) delaycount = 1;
 				if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < RegenMaxHealth) Console.Printf("    \caHP Regen [Step 23 - Regen Intervals (LOWCap)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 				
-				if (UsingInGameMenu != 0) delaycount = 0; // If using In-Game Menus
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) > 0 || Owner.CountInv("IsUnconscious") > 0) { }
 				else // If Player is "Conscious", allow their HP regen timer to count
 				{
@@ -4425,7 +4517,6 @@ class PlayerStatItem : Inventory
 					if (delaycount < 1) delaycount = 1;
 					if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth > RegenMaxHealth) Console.Printf("    \caHP Degen [Step 22 - Degen Intervals (LOWCap)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 
-					if (UsingInGameMenu != 0) delaycount = 0; // If using In-Game Menus
 					if (CallACS("DVDSSpecialArrayCheckDECORATE",0) > 0 || Owner.CountInv("IsUnconscious") > 0) { }
 					else // If Player is "Conscious", allow their HP degen timer to count
 					{
@@ -4493,79 +4584,73 @@ class PlayerStatItem : Inventory
 			// Check for Poison [-Invuln]
 			if (PoisonedTimer > 0 && InvulnerabilityTimer == 0) // Being invulnerable will prevent poison damage from occuring.
 			{
-				if (UsingInGameMenu == 0) 
+				// Base Increment
+				PoisonIncrement = 20;
+				if (debugpoison) Console.Printf("    \cuPoison Damage [Step 3 - Count Interval Base]: %d\c-", PoisonIncrement);
+				
+				// Input Alterations
+				previousdelaycount = PoisonIncrement;
+				SkillFactor = 100;
+				if (MenuModeToggle > 0) FreezePlayer += 1;
+				if (SleepTimer > 0) FreezePlayer += 1;
+				if (FreezePlayer == 0)
 				{
-					// Base Increment
-					PoisonIncrement = 20;
-					if (debugpoison) Console.Printf("    \cuPoison Damage [Step 3 - Count Interval Base]: %d\c-", PoisonIncrement);
-			
-					// Input Alterations
-					previousdelaycount = PoisonIncrement;
-					SkillFactor = 100;
-					if (MenuModeToggle > 0) FreezePlayer += 1;
-					if (SleepTimer > 0) FreezePlayer += 1;
-					if (FreezePlayer == 0)
-					{
-						if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) SkillFactor = SkillFactor * 125 / 100;
-						if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) SkillFactor = SkillFactor * random[statitem](112,113) / 100;
-						if (buttons & BT_JUMP) SkillFactor = SkillFactor * 125 / 100;
-						if (buttons & BT_CROUCH) SkillFactor = SkillFactor * 75 / 100;
-						PoisonIncrement = PoisonIncrement * SkillFactor / 100;
-					}
-					if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (\cyInput: %d\cu)]: %d\c-, Previous: %d, InputFactor: %d / 100, Frozen?: %d", buttons, PoisonIncrement, previousdelaycount, SkillFactor, FreezePlayer);
-			
-					// Check Characters & Armor
-					previousdelaycount = PoisonIncrement;
-					if (CharacterClass == 2)
-					{
-						SkillFactor = 1000;
-						if (Owner.CountInv("PearlyCorset") > 0) SkillFactor -= 83;
-						if (Owner.CountInv("DoveRibbon") > 0) SkillFactor -= 334;
-						if (Owner.CountInv("DivineShield") > 0) SkillFactor -= 83;
-						PoisonIncrement = PoisonIncrement * SkillFactor / 1000;
-						if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (Armor, Flora)]: %d\c-, Previous: %d, InputFactor: %d / 1000", PoisonIncrement, previousdelaycount, SkillFactor);
-					}
-					else
-					if (CharacterClass == 0 || CharacterClass == 1)
-					{
-						SkillFactor = 100;
-						if (Owner.CountInv("DSGreenArmorClass") > 0) SkillFactor -= 2; // (-2% for Green Armor)
-						if (Owner.CountInv("DSBlueArmorClass") > 0) SkillFactor -= 4; // (-4% for Blue Armor)
-						if (Owner.CountInv("DSStoneArmorClass1") > 0) SkillFactor -= 5; // (-5% for Stone Armor 1)
-						if (Owner.CountInv("DSDiamondArmorClass1") > 0) SkillFactor -= 7; // (-7% for Diamond Armor 1)
-						if (Owner.CountInv("DSStoneArmorClass2") > 0) SkillFactor -= 6; // (-6% for Stone Armor 2)
-						if (Owner.CountInv("DSDiamondArmorClass2") > 0) SkillFactor -= 8; // (-8% for Diamond Armor 2)
-						PoisonIncrement = PoisonIncrement * SkillFactor / 100;
-						if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (Armor, Marines)]: %d\c-, Previous: %d, InputFactor: %d / 100", PoisonIncrement, previousdelaycount, SkillFactor);
-					}
-					
-					// Buffs
-					previousdelaycount = PoisonIncrement;
-					if (DQAcceleratleTimer > 0) PoisonIncrement *= 1.2; // Acceleratle = 120% Speed
-					if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 5a - Count Interval (Acceleratle)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
-
-					previousdelaycount = PoisonIncrement;
-					if (DQDeceleratleTimer > 0) PoisonIncrement *= 0.8; // Deceleratle = 80% Speed
-					if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 5b - Count Interval (Deceleratle)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
-
-					previousdelaycount = PoisonIncrement;
-					if (FatigueTimer > 0) PoisonIncrement *= 1.8; // Fatigue = 180% Speed
-					if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 6 - Count Interval (Fatigue)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
-					
-					previousdelaycount = PoisonIncrement;
-					if (SleepTimer > 0) PoisonIncrement *= 0.2; // Sleep = 20% Speed
-					if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 7 - Count Interval (Sleep)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
-
-					previousdelaycount = PoisonIncrement;
-					if (BerserkTimer > 0) PoisonIncrement *= 1.5; // Berserk = 150% Speed
-					if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 8 - Count Interval (Berserk)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
-
-					if (UsingInGameMenu == 0) 
-					{
-						PoisonTimer += PoisonIncrement;
-						if (debugpoison) Console.Printf("    \cuPoison Damage [Step 9 - Timer]: %d / %d\c-, Increment: %d", PoisonTimer, PoisonMaxInterval, PoisonIncrement);
-					}
+					if (buttons & BT_FORWARD || buttons & BT_BACK || buttons & BT_MOVELEFT || buttons & BT_MOVERIGHT) SkillFactor = SkillFactor * 125 / 100;
+					if (buttons & BT_MOVEUP || buttons & BT_MOVEDOWN) SkillFactor = SkillFactor * random[statitem](112,113) / 100;
+					if (buttons & BT_JUMP) SkillFactor = SkillFactor * 125 / 100;
+					if (buttons & BT_CROUCH) SkillFactor = SkillFactor * 75 / 100;
+					PoisonIncrement = PoisonIncrement * SkillFactor / 100;
 				}
+				if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (\cyInput: %d\cu)]: %d\c-, Previous: %d, InputFactor: %d / 100, Frozen?: %d", buttons, PoisonIncrement, previousdelaycount, SkillFactor, FreezePlayer);
+				
+				// Check Characters & Armor
+				previousdelaycount = PoisonIncrement;
+				if (CharacterClass == 2)
+				{
+					SkillFactor = 1000;
+					if (Owner.CountInv("PearlyCorset") > 0) SkillFactor -= 83;
+					if (Owner.CountInv("DoveRibbon") > 0) SkillFactor -= 334;
+					if (Owner.CountInv("DivineShield") > 0) SkillFactor -= 83;
+					PoisonIncrement = PoisonIncrement * SkillFactor / 1000;
+					if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (Armor, Flora)]: %d\c-, Previous: %d, InputFactor: %d / 1000", PoisonIncrement, previousdelaycount, SkillFactor);
+				}
+				else
+				if (CharacterClass == 0 || CharacterClass == 1)
+				{
+					SkillFactor = 100;
+					if (Owner.CountInv("DSGreenArmorClass") > 0) SkillFactor -= 2; // (-2% for Green Armor)
+					if (Owner.CountInv("DSBlueArmorClass") > 0) SkillFactor -= 4; // (-4% for Blue Armor)
+					if (Owner.CountInv("DSStoneArmorClass1") > 0) SkillFactor -= 5; // (-5% for Stone Armor 1)
+					if (Owner.CountInv("DSDiamondArmorClass1") > 0) SkillFactor -= 7; // (-7% for Diamond Armor 1)
+					if (Owner.CountInv("DSStoneArmorClass2") > 0) SkillFactor -= 6; // (-6% for Stone Armor 2)
+					if (Owner.CountInv("DSDiamondArmorClass2") > 0) SkillFactor -= 8; // (-8% for Diamond Armor 2)
+					PoisonIncrement = PoisonIncrement * SkillFactor / 100;
+					if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 4 - Count Interval (Armor, Marines)]: %d\c-, Previous: %d, InputFactor: %d / 100", PoisonIncrement, previousdelaycount, SkillFactor);
+				}
+				
+				// Buffs
+				previousdelaycount = PoisonIncrement;
+				if (DQAcceleratleTimer > 0) PoisonIncrement *= 1.2; // Acceleratle = 120% Speed
+				if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 5a - Count Interval (Acceleratle)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+				
+				previousdelaycount = PoisonIncrement;
+				if (DQDeceleratleTimer > 0) PoisonIncrement *= 0.8; // Deceleratle = 80% Speed
+				if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 5b - Count Interval (Deceleratle)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+				
+				previousdelaycount = PoisonIncrement;
+				if (FatigueTimer > 0) PoisonIncrement *= 1.8; // Fatigue = 180% Speed
+				if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 6 - Count Interval (Fatigue)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+				
+				previousdelaycount = PoisonIncrement;
+				if (SleepTimer > 0) PoisonIncrement *= 0.2; // Sleep = 20% Speed
+				if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 7 - Count Interval (Sleep)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+				
+				previousdelaycount = PoisonIncrement;
+				if (BerserkTimer > 0) PoisonIncrement *= 1.5; // Berserk = 150% Speed
+				if (debugpoison && PoisonIncrement != previousdelaycount) Console.Printf("    \cuPoison Damage [Step 8 - Count Interval (Berserk)]: %d\c-, Previous: %d", PoisonIncrement, previousdelaycount);
+				
+				PoisonTimer += PoisonIncrement;
+				if (debugpoison) Console.Printf("    \cuPoison Damage [Step 9 - Timer]: %d / %d\c-, Increment: %d", PoisonTimer, PoisonMaxInterval, PoisonIncrement);
 
 				// Poison Damage
 				if (PoisonTimer >= PoisonMaxInterval)
@@ -4668,178 +4753,170 @@ class PlayerStatItem : Inventory
 			{
 				if (PlayerCurrentMP < PlayerMaxMP)
 				{
-					if (UsingInGameMenu != 0) // If using In-Game Menus
+					delaycount = 20;
+					if (debugmanaregen) Console.Printf("    \cnMP Regen [Step 1 - Base Count]: %d\c-", delaycount);
+					
+					// Stamina Upgrades [Strife]
+					previousdelaycount = delaycount;
+					SkillFactor = (StrifeStamLvl * 2) / 3;
+					delaycount += SkillFactor;
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 2 - Strife - Stamina Upgrade]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					// Accelerates MP Regen when Tension is Boosted
+					previousdelaycount = delaycount;
+					if (TensionLevel >= 1) delaycount += 1; // "5" = +1 [+5%]
+					if (TensionLevel >= 2) delaycount += 2; // "20" = +3 [+15%]
+					if (TensionLevel >= 3) delaycount += 2; // "50" = +5 [+25%]
+					if (TensionLevel >= 4) delaycount += 3; // "100" = +8 [+40%]
+					if (TensionLevel >= 5) delaycount += 3; // "250" = +11 [+55%]
+					if (TensionLevel >= 6) delaycount += 4; // "500" = +15 [+75%]
+					if (TensionLevel >= 7) delaycount += 5; // "1000" = +20 [+100%]
+					if (TensionLevel >= 5 && CallACS("MiscVarCheckDECORATE",184) == 0) delaycount *= frandompick[statitem2](1.0,1.05,1.1,1.15,1.2,1.25); // +~25%
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 3 - Tension]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					// PowerTrip Mode
+					previousdelaycount = delaycount;
+					if (dvds_musou_powertripmode == 1) delaycount *= 2.5; // 250%
+					if (dvds_musou_powertripmode == 2) delaycount *= 5.0; // 500%
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 4 - Musou/Power Trip Mode]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					previousdelaycount = delaycount;
+					if (DQAcceleratleTimer > 0) delaycount *= 1.2; // Acceleratle = 1.2x regen speed
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 5a - Acceleratle]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					previousdelaycount = delaycount;
+					if (DQDeceleratleTimer > 0) delaycount *= 0.8; // Deceleratle = 0.8x regen speed
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 5b - Deceleratle]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					previousdelaycount = delaycount;
+					if (FatigueTimer > 0) delaycount *= 0.2; // Fatigue = 0.2x regen speed
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 6 - Fatigue]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					previousdelaycount = delaycount;
+					if (GoETimer > 0) delaycount *= 5; // GoE 5x regen speed
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 7a - GoE]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					previousdelaycount = delaycount;
+					if (DivineAvatarTimer > 0) delaycount *= 1.125; // Divine Avatar = 1.125x regen speed
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 7b - Divine Avatar]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					previousdelaycount = delaycount;
+					if (SleepTimer > 0)
 					{
-						delaycount = 0;
-						if (debugmanaregen) Console.Printf("    \cjIn In-Game Menus\c-: %d / %d (%d)", PlayerCurrentMP, PlayerMaxMP, delaycount);
+						delaycount *= 5; // Sleep = 5x regen speed
+						PerkFactor = ((RegMPFstPerkLvl * 2000) + (RegMPFstEXPerkLvl * 5000)) + 10000;
+						delaycount = delaycount * PerkFactor / 10000; // "RegenMPFast" and "RegenMPFast EX" perks.
 					}
-					else
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 8 - Sleep]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					// Ruinous Shield - greatly reduces MP regeneration speed
+					previousdelaycount = delaycount;
+					if (CharacterClass == 2 && Owner.CountInv("RuinousShield") > 0) delaycount *= 0.375; // 37.5%
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 9 - Ruinous Shield]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					// RegenMPFast perks
+					previousdelaycount = delaycount;
+					perkfactor = 10;
+					if (RegMPFstPerkLvl > 0)
 					{
-						delaycount = 20;
-						if (debugmanaregen) Console.Printf("    \cnMP Regen [Step 1 - Base Count]: %d\c-", delaycount);
-
-						// Stamina Upgrades [Strife]
-						previousdelaycount = delaycount;
-						SkillFactor = (StrifeStamLvl * 2) / 3;
-						delaycount += SkillFactor;
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 2 - Strife - Stamina Upgrade]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-
-						// Accelerates MP Regen when Tension is Boosted
-						previousdelaycount = delaycount;
-						if (TensionLevel >= 1) delaycount += 1; // "5" = +1 [+5%]
-						if (TensionLevel >= 2) delaycount += 2; // "20" = +3 [+15%]
-						if (TensionLevel >= 3) delaycount += 2; // "50" = +5 [+25%]
-						if (TensionLevel >= 4) delaycount += 3; // "100" = +8 [+40%]
-						if (TensionLevel >= 5) delaycount += 3; // "250" = +11 [+55%]
-						if (TensionLevel >= 6) delaycount += 4; // "500" = +15 [+75%]
-						if (TensionLevel >= 7) delaycount += 5; // "1000" = +20 [+100%]
-						if (TensionLevel >= 5 && CallACS("MiscVarCheckDECORATE",184) == 0) delaycount *= frandompick[statitem2](1.0,1.05,1.1,1.15,1.2,1.25); // +~25%
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 3 - Tension]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-
-						// PowerTrip Mode
-						previousdelaycount = delaycount;
-						if (dvds_musou_powertripmode == 1) delaycount *= 2.5; // 250%
-						if (dvds_musou_powertripmode == 2) delaycount *= 5.0; // 500%
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 4 - Musou/Power Trip Mode]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-						
-						previousdelaycount = delaycount;
-						if (DQAcceleratleTimer > 0) delaycount *= 1.2; // Acceleratle = 1.2x regen speed
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 5a - Acceleratle]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-
-						previousdelaycount = delaycount;
-						if (DQDeceleratleTimer > 0) delaycount *= 0.8; // Deceleratle = 0.8x regen speed
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 5b - Deceleratle]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-
-						previousdelaycount = delaycount;
-						if (FatigueTimer > 0) delaycount *= 0.2; // Fatigue = 0.2x regen speed
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 6 - Fatigue]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-
-						previousdelaycount = delaycount;
-						if (GoETimer > 0) delaycount *= 5; // GoE 5x regen speed
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 7a - GoE]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-
-						previousdelaycount = delaycount;
-						if (DivineAvatarTimer > 0) delaycount *= 1.125; // Divine Avatar = 1.125x regen speed
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 7b - Divine Avatar]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-
-						previousdelaycount = delaycount;
-						if (SleepTimer > 0)
-						{
-							delaycount *= 5; // Sleep = 5x regen speed
-							PerkFactor = ((RegMPFstPerkLvl * 2000) + (RegMPFstEXPerkLvl * 5000)) + 10000;
-							delaycount = delaycount * PerkFactor / 10000; // "RegenMPFast" and "RegenMPFast EX" perks.
-						}
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 8 - Sleep]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-
-						// Ruinous Shield - greatly reduces MP regeneration speed
-						previousdelaycount = delaycount;
-						if (CharacterClass == 2 && Owner.CountInv("RuinousShield") > 0) delaycount *= 0.375; // 37.5%
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 9 - Ruinous Shield]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-					
-						// RegenMPFast perks
-						previousdelaycount = delaycount;
-						perkfactor = 10;
-						if (RegMPFstPerkLvl > 0)
-						{
-							PerkFactor = 10 + ((RegMPFstPerkLvl * 2) + (RegMPFstEXPerkLvl * 5));
-							delaycount = delaycount * PerkFactor / 10; // "RegenMPFast" and "RegenMPFast EX" perks.
-						}
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 10 - Regen MP Fast]: %d\c-, Previous: %d, Factor: %d / 10", delaycount, previousdelaycount, PerkFactor);
-					
-						// "Cleared of Mind" Perks
-						previousdelaycount = delaycount;
-						perkfactor = 80;
-						if (ClearMindPerkLvl > 0)
-						{
-							perkfactor = 80 + ((ClearMindPerkLvl * 2) + (ClearMindEXPerkLvl * 5));
-							delaycount = delaycount * perkfactor / 80;
-						}
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 11 - Cleared of Mind]: %d\c-, Previous: %d, Factor: %d / 80", delaycount, previousdelaycount, PerkFactor);
-						
-						// Checks Mana Regen Rate Menu Option
-						previousdelaycount = delaycount;
-						delaycount = delaycount * dvds_manaregenratemultiplier / 100;
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 12 - RegenMultiplier]: %d\c-, Previous: %d, Multiplier: %d%", delaycount, previousdelaycount, dvds_manaregenratemultiplier);
-						
-						// Focusing
-						previousdelaycount = delaycount;
-						if (IsFocusOn > 0)
-						{
-							// Slowly increases the speed of regen as focus lasts longer
-							if (FocusTimer >= 140) delaycount += 1; // [4 seconds]
-							if (FocusTimer >= 245) delaycount += 1; // [7 seconds]
-							if (FocusTimer >= 350) delaycount += 2; // [10 seconds]
-							if (FocusTimer >= 490) delaycount += 2; // [14 seconds]
-							if (FocusTimer >= 630) delaycount += 3; // [18 seconds]
-							if (FocusTimer >= 770) delaycount += 3; // [22 seconds]
-							if (FocusTimer >= 980) delaycount += 4; // [28 seconds]
-							if (FocusTimer >= 1190) delaycount += 4; // [34 seconds]
-							if (FocusTimer >= 1470) delaycount += 5; // [42 seconds]
-							if (FocusTimer >= 1750) delaycount += 5; // [50 seconds]
-							if (FocusTimer >= 2100) delaycount += 6; // [60 seconds]
-							if (FocusTimer >= 2450) delaycount += 6; // [70 seconds]
-							if (FocusTimer >= 2870) delaycount += 7; // [82 seconds]
-							if (FocusTimer >= 3290) delaycount += 7; // [94 seconds]
-							if (FocusTimer >= 3780) delaycount += 8; // [108 seconds]
-							if (FocusTimer >= 4270) delaycount += 8; // [122 seconds]
-							if (FocusTimer >= 2100) delaycount = (delaycount * 3) / 2; // [60 seconds]
-							if (FocusTimer >= 4200) delaycount = (delaycount * 3) / 2; // [60 seconds]
-					
-							if (StrifeStamLvl > 0)
-							{
-								if (FocusTimer >= 350) delaycount += (StrifeStamLvl * 1) / 4;
-								if (FocusTimer >= 700 && StrifeStamLvl >= 2) delaycount += (StrifeStamLvl * 1) / 4;
-								if (FocusTimer >= 1050 && StrifeStamLvl >= 4) delaycount += (StrifeStamLvl * 1) / 3;
-								if (FocusTimer >= 1400 && StrifeStamLvl >= 6) delaycount += (StrifeStamLvl * 1) / 3;
-								if (FocusTimer >= 1750 && StrifeStamLvl >= 8) delaycount += (StrifeStamLvl * 1) / 2;
-								if (FocusTimer >= 2100 && StrifeStamLvl >= 10) delaycount += (StrifeStamLvl * 1) / 2;
-							}
-					
-							if (random[statitem](1,25) == 1) delaycount *= 8; else delaycount *= 4;
-					
-							FocusHumTimer = FocusTimer % 25;
-							if (FocusTimer >= 140) FocusHumTimer = FocusTimer % 24;
-							if (FocusTimer >= 245) FocusHumTimer = FocusTimer % 23;
-							if (FocusTimer >= 315) FocusHumTimer = FocusTimer % 22;
-							if (FocusTimer >= 350) FocusHumTimer = FocusTimer % 21;
-							if (FocusTimer >= 490) FocusHumTimer = FocusTimer % 19;
-							if (FocusTimer >= 630) FocusHumTimer = FocusTimer % 17;
-							if (FocusTimer >= 910) FocusHumTimer = FocusTimer % 15;
-							if (FocusTimer >= 2100) FocusHumTimer = FocusTimer % 12;
-
-							if (FocusHumTimer == 1) owner.A_StartSound("focushum",7,CHANF_DEFAULT,1.125);
-						}
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 13 - Focusing]: %d\c-, Previous: %d, FocusHumTimer: %d, FocusTimer: %d", delaycount, previousdelaycount, FocusHumTimer, FocusTimer);
-					
-						// Weapons
-						previousdelaycount = delaycount;
-						If (weapon is "SapphireWandNew")
-						{
-							if (WandMastPerkLvl <= 0) delaycount *= 1.05;
-							if (WandMastPerkLvl == 1) delaycount *= 1.25;
-							if (WandMastPerkLvl == 2) delaycount *= 1.45;
-							if (WandMastPerkLvl == 3) delaycount *= 1.65;
-							if (WandMastPerkLvl == 4) delaycount *= 1.85;
-							if (WandMastPerkLvl >= 5) delaycount *= 2.05;
-						}
-						If (weapon is "DualSapphireWandsNew")
-						{
-							if (WandMastPerkLvl <= 0) delaycount *= 1.10;
-							if (WandMastPerkLvl == 1) delaycount *= 1.50;
-							if (WandMastPerkLvl == 2) delaycount *= 1.90;
-							if (WandMastPerkLvl == 3) delaycount *= 2.30;
-							if (WandMastPerkLvl == 4) delaycount *= 2.70;
-							if (WandMastPerkLvl >= 5) delaycount *= 3.10;
-						}
-						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 14 - Weapon Checking]: %d\c-, Previous: %d", delaycount, previousdelaycount);
-
-						// Final Checks
-						previousdelaycount = delaycount;
-						if (delaycount < 1) delaycount = 1;
-						// If Player is "Conscious" and Mana is below Max
-						MPRegenTimer += delaycount;
-						if (debugmanaregen) Console.Printf("    \cnMP Regen [Step 15 - Timer Check]: %d / %d\c-, delaycount: %d, Previous: %d", MPRegenTimer, MPDelayInterval, delaycount, previousdelaycount);
+						PerkFactor = 10 + ((RegMPFstPerkLvl * 2) + (RegMPFstEXPerkLvl * 5));
+						delaycount = delaycount * PerkFactor / 10; // "RegenMPFast" and "RegenMPFast EX" perks.
 					}
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 10 - Regen MP Fast]: %d\c-, Previous: %d, Factor: %d / 10", delaycount, previousdelaycount, PerkFactor);
+					
+					// "Cleared of Mind" Perks
+					previousdelaycount = delaycount;
+					perkfactor = 80;
+					if (ClearMindPerkLvl > 0)
+					{
+						perkfactor = 80 + ((ClearMindPerkLvl * 2) + (ClearMindEXPerkLvl * 5));
+						delaycount = delaycount * perkfactor / 80;
+					}
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 11 - Cleared of Mind]: %d\c-, Previous: %d, Factor: %d / 80", delaycount, previousdelaycount, PerkFactor);
+					
+					// Checks Mana Regen Rate Menu Option
+					previousdelaycount = delaycount;
+					delaycount = delaycount * dvds_manaregenratemultiplier / 100;
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 12 - RegenMultiplier]: %d\c-, Previous: %d, Multiplier: %d%", delaycount, previousdelaycount, dvds_manaregenratemultiplier);
+					
+					// Focusing
+					previousdelaycount = delaycount;
+					if (IsFocusOn > 0)
+					{
+						// Slowly increases the speed of regen as focus lasts longer
+						if (FocusTimer >= 140) delaycount += 1; // [4 seconds]
+						if (FocusTimer >= 245) delaycount += 1; // [7 seconds]
+						if (FocusTimer >= 350) delaycount += 2; // [10 seconds]
+						if (FocusTimer >= 490) delaycount += 2; // [14 seconds]
+						if (FocusTimer >= 630) delaycount += 3; // [18 seconds]
+						if (FocusTimer >= 770) delaycount += 3; // [22 seconds]
+						if (FocusTimer >= 980) delaycount += 4; // [28 seconds]
+						if (FocusTimer >= 1190) delaycount += 4; // [34 seconds]
+						if (FocusTimer >= 1470) delaycount += 5; // [42 seconds]
+						if (FocusTimer >= 1750) delaycount += 5; // [50 seconds]
+						if (FocusTimer >= 2100) delaycount += 6; // [60 seconds]
+						if (FocusTimer >= 2450) delaycount += 6; // [70 seconds]
+						if (FocusTimer >= 2870) delaycount += 7; // [82 seconds]
+						if (FocusTimer >= 3290) delaycount += 7; // [94 seconds]
+						if (FocusTimer >= 3780) delaycount += 8; // [108 seconds]
+						if (FocusTimer >= 4270) delaycount += 8; // [122 seconds]
+						if (FocusTimer >= 2100) delaycount = (delaycount * 3) / 2; // [60 seconds]
+						if (FocusTimer >= 4200) delaycount = (delaycount * 3) / 2; // [60 seconds]
+					
+						if (StrifeStamLvl > 0)
+						{
+							if (FocusTimer >= 350) delaycount += (StrifeStamLvl * 1) / 4;
+							if (FocusTimer >= 700 && StrifeStamLvl >= 2) delaycount += (StrifeStamLvl * 1) / 4;
+							if (FocusTimer >= 1050 && StrifeStamLvl >= 4) delaycount += (StrifeStamLvl * 1) / 3;
+							if (FocusTimer >= 1400 && StrifeStamLvl >= 6) delaycount += (StrifeStamLvl * 1) / 3;
+							if (FocusTimer >= 1750 && StrifeStamLvl >= 8) delaycount += (StrifeStamLvl * 1) / 2;
+							if (FocusTimer >= 2100 && StrifeStamLvl >= 10) delaycount += (StrifeStamLvl * 1) / 2;
+						}
+					
+						if (random[statitem](1,25) == 1) delaycount *= 8; else delaycount *= 4;
+					
+						FocusHumTimer = FocusTimer % 25;
+						if (FocusTimer >= 140) FocusHumTimer = FocusTimer % 24;
+						if (FocusTimer >= 245) FocusHumTimer = FocusTimer % 23;
+						if (FocusTimer >= 315) FocusHumTimer = FocusTimer % 22;
+						if (FocusTimer >= 350) FocusHumTimer = FocusTimer % 21;
+						if (FocusTimer >= 490) FocusHumTimer = FocusTimer % 19;
+						if (FocusTimer >= 630) FocusHumTimer = FocusTimer % 17;
+						if (FocusTimer >= 910) FocusHumTimer = FocusTimer % 15;
+						if (FocusTimer >= 2100) FocusHumTimer = FocusTimer % 12;
+					
+						if (FocusHumTimer == 1) owner.A_StartSound("focushum",7,CHANF_DEFAULT,1.125);
+					}
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 13 - Focusing]: %d\c-, Previous: %d, FocusHumTimer: %d, FocusTimer: %d", delaycount, previousdelaycount, FocusHumTimer, FocusTimer);
+					
+					// Weapons
+					previousdelaycount = delaycount;
+					If (weapon is "SapphireWandNew")
+					{
+						if (WandMastPerkLvl <= 0) delaycount *= 1.05;
+						if (WandMastPerkLvl == 1) delaycount *= 1.25;
+						if (WandMastPerkLvl == 2) delaycount *= 1.45;
+						if (WandMastPerkLvl == 3) delaycount *= 1.65;
+						if (WandMastPerkLvl == 4) delaycount *= 1.85;
+						if (WandMastPerkLvl >= 5) delaycount *= 2.05;
+					}
+					If (weapon is "DualSapphireWandsNew")
+					{
+						if (WandMastPerkLvl <= 0) delaycount *= 1.10;
+						if (WandMastPerkLvl == 1) delaycount *= 1.50;
+						if (WandMastPerkLvl == 2) delaycount *= 1.90;
+						if (WandMastPerkLvl == 3) delaycount *= 2.30;
+						if (WandMastPerkLvl == 4) delaycount *= 2.70;
+						if (WandMastPerkLvl >= 5) delaycount *= 3.10;
+					}
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 14 - Weapon Checking]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					
+					// Final Checks
+					previousdelaycount = delaycount;
+					if (delaycount < 1) delaycount = 1;
+					// If Player is "Conscious" and Mana is below Max
+					MPRegenTimer += delaycount;
+					if (debugmanaregen) Console.Printf("    \cnMP Regen [Step 15 - Timer Check]: %d / %d\c-, delaycount: %d, Previous: %d", MPRegenTimer, MPDelayInterval, delaycount, previousdelaycount);
 				}
 				else
 				{
@@ -5421,7 +5498,6 @@ class PlayerStatItem : Inventory
 				if (staminaregenfinal < 1) staminaregenfinal = 1;
 				if (debugstamregen) Console.Printf("    \cdStamina Regeneration [Step 20: LowCap/FINAL]: %d\c-, Previous: %d", staminaregenfinal, staminaregenbase);
 
-				if (UsingInGameMenu != 0) staminaregenfinal = 0; // If using In-Game Menus
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) > 0 || Owner.CountInv("IsUnconscious") > 0) { }
 				else // If Player is "Conscious", allow their Stamina Regen to count
 				{
@@ -5662,7 +5738,6 @@ class PlayerStatItem : Inventory
 				if (staminaregenfinal > -1) staminaregenfinal = -1;
 				if (debugstamregen) Console.Printf("    \cgStamina Degeneration [Step 20: LowCap/FINAL]: %d\c-, Previous: %d", staminaregenfinal, staminaregenbase);
 
-				if (UsingInGameMenu != 0) staminaregenfinal = 0; // If using In-Game Menus
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) > 0 || Owner.CountInv("IsUnconscious") > 0) { }
 				else // If Player is "Conscious", allow their Stamina Regen to Count
 				{
@@ -5824,7 +5899,7 @@ class PlayerStatItem : Inventory
 		int TimeFreezeTimer = CallACS("GetBuffTimer",5);
 		int GoETimer = CallACS("GetBuffTimer",129);
 		int UsingInGameMenu = CallACS("MenuVarCheckDECORATE",0);
-		if (playeractor)
+		if (playeractor && UsingInGameMenu == 0)
 		{
 			int ComboRank = CallACS("MiscVarCheckDECORATE",51);
 			int TimerMulti, TimerPart1;
@@ -5848,7 +5923,7 @@ class PlayerStatItem : Inventory
 			else if (comboamount >= combolevel5) ComboRank = 5; // Rank Z
 			if (dvdsdebug_showcombostuff && comboamount > 0) Console.Printf("Combo Amount: %d, Combo Rank: %d", comboamount, ComboRank);
 			
-			if (EXPComboTimer > 0 && UsingInGameMenu == 0)
+			if (EXPComboTimer > 0)
 			{
 				if (CallACS("GetBuffTimer",7) > 0)
 				{
@@ -7393,7 +7468,7 @@ class PlayerStatItem : Inventory
 		int UsingInGameMenu = CallACS("MenuVarCheckDECORATE",0);
 		int MenuModeToggle = CallACS("MenuVarCheckDECORATE",0);
 		
-		if (playeractor)
+		if (playeractor && UsingInGameMenu == 0)
 		{
 			int TensionChargeFailRate;
 			int TensionChargeTimeMax;
@@ -7572,7 +7647,7 @@ class PlayerStatItem : Inventory
 			if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 16 - Cooldown Calc P4 - Kill Counter]: %d, KillCount: %d", TensionCoolDownRatio, KillCounter);
 			
 			int DashTimer = CallACS("MiscVarCheckDECORATE",166);
-			if (DashTimer <= 0 && UsingInGameMenu == 0) TensionCooldownTimer -= TensionCoolDownRatio;
+			if (DashTimer <= 0) TensionCooldownTimer -= TensionCoolDownRatio;
 			if (TensionCooldownTimer <= 0) { TensionCooldownTimer = 0; TensionMaxCooldownTimer = TensionCooldownTimer; }
 			if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 17 - Cooldown Calc P5 - Final Countdown]: Timer: %d / %d, Decrease: %d", TensionCooldownTimer, TensionMaxCooldownTimer, TensionCoolDownRatio);
 			
@@ -7775,7 +7850,7 @@ class PlayerStatItem : Inventory
 				TensionChargeAmount += C3;
 				if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 19 - Charge Up Input]: %d, input-change: %d", TensionChargeAmount, C3);
 				
-				if (TensionCountingDown <= 0 && UsingInGameMenu == 0) TensionWarmupTimer += TensionChargeAmount;
+				if (TensionCountingDown <= 0) TensionWarmupTimer += TensionChargeAmount;
 				if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 20 - Increase Warmup/Charge]:  %d / %d, Charge: %d", TensionWarmupTimer, TensionChargeTimeMax, TensionChargeAmount);
 
 				if (TensionWarmupTimer <= 0) TensionWarmupTimer = 0;
@@ -8052,7 +8127,7 @@ class PlayerStatItem : Inventory
 					// TensionOverCharge Allowed?
 					if (TensionOverChargeAllowed > 1)
 					{
-						if (MenuModeToggle == 0) TensionOverPsycheTimer += TensionOCTimer1Amount; 
+						TensionOverPsycheTimer += TensionOCTimer1Amount; 
 					}
 					else
 					{
@@ -8065,7 +8140,7 @@ class PlayerStatItem : Inventory
 						TensionOverPsycheTimer = TensionMaxOverPsycheTimer;
 						if (TensionOverChargeAllowed > 1) 
 						{
-							if (MenuModeToggle == 0) TensionOverchargeTimer += TensionOCTimer2Amount;
+							TensionOverchargeTimer += TensionOCTimer2Amount;
 						}
 						else 
 						{
@@ -8164,7 +8239,7 @@ class PlayerStatItem : Inventory
 						tensiontimerdecrease = (tensiontimerdecrease * PerkFactor) / 10000;
 						if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 27e - TensionDecrease - PsycheFast]: %d, PerkFactor: %d / 10000", tensiontimerdecrease, PerkFactor);
 
-						If (UsingInGameMenu == 0) TensionTimer -= tensiontimerdecrease;
+						TensionTimer -= tensiontimerdecrease;
 						if (dvdsdebug_showtensioninformation) Console.Printf("Tension [Step 28 - TensionDecrease - Decrement]: %d, Decrease: %d", TensionTimer, tensiontimerdecrease);
 					}
 					
@@ -8356,6 +8431,7 @@ class PlayerStatItem : Inventory
 					mo.Destroy(); 
 				}
 			}
+			//if (dvdsdebug_showtensioninformation) Console.Printf("\cyTics: %d", level.totaltime);
 		}
 	}
 
@@ -8451,91 +8527,85 @@ class PlayerStatItem : Inventory
 			{
 				owner.A_SetInventory("AetheriusTimeFreezerMenu",0);
 				owner.A_SetInventory("MenuInvulnerability",0);
-			}
-			else
-			{
-				owner.A_SetInventory("AetheriusTimeFreezerMenu",1);
-				owner.A_SetInventory("MenuInvulnerability",1);
-			}
-			// Light/Infared
-			if (CallACS("GetBuffTimer",0) > 0)
-			{
-				owner.A_SetInventory("NightVisionSpell",1);
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",0,3,1);
-			}
-			else
-			{
-				owner.A_SetInventory("NightVisionSpell",0);
-			}
-			
-			// Invisibility
-			if (CallACS("GetBuffTimer",1) > 0)
-			{
-				if (CallACS("GetBuffTimer",1) == 64) owner.A_StartSound("buffs/invisfading",202,CHANF_DEFAULT,2.25,ATTN_NORM);
-
-				owner.A_SetInventory("InvisiblitySpell",1);
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",1,3,1);
-			}
-			else
-			{
-				owner.A_SetInventory("InvisiblitySpell",0);
-			}
-			
-			// Flight
-			if (CallACS("GetBuffTimer",2) > 0)
-			{
-				if (CallACS("GetBuffTimer",2) == 53) owner.A_StartSound("buffs/flightfading",206,CHANF_DEFAULT,2.25,ATTN_NORM);
-
-				owner.A_SetInventory("FlightSpell",1);
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",2,3,1);
-			}
-			else
-			{
-				owner.A_SetInventory("FlightSpell",0);
-			}
-			
-			// Stealth
-			if (CallACS("GetBuffTimer",3) > 0)
-			{
-				owner.player.cheats |= CF_NOTARGET; // Turns On
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",3,3,1);
-			}
-			else
-			{
-				owner.player.cheats &= ~CF_NOTARGET; // Turns Off
-			}
-			
-			// Invulnerability
-			if (CallACS("GetBuffTimer",4) > 0)
-			{
-				//if ((CallACS("GetBuffTimer",4) % 70) == 69) owner.A_StartSound("buffs/invulnpulse",200,CHANF_DEFAULT,frandom(0.75,1.0),ATTN_NORM);
-				if (CallACS("GetBuffTimer",4) == 106) owner.A_StartSound("buffs/invulnfading",201,CHANF_DEFAULT,2.25,ATTN_NORM);
-
-				owner.A_SetInventory("InvulnerabilitySpell",1);
-				owner.A_SetInventory("IsInvulnerable",1);
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",4,3,1);
-			}
-			else
-			{
-				owner.A_SetInventory("InvulnerabilitySpell",0);
-				owner.A_SetInventory("IsInvulnerable",0);
-			}
-			
-			// Time Stop
-			int BeatTimer;
-			int TickTimer;
-			double BeatVol = 0.5;
-			if (CallACS("GetBuffTimer",5) > 0)
-			{
-				if (PrevTimeFreezeTimer == 0)
+				
+				// Light/Infared
+				if (CallACS("GetBuffTimer",0) > 0)
 				{
-					owner.A_StopSound(CHAN_6);
-					if (dvds_timefreezesound == 0) owner.A_StartSound("TimeFreezeIn4",CHAN_6,CHANF_DEFAULT,0.875,ATTN_NONE); 
-					else owner.A_StartSound("TheWorldIn",CHAN_6,CHANF_DEFAULT,0.875,ATTN_NONE); 
+					owner.A_SetInventory("NightVisionSpell",1);
+					CallACS("GetBuffTimer",0,3,1);
 				}
-				owner.A_SetInventory("AetheriusTimeFreezer",1);
-				if (UsingInGameMenu == 0)
+				else
 				{
+					owner.A_SetInventory("NightVisionSpell",0);
+				}
+				
+				// Invisibility
+				if (CallACS("GetBuffTimer",1) > 0)
+				{
+					if (CallACS("GetBuffTimer",1) == 64) owner.A_StartSound("buffs/invisfading",202,CHANF_DEFAULT,2.25,ATTN_NORM);
+	
+					owner.A_SetInventory("InvisiblitySpell",1);
+					CallACS("GetBuffTimer",1,3,1);
+				}
+				else
+				{
+					owner.A_SetInventory("InvisiblitySpell",0);
+				}
+				
+				// Flight
+				if (CallACS("GetBuffTimer",2) > 0)
+				{
+					if (CallACS("GetBuffTimer",2) == 53) owner.A_StartSound("buffs/flightfading",206,CHANF_DEFAULT,2.25,ATTN_NORM);
+	
+					owner.A_SetInventory("FlightSpell",1);
+					CallACS("GetBuffTimer",2,3,1);
+				}
+				else
+				{
+					owner.A_SetInventory("FlightSpell",0);
+				}
+				
+				// Stealth
+				if (CallACS("GetBuffTimer",3) > 0)
+				{
+					owner.player.cheats |= CF_NOTARGET; // Turns On
+					CallACS("GetBuffTimer",3,3,1);
+				}
+				else
+				{
+					owner.player.cheats &= ~CF_NOTARGET; // Turns Off
+				}
+				
+				// Invulnerability
+				if (CallACS("GetBuffTimer",4) > 0)
+				{
+					//if ((CallACS("GetBuffTimer",4) % 70) == 69) owner.A_StartSound("buffs/invulnpulse",200,CHANF_DEFAULT,frandom(0.75,1.0),ATTN_NORM);
+					if (CallACS("GetBuffTimer",4) == 106) owner.A_StartSound("buffs/invulnfading",201,CHANF_DEFAULT,2.25,ATTN_NORM);
+
+					owner.A_SetInventory("InvulnerabilitySpell",1);
+					owner.A_SetInventory("IsInvulnerable",1);
+					CallACS("GetBuffTimer",4,3,1);
+				}
+				else
+				{
+					owner.A_SetInventory("InvulnerabilitySpell",0);
+					owner.A_SetInventory("IsInvulnerable",0);
+				}
+				
+				// Time Stop
+				int BeatTimer;
+				int TickTimer;
+				double BeatVol = 0.5;
+				if (CallACS("GetBuffTimer",5) > 0)
+				{
+					if (PrevTimeFreezeTimer == 0)
+					{
+						owner.A_StopSound(CHAN_6);
+						if (dvds_timefreezesound == 0) owner.A_StartSound("TimeFreezeIn4",CHAN_6,CHANF_DEFAULT,0.875,ATTN_NONE); 
+						else owner.A_StartSound("TheWorldIn",CHAN_6,CHANF_DEFAULT,0.875,ATTN_NONE); 
+					}
+					owner.A_SetInventory("AetheriusTimeFreezer",1);
+
 					CallACS("GetBuffTimer",5,3,1);
 					TickTimer = CallACS("GetBuffTimer",5) % 35;
 					if (TickTimer == 0 && PrevTimeFreezeTimer != 0)
@@ -8616,257 +8686,265 @@ class PlayerStatItem : Inventory
 						}
 					}
 				}
-			}
-			else
-			{
-				if (UsingInGameMenu == 0) owner.A_SetInventory("AetheriusTimeFreezer",0);
-			}
-			PrevTimeFreezeTimer = CallACS("GetBuffTimer",5);
-			
-			// Fear Aura Effects
-			if (CallACS("GetBuffTimer",6) > 0)
-			{
-				owner.A_SetInventory("PowerFrightener",1);
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",6,3,1);
-			}
-			else
-			{
-				owner.A_SetInventory("PowerFrightener",0);
-			}
-			
-			// Divine Avatar Effects
-			if (CallACS("GetBuffTimer",7) > 0)
-			{
-				if (CallACS("GetBuffTimer",7) == 62) owner.A_StartSound("buffs/divineavatarfading",205,CHANF_DEFAULT,2.25,ATTN_NORM);
-
-				owner.A_SetInventory("DivineAvatarDoubleFiringSpeed",1);
-				owner.A_SetInventory("DivineAvatarHighJump",1);
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",7,3,1);
-			}
-			else
-			{
-				owner.A_SetInventory("DivineAvatarDoubleFiringSpeed",0);
-				owner.A_SetInventory("DivineAvatarHighJump",0);
-				CallACS("MiscVarSetDECORATE",14,0);
-			}
-			
-			// Speader Aura Lv. 1 Effects
-			if (CallACS("GetBuffTimer",9) > 0)
-			{
-				CallACS("GetBuffTimer",8,1,0);
-				owner.A_SetInventory("SpreaderAura1",0);
-			}
-			else
-			{
-				if (CallACS("GetBuffTimer",8) > 0)
+				else
 				{
-					if (CallACS("GetBuffTimer",8) == 53) owner.A_StartSound("buffs/spread1fading",207,CHANF_DEFAULT,2.25,ATTN_NORM);
-
-					owner.A_SetInventory("SpreaderAura1",1);
-					if (UsingInGameMenu == 0) CallACS("GetBuffTimer",8,3,1);
+					owner.A_SetInventory("AetheriusTimeFreezer",0);
+				}
+				PrevTimeFreezeTimer = CallACS("GetBuffTimer",5);
+				
+				// Fear Aura Effects
+				if (CallACS("GetBuffTimer",6) > 0)
+				{
+					owner.A_SetInventory("PowerFrightener",1);
+					CallACS("GetBuffTimer",6,3,1);
 				}
 				else
 				{
+					owner.A_SetInventory("PowerFrightener",0);
+				}
+				
+				// Divine Avatar Effects
+				if (CallACS("GetBuffTimer",7) > 0)
+				{
+					if (CallACS("GetBuffTimer",7) == 62) owner.A_StartSound("buffs/divineavatarfading",205,CHANF_DEFAULT,2.25,ATTN_NORM);
+
+					owner.A_SetInventory("DivineAvatarDoubleFiringSpeed",1);
+					owner.A_SetInventory("DivineAvatarHighJump",1);
+					CallACS("GetBuffTimer",7,3,1);
+				}
+				else
+				{
+					owner.A_SetInventory("DivineAvatarDoubleFiringSpeed",0);
+					owner.A_SetInventory("DivineAvatarHighJump",0);
+					CallACS("MiscVarSetDECORATE",14,0);
+				}
+				
+				// Speader Aura Lv. 1 Effects
+				if (CallACS("GetBuffTimer",9) > 0)
+				{
+					CallACS("GetBuffTimer",8,1,0);
 					owner.A_SetInventory("SpreaderAura1",0);
 				}
-			}
-			
-			// Speader Aura Lv. 2 Effects
-			if (CallACS("GetBuffTimer",9) > 0)
-			{
-				if (CallACS("GetBuffTimer",9) == 62) owner.A_StartSound("buffs/spread2fading",207,CHANF_DEFAULT,2.25,ATTN_NORM);
-
-				owner.A_SetInventory("SpreaderAura2",1);
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",9,3,1);
-			}
-			else
-			{
-				owner.A_SetInventory("SpreaderAura2",0);
-			}
-			
-			// Oomph Effects
-			if (CallACS("GetBuffTimer",10) > 0) { if (UsingInGameMenu == 0) CallACS("GetBuffTimer",10,3,1); }
-			
-			// Buff Effects
-			if (CallACS("GetBuffTimer",11) > 0) { if (UsingInGameMenu == 0) CallACS("GetBuffTimer",11,3,1); }
-			
-			// Acceleratle Effects
-			if (CallACS("GetBuffTimer",12) > 0) { if (UsingInGameMenu == 0) CallACS("GetBuffTimer",12,3,1); }
-			
-			// Blunt Effects
-			if (CallACS("GetBuffTimer",13) > 0)
-			{
-				BaseTimerIncrement = 1; 
-				if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
-				if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
-				if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",13,3,BaseTimerIncrement);
-			}
-			
-			// Sap Effects
-			if (CallACS("GetBuffTimer",14) > 0)
-			{
-				BaseTimerIncrement = 1; 
-				if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
-				if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
-				if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",14,3,BaseTimerIncrement);
-			}
-			
-			// Deceleratle Effects
-			if (CallACS("GetBuffTimer",15) > 0)
-			{
-				BaseTimerIncrement = 1; 
-				if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
-				if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
-				if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",15,3,BaseTimerIncrement);
-			}
-			
-			// Poison Effects
-			if (CallACS("GetBuffTimer",16) > 0)
-			{
-				BaseTimerIncrement = 1; 
-				if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
-				if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
-				if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",16,3,BaseTimerIncrement);
-			}
-			
-			// Corrosion Effects
-			if (CallACS("GetBuffTimer",17) > 0)
-			{
-				BaseTimerIncrement = 1; 
-				if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
-				if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
-				if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",17,3,BaseTimerIncrement);
-			}
-			
-			// Fatigue Effects
-			if (CallACS("GetBuffTimer",18) > 0)
-			{
-				BaseTimerIncrement = 1; 
-				if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
-				if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
-				if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",18,3,BaseTimerIncrement);
-			}
-			
-			// Blind Effects
-			if (CallACS("GetBuffTimer",19) > 0)
-			{
-				CallACS("MiscVarSetDECORATE",248,1,1);
-				if (CallACS("MiscVarCheckDECORATE",248) == 1)
+				else
 				{
-					owner.A_StartSound("misc/blinded",CHAN_5,CHANF_DEFAULT,1.0,ATTN_NORM);
-					if (CharacterClass == 2) { owner.A_StopSound(CHAN_VOICE); owner.A_StartSound("FloraGotBlinded",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM); }
-				}
-				BaseTimerIncrement = 1; 
-				if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
-				if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
-				if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",19,3,BaseTimerIncrement);
-			}
-			else
-			{
-				CallACS("MiscVarSetDECORATE",248,0,0);
-			}
-			
-			// Sleep Effects
-			if (CallACS("GetBuffTimer",20) > 0)
-			{
-				CallACS("MiscVarSetDECORATE",249,1,1);
-				if (CallACS("MiscVarCheckDECORATE",249) == 1)
-				{
-					owner.A_StartSound("DraQue/fallasleep",CHAN_5,CHANF_DEFAULT,1.0,ATTN_NORM);
-					if (CharacterClass == 2) { owner.A_StopSound(CHAN_VOICE); owner.A_StartSound("FloraFallAsleep",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM); }
-				}
-				BaseTimerIncrement = 1; 
-				if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
-				if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
-				if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",20,3,BaseTimerIncrement);
-			}
-			else
-			{
-				CallACS("MiscVarSetDECORATE",249,0,0);
-			}
-			
-			
-			// Silence Effects
-			if (CallACS("GetBuffTimer",21) > 0)
-			{
-				CallACS("MiscVarSetDECORATE",270,1,1);
-				if (CallACS("MiscVarCheckDECORATE",270) == 1)
-				{
-					owner.A_StartSound("DraQue/sealed",CHAN_5,CHANF_DEFAULT,1.0,ATTN_NORM);
-					//if (CharacterClass == 2) { owner.A_StopSound(CHAN_VOICE); owner.A_StartSound("FloraSpSealed",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM); }
-				}
-				BaseTimerIncrement = 1; 
-				if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
-				if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
-				if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",21,3,BaseTimerIncrement);
-			}
-			else
-			{
-				CallACS("MiscVarSetDECORATE",270,0,0);
-			}
-			
-			// RadSphere Effects
-			if (CallACS("GetBuffTimer",22) > 0)
-			{
-				if (CallACS("GetBuffTimer",22) == 75) owner.A_StartSound("buffs/bioshieldfading",203,CHANF_DEFAULT,2.25,ATTN_NORM);
+					if (CallACS("GetBuffTimer",8) > 0)
+					{
+						if (CallACS("GetBuffTimer",8) == 53) owner.A_StartSound("buffs/spread1fading",207,CHANF_DEFAULT,2.25,ATTN_NORM);
 
-				if (ClassicDoomType == 4) owner.A_SetInventory("AetheriusPowerMask",1); else owner.A_SetInventory("PowerIronFeet",1);
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",22,3,1);
-			}
-			else
-			{
-				if (ClassicDoomType == 4) owner.A_SetInventory("AetheriusPowerMask",0); else owner.A_SetInventory("PowerIronFeet",0);
-			}
-			
-			// Berserk Effects
-			if (CallACS("GetBuffTimer",23) > 0)
-			{
-				if (CallACS("GetBuffTimer",23) == 48) owner.A_StartSound("buffs/berserkfading",204,CHANF_DEFAULT,2.25,ATTN_NORM);
+						owner.A_SetInventory("SpreaderAura1",1);
+						CallACS("GetBuffTimer",8,3,1);
+					}
+					else
+					{
+						owner.A_SetInventory("SpreaderAura1",0);
+					}
+				}
+				
+				// Speader Aura Lv. 2 Effects
+				if (CallACS("GetBuffTimer",9) > 0)
+				{
+					if (CallACS("GetBuffTimer",9) == 62) owner.A_StartSound("buffs/spread2fading",207,CHANF_DEFAULT,2.25,ATTN_NORM);
 
-				owner.A_SetInventory("AetheriusPowerStrength", 1);
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",23,3,1);
+					owner.A_SetInventory("SpreaderAura2",1);
+					CallACS("GetBuffTimer",9,3,1);
+				}
+				else
+				{
+					owner.A_SetInventory("SpreaderAura2",0);
+				}
+				
+				// Oomph Effects
+				if (CallACS("GetBuffTimer",10) > 0) { CallACS("GetBuffTimer",10,3,1); }
+				
+				// Buff Effects
+				if (CallACS("GetBuffTimer",11) > 0) { CallACS("GetBuffTimer",11,3,1); }
+				
+				// Acceleratle Effects
+				if (CallACS("GetBuffTimer",12) > 0) { CallACS("GetBuffTimer",12,3,1); }
+				
+				// Blunt Effects
+				if (CallACS("GetBuffTimer",13) > 0)
+				{
+					BaseTimerIncrement = 1; 
+					if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
+					if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
+					if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
+					CallACS("GetBuffTimer",13,3,BaseTimerIncrement);
+				}
+				
+				// Sap Effects
+				if (CallACS("GetBuffTimer",14) > 0)
+				{
+					BaseTimerIncrement = 1; 
+					if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
+					if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
+					if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
+					CallACS("GetBuffTimer",14,3,BaseTimerIncrement);
+				}
+				
+				// Deceleratle Effects
+				if (CallACS("GetBuffTimer",15) > 0)
+				{
+					BaseTimerIncrement = 1; 
+					if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
+					if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
+					if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
+					CallACS("GetBuffTimer",15,3,BaseTimerIncrement);
+				}
+				
+				// Poison Effects
+				if (CallACS("GetBuffTimer",16) > 0)
+				{
+					BaseTimerIncrement = 1; 
+					if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
+					if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
+					if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
+					CallACS("GetBuffTimer",16,3,BaseTimerIncrement);
+				}
+				
+				// Corrosion Effects
+				if (CallACS("GetBuffTimer",17) > 0)
+				{
+					BaseTimerIncrement = 1; 
+					if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
+					if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
+					if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
+					CallACS("GetBuffTimer",17,3,BaseTimerIncrement);
+				}
+				
+				// Fatigue Effects
+				if (CallACS("GetBuffTimer",18) > 0)
+				{
+					BaseTimerIncrement = 1; 
+					if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
+					if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
+					if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
+					CallACS("GetBuffTimer",18,3,BaseTimerIncrement);
+				}
+				
+				// Blind Effects
+				if (CallACS("GetBuffTimer",19) > 0)
+				{
+					CallACS("MiscVarSetDECORATE",248,1,1);
+					if (CallACS("MiscVarCheckDECORATE",248) == 1)
+					{
+						owner.A_StartSound("misc/blinded",CHAN_5,CHANF_DEFAULT,1.0,ATTN_NORM);
+						if (CharacterClass == 2) { owner.A_StopSound(CHAN_VOICE); owner.A_StartSound("FloraGotBlinded",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM); }
+					}
+					BaseTimerIncrement = 1; 
+					if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
+					if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
+					if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
+					CallACS("GetBuffTimer",19,3,BaseTimerIncrement);
+				}
+				else
+				{
+					CallACS("MiscVarSetDECORATE",248,0,0);
+				}
+				
+				// Sleep Effects
+				if (CallACS("GetBuffTimer",20) > 0)
+				{
+					CallACS("MiscVarSetDECORATE",249,1,1);
+					if (CallACS("MiscVarCheckDECORATE",249) == 1)
+					{
+						owner.A_StartSound("DraQue/fallasleep",CHAN_5,CHANF_DEFAULT,1.0,ATTN_NORM);
+						if (CharacterClass == 2) { owner.A_StopSound(CHAN_VOICE); owner.A_StartSound("FloraFallAsleep",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM); }
+					}
+					BaseTimerIncrement = 1; 
+					if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
+					if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
+					if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
+					CallACS("GetBuffTimer",20,3,BaseTimerIncrement);
+				}
+				else
+				{
+					CallACS("MiscVarSetDECORATE",249,0,0);
+				}
+				
+				
+				// Silence Effects
+				if (CallACS("GetBuffTimer",21) > 0)
+				{
+					CallACS("MiscVarSetDECORATE",270,1,1);
+					if (CallACS("MiscVarCheckDECORATE",270) == 1)
+					{
+						owner.A_StartSound("DraQue/sealed",CHAN_5,CHANF_DEFAULT,1.0,ATTN_NORM);
+						//if (CharacterClass == 2) { owner.A_StopSound(CHAN_VOICE); owner.A_StartSound("FloraSpSealed",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM); }
+					}
+					BaseTimerIncrement = 1; 
+					if (owner.CountInv("EvenstarNecklace") > 0 && random[statitem](1,6) == 1) BaseTimerIncrement += 1;
+					if (owner.CountInv("BalrogRing") > 0 && random[statitem](1,12) == 1) BaseTimerIncrement += 1;
+					if (CallACS("GetBuffTimer",7) > 0) BaseTimerIncrement *= 2;
+					CallACS("GetBuffTimer",21,3,BaseTimerIncrement);
+					
+				}
+				else
+				{
+					CallACS("MiscVarSetDECORATE",270,0,0);
+				}
+				
+				// RadSphere Effects
+				if (CallACS("GetBuffTimer",22) > 0)
+				{
+					if (CallACS("GetBuffTimer",22) == 75) owner.A_StartSound("buffs/bioshieldfading",203,CHANF_DEFAULT,2.25,ATTN_NORM);
+
+					if (ClassicDoomType == 4) owner.A_SetInventory("AetheriusPowerMask",1); else owner.A_SetInventory("PowerIronFeet",1);
+					CallACS("GetBuffTimer",22,3,1);
+				}
+				else
+				{
+					if (ClassicDoomType == 4) owner.A_SetInventory("AetheriusPowerMask",0); else owner.A_SetInventory("PowerIronFeet",0);
+				}
+				
+				// Berserk Effects
+				if (CallACS("GetBuffTimer",23) > 0)
+				{
+					if (CallACS("GetBuffTimer",23) == 48) owner.A_StartSound("buffs/berserkfading",204,CHANF_DEFAULT,2.25,ATTN_NORM);
+
+					owner.A_SetInventory("AetheriusPowerStrength", 1);
+					CallACS("GetBuffTimer",23,3,1);
+				}
+				else
+				{
+					owner.A_SetInventory("AetheriusPowerStrength",0);
+				}
+				
+				// Regen Effects
+				if (CallACS("GetBuffTimer",24) > 0) { CallACS("GetBuffTimer",24,3,1); }
+				
+				// Arcana Force Effects
+				if (CallACS("GetBuffTimer",25) > 0) { CallACS("GetBuffTimer",25,3,1); }
+				
+				// Desperado Damsel Effects
+				if (CallACS("GetBuffTimer",26) > 0) 
+				{ 
+					CallACS("GetBuffTimer",25,3,1); 
+					nm = "PowerHitscanBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 1);
+					nm = "PowerChristinaBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 1);
+					nm = "PowerAccuracyBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 1);
+				}
+				else
+				{
+					nm = "PowerHitscanBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 0);
+					nm = "PowerChristinaBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 0);
+					nm = "PowerAccuracyBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 0);
+				}
+				
+				// GoE?? Effects
+				if (CallACS("GetBuffTimer",129) > 0) 
+				{
+					// (GoE is intended as a "permenant buff" once activated. To disable this and make it time elasped, uncomment the line below)
+					// CallACS("GetBuffTimer",129,3,1); 
+				}
 			}
 			else
 			{
-				owner.A_SetInventory("AetheriusPowerStrength",0);
+				owner.A_SetInventory("AetheriusTimeFreezerMenu",1);
+				owner.A_SetInventory("MenuInvulnerability",1);
 			}
 			
-			// Regen Effects
-			if (CallACS("GetBuffTimer",24) > 0) { if (UsingInGameMenu == 0) CallACS("GetBuffTimer",24,3,1); }
 			
-			// Arcana Force Effects
-			if (CallACS("GetBuffTimer",25) > 0) { if (UsingInGameMenu == 0) CallACS("GetBuffTimer",25,3,1); }
-			
-			// Desperado Damsel Effects
-			if (CallACS("GetBuffTimer",26) > 0) 
-			{ 
-				if (UsingInGameMenu == 0) CallACS("GetBuffTimer",25,3,1); 
-				nm = "PowerHitscanBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 1);
-				nm = "PowerChristinaBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 1);
-				nm = "PowerAccuracyBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 1);
-			}
-			else
-			{
-				nm = "PowerHitscanBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 0);
-				nm = "PowerChristinaBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 0);
-				nm = "PowerAccuracyBoost"; APPackCheck = nm; owner.A_SetInventory(APPackCheck, 0);
-			}
-			
-			// GoE?? Effects
-			if (CallACS("GetBuffTimer",129) > 0) 
-			{
-				// (GoE is intended as a "permenant buff" once activated. To disable this and make it time elasped, uncomment the line below)
-				// if (UsingInGameMenu == 0) CallACS("GetBuffTimer",129,3,1); 
-			}
 		}
 	}
 	
@@ -11468,7 +11546,7 @@ class PlayerStatItem : Inventory
 		int UncursePtsAdd1 = 0;
 		int uncursetimerincrease = 100;
 		int uncurselevel = CallACS("MiscVarCheckDECORATE",202);
-		if (playeractor)
+		if (playeractor && CallACS("MenuVarCheckDECORATE",0) == 0)
 		{
 			if (CharacterClass == 2 && Owner.CountInv("RuinousShield") > 0) // Flora
 			{
@@ -11540,7 +11618,7 @@ class PlayerStatItem : Inventory
 				uncursetimerincrease = (uncursetimerincrease * dvds_uncurserate) / 100;
 				if (dvdsdebug_shielduncursedisplay) Console.Printf("    \cnShield Uncursing [Step 9 - Uncurse Interval (MenuFactor)]: %d\c-, Previous: %d, Uncurse Factor: %d%", uncursetimerincrease, dvds_uncurserate, previousdelaycount);
 
-				if (CallACS("MenuVarCheckDECORATE",0) == 0) UncurseInterval += uncursetimerincrease;
+				UncurseInterval += uncursetimerincrease;
 				if (dvdsdebug_shielduncursedisplay) Console.Printf("    \cnShield Uncursing [Step 10 - Uncurse Interval Increment]: %d / %d\c-, Increment: %d%, Uncurse Pts: (%d) %d / %d", UncurseInterval, UncurseMaxInterval, uncursetimerincrease, uncurselevel, RuinousPtsCurrent, RuinousPtsNeeded);
 				if (UncurseInterval >= UncurseMaxInterval)
 				{

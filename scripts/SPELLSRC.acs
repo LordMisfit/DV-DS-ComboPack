@@ -639,7 +639,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [1508] Misc Var #8
 	// [1509] Misc Var #9
 	// [1510] Misc Var #10
-	// [1999] Save Old HUD Toggle [for times where the HUD needs to be turned off fully]
+	// [1511 - 1999] are undefined
 	// [2000] HUD mod toggle >.>
 	// [2001] HUD X Size
 	// [2002] HUD Y Size
@@ -694,6 +694,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [2502] Unfreeze Player
 
 	// [2601 - 2614] Armor Item Drop Checkers #1-#14
+
+	// [2989 - 3059] Spell Cost Tables
+	// [2989] Selected Spell's Cost
 
 	// ***[5001-5500] Are likely reserved for Petra-specific vars***
 	// [5001] Arcana Points [Petra]
@@ -1659,296 +1662,6 @@ function void hudmessageonactor(int tid, int range, str sprite, str text)
 	}
 	else
 	hudmessage(s:" "; 0, 1, CR_UNTRANSLATED, 0, 0, 0);
-}
-
-// This Function will be used to check Spell Costs, all wrapped up in one place and easier to edit. :P
-function int SpellCostCheck(int checktype)
-{
-	int SpellIsSelected = checktype;
-	int FinalSpellCost, DivineAvatarPercentCost, SpellCostDeclineLevelsNeeded, LevelSpellCostReductionFactor, LvlSpellCostReducePercent, SecretSplCostReduceBonus, Check1, Check2;
-	int OriginalSpellCost, StatManaCostReduction;
-	int spellcostdebug = GetCVar("dvdsdebug_showspellcoststuff");
-	
-	if (SpellIsSelected == 53) // Divine Avatar Costs at most 90% of Mana Supply by Default
-	{
-		if (TrueGameSkill <= SKILL_VERY_EASY) DivineAvatarPercentCost = 80;
-		if (TrueGameSkill == SKILL_EASY) DivineAvatarPercentCost = 85;
-		if (TrueGameSkill == SKILL_NORMAL) DivineAvatarPercentCost = 90;
-		if (TrueGameSkill == SKILL_HARD) DivineAvatarPercentCost = 92;
-		if (TrueGameSkill == SKILL_VERY_HARD) DivineAvatarPercentCost = 95;
-		if (TrueGameSkill == SKILL_EXTREME) DivineAvatarPercentCost = 97;
-		if (TrueGameSkill == SKILL_HORRIBLE) DivineAvatarPercentCost = 98;
-		if (TrueGameSkill == SKILL_IMPOSSIBLE) DivineAvatarPercentCost = 99;
-		if (TrueGameSkill >= SKILL_OMEGA) DivineAvatarPercentCost = 100;
-		
-		if (PowerupTimer[7] > 0) 
-		{
-			if (MiscellaneousVars[14] > 0) DivineAvatarPercentCost *= 2;
-		}
-		
-		FinalSpellCost = MaxMana * DivineAvatarPercentCost / 100;
-		OriginalSpellCost = MaxMana * DivineAvatarPercentCost / 100;
-	}
-	else
-	if (SpellIsSelected == 40) // Diamond Skin / Spreader Aura Lv. 1
-	{
-		if (CharacterClass == 2) // If Flora is in use, it'll be Spreader Aura Lv. 1
-		{
-			FinalSpellCost = 575;
-			OriginalSpellCost = 575;
-		}
-		else // Otherwise, it's DiamondSkin and uses the usual costs
-		{
-			FinalSpellCost = SpellCosts[SpellIsSelected];
-			OriginalSpellCost = SpellCosts[SpellIsSelected];
-		}
-	}
-	else
-	if (SpellIsSelected == 15)
-	{
-		if (CharacterClass == 9) //If Petra is in use, it will be Desperado Damsel
-		{
-			FinalSpellCost = SpellCosts[58];
-			OriginalSpellCost = SpellCosts[58];  
-		}
-		else
-		{
-			FinalSpellCost = SpellCosts[15];
-			OriginalSpellCost = SpellCosts[15];
-		}
-	}
-	else
-	{
-		FinalSpellCost = SpellCosts[SpellIsSelected];
-		OriginalSpellCost = SpellCosts[SpellIsSelected];
-	}
-	if (checktype != -1 && spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [\c[Gold]Original Base\c-]");
-
-	int manacostbaselevelreq = GetCVar("dvds_manacostbaselevelreq");
-	// SpellCostDeclineLevelsNeeded = Number of Levels needed to be gained before the spell begins to decline in cost at every level up
-	if (SpellIsSelected == 0) SpellCostDeclineLevelsNeeded = manacostbaselevelreq; // (Minor Magic Missile) Level 0
-	if (SpellIsSelected == 1) SpellCostDeclineLevelsNeeded = manacostbaselevelreq; // (Minor Healing) Level 0
-	if (SpellIsSelected == 2) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 1; // (Minor Night Vision) Level 1
-	if (SpellIsSelected == 3) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 1; // (Chill Touch) Level 1
-	if (SpellIsSelected == 4) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 2; // (Minor Invisibility) Level 2
-	if (SpellIsSelected == 5) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 2; // (Minor Flight) Level 2
-	if (SpellIsSelected == 6) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 3; // (Minor Poison Cloud) Level 3
-	if (SpellIsSelected == 7) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 4; // (Minor Fireball) Level 4
-	if (SpellIsSelected == 8) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 5; // (Enhanced Strength) Level 5
-	if (SpellIsSelected == 9) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 6; // (Minor Ice Blast) Level 6
-	if (SpellIsSelected == 10) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 7; // (Summon Weak Monster) Level 7
-	if (SpellIsSelected == 11) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 7; // (Magic Missile) Level 7
-	if (SpellIsSelected == 12) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 8; // (Fireball) Level 8
-	if (SpellIsSelected == 13) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 9; // (Explosive Glyph) Level 9
-	if (SpellIsSelected == 14) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 9; // (Healing) Level 9
-	if (SpellIsSelected == 15) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 10; // (Fireball Nova) or (Desperado Damsel) [Petra] Level 10
-	if (SpellIsSelected == 16) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 11; // (Attack Booster) Level 11
-	if (SpellIsSelected == 17) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 11; // (Minor Raging Spirits) Level 11
-	if (SpellIsSelected == 18) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 11; // (Invisibility) Level 11
-	if (SpellIsSelected == 19) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 12; // (Acid Rain) Level 12
-	if (SpellIsSelected == 20) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 12; // (Minor Terrorization Aura) Level 12
-	if (SpellIsSelected == 21) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 13; // (Night-Vision) Level 13
-	if (SpellIsSelected == 22) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 13; // (Flight) Level 13
-	if (SpellIsSelected == 23) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 14; // (Major Magic Missile) Level 14
-	if (SpellIsSelected == 24) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 15; // (Summon Monster) Level 15
-	if (SpellIsSelected == 25) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 16; // (Icy Nova) Level 16
-	if (SpellIsSelected == 26) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 16; // (Poison Cloud) Level 16
-	if (SpellIsSelected == 27) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 17; // (Minor Lightning) Level 17
-	if (SpellIsSelected == 28) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 18; // (Stone Skin) Level 18
-	if (SpellIsSelected == 29) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 18; // (Major Healing) Level 18
-	if (SpellIsSelected == 30) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 19; // (Major Night-Vision) Level 19
-	if (SpellIsSelected == 31) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Ice Blast) Level 20
-	if (SpellIsSelected == 32) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Farsight) Level 20
-	if (SpellIsSelected == 33) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Lightning Nova) Level 20
-	if (SpellIsSelected == 34) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Minor Time Freezer) Level 21
-	if (SpellIsSelected == 35) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Defense Booster) Level 21
-	if (SpellIsSelected == 36) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Major Invisibility) Level 21
-	if (SpellIsSelected == 37) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Major Flight) Level 21
-	if (SpellIsSelected == 38) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 22; // (Lightning) Level 22
-	if (SpellIsSelected == 39) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 23; // (Summon Strong Monster) Level 23
-	if (SpellIsSelected == 40) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 24; // (Diamond Skin) [Deggaris/Illucia] or (Spreader Aura Lv. 1) [Flora] Level 24
-	if (SpellIsSelected == 41) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 25; // (Major Fireball) Level 25
-	if (SpellIsSelected == 42) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 25; // (Major Ice Blast) Level 25
-	if (SpellIsSelected == 43) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 25; // (Major Poison Cloud) Level 25
-	if (SpellIsSelected == 44) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 25; // (Major Lightning) Level 25
-	if (SpellIsSelected == 45) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 26; // (Invulnerability) Level 26
-	if (SpellIsSelected == 46) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 26; // (Speed Booster) Level 26 
-	if (SpellIsSelected == 47) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 27; // (Raging Spirits) Level 27
-	if (SpellIsSelected == 48) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 28; // (Summon Arch-Vile) Level 28
-	if (SpellIsSelected == 49) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Ultra Magic Missile) Level 29
-	if (SpellIsSelected == 50) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 30; // (Time Freezer) Level 30
-	if (SpellIsSelected == 51) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 30; // (Terrorization Aura) Level 30
-	if (SpellIsSelected == 52) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 30; // (Create Lotso Ammo) Level 30
-	if (SpellIsSelected == 53) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 31; // (Divine Avatar) Level 31
-	if (SpellIsSelected == 54) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 31; // (Summon Cyberdemon) Level 31
-	if (SpellIsSelected == 55) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 56; // (Spreader Aura Lv. 2) Level 56 [Flora Only]
-
-	int SpellCostDeclineFactor = 150;
-	if (TrueGameSkill <= SKILL_VERY_EASY) SpellCostDeclineFactor = 100;
-	if (TrueGameSkill == SKILL_EASY) SpellCostDeclineFactor = 125;
-	if (TrueGameSkill == SKILL_NORMAL) SpellCostDeclineFactor = 150;
-	if (TrueGameSkill == SKILL_HARD) SpellCostDeclineFactor = 175;
-	if (TrueGameSkill == SKILL_VERY_HARD) SpellCostDeclineFactor = 200;
-	if (TrueGameSkill == SKILL_EXTREME) SpellCostDeclineFactor = 225;
-	if (TrueGameSkill == SKILL_HORRIBLE) SpellCostDeclineFactor = 250;
-	if (TrueGameSkill == SKILL_IMPOSSIBLE) SpellCostDeclineFactor = 275;
-	if (TrueGameSkill >= SKILL_OMEGA) SpellCostDeclineFactor = 300;
-
-	SpellCostDeclineLevelsNeeded = (SpellCostDeclineLevelsNeeded * SpellCostDeclineFactor) / 100;
-
-	// Base Spell Cost Reduction Factor [level-based] 
-	LevelSpellCostReductionFactor = PlayerLevel - SpellCostDeclineLevelsNeeded;
-	if (LevelSpellCostReductionFactor < 0) LevelSpellCostReductionFactor = 0;
-
-	LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 2 / 30; // This is for any class that is not one of the below otherwise ignore this line
-	if (CharacterClass == 0) LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 1 / 18; // 5.55% [Deggaris]
-	else if (CharacterClass == 1) LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 1 / 16; // 6.25% [Illucia]
-	else if (CharacterClass == 2) LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 2 / 18; // 11.1% [Flora]
-	else if (CharacterClass == 8) LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 2 / 20; // 10% [Ailish]
-	else if (CharacterClass == 9) LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 1 / 12; // 8.33% [Petra]
-
-	LvlSpellCostReducePercent = 100;
-	LvlSpellCostReducePercent -= LevelSpellCostReductionFactor;
-	FinalSpellCost = FinalSpellCost * LvlSpellCostReducePercent / 100;
-	if (checktype != -1 && spellcostdebug == 1 && LvlSpellCostReducePercent != 100) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [LevelCostReduce], LvlSpellCostReducePercent: [",d:LvlSpellCostReducePercent,s:"/ 100]");
-
-	if (SpellIsSelected == 34) // Minor Time Freezer Costs at least 10% of Mana Supply by Default (Deggaris and Illucia Only)
-	{
-		LevelSpellCostReductionFactor = MaxMana / 10;
-		FinalSpellCost += LevelSpellCostReductionFactor;
-		if (checktype != -1 && spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [TimeFreezerCheck]");
-	}
-
-	if (SpellIsSelected == 50) // Time Freezer Costs at least 25% of Mana Supply by Default (Deggaris and Illucia Only)
-	{
-		LevelSpellCostReductionFactor = MaxMana / 4;
-		FinalSpellCost += LevelSpellCostReductionFactor;
-		if (checktype != -1 && spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [TimeFreezerCheck]");
-	}
-
-	// Secret Tally Affects Mana Consumption
-	int i, forstart, forend;
-	if (GetCVar("dvds_secretsreducemanacosts") >= 1)
-	{
-		if (ModType == 0) { forstart = 0; forend = 151; }
-		if (ModType == 1) { forstart = 1100; forend = 1105; }
-		if (ModType == 2) { forstart = 1200; forend = 1215; }
-		SecretSplCostReduceBonus = 0;
-		for (i = forstart; i < forend; i++) { SecretSplCostReduceBonus += SecretsFound[i]; }
-		if (TrueGameSkill <= SKILL_VERY_EASY) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 7 / 60; // 11.67% of the total secrets found accumulate to the percentage
-		if (TrueGameSkill == SKILL_EASY)  SecretSplCostReduceBonus = SecretSplCostReduceBonus * 3 / 30; // 10% of the total secrets found accumulate to the percentage
-		if (TrueGameSkill == SKILL_NORMAL) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 1 / 12; // 8.33% of the total secrets found accumulate to the percentage
-		if (TrueGameSkill == SKILL_HARD) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 2 / 30; // 6.67% of the total secrets found accumulate to the percentage
-		if (TrueGameSkill == SKILL_VERY_HARD) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 3 / 60; // 5% of the total secrets found accumulate to the percentage
-		if (TrueGameSkill == SKILL_EXTREME) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 2 / 50; // 4% of the total secrets found accumulate to the percentage
-		if (TrueGameSkill == SKILL_HORRIBLE) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 3 / 100; // 3% of the total secrets found accumulate to the percentage
-		if (TrueGameSkill == SKILL_IMPOSSIBLE) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 1 / 50; // 2% of the total secrets found accumulate to the percentage
-		if (TrueGameSkill >= SKILL_OMEGA) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 1 / 100; // 1% of the total secrets found accumulate to the percentage
-		SecretSplCostReduceBonus *= -1; // Inverts the number to a "cost"
-		SecretSplCostReduceBonus += 100; // Then adds 100 to it for the actual percentage factor
-
-		if (SecretSplCostReduceBonus > 100) SecretSplCostReduceBonus = 100;
-		if (CharacterClass == 2 || CharacterClass == 8 || CharacterClass == 9)
-		{
-			if (SecretSplCostReduceBonus < 50) SecretSplCostReduceBonus = 50; // Flora, Ailish or Petra
-		}
-		else
-		{
-			if (SecretSplCostReduceBonus < 63) SecretSplCostReduceBonus = 63; // Deggaris/Illucia
-		}
-		FinalSpellCost = FinalSpellCost * SecretSplCostReduceBonus / 100;
-		if (checktype != -1 && spellcostdebug == 1 && SecretSplCostReduceBonus != 100) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [CostReduceBonus], SecretSplCostReduceBonus: [",d:SecretSplCostReduceBonus,s:"/ 100]");
-	}
-
-	// Check for having The Ring in you inventory
-	if (MiscellaneousVars[25103] > 0)
-	{
-		if (CharacterClass == 2 || CharacterClass == 8) FinalSpellCost = FinalSpellCost * 13 / 16; // 81.25% MP Cost (Flora and Ailish are the only ones who doesn't have their MP Costs increased by the One Ring)
-		else FinalSpellCost = FinalSpellCost * 5 / 4; // 125% MP Cost (Deggaris and Illucia)
-		if (checktype != -1 && spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [The One Ring]");
-	}
-	
-	int SpellCostMinimum;
-	
-	if (CharacterClass == 2)
-	{
-		Check1 = 0; // Check1 is an exact value
-		Check2 = 1000; // Check2 is a % value
-		if (MiscellaneousVars[25107] > 0) { Check1 += 10; Check2 -= 50; } // Evenstar Necklace [MP reduction of 10 + 5%]
-		if (MiscellaneousVars[25109] > 0) { Check1 += 2; Check2 -= 10; } // Anubis Cufflinks [MP reduction of 2 + 1%]
-		if (MiscellaneousVars[25113] > 0) { Check1 += 5; Check2 -= 25; } // Balrog's Ring [MP reduction of 5 + 2.5%]
-
-		FinalSpellCost -= Check1;
-		FinalSpellCost = FinalSpellCost * Check2 / 1000;
-
-		// Ruinous Shield = +50% MP Consumption
-		if (MiscellaneousVars[25112] > 0) FinalSpellCost = FinalSpellCost * 3 / 2;
-		if (checktype != -1 && spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [FloraArmors]");
-	}
-
-	int MaxManaDouble = MaxMana * 2;
-	if (SpellIsSelected == 53 && PowerupTimer[7] > 0)
-	{
-		if (FinalSpellCost > MaxManaDouble) FinalSpellCost = MaxManaDouble;
-	}
-	else
-	{
-		if (FinalSpellCost > MaxMana) FinalSpellCost = MaxMana;
-	}
-	if (checktype != -1 && spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [MaxManaClamp]");
-
-	if (TrueGameSkill <= SKILL_VERY_EASY) SpellCostMinimum = OriginalSpellCost * 42 / 100;
-	if (TrueGameSkill == SKILL_EASY) SpellCostMinimum =  OriginalSpellCost * 49 / 100;
-	if (TrueGameSkill == SKILL_NORMAL) SpellCostMinimum =  OriginalSpellCost * 56 / 100;
-	if (TrueGameSkill == SKILL_HARD) SpellCostMinimum =  OriginalSpellCost * 63 / 100;
-	if (TrueGameSkill == SKILL_VERY_HARD) SpellCostMinimum = OriginalSpellCost * 70 / 100;
-	if (TrueGameSkill == SKILL_EXTREME) SpellCostMinimum = OriginalSpellCost * 77 / 100;
-	if (TrueGameSkill == SKILL_HORRIBLE) SpellCostMinimum = OriginalSpellCost * 84 / 100;
-	if (TrueGameSkill == SKILL_IMPOSSIBLE) SpellCostMinimum = OriginalSpellCost * 91 / 100;
-	if (TrueGameSkill >= SKILL_OMEGA) SpellCostMinimum = OriginalSpellCost * 98 / 100;
-
-	// Clamp Minimum Mana Cost
-	if (FinalSpellCost < SpellCostMinimum) FinalSpellCost = SpellCostMinimum;
-	if (checktype != -1 && spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [CostMinimumClamp]");
-	
-	int SpellCostMinimum2 = 0.0;
-	// Clearer of Mind & MagiUp Perks
-	if (MiscellaneousVars[10003] > 0 || MiscellaneousVars[10055] > 0)
-	{
-		SpellCostMinimum2 = (MiscellaneousVars[10003] * 1) + (MiscellaneousVars[10004] * 2) + (MiscellaneousVars[10055] * 2) + (MiscellaneousVars[10056] * 5);
-		if (MiscellaneousVars[10004] >= 2) SpellCostMinimum2 += 1;
-		if (MiscellaneousVars[10055] >= 2) SpellCostMinimum2 += 1;
-		if (MiscellaneousVars[10055] >= 4) SpellCostMinimum2 += 2;
-		if (MiscellaneousVars[10056] >= 2) SpellCostMinimum2 += 5;
-		SpellCostMinimum2 *= -1;
-		SpellCostMinimum2 += 100;
-		FinalSpellCost = (FinalSpellCost * SpellCostMinimum2) / 100;
-		if (checktype != -1 && spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [ClearMind/MagiUp], SpellCostMinimum2: [",d:SpellCostMinimum2,s:"/ 100]");
-	}
-
-	// ((Sorcery + Therapeusis) / 2) = -0.1% Final Mana Cost [circumvents Clamp]
-	int manacostbasestatreq = GetCVar("dvds_manacostbasestatreq");
-	StatManaCostReduction = 100 - ((MiscellaneousVars[34] + MiscellaneousVars[36]) / manacostbasestatreq);
-	if (StatManaCostReduction < 25) StatManaCostReduction = 25;
-	FinalSpellCost = FinalSpellCost * StatManaCostReduction / 100;
-	if (checktype != -1 && spellcostdebug == 1 && StatManaCostReduction != 100) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [SorcTherChecks], StatManaCostReduction: [",d:StatManaCostReduction,s:"/ 100]");
-
-	// Checks Mana Cost Rate Menu Option [circumvents Clamp]
-	FinalSpellCost = FinalSpellCost * GetCVar("dvds_manacostgmultiplier") / 100;
-	if (checktype != -1 && spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" [CostRateOption]");
-
-	if (FinalSpellCost < 1) FinalSpellCost = 1;
-	if (SpellIsSelected == 53 && PowerupTimer[7] > 0)
-	{
-		if (FinalSpellCost > MaxManaDouble) FinalSpellCost = MaxManaDouble;
-	}
-	else
-	{
-		if (FinalSpellCost > MaxMana) FinalSpellCost = MaxMana;
-	}
-	if (spellcostdebug == 1) PrintBold(s:"FinalSpellCost (",d:checktype,s:"): ",d:FinalSpellCost,s:" / ",d:OriginalSpellCost,s:" [\cxFinalClamps]");
-
-	return FinalSpellCost;
 }
 
 //*******************
@@ -4381,7 +4094,9 @@ script "HUDDISPLAY" ENTER
 					if (HUDMsgIDAdd == 9) { xpos = ScreenXOffset + 611.0 + 0.2; ypos = ScreenYOffset + 1049.0; }
 					if (xpos < 0.0) xpos -= 0.4;
 					SetFont("DQHUDFONTSTATUS");
-					CostOfSpell = SpellCostCheck(ReadiedSpells[HUDMsgIDAdd] - 1);
+
+					CostOfSpell = MiscellaneousVars[(2990+HUDMsgIDAdd)];
+
 					msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
 					if (ReadiedSpells[HUDMsgIDAdd] != 0)
 					{
@@ -4436,7 +4151,7 @@ script "HUDDISPLAY" ENTER
           
 					if (ReadiedSpells[HUDMsgIDAdd] != 0)
 					{
-						CostOfSpell = SpellCostCheck(ReadiedSpells[HUDMsgIDAdd] - 1); // Function
+						CostOfSpell = MiscellaneousVars[(2990+HUDMsgIDAdd)];
 
 						//**********************************
 						//*Not Enough Mana Icon [7876-7886]*
@@ -4617,7 +4332,7 @@ script "HUDDISPLAY" ENTER
 			xpos = ScreenXOffset + 587.0;
 			ypos = ScreenYOffset + 792.0; // 792.0
 			SetFont("DQHUDFONTSTATUS");
-			CostOfSpell = SpellCostCheck(SelectedSpell);
+			CostOfSpell = MiscellaneousVars[2989];
 			msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
 			HudMessage(d:CostOfSpell;HUDMSG_ALPHA,7991,cr_lightblue,xpos,ypos,HUDMsgDelayFixed,msgalpha); // Not Enough Mana
 
@@ -4663,7 +4378,7 @@ script "HUDDISPLAY" ENTER
 			ypos = ScreenYOffset + 768.0; // 768.0
 			SetFont("SPLINONE");
       
-			CostOfSpell = SpellCostCheck(SelectedSpell); // Function
+			CostOfSpell = MiscellaneousVars[2989];
 
 			tempvar1 = 2010;
 			if (CurrentMana < CostOfSpell)
@@ -10621,7 +10336,7 @@ script "SpellQuickAssign" (int Slot, int Type)
 		if (ReadiedSpells[Slot] != 0)
 		{
 			// Function Ran
-			CostOfSpell = SpellCostCheck(ReadiedSpells[Slot] - 1); // Function testing to come later :P
+			CostOfSpell = MiscellaneousVars[(2990+Slot)];
 			MiscellaneousVars[555] = CostOfSpell; // Saves spellcost into a global array [in case the spell fails, so it gives back the MP you lost] :P
 			// Function Ran
 		
@@ -10788,7 +10503,7 @@ script "SpellCasting" (int enableRapidCasting)
 	int CurrentHealth, CostOfSpell;
 	
 	// Function Ran
-	CostOfSpell = SpellCostCheck(SelectedSpell); // Function testing to come later :P
+	CostOfSpell = MiscellaneousVars[2989];
 	MiscellaneousVars[555] = CostOfSpell; // Saves spellcost into a global array [in case the spell fails, so it gives back the MP you lost] :P
 	// Function Ran
 	
@@ -21184,6 +20899,7 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 			
 			
 			// Spells - Page 0
+			SpellCharges = 0;
 			if (MenuSystemVars[5] == 0)
 			{
 				// Minor Magic Missile [Level 0]
@@ -21197,8 +20913,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 0;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21223,14 +20939,12 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 1;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
+				HealMin = MiscellaneousVars[281]; // Minor [Min] 
+				HealMax = MiscellaneousVars[282]; // Minor [Max] 
 				if (PlayerLevel >= LevelRequirement)
 				{
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
-					HealMin = MiscellaneousVars[281]; // Minor [Min] 
-					HealMax = MiscellaneousVars[282]; // Minor [Max] 
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthTrue,s:" [100%]",
 										s:"\n", 
 										s:"\nCost: [",d:SpellCost,s:"] (Uses: ",d:SpellCharges,s:")"; 
@@ -21254,8 +20968,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 2;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21280,8 +20994,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 3;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21306,8 +21020,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 4;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21332,8 +21046,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 5;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21360,8 +21074,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 6;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 							HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21387,8 +21101,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 7;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21413,8 +21127,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 8;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21444,8 +21158,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 9;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21470,8 +21184,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 10;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21496,8 +21210,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 11;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21522,8 +21236,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 12;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21548,8 +21262,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 13;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21574,14 +21288,12 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 14;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
+				HealMin = MiscellaneousVars[283]; // Normal [Min] 
+				HealMax = MiscellaneousVars[284]; // Normal [Max] 
 				if (PlayerLevel >= LevelRequirement)
 				{
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
-					HealMin = MiscellaneousVars[283]; // Normal [Min] 
-					HealMax = MiscellaneousVars[284]; // Normal [Max] 
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthTrue,s:" [100%]",
 										s:"\n", 
 										s:"\nCost: [",d:SpellCost,s:"] (Uses: ",d:SpellCharges,s:")"; 
@@ -21606,8 +21318,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 15;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21635,8 +21347,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 58;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 							HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21662,8 +21374,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 16;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21688,8 +21400,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 17;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21719,8 +21431,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 18;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21745,8 +21457,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 19;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21773,8 +21485,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 20;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21800,8 +21512,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 21;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21826,8 +21538,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 22;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21854,8 +21566,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 23;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 							HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21881,8 +21593,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 24;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21907,8 +21619,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 25;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21935,8 +21647,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 26;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 							HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21967,8 +21679,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 27;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -21995,8 +21707,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 28;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22024,14 +21736,12 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 29;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
+					HealMin = MiscellaneousVars[285]; // Major [Min] 
+					HealMax = MiscellaneousVars[286]; // Major [Max] 
 					if (PlayerLevel >= LevelRequirement)
 					{
-						SpellCost = SpellCostCheck(SpellNo);
-						SpellCharges = CurrentMana / SpellCost;
-						HealMin = MiscellaneousVars[285]; // Major [Min] 
-						HealMax = MiscellaneousVars[286]; // Major [Max] 
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:"Heals ",d:HealMin,s:"-",d:HealMax,s:" health points up to ",d:MaxHealthLimit,s:" [200%]",
 										s:"\n", 
 										s:"\nCost: [",d:SpellCost,s:"] (Uses: ",d:SpellCharges,s:")"; 
@@ -22057,8 +21767,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 30;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22084,8 +21794,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 31;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22110,8 +21820,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 32;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22138,8 +21848,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 33;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22167,8 +21877,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 34;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22194,8 +21904,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 35;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22227,8 +21937,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 36;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22256,8 +21966,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 37;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22283,8 +21993,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 38;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22309,8 +22019,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 39;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22335,8 +22045,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 40;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					if (CharacterClass == 2)
@@ -22373,8 +22083,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 41;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22402,8 +22112,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 42;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22431,8 +22141,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 43;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22460,8 +22170,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 44;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22491,8 +22201,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 45;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22517,8 +22227,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 46;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22543,8 +22253,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 47;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22571,8 +22281,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 48;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22600,8 +22310,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 49;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22629,8 +22339,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 50;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22658,8 +22368,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 51;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22687,8 +22397,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 52;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22714,8 +22424,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 				xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 				ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 				SpellNo = 53;
-				SpellCost = SpellCostCheck(SpellNo);
-				SpellCharges = CurrentMana / SpellCost;
+				SpellCost = MiscellaneousVars[(3000+SpellNo)];
+				if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 				if (PlayerLevel >= LevelRequirement)
 				{
 					HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22746,8 +22456,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 54;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -22775,8 +22485,8 @@ script "INGAMEMENUS_DISPLAYS" ENTER
 					xtemp2 += (HudXRange * 5000 / 100000) * 1.0 + 0.1; // -0.10;
 					ytemp2 -= (HudXRange * 1250 / 100000) * 1.0; // -0.10;
 					SpellNo = 55;
-					SpellCost = SpellCostCheck(SpellNo);
-					SpellCharges = CurrentMana / SpellCost;
+					SpellCost = MiscellaneousVars[(3000+SpellNo)];
+					if (SpellCost != 0) SpellCharges = CurrentMana / SpellCost; else SpellCharges = 0;
 					if (PlayerLevel >= LevelRequirement)
 					{
 						HudMessage(s:SpellTable[SpellNo],s:" - ",s:SpellDesc[SpellNo], 
@@ -31701,6 +31411,30 @@ script "ArrayVarSetDECORATE" (int value, int arraynum, int perkvalue, int type)
 		if (type == 9) ItemsFound[arraynum] <<= perkvalue; // Shift Left
 		if (type == 10) ItemsFound[arraynum] >>= perkvalue; // Shift Right
 	}
+}
+
+// REFERENCE/CHECK/SET: Allows ZSCRIPT/DECORATE to check the value of a specific QuickSpell # value for checks
+script "QuickSpellCheckDECORATE" (int value, int type)
+{
+	SetResultValue(ReadiedSpells[value]);
+	//ReadiedSpells
+}
+
+// REFERENCE/CHECK/SET: Allows ZSCRIPT/DECORATE to check the value of a specific QuickSpell # value for checks
+script "QuickSpellSetDECORATE" (int value, int perkvalue, int type)
+{
+	if (type <= -1) SetResultValue(ReadiedSpells[value]);
+	if (type == 0) ReadiedSpells[value] = perkvalue; // Set
+	if (type == 1) ReadiedSpells[value] += perkvalue; // Add
+	if (type == 2) ReadiedSpells[value] -= perkvalue; // Subtract
+	if (type == 3) ReadiedSpells[value] *= perkvalue; // Multiply
+	if (type == 4 && perkvalue != 0) ReadiedSpells[value] /= perkvalue; // Divide
+	if (type == 5 && perkvalue != 0) ReadiedSpells[value] %= perkvalue; // Modulo
+	if (type == 6) ReadiedSpells[value] &= perkvalue; // AND
+	if (type == 7) ReadiedSpells[value] |= perkvalue; // OR
+	if (type == 8) ReadiedSpells[value] ^= perkvalue; // XOR
+	if (type == 9) ReadiedSpells[value] <<= perkvalue; // Shift Left
+	if (type == 10) ReadiedSpells[value] >>= perkvalue; // Shift Right
 }
 
 // REFERENCE/CHECK/SET: Allows ZSCRIPT/DECORATE to check the value of a specific "Other" value for checks
