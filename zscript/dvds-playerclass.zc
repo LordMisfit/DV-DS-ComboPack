@@ -55,6 +55,9 @@ class AetheriusPlayerPawn : PlayerPawn
 	int saveddamage;
 	int InvisNeedleBonus;
 	
+	double DeathRageMaxTimer;
+	double DeathRageTimer;
+	double DeathRageTimerCooldown;
 	
 	double PlayerDefenseIgnoreFactor, PlayerArmorIgnoreFactor, PlayerArmorIgnoreFactorGeneral;
 	int neverbleeds;
@@ -1711,20 +1714,23 @@ class AetheriusPlayerPawn : PlayerPawn
 		// [195] Mercy Invincibility Timer
 		// [196] Mercy Invincibility 'Modulus/Remainder'
 		// Death Rage Countdown Checks
-		double DeathRageMaxTimer = 1;
-		double DeathRageTimer = 1;
+		DeathRageMaxTimer;
+		DeathRageTimer;
 		double DRTimerRatio = 1.0;
-		if (CallACS("MiscVarCheckDECORATE",9043) > 0)
+		int DeathRageDebug = dvdsdebug_showplayerhealthsync;
+		if (DeathRageTimer > 0)
 		{
-			DeathRageTimer = CallACS("MiscVarCheckDECORATE",9043);
-			DeathRageMaxTimer = CallACS("MiscVarCheckDECORATE",9042);
 			DRTimerRatio = (DeathRageTimer / (DeathRageMaxTimer * 0.2));
 			if (DRTimerRatio > 1.0) DRTimerRatio = 1.0;
-			//Console.Printf("DRTimerRatio: %.8f (%d / %d)", DRTimerRatio, DeathRageTimer, DeathRageMaxTimer);
+			if (DeathRageDebug) Console.Printf("DRTimerRatio: %.8f (%d / %d)", DRTimerRatio, DeathRageTimer, DeathRageMaxTimer);
 			A_SetBlend("d0 00 20", (0.525*DRTimerRatio), random(17,18));
-			CallACS("MiscVarSetDECORATE",9043,-1,1); // Death Rage Timer
+			DeathRageTimer--; // Death Rage Timer
 		}
-		if (CallACS("MiscVarCheckDECORATE",9044) > 0) CallACS("MiscVarSetDECORATE",9044,-1,1); // Death Rage "Cooldown" Timer
+		if (DeathRageTimerCooldown > 0) 
+		{
+			DeathRageTimerCooldown--; // Death Rage "Cooldown" Timer
+			if (DeathRageDebug) Console.Printf("DeathRageTimerCooldown: %d tics", DeathRageTimerCooldown);
+		}
 
 		if (dvdsdebug_showplayerhealthsync) Console.Printf("\cxplayer.mo.health\c-: %d -- (\cyplayer.health\c-: %d) -- (\cyMiscVar25001\c-: %d) -- (\cwplayer.mo.Stamina\c-: %d)", player.mo.health, player.health, CallACS("MiscVarCheckDECORATE",25001), player.mo.stamina);
 		int TempStartValue, TempEndValue, PerkFactor;
@@ -1800,7 +1806,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			//****************************************************
 			//*Check "Mortal Hit Survivability 'Death Rage'" Perk*
 			//****************************************************
-			if (CallACS("MiscVarCheckDECORATE",10043) > 0 && CallACS("MiscVarCheckDECORATE",9044) <= 0)
+			if (CallACS("MiscVarCheckDECORATE",10043) > 0 && DeathRageTimerCooldown <= 0)
 			{
 				if (CallACS("MiscVarCheckDECORATE",10043) == 1) PerkFactor = 1250;
 				if (CallACS("MiscVarCheckDECORATE",10043) == 2) PerkFactor = 2000;
@@ -1811,21 +1817,21 @@ class AetheriusPlayerPawn : PlayerPawn
 					PerkFactor = random(17,18);
 					if (CallACS("MiscVarCheckDECORATE",10043) == 1)
 					{
-						CallACS("MiscVarSetDECORATE",9043,(15 * 35),0); // Death Rage Timer
-						CallACS("MiscVarSetDECORATE",9042,(15 * 35),0); // Death Rage Max Timer
-						CallACS("MiscVarSetDECORATE",9044,(195 * 35),0); // Death Rage Cooldown Timer
+						DeathRageTimer = (15 * 35); // Death Rage Timer
+						DeathRageMaxTimer = (15 * 35); // Death Rage Max Timer
+						DeathRageTimerCooldown = (195 * 35); // Death Rage Cooldown Timer
 					}
 					if (CallACS("MiscVarCheckDECORATE",10043) == 2)
 					{
-						CallACS("MiscVarSetDECORATE",9043,((22 * 35) + PerkFactor),0); // Death Rage Timer
-						CallACS("MiscVarSetDECORATE",9042,((22 * 35) + PerkFactor),0); // Death Rage Max Timer
-						CallACS("MiscVarSetDECORATE",9044,((172 * 35) + PerkFactor),0); // Death Rage Cooldown Timer
+						DeathRageTimer = ((22 * 35) + PerkFactor); // Death Rage Timer
+						DeathRageMaxTimer = ((22 * 35) + PerkFactor); // Death Rage Max Timer
+						DeathRageTimerCooldown = ((172 * 35) + PerkFactor); // Death Rage Cooldown Timer
 					}
 					if (CallACS("MiscVarCheckDECORATE",10043) == 3)
 					{
-						CallACS("MiscVarSetDECORATE",9043,(30 * 35),0); // Death Rage Timer
-						CallACS("MiscVarSetDECORATE",9042,(30 * 35),0); // Death Rage Max Timer
-						CallACS("MiscVarSetDECORATE",9044,(150 * 35),0); // Death Rage Cooldown Timer
+						DeathRageTimer = (30 * 35); // Death Rage Timer
+						DeathRageMaxTimer = (30 * 35); // Death Rage Max Timer
+						DeathRageTimerCooldown = (150 * 35); // Death Rage Cooldown Timer
 					}
 				}
 			}
@@ -2644,7 +2650,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (ActorClass == "EvilDeadHandNew" || ActorClass == "BabyClownNew" || 
 					ActorClass == "BabyClown2New" || ActorClass == "BouncingClownNew" ||
 					ActorClass == "StarSpawn" || ActorClass == "SpiderGod" || ActorClass == "SpiderGodling") CritChance *= 4;
-			// Ally Specfic
+			// Ally Specific
 			if (ActorClass == "RebelNew" || ActorClass == "Rebel1New" || ActorClass == "Rebel2New" || ActorClass == "Rebel3New" || 
 					ActorClass == "Rebel4New" || ActorClass == "Rebel5New" || ActorClass == "Rebel6New") 
 					CritChance *= frandom(1.75,2.25); // Strife Rebels have +75-125% more crit

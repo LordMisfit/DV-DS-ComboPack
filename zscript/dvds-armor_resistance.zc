@@ -24,6 +24,7 @@ class PlayerStatItem : Inventory
 	int CharacterClass;
 	int jiggle_jump, jiggle_crouch, jiggle_left, jiggle_right, jiggle_up, jiggle_down;
 	
+	int LevelupSpeechTimer1;
 	int LevelupSpeechTimer2;
 	int PrevBackPacksCollected;
 
@@ -42,18 +43,18 @@ class PlayerStatItem : Inventory
 	double RuinousPtsCurrent, RuinousPtsNeeded;
 	double UncurseInterval, UncurseMaxInterval;
 
-	int LifeUpPerkComboCheck; // [9901]
-	int LifeUpPerkFactor; // [9902]
-	int LifeUpPerkBaseFactor; // [9903]
-	int MagiUpPerkComboCheck; // [9904]
-	int MagiUpPerkFactor; // [9905]
-	int MagiUpPerkBaseFactor; // [9906]
-	int StamUpgradeHPComboCheck; // [9907]
-	int StamUpgradeHPPerkFactor; // [9908]
-	int StamUpgradeHPPerkBaseFactor; // [9909]
-	int StamUpgradeMPComboCheck; // [9910]
-	int StamUpgradeMPPerkFactor; // [9911]
-	int StamUpgradeMPPerkBaseFactor; // [9912]
+	int LifeUpPerkComboCheck;
+	int LifeUpPerkFactor;
+	int LifeUpPerkBaseFactor;
+	int MagiUpPerkComboCheck;
+	int MagiUpPerkFactor;
+	int MagiUpPerkBaseFactor;
+	int StamUpgradeHPComboCheck;
+	int StamUpgradeHPPerkFactor;
+	int StamUpgradeHPPerkBaseFactor;
+	int StamUpgradeMPComboCheck;
+	int StamUpgradeMPPerkFactor;
+	int StamUpgradeMPPerkBaseFactor;
 
 	int landdmgbonus;
 	int heldtime;
@@ -67,6 +68,7 @@ class PlayerStatItem : Inventory
 	int TensionCooldownTimer; // [186]
 	int TensionChargeLoopTimer; // [189]
 	int TensionActivePulseTimer; // [190]
+	int TensionBackgroundAuraTimer; // [246]
 	int TensionOverPsycheTimer; // [250]
 	int TensionOverchargeTimer; // [251]
 	int TensionMaxOverchargeTimer; // [261]
@@ -169,6 +171,10 @@ class PlayerStatItem : Inventory
 	
 	int StrifeStamLvl;
 	int StrifeAccuLvl;
+	
+	int DeathRageTimer;
+	int DeathRageMaxTimer;
+	int DeathRageTimerCooldown;
 
 	default 
 	{
@@ -190,6 +196,12 @@ class PlayerStatItem : Inventory
 		let weapon = owner.player.ReadyWeapon;
 		buttons = owner.GetPlayerInput(INPUT_BUTTONS);
 		
+		if (playeractor)
+		{
+			DeathRageTimer = playeractor.DeathRageTimer;
+			DeathRageMaxTimer = playeractor.DeathRageMaxTimer;
+			DeathRageTimerCooldown = playeractor.DeathRageTimerCooldown;
+		}
 		CharacterClass = CallACS("CheckCharacterClass");
 		TensionLevel = CallACS("MiscVarCheckDECORATE",181);
 		TensionSpeedRatio = dvds_tensionspeed;
@@ -1315,7 +1327,7 @@ class PlayerStatItem : Inventory
 		
 		
 		//****************************************************************************************************************************************************************
-		//**Checks "user_PlayerDVDSSpecial[]" array on the player actors [used for various things, including disjointed MAP-specfic ACS scripts (TCOTD:A, Unloved, etc)]**
+		//**Checks "user_PlayerDVDSSpecial[]" array on the player actors [used for various things, including disjointed MAP-specific ACS scripts (TCOTD:A, Unloved, etc)]**
 		//****************************************************************************************************************************************************************
 		if (playeractor)
 		{
@@ -1352,9 +1364,9 @@ class PlayerStatItem : Inventory
 				owner.A_SetInventory("TakeAllStamina",0);
 			}
 		
-			// DVDSSpecialArrayValue[3] = Unloved Specfic - Makes Hellcore Weapons drop 4x more often, etc :o
-			// DVDSSpecialArrayValue[4] = TCOTD:A Specfic
-			// DVDSSpecialArrayValue[5] = Circus2 Specfic
+			// DVDSSpecialArrayValue[3] = Unloved Specific - Makes Hellcore Weapons drop 4x more often, etc :o
+			// DVDSSpecialArrayValue[4] = TCOTD:A Specific
+			// DVDSSpecialArrayValue[5] = Circus2 Specific
 			
 			// DVDSSpecialArrayValue[6] = Make HUD invisible [for TITLEMAP usage]
 			if (CallACS("DVDSSpecialArrayCheckDECORATE",6) > 0 || owner.CountInv("DisableHUD") > 0) 
@@ -1384,9 +1396,9 @@ class PlayerStatItem : Inventory
 			
 			// DVDSSpecialArrayValue[9] = Prevents Dashing
 
-			// DVDSSpecialArrayValue[10] = KDIZD Specfic
+			// DVDSSpecialArrayValue[10] = KDIZD Specific
 
-			// DVDSSpecialArrayValue[11] = TUTNT Specfic
+			// DVDSSpecialArrayValue[11] = TUTNT Specific
 		}
 		
 		
@@ -2364,6 +2376,17 @@ class PlayerStatItem : Inventory
 		
 		
 		
+		A_PSI1DoEffectHealValueCheck();
+		
+		
+		
+		
+		
+		A_PSI1DoEffectSpellCostCheck();
+		
+		
+		
+		
 		A_PSI1DoEffectFinalCalls();
 		
 		// Class Check is done six times for randomization purposes.
@@ -2374,6 +2397,474 @@ class PlayerStatItem : Inventory
 	//*****************************************
 	//*Extra Functions to play from DoEffect()*
 	//*****************************************
+	int F_GetHealingValue(int type, int MinOrMax)
+	{
+		int HealSorcRatio, value;
+		int MaxHealthTrue = CallACS("StatCheck",1);
+		int PlayerSOR = CallACS("StatCheck",6);
+		int PlayerTHE = CallACS("StatCheck",8);
+		PlayerLevel = CallACS("StatCheck",0);
+		TensionLevel = CallACS("MiscVarCheckDECORATE",181);
+		CharacterClass = CallACS("CheckCharacterClass");
+		
+		if (type == 0) // Minor Healing
+		{
+			if (MinOrMax == 0) // Min
+			{
+				value = 1;
+				value += (PlayerLevel / 8);
+			}
+			if (MinOrMax == 1) // Max
+			{
+				value = 3;
+				value += (PlayerLevel / 8);
+			}
+			if (CharacterClass == 2) value = value * 3 / 2;
+		}
+		
+		if (type == 1) // Healing
+		{
+			if (MinOrMax == 0) // Min
+			{
+				value = 7; 
+				value += (PlayerLevel / 6);
+			}
+			if (MinOrMax == 1) // Max
+			{
+				value = 12; 
+				value += (PlayerLevel / 6);
+			}
+			if (CharacterClass == 2) value = value * 7 / 4;
+		}
+	
+	
+		if (type == 2) // Major Healing
+		{
+			if (MinOrMax == 0) // Min
+			{
+				value = 18; 
+				value += (PlayerLevel / 3);
+			}
+			if (MinOrMax == 1) // Max
+			{
+				value = 31; 
+				value += (PlayerLevel / 3);
+			}
+			if (CharacterClass == 2) value = value * 5 / 2;
+		}
+	
+		if (type == 3) // Heal [DQ]
+		{
+			if (MinOrMax == 0) // Min
+			{
+				value = 24; 
+				value += (PlayerLevel / 5);
+			}
+			if (MinOrMax == 1) // Max
+			{
+				value = 36; 
+				value += (PlayerLevel / 5);
+			}
+		}
+	
+		if (type == 4) // MidHeal [DQ]
+		{
+			if (MinOrMax == 0) // Min
+			{
+				value = 60; 
+				value += (PlayerLevel / 4);
+			}
+			if (MinOrMax == 1) // Max
+			{
+				value = 90; 
+				value += (PlayerLevel / 4);
+			}
+		}
+	
+		if (type == 5) // MoreHeal [DQ]
+		{
+			if (MinOrMax == 0) // Min
+			{
+				value = 135; 
+				value += (PlayerLevel / 4);
+			}
+			if (MinOrMax == 1) // Max
+			{
+				value = 210; 
+				value += (PlayerLevel / 4);
+			}
+		}
+		
+		if (type == 6) // FullHeal [DQ]
+		{
+			value = MaxHealthTrue; 
+		}
+
+		// Stat Alternations
+		value = value * (16 + (PlayerLevel / 25)) / 16;
+		if (owner.CountInv("SauronHelmet") > 0) value = value * 17 / 16;
+		if (owner.CountInv("SauronGauntletsItem") > 0) value = value * 17 / 16;
+		if (owner.CountInv("TheOneRing") > 0) value = value * 3 / 2;
+		
+		// Divine Avatar
+		if (CallACS("GetBuffTimer",7) > 0) value *= 4;
+	
+		// ???
+		if (CallACS("GetBuffTimer",129) > 0) value *= 10;
+		
+		// Healing Strength is increased based on Sorcery stat
+		if (CharacterClass == 0) HealSorcRatio = (PlayerSOR * 75) / 300;
+		if (CharacterClass == 1) HealSorcRatio = (PlayerSOR * 75) / 200;
+		if (CharacterClass == 2) HealSorcRatio = (PlayerSOR * 75) / 150;
+		if (CharacterClass == 8) HealSorcRatio = (PlayerSOR * 75) / 175;
+		if (CharacterClass == 9) HealSorcRatio = (PlayerSOR * 75) / 200;
+		HealSorcRatio += 100;
+		value = (value * HealSorcRatio) / 100;
+		// Healing Strength is also increased based on Therapeusis stat [3x the value of Sorcery, so Therapeusis is best for healing]
+		if (CharacterClass == 0) HealSorcRatio = (PlayerTHE * 225) / 300;
+		if (CharacterClass == 1) HealSorcRatio = (PlayerTHE * 225) / 200;
+		if (CharacterClass == 2) HealSorcRatio = (PlayerTHE * 225) / 150;
+		if (CharacterClass == 8) HealSorcRatio = (PlayerTHE * 225) / 175;
+		if (CharacterClass == 9) HealSorcRatio = (PlayerTHE * 225) / 200;
+		HealSorcRatio += 100;
+		value = (value * HealSorcRatio) / 100;
+		
+		string TensionItem;
+		if (TensionLevel == 0) TensionItem = "0";
+		if (TensionLevel == 1) TensionItem = "5";
+		if (TensionLevel == 2) TensionItem = "20";
+		if (TensionLevel == 3) TensionItem = "50";
+		if (TensionLevel == 4) TensionItem = "100";
+		if (TensionLevel == 5) TensionItem = "250";
+		if (TensionLevel == 6) TensionItem = "500";
+		if (TensionLevel == 7) TensionItem = "1000";
+		//PrintBold(s:"Pre-Tension [Heal] (",s:TensionItem,s:"): ",d:value);
+		if (TensionLevel == 1) value = value * 17 / 10; // 1.7x
+		if (TensionLevel == 2) value = value * 3; // 3x
+		if (TensionLevel == 3) value = value * 5; // 5x
+		if (TensionLevel == 4) value = value * 15 / 2; // 7.5x
+		if (TensionLevel == 5) value = value * 45 / 4; // 11.25x
+		if (TensionLevel == 6) value = value * 35 / 2; // 17.5x
+		if (TensionLevel == 7) value = value * 25; // 25x
+		//PrintBold(s:"Post-Tension [Heal] (",s:TensionItem,s:"): ",d:value);
+
+		return value;
+	}
+	
+	void A_PSI1DoEffectHealValueCheck()
+	{
+		CallACS("MiscVarSetDECORATE",281,F_GetHealingValue(0,0));
+		CallACS("MiscVarSetDECORATE",282,F_GetHealingValue(0,1));
+		CallACS("MiscVarSetDECORATE",283,F_GetHealingValue(1,0));
+		CallACS("MiscVarSetDECORATE",284,F_GetHealingValue(1,1));
+		CallACS("MiscVarSetDECORATE",285,F_GetHealingValue(2,0));
+		CallACS("MiscVarSetDECORATE",286,F_GetHealingValue(2,1));
+	}
+	
+	int F_SpellCostCheck(int checktype)
+	{
+		int SpellIsSelected = checktype;
+		int FinalSpellCost, DivineAvatarPercentCost, SpellCostDeclineLevelsNeeded, LevelSpellCostReductionFactor, LvlSpellCostReducePercent, SecretSplCostReduceBonus, Check1, Check2;
+		int OriginalSpellCost, StatManaCostReduction;
+		int spellcostdebug = dvdsdebug_showspellcoststuff;
+		int DivineAvatarTimer = CallACS("GetBuffTimer",7);
+		PlayerLevel = CallACS("StatCheck",0);
+		CharacterClass = CallACS("CheckCharacterClass");
+		ModType = CallACS("OtherVarCheckDECORATE",8);
+		
+		if (SpellIsSelected == 53) // Divine Avatar Costs at most 90% of Mana Supply by Default
+		{
+			if (TrueGameSkill <= SKILL_VERY_EASY) DivineAvatarPercentCost = 80;
+			if (TrueGameSkill == SKILL_EASY) DivineAvatarPercentCost = 85;
+			if (TrueGameSkill == SKILL_NORMAL) DivineAvatarPercentCost = 90;
+			if (TrueGameSkill == SKILL_HARD) DivineAvatarPercentCost = 92;
+			if (TrueGameSkill == SKILL_VERY_HARD) DivineAvatarPercentCost = 95;
+			if (TrueGameSkill == SKILL_EXTREME) DivineAvatarPercentCost = 97;
+			if (TrueGameSkill == SKILL_HORRIBLE) DivineAvatarPercentCost = 98;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) DivineAvatarPercentCost = 99;
+			if (TrueGameSkill >= SKILL_OMEGA) DivineAvatarPercentCost = 100;
+			
+			if (DivineAvatarTimer > 0)
+			{
+				if (CallACS("MiscVarCheckDECORATE",14) > 0) DivineAvatarPercentCost *= 2;
+			}
+			
+			
+			FinalSpellCost = MaxMana * DivineAvatarPercentCost / 100;
+			OriginalSpellCost = MaxMana * DivineAvatarPercentCost / 100;
+		}
+		else
+		if (SpellIsSelected == 40) // Diamond Skin / Spreader Aura Lv. 1
+		{
+			if (CharacterClass == 2) // If Flora is in use, it'll be Spreader Aura Lv. 1
+			{
+				FinalSpellCost = 575;
+				OriginalSpellCost = 575;
+			}
+			else // Otherwise, it's DiamondSkin and uses the usual costs
+			{
+				FinalSpellCost = CallACS("SpellCostsCheckDECORATE",SpellIsSelected);
+				OriginalSpellCost = CallACS("SpellCostsCheckDECORATE",SpellIsSelected);
+			}
+		}
+		else
+		if (SpellIsSelected == 15)
+		{
+			if (CharacterClass == 9) //If Petra is in use, it will be Desperado Damsel
+			{
+				FinalSpellCost = CallACS("SpellCostsCheckDECORATE",58);
+				OriginalSpellCost = CallACS("SpellCostsCheckDECORATE",58);  
+			}
+			else
+			{
+				FinalSpellCost = CallACS("SpellCostsCheckDECORATE",15);
+				OriginalSpellCost = CallACS("SpellCostsCheckDECORATE",15);
+			}
+		}
+		else
+		{
+			FinalSpellCost = CallACS("SpellCostsCheckDECORATE",SpellIsSelected);
+			OriginalSpellCost = CallACS("SpellCostsCheckDECORATE",SpellIsSelected);
+		}
+		if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [\c[Gold]Original Base\c-]", checktype, FinalSpellCost);
+		
+		int manacostbaselevelreq = dvds_manacostbaselevelreq;
+		// SpellCostDeclineLevelsNeeded = Number of Levels needed to be gained before the spell begins to decline in cost at every level up
+		if (SpellIsSelected == 0) SpellCostDeclineLevelsNeeded = manacostbaselevelreq; // (Minor Magic Missile) Level 0
+		if (SpellIsSelected == 1) SpellCostDeclineLevelsNeeded = manacostbaselevelreq; // (Minor Healing) Level 0
+		if (SpellIsSelected == 2) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 1; // (Minor Night Vision) Level 1
+		if (SpellIsSelected == 3) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 1; // (Chill Touch) Level 1
+		if (SpellIsSelected == 4) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 2; // (Minor Invisibility) Level 2
+		if (SpellIsSelected == 5) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 2; // (Minor Flight) Level 2
+		if (SpellIsSelected == 6) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 3; // (Minor Poison Cloud) Level 3
+		if (SpellIsSelected == 7) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 4; // (Minor Fireball) Level 4
+		if (SpellIsSelected == 8) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 5; // (Enhanced Strength) Level 5
+		if (SpellIsSelected == 9) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 6; // (Minor Ice Blast) Level 6
+		if (SpellIsSelected == 10) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 7; // (Summon Weak Monster) Level 7
+		if (SpellIsSelected == 11) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 7; // (Magic Missile) Level 7
+		if (SpellIsSelected == 12) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 8; // (Fireball) Level 8
+		if (SpellIsSelected == 13) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 9; // (Explosive Glyph) Level 9
+		if (SpellIsSelected == 14) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 9; // (Healing) Level 9
+		if (SpellIsSelected == 15) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 10; // (Fireball Nova) or (Desperado Damsel) [Petra] Level 10
+		if (SpellIsSelected == 16) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 11; // (Attack Booster) Level 11
+		if (SpellIsSelected == 17) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 11; // (Minor Raging Spirits) Level 11
+		if (SpellIsSelected == 18) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 11; // (Invisibility) Level 11
+		if (SpellIsSelected == 19) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 12; // (Acid Rain) Level 12
+		if (SpellIsSelected == 20) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 12; // (Minor Terrorization Aura) Level 12
+		if (SpellIsSelected == 21) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 13; // (Night-Vision) Level 13
+		if (SpellIsSelected == 22) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 13; // (Flight) Level 13
+		if (SpellIsSelected == 23) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 14; // (Major Magic Missile) Level 14
+		if (SpellIsSelected == 24) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 15; // (Summon Monster) Level 15
+		if (SpellIsSelected == 25) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 16; // (Icy Nova) Level 16
+		if (SpellIsSelected == 26) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 16; // (Poison Cloud) Level 16
+		if (SpellIsSelected == 27) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 17; // (Minor Lightning) Level 17
+		if (SpellIsSelected == 28) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 18; // (Stone Skin) Level 18
+		if (SpellIsSelected == 29) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 18; // (Major Healing) Level 18
+		if (SpellIsSelected == 30) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 19; // (Major Night-Vision) Level 19
+		if (SpellIsSelected == 31) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Ice Blast) Level 20
+		if (SpellIsSelected == 32) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Farsight) Level 20
+		if (SpellIsSelected == 33) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Lightning Nova) Level 20
+		if (SpellIsSelected == 34) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Minor Time Freezer) Level 21
+		if (SpellIsSelected == 35) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Defense Booster) Level 21
+		if (SpellIsSelected == 36) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Major Invisibility) Level 21
+		if (SpellIsSelected == 37) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 21; // (Major Flight) Level 21
+		if (SpellIsSelected == 38) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 22; // (Lightning) Level 22
+		if (SpellIsSelected == 39) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 23; // (Summon Strong Monster) Level 23
+		if (SpellIsSelected == 40) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 24; // (Diamond Skin) [Deggaris/Illucia] or (Spreader Aura Lv. 1) [Flora] Level 24
+		if (SpellIsSelected == 41) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 25; // (Major Fireball) Level 25
+		if (SpellIsSelected == 42) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 25; // (Major Ice Blast) Level 25
+		if (SpellIsSelected == 43) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 25; // (Major Poison Cloud) Level 25
+		if (SpellIsSelected == 44) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 25; // (Major Lightning) Level 25
+		if (SpellIsSelected == 45) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 26; // (Invulnerability) Level 26
+		if (SpellIsSelected == 46) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 26; // (Speed Booster) Level 26 
+		if (SpellIsSelected == 47) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 27; // (Raging Spirits) Level 27
+		if (SpellIsSelected == 48) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 28; // (Summon Arch-Vile) Level 28
+		if (SpellIsSelected == 49) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 20; // (Ultra Magic Missile) Level 29
+		if (SpellIsSelected == 50) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 30; // (Time Freezer) Level 30
+		if (SpellIsSelected == 51) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 30; // (Terrorization Aura) Level 30
+		if (SpellIsSelected == 52) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 30; // (Create Lotso Ammo) Level 30
+		if (SpellIsSelected == 53) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 31; // (Divine Avatar) Level 31
+		if (SpellIsSelected == 54) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 31; // (Summon Cyberdemon) Level 31
+		if (SpellIsSelected == 55) SpellCostDeclineLevelsNeeded = manacostbaselevelreq + 56; // (Spreader Aura Lv. 2) Level 56 [Flora Only]
+		
+		int SpellCostDeclineFactor = 150;
+		if (TrueGameSkill <= SKILL_VERY_EASY) SpellCostDeclineFactor = 100;
+		if (TrueGameSkill == SKILL_EASY) SpellCostDeclineFactor = 125;
+		if (TrueGameSkill == SKILL_NORMAL) SpellCostDeclineFactor = 150;
+		if (TrueGameSkill == SKILL_HARD) SpellCostDeclineFactor = 175;
+		if (TrueGameSkill == SKILL_VERY_HARD) SpellCostDeclineFactor = 200;
+		if (TrueGameSkill == SKILL_EXTREME) SpellCostDeclineFactor = 225;
+		if (TrueGameSkill == SKILL_HORRIBLE) SpellCostDeclineFactor = 250;
+		if (TrueGameSkill == SKILL_IMPOSSIBLE) SpellCostDeclineFactor = 275;
+		if (TrueGameSkill >= SKILL_OMEGA) SpellCostDeclineFactor = 300;
+	
+		SpellCostDeclineLevelsNeeded = (SpellCostDeclineLevelsNeeded * SpellCostDeclineFactor) / 100;
+		
+		// Base Spell Cost Reduction Factor [level-based] 
+		LevelSpellCostReductionFactor = PlayerLevel - SpellCostDeclineLevelsNeeded;
+		if (LevelSpellCostReductionFactor < 0) LevelSpellCostReductionFactor = 0;
+	
+		LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 2 / 30; // This is for any class that is not one of the below otherwise ignore this line
+		if (CharacterClass == 0) LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 1 / 18; // 5.55% [Deggaris]
+		else if (CharacterClass == 1) LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 1 / 16; // 6.25% [Illucia]
+		else if (CharacterClass == 2) LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 2 / 18; // 11.1% [Flora]
+		else if (CharacterClass == 8) LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 2 / 20; // 10% [Ailish]
+		else if (CharacterClass == 9) LevelSpellCostReductionFactor = LevelSpellCostReductionFactor * 1 / 12; // 8.33% [Petra]
+		
+		LvlSpellCostReducePercent = 100;
+		LvlSpellCostReducePercent -= LevelSpellCostReductionFactor;
+		FinalSpellCost = FinalSpellCost * LvlSpellCostReducePercent / 100;
+		if (checktype != -1 && spellcostdebug == 1 && LvlSpellCostReducePercent != 100) Console.Printf("FinalSpellCost (%d): %d MP [LevelCostReduce], LvlSpellCostReducePercent: [%d / 100]", checktype, FinalSpellCost, LvlSpellCostReducePercent);
+		
+		if (SpellIsSelected == 34) // Minor Time Freezer Costs at least 10% of Mana Supply by Default (Deggaris and Illucia Only)
+		{
+			LevelSpellCostReductionFactor = MaxMana / 10;
+			FinalSpellCost += LevelSpellCostReductionFactor;
+			if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [TimeFreezerCheck]", checktype, FinalSpellCost);
+		}
+		
+		if (SpellIsSelected == 50) // Time Freezer Costs at least 25% of Mana Supply by Default (Deggaris and Illucia Only)
+		{
+			LevelSpellCostReductionFactor = MaxMana / 4;
+			FinalSpellCost += LevelSpellCostReductionFactor;
+			if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [TimeFreezerCheck]", checktype, FinalSpellCost);
+		}
+		
+		// Secret Tally Affects Mana Consumption
+		int i, forstart, forend;
+		if (dvds_secretsreducemanacosts >= 1)
+		{
+			if (ModType == 0) { forstart = 0; forend = 151; }
+			if (ModType == 1) { forstart = 1100; forend = 1105; }
+			if (ModType == 2) { forstart = 1200; forend = 1215; }
+			SecretSplCostReduceBonus = 0;
+			for (i = forstart; i < forend; i++) { SecretSplCostReduceBonus += CallACS("ArrayVarCheckDECORATE",2,i); }
+			if (TrueGameSkill <= SKILL_VERY_EASY) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 7 / 60; // 11.67% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_EASY)  SecretSplCostReduceBonus = SecretSplCostReduceBonus * 3 / 30; // 10% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_NORMAL) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 1 / 12; // 8.33% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_HARD) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 2 / 30; // 6.67% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_VERY_HARD) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 3 / 60; // 5% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_EXTREME) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 2 / 50; // 4% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_HORRIBLE) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 3 / 100; // 3% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 1 / 50; // 2% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill >= SKILL_OMEGA) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 1 / 100; // 1% of the total secrets found accumulate to the percentage
+			SecretSplCostReduceBonus *= -1; // Inverts the number to a "cost"
+			SecretSplCostReduceBonus += 100; // Then adds 100 to it for the actual percentage factor
+	
+			if (SecretSplCostReduceBonus > 100) SecretSplCostReduceBonus = 100;
+			if (CharacterClass == 2 || CharacterClass == 8 || CharacterClass == 9)
+			{
+				if (SecretSplCostReduceBonus < 50) SecretSplCostReduceBonus = 50; // Flora, Ailish or Petra
+			}
+			else
+			{
+				if (SecretSplCostReduceBonus < 63) SecretSplCostReduceBonus = 63; // Deggaris/Illucia
+			}
+			FinalSpellCost = FinalSpellCost * SecretSplCostReduceBonus / 100;
+			if (checktype != -1 && spellcostdebug == 1 && SecretSplCostReduceBonus != 100) Console.Printf("FinalSpellCost (%d): %d MP [CostReduceBonus], SecretSplCostReduceBonus: [%d / 100]", checktype, FinalSpellCost, SecretSplCostReduceBonus);
+		}
+		
+		// Check for having The Ring in you inventory
+		if (owner.CountInv("TheOneRing") > 0)
+		{
+			if (CharacterClass == 2 || CharacterClass == 8) FinalSpellCost = FinalSpellCost * 13 / 16; // 81.25% MP Cost (Flora and Ailish are the only ones who doesn't have their MP Costs increased by the One Ring)
+			else FinalSpellCost = FinalSpellCost * 5 / 4; // 125% MP Cost (Deggaris and Illucia)
+			if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [The One Ring]", checktype, FinalSpellCost);
+		}
+		
+		int SpellCostMinimum;
+		
+		if (CharacterClass == 2)
+		{
+			Check1 = 0; // Check1 is an exact value
+			Check2 = 1000; // Check2 is a % value
+			if (owner.CountInv("EvenstarNecklace") > 0) { Check1 += 10; Check2 -= 50; } // Evenstar Necklace [MP reduction of 10 + 5%]
+			if (owner.CountInv("AnubisCufflinks") > 0) { Check1 += 2; Check2 -= 10; } // Anubis Cufflinks [MP reduction of 2 + 1%]
+			if (owner.CountInv("BalrogRing") > 0) { Check1 += 5; Check2 -= 25; } // Balrog's Ring [MP reduction of 5 + 2.5%]
+	
+			FinalSpellCost -= Check1;
+			FinalSpellCost = FinalSpellCost * Check2 / 1000;
+	
+			// Ruinous Shield = +50% MP Consumption
+			if (owner.CountInv("RuinousShield") > 0) FinalSpellCost = FinalSpellCost * 3 / 2;
+			if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [FloraArmors]", checktype, FinalSpellCost);
+		}
+
+		int MaxManaDouble = MaxMana * 2;
+		if (SpellIsSelected == 53 && DivineAvatarTimer > 0)
+		{
+			if (FinalSpellCost > MaxManaDouble) FinalSpellCost = MaxManaDouble;
+		}
+		else
+		{
+			if (FinalSpellCost > MaxMana) FinalSpellCost = MaxMana;
+		}
+		if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [MaxManaClamp]", checktype, FinalSpellCost);
+		
+		if (TrueGameSkill <= SKILL_VERY_EASY) SpellCostMinimum = OriginalSpellCost * 42 / 100;
+		if (TrueGameSkill == SKILL_EASY) SpellCostMinimum =  OriginalSpellCost * 49 / 100;
+		if (TrueGameSkill == SKILL_NORMAL) SpellCostMinimum =  OriginalSpellCost * 56 / 100;
+		if (TrueGameSkill == SKILL_HARD) SpellCostMinimum =  OriginalSpellCost * 63 / 100;
+		if (TrueGameSkill == SKILL_VERY_HARD) SpellCostMinimum = OriginalSpellCost * 70 / 100;
+		if (TrueGameSkill == SKILL_EXTREME) SpellCostMinimum = OriginalSpellCost * 77 / 100;
+		if (TrueGameSkill == SKILL_HORRIBLE) SpellCostMinimum = OriginalSpellCost * 84 / 100;
+		if (TrueGameSkill == SKILL_IMPOSSIBLE) SpellCostMinimum = OriginalSpellCost * 91 / 100;
+		if (TrueGameSkill >= SKILL_OMEGA) SpellCostMinimum = OriginalSpellCost * 98 / 100;
+		
+		// Clamp Minimum Mana Cost
+		if (FinalSpellCost < SpellCostMinimum) FinalSpellCost = SpellCostMinimum;
+		if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [CostMinimumClamp]", checktype, FinalSpellCost);
+		
+		double SpellCostMinimum2 = 0.0;
+		int MagiUpPerkLvl = CallACS("MiscVarCheckDECORATE",10003);
+		int MagiUpExPerkLvl = CallACS("MiscVarCheckDECORATE",10004);
+		int ClearMindPerkLvl = CallACS("MiscVarCheckDECORATE",10055);
+		int ClearMindEXPerkLvl = CallACS("MiscVarCheckDECORATE",10056);
+		// Clearer of Mind & MagiUp Perks
+		if (MagiUpPerkLvl > 0 || ClearMindPerkLvl > 0)
+		{
+			SpellCostMinimum2 = (MagiUpPerkLvl * 1) + (MagiUpExPerkLvl * 2) + (ClearMindPerkLvl * 2) + (ClearMindEXPerkLvl * 5);
+			if (MagiUpExPerkLvl >= 2) SpellCostMinimum2 += 1;
+			if (ClearMindPerkLvl >= 2) SpellCostMinimum2 += 1;
+			if (ClearMindPerkLvl >= 4) SpellCostMinimum2 += 2;
+			if (ClearMindEXPerkLvl >= 2) SpellCostMinimum2 += 5;
+			SpellCostMinimum2 *= -1;
+			SpellCostMinimum2 += 100;
+			FinalSpellCost = (FinalSpellCost * SpellCostMinimum2) / 100;
+			if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [ClearMind/MagiUp], SpellCostMinimum2: [%d / 100]", checktype, FinalSpellCost, SpellCostMinimum2);
+		}
+		
+		// ((Sorcery + Therapeusis) / 2) = -0.1% Final Mana Cost [circumvents Clamp]
+		int manacostbasestatreq = dvds_manacostbasestatreq;
+		int PlayerSOR = CallACS("StatCheck",6);
+		int PlayerTHE = CallACS("StatCheck",8);
+		StatManaCostReduction = 100 - ((PlayerSOR + PlayerTHE) / manacostbasestatreq);
+		if (StatManaCostReduction < 25) StatManaCostReduction = 25;
+		FinalSpellCost = FinalSpellCost * StatManaCostReduction / 100;
+		if (checktype != -1 && spellcostdebug == 1 && StatManaCostReduction != 100) Console.Printf("FinalSpellCost (%d): %d MP [SorcTherChecks], StatManaCostReduction: [%d / 100]", checktype, FinalSpellCost, StatManaCostReduction);
+		
+		// Checks Mana Cost Rate Menu Option [circumvents Clamp]
+		FinalSpellCost = FinalSpellCost * dvds_manacostgmultiplier / 100;
+		if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [CostRateOption]", checktype, FinalSpellCost);
+		
+		if (FinalSpellCost < 1) FinalSpellCost = 1;
+		if (SpellIsSelected == 53 && CallACS("GetBuffTimer",7) > 0)
+		{
+			if (FinalSpellCost > MaxManaDouble) FinalSpellCost = MaxManaDouble;
+		}
+		else
+		{
+			if (FinalSpellCost > MaxMana) FinalSpellCost = MaxMana;
+		}
+		if (spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d / %d MP [\cxFinalClamps]", checktype, FinalSpellCost, OriginalSpellCost);
+		
+		return FinalSpellCost;
+	}
+	
+	void A_PSI1DoEffectSpellCostCheck()
+	{
+	}
+
 	void A_PSI1DoEffectFinalCalls()
 	{
 		int temp;
@@ -3063,7 +3554,7 @@ class PlayerStatItem : Inventory
 		IsFocusOn = CallACS("MiscVarCheckDECORATE",212);
 		CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
 		int MaximumStamina = CallACS("MiscVarCheckDECORATE",22);
-		int MenuModeToggle = CallACS("MiscVarCheckDECORATE",2500);
+		int MenuModeToggle = CallACS("MenuVarCheckDECORATE",0);
 		int InvulnerabilityTimer = CallACS("GetBuffTimer",4);
 		int DivineAvatarTimer = CallACS("GetBuffTimer",7);
 		int DQAcceleratleTimer = CallACS("GetBuffTimer",12);
@@ -3616,11 +4107,11 @@ class PlayerStatItem : Inventory
 				
 				// "Death Rage" Perk
 				SkillFactor = delaycount;
-				if (CallACS("MiscVarCheckDECORATE",9043) > 0)
+				if (DeathRageTimer > 0)
 				{
-					if (CallACS("MiscVarCheckDECORATE",9043) <= 1) delaycount *= 2;
-					if (CallACS("MiscVarCheckDECORATE",9043) == 2) delaycount *= 4;
-					if (CallACS("MiscVarCheckDECORATE",9043) >= 3) delaycount *= 8;
+					if (DeathRageTimer <= 1) delaycount *= 2;
+					if (DeathRageTimer == 2) delaycount *= 4;
+					if (DeathRageTimer >= 3) delaycount *= 8;
 				}
 				if (dvdsdebug_showhpregenstuff && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 18 - Regen Intervals (Death Rage)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 				
@@ -3890,11 +4381,11 @@ class PlayerStatItem : Inventory
 					
 					// "Death Rage" Perk
 					SkillFactor = delaycount;
-					if (CallACS("MiscVarCheckDECORATE",9043) > 0)
+					if (DeathRageTimer > 0)
 					{
-						if (CallACS("MiscVarCheckDECORATE",9043) <= 1) delaycount *= 0.5;
-						if (CallACS("MiscVarCheckDECORATE",9043) == 2) delaycount *= 0.25;
-						if (CallACS("MiscVarCheckDECORATE",9043) >= 3) delaycount *= 0.125;
+						if (DeathRageTimer <= 1) delaycount *= 0.5;
+						if (DeathRageTimer == 2) delaycount *= 0.25;
+						if (DeathRageTimer >= 3) delaycount *= 0.125;
 					}
 					if (dvdsdebug_showhpregenstuff && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 17 - Degen Intervals (Death Rage)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 
@@ -4541,7 +5032,7 @@ class PlayerStatItem : Inventory
 				if (debugmanaregen) Console.Printf("    \cnMP Regen [Step x10 - Get Max Regen]: %d\c-, MaxRegen: %d", RegenedMana, MaxRegenableMana);
 	
 				EquippedRegenCap = 100; // in percent
-				// All-Character Specfic Items
+				// All-Character Specific Items
 				if (Owner.CountInv("SauronHelmet") > 0) EquippedRegenCap -= 25;  // (-25% extension if Sauron's Helmet is equipped)
 				if (Owner.CountInv("SauronGauntlets") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
 				if (Owner.CountInv("SauronGauntletsIllucia") > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
@@ -4551,14 +5042,14 @@ class PlayerStatItem : Inventory
 				nm = "SauronGauntletsPetra"; APPackCheck2 = nm; 
 				if (Owner.CountInv(APPackCheck2) > 0) EquippedRegenCap -= 10;  // (-10% extension if Sauron's Gauntlets are equipped)
 				if (Owner.CountInv("TheOneRing") > 0) EquippedRegenCap += 50;  // (+50% extension if The One Ring is equipped)
-				// Marine Specfic Items (between -4% and -16%, since only one can be equipped at once
+				// Marine Specific Items (between -4% and -16%, since only one can be equipped at once
 				if (Owner.CountInv("DSGreenArmorClass") > 0) EquippedRegenCap -= 4; // (-4% for Green Armor)
 				if (Owner.CountInv("DSBlueArmorClass") > 0) EquippedRegenCap -= 8; // (-8% for Blue Armor)
 				if (Owner.CountInv("DSStoneArmorClass1") > 0) EquippedRegenCap -= 10; // (-10% for Stone Armor 1)
 				if (Owner.CountInv("DSDiamondArmorClass1") > 0) EquippedRegenCap -= 14; // (-14% for Diamond Armor 1)
 				if (Owner.CountInv("DSStoneArmorClass2") > 0) EquippedRegenCap -= 12; // (-12% for Stone Armor 2)
 				if (Owner.CountInv("DSDiamondArmorClass2") > 0) EquippedRegenCap -= 16; // (-16% for Diamond Armor 2)
-				// Flora Specfic Items (up to +150%)
+				// Flora Specific Items (up to +150%)
 				if (Owner.CountInv("EvenstarNecklace") > 0) EquippedRegenCap += 25;  // (+25% extension if Evenstar Necklace is equipped)
 				if (Owner.CountInv("AnubisCufflinks") > 0) EquippedRegenCap += 62;  // (+62% extension if Anubis Cufflinks are equipped)
 				if (Owner.CountInv("KissaBra") > 0) EquippedRegenCap += 38; // (+38% extension if Kissa's Armor Brassiere is equipped)
@@ -4761,7 +5252,7 @@ class PlayerStatItem : Inventory
 				
 				// Check Armor for Bonus/Penalties
 				staminaregenbase = 1000;
-				// Marine Specfic Armors
+				// Marine Specific Armors
 				if (Owner.CountInv("DSGreenArmorClass") > 0)		staminaregenbase += 12; 
 				if (Owner.CountInv("DSBlueArmorClass") > 0)			staminaregenbase += 25; 
 				if (Owner.CountInv("DSStoneArmorClass1") > 0)		staminaregenbase += 50; 
@@ -5000,7 +5491,7 @@ class PlayerStatItem : Inventory
 				
 				// Check Armor for Bonus/Penalties
 				staminaregenbase = 1000;
-				// Marine Specfic Armors
+				// Marine Specific Armors
 				if (Owner.CountInv("DSGreenArmorClass") > 0)		staminaregenbase -= 6; 
 				if (Owner.CountInv("DSBlueArmorClass") > 0)			staminaregenbase -= 12; 
 				if (Owner.CountInv("DSStoneArmorClass1") > 0)		staminaregenbase -= 25; 
@@ -5507,7 +5998,7 @@ class PlayerStatItem : Inventory
 
 			// Death Rage [Invulnerablity?]
 			double DeathRageRDFactor = 1.0;
-			if (CallACS("MiscVarCheckDECORATE",9043) > 0) DeathRageRDFactor = 0.0;
+			if (DeathRageTimer > 0) DeathRageRDFactor = 0.0;
 			
 			// DQ Buffs
 			double DQBuffRDFactor = 1.00;
@@ -6153,7 +6644,7 @@ class PlayerStatItem : Inventory
 
 			SkillFactor = SurvivalRate;
 			// Death Rage's Invulnerability
-			if (CallACS("MiscVarCheckDECORATE",9043) > 0) 
+			if (DeathRageTimer > 0) 
 			{
 				SurvivalRate = 1000;
 				if (debugsurvival && SurvivalRate != SkillFactor) Console.Printf("    \cwSurvival Rate % [STEP 12 - Death Rage Invulnerability Check]: %d,\c- Previous: %d", SurvivalRate, SkillFactor);
@@ -6900,7 +7391,7 @@ class PlayerStatItem : Inventory
 		int PsychFstPerkLvl = CallACS("MiscVarCheckDECORATE",10011);
 		int PsychFstEXPerkLvl = CallACS("MiscVarCheckDECORATE",10012);
 		int UsingInGameMenu = CallACS("MenuVarCheckDECORATE",0);
-		int MenuModeToggle = CallACS("MiscVarCheckDECORATE",2500);
+		int MenuModeToggle = CallACS("MenuVarCheckDECORATE",0);
 		
 		if (playeractor)
 		{
@@ -6929,7 +7420,6 @@ class PlayerStatItem : Inventory
 			int TensionMaxCooldownTimer = CallACS("MiscVarCheckDECORATE",188);
 			TensionChargeLoopTimer = CallACS("MiscVarCheckDECORATE",189);
 			TensionActivePulseTimer = CallACS("MiscVarCheckDECORATE",190);
-			int TensionBackgroundAuraTimer = CallACS("MiscVarCheckDECORATE",246);
 			TensionOverPsycheTimer = CallACS("MiscVarCheckDECORATE",250);
 			TensionOverchargeTimer = CallACS("MiscVarCheckDECORATE",251);
 			TensionMaxOverchargeTimer = CallACS("MiscVarCheckDECORATE",261);
@@ -7733,7 +8223,6 @@ class PlayerStatItem : Inventory
 			CallACS("MiscVarSetDECORATE",188,TensionMaxCooldownTimer);
 			CallACS("MiscVarSetDECORATE",189,TensionChargeLoopTimer);
 			CallACS("MiscVarSetDECORATE",190,TensionActivePulseTimer);
-			CallACS("MiscVarSetDECORATE",246,TensionBackgroundAuraTimer);
 			CallACS("MiscVarSetDECORATE",250,TensionOverPsycheTimer);
 			CallACS("MiscVarSetDECORATE",251,TensionOverchargeTimer);
 			CallACS("MiscVarSetDECORATE",261,TensionMaxOverchargeTimer);
@@ -9229,7 +9718,7 @@ class PlayerStatItem : Inventory
 							if (CharacterClass == 8) lvlcharsnd = "AilishLeveledUp"; //Ailish
 							if (CharacterClass == 9) lvlcharsnd = "PetraLeveledUp"; //Petra
 							owner.A_StartSound(lvlcharsnd,CHAN_6,CHANF_DEFAULT,1.25,ATTN_NONE); 
-							CallACS("MiscVarSetDECORATE",247,1);
+							LevelupSpeechTimer1 = 1;
 						}
 						
 						// [222] # of TOTAL Max HP gained during multiple stat ups [for displays]
@@ -9281,7 +9770,7 @@ class PlayerStatItem : Inventory
 			}
 			
 			// Delays the levelup speech for a character
-			if (CallACS("MiscVarCheckDECORATE",247) > 0)
+			if (LevelupSpeechTimer1 > 0)
 			{
 				LevelupSpeechTimer2++;
 				if (dvdsdebug_levelupdisplays) Console.Printf("Level Up dialogue Timer: %d / 105", LevelupSpeechTimer2);
@@ -9294,7 +9783,7 @@ class PlayerStatItem : Inventory
 							owner.A_StartSound("FloraLevelSpeech",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
 						}
 					}
-					CallACS("MiscVarSetDECORATE",247,0);
+					LevelupSpeechTimer1 = 0;
 					LevelupSpeechTimer2 = 0;
 				}
 			}
@@ -10927,7 +11416,7 @@ class PlayerStatItem : Inventory
 			if (Owner.CountInv("DSDiamondArmorClass1") > 0)	temp += 1000; // +10.0% Chance
 			if (Owner.CountInv("DSStoneArmorClass2") > 0)		temp += 1500; // +15.0% Chance
 			if (Owner.CountInv("DSDiamondArmorClass2") > 0)	temp += 2500; // +25.0% Chance
-			if (ModType != 0) 															temp *= 1.5; // Marine's Armor gives them 1.5x the chance of infinite ammo (from their specfic armors only) on each tic in DVI/DVII mode.
+			if (ModType != 0) 															temp *= 1.5; // Marine's Armor gives them 1.5x the chance of infinite ammo (from their specific armors only) on each tic in DVI/DVII mode.
 			infammoneeded += temp;
 			if (dvdsdebug_infiniteammostuff) Console.Printf("    \cwInfinite Ammo [STEP 1 - Marine Armor]: %d\c-", infammoneeded);
 
@@ -11326,10 +11815,9 @@ class PlayerStatItem : Inventory
 		
 		
 		
-		// [2500] In Menu or Not?
 		// [2502] Unfreeze Player
 		CallACS("MiscVarSetDECORATE",4,0);
-		if (CallACS("MiscVarCheckDECORATE",2500) == 1 || SleepTimer > 0) CallACS("MiscVarSetDECORATE",4,1,1); // Freezes the player's actions if in the menu or was put to sleep.
+		if (CallACS("MenuVarCheckDECORATE",0) != 0 || SleepTimer > 0) CallACS("MiscVarSetDECORATE",4,1,1); // Freezes the player's actions if in the menu or was put to sleep.
 		if (CallACS("MiscVarCheckDECORATE",4) > 0)
 		{
 			owner.player.cheats |= CF_FROZEN; // Turns on Freezing
@@ -11783,7 +12271,7 @@ class PlayerStatItem : Inventory
 						if (UsingInGameMenuSelection == 10) A_PerkRespecCheckEX(10045,10046); // OnTheMove [5]
 					}
 
-					if (UsingInGameSubMenu2 == 1) // Character-Specfic Stat Perks
+					if (UsingInGameSubMenu2 == 1) // Character-Specific Stat Perks
 					{
 						if (CharacterClass == 0) // Deggaris
 						{
@@ -12190,7 +12678,7 @@ class PlayerStatItem : Inventory
 			
 			// Death Rage
 			double DeathRageFactor = 1.0;
-			if (CallACS("MiscVarCheckDECORATE",9043) > 0)
+			if (DeathRageTimer > 0)
 			{
 				if (CallACS("MiscVarCheckDECORATE",10043) <= 1) DeathRageFactor = 2.5;
 				if (CallACS("MiscVarCheckDECORATE",10043) == 2) DeathRageFactor = 3.75;
@@ -12683,7 +13171,7 @@ class PlayerStatItem : Inventory
 
 			// Death Rage [Invulnerablity?] ===Unignorable===
 			double DeathRageFactor = 1.0;
-			if (CallACS("MiscVarCheckDECORATE",9043) > 0) DeathRageFactor = 0.0;
+			if (DeathRageTimer > 0) DeathRageFactor = 0.0;
 			
 			// Focusing ===Unignorable===
 			double FocusFactor = 1.00;
@@ -13025,18 +13513,18 @@ class PlayerStatItem2 : Inventory
 	double RuinousPtsCurrent, RuinousPtsNeeded;
 	double UncurseInterval, UncurseMaxInterval;
 
-	int LifeUpPerkComboCheck; // [9901]
-	int LifeUpPerkFactor; // [9902]
-	int LifeUpPerkBaseFactor; // [9903]
-	int MagiUpPerkComboCheck; // [9904]
-	int MagiUpPerkFactor; // [9905]
-	int MagiUpPerkBaseFactor; // [9906]
-	int StamUpgradeHPComboCheck; // [9907]
-	int StamUpgradeHPPerkFactor; // [9908]
-	int StamUpgradeHPPerkBaseFactor; // [9909]
-	int StamUpgradeMPComboCheck; // [9910]
-	int StamUpgradeMPPerkFactor; // [9911]
-	int StamUpgradeMPPerkBaseFactor; // [9912]
+	int LifeUpPerkComboCheck;
+	int LifeUpPerkFactor;
+	int LifeUpPerkBaseFactor;
+	int MagiUpPerkComboCheck;
+	int MagiUpPerkFactor;
+	int MagiUpPerkBaseFactor;
+	int StamUpgradeHPComboCheck;
+	int StamUpgradeHPPerkFactor;
+	int StamUpgradeHPPerkBaseFactor;
+	int StamUpgradeMPComboCheck;
+	int StamUpgradeMPPerkFactor;
+	int StamUpgradeMPPerkBaseFactor;
 
 	int landdmgbonus;
 	int heldtime;
