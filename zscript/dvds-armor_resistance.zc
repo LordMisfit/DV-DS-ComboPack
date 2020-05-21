@@ -2584,7 +2584,7 @@ class PlayerStatItem : Inventory
 		if (checktype < 0) return 0;
 
 		int SpellIsSelected = checktype;
-		int FinalSpellCost, DivineAvatarPercentCost, SpellCostDeclineLevelsNeeded, LevelSpellCostReductionFactor, LvlSpellCostReducePercent, SecretSplCostReduceBonus, Check1, Check2;
+		int FinalSpellCost, DivineAvatarPercentCost, SpellCostDeclineLevelsNeeded, LevelSpellCostReductionFactor, LvlSpellCostReducePercent, SecretSplCostReduceBonus, BaseSpellCostReduceBonus, Check1, Check2;
 		int OriginalSpellCost, StatManaCostReduction;
 		int spellcostdebug = dvdsdebug_showspellcoststuff;
 		int DivineAvatarTimer = CallACS("GetBuffTimer",7);
@@ -2711,7 +2711,7 @@ class PlayerStatItem : Inventory
 		
 		LvlSpellCostReducePercent = 100;
 		LvlSpellCostReducePercent -= LevelSpellCostReductionFactor;
-		FinalSpellCost = FinalSpellCost * LvlSpellCostReducePercent / 100;
+		FinalSpellCost = ceil(FinalSpellCost * LvlSpellCostReducePercent / 100);
 		if (checktype != -1 && spellcostdebug == 1 && LvlSpellCostReducePercent != 100) Console.Printf("FinalSpellCost (%d): %d MP [LevelCostReduce], LvlSpellCostReducePercent: [%d / 100]", checktype, FinalSpellCost, LvlSpellCostReducePercent);
 		
 		if (SpellIsSelected == 34) // Minor Time Freezer Costs at least 10% of Mana Supply by Default (Deggaris and Illucia Only)
@@ -2729,26 +2729,27 @@ class PlayerStatItem : Inventory
 		}
 		
 		// Secret Tally Affects Mana Consumption
-		int i, forstart, forend;
 		if (dvds_secretsreducemanacosts >= 1)
 		{
+			int forstart, forend;
 			if (ModType == 0) { forstart = 0; forend = 151; }
 			if (ModType == 1) { forstart = 1100; forend = 1105; }
 			if (ModType == 2) { forstart = 1200; forend = 1215; }
 			SecretSplCostReduceBonus = 0;
-			for (i = forstart; i < forend; i++) { SecretSplCostReduceBonus += CallACS("ArrayVarCheckDECORATE",2,i); }
-			if (TrueGameSkill <= SKILL_VERY_EASY) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 7 / 60; // 11.67% of the total secrets found accumulate to the percentage
-			if (TrueGameSkill == SKILL_EASY)  SecretSplCostReduceBonus = SecretSplCostReduceBonus * 3 / 30; // 10% of the total secrets found accumulate to the percentage
-			if (TrueGameSkill == SKILL_NORMAL) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 1 / 12; // 8.33% of the total secrets found accumulate to the percentage
-			if (TrueGameSkill == SKILL_HARD) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 2 / 30; // 6.67% of the total secrets found accumulate to the percentage
-			if (TrueGameSkill == SKILL_VERY_HARD) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 3 / 60; // 5% of the total secrets found accumulate to the percentage
-			if (TrueGameSkill == SKILL_EXTREME) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 2 / 50; // 4% of the total secrets found accumulate to the percentage
-			if (TrueGameSkill == SKILL_HORRIBLE) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 3 / 100; // 3% of the total secrets found accumulate to the percentage
-			if (TrueGameSkill == SKILL_IMPOSSIBLE) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 1 / 50; // 2% of the total secrets found accumulate to the percentage
-			if (TrueGameSkill >= SKILL_OMEGA) SecretSplCostReduceBonus = SecretSplCostReduceBonus * 1 / 100; // 1% of the total secrets found accumulate to the percentage
+			for (int i = forstart; i < forend; i++) { SecretSplCostReduceBonus += CallACS("ArrayVarCheckDECORATE",2,i); }
+			BaseSpellCostReduceBonus = SecretSplCostReduceBonus;
+			if (TrueGameSkill <= SKILL_VERY_EASY) SecretSplCostReduceBonus *= 0.1167; // 11.67% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_EASY) SecretSplCostReduceBonus *= 0.1; // 10% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_NORMAL) SecretSplCostReduceBonus *= 0.0833; // 8.33% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_HARD) SecretSplCostReduceBonus *= 0.0667; // 6.67% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_VERY_HARD) SecretSplCostReduceBonus *= 0.05; // 5% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_EXTREME) SecretSplCostReduceBonus *= 0.04; // 4% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_HORRIBLE) SecretSplCostReduceBonus *= 0.03; // 3% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) SecretSplCostReduceBonus *= 0.02; // 2% of the total secrets found accumulate to the percentage
+			if (TrueGameSkill >= SKILL_OMEGA) SecretSplCostReduceBonus *= 0.01; // 1% of the total secrets found accumulate to the percentage
 			SecretSplCostReduceBonus *= -1; // Inverts the number to a "cost"
 			SecretSplCostReduceBonus += 100; // Then adds 100 to it for the actual percentage factor
-	
+			
 			if (SecretSplCostReduceBonus > 100) SecretSplCostReduceBonus = 100;
 			if (CharacterClass == 2 || CharacterClass == 8 || CharacterClass == 9)
 			{
@@ -2758,15 +2759,15 @@ class PlayerStatItem : Inventory
 			{
 				if (SecretSplCostReduceBonus < 63) SecretSplCostReduceBonus = 63; // Deggaris/Illucia
 			}
-			FinalSpellCost = FinalSpellCost * SecretSplCostReduceBonus / 100;
-			if (checktype != -1 && spellcostdebug == 1 && SecretSplCostReduceBonus != 100) Console.Printf("FinalSpellCost (%d): %d MP [CostReduceBonus], SecretSplCostReduceBonus: [%d / 100]", checktype, FinalSpellCost, SecretSplCostReduceBonus);
+			FinalSpellCost = ceil(FinalSpellCost * SecretSplCostReduceBonus / 100);
+			if (checktype != -1 && spellcostdebug == 1 && SecretSplCostReduceBonus != 100) Console.Printf("FinalSpellCost (%d): %d MP [CostReduceBonus], SecretSplCostReduceBonus: [%d / 100 (%d)]", checktype, FinalSpellCost, SecretSplCostReduceBonus, BaseSpellCostReduceBonus);
 		}
 		
 		// Check for having The Ring in you inventory
 		if (owner.CountInv("TheOneRing") > 0)
 		{
-			if (CharacterClass == 2 || CharacterClass == 8) FinalSpellCost = FinalSpellCost * 13 / 16; // 81.25% MP Cost (Flora and Ailish are the only ones who doesn't have their MP Costs increased by the One Ring)
-			else FinalSpellCost = FinalSpellCost * 5 / 4; // 125% MP Cost (Deggaris and Illucia)
+			if (CharacterClass == 2 || CharacterClass == 8) FinalSpellCost = ceil(FinalSpellCost * 0.8125); // 81.25% MP Cost (Flora and Ailish are the only ones who doesn't have their MP Costs increased by the One Ring)
+			else FinalSpellCost = ceil(FinalSpellCost * 1.25); // 125% MP Cost (Deggaris and Illucia)
 			if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [The One Ring]", checktype, FinalSpellCost);
 		}
 		
@@ -2781,11 +2782,11 @@ class PlayerStatItem : Inventory
 			if (owner.CountInv("BalrogRing") > 0) { Check1 += 5; Check2 -= 25; } // Balrog's Ring [MP reduction of 5 + 2.5%]
 	
 			FinalSpellCost -= Check1;
-			FinalSpellCost = FinalSpellCost * Check2 / 1000;
+			FinalSpellCost = ceil(FinalSpellCost * Check2 / 1000);
 	
 			// Ruinous Shield = +50% MP Consumption
-			if (owner.CountInv("RuinousShield") > 0) FinalSpellCost = FinalSpellCost * 3 / 2;
-			if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [FloraArmors]", checktype, FinalSpellCost);
+			if (owner.CountInv("RuinousShield") > 0) FinalSpellCost = ceil(FinalSpellCost * 3 / 2);
+			if (checktype != -1 && spellcostdebug == 1 && (Check1 != 0 || Check2 != 1000)) Console.Printf("FinalSpellCost (%d): %d MP [FloraArmors] (-%d & %d)", checktype, FinalSpellCost, Check1, Check2);
 		}
 
 		int MaxManaDouble = MaxMana * 2;
@@ -2828,7 +2829,7 @@ class PlayerStatItem : Inventory
 			if (ClearMindEXPerkLvl >= 2) SpellCostMinimum2 += 5;
 			SpellCostMinimum2 *= -1;
 			SpellCostMinimum2 += 100;
-			FinalSpellCost = (FinalSpellCost * SpellCostMinimum2) / 100;
+			FinalSpellCost = ceil((FinalSpellCost * SpellCostMinimum2) / 100);
 			if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [ClearMind/MagiUp], SpellCostMinimum2: [%d / 100]", checktype, FinalSpellCost, SpellCostMinimum2);
 		}
 		
@@ -2838,11 +2839,11 @@ class PlayerStatItem : Inventory
 		int PlayerTHE = CallACS("StatCheck",8);
 		StatManaCostReduction = 100 - ((PlayerSOR + PlayerTHE) / manacostbasestatreq);
 		if (StatManaCostReduction < 25) StatManaCostReduction = 25;
-		FinalSpellCost = FinalSpellCost * StatManaCostReduction / 100;
+		FinalSpellCost = ceil(FinalSpellCost * StatManaCostReduction / 100);
 		if (checktype != -1 && spellcostdebug == 1 && StatManaCostReduction != 100) Console.Printf("FinalSpellCost (%d): %d MP [SorcTherChecks], StatManaCostReduction: [%d / 100]", checktype, FinalSpellCost, StatManaCostReduction);
 		
 		// Checks Mana Cost Rate Menu Option [circumvents Clamp]
-		FinalSpellCost = FinalSpellCost * dvds_manacostgmultiplier / 100;
+		FinalSpellCost = ceil(FinalSpellCost * dvds_manacostgmultiplier / 100);
 		if (checktype != -1 && spellcostdebug == 1) Console.Printf("FinalSpellCost (%d): %d MP [CostRateOption]", checktype, FinalSpellCost);
 		
 		if (FinalSpellCost < 1) FinalSpellCost = 1;
@@ -3526,6 +3527,12 @@ class PlayerStatItem : Inventory
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",5) > 0 || Owner.CountInv("PlayingCircus2") > 0) HellcoreCoolRatio = (HellcoreCoolRatio * 3) / 2;
 				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 10c - Cooldown Increment (Playing Happy Time Circus 2)]: %d\c-, Previous: %d", HellcoreCoolRatio, previousdelaycount);
 				
+				// Power Trip "Cheat"
+				previousdelaycount = HellcoreCoolRatio;
+				if (dvds_musou_powertripmode == 1) HellcoreCoolRatio *= 2.5; // 250%
+				if (dvds_musou_powertripmode == 2) HellcoreCoolRatio *= 5; // 500%
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 11 - Cooldown Increment (Power Trip Mode [%d])]: %d\c-, Previous: %d", dvds_musou_powertripmode, HellcoreCoolRatio, previousdelaycount);
+
 				// Using Focus
 				previousdelaycount = HellcoreCoolRatio;
 				double tempdouble;
@@ -3536,12 +3543,12 @@ class PlayerStatItem : Inventory
 					if (CallACS("DVDSSpecialArrayCheckDECORATE",4) > 0 || Owner.CountInv("PlayingTCOTDA") > 0) tempdouble *= 5;
 					if (CallACS("DVDSSpecialArrayCheckDECORATE",5) > 0 || Owner.CountInv("PlayingCircus2") > 0) tempdouble *= 3;
 					HellcoreCoolRatio *= (1.0 + (0.25 + tempdouble));
-					if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 11 - Cooldown Increments]: %d\c-, New Heat Level: %d\c-, Old Heat Level: %d", HellcoreCoolRatio,  HellcoreOverheatLevel, previousdelaycount);
+					if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 12 - Cooldown Increments]: %d\c-, New Heat Level: %d\c-, Old Heat Level: %d", HellcoreCoolRatio,  HellcoreOverheatLevel, previousdelaycount);
 				}
 				
 				previousdelaycount = HellcoreOverheatLevel;
 				HellcoreOverheatLevel -= HellcoreCoolRatio;
-				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 12 - Cooldown Increments]: New Heat Level: %d\c-, Old Heat Level: %d", HellcoreOverheatLevel, previousdelaycount);
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 13 - Cooldown Increments]: New Heat Level: %d\c-, Old Heat Level: %d", HellcoreOverheatLevel, previousdelaycount);
 			}
 			if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
 			CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
