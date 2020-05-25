@@ -4043,9 +4043,9 @@ class PlayerStatItem : Inventory
 			if (dvdsdebug_showhpregenstuff && delaycount != previousdelaycount) Console.Printf("    \caHP Regen [Step 4 - Get Character RegenTimer Increment]: %d\c-, Added: %d", delaycount, SkillFactor);
 			
 			// Stamina Upgrades [Strife]
-			SkillFactor = (StrifeStamLvl * 4) / 3;
+			SkillFactor = (StrifeStamLvl * 1.6);
 			delaycount += SkillFactor;
-			if (dvdsdebug_showhpregenstuff && StrifeStamLvl != 0) Console.Printf("    \caHP Regen [Step 5 - Get Strife Stamina RegenTimer Inc]: %d\c-, Added: %d", delaycount, SkillFactor);
+			if (dvdsdebug_showhpregenstuff && PlayerCurrentHealth < RegenMaxHealth && StrifeStamLvl != 0) Console.Printf("    \caHP Regen [Step 5 - Get Strife Stamina RegenTimer Inc]: %d\c-, Added: %d", delaycount, SkillFactor);
 			
 			// Accelerates HP Regen when Tension is Boosted
 			previousdelaycount = delaycount;
@@ -4289,7 +4289,7 @@ class PlayerStatItem : Inventory
 			//**Health Degen**
 			//****************
 			if (CharacterClass == 2 && Owner.CountInv("DoveRibbon") > 0) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = PlayerMaxHP;
-			if (dvds_healthdegenmode == 1)
+			if (dvds_healthdegenmode == 1 && PlayerCurrentHealth > RegenMaxHealth)
 			{
 				// Base Character Interval Max
 				if (CharacterClass == 0) HPDelayInterval2 = 41; // Deggaris Degenerates the Slowest [1.17 seconds]
@@ -4345,8 +4345,8 @@ class PlayerStatItem : Inventory
 				if (dvdsdebug_showhpregenstuff && delaycount != previousdelaycount) Console.Printf("    \caHP Degen [Step 4 - Get Character RegenTimer Increment]: %d\c-, Added: %d", delaycount, SkillFactor);
 				
 				// Stamina Upgrades [Strife]
-				SkillFactor = (StrifeStamLvl * 3) / 4;
-				delaycount += SkillFactor;
+				SkillFactor = (StrifeStamLvl * 0.625);
+				delaycount -= SkillFactor;
 				if (dvdsdebug_showhpregenstuff && StrifeStamLvl != 0) Console.Printf("    \caHP Degen [Step 5 - Get Strife Stamina RegenTimer Inc]: %d\c-, Added: %d", delaycount, SkillFactor);
 
 				// Accelerates HP Regen when Tension is Boosted
@@ -13064,13 +13064,8 @@ class PlayerStatItem : Inventory
 			double UppercutFactor = 1.0;
 			if (Owner.CountInv("UppercutDEFBonus1") > 0) UppercutFactor = 0.80;
 			if (Owner.CountInv("UppercutDEFBonus2") > 0) UppercutFactor = 0.615;
+			if (UppercutFactor < 1.00) UppercutFactor *= (1.00 - ((LifeUpPerkLvl * .0125) + (LifeUpExPerkLvl * .03125)));
 			if (UppercutFactor < 1.00 && Owner.CountInv("AetheriusPowerStrength")) UppercutFactor *= BerserkFactorblock;
-
-			// Kicking Bonus
-			double KickingFactor = 1.0;
-			if (Owner.CountInv("UppercutDEFBonus1") > 0) KickingFactor = 0.75;
-			if (Owner.CountInv("UppercutDEFBonus2") > 0) KickingFactor = 0.5625;
-			if (KickingFactor < 1.00 && Owner.CountInv("AetheriusPowerStrength")) KickingFactor *= BerserkFactorblock;
 
 			// Kicking Bonus
 			BerserkFactorblock = frandompick[statitem2](0.5,0.667,0.75);
@@ -13100,6 +13095,7 @@ class PlayerStatItem : Inventory
 				MartArtFactor *= 0.425; // 57.5%
 				if (damageType == 'Melee' || damageType == 'Trample' || damageType == 'Stomp') MartArtFactor *= 0.7125;
 			}
+			if (MartArtFactor < 1.00) MartArtFactor *= (1.00 - ((LifeUpPerkLvl * .0125) + (LifeUpExPerkLvl * .03125)));
 			if (MartArtFactor < 1.00 && Owner.CountInv("AetheriusPowerStrength")) MartArtFactor *= BerserkFactorblock;
 
 			// Hell Warrior Shield [DEFENSIVE]
@@ -13111,12 +13107,15 @@ class PlayerStatItem : Inventory
 				if (Owner.CountInv("EWShieldDefendMode") > 0) EWShieldFactor *= 0.134;
 				if (Owner.CountInv("EWShieldDefendModeExtra") > 0) EWShieldFactor *= 0.0268;
 			}
+			if (EWShieldFactor < 1.00) EWShieldFactor *= (1.00 - ((LifeUpPerkLvl * .0125) + (LifeUpExPerkLvl * .03125)));
 			if (EWShieldFactor < 1.00 && Owner.CountInv("AetheriusPowerStrength")) EWShieldFactor *= BerserkFactorblock;
 
 			double PlayerFistBlockFactor = 1.00;
+			int UsingFistBlock = 0;
 			BerserkFactorblock = frandompick[statitem2](0.25,0.334,0.5,0.667,0.75);
 			if (Owner.CountInv("FistPlayerBlock") > 0) 
 			{
+				UsingFistBlock++;
 				PlayerFistBlockFactor *= 0.5;
 				if (damageType == 'Melee' || damageType == 'Trample' || damageType == 'Stomp') PlayerFistBlockFactor *= 0.5;
 			}
@@ -13135,6 +13134,12 @@ class PlayerStatItem : Inventory
 				PlayerFistBlockFactor *= 0.1;
 				if (damageType == 'Melee' || damageType == 'Trample' || damageType == 'Stomp') PlayerFistBlockFactor *= 0.1;
 			}
+			// Lifeup Perk
+			if (PlayerFistBlockFactor < 1.00)
+			{
+				PlayerFistBlockFactor *= (1.00 - ((LifeUpPerkLvl * .0125) + (LifeUpExPerkLvl * .03125)));
+				if (damageType == 'Melee' || damageType == 'Trample' || damageType == 'Stomp') PlayerFistBlockFactor *= (1.00 - ((LifeUpPerkLvl * .0125) + (LifeUpExPerkLvl * .03125)));
+			}
 			if (PlayerFistBlockFactor < 1.00 && Owner.CountInv("AetheriusPowerStrength")) PlayerFistBlockFactor *= BerserkFactorblock;
 
 			// Sceptre Swinging [DEFENSIVE]
@@ -13152,6 +13157,8 @@ class PlayerStatItem : Inventory
 			if (Owner.CountInv("SceptreSpinDefense2") > 0) SceptreDefenseFactor *= 0.875;
 			if (Owner.CountInv("SceptreSpinDefense3") > 0) SceptreDefenseFactor *= 0.75;
 			if (Owner.CountInv("SceptreSpinDefense4") > 0) SceptreDefenseFactor *= 0.5;
+			// Lifeup Perk
+			if (SceptreDefenseFactor < 1.00) { SceptreDefenseFactor *= (1.00 - ((LifeUpPerkLvl * .0125) + (LifeUpExPerkLvl * .03125))); }
 			if (SceptreDefenseFactor < 1.00 && Owner.CountInv("AetheriusPowerStrength")) SceptreDefenseFactor *= BerserkFactorblock;
 
 			// Sauron Equipment [DEFENSIVE]
@@ -13187,7 +13194,6 @@ class PlayerStatItem : Inventory
 													* StrifeStaminaFactor
 													* InvisFactor
 													* UppercutFactor
-													* KickingFactor
 													* MartArtFactor
 													* EWShieldFactor
 													* PlayerFistBlockFactor
@@ -13222,13 +13228,13 @@ class PlayerStatItem : Inventory
 			int postdef1dmg = newdamage;
 			if (dvdsdebug_playerdmgdisplays && damage > 0) 
 			{
-				Console.Printf("    (\cz[STEP 8] StatItem input ([Ignorables])\c-: \cwDmgType:\c- \cw%s\c-, \cyolddmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-, \caTOTALFactor\c- = \ca%.8f\c-, LVLFactor [%d] = %.8f, DEFfactor [%d] = %.8f, THEfactor [%d] = %.8f, LifeUpDEFFactor = %.8f, DemoExpertFactor = %.8f, StrifeStaminaFactor = %.8f, InvisFactor = %.8f, EWShieldFactor = %.8f, PlayerFistBlockFactor = %.8f, SceptreDefenseFactor = %.8f, UppercutFactor = %.8f, KickingFactor = %.8f, MartArtFactor = %.8f, SauronEquipFactor = %.8f, RingFactor = %.8f, DQBuffFactor = %.8f)", 
+				Console.Printf("    (\cz[STEP 8] StatItem input ([Ignorables])\c-: \cwDmgType:\c- \cw%s\c-, \cyolddmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-, \caTOTALFactor\c- = \ca%.8f\c-, LVLFactor [%d] = %.8f, DEFfactor [%d] = %.8f, THEfactor [%d] = %.8f, LifeUpDEFFactor = %.8f, DemoExpertFactor = %.8f, StrifeStaminaFactor = %.8f, InvisFactor = %.8f, EWShieldFactor = %.8f, PlayerFistBlockFactor = %.8f, SceptreDefenseFactor = %.8f, UppercutFactor = %.8f, MartArtFactor = %.8f, SauronEquipFactor = %.8f, RingFactor = %.8f, DQBuffFactor = %.8f)", 
 				damageType, damage, postdef1dmg, TOTALFactor, 
 				PlayerLevel, LVLFactor, PlayerDEF, DEFfactor, PlayerTHE, THEfactor, 
 				LifeUpDEFFactor, DemoExpertFactor, StrifeStaminaFactor, 
 				InvisFactor, EWShieldFactor,
 				PlayerFistBlockFactor, SceptreDefenseFactor, UppercutFactor, 
-				KickingFactor, MartArtFactor, SauronEquipFactor, 
+				MartArtFactor, SauronEquipFactor, 
 				RingFactor, DQBuffFactor);
 			}
 
