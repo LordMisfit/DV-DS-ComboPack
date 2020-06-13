@@ -1691,6 +1691,7 @@ mixin class AtkTypeChecker
 {
 	action int A_GetPlayerAttackDamage(int type = 0, int puff = 0, int isinvoker = 0)
 	{
+		int CharacterClass = CallACS("CheckCharacterClass");
 		int finaldamagedealt;
 		class<Inventory> ExternalCheck1;
 
@@ -1711,8 +1712,15 @@ mixin class AtkTypeChecker
 		int PlayerSTR = CallACS("MiscVarCheckDECORATE",35);
 		int PlayerTHE = CallACS("MiscVarCheckDECORATE",36);
 		int PlayerLVL = CallACS("StatCheck",0);
+		int CurrentMana = CallACS("StatCheck",14);
+
+		int EWShieldKills = CallACS("MiscVarCheckDECORATE",49);
+		int stamdamagefactor = CallACS("MiscVarCheckDECORATE",317);
+
 		int MagiUpPerkLevel = CallACS("MiscVarCheckDECORATE",10003);
 		int MagiUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10004);
+		int StamUpPerkLevel = CallACS("MiscVarCheckDECORATE",10005);
+		int StamUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10006);
 		int BulletAccuracyPerkLevel = CallACS("MiscVarCheckDECORATE",10019);
 		int BulletAccuracyEXPerkLevel = CallACS("MiscVarCheckDECORATE",10020);
 		int PelletAccuracyPerkLevel = CallACS("MiscVarCheckDECORATE",10021);
@@ -1729,6 +1737,8 @@ mixin class AtkTypeChecker
 		int ArcheryMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10032);
 		int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
 		int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
+		int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+		int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
 		int WandMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10053);
 		int WandMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10054);
 		int ismagicalatk;
@@ -1822,7 +1832,7 @@ mixin class AtkTypeChecker
 			perkfactor += ((MagiUpPerkLevel * 0.075) + (MagiUpEXPerkLevel * 0.1875)); // MagiUp
 			perkfactor += ((SoulMasteryPerkLevel * 0.05) + (SoulMasteryEXPerkLevel * 0.125)); // Soul Mastery
 			perkfactor += ((WandMasteryPerkLevel * 0.05) + (WandMasteryEXPerkLevel * 0.125)); // Wand/Staff Mastery
-			perkfactor += (CallACS("MiscVarCheckDECORATE",49) * frandompick(0.0005,0.00075,0.00075,0.00075,0.00075,0.00075,0.001));
+			perkfactor += (EWShieldKills * frandompick(0.0005,0.00075,0.00075,0.00075,0.00075,0.00075,0.001));
 		}
 		// Soul Scepter
 		if (type >= 65 && type <= 68) // Soul Scepter
@@ -2232,7 +2242,7 @@ mixin class AtkTypeChecker
 			damage = random(1,8) * 2; // 2 to 16
 			extradmg1 = (PlayerSOR * 0.5); // 50.0% of Sorcery
 			extradmg2 = (PlayerTHE * 0.2); // 25.0% of Therapeusis 
-			extradmg6 = floor((CallACS("MiscVarCheckDECORATE",49) * frandompick(0.001,0.0015,0.0015,0.0015,0.00225,0.0015,0.002)));
+			extradmg6 = floor((EWShieldKills * frandompick(0.001,0.0015,0.0015,0.0015,0.00225,0.0015,0.002)));
 			ismagicalatk = 1;
 		}
 		if (type == 53) // A. Christina Long Range Blast (Normal)
@@ -2282,9 +2292,7 @@ mixin class AtkTypeChecker
 		{
 			int strengthcounter;
 			damage = random(6,12);
-			int stamdamagefactor = CallACS("MiscVarCheckDECORATE",317);
 			damage = (damage * (2 + stamdamagefactor) / 2);
-			int PlayerSTR = CallACS("StatCheck",7);
 			for (strengthcounter = 0; strengthcounter < PlayerSTR; strengthcounter++)
 			{
 				damage += random(0,2);
@@ -2296,8 +2304,6 @@ mixin class AtkTypeChecker
 			if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) Damage = floor(Damage * 1.334); // +33.3~% Punch Damage
 			if (CountInv("AnubisCufflinks", AAPTR_PLAYER1) > 0) Damage = floor(Damage * 1.75); // +75% Punch Damage
 			
-			int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
-			int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
 			if (MartialArtsMastery > 0)
 			{
 				int temp1 = 0;
@@ -2313,8 +2319,6 @@ mixin class AtkTypeChecker
 				damage = floor(damage * PerkFactor / 1000);
 			}
 			
-			int StamUpPerkLevel = CallACS("MiscVarCheckDECORATE",10005);
-			int StamUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10006);
 			if (StamUpPerkLevel > 0)
 			{
 				PerkFactor = ((StamUpPerkLevel * 30) + (StamUpEXPerkLevel * 75)) + 400;
@@ -2425,7 +2429,7 @@ mixin class AtkTypeChecker
 			extradmg2 *= frand;
 			extradmg3 *= frand;
 			extradmg4 *= frand;
-			if ((type == 65 && CallACS("StatCheck",14) <= 1) || (type == 66 && CallACS("StatCheck",14) <= 2) || (type == 67 && CallACS("StatCheck",14) <= 2) || (type == 68 && CallACS("StatCheck",14) <= 4))
+			if ((type == 65 && CurrentMana <= 1) || (type == 66 && CurrentMana <= 2) || (type == 67 && CurrentMana <= 2) || (type == 68 && CurrentMana <= 4))
 			{
 				damage *= 0.25;
 				extradmg1 *= 0.25;
@@ -2467,7 +2471,7 @@ mixin class AtkTypeChecker
 			else
 			if (CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 1) // Hellcore/Cells
 			{
-				if (CallACS("CheckCharacterClass") == 2) // Hellcore
+				if (CharacterClass == 2) // Hellcore
 				{
 					perkfactor += (SoulMasteryPerkLevel * 0.025) + (SoulMasteryEXPerkLevel * 0.0625);
 					baserand1 += (SoulMasteryPerkLevel * 0.0625) + (SoulMasteryEXPerkLevel * 0.15625);
@@ -2491,7 +2495,7 @@ mixin class AtkTypeChecker
 			{
 				perkfactor += (WandMasteryPerkLevel * 0.025) + (WandMasteryEXPerkLevel * 0.0625);
 				baserand1 += (WandMasteryPerkLevel * 0.9375) + (WandMasteryEXPerkLevel * 2.34375);
-				if (CallACS("CheckCharacterClass") == 2)
+				if (CharacterClass == 2)
 				{
 					perkfactor += ((SoulMasteryPerkLevel * 0.025) + (SoulMasteryEXPerkLevel * 0.0625));
 					baserand1 += (SoulMasteryPerkLevel * 0.9375) + (SoulMasteryEXPerkLevel * 2.34375);
@@ -2591,7 +2595,7 @@ mixin class AtkTypeChecker
 				finaldmg = (finaldmg * misc2) / 1000;
 				
 				// Bonus Damage added based on how many enemies have been killed previously by the shot.
-				finaldmg *= (1.0 + (CallACS("MiscVarCheckDECORATE",49) * frandompick(0.002,0.003,0.003,0.003,0.003,0.003,0.004)));
+				finaldmg *= (1.0 + (EWShieldKills * frandompick(0.002,0.003,0.003,0.003,0.003,0.003,0.004)));
 			}
 
 			// Tries to Guarantee Poison Needles inflict at least 1 base damage

@@ -23,6 +23,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int IsACrisisMeleeAttack;
 	int IsACrisisComboAttack;
 
+	int TrueGameSkill;
+	int CrisisMultiplier;
+	int CharacterClass;
+	int ClassicDoomType;
+	int ModType;
+
 	int timesrevivedamonster;
 	int timesrevivedpervile;
 	int timesrevivedperdiabloist;
@@ -421,7 +427,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	
 	override void PostBeginPlay()
 	{
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
+		TrueGameSkill = dvds_gendifficultycurve + Skill;
+		CrisisMultiplier = CallACS("CrisisMultiplier");
+		CharacterClass = CallACS("CheckCharacterClass");
+		ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
+		ModType = CallACS("OtherVarCheckDECORATE",8);
+
 		//STYLE_None (0)
 		//STYLE_Normal (1)
 		//STYLE_Fuzzy (2)
@@ -988,8 +999,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
 		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
-		int ModType = CallACS("OtherVarCheckDECORATE",8);
-		int CharacterClass = CallACS("CheckCharacterClass");
+		int SceptEXPFrags = CallACS("MiscVarCheckDECORATE",203);
 		int ExpPiecesToAdd;
 		double EXPBonus1;
 		int BossEnemy;
@@ -999,6 +1009,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		string vict = GetClassName();
 		double sceptbasemulti = 1.00;
 		int higherlearning = CallACS("MiscVarCheckDECORATE",11001);
+		int PlayerDFT = CallACS("MiscVarCheckDECORATE",33);
 		
 		//if (BossEnemy != 0) DivAmount *= 5;
 		if (DivAmount <= 1) DivAmount = 1;
@@ -1134,8 +1145,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 			SExPts *= EXPBonus1;
 			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 5 - Buff Check [%3f]): %d / 16", EXPBonus1, SExPts);
-			SExPts = SExPts * (DeftnessExpBase + CallACS("MiscVarCheckDECORATE",33)) / DeftnessExpBase;
-			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 6 - Deftness Check): %d / 16 [DeftExpBase: %d / %d]", SExPts, (DeftnessExpBase + CallACS("MiscVarCheckDECORATE",33)), DeftnessExpBase);
+			SExPts = SExPts * (DeftnessExpBase + PlayerDFT) / DeftnessExpBase;
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 6 - Deftness Check): %d / 16 [DeftExpBase: %d / %d]", SExPts, (DeftnessExpBase + PlayerDFT), DeftnessExpBase);
 			SExPts = SExPts * SceptreExpMultiplier / 100;
 			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (Step 7 - Option Checker [%d%]): %d / 16", SceptreExpMultiplier, SExPts);
 		
@@ -1173,12 +1184,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 			CallACS("MiscVarSetDECORATE",203,SExPts,1); 
 		
-			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (pre-while 2): %d / 16", CallACS("MiscVarCheckDECORATE",203));
-			while (CallACS("MiscVarCheckDECORATE",203) > 15) // if (MiscellaneousVars[203] > 15)
+			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (pre-while 2): %d / 16", SceptEXPFrags);
+			while (SceptEXPFrags > 15)
 			{
 				CallACS("MiscVarSetDECORATE",203,-16,1); 
 				CallACS("OtherVarSetDECORATE",10,1,1);
-				if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (while 2): %d / 16", CallACS("MiscVarCheckDECORATE",203));
+				if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (while 2): %d / 16", SceptEXPFrags);
 			}
 		}
 	}
@@ -1419,13 +1430,44 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input\c-: \cygametic = %d\c-)", gametic);
 		int predamage = damage;
+
+		int PlayerTensionLevel = CallACS("MiscVarCheckDECORATE",181);
+		int MagiUpPerkLvl = CallACS("MiscVarCheckDECORATE",10003);
+		int MagiUpExPerkLvl = CallACS("MiscVarCheckDECORATE",10004);
+		int StamUpPerkLvl = CallACS("MiscVarCheckDECORATE",10005);
+		int StamUpEXPerkLvl = CallACS("MiscVarCheckDECORATE",10006);
+		int BulletAccuracyPerkLevel = CallACS("MiscVarCheckDECORATE",10019);
+		int BulletAccuracyEXPerkLevel = CallACS("MiscVarCheckDECORATE",10020);
+		int PelletAccuracyPerkLevel = CallACS("MiscVarCheckDECORATE",10021);
+		int PelletAccuracyEXPerkLevel = CallACS("MiscVarCheckDECORATE",10022);
+		int PlasmaAccuracyPerkLevel = CallACS("MiscVarCheckDECORATE",10023);
+		int PlasmaAccuracyEXPerkLevel = CallACS("MiscVarCheckDECORATE",10024);
+		int DemolitionsExpertPerkLevel = CallACS("MiscVarCheckDECORATE",10025);
+		int DemolitionsExpertEXPerkLevel = CallACS("MiscVarCheckDECORATE",10026);
+		int KarasawaAttunementPerkLevel = CallACS("MiscVarCheckDECORATE",10027);
+		int KarasawaAttunementEXPerkLevel = CallACS("MiscVarCheckDECORATE",10028);
+		int BFGAttunementPerkLevel = CallACS("MiscVarCheckDECORATE",10029);
+		int BFGAttunementEXPerkLevel = CallACS("MiscVarCheckDECORATE",10030);
+		int ArcheryMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10031);
+		int ArcheryMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10032);
+		int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
+		int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
+		int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+		int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+		int BerserkerFit = CallACS("MiscVarCheckDECORATE",10051);
+		int BerserkerFitEX = CallACS("MiscVarCheckDECORATE",10052);
+		int WandMastPerkLvl = CallACS("MiscVarCheckDECORATE",10053);
+		int WandMastEXPerkLvl = CallACS("MiscVarCheckDECORATE",10054);
 		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
 		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
+		int VillainKillerPerkLvl = CallACS("MiscVarCheckDECORATE",10057);
+		int VillainKillerEXPerkLvl = CallACS("MiscVarCheckDECORATE",10058);
+		int StrifeStaminaLevel = CallACS("MiscVarCheckDECORATE",317);
+		int StrifeAccuracyLevel = CallACS("MiscVarCheckDECORATE",318);
 		int criticalhit;
 		int CritChance, CritRoll;
 		int oldhealth = self.health;
 		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
-		int CharacterClass = CallACS("CheckCharacterClass");
 		double HellcoreBaseMulti = 1.0;
 		double HellcoreLevelFactor = 1.0;
 		int HellcoreLevel;
@@ -1497,9 +1539,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			
 			olddmg = damage;
 			double SoulMasteryFactor = 1.0;
-			SoulMasteryFactor = 1.00 + ((CallACS("MiscVarCheckDECORATE",10033) * .10) + (CallACS("MiscVarCheckDECORATE",10034) * .25));
+			SoulMasteryFactor = 1.00 + ((SoulMasteryPerkLevel * .10) + (SoulMasteryEXPerkLevel * .25));
 			damage = floor(damage * SoulMasteryFactor);
-			if (dvdsdebug_actordmgdisplays) Console.Printf("    (input: SoulMasteryFactor [%d, %d] = %10f)  (damage: \cy%d\c- (\cx%d\c-))", CallACS("MiscVarCheckDECORATE",10033), CallACS("MiscVarCheckDECORATE",10034), SoulMasteryFactor, damage, olddmg);
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (input: SoulMasteryFactor [%d, %d] = %10f)  (damage: \cy%d\c- (\cx%d\c-))", SoulMasteryPerkLevel, SoulMasteryEXPerkLevel, SoulMasteryFactor, damage, olddmg);
 		}
 		if (IsHellCoreAttack != 0)
 		{
@@ -1521,7 +1563,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int prefriendlydmg = 0;
 		int precritdmg = 0;
 		int preldldmg = 0;
-		int TensionLevel = CallACS("MiscVarCheckDECORATE",181);
 		double PoisonNeedleCritChance = 12.5;
 		int PoisonNeedleBossCheck = 0;
 		// Player/Actor Check
@@ -1676,17 +1717,17 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				flags |= DMG_THRUSTLESS; flags |= DMG_NO_ARMOR; flags |= DMG_NO_FACTOR; flags |= DMG_NO_PROTECT; 
 				CritResistChance = -200.0; // Cannot be resisted
 				if (damage < 1) damage = randompick(1,1,1,1,2);
-				PoisonNeedleCritChance += ((CallACS("MiscVarCheckDECORATE",10005) * 0.5) + (CallACS("MiscVarCheckDECORATE",10006) * 1.25)); // StamUp
-				PoisonNeedleCritChance += ((CallACS("MiscVarCheckDECORATE",10035) * 1.0) + (CallACS("MiscVarCheckDECORATE",10036) * 2.5)); // Martial Arts Mastery
-				PoisonNeedleCritChance += ((CallACS("MiscVarCheckDECORATE",10055) * 0.25) + (CallACS("MiscVarCheckDECORATE",10056) * 0.625)); // Cleared of Mind
-				PoisonNeedleCritChance += ((CallACS("MiscVarCheckDECORATE",317) * 0.25) + (CallACS("MiscVarCheckDECORATE",318) * 0.75)); // Strife [Stamina and Accuracy]
+				PoisonNeedleCritChance += ((StamUpPerkLvl * 0.5) + (StamUpEXPerkLvl * 1.25)); // StamUp
+				PoisonNeedleCritChance += ((MartialArtsMastery * 1.0) + (MartialArtsMasteryEX * 2.5)); // Martial Arts Mastery
+				PoisonNeedleCritChance += ((clearofmind * 0.25) + (clearofmindex * 0.625)); // Cleared of Mind
+				PoisonNeedleCritChance += ((StrifeStaminaLevel * 0.25) + (StrifeAccuracyLevel * 0.75)); // Strife [Stamina and Accuracy]
 				if (CallACS("GetBuffTimer",10) > 0) PoisonNeedleCritChance *= 1.25;
 				if (CallACS("GetBuffTimer",13) > 0) PoisonNeedleCritChance *= 0.80;
 				if (CallACS("GetBuffTimer",1) > 0)
 				{
 					if (playpawn) PoisonNeedleCritChance *= (((playpawn.InvisNeedleBonus - 1.00) / 3) + 1.00);
 				}
-				if (TensionLevel > 0) PoisonNeedleCritChance = (PoisonNeedleCritChance * (TensionLevel + 7)) / 7;
+				if (PlayerTensionLevel > 0) PoisonNeedleCritChance = (PoisonNeedleCritChance * (PlayerTensionLevel + 7)) / 7;
 				if (PoisonNeedleBossCheck) PoisonNeedleCritChance /= 4;
 				if (playpawn.CountInv("PlayerDashing") > 0) PoisonNeedleCritChance *= 2.5;
 
@@ -1774,8 +1815,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (mod == 'Gauntlets') ldlbasemod *= 1.25;
 				if (mod == 'Melee' || mod == 'Trample' || mod == 'Stomp' || mod == 'Fist' || mod == 'Kick' || mod == 'Chainsaw') ldlbasemod *= 1.125;
 
-				ldldmgmulti += (ldlbasemod * CallACS("MiscVarCheckDECORATE",10057));
-				ldldmgmulti += ((ldlbasemod * 2.5) * CallACS("MiscVarCheckDECORATE",10058));
+				ldldmgmulti += (ldlbasemod * VillainKillerPerkLvl);
+				ldldmgmulti += ((ldlbasemod * 2.5) * VillainKillerEXPerkLvl);
 				if (ldldmgmulti >= 1.0000) damage = floor(damage * ldldmgmulti);
 															else damage = ceil(damage * ldldmgmulti);
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2d - Player-LDLPerk Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \caldldmgmulti = %3f\c-)", preldldmg, damage, ldldmgmulti);
@@ -2000,7 +2041,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			// Hellcore
 			if (IsHellCoreAttack) 
 			{
-				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + (CallACS("MiscVarCheckDECORATE",10033) * frandom(0.0225,0.0275)) + (CallACS("MiscVarCheckDECORATE",10034) * frandom(0.05625,0.06875))) * (1.00 - ActorDefenseIgnoreFactor));
+				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + (SoulMasteryPerkLevel * frandom(0.0225,0.0275)) + (SoulMasteryEXPerkLevel * frandom(0.05625,0.06875))) * (1.00 - ActorDefenseIgnoreFactor));
 			}
 
 			// Eldritch
@@ -2013,8 +2054,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10051) * 0.01) + (CallACS("MiscVarCheckDECORATE",10052) * 0.025));
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10035) * 0.01) + (CallACS("MiscVarCheckDECORATE",10036) * 0.025));
+					dfperkfactor += ((BerserkerFit * 0.01) + (BerserkerFitEX * 0.025));
+					dfperkfactor += ((MartialArtsMastery * 0.01) + (MartialArtsMasteryEX * 0.025));
 				}
 				ActorDefenseIgnoreFactor += (((random(0,10) * 0.01) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
@@ -2023,8 +2064,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{ 
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10023) * 0.01) + (CallACS("MiscVarCheckDECORATE",10024) * 0.025));
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10029) * 0.01) + (CallACS("MiscVarCheckDECORATE",10030) * 0.025));
+					dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.01) + (PlasmaAccuracyEXPerkLevel * 0.025));
+					dfperkfactor += ((BFGAttunementPerkLevel * 0.01) + (BFGAttunementEXPerkLevel * 0.025));
 				}
 				ActorDefenseIgnoreFactor += ((frandom(0.45,0.55) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
@@ -2033,7 +2074,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{ 
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10023) * 0.01) + (CallACS("MiscVarCheckDECORATE",10024) * 0.025));
+					dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.01) + (PlasmaAccuracyEXPerkLevel * 0.025));
 				}
 				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
@@ -2042,7 +2083,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{ 
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10023) * 0.01) + (CallACS("MiscVarCheckDECORATE",10024) * 0.025));
+					dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.01) + (PlasmaAccuracyEXPerkLevel * 0.025));
 				}
 				ActorDefenseIgnoreFactor += ((RailRandom + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
@@ -2051,8 +2092,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10003) * 0.025) + (CallACS("MiscVarCheckDECORATE",10004) * 0.0625));
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10053) * 0.05) + (CallACS("MiscVarCheckDECORATE",10054) * 0.125));
+					dfperkfactor += ((MagiUpPerkLvl * 0.025) + (MagiUpExPerkLvl * 0.0625));
+					dfperkfactor += ((WandMastPerkLvl * 0.05) + (WandMastEXPerkLvl * 0.125));
 				}
 				ActorDefenseIgnoreFactor += ((HubBubRand + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 				
@@ -2075,7 +2116,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{ 
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10019) * 0.01) + (CallACS("MiscVarCheckDECORATE",10021) * 0.01) + (CallACS("MiscVarCheckDECORATE",10020) * 0.025) + (CallACS("MiscVarCheckDECORATE",10022) * 0.025));
+					dfperkfactor += ((BulletAccuracyPerkLevel * 0.01) + (PelletAccuracyPerkLevel * 0.01) + (BulletAccuracyEXPerkLevel * 0.025) + (PelletAccuracyEXPerkLevel * 0.025));
 				}
 				ActorDefenseIgnoreFactor += ((frandom(0.1125,0.1375) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
@@ -2099,7 +2140,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{ 
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10035) * 0.01) + (CallACS("MiscVarCheckDECORATE",10036) * 0.025));
+					dfperkfactor += ((MartialArtsMastery * 0.01) + (MartialArtsMasteryEX * 0.025));
 				}
 				ActorDefenseIgnoreFactor += ((0.625 + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
@@ -2110,8 +2151,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10003) * 0.01) + (CallACS("MiscVarCheckDECORATE",10024) * 0.025));
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10053) * 0.02) + (CallACS("MiscVarCheckDECORATE",10024) * 0.05));
+					dfperkfactor += ((MagiUpPerkLvl * 0.01) + (MagiUpExPerkLvl * 0.025));
+					dfperkfactor += ((WandMastPerkLvl * 0.02) + (WandMastEXPerkLvl * 0.05));
 				}
 				ActorDefenseIgnoreFactor += ((frandompick(0.20,0.225,0.25,0.275,0.30) - dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 				
@@ -2177,7 +2218,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10025) * 0.01) + (CallACS("MiscVarCheckDECORATE",10026) * 0.025));
+					dfperkfactor += ((DemolitionsExpertPerkLevel * 0.01) + (DemolitionsExpertEXPerkLevel * 0.025));
 				}
 				if (infl == "RockBombShardProj") ActorDefenseIgnoreFactor += ((frandompick(0.50,0.5334,0.60) + (dfperkfactor * 0.5)) * (1.00 - ActorDefenseIgnoreFactor));
 																		else ActorDefenseIgnoreFactor += ((frandompick(0.625,0.6667,0.75) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
@@ -2187,8 +2228,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10003) * 0.02) + (CallACS("MiscVarCheckDECORATE",10024) * 0.05));
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10053) * 0.01) + (CallACS("MiscVarCheckDECORATE",10024) * 0.025));
+					dfperkfactor += ((MagiUpPerkLvl * 0.02) + (MagiUpExPerkLvl * 0.05));
+					dfperkfactor += ((WandMastPerkLvl * 0.01) + (WandMastEXPerkLvl * 0.025));
 				}
 				ActorDefenseIgnoreFactor += ((0.5 + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
@@ -2210,10 +2251,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				if (playpawn)
 				{
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10003) * 0.02) + (CallACS("MiscVarCheckDECORATE",10024) * 0.05));
-					dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10053) * 0.02) + (CallACS("MiscVarCheckDECORATE",10054) * 0.05));
-					if (CallACS("CheckCharacterClass") != 2 && CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 1) dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10023) * 0.02) + (CallACS("MiscVarCheckDECORATE",10024) * 0.05));
-					if (CallACS("CheckCharacterClass") == 2 && CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 1) dfperkfactor += ((CallACS("MiscVarCheckDECORATE",10033) * 0.02) + (CallACS("MiscVarCheckDECORATE",10034) * 0.05));
+					dfperkfactor += ((MagiUpPerkLvl * 0.02) + (MagiUpExPerkLvl * 0.05));
+					dfperkfactor += ((WandMastPerkLvl * 0.02) + (WandMastEXPerkLvl * 0.05));
+					if (CharacterClass != 2 && CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 1) dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.02) + (PlasmaAccuracyEXPerkLevel * 0.05));
+					if (CharacterClass == 2 && CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 1) dfperkfactor += ((SoulMasteryPerkLevel * 0.02) + (SoulMasteryEXPerkLevel * 0.05));
 				}
 				ActorDefenseIgnoreFactor += ((frandompick(0.25,0.3125,0.375) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
 			}
@@ -2224,7 +2265,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				ActorDefenseIgnoreFactor += (0.25 * (1.00 - ActorDefenseIgnoreFactor));
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP ? - Fright Check]: YES\c-)");
 			}
-			int PlayerTensionLevel = CallACS("MiscVarCheckDECORATE",181);
 			if (playpawn && PlayerTensionLevel)
 			{
 				double tensionignore; 
@@ -3264,6 +3304,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	// int type = 0, int value1 = 0, int value2 = 0, int value3 = 0, int value4 = 0, int value5 = 0
 	void A_DVDSChase(statelabel melee = '_a_chase_default', statelabel missile = '_a_chase_default', int flags = 0, int type = 0, int value1 = 0, int value2 = 0, int value3 = 0, int value4 = 0, int value5 = 0, int value6 = 0)
 	{
+		int DodgeMorePerkLvl = CallACS("MiscVarCheckDECORATE",10007);
+		int DodgeMoreEXPerkLvl = CallACS("MiscVarCheckDECORATE",10008);
 		if (type == 0)
 		{
 			if (value1) value1 = 0;
@@ -3307,14 +3349,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (playpawn.CountInv("PowerInvisibility") > 0 || playpawn.CountInv("InvisiblitySpell") > 0)
 			{
 				int PerkFactor = 167;
-				PerkFactor += ((CallACS("MiscVarCheckDECORATE",10007) * 6) + (CallACS("MiscVarCheckDECORATE",10008) * 15));
+				PerkFactor += ((DodgeMorePerkLvl * 6) + (DodgeMoreEXPerkLvl * 15));
 				int SkillFactor = (1000 - NoAtkChance) * PerkFactor / 1000;
 				NoAtkChance += SkillFactor;
 			}
 			if (playpawn.CountInv("PlayerDashing") > 0)
 			{
 				int PerkFactor = 875;
-				//PerkFactor += ((CallACS("MiscVarCheckDECORATE",10007) * 6) + (CallACS("MiscVarCheckDECORATE",10008) * 15));
+				//PerkFactor += ((DodgeMorePerkLvl * 6) + (DodgeMoreEXPerkLvl * 15));
 				int SkillFactor = (1000 - NoAtkChance) * PerkFactor / 1000;
 				NoAtkChance += SkillFactor;
 			}
@@ -3407,7 +3449,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	
 	void A_LegendaryCheck()
 	{
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
 		String nm = "LDLegendaryMonsterPickupEasy";
 		LDLPreload = nm;
 		
@@ -3444,10 +3485,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int mapcalcfactorpercent = 100;
 		int PlayerLevel = CallACS("StatCheck",0);
 		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
-		int CharacterClass = CallACS("CheckCharacterClass");
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
-		int ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
-		int ModType = CallACS("OtherVarCheckDECORATE",8);
 		int mapdifficultytype = dvds_mapdifficultytype;
 		
 		StealthChance = dvds_rnd_stealth;
@@ -3691,11 +3728,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int mapcalcfactorexact = 0;
 		int mapcalcfactorpercent = 100;
 		int BossEyeCheck = 0;
-		int ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
-		int ModType = CallACS("OtherVarCheckDECORATE",8);
 		int PlayerLevel = CallACS("StatCheck",0);
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
 		int mapdifficultytype = dvds_mapdifficultytype;
+		int StrifeStaminaLevel = CallACS("MiscVarCheckDECORATE",317);
+		int StrifeAccuracyLevel = CallACS("MiscVarCheckDECORATE",318);
 		
 		if (type < 0) type = 0;
 		if (type > 1) type = 1;
@@ -4489,15 +4525,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					{
 						int OldMaxHP = MaxHP;
 						// Rebels get an HP boost dependant on the Player's "Stamina" stat in Strife [to reflect them having undergone the process as the player does to "keep up"] :V
-						MaxHP = MaxHP * (100 + (CallACS("MiscVarCheckDECORATE",317) * 10)) / 100;
-						if (debugstatcalc) Console.Printf("\caPre Stamina Max HP: %d, \caPost Stamina Max HP: %d, \cgPlayer's Stamina Level: %d", OldMaxHP, MaxHP, CallACS("MiscVarCheckDECORATE",317));
+						MaxHP = MaxHP * (100 + (StrifeStaminaLevel * 10)) / 100;
+						if (debugstatcalc) Console.Printf("\caPre Stamina Max HP: %d, \caPost Stamina Max HP: %d, \cgPlayer's Stamina Level: %d", OldMaxHP, MaxHP, StrifeStaminaLevel);
 
 						string StaminaUpgradeItem = "StaminaUpgrade";
-						StaminaUpgradeItem.AppendFormat("%d", CallACS("MiscVarCheckDECORATE",317));
+						StaminaUpgradeItem.AppendFormat("%d", StrifeStaminaLevel);
 						A_SetInventory(StaminaUpgradeItem,1);
 					
 						string AccuracyUpgradeItem = "AccuracyUpgrade";
-						AccuracyUpgradeItem.AppendFormat("%d", CallACS("MiscVarCheckDECORATE",318));
+						AccuracyUpgradeItem.AppendFormat("%d", StrifeAccuracyLevel);
 						A_SetInventory(AccuracyUpgradeItem,1);
 					}
 					
@@ -4934,7 +4970,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		user_golddrop = (user_golddrop * LDLMulti) / 2;
 		
 		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
-		int deftness = CallACS("MiscVarCheckDECORATE",33);
+		int PlayerDFT = CallACS("MiscVarCheckDECORATE",33);
 		int extragold;
 		int extragold2;
 		int deftbonus;
@@ -4962,12 +4998,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				user_golddrop += extragold;
 			}
 			
-			deftbonus = deftness / 4;
+			deftbonus = PlayerDFT / 4;
 			deftbonus = (deftbonus * LDLMulti) / 4;
 			bonusgold2 = (100 + deftbonus);
 			user_golddrop = user_golddrop * (bonusgold2) / 100;
 
-			extragold2 = deftness / 32;
+			extragold2 = PlayerDFT / 32;
 			if (extragold2 < 0) extragold2 = 0;
 			extragold2 = (extragold2 * LDLMulti) / 4;
 
@@ -5253,8 +5289,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int A_GetExpMultiFactor()
 	{
 		int debugexp = dvdsdebug_showexpdebugstuff;
-		int ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
-		int ModType = CallACS("OtherVarCheckDECORATE",8);
 		int PlayerLevel = CallACS("StatCheck",0);
 
 		int ExpMultiFactor, MapCheck, Exp2;
@@ -5668,9 +5702,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
 		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
 		int debugexp = dvdsdebug_showexpdebugstuff;
-		int CharacterClass = CallACS("CheckCharacterClass");
+		int PlayerAGL = CallACS("MiscVarCheckDECORATE",31);
+		int PlayerDFT = CallACS("MiscVarCheckDECORATE",33);
 
 		int DeftnessExpBase = dvds_deftnessexpbase;
 		int ExpMultiplier = dvds_expmultiplier;
@@ -5679,8 +5713,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		RealExpGain = RealExpGain * ExpMultiFactor / 100; // Randomizes some of the experience gained
 		if (debugexp) Console.Printf("\cxGetExperience\c- - After Randomization: %d, [\cxExpMultiFactor: %d%\c-]", RealExpGain, ExpMultiFactor);
 
-		RealExpGain = RealExpGain * (DeftnessExpBase + CallACS("MiscVarCheckDECORATE",33)) / DeftnessExpBase;
-		if (debugexp) Console.Printf("\cxGetExperience\c- - Deftness: %d [\cxDeftBonus: %d%\c-]", RealExpGain, (DeftnessExpBase + CallACS("MiscVarCheckDECORATE",33)), DeftnessExpBase);
+		RealExpGain = RealExpGain * (DeftnessExpBase + PlayerDFT) / DeftnessExpBase;
+		if (debugexp) Console.Printf("\cxGetExperience\c- - Deftness: %d [\cxDeftBonus: %d%\c-]", RealExpGain, (DeftnessExpBase + PlayerDFT), DeftnessExpBase);
 
 		RealExpGain = RealExpGain * ExpMultiplier / 100; // EXP Multiplier Option
 		if (debugexp) Console.Printf("\cxGetExperience\c- - Multiplier: %d, [\cxExpMultiOption: %d%\c-]", RealExpGain, ExpMultiplier);
@@ -5748,11 +5782,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
 		int debugexp = dvdsdebug_showexpdebugstuff;
 		int debuguncurse = dvdsdebug_shielduncursedisplay;
-		int ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
-		int ModType = CallACS("OtherVarCheckDECORATE",8);
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
-		int CharacterClass = CallACS("CheckCharacterClass");
 		int PlayerLevel = CallACS("StatCheck",0);
+		int StrifeStaminaLevel = CallACS("MiscVarCheckDECORATE",317);
+		int StrifeAccuracyLevel = CallACS("MiscVarCheckDECORATE",318);
+		int PlayerAGL = CallACS("MiscVarCheckDECORATE",31);
+		int PlayerDFT = CallACS("MiscVarCheckDECORATE",33);
 		int terminate;
 
 		int baseexp, finalexpamount, overkillhp, overkillhp2;
@@ -5956,7 +5990,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			string soulname;
 			string soulname2;
 			HellCoreRuinousDropChance += ((CallACS("MiscVarCheckDECORATE",10033) * 6) + (CallACS("MiscVarCheckDECORATE",10034) * 15));
-			HellCoreRuinousDropChance += ((CallACS("MiscVarCheckDECORATE",10055) * 4) + (CallACS("MiscVarCheckDECORATE",10056) * 10));
+			HellCoreRuinousDropChance += ((clearofmindex * 4) + (clearofmindex * 10));
 			HellCoreRuinousDropChance += (user_lastmonsterlevel / 11.25);
 			if (CountInv("EvenstarNecklace", AAPTR_PLAYER1) > 0) HellCoreRuinousDropChance += 12;
 			if (CountInv("AnubisCufflinks", AAPTR_PLAYER1) > 0) HellCoreRuinousDropChance += 4;
@@ -6204,12 +6238,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			int randomdropsallowed = 1;
 
 			double experiessencefactor = 1.0;
-			experiessencefactor *= (1.0 + (CallACS("MiscVarCheckDECORATE",33) * 0.0104166666666667));
-			experiessencefactor *= (1.0 + ((CallACS("MiscVarCheckDECORATE",10055) * 0.4) + (CallACS("MiscVarCheckDECORATE",10056) * 1.0)));
+			experiessencefactor *= (1.0 + (PlayerDFT * 0.0104166666666667));
+			experiessencefactor *= (1.0 + ((clearofmindex * 0.4) + (clearofmindex * 1.0)));
 
 			double basedroprate = 1.0;
-			basedroprate *= (1.0 + (CallACS("MiscVarCheckDECORATE",33) * 0.0104166666666667));
-			basedroprate *= (1.0 + ((CallACS("MiscVarCheckDECORATE",10055) * 0.3) + (CallACS("MiscVarCheckDECORATE",10056) * 0.75)));
+			basedroprate *= (1.0 + (PlayerDFT * 0.0104166666666667));
+			basedroprate *= (1.0 + ((clearofmindex * 0.3) + (clearofmindex * 0.75)));
 
 			// Drops
 			if (bBOSS)
@@ -6250,7 +6284,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					DropVels2 = (DropTimes - 1) * frandompick(1.336875,1.67375,2.3475);
 
 					nm = "VitalitySerum"; MiscCheck = nm;
-					if (ModType == 0 && CallACS("MiscVarCheckDECORATE",317) < 10) // Classic Mode
+					if (ModType == 0 && StrifeStaminaLevel < 10) // Classic Mode
 					{
 						if (ClassicDoomType != 4) // NOT Strife
 						{
@@ -6262,7 +6296,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					}
 
 					nm = "CarrotusPotion"; MiscCheck = nm;
-					if (ModType == 0 && CallACS("MiscVarCheckDECORATE",318) < 10) // Classic Mode
+					if (ModType == 0 && StrifeAccuracyLevel < 10) // Classic Mode
 					{
 						if (ClassicDoomType != 4) // NOT Strife
 						{
@@ -6274,7 +6308,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					}
 
 					nm = "GoldenApple"; MiscCheck = nm;
-					if (ModType == 0 && (CallACS("MiscVarCheckDECORATE",317) < 10 && CallACS("MiscVarCheckDECORATE",318) < 10)) // Classic Mode
+					if (ModType == 0 && (StrifeStaminaLevel < 10 && StrifeAccuracyLevel < 10)) // Classic Mode
 					{
 						if (ClassicDoomType != 4) // NOT Strife
 						{
@@ -6954,15 +6988,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						if (EXPTimer <= 0) // If not set, set to 4 seconds, if already set, add 1 second
 						{
 							EXPTimerIncrease = 2800; // 140 tics [20 units / tic]
-							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",31) * 16); // 1 point of Agility = 0.8 tics [or 16 units] [5 points = 4 tics (or 80 units)]
-							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",33) * 4); // 1 point of Deftness = 0.2 tics [or 4 units] [20 points = 4 tics (or 80 units)]
+							EXPTimerIncrease += (PlayerAGL * 16); // 1 point of Agility = 0.8 tics [or 16 units] [5 points = 4 tics (or 80 units)]
+							EXPTimerIncrease += (PlayerDFT * 4); // 1 point of Deftness = 0.2 tics [or 4 units] [20 points = 4 tics (or 80 units)]
 							ComboTimerDelayIncrease = randompick(2,4) * 8;
 						}
 						else
 						{
 							EXPTimerIncrease = 700; // 35 tics [20 units / tic]
-							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",31) * 4); // 1 point of Agility = 0.8 tics [or 16 units] [5 points = 4 tics (or 80 units)]
-							EXPTimerIncrease += (CallACS("MiscVarCheckDECORATE",33) * 1); // 1 point of Deftness = 0.2 tics [or 4 units] [20 points = 4 tics (or 80 units)]
+							EXPTimerIncrease += (PlayerAGL * 4); // 1 point of Agility = 0.8 tics [or 16 units] [5 points = 4 tics (or 80 units)]
+							EXPTimerIncrease += (PlayerDFT * 1); // 1 point of Deftness = 0.2 tics [or 4 units] [20 points = 4 tics (or 80 units)]
 							ComboTimerDelayIncrease = randompick(2,4) * 2;
 						}
 						
@@ -7468,13 +7502,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	
 	void A_DiabloistGravity(int gravitytype)
 	{
+		int PlayerTHE = CallACS("MiscVarCheckDECORATE",36);
 		gravitypulsetimer = 0;
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
 		double GravityEffectFactor, FinalGravityFactor;
 		int PropertyValue, TherapeusisFactor, LevelFactor;
 		int basedmgratio;
 		int AffectedStat, MultFactor, THEEffect;
-		int CharacterClass = CallACS("CheckCharacterClass");
 		int InvulnerabilityTimer = CallACS("GetBuffTimer",4);
 
 		Actor targ = target;
@@ -7514,31 +7547,31 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					// Flora = 150 Needed to max out
 					if (CharacterClass == 0)
 					{
-						TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+						TherapeusisFactor = 300 - PlayerTHE;
 						if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 						GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
 					}
 					if (CharacterClass == 1)
 					{
-						TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+						TherapeusisFactor = 200 - PlayerTHE;
 						if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 						GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
 					}
 					if (CharacterClass == 2)
 					{
-						TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+						TherapeusisFactor = 150 - PlayerTHE;
 						if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 						GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
 					}
 					if (CharacterClass == 8)
 					{
-						TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+						TherapeusisFactor = 175 - PlayerTHE;
 						if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 						GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
 					}
 					if (CharacterClass == 9)
 					{
-						TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+						TherapeusisFactor = 225 - PlayerTHE;
 						if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 						GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
 					}
@@ -7579,31 +7612,31 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						// Flora = 150 Needed to max out
 						if (CharacterClass == 0)
 						{
-							TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 300 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
 						}
 						if (CharacterClass == 1)
 						{
-							TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 200 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
 						}
 						if (CharacterClass == 2)
 						{
-							TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 150 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
 						}
 						if (CharacterClass == 8)
 						{
-							TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 175 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
 						}
 						if (CharacterClass == 9)
 						{
-							TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 225 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
 						}
@@ -7637,31 +7670,31 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						// Flora = 150 Needed to max out
 						if (CharacterClass == 0)
 						{
-							TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 300 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
 						}
 						if (CharacterClass == 1)
 						{
-							TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 200 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
 						}
 						if (CharacterClass == 2)
 						{
-							TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 150 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
 						}
 						if (CharacterClass == 8)
 						{
-							TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 175 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
 						}
 						if (CharacterClass == 9)
 						{
-							TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 225 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
 						}
@@ -7696,31 +7729,31 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						// Flora = 150 Needed to max out
 						if (CharacterClass == 0)
 						{
-							TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 300 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
 						}
 						if (CharacterClass == 1)
 						{
-							TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 200 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
 						}
 						if (CharacterClass == 2)
 						{
-							TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 150 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
 						}
 						if (CharacterClass == 8)
 						{
-							TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 175 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
 						}
 						if (CharacterClass == 9)
 						{
-							TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 225 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
 						}
@@ -7752,31 +7785,31 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						// Flora = 150 Needed to max out
 						if (CharacterClass == 0)
 						{
-							TherapeusisFactor = 300 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 300 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 300;
 						}
 						if (CharacterClass == 1)
 						{
-							TherapeusisFactor = 200 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 200 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 200;
 						}
 						if (CharacterClass == 2)
 						{
-							TherapeusisFactor = 150 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 150 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 150;
 						}
 						if (CharacterClass == 8)
 						{
-							TherapeusisFactor = 175 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 175 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 175;
 						}
 						if (CharacterClass == 9)
 						{
-							TherapeusisFactor = 225 - CallACS("MiscVarCheckDECORATE",36);
+							TherapeusisFactor = 225 - PlayerTHE;
 							if (TherapeusisFactor < 0) TherapeusisFactor = 0;
 							GravityEffectFactor = GravityEffectFactor * TherapeusisFactor / 225;
 						}
@@ -10646,8 +10679,6 @@ class Sauravatar : AetheriusBossZSC //32201
 	void A_SetSauravatarHealth()
 	{
 		int debugstatcalc = dvdsdebug_showstatcalcstuff;
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
-		int ModType = CallACS("OtherVarCheckDECORATE",8);
 		int PlayerLevel = CallACS("StatCheck",0);
 		double MonstKillHealthMulti;
 		int MonsterKillHealth;
@@ -10763,8 +10794,6 @@ class Sauravatar : AetheriusBossZSC //32201
 		SauravatarFirstDMG = user_MaxHP * 0.6667;
 		SauravatarSecondDMG = user_MaxHP * 0.3334;
 
-		int TrueGameSkill = dvds_gendifficultycurve + Skill;
-		int ModType = CallACS("OtherVarCheckDECORATE",8);
 		int SkillHealthAdd;
 		double SkillMulti;
 		int regendebug = dvdsdebug_actorregendisplays;
@@ -11615,18 +11644,18 @@ class Sauravatar : AetheriusBossZSC //32201
 			CYBR P 5 A_SetTranslucent (0.055, 0);
 			CYBR P 0 
 			{
-				if (CallACS("OtherVarCheckDECORATE",8) == 1) { A_StartSound("SauronDeathS",102,CHANF_DEFAULT,2); }
+				if (ModType == 1) { A_StartSound("SauronDeathS",102,CHANF_DEFAULT,2); }
 			}
 			CYBR P 5 A_SetTranslucent (0.0325, 0);
 			CYBR P 5 A_SetTranslucent (0.01, 0);
 			CYBR P 875
 			{
-				if (CallACS("OtherVarCheckDECORATE",8) != 1) { A_SetTics(0); }
+				if (ModType != 1) { A_SetTics(0); }
 			}
 			// 1095 total time
 			CYBR P -1 
 			{
-				if (CallACS("OtherVarCheckDECORATE",8) == 1) { A_BrainDie(); } else { A_SetTics(0); }
+				if (ModType == 1) { A_BrainDie(); } else { A_SetTics(0); }
 			}
 			stop;
 	}
