@@ -13,6 +13,19 @@ class AetheriusPlayerPawn : PlayerPawn
 	
 	mixin Tension;
 
+	int DivineAvatarTimer;
+	int DQOomphTimer;
+	int DQBuffTimer;
+	int DQAcceleratleTimer;
+	int DQBluntTimer;
+	int DQSapTimer;
+	int DQDeceleratleTimer;
+	int SleepTimer;
+	int GoETimer;
+	
+	int DeathRagePerkLvl;
+	int DeathRageEXPerkLvl;
+
 	// Spreader Aura Level 1 Angles
 	const spread1angle1 = -15.0;
 	const spread1angle2 = 15.0;
@@ -136,8 +149,8 @@ class AetheriusPlayerPawn : PlayerPawn
 
 		// Buffs
 		double BuffAirControl = 1.00;
-		if (CallACS("GetBuffTimer",12) > 0) BuffAirControl += 0.25;
-		if (CallACS("GetBuffTimer",15) > 0) BuffAirControl -= 0.25;
+		if (DQAcceleratleTimer > 0) BuffAirControl += 0.25;
+		if (DQDeceleratleTimer > 0) BuffAirControl -= 0.25;
 
 		// Sceptre for AirControl.
 		double SceptreAirControl = 1.00;
@@ -152,7 +165,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		if (CallACS("MiscVarCheckDECORATE",166) > 0) DashingAirControl = 1.5 + frandom(-0.25,0.25); // (0.015625 * 5);
 
 		double DivineAvatarAirControl = 1.00;
-		if (CallACS("GetBuffTimer",7) > 0) DivineAvatarAirControl *= 2.00;
+		if (DivineAvatarTimer > 0) DivineAvatarAirControl *= 2.00;
 		
 		
 		level.aircontrol = AirControlBase
@@ -183,12 +196,11 @@ class AetheriusPlayerPawn : PlayerPawn
 		//********************************************************************************
 		//*Allows the player to "jiggle" out of sleep faster by pressing movement keys :V*
 		//********************************************************************************
-		int SleepTimer = CallACS("GetBuffTimer",20);
 		buttons = GetPlayerInput(INPUT_BUTTONS);
 		int jiggledecrease = random(4,6);
 		if (CountInv("EvenstarNecklace") > 0) jiggledecrease += random(2,3);
 		if (CountInv("BalrogRing") > 0) jiggledecrease += random(0,1);
-		if (CallACS("GetBuffTimer",129) > 0) jiggledecrease *= 10;
+		if (GoETimer > 0) jiggledecrease *= 10;
 		int jigglecooldown = random(2,3);
 		int jigglewarmup = 5;
 		if (jiggle_jump > 0) jiggle_jump -= 1;
@@ -210,6 +222,8 @@ class AetheriusPlayerPawn : PlayerPawn
 				if (jiggle_jump < 1)
 				{
 					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					SleepTimer = CallACS("GetBuffTimer",20);
+
 					jiggle_jump += jigglewarmup;
 					jiggle_crouch -= jigglecooldown;
 					jiggle_left -= jigglecooldown;
@@ -224,6 +238,8 @@ class AetheriusPlayerPawn : PlayerPawn
 				if (jiggle_crouch < 1)
 				{
 					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					SleepTimer = CallACS("GetBuffTimer",20);
+
 					jiggle_jump -= jigglecooldown;
 					jiggle_crouch += jigglewarmup;
 					jiggle_left -= jigglecooldown;
@@ -238,6 +254,8 @@ class AetheriusPlayerPawn : PlayerPawn
 				if (jiggle_left < 1)
 				{
 					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					SleepTimer = CallACS("GetBuffTimer",20);
+
 					jiggle_jump -= jigglecooldown;
 					jiggle_crouch -= jigglecooldown;
 					jiggle_left += jigglewarmup;
@@ -252,6 +270,8 @@ class AetheriusPlayerPawn : PlayerPawn
 				if (jiggle_right < 1)
 				{
 					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					SleepTimer = CallACS("GetBuffTimer",20);
+
 					jiggle_jump -= jigglecooldown;
 					jiggle_crouch -= jigglecooldown;
 					jiggle_left -= jigglecooldown;
@@ -266,6 +286,8 @@ class AetheriusPlayerPawn : PlayerPawn
 				if (jiggle_up < 1)
 				{
 					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					SleepTimer = CallACS("GetBuffTimer",20);
+
 					jiggle_jump -= jigglecooldown;
 					jiggle_crouch -= jigglecooldown;
 					jiggle_left -= jigglecooldown;
@@ -280,6 +302,8 @@ class AetheriusPlayerPawn : PlayerPawn
 				if (jiggle_down < 1)
 				{
 					CallACS("GetBuffTimer",20,3,jiggledecrease); // Subtract
+					SleepTimer = CallACS("GetBuffTimer",20);
+
 					jiggle_jump -= jigglecooldown;
 					jiggle_crouch -= jigglecooldown;
 					jiggle_left -= jigglecooldown;
@@ -288,7 +312,11 @@ class AetheriusPlayerPawn : PlayerPawn
 					jiggle_down += jigglewarmup;
 				}
 			}
-			if (SleepTimer < 0) CallACS("GetBuffTimer",20,1,0); // Set
+			if (SleepTimer < 0)
+			{
+				CallACS("GetBuffTimer",20,1,0); // Set
+				SleepTimer = CallACS("GetBuffTimer",20);
+			}
 			if (dvdsdebug_showmoveinformation > 0) Console.Printf("Jiggle - Sleep Time: %d, Jump: %d, Crouch: %d, Left: %d, Right: %d, Up: %d, Down: %d", SleepTimer, jiggle_jump, jiggle_crouch, jiggle_left, jiggle_right, jiggle_up, jiggle_down);
 		}
 		if (buttons & BT_ZOOM) A_SetInventory("HoldingZoom",1);
@@ -366,6 +394,20 @@ class AetheriusPlayerPawn : PlayerPawn
 											translation,
 											CallACS("MiscVarCheckDECORATE",1000));
 		}
+
+		DivineAvatarTimer = CallACS("GetBuffTimer",7);
+		DQOomphTimer = CallACS("GetBuffTimer",10);
+		DQBuffTimer = CallACS("GetBuffTimer",11);
+		DQAcceleratleTimer = CallACS("GetBuffTimer",12);
+		DQBluntTimer = CallACS("GetBuffTimer",13);
+		DQSapTimer = CallACS("GetBuffTimer",14);
+		DQDeceleratleTimer = CallACS("GetBuffTimer",15);
+		SleepTimer = CallACS("GetBuffTimer",20);
+		GoETimer = CallACS("GetBuffTimer",129);
+
+		DeathRagePerkLvl = CallACS("MiscVarCheckDECORATE",10043);
+		DeathRageEXPerkLvl = CallACS("MiscVarCheckDECORATE",10044);
+
 		int Player1TID = 1001;
 		if (CountInv("PlayerStatItem") == 0) CallACS("MiscVarSetDECORATE",25001,health);
 		if (CountInv("PlayerStatItem") > 0 && level.maptime == 10 && tid != Player1TID)
@@ -1282,7 +1324,7 @@ class AetheriusPlayerPawn : PlayerPawn
 					DashRad *= (1.0 + (StamUpPerkLevel * 0.05) + (StamUpEXPerkLevel * 0.125));
 					DashRad *= (1.0 + (MartialArtsMastery * 0.1) + (MartialArtsMasteryEX * 0.25));
 					if (CharacterClass == 2 && CountInv("SafeTeaShoes")) { DashDmg *= 2.5; DashRad *= 1.25; }
-					if (CallACS("GetBuffTimer",23) > 0) { DashDmg *= 2.5; DashRad *= 1.25; }
+					if (CountInv("AetheriusPowerStrength") > 0) { DashDmg *= 2.5; DashRad *= 1.25; }
 					if (CountInv("HWShieldBlockHold")) { DashDmg *= 3.75; DashRad *= 1.625; }
 					DashFullRad = (DashRad * 3) / 4;
 
@@ -1806,28 +1848,28 @@ class AetheriusPlayerPawn : PlayerPawn
 			//****************************************************
 			//*Check "Mortal Hit Survivability 'Death Rage'" Perk*
 			//****************************************************
-			if (CallACS("MiscVarCheckDECORATE",10043) > 0 && DeathRageTimerCooldown <= 0)
+			if (DeathRagePerkLvl > 0 && DeathRageTimerCooldown <= 0)
 			{
-				if (CallACS("MiscVarCheckDECORATE",10043) == 1) PerkFactor = 1250;
-				if (CallACS("MiscVarCheckDECORATE",10043) == 2) PerkFactor = 2000;
-				if (CallACS("MiscVarCheckDECORATE",10043) == 3) PerkFactor = 2500;
+				if (DeathRagePerkLvl == 1) PerkFactor = 1250;
+				if (DeathRagePerkLvl == 2) PerkFactor = 2000;
+				if (DeathRagePerkLvl == 3) PerkFactor = 2500;
 				if (random(1,10000) <= PerkFactor)
 				{
 					A_StartSound("MortalHit/DeathRage");
 					PerkFactor = random(17,18);
-					if (CallACS("MiscVarCheckDECORATE",10043) == 1)
+					if (DeathRagePerkLvl == 1)
 					{
 						DeathRageTimer = (15 * 35); // Death Rage Timer
 						DeathRageMaxTimer = (15 * 35); // Death Rage Max Timer
 						DeathRageTimerCooldown = (195 * 35); // Death Rage Cooldown Timer
 					}
-					if (CallACS("MiscVarCheckDECORATE",10043) == 2)
+					if (DeathRagePerkLvl == 2)
 					{
 						DeathRageTimer = ((22 * 35) + PerkFactor); // Death Rage Timer
 						DeathRageMaxTimer = ((22 * 35) + PerkFactor); // Death Rage Max Timer
 						DeathRageTimerCooldown = ((172 * 35) + PerkFactor); // Death Rage Cooldown Timer
 					}
-					if (CallACS("MiscVarCheckDECORATE",10043) == 3)
+					if (DeathRagePerkLvl == 3)
 					{
 						DeathRageTimer = (30 * 35); // Death Rage Timer
 						DeathRageMaxTimer = (30 * 35); // Death Rage Max Timer
@@ -2565,17 +2607,17 @@ class AetheriusPlayerPawn : PlayerPawn
 			zerodmgchance2 = floor(zerodmgchance2 * 0.25);
 		}
 		// [De]Buffs
-		if (CallACS("GetBuffTimer",11) > 0) // Buff
+		if (DQBuffTimer > 0) // Buff
 		{
 			zerodmgchance = floor(zerodmgchance * 3);
 			zerodmgchance2 = floor(zerodmgchance2 * 3);
 		}
-		if (CallACS("GetBuffTimer",14) > 0) // Sap
+		if (DQSapTimer > 0) // Sap
 		{
 			zerodmgchance = floor(zerodmgchance * 0.334);
 			zerodmgchance2 = floor(zerodmgchance2 * 0.334);
 		}
-		if (CallACS("GetBuffTimer",20) > 0) // Sleep
+		if (SleepTimer > 0) // Sleep
 		{
 			if (random(1,16) == 1) 
 			{
@@ -3037,13 +3079,13 @@ class AetheriusPlayerPawn : PlayerPawn
 			temp1 /= 4;
 			CritResistChance += temp1;
 			if (CallACS("GetBuffTimer",1) > 0) CritResistChance += 2.5; // Invisiblity
-			if (CallACS("GetBuffTimer",7) > 0) CritResistChance += 12.5; // Divine Avatar
-			if (CallACS("GetBuffTimer",11) > 0) CritResistChance += 5.0; // Buff
-			if (CallACS("GetBuffTimer",12) > 0) CritResistChance += 1.25; // Acceleratle
-			if (CallACS("GetBuffTimer",14) > 0) CritResistChance -= 2.5; // Sap
-			if (CallACS("GetBuffTimer",15) > 0) CritResistChance -= 0.625; // Deceleratle
-			if (CallACS("GetBuffTimer",129) > 0) CritResistChance += 25.0; // GoE
-			if (CallACS("GetBuffTimer",20) > 0) CritResistChance = 0.0; // Sleep
+			if (DivineAvatarTimer > 0) CritResistChance += 12.5; // Divine Avatar
+			if (DQBuffTimer > 0) CritResistChance += 5.0; // Buff
+			if (DQAcceleratleTimer > 0) CritResistChance += 1.25; // Acceleratle
+			if (DQSapTimer > 0) CritResistChance -= 2.5; // Sap
+			if (DQDeceleratleTimer > 0) CritResistChance -= 0.625; // Deceleratle
+			if (GoETimer > 0) CritResistChance += 25.0; // GoE
+			if (SleepTimer > 0) CritResistChance = 0.0; // Sleep
 
 			// Player Has "Item"
 			if (CountInv("HWShieldDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.25);
@@ -3154,12 +3196,12 @@ class AetheriusPlayerPawn : PlayerPawn
 			{
 				if (mod == 'Slime' || mod == 'Crush') 
 				{
-					if (CallACS("GetBuffTimer",11) > 0) 
+					if (DQBuffTimer > 0) 
 					{
 						defense *= 0.5; // Total Defense is only 50% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
 					}
 					else 
-					if (CallACS("GetBuffTimer",14) > 0) 
+					if (DQSapTimer > 0) 
 					{
 						defense *= 0.02; // Total Defense is only 2% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
 					}
@@ -3172,13 +3214,13 @@ class AetheriusPlayerPawn : PlayerPawn
 				{
 					if (mod == 'Fire' || mod == 'Magma') 
 					{
-						if (CallACS("GetBuffTimer",11) > 0) 
+						if (DQBuffTimer > 0) 
 						{
 							defense *= 0.5; // Total Defense is only 50% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
 							damage = ceil(damage * frandom(0.9,1.5));
 						}
 						else 
-						if (CallACS("GetBuffTimer",14) > 0) 
+						if (DQSapTimer > 0) 
 						{
 							defense *= 0.02; // Total Defense is only 2% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
 							damage = ceil(damage * frandom(2.4,4.0));
@@ -3255,12 +3297,12 @@ class AetheriusPlayerPawn : PlayerPawn
 				if (mod == 'SigilUse') PlayerDefenseIgnoreFactor += (1.00 * (1.00 - PlayerDefenseIgnoreFactor));
 				if (mod == 'Slime' || mod == 'Crush') 
 				{
-					if (CallACS("GetBuffTimer",11) > 0) 
+					if (DQBuffTimer > 0) 
 					{
 						PlayerDefenseIgnoreFactor += (0.30 * (1.00 - PlayerDefenseIgnoreFactor));
 					}
 					else 
-					if (CallACS("GetBuffTimer",14) > 0) 
+					if (DQSapTimer > 0) 
 					{
 						PlayerDefenseIgnoreFactor += (0.97 * (1.00 - PlayerDefenseIgnoreFactor));
 					}
@@ -3271,12 +3313,12 @@ class AetheriusPlayerPawn : PlayerPawn
 				}
 				if (gameinfo.gametype & GAME_Raven)
 				{
-					if (CallACS("GetBuffTimer",11) > 0) 
+					if (DQBuffTimer > 0) 
 					{
 						PlayerDefenseIgnoreFactor += (0.30 * (1.00 - PlayerDefenseIgnoreFactor));
 					}
 					else 
-					if (CallACS("GetBuffTimer",14) > 0) 
+					if (DQSapTimer > 0) 
 					{
 						PlayerDefenseIgnoreFactor += (0.97 * (1.00 - PlayerDefenseIgnoreFactor));
 					}
