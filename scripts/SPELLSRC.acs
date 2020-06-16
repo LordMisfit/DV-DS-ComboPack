@@ -578,7 +578,17 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [316] Total Sceptre EXP Required for Level 16
 	// [317] [STRIFE-Compatibility] Times "Stamina Upgraded"
 	// [318] [STRIFE-Compatibility] Times "Accuracy Upgraded"
-		// [319 to 396] are undefined so far :P
+		// [319 to 320] are undefined so far :P
+	// [321] Minor Healing [Min] Stamina Value
+	// [322] Minor Healing [Max] Stamina Value
+	// [323] Minor Healing [Cap] Stamina Value
+	// [324] Healing [Min] Stamina Value
+	// [325] Healing [Max] Stamina Value
+	// [326] Healing [Cap] Stamina Value
+	// [327] Major Healing [Min] Stamina Value
+	// [328] Major Healing [Max] Stamina Value
+	// [329] Major Healing [Cap] Stamina Value
+		// [330 to 396] are undefined so far :P
 	// [397] Value for SceptreShieldLevel [for speed/movement calculations when using Sceptre's Shield]
 	// [398] Value for BowLevel [for speed/movement calculations when drawing/priming Diaris Longbow]
 		// [399 to 400] are undefined so far :P
@@ -10681,6 +10691,7 @@ script "MagicEffects" (int Type, int Strength)
 	
 	int healingcap;
 	int healamount;
+	int stamhealamount;
 	int oldhealthvalue;
 	int finalhealvalue;
 
@@ -16480,17 +16491,24 @@ script "MagicEffects" (int Type, int Strength)
 		int StamHealMin;
 		int StamHealMax;
 		int StamHealCap;
+		int SpreadHealRollNum;
+		int SpreadHealMaxRolls = 1;
+		if (PowerupTimer[8] > 0) SpreadHealMaxRolls = 3;
+		if (PowerupTimer[9] > 0) SpreadHealMaxRolls = 7;
+
 		if (Strength < 10) // Not the Major Healing Spell [Deggaris and Illucia Only]
 		{
 			if (Strength < 3) // Minor Healing Spell [Deggaris and Illucia Only]
 			{
 				healingcap = MaxHealthTrue;
-				healamount = random(MiscellaneousVars[281],MiscellaneousVars[282]);
-		
-				StamHealCap = ((MiscellaneousVars[22] * 10250) / 10000);
-				StamHealMin = ((MiscellaneousVars[22] * 36) / 10000);
-				StamHealMax = ((MiscellaneousVars[22] * 66) / 10000);
-		
+				StamHealCap = MiscellaneousVars[323];
+				
+				for (SpreadHealRollNum = 0; SpreadHealRollNum < SpreadHealMaxRolls; SpreadHealRollNum++)
+				{
+					healamount += random(MiscellaneousVars[281],MiscellaneousVars[282]);
+					stamhealamount += random(MiscellaneousVars[321],MiscellaneousVars[322]);
+				}
+				
 				FadeRange(63,63,63,0.8,255,255,255,0.0,1.0);
 				if (CharacterClass == 2) ActivatorSound("healing_dq",127); 
 				else ActivatorSound("HealSpell1",127);
@@ -16500,12 +16518,14 @@ script "MagicEffects" (int Type, int Strength)
 			else // Healing Spell [Deggaris and Illucia Only]
 			{
 				healingcap = MaxHealthTrue;
-				healamount = random(MiscellaneousVars[283],MiscellaneousVars[284]);
-		
-				StamHealCap = ((MiscellaneousVars[22] * 11250) / 10000);
-				StamHealMin = ((MiscellaneousVars[22] * 180) / 10000);
-				StamHealMax = ((MiscellaneousVars[22] * 330) / 10000);
-		
+				StamHealCap = MiscellaneousVars[326];
+				
+				for (SpreadHealRollNum = 0; SpreadHealRollNum < SpreadHealMaxRolls; SpreadHealRollNum++)
+				{
+					healamount = random(MiscellaneousVars[283],MiscellaneousVars[284]);
+					stamhealamount = random(MiscellaneousVars[324],MiscellaneousVars[325]);
+				}
+				
 				FadeRange(127,127,127,0.8,255,255,255,0.0,1.0);
 				if (CharacterClass == 2) ActivatorSound("healing_dq",127); 
 				else ActivatorSound("HealSpell1",127); 
@@ -16516,11 +16536,13 @@ script "MagicEffects" (int Type, int Strength)
 		else // Major Healing Spell [Deggaris and Illucia Only]
 		{
 			healingcap = MaxHealthLimit;
-			healamount = random(MiscellaneousVars[285],MiscellaneousVars[286]);
-		
-			StamHealCap = ((MiscellaneousVars[22] * 15000) / 10000);
-			StamHealMin = ((MiscellaneousVars[22] * 450) / 10000);
-			StamHealMax = ((MiscellaneousVars[22] * 825) / 10000);
+			StamHealCap = MiscellaneousVars[329];
+				
+			for (SpreadHealRollNum = 0; SpreadHealRollNum < SpreadHealMaxRolls; SpreadHealRollNum++)
+			{
+				healamount = random(MiscellaneousVars[285],MiscellaneousVars[286]);
+				stamhealamount = random(MiscellaneousVars[327],MiscellaneousVars[328]);
+			}
 		
 			FadeRange(193,193,193,0.8,255,255,255,0.0,1.0);
 			if (CharacterClass == 2) ActivatorSound("healing_dq",127); 
@@ -16532,122 +16554,7 @@ script "MagicEffects" (int Type, int Strength)
 		SetActorAngle(2001, 0);
 		SetActorPosition(2001,PX,PY,PZ+healheight,0);
 		Thing_ChangeTID(2001,4444);
-	
-		if (PowerupTimer[9] > 0)
-		{
-			healamount *= 7;
-			StamHealMin *= 7;
-			StamHealMax *= 7;
-		}
-		else
-		{
-			if (PowerupTimer[8] > 0)
-			{
-				healamount *= 3;
-				StamHealMin *= 3;
-				StamHealMax *= 3;
-			}
-		}
-	
-		StamHealMin = StamHealMin * (10 + (PlayerLevel / 25)) / 10;
-		StamHealMax = StamHealMax * (10 + (PlayerLevel / 25)) / 10;
-	
-		// Check Sauron Equipment
-		if (MiscellaneousVars[25101] > 0)
-		{
-			StamHealMin = StamHealMin * 9 / 8; // 1.125x
-			StamHealMax = StamHealMax * 9 / 8; // 1.125x
-		}
-		if (MiscellaneousVars[25102] > 0)
-		{
-			StamHealMin = StamHealMin * 9 / 8; // 1.125x
-			StamHealMax = StamHealMax * 9 / 8; // 1.125x
-		}
-		if (MiscellaneousVars[25103] > 0)
-		{
-			StamHealMin = StamHealMin * 5 / 2; // 2.5x
-			StamHealMax = StamHealMax * 5 / 2; // 2.5x
-		}
-	
-		// Divine Avatar
-		if (PowerupTimer[7] > 0)
-		{
-			StamHealMin *= 4;
-			StamHealMax *= 4;
-		}
-		// ???
-		if (PowerupTimer[129] > 0)
-		{
-			StamHealMin *= 10;
-			StamHealMax *= 10;
-		}
-		// Tension
-		if (MiscellaneousVars[181] == 1)
-		{
-			StamHealMin = StamHealMin * 17 / 10; // 1.7x
-			StamHealMax = StamHealMax * 17 / 10; // 1.7x
-		}
-		if (MiscellaneousVars[181] == 2)
-		{
-			StamHealMin = StamHealMin * 3; // 3x
-			StamHealMax = StamHealMax * 3; // 3x
-		}
-		if (MiscellaneousVars[181] == 3)
-		{
-			StamHealMin = StamHealMin * 5; // 5x
-			StamHealMax = StamHealMax * 5; // 5x
-		}
-		if (MiscellaneousVars[181] == 4)
-		{
-			StamHealMin = StamHealMin * 15 / 2; // 7.5x
-			StamHealMax = StamHealMax * 15 / 2; // 7.5x
-		}
-		if (MiscellaneousVars[181] == 5)
-		{
-			StamHealMin = StamHealMin * 45 / 4; // 11.25x
-			StamHealMax = StamHealMax * 45 / 4; // 11.25x
-		}
-		if (MiscellaneousVars[181] == 6)
-		{
-			StamHealMin = StamHealMin * 35 / 2; // 17.5x
-			StamHealMax = StamHealMax * 35 / 2; // 17.5x
-		}
-		if (MiscellaneousVars[181] == 7)
-		{
-			StamHealMin = StamHealMin * 25; // 25x
-			StamHealMax = StamHealMax * 25; // 25x
-		}
-	
-		// Deggaris in use
-		if (CharacterClass == 0)
-		{
-			StamHealMin = StamHealMin * 7 / 4; // 1.75x
-			StamHealMax = StamHealMax * 7 / 4; // 1.75x
-		}
-		// Illucia in use
-		if (CharacterClass == 1)
-		{
-			StamHealMin = StamHealMin * 5 / 4; // 1.25x
-			StamHealMax = StamHealMax * 5 / 4; // 1.25x
-		}
-		// Flora in use
-		if (CharacterClass == 2)
-		{
-			StamHealMin = StamHealMin * 7 / 8; // 0.875x
-			StamHealMax = StamHealMax * 7 / 8; // 0.875x
-		}
-		// Ailish in use
-		if (CharacterClass == 8)
-		{
-			StamHealMin = StamHealMin * 6 / 8; // 0.75x
-			StamHealMax = StamHealMax * 6 / 8; // 0.75x
-		}
-		// Petra in use
-		if (CharacterClass == 9)
-		{
-			StamHealMin = StamHealMin * 8 / 4; // 2x
-			StamHealMax = StamHealMax * 8 / 4; // 2x
-		}
+		
 		
 		oldhealthvalue = MiscellaneousVars[25001];
 		finalhealvalue = oldhealthvalue + healamount;
@@ -16661,8 +16568,8 @@ script "MagicEffects" (int Type, int Strength)
 	
 		if (MiscellaneousVars[21] < StamHealCap)
 		{
-			//ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
-			MiscellaneousVars[21] += random(StamHealMin,StamHealMax);
+			ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
+			MiscellaneousVars[21] += stamhealamount;
 			if (MiscellaneousVars[21] < 0) MiscellaneousVars[21] = 0;
 			if (MiscellaneousVars[21] > StamHealCap) MiscellaneousVars[21] = StamHealCap;
 		}

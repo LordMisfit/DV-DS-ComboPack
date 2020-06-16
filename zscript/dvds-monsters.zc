@@ -24,6 +24,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int IsACrisisComboAttack;
 
 	int TrueGameSkill;
+	int stealthcheckinterval;
 	int CrisisMultiplier;
 	int CharacterClass;
 	int ClassicDoomType;
@@ -425,10 +426,35 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 	
+	void A_FirstTicInit(int type = 0)
+	{
+		if (self.health > 0 && !ActorLevelCalcs) 
+		{
+			if (GetClassName() != "Sauravatar") A_AetheriusStats(0); 
+
+			if (self.health <= User_MaxHP) self.health = User_MaxHP;
+			if (diedasafriendly && !bFRIENDLY)
+			{
+				if (dvdsdebug_actorresurrectdisplays && type == 0) Console.Printf("diedasafriendly [PostBeginPlay()]");
+				if (dvdsdebug_actorresurrectdisplays && type == 1) Console.Printf("diedasafriendly [tick()]");
+				bFRIENDLY = true;
+				diedasafriendly = 0;
+				if (diedasacharmed)
+				{
+					user_charmed = 1;
+					diedasacharmed = 0;
+				}
+			}
+			
+			// LDL
+			A_LegendaryCheck();
+		}
+	}
+	
 	override void PostBeginPlay()
 	{
-		TrueGameSkill = dvds_gendifficultycurve + Skill;
 		CrisisMultiplier = CallACS("CrisisMultiplier");
+		TrueGameSkill = dvds_gendifficultycurve + Skill;
 		CharacterClass = CallACS("CheckCharacterClass");
 		ClassicDoomType = CallACS("OtherVarCheckDECORATE",7);
 		ModType = CallACS("OtherVarCheckDECORATE",8);
@@ -490,27 +516,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 		}
 
-		if (self.health > 0 && !ActorLevelCalcs) 
-		{
-			if (GetClassName() != "Sauravatar") A_AetheriusStats(0); 
-
-			if (self.health <= User_MaxHP) self.health = User_MaxHP;
-			if (diedasafriendly && !bFRIENDLY)
-			{
-				if (dvdsdebug_actorresurrectdisplays) Console.Printf("diedasafriendly [PostBeginPlay()]");
-				bFRIENDLY = true;
-				diedasafriendly = 0;
-				if (diedasacharmed)
-				{
-					user_charmed = 1;
-					diedasacharmed = 0;
-				}
-			}
-			
-			// LDL
-			A_LegendaryCheck();
-		}
-		//Console.Printf("User_MaxHP: %d", User_MaxHP);
+		A_FirstTicInit(0);
 
 		ActorRandomBits = random();
 
@@ -578,46 +584,18 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		levelbehavior = dvds_monsterlevelbehavior;
 		gfxeffectlevel = dvds_gfxeffectlevel;
 		
-		if (self.health > 0 && !ActorLevelCalcs) 
+		A_FirstTicInit(1);
+		
+		if (self.health > 0 && ((gametic % 4) == 0))
 		{
-			if (GetClassName() != "Sauravatar") A_AetheriusStats(0); 
-
-			if (self.health <= User_MaxHP) self.health = User_MaxHP;
-			if (diedasafriendly && !bFRIENDLY)
-			{
-				if (dvdsdebug_actorresurrectdisplays) Console.Printf("diedasafriendly [tick()]");
-				bFRIENDLY = true;
-				diedasafriendly = 0;
-				if (diedasacharmed)
-				{
-					user_charmed = 1;
-					diedasacharmed = 0;
-				}
-			}
-			
-			// LDL
-			A_LegendaryCheck();
-		}
-
-		if (self.health > 0)
-		{
-			if (dvds_dmgindicator && !ActorDisplayDMG) 
-			{
-				ActorDisplayDMG = true;
-				//ACS_NamedExecuteAlways("DamageDisplays",0,0,0,0);
-			}
-			else
-			{
-				if (!dvds_dmgindicator && ActorDisplayDMG) ActorDisplayDMG = false;
-			}
+			if (dvds_dmgindicator && !ActorDisplayDMG) ActorDisplayDMG = true;
+			else if (!dvds_dmgindicator && ActorDisplayDMG) ActorDisplayDMG = false;
 		}
 		
 		//******************
 		//*"Stealth" Checks*
 		//******************
-		int stealthcheckinterval = dvds_rnd_stealth_refreshrate;
-		if (stealthcheckinterval < 1) stealthcheckinterval = 1;
-		if (stealthcheckinterval > 35) stealthcheckinterval = 35;
+		stealthcheckinterval = clamp(dvds_rnd_stealth_refreshrate, 1, 35);
 		if (user_isstealth && ((gametic % stealthcheckinterval) == 0))
 		{
 			if (InStateSequence(curstate,ResolveState("See")) || 
@@ -1232,10 +1210,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		shieldfactor *= -1;
 		shieldfactor += 1.0;
-		if (shieldfactor >= 1.0) shieldfactor = 1.0;
+		shieldfactor = clamp(shieldfactor, shieldfactor, 1.0);
 		
 		finaldmg = ceil(finaldmg * shieldfactor);
-		if (finaldmg < 1) finaldmg = 1;
+		finaldmg = clamp(finaldmg, 1, finaldmg);
 		if (dvdsdebug_actordmgdisplays && shieldfactor >= 0.01) Console.Printf("    (\czActor Defensive Input [STEP ?? - Shielding Monsters]\c-: finaldmg: %d (prevdamage: %d), shieldfactor: %4f", finaldmg, damage, shieldfactor);
 
 		return finaldmg;
@@ -1661,7 +1639,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				damage = ceil(damage * 0.25);
 				if (user_summoned > 0) damage = ceil(damage * 0.25);
 				if (user_charmed > 0) damage = ceil(damage * 0.25);
-				if (damage < 1) damage = 1;
+				damage = clamp(damage, 1, damage);
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2a - Player-Friendly Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-)", prefriendlydmg, damage);
 			}
 			
@@ -1961,7 +1939,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') // BFG related attacks have signficantly LESS chance to crit, but still always have at least a 1/512 chance :P
 				{ 
 					CritChance /= 4;
-					if (CritChance < 1) CritChance = 1;
+					CritChance = clamp(CritChance, 1, CritChance);
 				}
 				if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
 						infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
@@ -2386,7 +2364,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		predirdmg = damage;
 		double cheatnpcdmgtaken;
 		cheatnpcdmgtaken = dvds_cheatnpcdmgtaken * 0.01;
-		if (cheatnpcdmgtaken < 0.01) cheatnpcdmgtaken = 0.01;
+		cheatnpcdmgtaken = clamp(cheatnpcdmgtaken, 0.01, cheatnpcdmgtaken);
+		
 		bool isakamikaze = false;
 		if (mod == 'Massacre') { }
 		else
@@ -2407,7 +2386,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					{
 						if (random(0,1) == 0) damage = floor(damage * cheatnpcdmgtaken);
 														 else damage = ceil(damage * cheatnpcdmgtaken);
-						if (damage < 1) damage = 1;
+						damage = clamp(damage, 1, damage);
 						if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP C1 - Direct Dmg Changes]:\c- \cypredmg = %d\c-, \cydmg = %d\c-, \cxcheatnpcdmgtaken = %2f)", predirdmg, damage, cheatnpcdmgtaken);
 					}
 				}
@@ -3293,7 +3272,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				specialspeed1 -= value2;
 				tics -= value1;
-				if (tics < value3) tics = value3;
+				tics = clamp(tics, value3, tics);
 				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_DVDSWander]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), specialspeed1, value1, value2, value3);
 			}
 		}
@@ -3325,7 +3304,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				specialspeed1 -= value2;
 				tics -= value1;
-				if (tics < value3) tics = value3;
+				tics = clamp(tics, value3, tics);
 				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_DVDSChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), specialspeed1, value1, value2, value3);
 			}
 		}
@@ -3492,13 +3471,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (debugevolvestealth) Console.Printf("Stealth Chance [Base]: %d - %s", StealthChance, GetClassName());
 		
-		if (StealthChance < 0) StealthChance = 0;
-		if (StealthChance > 512) StealthChance = 512;
+		StealthChance = clamp(StealthChance, 0, 512);
 
 		TempRatio = dvds_rnd_stealth_levels;
 		if (TempRatio > 0) 
 		{
-			if (TempRatio > 1000) TempRatio = 1000;
+			TempRatio = clamp(TempRatio, TempRatio, 1000);
 			
 			TempStealthChance = (SceptreActualLevel * 2 / 50) + (PlayerLevel / 75); 
 			TempStealthChance = TempStealthChance * TempRatio / 100;
@@ -3509,7 +3487,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		TempRatio = dvds_rnd_stealth_chars;
 		if (TempRatio > 0) 
 		{
-			if (TempRatio > 1000) TempRatio = 1000;
+			TempRatio = clamp(TempRatio, TempRatio, 1000);
 			
 			TempStealthChance = 0;
 			if (CharacterClass == 0) TempStealthChance = 125;
@@ -3528,7 +3506,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		TempRatio = dvds_rnd_stealth_skill;
 		if (TempRatio > 0) 
 		{
-			if (TempRatio > 1000) TempRatio = 1000;
+			TempRatio = clamp(TempRatio, TempRatio, 1000);
 			
 			TempStealthChance = 0;
 			if (TrueGameSkill <= SKILL_VERY_EASY) TempStealthChance = -250;
@@ -3551,7 +3529,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		TempRatio = dvds_rnd_stealth_maps;
 		if (TempRatio > 0) 
 		{
-			if (TempRatio > 1000) TempRatio = 1000;
+			TempRatio = clamp(TempRatio, TempRatio, 1000);
 			
 			if (ModType == 0) // Classic Doom 1/2 / Heretic / Hexen / Strife
 			{
@@ -3565,8 +3543,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					MapCheck += CallACS("MiscVarCheckDECORATE",169); // Map Inflation [Overall - Exact]
 					MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",3) / 100; // Map Inflation [Evolve/Stealth - Percentile]
 					MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",5) / 100; // Map Inflation [Overall - Percentile]
-					if (MapCheck < 1) MapCheck = 1;
-					if (MapCheck > 100) MapCheck = 100;
+					MapCheck = clamp(MapCheck, 1, 100);
 			
 					if (MapCheck >= 1 && MapCheck <= 10) ChanceFactor = (MapCheck * 25); // Episode 1
 					if (MapCheck >= 11 && MapCheck <= 20) ChanceFactor = (MapCheck * 31); // Episode 2
@@ -3589,8 +3566,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					MapCheck += CallACS("MiscVarCheckDECORATE",169); // Map Inflation [Overall - Exact]
 					MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",3) / 100; // Map Inflation [Evolve/Stealth - Percentile]
 					MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",5) / 100; // Map Inflation [Overall - Percentile]
-					if (MapCheck < 1) MapCheck = 1;
-					if (MapCheck > 100) MapCheck = 100;
+					MapCheck = clamp(MapCheck, 1, 100);
 			
 					if (MapCheck >= 1 && MapCheck <= 5) ChanceFactor = (MapCheck * 30);
 					if (MapCheck >= 6 && MapCheck <= 10) ChanceFactor = (MapCheck * 35);
@@ -3616,8 +3592,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			else if (ModType == 1) // DVI
 			{
 				MapCheck = level.levelnum;
-				if (MapCheck < 1101) MapCheck = 1101;
-				if (MapCheck > 1104) MapCheck = 1104;
+				MapCheck = clamp(MapCheck, 1101, 1104);
 			
 				if (MapCheck == 1101) StealthChance = StealthChance * 1000 / 1000; // MAP01 - Insurgents
 				else if (MapCheck == 1102) StealthChance = StealthChance * 1116 / 1000; // MAP02 - Torture Chamber
@@ -3628,8 +3603,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (ModType == 2) // DVII
 			{
 				MapCheck = level.levelnum;
-				if (MapCheck < 1201) MapCheck = 1201;
-				if (MapCheck > 1212) MapCheck = 1212;
+				MapCheck = clamp(MapCheck, 1201, 1212);
 			
 				if (MapCheck == 1201) ChanceFactor = 0; // MAP01 - Entryway Pass
 				else if (MapCheck == 1202) ChanceFactor = 70; // MAP02 - Mutagen
@@ -3733,10 +3707,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int StrifeStaminaLevel = CallACS("MiscVarCheckDECORATE",317);
 		int StrifeAccuracyLevel = CallACS("MiscVarCheckDECORATE",318);
 		
-		if (type < 0) type = 0;
-		if (type > 1) type = 1;
+		type = clamp(type, 0, 1);
 		
-	
 		// extraflags
 		// & 1 = Always multiply level by 4 instead of a 1/64 chance of it. [basically "Elitifies" the monster all the time when called]
 		// & 2 = Multiplies the monsters' level by 4 [again]
@@ -5091,7 +5063,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		//A_MonsterCrisisCheck(); // Inside CrisisAttack Function
 		if (user_canusecrisisatk == 1) 
 		{
-			damage *= CallACS("CrisisMultiplier"); 
+			damage *= CrisisMultiplier; 
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
 		}
 		A_Explode(damage,radius,flags,alert,fulldmgradius,nails,naildamage,pufftype,damagetype);
@@ -5128,7 +5100,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		if (user_canusecrisisatk == 1) 
 		{
-			damage *= CallACS("CrisisMultiplier"); 
+			damage *= CrisisMultiplier; 
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
 		}
 		A_CustomRailgun(damage,spawnofs_xy,ringcolor,corecolor,flags,aim,maxdiff,pufftype,spread_xy,spread_z,range,duration,sparsity,driftspeed,spawnclass,spawnofs_z,spiraloffset,limit,veleffect);
@@ -5139,7 +5111,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		string atktype = missiletype;
 		if (user_canusecrisisatk == 1) 
 		{
-			meleedamage *= CallACS("CrisisMultiplier"); 
+			meleedamage *= CrisisMultiplier; 
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
 			atktype = crisismissiletype;
 		}
@@ -5151,7 +5123,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_MonsterCrisisCheck();
 		if (user_canusecrisisatk == 1) 
 		{
-			meleedamage *= CallACS("CrisisMultiplier");
+			meleedamage *= CrisisMultiplier;
 			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
 		}
 		A_CustomMeleeAttack(meleedamage,meleesound,misssound,damagetype,bleed);
@@ -5298,35 +5270,25 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		
 		int mapdifficultytype = dvds_mapdifficultytype;
 
-		int mapdifficultyinflationEXP = dvds_mapdifficultyinflationEXP;
-		if (mapdifficultyinflationEXP < -50) mapdifficultyinflationEXP = -50;
-		if (mapdifficultyinflationEXP > 50) mapdifficultyinflationEXP = 50;
-		
-		int mapdifficultyinflationOVERALL = dvds_mapdifficultyinflationOVERALL;
-		if (mapdifficultyinflationOVERALL < -50) mapdifficultyinflationOVERALL = -50;
-		if (mapdifficultyinflationOVERALL > 50) mapdifficultyinflationOVERALL = 50;
-
-		int mapdifficultyinflationEXP2 = dvds_mapdifficultyinflationEXP2;
-		if (mapdifficultyinflationEXP2 < 1) mapdifficultyinflationEXP2 = 1;
-		if (mapdifficultyinflationEXP2 > 5000) mapdifficultyinflationEXP2 = 5000;
-		
-		int mapdifficultyinflationOVERALL2 = dvds_mapdifficultyinflationOVERALL2;
-		if (mapdifficultyinflationOVERALL2 < 1) mapdifficultyinflationOVERALL2 = 1;
-		if (mapdifficultyinflationOVERALL2 > 5000) mapdifficultyinflationOVERALL2 = 5000;
+		int mapdifficultyinflationEXP = clamp(dvds_mapdifficultyinflationEXP, -50, 50);
+		int mapdifficultyinflationOVERALL = clamp(dvds_mapdifficultyinflationOVERALL, -50, 50);
+		int mapdifficultyinflationEXP2 = clamp(dvds_mapdifficultyinflationEXP2, 1, 5000);
+		int mapdifficultyinflationOVERALL2 = clamp(dvds_mapdifficultyinflationOVERALL2, 1, 5000);
 
 		// Gets the Experience Multiplication Factor [Part 1]
 		ExpMultiFactor = Random(90,120);
-		if (PlayerLevel < 40) ExpMultiFactor += (PlayerLevel * 1.03125); // +6.25%
+		double basemultiextra = 0.015625;
+		if (PlayerLevel < 40) ExpMultiFactor += (PlayerLevel * (1.0 + basemultiextra));
 		else
 		{
-			if (PlayerLevel < 80) ExpMultiFactor += (PlayerLevel * 1.0625); // +12.5%
+			if (PlayerLevel < 80) ExpMultiFactor += (PlayerLevel * (1.0 + (basemultiextra * 2)));
 			else
 			{
-				if (PlayerLevel < 120) ExpMultiFactor += (PlayerLevel * 1.125); // +25%
+				if (PlayerLevel < 120) ExpMultiFactor += (PlayerLevel * (1.0 + (basemultiextra * 4)));
 				else
 				{
-					if (PlayerLevel < 160) ExpMultiFactor += (PlayerLevel * 1.25); // +50%
-					else ExpMultiFactor += (PlayerLevel * 1.5); // +100%
+					if (PlayerLevel < 160) ExpMultiFactor += (PlayerLevel * (1.0 + (basemultiextra * 8)));
+														else ExpMultiFactor += (PlayerLevel * (1.0 + (basemultiextra * 16)));
 				}
 			}
 		}
@@ -5350,8 +5312,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					MapCheck += mapdifficultyinflationOVERALL; // Map Inflation [Overall - Exact]
 					MapCheck = MapCheck * mapdifficultyinflationEXP2 / 100; // Map Inflation [EXP - Percentile]
 					MapCheck = MapCheck * mapdifficultyinflationOVERALL2 / 100; // Map Inflation [Overall - Percentile]
-					if (MapCheck < 1) MapCheck = 1;
-					if (MapCheck > 100) MapCheck = 100;
+					MapCheck = clamp(MapCheck, 1, 100);
 				}
 				// Episode 1
 				if (MapCheck <= 1) TempExp2 = 0.00; 
@@ -5496,8 +5457,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					MapCheck += mapdifficultyinflationOVERALL; // Map Inflation [Overall - Exact]
 					MapCheck = MapCheck * mapdifficultyinflationEXP2 / 100; // Map Inflation [EXP - Percentile]
 					MapCheck = MapCheck * mapdifficultyinflationOVERALL2 / 100; // Map Inflation [Overall - Percentile]
-					if (MapCheck < 1) MapCheck = 1;
-					if (MapCheck > 100) MapCheck = 100;
+					MapCheck = clamp(MapCheck, 1, 100);
 				}
 				// Main Game
 				if (MapCheck <= 1) TempExp2 = 0.000;
@@ -5633,11 +5593,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		else
 		if (ModType == 1) // Deus Vult 1
 		{
-			if (MapCheck != 1100)
-			{
-				if (MapCheck < 1101) MapCheck = 1101;
-				if (MapCheck > 1104) MapCheck = 1104;
-			}
+			MapCheck = clamp(MapCheck, 1101, 1104);
+
 			if (MapCheck == 1101) TempExp2 = 0.00;
 			if (MapCheck == 1102) TempExp2 = 0.20;
 			if (MapCheck == 1103) TempExp2 = 0.44;
@@ -5649,11 +5606,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		else
 		if (ModType == 2) // Deus Vult 2
 		{
-			if (MapCheck != 1200)
-			{
-				if (MapCheck < 1201) MapCheck = 1201;
-				if (MapCheck > 1212) MapCheck = 1212;
-			}
+			MapCheck = clamp(MapCheck, 1201, 1212);
+
 			// Zendaria Levels
 			if (MapCheck == 1200) Exp2 = (MapCheck - 1200) * 1.04; // +4% Exp Bonus // Prolouge - The Mysterious Cave
 			// Earth-type Levels
@@ -5749,8 +5703,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (debugexp) Console.Printf("\cxGetExperience\c- - Grand Mastery Perk [\cx1.3x\c-]: %d", RealExpGain);
 		}
 
-		if (TrueGameSkill <= SKILL_VERY_EASY) RealExpGain *= 2.25;
-		else if (TrueGameSkill == SKILL_EASY) RealExpGain *= 1.5;
+		if (TrueGameSkill <= SKILL_VERY_EASY) RealExpGain *= 1.5;
+		else if (TrueGameSkill == SKILL_EASY) RealExpGain *= 1.25;
 		else if (TrueGameSkill == SKILL_NORMAL) RealExpGain *= 1.0;
 		else if (TrueGameSkill == SKILL_HARD) RealExpGain *= 0.834;
 		else if (TrueGameSkill == SKILL_VERY_HARD) RealExpGain *= 0.75;
@@ -5942,7 +5896,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				double tempval2 = (1.0 - KillExpMultiplier) * tempval1;
 				if (CountInv("AnubisCufflinks", AAPTR_PLAYER1) > 0) KillExpMultiplier += 0.10;
 				if (damagedbyplayer) KillExpMultiplier += tempval2; // If the player also directly contribued to damaging the monster, they gain 50% more share of the EXP than otherwise
-				if (KillExpMultiplier >= 1.0) KillExpMultiplier = 1.0;
+				KillExpMultiplier = clamp(KillExpMultiplier, KillExpMultiplier, 1.0);
 				if (debugexp) Console.Printf("\cxAddEXP\c- - Passed Player/Friendly-Monster Credit Check: YES, \cxDamagedByPlayer: %d (%.8f)\c-, \cxKillMultiplier: %.8f\c-", DamagedByPlayer, tempval2, KillExpMultiplier);
 			}
 			else
@@ -7021,14 +6975,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						if (CallACS("GetBuffTimer",15) > 0) { EXPTimerIncrease *= 0.8; ComboTimerDelayIncrease *= 0.8; } // Deceleratle
 						EXPTimer += EXPTimerIncrease;
 						ComboTimerDelay += ComboTimerDelayIncrease;
-						if (CallACS("GetBuffTimer",7) > 0) 
-						{
-							if (EXPTimer >= 7000) EXPTimer = 7000; // Combo Timer maxes at 10 seconds.
-						}
-						else
-						{
-							if (EXPTimer >= 5600) EXPTimer = 5600; // Combo Timer maxes at 8 seconds.
-						}
+
+						if (CallACS("GetBuffTimer",7) > 0) EXPTimer = clamp(EXPTimer, EXPTimer, 7000); // Combo Timer maxes at 10 seconds.
+																					else EXPTimer = clamp(EXPTimer, EXPTimer, 5600); // Combo Timer maxes at 8 seconds.
+
 						CallACS("MiscVarSetDECORATE",157,EXPTimer,0);
 						CallACS("MiscVarSetDECORATE",162,ComboTimerDelay,0);
 						CallACS("MiscVarSetDECORATE",158,1,1); // combonumber += 1; // Increment Kill Combo Count by 1
@@ -7193,8 +7143,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (isamajorboss != 0) baseratio /= isamajorboss;
 					
 					expgainratio = 1.00 + (baseratio * dvds_expplayervsmonsterlevels);
-					if (expgainratio <= expratiofloor) expgainratio = expratiofloor;
-					if (expgainratio >= expratioceiling) expgainratio = expratioceiling;
+					expgainratio = clamp(expgainratio, expratiofloor, expratioceiling);
 					finalexpamount = finalexpamount * expgainratio;
 					if (debugexp) Console.Printf("\cxAddEXP\c- - EXP?: %d [\cxexpgainratio: %.8fx\c-], MonsterLevel: %d, PlayerLevel: %d, EXPFloor: %.8fx, EXPCeiling: %.8fx, BaseRatio: %.8fx, LevelDifference: %d, isamajorboss: %d, ?: %f", finalexpamount, expgainratio, user_lastmonsterlevel, PlayerLevel, expratiofloor, expratioceiling, baseratio, leveldifference, isamajorboss, dvds_expplayervsmonsterlevels);
 				}
@@ -7972,7 +7921,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		A_StartSound(AttackSound, CHAN_WEAPON);
 		if (CheckMeleeRange())
 		{
-			if (user_canusecrisisatk == 1) { meleedamage *= CallACS("CrisisMultiplier"); if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } }
+			if (user_canusecrisisatk == 1) { meleedamage *= CrisisMultiplier; if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } }
 			int damage = meleedamage;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
 			target.TraceBleed (newdam > 0 ? newdam : damage, self);
@@ -8022,7 +7971,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (user_canusecrisisatk == 1) 
 			{ 
 				if (playcrisissound == 1) { A_PlayCrisisAtkSound(); } 
-				meleedamage *= CallACS("CrisisMultiplier"); 
+				meleedamage *= CrisisMultiplier; 
 			}
 			int damage = meleedamage;
 			int newdam = target.DamageMobj (self, self, damage, 'Melee');
@@ -8323,7 +8272,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			A_MonsterCrisisCheck(); // A_BishopAttack - Melee
 			if (user_canusecrisisatk == 1) 
 			{
-				meleedmg *= CallACS("CrisisMultiplier");
+				meleedmg *= CrisisMultiplier;
 				A_PlayCrisisAtkSound();
 			}
 			int damage = meleedmg;
@@ -8742,7 +8691,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			A_MonsterCrisisCheck(); // WraithMelee - Life Drain
 			if (user_canusecrisisatk == 1) 
 			{
-				drainamount *= CallACS("CrisisMultiplier");
+				drainamount *= CrisisMultiplier;
 				A_PlayCrisisAtkSound(); 
 			}
 			int amount = drainamount;
@@ -8912,7 +8861,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					int basedmg = meleedamage;
 					if (user_canusecrisisatk == 1) 
 					{
-						basedmg *= CallACS("CrisisMultiplier");	
+						basedmg *= CrisisMultiplier;	
 						A_PlayCrisisAtkSound();
 					}
 
@@ -9030,7 +8979,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				A_MonsterCrisisCheck(); // DragonFlight - Melee
 				if (user_canusecrisisatk == 1) 
 				{
-					basedmg *= CallACS("CrisisMultiplier");	
+					basedmg *= CrisisMultiplier;	
 					A_PlayCrisisAtkSound();
 				}
 
@@ -9529,7 +9478,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (CheckMeleeRange ())
 			{
 				A_MonsterCrisisCheck(); // [Order] Stalker Attack - Melee
-				if (user_canusecrisisatk == 1) { dmg *= CallACS("CrisisMultiplier"); A_PlayCrisisAtkSound(); }
+				if (user_canusecrisisatk == 1) { dmg *= CrisisMultiplier; A_PlayCrisisAtkSound(); }
 
 				int damage = dmg;
 				int newdam = target.DamageMobj (self, self, damage, 'Melee');
@@ -9548,7 +9497,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	void A_ProgrammerMelee (int dmg = 6)
 	{
 		A_MonsterCrisisCheck(); // Programmer Attack - Melee
-		if (user_canusecrisisatk == 1) { dmg *= CallACS("CrisisMultiplier"); A_PlayCrisisAtkSound(); }
+		if (user_canusecrisisatk == 1) { dmg *= CrisisMultiplier; A_PlayCrisisAtkSound(); }
 
 		if (target == null)
 			return;
@@ -10053,25 +10002,25 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		Pain.Heal1: 
 			TNT1 A 0 
 			{
-				ACS_NamedExecuteAlways("Healing_Actor",0,0); 
+				CallACS("Healing_Actor",0,0); 
 				SetStateLabel("See");
 			}
 		Pain.Heal2: 
 			TNT1 A 0 
 			{
-				ACS_NamedExecuteAlways("Healing_Actor",0,1); 
+				CallACS("Healing_Actor",0,1); 
 				SetStateLabel("See");
 			}
 		Pain.Heal3: 
 			TNT1 A 0 
 			{
-				ACS_NamedExecuteAlways("Healing_Actor",0,2); 
+				CallACS("Healing_Actor",0,2); 
 				SetStateLabel("See");
 			}
 		Pain.Heal4: 
 			TNT1 A 0 
 			{
-				ACS_NamedExecuteAlways("Healing_Actor",0,3); 
+				CallACS("Healing_Actor",0,3); 
 				SetStateLabel("See");
 			}
 	}
@@ -10220,7 +10169,7 @@ class MaulotaurBase : AetheriusMonsterZSC
 	void A_MinotaurAtk1(int atkdamage = 4, int squishamount = -16)
 	{
 		A_MonsterCrisisCheck(); // Maulotaur Attack - Hammer Smash [Melee]
-		if (user_canusecrisisatk == 1) atkdamage *= CallACS("CrisisMultiplier");
+		if (user_canusecrisisatk == 1) atkdamage *= CrisisMultiplier;
 
 		if (!target)
 		{
@@ -10337,7 +10286,7 @@ class MaulotaurBase : AetheriusMonsterZSC
 		A_MonsterCrisisCheck(); // Maulotaur Attack2 - Hammer Smash Projectile
 		if (user_canusecrisisatk == 1) 
 		{
-			actualmeleedmg *= CallACS("CrisisMultiplier");
+			actualmeleedmg *= CrisisMultiplier;
 			actualmissile = crisismissiletype;
 		}
 		
@@ -10378,7 +10327,7 @@ class MaulotaurBase : AetheriusMonsterZSC
 		if (user_canusecrisisatk == 1) 
 		{
 			attacktype = crisismissiletype;
-			atkdamage *= CallACS("CrisisMultiplier");
+			atkdamage *= CrisisMultiplier;
 		}
 
 		if (!target)

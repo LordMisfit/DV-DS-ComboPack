@@ -18,6 +18,8 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 	bool IsACrisisAttack;
 	int CrisisMultiplier;
 	
+	int user_basespellangle;
+	
 	int Fuse;
 	int timesrippedoverall;
 	int maxtimesrippedoverall;
@@ -231,6 +233,8 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 		
 		CrisisMultiplier = CallACS("CrisisMultiplier");
 
+		user_basespellangle = CallACS("CalculateSpellBaseAngles");
+
 		Super.PostBeginPlay();
 	}
 	
@@ -355,7 +359,7 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 			if (CharacterClass == 2) damagedivgain = (PlayerLevel/40);
 			if (CharacterClass == 8) damagedivgain = (PlayerLevel/52);
 			if (CharacterClass == 9) damagedivgain = (PlayerLevel/44);
-			if (damagedivgain > 4) damagedivgain = 4;
+			damagedivgain = clamp(damagedivgain, damagedivgain, 4);
 		}
 		else
 		{
@@ -364,11 +368,11 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 			if (CharacterClass == 2) damagedivgain = (PlayerLevel/28);
 			if (CharacterClass == 8) damagedivgain = (PlayerLevel/40);
 			if (CharacterClass == 9) damagedivgain = (PlayerLevel/32);
-			if (damagedivgain > 8) damagedivgain = 8;
+			damagedivgain = clamp(damagedivgain, damagedivgain, 8);
 		}
 		
 		damagedivider -= damagedivgain;
-		if (damagedivider < 1) damagedivider = 1;
+		damagedivider = clamp(damagedivider, 1, damagedivider);
 		
 		damage /= damagedivider;
 		if (damage < lowcap) { damage = random(lowcap,lowcaprand); }
@@ -1289,6 +1293,7 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 		if (random(1,4) <= 1) A_SpawnItemEx("AetheriusCrisisParticle", 0,0,0, frandom(-rangexspread,rangexspread),frandom(-rangeyspread,rangeyspread),frandom(-rangezspread,rangezspread), 0, flags);
 		if (random(1,4) <= 1) A_SpawnItemEx("AetheriusCrisisParticle", 0,0,0, frandom(-rangexspread,rangexspread),frandom(-rangeyspread,rangeyspread),frandom(-rangezspread,rangezspread), 0, flags);
 	}
+	
 }
 
 // Base Normal Projectile Class
@@ -1501,7 +1506,7 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 			if (dvds_monsterprojectileboost == 1)
 			{
 				if (IsAMonster.user_basespeed <= 0) speedmulti = 1.0; else speedmulti = IsAMonster.speed / IsAMonster.user_basespeed;
-				if (speedmulti < 1.0) speedmulti = 1.0;
+				speedmulti = clamp(speedmulti, 1.0, speedmulti);
 				speedmulti2 = ((speedmulti - 1.0) * monsprojboostfactor) + 1.0;
 				A_ScaleVelocity(speedmulti2);
 			}
@@ -2961,7 +2966,7 @@ class AetheriusWhirlwind : AetheriusProjectileZSC
 	override int DoSpecialDamage (Actor target, int damage, Name damagetype)
 	{
 		int randVal;
-		if (Accuracy < 1) Accuracy = 1;
+		Accuracy = clamp(Accuracy, 1, Accuracy);
 		int whirltimer = level.time & (Accuracy-1);
 		int whirldmg = 3 * randompick(1,1,1,1,1,1,1,1,2,2,2,3);            
 		if (Stamina == 30) whirldmg *= CrisisMultiplier;
@@ -2977,10 +2982,7 @@ class AetheriusWhirlwind : AetheriusProjectileZSC
 		{
 			randVal = min(160, random[WhirlwindSeek]());
 			target.Vel.Z += randVal / 32.;
-			if (target.Vel.Z > 12)
-			{
-				target.Vel.Z = 12;
-			}
+			target.Vel.Z = clamp(target.Vel.Z, target.Vel.Z, 12);
 		}
 
 		if (whirltimer == 0)
@@ -4603,18 +4605,12 @@ class HornRodFX2Base : AetheriusProjectileZSC
 				// Terminate an active rain
 				if (tracker.Rain1.health < tracker.Rain2.health)
 				{
-					if (tracker.Rain1.health > 16)
-					{
-						tracker.Rain1.health = 16;
-					}
+					tracker.Rain1.health = clamp(tracker.Rain1.health, tracker.Rain1.health, 16);
 					tracker.Rain1 = null;
 				}
 				else
 				{
-					if (tracker.Rain2.health > 16)
-					{
-						tracker.Rain2.health = 16;
-					}
+					tracker.Rain2.health = clamp(tracker.Rain2.health, tracker.Rain2.health, 16);
 					tracker.Rain2 = null;
 				}
 			}
@@ -5422,7 +5418,7 @@ class GravityHPBall : AetheriusFastProjectileZSC
 					PropertyValue = svictim.health;
 					PropertyValue = PropertyValue * FinalGravityFactor;
 				
-					if (PropertyValue < 1) PropertyValue = 1;
+					PropertyValue = clamp(PropertyValue, 1, PropertyValue);
 					svictim.health = PropertyValue;
 					svictim.A_StartSound("diabloistgravityend");
 					svictim.A_SpawnItem("DiabloistGravityHPTargeter");
