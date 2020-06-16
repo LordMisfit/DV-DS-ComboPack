@@ -977,7 +977,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
 		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
 		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
-		int SceptEXPFrags = CallACS("MiscVarCheckDECORATE",203);
+		int ModType = CallACS("OtherVarCheckDECORATE",8);
+		int CharacterClass = CallACS("CheckCharacterClass");
 		int ExpPiecesToAdd;
 		double EXPBonus1;
 		int BossEnemy;
@@ -988,6 +989,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		double sceptbasemulti = 1.00;
 		int higherlearning = CallACS("MiscVarCheckDECORATE",11001);
 		int PlayerDFT = CallACS("MiscVarCheckDECORATE",33);
+		int SceptEXPFrags = CallACS("MiscVarCheckDECORATE",203);
+
 		
 		//if (BossEnemy != 0) DivAmount *= 5;
 		if (DivAmount <= 1) DivAmount = 1;
@@ -1160,12 +1163,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				CallACS("OtherVarSetDECORATE",10,1,1);
 				if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (while 1): %d / 16", SExPts);
 			}
-			CallACS("MiscVarSetDECORATE",203,SExPts,1); 
+			CallACS("MiscVarSetDECORATE",203,SExPts,1);
+			SceptEXPFrags = CallACS("MiscVarCheckDECORATE",203);
 		
 			if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (pre-while 2): %d / 16", SceptEXPFrags);
-			while (SceptEXPFrags > 15)
+			while (SceptEXPFrags > 15) // if (MiscellaneousVars[203] > 15)
 			{
-				CallACS("MiscVarSetDECORATE",203,-16,1); 
+				CallACS("MiscVarSetDECORATE",203,-16,1);
+				SceptEXPFrags = CallACS("MiscVarCheckDECORATE",203);
 				CallACS("OtherVarSetDECORATE",10,1,1);
 				if (dvdsdebug_showexpdebugstuff) Console.Printf("\cxSExPts (while 2): %d / 16", SceptEXPFrags);
 			}
@@ -1517,7 +1522,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			
 			olddmg = damage;
 			double SoulMasteryFactor = 1.0;
-			SoulMasteryFactor = 1.00 + ((SoulMasteryPerkLevel * .10) + (SoulMasteryEXPerkLevel * .25));
+			SoulMasteryFactor = 1.00 + ((SoulMasteryPerkLevel * 0.10) + (SoulMasteryEXPerkLevel * 0.25));
 			damage = floor(damage * SoulMasteryFactor);
 			if (dvdsdebug_actordmgdisplays) Console.Printf("    (input: SoulMasteryFactor [%d, %d] = %10f)  (damage: \cy%d\c- (\cx%d\c-))", SoulMasteryPerkLevel, SoulMasteryEXPerkLevel, SoulMasteryFactor, damage, olddmg);
 		}
@@ -1938,7 +1943,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				// Misc
 				if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') // BFG related attacks have signficantly LESS chance to crit, but still always have at least a 1/512 chance :P
 				{ 
-					CritChance /= 4;
+					CritChance *= 0.25;
 					CritChance = clamp(CritChance, 1, CritChance);
 				}
 				if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
@@ -2398,6 +2403,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		//************************************************************************
 		let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		//************************************************************************
+		
 		A_DamageMobPostReturn1(inflictor, source, damage, mod, flags, angle, 
 													 ret, oldhealth, nrmldmgfctr, vict, sour, infl, basedmgfactor, drainmaxdmg, playweaksound);
 		
@@ -2594,6 +2600,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 			}
 		}
+
 		string playedsound = "";
 		int ComboTimerDelay = CallACS("MiscVarCheckDECORATE",162);
 		int ComboTimerDelayIncrease = 0;
@@ -2702,17 +2709,18 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		// Unsets Alterations of target's DamageFactor
 		DamageFactor = basedmgfactor;
-
-		// Gauntlet HP/MP/AP drain
+		
+		// Gauntlet HP/MP/AP drain && Sceptre EXP Gain
 		if (playpawn && ret > 0 && bFRIENDLY == 0)
 		{
 			int InvalidTargetType = 0;
 			if (vict == "PracticeTarget" || vict == "PracticeTarget2") InvalidTargetType = 1;
-			//if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czINFO:\c- \cavict\c-: \ca%s\c-, \cdinfl\c-: \cd%s\c-)", vict, infl);
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czINFO (Gauntlet Drain/Sceptre EXP):\c- \cavict\c-: \ca%s\c-, \cdinfl\c-: \cd%s\c-)", vict, infl);
 
 			if (InvalidTargetType == 0)
 			{
-				if (infl == "GauntletPuff" || infl == "GauntletAltPuff")
+				if (infl == "GauntletPuff" || 
+						infl == "GauntletAltPuff")
 				{
 					// Give some life when hurting a monster [1+(HP/250)]
 					// Give more life when killing a monster [5+(HP/50)]
@@ -2722,8 +2730,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (dvdsdebug_actordmgdisplays && drainamt > 0) Console.Printf("    (\czActor Def. Output [STEP (8) - Gauntlet Drain]:\c- \cy%d\c- / \cy%d\c-)", drainamt, drainmaxdmg);
 					A_SauronGauntletsHit(playpawn,drainamt,(health > 0? 1 : 2));
 				}
+
 				// Sceptre EXP Gain
-				else if (infl == "SceptrePuff-Normal" || infl == "SceptrePuff-Silent" || infl == "SceptrePuff-Spinning")
+				if (infl == "SceptrePuff-Normal" || 
+						infl == "SceptrePuff-Silent" || 
+						infl == "SceptrePuff-Spinning")
 				{
 					A_AddSceptreEXP_M(0,(health > 0? randompick(4,5,5,5,6) : 1));
 				}
@@ -3272,8 +3283,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				specialspeed1 -= value2;
 				tics -= value1;
-				tics = clamp(tics, value3, tics);
-				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_DVDSWander]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), specialspeed1, value1, value2, value3);
+				if (tics < value3) tics = value3;
+				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s) (gametic: %d) [A_DVDSWander]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), gametic, specialspeed1, value1, value2, value3);
 			}
 		}
 		
@@ -3304,8 +3315,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				specialspeed1 -= value2;
 				tics -= value1;
-				tics = clamp(tics, value3, tics);
-				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_DVDSChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), specialspeed1, value1, value2, value3);
+				if (tics < value3) tics = value3;
+				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s) (gametic: %d) [A_DVDSChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), gametic, specialspeed1, value1, value2, value3);
 			}
 		}
 		
@@ -3343,8 +3354,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		
 		if (dvdsdebug_showactormoveinformation && NoAtkChance > 0) 
 		{
-			if (target) Console.Printf("\cx(%s)[A_DVDSChase]\c- NoAtkChance: %d / 1000, Target: %s", GetClassName(), NoAtkChance, target.GetClassName());
-						 else Console.Printf("\cx(%s)[A_DVDSChase]\c- NoAtkChance: %d / 1000", GetClassName(), NoAtkChance);
+			if (target) Console.Printf("\cx(%s) (gametic: %d) [A_DVDSChase]\c- NoAtkChance: %d / 1000, Target: %s", GetClassName(), gametic, NoAtkChance, target.GetClassName());
+						 else Console.Printf("\cx(%s) (gametic: %d) [A_DVDSChase]\c- NoAtkChance: %d / 1000", GetClassName(), gametic, NoAtkChance);
 		}
 		if (random(1,1000) <= NoAtkChance)
 		{
@@ -3354,7 +3365,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (random(1,1000) <= 250) 
 				{
 					A_Wander();
-					if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_DVDSChase]\c- A_Wander Succeed", GetClassName());
+					if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s) (gametic: %d) [A_DVDSChase]\c- A_Wander Succeed", GetClassName(), gametic);
 				}
 				else 
 				{
@@ -3365,12 +3376,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				A_Chase(null,null,flags);
 			}
-			if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_DVDSChase]\c- NoAtkChance Succeed", GetClassName());
+			if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s) (gametic: %d) [A_DVDSChase]\c- NoAtkChance Succeed", gametic, GetClassName());
 		}
 		else
 		{
 			A_Chase(melee,missile,flags);
 		}
+		if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s) (gametic: %d) [A_DVDSChase]\c- Default Chase", GetClassName(), gametic);
 	}
 	
 	void A_DVDSLook(int flags = 0, double minseedist = 0, double maxseedist = 0, double maxheardist = 0, double fov = 0, statelabel label = null)
@@ -3415,7 +3427,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				int extrasteps;
 				if (levelbehavior > 0) extrasteps = user_monsterlevel / value2;
 				specialspeed1 = value1 + extrasteps; // Number of steps to walk fast
-				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_DVDSPain]\c- specialspeed1: %d, basespeedtimer: %d, leveldivisor: %d, ?3: %d, ?4: %d, chanceroll[/100]: %d", GetClassName(), specialspeed1, value1, value2, value3, value4, value5);
+				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s) (gametic: %d) [A_DVDSPain]\c- specialspeed1: %d, basespeedtimer: %d, leveldivisor: %d, ?3: %d, ?4: %d, chanceroll[/100]: %d", GetClassName(), gametic, specialspeed1, value1, value2, value3, value4, value5);
 			}
 		}
 
@@ -3478,7 +3490,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			TempRatio = clamp(TempRatio, TempRatio, 1000);
 			
-			TempStealthChance = (SceptreActualLevel * 2 / 50) + (PlayerLevel / 75); 
+			TempStealthChance = (SceptreActualLevel * 0.04) + (PlayerLevel * 0.0133333333333333); 
 			TempStealthChance = TempStealthChance * TempRatio / 100;
 			StealthChance += TempStealthChance;
 			if (debugevolvestealth) Console.Printf("Stealth Chance [Level]: %d - %s - (+%d)", StealthChance, GetClassName(), TempStealthChance);
@@ -8144,7 +8156,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				specialspeed1 -= value2;
 				tics -= value1;
 				if (tics < value3) tics = value3;
-				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_FireDChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), specialspeed1, value1, value2, value3);
+				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s) (gametic: %d) [A_FireDChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), gametic, specialspeed1, value1, value2, value3);
 			}
 		}
 		
@@ -8390,7 +8402,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				specialspeed1 -= value2;
 				tics -= value1;
 				if (tics < value3) tics = value3;
-				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_BishopChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), specialspeed1, value1, value2, value3);
+				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s) (gametic: %d) [A_BishopChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), gametic, specialspeed1, value1, value2, value3);
 			}
 		}
 
@@ -8592,7 +8604,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				specialspeed1 -= value2;
 				tics -= value1;
 				if (tics < value3) tics = value3;
-				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_WraithChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), specialspeed1, value1, value2, value3);
+				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s) (gametic: %d) [A_WraithChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), gametic, specialspeed1, value1, value2, value3);
 			}
 		}
 		
@@ -8773,7 +8785,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				specialspeed1 -= value2;
 				tics -= value1;
 				if (tics < value3) tics = value3;
-				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s)[A_IceGuyChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), specialspeed1, value1, value2, value3);
+				if (dvdsdebug_showactormoveinformation) Console.Printf("\cx(%s) (gametic: %d) [A_IceGuyChase]\c- specialspeed1: %d, ticdecrement: %d, speedtimerdecrement: %d, lowcap: %d", GetClassName(), gametic, specialspeed1, value1, value2, value3);
 			}
 		}
 		
@@ -11739,4 +11751,3 @@ class PracticeTarget2 : AetheriusMonsterZSC //21334
 		Death.Gauntlets: Goto Death;
 	}
 }
-
