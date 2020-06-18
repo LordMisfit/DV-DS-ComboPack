@@ -1903,7 +1903,7 @@ class AetheriusPlayerPawn : PlayerPawn
 					if (CurrentMana < TempEndValue) 
 					{
 						CurrentMana += TempStartValue;
-						if (CurrentMana > TempEndValue) CurrentMana = TempEndValue;
+						CurrentMana = clamp(CurrentMana, CurrentMana, TempEndValue);
 						A_SetBlend("c0 00 c0", 0.75, random(17,18));
 						CallACS("OtherVarSetDECORATE",2,CurrentMana);
 					}
@@ -2049,9 +2049,9 @@ class AetheriusPlayerPawn : PlayerPawn
 			{
 				if (dvdsdebug_recalldisplays) Console.Printf("Name: %s (TID: %d, FRIENDLY: %d, Charmed: %d)", recallee.GetClassName(), recallee.tid, recallee.bFRIENDLY, recallee.user_charmed);
 				int WhistleStamUse = 200;
-				if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
+				if (CountInv("FalconKnifeEarrings") > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
 
-				if (((recallee.bFRIENDLY && recallee.tid == 1000) || recallee.user_charmed > 0))
+				if (((recallee.bFRIENDLY && recallee.tid == 1000) || recallee.user_charmed))
 				{
 					if (CallACS("MiscVarCheckDECORATE",21) >= WhistleStamUse)
 					{
@@ -2102,7 +2102,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			recalleetarg = AetheriusMonsterZSC(AimTarget());
 
 			int WhistleStamUse = 500;
-			if (CountInv("FalconKnifeEarrings", AAPTR_PLAYER1) > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
+			if (CountInv("FalconKnifeEarrings") > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
 			if (CallACS("MiscVarCheckDECORATE",21) >= WhistleStamUse)
 			{
 				int numberrecalled = 0;
@@ -2526,12 +2526,12 @@ class AetheriusPlayerPawn : PlayerPawn
 		{
 			zerodmgchance = floor(zerodmgchance * 1.125);
 			zerodmgchance2 = floor(zerodmgchance2 * 1.125);
-			if (CountInv("EWShieldDefendMode") > 0)
+			if (CountInv("EWShieldDefendMode"))
 			{
 				zerodmgchance = floor(zerodmgchance * 1.5);
 				zerodmgchance2 = floor(zerodmgchance2 * 1.5);
 			}
-			if (CountInv("EWShieldDefendModeExtra") > 0)
+			if (CountInv("EWShieldDefendModeExtra"))
 			{
 				zerodmgchance = floor(zerodmgchance * 3.75);
 				zerodmgchance2 = floor(zerodmgchance2 * 3.75);
@@ -2975,7 +2975,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		double MonsterLevelIgnoreFactor;
 		if (DVDSActor) MonsterLevelIgnoreFactor = (DVDSActor.user_monsterlevel * 0.00022223);
 		int LegendaryIgnoreDefenseFactor = 0.5 - (VillainKillerPerkLvl * 0.05) - (VillainKillerEXPerkLvl * 0.125);
-		if (LegendaryIgnoreDefenseFactor < 0.000) LegendaryIgnoreDefenseFactor = 0.000;
+		LegendaryIgnoreDefenseFactor = clamp(LegendaryIgnoreDefenseFactor, 0.000, LegendaryIgnoreDefenseFactor);
 
 		//*************************************
 		//**Player Taking Crits from Monsters**
@@ -2997,7 +2997,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			CritChance = 8 + (DVDSActor.user_monsterlevel / 11.25); // 8 (+ 8 every 90 levels)
 			if (DVDSActor && DVDSActor.bBOSS) CritChance = (CritChance * 3) / 2; // Boss Flag Check
 			if (DVDSActor && DVDSActor.bJUSTHIT) CritChance *= 2; // JustHit Flag Check
-			if (DVDSActor && DVDSActor.user_charmed > 0) CritChance = (CritChance * 3) / 2; // Charm Flag Check
+			if (DVDSActor && DVDSActor.user_charmed) CritChance = (CritChance * 3) / 2; // Charm Flag Check
 			if (DVDSActor && DVDSActor.user_legendaryevolved) CritChance *= 4; // Legendaries have quadruple crit rate
 			if (DVDSActor && DVDSActor.health <= DVDSActor.user_HPBuffRange) CritChance = (CritChance * 6) / 4;
 	
@@ -3106,8 +3106,8 @@ class AetheriusPlayerPawn : PlayerPawn
 			// Misc
 			if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') // BFG related attacks have signficantly LESS chance to crit, but still always have at least a 1/512 chance :P
 			{ 
-				CritChance /= 4;
-				if (CritChance < 1) CritChance = 1;
+				CritChance *= 0.25;
+				CritChance = clamp(CritChance, 1, CritChance);
 			}
 			if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
 					infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
@@ -3237,8 +3237,8 @@ class AetheriusPlayerPawn : PlayerPawn
 				{
 					damage = ceil(damage * 0.25);
 					if (DVDSActor.user_summoned > 0) damage = ceil(damage * 0.25);
-					if (DVDSActor.user_charmed > 0) damage = ceil(damage * 0.25);
-					if (damage < 1) damage = 1;
+					if (DVDSActor.user_charmed) damage = ceil(damage * 0.25);
+					damage = clamp(damage, 1, damage);
 					if (dvdsdebug_playerdmgdisplays && damage > 0) Console.Printf("    (\cz[STEP 2] player-damagemobj input [Hit By Friendly]\c-: \cypredmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-)", prefriendlydmg, damage);
 				}
 				else
@@ -3246,7 +3246,7 @@ class AetheriusPlayerPawn : PlayerPawn
 					if (DVDSActor.bFRIGHTENED) // Attacker is frightened, AND the Player is the one that is doing the frightening
 					{
 						if (player.cheats & CF_FRIGHTENING || bFRIGHTENING) damage = ceil(damage * frandompick(0.625,0.6875,0.75)); else damage = ceil(damage * frandompick(0.9375,0.95,0.9625));
-						if (damage < 1) damage = 1;
+						damage = clamp(damage, 1, damage);
 					}
 					if (dvdsdebug_playerdmgdisplays && damage > 0) Console.Printf("    (\cz[STEP 2] player-damagemobj input [Hit By Defined Enemy]\c-: \caSKIPPED\c-, \cydmg = %d\c-)", damage);
 				}
@@ -3516,7 +3516,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			}
 
 			LegendaryIgnoreDefenseFactor = 0.50 - (VillainKillerPerkLvl * 0.05) - (VillainKillerEXPerkLvl * 0.125);
-			if (LegendaryIgnoreDefenseFactor < 0.000) LegendaryIgnoreDefenseFactor = 0.000;
+			LegendaryIgnoreDefenseFactor = clamp(LegendaryIgnoreDefenseFactor, 0.000, LegendaryIgnoreDefenseFactor);
 			if (DVDSActor && DVDSActor.user_legendaryevolved) 
 			{
 				PlayerDefenseIgnoreFactor += (LegendaryIgnoreDefenseFactor * (1.00 - PlayerDefenseIgnoreFactor));
@@ -3579,7 +3579,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		int predirdmg = damage;
 		double cheatplayerdmgtaken;
 		cheatplayerdmgtaken = dvds_cheatplayerdmgtaken * 0.01;
-		if (cheatplayerdmgtaken < 0.01) cheatplayerdmgtaken = 0.01;
+		cheatplayerdmgtaken = clamp(cheatplayerdmgtaken, 0.01, cheatplayerdmgtaken);
 		bool isadmgfloor = false;
 		bool isacrusher = false;
 		if (inflictor == null && source == null)
@@ -3613,7 +3613,7 @@ class AetheriusPlayerPawn : PlayerPawn
 				if (random(0,1) == 0) damage = floor(damage * cheatplayerdmgtaken);
 												 else damage = ceil(damage * cheatplayerdmgtaken);
 				
-				if (damage < 1) damage = 1;
+				damage = clamp(damage, 1, damage);
 				if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP C1] Direct Dmg Changes\c-: \cypredmg = %d\c-, \cydmg = %d\c-, \cxcheatplayerdmgtaken = %2f)", predirdmg, damage, cheatplayerdmgtaken);
 			}
 		}
@@ -3813,20 +3813,20 @@ class AetheriusPlayerPawn : PlayerPawn
 		baserange = range;
 		if (CharacterClass == 2 && MartialArtsMastery > 0)
 		{
-			if (MartialArtsMastery == 1) range = range * 1015 / 1000;
-			if (MartialArtsMastery == 2) range = range * 1030 / 1000;
-			if (MartialArtsMastery == 3) range = range * 1045 / 1000;
-			if (MartialArtsMastery == 4) range = range * 1060 / 1000;
-			if (MartialArtsMastery == 5) range = range * 1075 / 1000;
+			if (MartialArtsMastery == 1) range *= 1.015;
+			if (MartialArtsMastery == 2) range *= 1.030;
+			if (MartialArtsMastery == 3) range *= 1.045;
+			if (MartialArtsMastery == 4) range *= 1.060;
+			if (MartialArtsMastery == 5) range *= 1.075;
 		}
 		
 		if (CharacterClass != 2 && BerserkerFit > 0)
 		{
-			if (BerserkerFit == 1) range = range * 1010 / 1000;
-			if (BerserkerFit == 2) range = range * 1020 / 1000;
-			if (BerserkerFit == 3) range = range * 1030 / 1000;
-			if (BerserkerFit == 4) range = range * 1040 / 1000;
-			if (BerserkerFit == 5) range = range * 1050 / 1000;
+			if (BerserkerFit == 1) range *= 1.01;
+			if (BerserkerFit == 2) range *= 1.02;
+			if (BerserkerFit == 3) range *= 1.03;
+			if (BerserkerFit == 4) range *= 1.04;
+			if (BerserkerFit == 5) range *= 1.05;
 		}
 		
 		if (ClassicDoomType == 5) range = range * 6 / 5; // 1.2x in Doom64 due to scaling up of general maps, etc :V
@@ -3840,38 +3840,37 @@ class AetheriusPlayerPawn : PlayerPawn
 	{
 		int CharacterClass = CallACS("CheckCharacterClass");
 		int CurseMultiRandomizer;
-		if (uncursemulti < 1) uncursemulti = 1;
-		if (uncurseddivisor < 1) uncurseddivisor = 1;
+		uncursemulti = clamp(uncursemulti, 1, uncursemulti);
+		uncurseddivisor = clamp(uncurseddivisor, 1, uncurseddivisor);
 		
 		if (CharacterClass == 2)
 		{
-			if (CountInv("PearlyCorset", AAPTR_PLAYER1) > 0) UncursePts += UncursePts;
-			if (CountInv("DoveRibbon", AAPTR_PLAYER1) > 0) UncursePts += UncursePts;
+			if (CountInv("PearlyCorset") > 0) UncursePts += UncursePts;
+			if (CountInv("DoveRibbon") > 0) UncursePts += UncursePts;
 
-			if (CountInv("RuinousShield", AAPTR_PLAYER1) > 0)
+			if (CountInv("RuinousShield") > 0)
 			{
 				CurseMultiRandomizer = random(1,100);
-				if (CurseMultiRandomizer == 1) UncursePts = UncursePts * 16;
-				if (CurseMultiRandomizer == 2) UncursePts = UncursePts * 8;
-				if (CurseMultiRandomizer == 3) UncursePts = UncursePts * 8;
-				if (CurseMultiRandomizer == 4) UncursePts = UncursePts * 4;
-				if (CurseMultiRandomizer == 5) UncursePts = UncursePts * 4;
-				if (CurseMultiRandomizer == 6) UncursePts = UncursePts * 4;
-				if (CurseMultiRandomizer == 7) UncursePts = UncursePts * 4;
-				if (CurseMultiRandomizer == 8) UncursePts = UncursePts * 2;
-				if (CurseMultiRandomizer == 9) UncursePts = UncursePts * 2;
-				if (CurseMultiRandomizer == 10) UncursePts = UncursePts * 2;
-				if (CurseMultiRandomizer == 11) UncursePts = UncursePts * 2;
-				if (CurseMultiRandomizer == 12) UncursePts = UncursePts * 2;
-				if (CurseMultiRandomizer == 13) UncursePts = UncursePts * 2;
-				if (CurseMultiRandomizer == 14) UncursePts = UncursePts * 2;
-				if (CurseMultiRandomizer == 15) UncursePts = UncursePts * 2;
+				if (CurseMultiRandomizer == 1) UncursePts *= 16;
+				if (CurseMultiRandomizer == 2) UncursePts *= 8;
+				if (CurseMultiRandomizer == 3) UncursePts *= 8;
+				if (CurseMultiRandomizer == 4) UncursePts *= 4;
+				if (CurseMultiRandomizer == 5) UncursePts *= 4;
+				if (CurseMultiRandomizer == 6) UncursePts *= 4;
+				if (CurseMultiRandomizer == 7) UncursePts *= 4;
+				if (CurseMultiRandomizer == 8) UncursePts *= 2;
+				if (CurseMultiRandomizer == 9) UncursePts *= 2;
+				if (CurseMultiRandomizer == 10) UncursePts *= 2;
+				if (CurseMultiRandomizer == 11) UncursePts *= 2;
+				if (CurseMultiRandomizer == 12) UncursePts *= 2;
+				if (CurseMultiRandomizer == 13) UncursePts *= 2;
+				if (CurseMultiRandomizer == 14) UncursePts *= 2;
+				if (CurseMultiRandomizer == 15) UncursePts *= 2;
 				UncursePts *= 2;
 	
 				UncursePts *= uncursemulti;
 				UncursePts /= uncurseddivisor;
-				if (UncursePts < 2) UncursePts = 2;
-				if (UncursePts > 1024) UncursePts = 1024;
+				UncursePts = clamp(UncursePts, 2, 1024);
 				CallACS("MiscVarSetDECORATE",202,UncursePts,1);
 				int uncurselevel = CallACS("MiscVarCheckDECORATE",202);
 				if (dvdsdebug_shielduncursedisplay > 0) Console.Printf("+%d (Now: %d)", UncursePts, uncurselevel);

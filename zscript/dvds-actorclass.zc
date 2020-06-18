@@ -173,7 +173,7 @@ class AetheriusBaseZSC : Actor
 			int PerkFactor;
 			int CurrentHealth, TempHealAmount, TempHealAmount2, TempHealAmount3;
 			
-			if (multiplier <= 0) multiplier = 1;
+			multiplier = clamp(multiplier, 1, multiplier);
 			CurrentHealth = playpawn.player.mo.health;
 			
 			if (CurrentHealth < MaxHealthLimit)
@@ -216,7 +216,7 @@ class AetheriusBaseZSC : Actor
 				
 				PerkFactor = ((RegenStamFastPerkLevel * 2000) + (RegenStamFastEXPerkLevel * 5000)) + 10000;
 				perktemp1 = perktemp1 * PerkFactor / 10000;
-				if (playpawn.player.mo.CountInv("WaterFlyingDress") > 0) perktemp1 = perktemp1 * 1.6667;
+				if (playpawn.player.mo.CountInv("WaterFlyingDress") > 0) perktemp1 *= 1.6667;
 				if (dvdsdebug_healitemdisplays) Console.Printf("Stamina Restored: %d VS [%d]", perktemp1, StamToGain);
 				StamToGain = perktemp1;
 				
@@ -242,7 +242,7 @@ class AetheriusBaseZSC : Actor
 					TempHealAmount2 = PlayerLevel * 10;
 					TempHealAmount3 = random(-500,500);
 					HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
-					if (playpawn.player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 1.6667;
+					if (playpawn.player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored *= 1.6667;
 					if (SoulMasteryPerkLevel >= 0)
 					{
 						if (SoulMasteryPerkLevel == 1) temp1 = 1;
@@ -284,15 +284,13 @@ class AetheriusBaseZSC : Actor
 			int MaxManaLimit = MaxMana * 2;
 			bool gaveAnything = false;
 			
-			if (HitType <= 0) HitType = 1;
-			if (HitType >= 3) HitType = 2;
+			HitType = clamp(HitType, 1, 2);
 			
 			if (HitType == 1) Amount = (Amount / 250) + 1; // Give some life when hurting a monster [1+(Damage/250)]
 			if (HitType == 2) Amount = (Amount / 50) + 5; // Give more life when killing a monster [5+(Damage/50)]
 		
-			If (Amount <= 0) Amount = 1;
-			If (Amount >= 65) Amount = 64;
-				
+			Amount = clamp(Amount, 1, 64);
+			
 			// Restore Health & Stamina
 			int giveHealth = dvds_saurongauntlets_givehealth;
 			int giveStamina = dvds_saurongauntlets_givestamina;
@@ -323,7 +321,7 @@ class AetheriusBaseZSC : Actor
 				if (playpawn.player.mo.CountInv("Armor") < dvds_saurongauntlets_givearmor)
 				{
 					int ArmorAmount = (Amount * random(6,9)) / 15;
-					If (ArmorAmount <= 0) ArmorAmount = 1;
+					ArmorAmount = clamp(ArmorAmount, 1, ArmorAmount);
 					A_EmulateGiveArmorBonus(ArmorAmount,1,true,playpawn);
 					gaveAnything = true;
 				}
@@ -345,9 +343,9 @@ class AetheriusBaseZSC : Actor
 					if (CharacterClass == 2) ManaAmount = ManaAmount * random(5,7) / 4; // Flora will gain Extra Mana from a Gauntlet punch to make up for not being able to get armor.
 					else if (CharacterClass == 8) ManaAmount = ManaAmount * random(4,6) / 4; // Ailish will gain Extra Mana from a Gauntlet punch as well.
 					else ManaAmount = ManaAmount * random(9,15) / 12;
-					If (ManaAmount <= 0) ManaAmount = 1;
+					ManaAmount = clamp(ManaAmount, 1, ManaAmount);
 					CurrentMana += ManaAmount;
-					if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
+					CurrentMana = clamp(CurrentMana, CurrentMana, MaxManaLimit);
 					
 					if (CurrentMana > prevMana)
 						gaveAnything = true;
@@ -794,8 +792,8 @@ class AetheriusCustomInventory : CustomInventory
 			if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 			value2a *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 			value2b *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
-			if (value2a > 200) value2a = 200.0;
-			if (value2b > 200) value2b = 200.0;
+			value2a = clamp(value2a, value2a, 200.0);
+			value2b = clamp(value2b, value2b, 200.0);
 
 			if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 			value3a *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
@@ -1036,7 +1034,7 @@ class AetheriusCustomInventory : CustomInventory
 			if (TrueGameSkill == SKILL_HORRIBLE) Rand0 = random(1,144); // 152 
 			if (TrueGameSkill == SKILL_IMPOSSIBLE) Rand0 = random(1,156); // 152 
 			if (TrueGameSkill >= SKILL_OMEGA) Rand0 = random(1,180); // 152 
-			Rand0 = Rand0 * 5 / 2;
+			Rand0 *= 2.5;
 		}
 		
 		SeedDropChance = 1 + (CallACS("MiscVarCheckDECORATE",33) / 64);
@@ -1310,9 +1308,9 @@ class AetheriusCustomInventory : CustomInventory
 								temp2 = perkhealthlimit;
 								perktemp1 = temp2;
 							
-								if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+								if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 								temp1 += perktemp1;
-								if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+								temp1 = clamp(temp1, temp1, perkhealthlimit);
 								DVDSActor.health = temp1;
 								DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 								A_UCIIHealSpark(DVDSActor,"CustomHealSpark",0.875,0.875,"Heal3Glitter",4);
@@ -1360,9 +1358,9 @@ class AetheriusCustomInventory : CustomInventory
 					if (CharacterClass == 2 || CharacterClass == 8) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 					perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 				
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 					temp1 += perktemp1;
-					if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+					temp1 = clamp(temp1, temp1, perkhealthlimit);
 					player.mo.health = player.health = temp1;
 				}
 				// Heal Stamina [200%]
@@ -1385,8 +1383,8 @@ class AetheriusCustomInventory : CustomInventory
 					perktemp2 = perktemp2 * PerkFactor;
 					CurrentStamina += perktemp2;
 
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
-					if (CurrentStamina > perkstaminalimit) CurrentStamina = perkstaminalimit;
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
+					CurrentStamina = clamp(CurrentStamina, CurrentStamina, perkhealthlimit);
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 				}
 				if (check1 > 0)
@@ -1423,9 +1421,9 @@ class AetheriusCustomInventory : CustomInventory
 								temp2 = DVDSActor.user_MaxHP * (0.01 * random(20,30));
 								perktemp1 += temp2;
 							
-								if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+								if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 								temp1 += perktemp1;
-								if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+								temp1 = clamp(temp1, temp1, perkhealthlimit);
 								DVDSActor.health = temp1;
 								DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 								A_UCIIHealSpark(DVDSActor,"CustomHealSpark",0.75,0.75,"Heal2Glitter",2);
@@ -1475,9 +1473,9 @@ class AetheriusCustomInventory : CustomInventory
 					if (CharacterClass == 2 || CharacterClass == 8) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 					perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 				
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 					temp1 += perktemp1;
-					if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+					temp1 = clamp(temp1, temp1, perkhealthlimit);
 					player.mo.health = player.health = temp1;
 				}
 				// Heal Stamina [~45%-55%]
@@ -1500,8 +1498,8 @@ class AetheriusCustomInventory : CustomInventory
 					perktemp2 = perktemp2 * PerkFactor;
 					CurrentStamina += perktemp2;
 
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
-					if (CurrentStamina > perkstaminalimit) CurrentStamina = perkstaminalimit;
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
+					CurrentStamina = clamp(CurrentStamina, CurrentStamina, perkhealthlimit);
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 				}
 				if (check1 > 0)
@@ -1538,9 +1536,9 @@ class AetheriusCustomInventory : CustomInventory
 								temp2 = DVDSActor.user_MaxHP * (0.01 * random(8,12));
 								perktemp1 += temp2;
 							
-								if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+								if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 								temp1 += perktemp1;
-								if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+								temp1 = clamp(temp1, temp1, perkhealthlimit);
 								DVDSActor.health = temp1;
 								DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 								A_UCIIHealSpark(DVDSActor,"CustomHealSpark",0.50,0.50,"Heal1Glitter",2);
@@ -1590,9 +1588,9 @@ class AetheriusCustomInventory : CustomInventory
 					if (CharacterClass == 2 || CharacterClass == 8) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 					perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 				
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 					temp1 += perktemp1;
-					if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+					temp1 = clamp(temp1, temp1, perkhealthlimit);
 					player.mo.health = player.health = temp1;
 				}
 				// Heal Stamina [~18.75%-21.25%]
@@ -1615,8 +1613,8 @@ class AetheriusCustomInventory : CustomInventory
 					perktemp2 = perktemp2 * PerkFactor;
 					CurrentStamina += perktemp2;
 
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
-					if (CurrentStamina > perkstaminalimit) CurrentStamina = perkstaminalimit;
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
+					CurrentStamina = clamp(CurrentStamina, CurrentStamina, perkhealthlimit);
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 				}
 				if (check1 > 0)
@@ -1720,9 +1718,9 @@ class AetheriusCustomInventory : CustomInventory
 						temp2 = DVDSActor.user_MaxHP * 0.625;
 						perktemp1 = temp2;
 					
-						if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+						if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 						temp1 += perktemp1;
-						if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+						temp1 = clamp(temp1, temp1, perkhealthlimit);
 						DVDSActor.health = temp1;
 						DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 						A_UCIIHealSpark(DVDSActor,"CustomHealSpark",1.125,1.125,"Heal3Glitter",4);
@@ -1741,7 +1739,7 @@ class AetheriusCustomInventory : CustomInventory
 			{
 				check1 += 1;
 				temp1 += (MaxHealthTrue * 5 / 8);
-				if (temp1 > healmax) temp1 = healmax;
+				temp1 = clamp(temp1, temp1, healmax);
 				player.mo.health = player.health = temp1;
 			}
 			
@@ -1750,8 +1748,8 @@ class AetheriusCustomInventory : CustomInventory
 			if (CurrentMana < healmax)
 			{
 				check1 += 1;
-				CurrentMana += (MaxMana * 5 / 8);
-				if (CurrentMana > healmax) CurrentMana = healmax;
+				CurrentMana += (MaxMana * 0.625);
+				CurrentMana = clamp(CurrentMana, CurrentMana, healmax);
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
 			}
 			
@@ -1762,13 +1760,13 @@ class AetheriusCustomInventory : CustomInventory
 				check1 += 1;
 				temp2 = MaxStamina * 1.25;
 				perktemp1 = temp2;
-				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 1.6667;
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 *= 1.6667;
 				PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
 				perktemp1 = perktemp1 * PerkFactor;
-				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //Console.Printf("Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+				if (dvdsdebug_healitemdisplays) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //Console.Printf("Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
 				temp2 = perktemp1;
 				CurrentStamina += temp2;
-				if (CurrentStamina > healmax) CurrentStamina = healmax;
+				CurrentStamina = clamp(CurrentStamina, CurrentStamina, healmax);
 				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 			}
 			
@@ -1844,9 +1842,9 @@ class AetheriusCustomInventory : CustomInventory
 								temp2 = DVDSActor.user_MaxHP * frandom(1.0,1.1);
 								perktemp1 = temp2;
 							
-								if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+								if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 								temp1 += perktemp1;
-								if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+								temp1 = clamp(temp1, temp1, perkhealthlimit);
 								DVDSActor.health = temp1;
 								DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 								A_UCIIHealSpark(DVDSActor,"CustomHealSpark",1.125,1.125,"Heal3Glitter",6);
@@ -1883,7 +1881,7 @@ class AetheriusCustomInventory : CustomInventory
 				healmax = MaxHealthTrue * 1.925;
 				if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 				healmax *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
-				if (healmax > MaxHealthLimit) healmax = MaxHealthLimit;
+				healmax = clamp(healmax, healmax, MaxHealthLimit);
 				
 				if (temp1 < healmax)
 				{
@@ -1891,7 +1889,7 @@ class AetheriusCustomInventory : CustomInventory
 					temp1 += MaxHealthTrue * frandom(1.0,1.1);
 					if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 					temp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
-					if (temp1 > healmax) temp1 = healmax;
+					temp1 = clamp(temp1, temp1, healmax);
 					player.mo.health = player.health = temp1;
 				}
 				// Heal Stamina [62.50%] up to 500%
@@ -1901,15 +1899,15 @@ class AetheriusCustomInventory : CustomInventory
 					check1 += 1;
 					temp2 = MaxStamina * 0.625;
 					perktemp1 = temp2;
-					if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 1.6667;
+					if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 *= 1.6667;
 					PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
 					perktemp1 = perktemp1 * PerkFactor;
 					if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 					perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //Console.Printf("Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //Console.Printf("Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
 					temp2 = perktemp1;
 					CurrentStamina += temp2;
-					if (CurrentStamina > healmax) CurrentStamina = healmax;
+					CurrentStamina = clamp(CurrentStamina, CurrentStamina, healmax);
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 				}
 				if (check1 > 0)
@@ -1946,9 +1944,9 @@ class AetheriusCustomInventory : CustomInventory
 								temp2 = DVDSActor.user_MaxHP * frandom(0.25,0.30);
 								perktemp1 = temp2;
 							
-								if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+								if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 								temp1 += perktemp1;
-								if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+								temp1 = clamp(temp1, temp1, perkhealthlimit);
 								DVDSActor.health = temp1;
 								DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 								A_UCIIHealSpark(DVDSActor,"CustomHealSpark",0.625,0.625,"Heal2Glitter",3);
@@ -1985,7 +1983,7 @@ class AetheriusCustomInventory : CustomInventory
 				healmax = MaxHealthTrue * 1.05;
 				if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 				healmax *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
-				if (healmax > MaxHealthLimit) healmax = MaxHealthLimit;
+				healmax = clamp(healmax, healmax, MaxHealthLimit);
 				
 				if (temp1 < healmax)
 				{
@@ -1993,7 +1991,7 @@ class AetheriusCustomInventory : CustomInventory
 					temp1 += MaxHealthTrue * frandom(0.25,0.30);
 					if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 					temp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
-					if (temp1 > healmax) temp1 = healmax;
+					temp1 = clamp(temp1, temp1, healmax);
 					player.mo.health = player.health = temp1;
 				}
 
@@ -2007,15 +2005,15 @@ class AetheriusCustomInventory : CustomInventory
 					check1 += 1;
 					temp2 = MaxStamina * 0.125;
 					perktemp1 = temp2;
-					if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 1.6667;
+					if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 *= 1.6667;
 					PerkFactor = ((RegenStamFastPerkLevel * 0.2) + (RegenStamFastEXPerkLevel * 0.5)) + 1.0;
 					perktemp1 = perktemp1 * PerkFactor;
 					if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 					perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //Console.Printf("Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Stamina Restored: %d VS [%d]", perktemp1, temp2); //Console.Printf("Stamina Restored: ",d:perktemp1,s:" VS [",d:temp2,s:"]");
 					temp2 = perktemp1;
 					CurrentStamina += temp2;
-					if (CurrentStamina > healmax) CurrentStamina = healmax;
+					CurrentStamina = clamp(CurrentStamina, CurrentStamina, healmax);
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 				}
 				if (check1 > 0)
@@ -2052,9 +2050,9 @@ class AetheriusCustomInventory : CustomInventory
 								temp2 = random(25,35);
 								perktemp1 = temp2;
 							
-								if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+								if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 								temp1 += perktemp1;
-								if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+								temp1 = clamp(temp1, temp1, perkhealthlimit);
 								DVDSActor.health = temp1;
 								DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 								A_UCIIHealSpark(DVDSActor,"CustomHealSpark",0.5,0.5,"Heal1Glitter",2);
@@ -2102,9 +2100,9 @@ class AetheriusCustomInventory : CustomInventory
 					if (CharacterClass == 2 || CharacterClass == 8) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 					perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 				
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 					temp1 += perktemp1;
-					if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+					temp1 = clamp(temp1, temp1, perkhealthlimit);
 					player.mo.health = player.health = temp1;
 				}
 				// Heal Stamina [~7.5% - ~10.5%]
@@ -2127,8 +2125,8 @@ class AetheriusCustomInventory : CustomInventory
 					perktemp2 = perktemp2 * PerkFactor;
 					CurrentStamina += perktemp2;
 
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
-					if (CurrentStamina > perkstaminalimit) CurrentStamina = perkstaminalimit;
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
+					CurrentStamina = clamp(CurrentStamina, CurrentStamina, perkhealthlimit);
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 				}
 				if (check1 > 0)
@@ -2164,9 +2162,9 @@ class AetheriusCustomInventory : CustomInventory
 								temp2 = random(55,65);
 								perktemp1 = temp2;
 							
-								if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+								if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 								temp1 += perktemp1;
-								if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+								temp1 = clamp(temp1, temp1, perkhealthlimit);
 								DVDSActor.health = temp1;
 								DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 								A_UCIIHealSpark(DVDSActor,"CustomHealSpark",0.75,0.75,"Heal2Glitter",random(3,4));
@@ -2214,9 +2212,9 @@ class AetheriusCustomInventory : CustomInventory
 					if (CharacterClass == 2 || CharacterClass == 8) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 					perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 				
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 					temp1 += perktemp1;
-					if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+					temp1 = clamp(temp1, temp1, perkhealthlimit);
 					player.mo.health = player.health = temp1;
 				}
 				
@@ -2240,8 +2238,8 @@ class AetheriusCustomInventory : CustomInventory
 					perktemp2 = perktemp2 * PerkFactor;
 					CurrentStamina += perktemp2;
 
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
-					if (CurrentStamina > perkstaminalimit) CurrentStamina = perkstaminalimit;
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
+					CurrentStamina = clamp(CurrentStamina, CurrentStamina, perkhealthlimit);
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 				}
 				if (check1 > 0)
@@ -2277,9 +2275,9 @@ class AetheriusCustomInventory : CustomInventory
 								temp2 = random(85,105);
 								perktemp1 = temp2;
 							
-								if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+								if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 								temp1 += perktemp1;
-								if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+								temp1 = clamp(temp1, temp1, perkhealthlimit);
 								DVDSActor.health = temp1;
 								DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 								A_UCIIHealSpark(DVDSActor,"CustomHealSpark",0.875,0.875,"Heal3Glitter",random(4,5));
@@ -2327,9 +2325,9 @@ class AetheriusCustomInventory : CustomInventory
 					if (CharacterClass == 2 || CharacterClass == 8) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 					perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 				
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 					temp1 += perktemp1;
-					if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+					temp1 = clamp(temp1, temp1, perkhealthlimit);
 					player.mo.health = player.health = temp1;
 				}
 				
@@ -2353,8 +2351,8 @@ class AetheriusCustomInventory : CustomInventory
 					perktemp2 = perktemp2 * PerkFactor;
 					CurrentStamina += perktemp2;
 
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
-					if (CurrentStamina > perkstaminalimit) CurrentStamina = perkstaminalimit;
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
+					CurrentStamina = clamp(CurrentStamina, CurrentStamina, perkhealthlimit);
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 				}
 				if (check1 > 0)
@@ -2402,9 +2400,9 @@ class AetheriusCustomInventory : CustomInventory
 						temp2 = ((perkhealthlimit * random(900,1100)) / 1000);
 						perktemp1 = temp2;
 					
-						if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+						if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 						temp1 += perktemp1;
-						if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+						temp1 = clamp(temp1, temp1, perkhealthlimit);
 						DVDSActor.health = temp1;
 						DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 						A_UCIIHealSpark(DVDSActor,"CustomHealSpark",1.375,1.375,"Heal3Glitter",6);
@@ -2430,8 +2428,8 @@ class AetheriusCustomInventory : CustomInventory
 				perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 			
 				temp1 += perktemp1;
-				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
-				if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+				if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+				temp1 = clamp(temp1, temp1, perkhealthlimit);
 				player.mo.health = player.health = temp1;
 			}
 			
@@ -2453,8 +2451,8 @@ class AetheriusCustomInventory : CustomInventory
 				temp3 = perktemp3;
 				CurrentMana += temp3;
 			
-				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp3, temp2);
-				if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
+				if (dvdsdebug_healitemdisplays) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp3, temp2);
+				CurrentMana = clamp(CurrentMana, CurrentMana, perkmanalimit);
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
 			}
 			
@@ -2478,8 +2476,8 @@ class AetheriusCustomInventory : CustomInventory
 				perktemp2 = perktemp2 * PerkFactor;
 				CurrentStamina += perktemp2;
 			
-				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
-				if (CurrentStamina > perkstaminalimit) CurrentStamina = perkstaminalimit;
+				if (dvdsdebug_healitemdisplays) Console.Printf ("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", perkstaminalimit, MaxStamina, perktemp2, temp2);
+				CurrentStamina = clamp(CurrentStamina, CurrentStamina, perkhealthlimit);
 				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 			}
 			if (check1 > 0)
@@ -2600,9 +2598,9 @@ class AetheriusCustomInventory : CustomInventory
 				if (CharacterClass == 2 || CharacterClass == 8) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 				perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 			
-				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp1, temp2);
+				if (dvdsdebug_healitemdisplays) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp1, temp2);
 				CurrentMana += perktemp1;
-				if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
+				CurrentMana = clamp(CurrentMana, CurrentMana, perkmanalimit);
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
 
 				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
@@ -2632,9 +2630,9 @@ class AetheriusCustomInventory : CustomInventory
 				if (CharacterClass == 2 || CharacterClass == 8) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 				perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 			
-				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp1, temp2);
+				if (dvdsdebug_healitemdisplays) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp1, temp2);
 				CurrentMana += perktemp1;
-				if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
+				CurrentMana = clamp(CurrentMana, CurrentMana, perkmanalimit);
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
 
 				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
@@ -2665,9 +2663,9 @@ class AetheriusCustomInventory : CustomInventory
 				if (CharacterClass == 2 || CharacterClass == 8) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 				perktemp1 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 			
-				if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp1, temp2);
+				if (dvdsdebug_healitemdisplays) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp1, temp2);
 				CurrentMana += perktemp1;
-				if (CurrentMana > perkmanalimit) CurrentMana = perkmanalimit;
+				CurrentMana = clamp(CurrentMana, CurrentMana, perkmanalimit);
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
 
 				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
@@ -2700,9 +2698,9 @@ class AetheriusCustomInventory : CustomInventory
 								temp2 = perkhealthlimit;
 								perktemp1 = temp2;
 							
-								if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+								if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit (ally heal): %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
 								temp1 += perktemp1;
-								if (temp1 > perkhealthlimit) temp1 = perkhealthlimit;
+								temp1 = clamp(temp1, temp1, perkhealthlimit);
 								DVDSActor.health = temp1;
 								DVDSActor.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 								A_UCIIHealSpark(DVDSActor,"CustomHealSpark",1.375,1.375,"Heal3Glitter",6);
@@ -2756,8 +2754,8 @@ class AetheriusCustomInventory : CustomInventory
 					if (CurrentHealth < perkhealthlimit) player.mo.health = player.health = perkhealthlimit;
 					CurrentMana = clamp(CurrentMana, CurrentMana, perkmanalimit);
 					CallACS("OtherVarSetDECORATE",2,CurrentMana);
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
-					if (dvdsdebug_healitemdisplays > 0) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp3, temp2);
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Healing Limit: %d VS [%d], Health Restored: %d VS [%d]", perkhealthlimit, MaxHealthTrue, perktemp1, temp2);
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Mana Limit: %d VS [%d], Mana Restored: %d VS [%d]", perkmanalimit, MaxMana, perktemp3, temp2);
 					
 					// Hellcore
 					if (HellcoreOverheatLevel > 0)
@@ -2817,7 +2815,7 @@ class AetheriusCustomInventory : CustomInventory
 		int PerkFactor;
 		int CurrentHealth, TempHealAmount, TempHealAmount2, TempHealAmount3;
 		
-		if (multiplier <= 0) multiplier = 1;
+		multiplier = clamp(multiplier, 1, multiplier);
 		CurrentHealth = player.mo.health;
 		
 		if (CurrentHealth < MaxHealthLimit)
@@ -2860,7 +2858,7 @@ class AetheriusCustomInventory : CustomInventory
 			
 			PerkFactor = ((RegenStamFastPerkLevel * 2000) + (RegenStamFastEXPerkLevel * 5000)) + 10000;
 			perktemp1 = perktemp1 * PerkFactor / 10000;
-			if (player.mo.CountInv("WaterFlyingDress") > 0) perktemp1 = perktemp1 * 1.6667;
+			if (player.mo.CountInv("WaterFlyingDress") > 0) perktemp1 *= 1.6667;
 			if (dvdsdebug_healitemdisplays) Console.Printf("Stamina Restored: %d VS [%d]", perktemp1, StamToGain);
 			StamToGain = perktemp1;
 			
@@ -2886,7 +2884,7 @@ class AetheriusCustomInventory : CustomInventory
 				TempHealAmount2 = PlayerLevel * 10;
 				TempHealAmount3 = random(-500,500);
 				HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
-				if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 1.6667;
+				if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored *= 1.6667;
 				if (SoulMasteryPerkLevel >= 0)
 				{
 					if (SoulMasteryPerkLevel == 1) temp1 = 1;
@@ -3009,7 +3007,7 @@ class AetheriusCustomInventory : CustomInventory
 		TrueStamValue = MaxStamina / 4;
 		if (type == 1) TrueStamValue *= 0.5;
 		perktemp1 = TrueStamValue;
-		if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 1.6667;
+		if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 *= 1.6667;
 		PerkFactor = ((RegenStamFastPerkLevel * 2000) + (RegenStamFastEXPerkLevel * 5000)) + 10000;
 		perktemp1 = perktemp1 * PerkFactor / 10000;
 		
@@ -3029,7 +3027,7 @@ class AetheriusCustomInventory : CustomInventory
 			ManaValue = MaxMana / 2;
 			if (type == 1) ManaValue *= 0.5;
 			CurrentMana += ManaValue;
-			if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
+			CurrentMana = clamp(CurrentMana, CurrentMana, MaxManaLimit);
 
 			CallACS("OtherVarSetDECORATE",2,CurrentMana);
 		}
@@ -3041,7 +3039,7 @@ class AetheriusCustomInventory : CustomInventory
 			{
 				HellcoreRestored = 250000 + (PlayerLevel * 2500) + random(-50000,50000);
 				if (type == 1) HellcoreRestored *= 0.5;
-				if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 1.6667;
+				if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored *= 1.6667;
 				if (SoulMasteryPerkLevel >= 0)
 				{
 					if (SoulMasteryPerkLevel == 1) temp1 = 1;
@@ -3104,7 +3102,7 @@ class AetheriusCustomInventory : CustomInventory
 		// Add 50% to Stamina Value [up to 200%]
 		TrueStamValue = MaxStamina / 2;
 		perktemp1 = TrueStamValue;
-		if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 1.6667;
+		if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 *= 1.6667;
 		PerkFactor = ((RegenStamFastPerkLevel * 2000) + (RegenStamFastEXPerkLevel * 5000)) + 10000;
 		perktemp1 = perktemp1 * PerkFactor / 10000;
 
@@ -3123,7 +3121,7 @@ class AetheriusCustomInventory : CustomInventory
 			if (HellcoreOverheatLevel > 0)
 			{
 				HellcoreRestored = 750000 + (PlayerLevel * 7500) + random(-150000,150000);
-				if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored = HellcoreRestored * 1.6667;
+				if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored *= 1.6667;
 				if (SoulMasteryPerkLevel >= 0)
 				{
 					if (SoulMasteryPerkLevel == 1) temp1 = 1;
@@ -3297,7 +3295,7 @@ class AetheriusCustomInventory : CustomInventory
 			{
 				TrueStamValue = MaxStamina / 8; // 12.5%
 				perktemp1 = TrueStamValue;
-				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 1.6667;
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 *= 1.6667;
 				PerkFactor = ((RegenStamFastPerkLevel * 2) + (RegenStamFastEXPerkLevel * 5)) + 10;
 				perktemp1 = perktemp1 * PerkFactor / 10;
 			
@@ -3307,7 +3305,7 @@ class AetheriusCustomInventory : CustomInventory
 				CurrentStamina += perktemp1;
 			
 				if (debughealitems) Console.Printf("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", tempstaminalimit, MaxStamina, perktemp1, TrueStamValue);
-				if (CurrentStamina > tempstaminalimit) CurrentStamina = tempstaminalimit;
+				CurrentStamina = clamp(CurrentStamina, CurrentStamina, tempstaminalimit);
 				
 				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 			}
@@ -3332,7 +3330,7 @@ class AetheriusCustomInventory : CustomInventory
 				if (HealItemType == 0) TrueStamValue = MaxStamina / 20; // 5.0% [Stimpack/Vial]
 				if (HealItemType == 1) TrueStamValue = MaxStamina / 8; // 12.5% [Medikit/Flask]
 				perktemp1 = TrueStamValue;
-				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 1.6667;
+				if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 *= 1.6667;
 				PerkFactor = ((RegenStamFastPerkLevel * 2) + (RegenStamFastEXPerkLevel * 5)) + 10;
 				perktemp1 = perktemp1 * PerkFactor / 10;
 			
@@ -3342,7 +3340,7 @@ class AetheriusCustomInventory : CustomInventory
 				CurrentStamina += perktemp1;
 			
 				if (debughealitems) Console.Printf("Stamina Limit: %d VS [%d], Stamina Restored: %d VS [%d]", tempstaminalimit, MaxStamina, perktemp1, TrueStamValue);
-				if (CurrentStamina > tempstaminalimit) CurrentStamina = tempstaminalimit;
+				CurrentStamina = clamp(CurrentStamina, CurrentStamina, tempstaminalimit);
 
 				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 			}
@@ -3361,7 +3359,7 @@ class AetheriusCustomInventory : CustomInventory
 			if (HealItemType == 3) TrueStamValue = MaxStamina * 1; // 100% [Full Berserk Pack]
 			if (HealItemType == 4) TrueStamValue = MaxStamina * 0.25; // 25% [Mini Berserk Pack]
 			perktemp1 = TrueStamValue;
-			if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 = perktemp1 * 1.6667;
+			if (player.mo.CountInv("WaterFlyingDress") > 0 && CharacterClass == 2) perktemp1 *= 1.6667;
 			PerkFactor = ((RegenStamFastPerkLevel * 2) + (RegenStamFastEXPerkLevel * 5)) + 10;
 			perktemp1 = perktemp1 * PerkFactor / 10;
 		
@@ -3372,7 +3370,7 @@ class AetheriusCustomInventory : CustomInventory
 		
 			if (debughealitems) Console.Printf("Stamina Limit: [%d], Stamina Restored: %d VS [%d]", tempstaminalimit, perktemp1, TrueStamValue);
 			if (CurrentStamina < tempstaminalimit) CurrentStamina += perktemp1;
-			if (CurrentStamina >= tempstaminalimit) CurrentStamina = tempstaminalimit; 
+			CurrentStamina = clamp(CurrentStamina, CurrentStamina, tempstaminalimit);
 			
 			CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 		}
@@ -3382,13 +3380,12 @@ class AetheriusCustomInventory : CustomInventory
 		
 		if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 		temphealthlimit *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
-
-		if (temphealthlimit > (MaxHealthTrue*2)) temphealthlimit = MaxHealthTrue * 2;
+		temphealthlimit = clamp(temphealthlimit, temphealthlimit, (MaxHealthTrue*2));
 
 		if (CurrentHP <= temphealthlimit)
 		{
 			CurrentHP += perktemp2;
-			if (CurrentHP > temphealthlimit) CurrentHP = temphealthlimit;
+			CurrentHP = clamp(CurrentHP, CurrentHP, temphealthlimit);
 			if (debughealitems) Console.Printf("Health Limit: %d VS [%d], Health Restored: %d VS [%d]", temphealthlimit, MaxHealthTrue, perktemp2, HealAmount);
 
 			player.mo.health = player.health = CurrentHP;
@@ -3396,7 +3393,7 @@ class AetheriusCustomInventory : CustomInventory
 	}
 	
 	// Check if Health is above or below normal max [for customized "normal" health item checks] (All games)
-	action int A_CheckHealthLevels(int maxhealtype = 0)
+	action bool A_CheckHealthLevels(int maxhealtype = 0)
 	{
 		int currenthealth = player.mo.health;
 		int MaxHealthTrue = CallACS("StatCheck",1);
@@ -3408,10 +3405,10 @@ class AetheriusCustomInventory : CustomInventory
 		if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 		perkhealthlimit *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 		if (maxhealtype > 0) perkhealthlimit *= 2;
-		if (perkhealthlimit > (MaxHealthTrue*2)) perkhealthlimit = (MaxHealthTrue * 2);
+		perkhealthlimit = clamp(perkhealthlimit, perkhealthlimit, (MaxHealthTrue*2));
 		
-		int result = 0;
-		if (currenthealth < perkhealthlimit) result = 1;
+		int result = false;
+		if (currenthealth < perkhealthlimit) result = true;
 
 		return result;
 	}
@@ -3455,7 +3452,7 @@ class AetheriusCustomInventory : CustomInventory
 			if (CharacterClass == 8) { IncreaseMultiplier = random(10,12); } // Ailish receives the least HP from a bonus
 			if (CharacterClass == 9) { IncreaseMultiplier = random(20,23); } // Petra receives most HP from a bonus
 			BonusMaxHP = BonusMaxHP * IncreaseMultiplier / 16;
-			if (debugseedstuff > 0) Console.Printf("Randomizer IncreaseMultiplier: %d / 16, BonusMaxHP [After HPError]: %d", IncreaseMultiplier, BonusMaxHP);
+			if (debugseedstuff) Console.Printf("Randomizer IncreaseMultiplier: %d / 16, BonusMaxHP [After HPError]: %d", IncreaseMultiplier, BonusMaxHP);
 			
 			// Flora's Armor Items [up to +55% Max HP gained from Max HP Bonuses]
 			if (CharacterClass == 2)
@@ -3465,7 +3462,7 @@ class AetheriusCustomInventory : CustomInventory
 				if (player.mo.CountInv("BalrogRing")) ArmorHPBonus += 15; // +25%
 				ArmorHPBonus += 100;
 				BonusMaxHP = BonusMaxHP * ArmorHPBonus / 100; // Flora is the only one who can use the Pearly Corset / Kissa Bra / Balrog Ring
-				if (debugseedstuff > 0) Console.Printf("ArmorHPBonus [Flora]: %d / 100, BonusMaxHP [After ArmorHPBonus]: %d", ArmorHPBonus, BonusMaxHP);
+				if (debugseedstuff) Console.Printf("ArmorHPBonus [Flora]: %d / 100, BonusMaxHP [After ArmorHPBonus]: %d", ArmorHPBonus, BonusMaxHP);
 			}
 			
 			PerkFactor = ((LifeUpPerkLvl * 500) + (LifeUpExPerkLvl * 1250)) + 10000;
@@ -3478,7 +3475,7 @@ class AetheriusCustomInventory : CustomInventory
 			
 			// Overall Modifier
 			MapNoBonus = (level.levelnum * 9) / 20; // 45%
-			if (debugseedstuff > 0) Console.Printf("MapNoBonus: %d", MapNoBonus);
+			if (debugseedstuff) Console.Printf("MapNoBonus: %d", MapNoBonus);
 			BonusMaxHP = BonusMaxHP * (random(70,80) + MapNoBonus) / 100;
 			if (TrueGameSkill <= SKILL_VERY_EASY)		BonusMaxHP = BonusMaxHP * (random(90,100) + MapNoBonus) / 100;
 			if (TrueGameSkill == SKILL_EASY)				BonusMaxHP = BonusMaxHP * (random(80,90) + MapNoBonus) / 100;
@@ -3769,7 +3766,7 @@ class AetheriusCustomInventory : CustomInventory
 		HellCoreID = HellcoreWeapon + 95;
 		HellCoreLevel = CallACS("MiscVarCheckDECORATE",HellCoreID);
 		HellCoreLevel += 1;
-		if (HellCoreLevel > MaxHellCoreLevel) HellCoreLevel = MaxHellCoreLevel; // HellCoreLevelDefine
+		HellCoreLevel = clamp(HellCoreLevel, HellCoreLevel, MaxHellCoreLevel);
 		CallACS("MiscVarSetDECORATE",HellCoreID,HellCoreLevel);
 	}
 	
@@ -4429,7 +4426,7 @@ class AetheriusCustomInventory : CustomInventory
 		{
 			OldAccuracy = invoker.owner.accuracy;
 			NewAccuracy = OldAccuracy + 10;
-			if (NewAccuracy > 100) NewAccuracy = 100;
+			NewAccuracy = clamp(NewAccuracy, NewAccuracy, 100);
 			invoker.owner.accuracy = NewAccuracy;
 			
 			int tempaeonpts;
@@ -4893,10 +4890,7 @@ class AetheriusBaseTeleGlitter : Actor
 
 	void A_AccTeleGlitter ()
 	{
-		if (++health > 35)
-		{
-			Vel.Z *= 1.5;
-		}
+		if (++health > 35) Vel.Z *= 1.5;
 	}
 }
 
