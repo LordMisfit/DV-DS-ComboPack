@@ -23,6 +23,8 @@ class PlayerStatItem : Inventory
 	int MPRegenBonPenTimer;
 	int StamRegenBonPenTimer;
 	int HLCRCoolBonPenTimer;
+	
+	int BaseStamPenalty;
 
 	int PrevTimeFreezeTimer;
 	int InitEXPTables;
@@ -305,6 +307,9 @@ class PlayerStatItem : Inventory
 		PlayerCurrentHealth = owner.health;
 		IsFocusOn = CallACS("MiscVarCheckDECORATE",212);
 		FocusTimer = CallACS("MiscVarCheckDECORATE",231);
+
+		BaseStamPenalty = 35 * random(8,12);
+		CallACS("MiscVarSetDECORATE",46,BaseStamPenalty);
 
 		ClassCheck = CallACS("OtherVarCheckDECORATE",4);
 		CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
@@ -3651,7 +3656,11 @@ class PlayerStatItem : Inventory
 				{
 					previousdelaycount = CurrentStamina;
 					CurrentStamina -= FocusDrain;
-					CurrentStamina = clamp(CurrentStamina, 0, CurrentStamina);
+					BaseStamPenalty = (BaseStamPenalty * FocusDrain) / MaximumStamina;
+					if (BaseStamPenalty <= random(1,2)) BaseStamPenalty = random(1,2);
+					CallACS("MiscVarSetDECORATE",94,BaseStamPenalty,2);  // StamRegenBonPenTimer
+
+					if (CurrentStamina < 0) CurrentStamina = 0;
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 					CurrentStamina = CallACS("MiscVarCheckDECORATE",21); // Refreshes Current Stamina
 					//Console.Printf("    \cnFocusing [Step 2 - Reduce Stamina]: Current: %d\c-, Previous: %d, DrainAmt: %d", CurrentStamina, previousdelaycount, FocusDrain);
@@ -3692,9 +3701,9 @@ class PlayerStatItem : Inventory
 				DegenMinimumManaFactor = 64 - ((TrueGameSkill * 8) * 0.667);
 				DegenMinimumHPFactor = ceil(DegenMinimumHPFactor * 0.75);
 				DegenMinimumManaFactor = ceil(DegenMinimumManaFactor * 0.75);
-				DegenMinimumHP = floor(MaxHealthTrue / DegenMinimumHPFactor);
+				DegenMinimumHP = floor((MaxHealthTrue * DegenMinimumHPFactor) / 100);
 				if (DegenMinimumHP < 1) DegenMinimumHP = 1;
-				DegenMinimumMana = floor(MaxMana / DegenMinimumManaFactor);
+				DegenMinimumMana = floor((MaxMana * DegenMinimumManaFactor) / 100);
 				if (dvdsdebug_cursedmgdisplay) Console.Printf("    \cnCurse Degeneration [Step 1 - Base Divisors]: HP %d, MP: %d\c-, LowHP: %d, LowMP: %d", DegenMinimumHPFactor, DegenMinimumManaFactor, DegenMinimumHP, DegenMinimumMana);
 			
 				// Set Curse Degeneration Intervals
@@ -3740,7 +3749,7 @@ class PlayerStatItem : Inventory
 					if (PlayerCurrentHealth > DegenMinimumHP)
 					{
 						// HP Degeneration
-						DegenValue = ceil(MaxHealthTrue * frandompick(1.5,0.75,0.75,0.5,0.5,0.5,0.5,0.375,0.375,0.3));
+						DegenValue = ceil(MaxHealthTrue * frandompick(0.015,0.0075,0.0075,0.005,0.005,0.005,0.005,0.00375,0.00375,0.003));
 						if (DegenValue < 1) DegenValue = 1;
 						PlayerCurrentHealth -= DegenValue;
 						if (PlayerCurrentHealth < DegenMinimumHP) PlayerCurrentHealth = DegenMinimumHP;
@@ -3754,7 +3763,7 @@ class PlayerStatItem : Inventory
 					if (CurrentMana > DegenMinimumMana)
 					{
 						// MP Degeneration
-						DegenValue = ceil(MaxMana * frandompick(1.5,0.75,0.75,0.5,0.5,0.5,0.5,0.375,0.375,0.3));
+						DegenValue = ceil(MaxMana * frandompick(0.015,0.0075,0.0075,0.005,0.005,0.005,0.005,0.00375,0.00375,0.003));
 						if (DegenValue < 1) DegenValue = 1;
 						CurrentMana -= DegenValue;
 						if (CurrentMana < DegenMinimumMana) CurrentMana = DegenMinimumMana;

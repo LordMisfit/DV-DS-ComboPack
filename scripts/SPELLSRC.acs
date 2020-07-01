@@ -323,7 +323,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [43] is the # of Aeon Pts Spent on STATS
 	// [44] is for holding a temp "cost" of refunded Aeon Points on cooldown [you get back a % immediately, the rest gradually return after a set time]
 	// [45] is the cooldown delay for how long it takes to respec after doing it once
-		// [46] is unused
+	// [46] is stamina penalty base time
 	// [47] is for 'stepping' [converted from a global var]
 	// [48] is for Rapid Cast Delay [via ZScript]
 	// [49] is # of kills w/ Hell Warrior Shield weapon
@@ -30397,6 +30397,8 @@ script "UseWhistle" (void)
 	int PY = GetActorY(0);
 	int PZ = GetActorZ(0);
 	int WhistleStamUse = 200;
+	int BaseStamPenalty = MiscellaneousVars[46];
+
 	if (MiscellaneousVars[25115] > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
 	
 	if (MiscellaneousVars[25001] > 0 && MiscellaneousVars[168] == 0 && MiscellaneousVars[21] >= WhistleStamUse && MiscellaneousVars[4] == 0)
@@ -30405,6 +30407,10 @@ script "UseWhistle" (void)
 		NoiseAlert(0,0);
 		MiscellaneousVars[21] -= WhistleStamUse;
 		MiscellaneousVars[168] = 24; // Set's cooldown for whistling
+		
+		BaseStamPenalty = (BaseStamPenalty * WhistleStamUse) / MiscellaneousVars[22];
+		if (BaseStamPenalty <= random(1,2)) BaseStamPenalty = random(1,2);
+		MiscellaneousVars[94] -= BaseStamPenalty;
 	}
 }
 
@@ -30460,6 +30466,7 @@ function int IsButtonPressed (int input, int oldInput, int mask)
 script "KD-SideDodge" enter
 {
 	int input, oldInput, taps, tics, last, angle, velX, velY, velZ;
+	int BaseStamPenalty = MiscellaneousVars[46];
 	
 	int dashtapwindow = 8;			// Same type of var/define as SD_TIMEFRAME, but made to be editable
 	int airdashvel = 20.0;			// Same type of var/define as SD_DASHSPEED, but made to be editable 
@@ -30530,6 +30537,11 @@ script "KD-SideDodge" enter
 						if (MiscellaneousVars[4] == 0)
 						{
 							MiscellaneousVars[21] -= MiscellaneousVars[638];
+							
+							BaseStamPenalty = (BaseStamPenalty * MiscellaneousVars[638]) / MiscellaneousVars[22];
+							if (BaseStamPenalty <= random(1,2)) BaseStamPenalty = random(1,2);
+							MiscellaneousVars[94] -= BaseStamPenalty;
+
 							int whole = MiscellaneousVars[638] / 100; 
 							int modulus = MiscellaneousVars[638] % 100;
 							if (MiscellaneousVars[100005] > 0)
@@ -30835,6 +30847,7 @@ Script "AttackTarget" (void) NET
 	int PZ = GetActorZ(0);
 	int WhistleStamUse = 200;
 	if (MiscellaneousVars[25115] > 0) WhistleStamUse = WhistleStamUse * 3 / 4;
+	int BaseStamPenalty = MiscellaneousVars[46];
 
 	int oldTID, target;
 	If (SetActivator(0,AAPTR_PLAYER_GETTARGET)) // Get the target of the activator. If it fails because there is none nothing will happen.
@@ -30852,6 +30865,10 @@ Script "AttackTarget" (void) NET
 				SpawnForced("PlayerWhistle",PX,PY,PZ+(32*65536),0,0);
 				MiscellaneousVars[21] -= WhistleStamUse;
 				MiscellaneousVars[168] = 24; // Set's cooldown for whistling
+				
+				BaseStamPenalty = (BaseStamPenalty * WhistleStamUse) / MiscellaneousVars[22];
+				if (BaseStamPenalty <= random(1,2)) BaseStamPenalty = random(1,2);
+				MiscellaneousVars[94] -= BaseStamPenalty;
 			}
 			else
 			{
