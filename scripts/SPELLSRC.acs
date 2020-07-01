@@ -104,7 +104,6 @@
 			["SpellQuickAssign"]							-	Spell Readying
 			["SpellCasting"]									-	Spell Casting
 			["SetSauravatarHealth"]						-	Configures the full max health of the Sauravatar and sets it to its proper Health to start the fight [DVI-DS & DVII-DS]
-			["Hand-GravityAttack"]						-	Using a Diabloist's Souls' HP Gravity attack-projectile on an enemy.
 			["WeaponAngleLoop"]								-	For the Sceptre's Spin Attack & HellCore Weapons (used as a replacement for uservars in weapons)
 			["WeaponAngleLoopSecondary"]			-	For the Sceptre's Spin Attack & HellCore Weapons [secondary level] (used as a replacement for uservars in weapons)
 			["HellcoreFireMode"]							-	Determines the mode selected for a Hellcore weapon using multiple types of attacks
@@ -370,7 +369,10 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [89] is storage for Shield Uncurse Rate [Menu CVar]
 	// [90] is storage for Base EXP Multiplier [Menu CVar]
 	// [91] is max dash timer
-		// [92 to 95] are undefined
+	// [92] is Heal Item Just Used Timer
+	// [93] is Mana Item Just Used Timer
+	// [94] is Stamina Item Just Used Timer
+	// [95] is Hellcore Item Just Used Timer
 	// [96] is the Current Level of the Imp's Soul
 	// [97] is the Current Level of the Dark Imp's Soul
 	// [98] is the Current Level of the Cacodemon's Soul
@@ -546,7 +548,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [272] Saves player's YVel when using the menus
 	// [273] Saves player's ZVel when using the menus
 	// [274] Checks for if the player can use the Sceptre's Overhead Smash Attack [for future versions]
-		// [275 to 279] are undefined so far :P
+	// [275] is storage for the tic add for MP Regen Bonus/Penalty from a spell cast
+	// [276] is lowest accumulation for MP Regen Penalty Time from a spell cast
+		// [277 to 279] are undefined so far :P
 	// [280] is storage for Base Perk Cost Multiplier [Menu CVar]
 	// [281] Minor Healing [Min] Value
 	// [282] Minor Healing [Max] Value
@@ -10298,6 +10302,13 @@ script "SpellSelection" (int Dir)
 	}
 }
 
+function void MPRegenPenaltySet(int CostOfSpell)
+{
+	int TempMPRegenPenalty = ((MiscellaneousVars[275] * CostOfSpell) / MaxMana);
+	if (TempMPRegenPenalty < MiscellaneousVars[276]) TempMPRegenPenalty = MiscellaneousVars[276];
+	MiscellaneousVars[93] -= TempMPRegenPenalty;
+}
+
 // Spell Readying (For Ten-Slot system)
 script "SpellQuickAssign" (int Slot, int Type)
 {
@@ -10310,6 +10321,7 @@ script "SpellQuickAssign" (int Slot, int Type)
  
 	int MaxHealthLimit = MaxHealthTrue * 2;
 	int CostOfSpell, SelectedSpellSlot;
+	int TempMPRegenPenalty;
 	
 	int buttons = GetPlayerInput(0, INPUT_BUTTONS);
 	
@@ -10357,6 +10369,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 						if (buttons & BT_ZOOM)
 						{
 							CurrentMana -= CostOfSpell;
+							MPRegenPenaltySet(CostOfSpell);
+							
 							MiscellaneousVars[243] = CurrentMana;
 							MiscellaneousVars[238] = CurrentMana;
 							ACS_NamedExecuteAlways("MagicEffects",0,0,-3,0);
@@ -10366,6 +10380,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 							if (MiscellaneousVars[25001] < MaxHealthTrue)
 							{
 								CurrentMana -= CostOfSpell;
+								MPRegenPenaltySet(CostOfSpell);
+
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -10377,6 +10393,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 						if (buttons & BT_ZOOM)
 						{
 							CurrentMana -= CostOfSpell;
+							MPRegenPenaltySet(CostOfSpell);
+
 							MiscellaneousVars[243] = CurrentMana;
 							MiscellaneousVars[238] = CurrentMana;
 							ACS_NamedExecuteAlways("MagicEffects",0,0,-2,0);
@@ -10386,6 +10404,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 							if (MiscellaneousVars[25001] < MaxHealthTrue)
 							{
 								CurrentMana -= CostOfSpell;
+								MPRegenPenaltySet(CostOfSpell);
+
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -10399,6 +10419,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 							if (CheckInventory("Armor") < 2000)
 							{
 								CurrentMana -= CostOfSpell;
+								MPRegenPenaltySet(CostOfSpell);
+
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -10409,6 +10431,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 							if (CheckInventory("Armor") < 500)
 							{
 								CurrentMana -= CostOfSpell;
+								MPRegenPenaltySet(CostOfSpell);
+
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -10420,6 +10444,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 						if (buttons & BT_ZOOM)
 						{
 							CurrentMana -= CostOfSpell;
+							MPRegenPenaltySet(CostOfSpell);
+
 							MiscellaneousVars[243] = CurrentMana;
 							MiscellaneousVars[238] = CurrentMana;
 							ACS_NamedExecuteAlways("MagicEffects",0,0,-1,0);
@@ -10429,6 +10455,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 							if (MiscellaneousVars[25001] < MaxHealthLimit)
 							{
 								CurrentMana -= CostOfSpell;
+								MPRegenPenaltySet(CostOfSpell);
+
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -10443,6 +10471,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 							if (PowerupTimer[9] > 0) // If Lv. 2 is intact, give it a random (6-8) seconds. :P
 							{
 								CurrentMana -= CostOfSpell;
+								MPRegenPenaltySet(CostOfSpell);
+
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,18,random(6,8),0);
@@ -10450,6 +10480,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 							else // If only Lv. 1 is intact, give it the full 30 seconds. :P
 							{
 								CurrentMana -= CostOfSpell;
+								MPRegenPenaltySet(CostOfSpell);
+
 								MiscellaneousVars[243] = CurrentMana;
 								MiscellaneousVars[238] = CurrentMana;
 								ACS_NamedExecuteAlways("MagicEffects",0,17,30,0);
@@ -10462,6 +10494,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 								if (CheckInventory("Armor") < 5000)
 								{
 									CurrentMana -= CostOfSpell;
+									MPRegenPenaltySet(CostOfSpell);
+
 									MiscellaneousVars[243] = CurrentMana;
 									MiscellaneousVars[238] = CurrentMana;
 									ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -10472,6 +10506,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 								if (CheckInventory("Armor") < 1250)
 								{
 									CurrentMana -= CostOfSpell;
+									MPRegenPenaltySet(CostOfSpell);
+
 									MiscellaneousVars[243] = CurrentMana;
 									MiscellaneousVars[238] = CurrentMana;
 									ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -10486,6 +10522,8 @@ script "SpellQuickAssign" (int Slot, int Type)
 					else // All Other Spells [Deggaris/Illucia Only]
 					{
 						CurrentMana -= CostOfSpell;
+						MPRegenPenaltySet(CostOfSpell);
+
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[ReadiedSpells[Slot] - 1],SpellCastStrength[ReadiedSpells[Slot] - 1],0);
@@ -10520,12 +10558,13 @@ script "SpellCasting" (int enableRapidCasting)
 	{
 		if (CurrentMana >= CostOfSpell)
 		{
-			//PrintBold(d:SelectedSpell);
 			if (SelectedSpell == 1) // Minor Healing [Deggaris and Illucia Only]
 			{
 				if (buttons & BT_ZOOM)
 				{
 					CurrentMana -= CostOfSpell;
+					MPRegenPenaltySet(CostOfSpell);
+
 					MiscellaneousVars[243] = CurrentMana;
 					MiscellaneousVars[238] = CurrentMana;
 					ACS_NamedExecuteAlways("MagicEffects",0,0,-3,0);
@@ -10536,6 +10575,8 @@ script "SpellCasting" (int enableRapidCasting)
 					if (CurrentHealth < MaxHealthTrue)
 					{
 						CurrentMana -= CostOfSpell;
+						MPRegenPenaltySet(CostOfSpell);
+
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -10547,6 +10588,8 @@ script "SpellCasting" (int enableRapidCasting)
 				if (buttons & BT_ZOOM)
 				{
 					CurrentMana -= CostOfSpell;
+					MPRegenPenaltySet(CostOfSpell);
+
 					MiscellaneousVars[243] = CurrentMana;
 					MiscellaneousVars[238] = CurrentMana;
 					ACS_NamedExecuteAlways("MagicEffects",0,0,-2,0);
@@ -10557,6 +10600,8 @@ script "SpellCasting" (int enableRapidCasting)
 					if (CurrentHealth < MaxHealthTrue)
 					{
 						CurrentMana -= CostOfSpell;
+						MPRegenPenaltySet(CostOfSpell);
+
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -10570,6 +10615,8 @@ script "SpellCasting" (int enableRapidCasting)
 					if (CheckInventory("Armor") < 2000)
 					{
 						CurrentMana -= CostOfSpell;
+						MPRegenPenaltySet(CostOfSpell);
+
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -10580,6 +10627,8 @@ script "SpellCasting" (int enableRapidCasting)
 					if (CheckInventory("Armor") < 500)
 					{
 						CurrentMana -= CostOfSpell;
+						MPRegenPenaltySet(CostOfSpell);
+
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -10591,6 +10640,8 @@ script "SpellCasting" (int enableRapidCasting)
 				if (buttons & BT_ZOOM)
 				{
 					CurrentMana -= CostOfSpell;
+					MPRegenPenaltySet(CostOfSpell);
+
 					MiscellaneousVars[243] = CurrentMana;
 					MiscellaneousVars[238] = CurrentMana;
 					ACS_NamedExecuteAlways("MagicEffects",0,0,-1,0);
@@ -10601,6 +10652,8 @@ script "SpellCasting" (int enableRapidCasting)
 					if (CurrentHealth < MaxHealthLimit)
 					{
 						CurrentMana -= CostOfSpell;
+						MPRegenPenaltySet(CostOfSpell);
+
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -10614,6 +10667,8 @@ script "SpellCasting" (int enableRapidCasting)
 					if (PowerupTimer[9] > 0) // If Lv. 2 is intact, give it a random (6-8) seconds. :P
 					{
 						CurrentMana -= CostOfSpell;
+						MPRegenPenaltySet(CostOfSpell);
+
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,18,random(6,8),0);
@@ -10621,6 +10676,8 @@ script "SpellCasting" (int enableRapidCasting)
 					else // If only Lv. 1 is intact, give it the full 30 seconds. :P
 					{
 						CurrentMana -= CostOfSpell;
+						MPRegenPenaltySet(CostOfSpell);
+
 						MiscellaneousVars[243] = CurrentMana;
 						MiscellaneousVars[238] = CurrentMana;
 						ACS_NamedExecuteAlways("MagicEffects",0,17,30,0);
@@ -10632,20 +10689,24 @@ script "SpellCasting" (int enableRapidCasting)
 					{
 						if (CheckInventory("Armor") < 5000)
 						{
-						CurrentMana -= CostOfSpell;
-						MiscellaneousVars[243] = CurrentMana;
-						MiscellaneousVars[238] = CurrentMana;
-						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
+							CurrentMana -= CostOfSpell;
+							MPRegenPenaltySet(CostOfSpell);
+	
+							MiscellaneousVars[243] = CurrentMana;
+							MiscellaneousVars[238] = CurrentMana;
+							ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
 						}
 					}
 					else
 					{
 						if (CheckInventory("Armor") < 1250)
 						{
-						CurrentMana -= CostOfSpell;
-						MiscellaneousVars[243] = CurrentMana;
-						MiscellaneousVars[238] = CurrentMana;
-						ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
+							CurrentMana -= CostOfSpell;
+							MPRegenPenaltySet(CostOfSpell);
+
+							MiscellaneousVars[243] = CurrentMana;
+							MiscellaneousVars[238] = CurrentMana;
+							ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
 						}
 					}
 				}
@@ -10657,6 +10718,8 @@ script "SpellCasting" (int enableRapidCasting)
 			else // All other spells [Deggaris and Illucia only]
 			{
 				CurrentMana -= CostOfSpell;
+				MPRegenPenaltySet(CostOfSpell);
+
 				MiscellaneousVars[243] = CurrentMana;
 				MiscellaneousVars[238] = CurrentMana;
 				ACS_NamedExecuteAlways("MagicEffects",0,SpellCastTypes[SelectedSpell],SpellCastStrength[SelectedSpell],0);
@@ -16618,10 +16681,13 @@ script "MagicEffects" (int Type, int Strength)
 			SpawnForced(FriendIDDoom[random(0,17)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1002,PA >> 16);
 			if (ThingCount(0,1002) > 0)
 			{
+				SetUserVariable(1002, "user_summoned", 1);
 				ActivatorSound("monstersummon",127);
 				if (CharacterClass == 2 && random(1,5) == 1) MiscellaneousVars[25209]++;
 				Thing_ChangeTID(1002,1000);
 				CurrentMana -= MiscellaneousVars[555];
+				MPRegenPenaltySet(MiscellaneousVars[555]);
+
 				MiscellaneousVars[243] = CurrentMana;
 				MiscellaneousVars[238] = CurrentMana;
 				PrintBold(s:"Successful Summon!");
@@ -16630,6 +16696,7 @@ script "MagicEffects" (int Type, int Strength)
 					SpawnForced(FriendIDDoom[random(0,17)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1003,PA >> 16);
 					if (ThingCount(0,1003) > 0)
 					{
+						SetUserVariable(1003, "user_summoned", 1);
 						ActivatorSound("monstersummon",127);
 						if (CharacterClass == 2 && random(1,5) == 1) MiscellaneousVars[25209]++;
 						Thing_ChangeTID(1003,1000);
@@ -16649,10 +16716,13 @@ script "MagicEffects" (int Type, int Strength)
 			SpawnForced(FriendIDDoom[random(18,29)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1002,PA >> 16);
 			if (ThingCount(0,1002) > 0)
 			{
+				SetUserVariable(1002, "user_summoned", 1);
 				ActivatorSound("monstersummon",127);
 				if (CharacterClass == 2 && random(1,5) == 1) MiscellaneousVars[25209]++;
 				Thing_ChangeTID(1002,1000);
 				CurrentMana -= MiscellaneousVars[555];
+				MPRegenPenaltySet(MiscellaneousVars[555]);
+
 				MiscellaneousVars[243] = CurrentMana;
 				MiscellaneousVars[238] = CurrentMana;
 				PrintBold(s:"Successful Summon!");
@@ -16661,6 +16731,7 @@ script "MagicEffects" (int Type, int Strength)
 					SpawnForced(FriendIDDoom[random(18,29)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1003,PA >> 16);
 					if (ThingCount(0,1003) > 0)
 					{
+						SetUserVariable(1003, "user_summoned", 1);
 						ActivatorSound("monstersummon",127);
 						if (CharacterClass == 2 && random(1,5) == 1) MiscellaneousVars[25209]++;
 						Thing_ChangeTID(1003,1000);
@@ -16680,10 +16751,13 @@ script "MagicEffects" (int Type, int Strength)
 			SpawnForced(FriendIDDoom[random(30,48)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1002,PA >> 16);
 			if (ThingCount(0,1002) > 0)
 			{
+				SetUserVariable(1002, "user_summoned", 1);
 				ActivatorSound("monstersummon",127);
 				if (CharacterClass == 2 && random(1,5) == 1) MiscellaneousVars[25209]++;
 				Thing_ChangeTID(1002,1000);
 				CurrentMana -= MiscellaneousVars[555];
+				MPRegenPenaltySet(MiscellaneousVars[555]);
+
 				MiscellaneousVars[243] = CurrentMana;
 				MiscellaneousVars[238] = CurrentMana;
 				PrintBold(s:"Successful Summon!");
@@ -16692,6 +16766,7 @@ script "MagicEffects" (int Type, int Strength)
 					SpawnForced(FriendIDDoom[random(30,48)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1003,PA >> 16);
 					if (ThingCount(0,1003) > 0)
 					{
+						SetUserVariable(1003, "user_summoned", 1);
 						ActivatorSound("monstersummon",127);
 						if (CharacterClass == 2 && random(1,5) == 1) MiscellaneousVars[25209]++;
 						Thing_ChangeTID(1003,1000);
@@ -16711,10 +16786,13 @@ script "MagicEffects" (int Type, int Strength)
 			SpawnForced(FriendIDDoom[random(49,50)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1002,PA >> 16);
 			if (ThingCount(0,1002) > 0)
 			{
+				SetUserVariable(1002, "user_summoned", 1);
 				ActivatorSound("monstersummon",127);
 				if (CharacterClass == 2 && random(1,5) == 1) MiscellaneousVars[25209]++;
 				Thing_ChangeTID(1002,1000);
 				CurrentMana -= MiscellaneousVars[555];
+				MPRegenPenaltySet(MiscellaneousVars[555]);
+
 				MiscellaneousVars[243] = CurrentMana;
 				MiscellaneousVars[238] = CurrentMana;
 				PrintBold(s:"Successful Summon!");
@@ -16731,10 +16809,13 @@ script "MagicEffects" (int Type, int Strength)
 			SpawnForced(FriendIDDoom[random(51,52)],PX + (Random(-8,8) << 16),PY + (Random(-8,8) << 16),PZ + (Random(0,4) << 16),1002,PA >> 16);
 			if (ThingCount(0,1002) > 0)
 			{
+				SetUserVariable(1002, "user_summoned", 1);
 				ActivatorSound("monstersummon",127);
 				if (CharacterClass == 2 && random(1,5) == 1) MiscellaneousVars[25209]++;
 				Thing_ChangeTID(1002,1000);
 				CurrentMana -= MiscellaneousVars[555];
+				MPRegenPenaltySet(MiscellaneousVars[555]);
+
 				MiscellaneousVars[243] = CurrentMana;
 				MiscellaneousVars[238] = CurrentMana;
 				PrintBold(s:"Successful Summon!");
