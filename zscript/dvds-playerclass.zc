@@ -2541,13 +2541,13 @@ class AetheriusPlayerPawn : PlayerPawn
 			}
 			if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[ZeroDamageCheck: STEP 2a - Evil Warrior Shield] Chance1: %.8f, Chances: %.8f", zerodmgchance, zerodmgchance2);
 		}
-		if (CountInv("UppercutDEFBonus1"))
+		if (CountInv("UppercutDEFBonus") == 1)
 		{
 			zerodmgchance = floor(zerodmgchance * 1.0125);
 			zerodmgchance2 = floor(zerodmgchance2 * 1.0125);
 			if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[ZeroDamageCheck: STEP 2ba - UpperCut Def Bonus 1] Chance1: %.8f, Chances: %.8f", zerodmgchance, zerodmgchance2);
 		}
-		if (CountInv("UppercutDEFBonus2"))
+		if (CountInv("UppercutDEFBonus") == 2)
 		{
 			zerodmgchance = floor(zerodmgchance * 1.0375);
 			zerodmgchance2 = floor(zerodmgchance2 * 1.0375);
@@ -3461,8 +3461,9 @@ class AetheriusPlayerPawn : PlayerPawn
 				if (DVDSActor.bFRIENDLY)
 				{
 					damage = ceil(damage * 0.25);
-					if (DVDSActor.user_summoned > 0) damage = ceil(damage * 0.25);
 					if (DVDSActor.user_charmed) damage = ceil(damage * 0.25);
+					if (DVDSActor.user_summoned) damage = ceil(damage * 0.25);
+					if (damage < 1) damage = 1;
 					if (dvdsdebug_playerdmgdisplays && damage > 0) Console.Printf("    (\cz[STEP 4] player-damagemobj input [Hit By Friendly]\c-: \cypredmg\c- / \cynewdmg\c- = \cy%d\c- / \cy%d\c-)", prefriendlydmg, damage);
 				}
 				else
@@ -3674,6 +3675,8 @@ class AetheriusPlayerPawn : PlayerPawn
 				Console.Printf("\cxDealt a Desperate Blow!", criticalhit);
 			}
 			int hpratio = ret * 100 / max(1, CallACS("StatCheck",1));
+			
+			// Cursed Shield Ratio Checks
 			int cursemulti = 1;
 			int cursedivisor = 1;
 			if (hpratio >= 201)										{ cursemulti = 8; cursedivisor = 2; }
@@ -3685,8 +3688,21 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (hpratio >= 21 && hpratio <= 40)		{ cursemulti = 2; cursedivisor = 2; }
 			if (hpratio <= 20)										{ cursemulti = 1; cursedivisor = 2; }
 			if (criticalhit) cursemulti *= random(3,5);
+
 			if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP 13] player-damagemobj uncurse stuff\c-: \cydmg = %d\c-, \cwcursemulti = %d\c-, \cxcursedivisor = %d\c-, \cdhpratio = %d\c-)", ret, cursemulti, cursedivisor, hpratio);
 			A_CursedShieldPain(1,cursemulti,cursedivisor);
+
+			// Health Regen Ratio Checks
+			double regendmg;
+			int hpratioclamp = hpratio;
+			if (hpratioclamp > 200) hpratioclamp = 200;
+			regendmg = 1.25 + (hpratioclamp * 0.01);
+			regendmg += (random(0,5) * 0.05);
+			regendmg *= hpratioclamp;
+			if (criticalhit) regendmg *= frandompick(1.25,1.5,1.5,1.5,1.5,1.75);
+
+			if (regendmg) CallACS("MiscVarSetDECORATE",92,regendmg,2);
+			if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP 14] player-damagemobj hpregentimer stuff\c-: \cytics = %d, \cdhpratioclamp = %d\c-)", CallACS("MiscVarCheckDECORATE",92), hpratioclamp);
 		}
 		else
 		{

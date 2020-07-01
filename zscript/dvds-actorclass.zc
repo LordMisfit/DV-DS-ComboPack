@@ -173,21 +173,22 @@ class AetheriusBaseZSC : Actor
 			int PerkFactor;
 			int CurrentHealth, TempHealAmount, TempHealAmount2, TempHealAmount3;
 			
-			multiplier = clamp(multiplier, 1, multiplier);
+			if (multiplier < 1) multiplier = 1;
 			CurrentHealth = playpawn.player.mo.health;
 			
 			if (CurrentHealth < MaxHealthLimit)
 			{
 				TempHealAmount = MaxHealthTrue / 100;
-				TempHealAmount = clamp(TempHealAmount, 1, TempHealAmount);
+				if (TempHealAmount < 1) TempHealAmount = 1;
 			
 				TempHealAmount2 = (PlayerLevel * 0.04);
 				TempHealAmount += TempHealAmount2;
 				TempHealAmount *= multiplier;
 				CurrentHealth += TempHealAmount;
-				CurrentHealth = clamp(CurrentHealth, CurrentHealth, MaxHealthLimit);
+				if (CurrentHealth > MaxHealthLimit) CurrentHealth = MaxHealthLimit;
 
 				playpawn.player.mo.health = playpawn.player.health = CurrentHealth;
+				for (int i = 0; i < multiplier; i++) CallACS("MiscVarSetDECORATE",92,randompick(3,4,4,4,5),1); // HealItemJustUsedTimer
 			}
 			
 			if (random(1,100) <= givemanachance)
@@ -195,19 +196,20 @@ class AetheriusBaseZSC : Actor
 				if (CurrentMana < MaxManaLimit)
 				{
 					TempHealAmount = MaxMana / 100;
-					TempHealAmount = clamp(TempHealAmount, 1, TempHealAmount);
+					if (TempHealAmount < 1) TempHealAmount = 1;
 				
 					TempHealAmount2 = (PlayerLevel * 0.04);
 					TempHealAmount += TempHealAmount2;
 					TempHealAmount *= multiplier;
 					CurrentMana += TempHealAmount;
-					CurrentMana = clamp(CurrentMana, CurrentMana, MaxManaLimit);
+					if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
 
 					CallACS("OtherVarSetDECORATE",2,CurrentMana);
+					for (int i = 0; i < multiplier; i++) CallACS("MiscVarSetDECORATE",93,randompick(3,4,4,4,5),1); // ManaItemJustUsedTimer
 				}
 			}
 			
-			if (staminagive >= 0)
+			if (staminagive)
 			{
 				// Add 0.5% to Stamina Value [up to 500%]
 				StamToGain = MaxStamina / 200;
@@ -227,6 +229,7 @@ class AetheriusBaseZSC : Actor
 				if (CurrentStamina > MaxStamina5X) CurrentStamina = MaxStamina5X;
 				
 				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+				for (int i = 0; i < multiplier; i++) CallACS("MiscVarSetDECORATE",94,randompick(3,4,4,4,5),1); // StamItemJustUsedTimer
 			}
 			
 			int HellcoreRestored;
@@ -258,9 +261,10 @@ class AetheriusBaseZSC : Actor
 					HellcoreRestored = clamp(HellcoreRestored, 1, 10000000);
 				
 					HellcoreOverheatLevel -= HellcoreRestored;
-					HellcoreOverheatLevel = clamp(HellcoreOverheatLevel, 0, HellcoreOverheatLevel);
+					if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
 					
 					CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+					for (int i = 0; i < multiplier; i++) CallACS("MiscVarSetDECORATE",95,randompick(3,4,4,4,5),1); // HLCRItemJustUsedTimer
 				}
 			}
 		}
@@ -321,7 +325,7 @@ class AetheriusBaseZSC : Actor
 				if (playpawn.player.mo.CountInv("Armor") < dvds_saurongauntlets_givearmor)
 				{
 					int ArmorAmount = (Amount * random(6,9)) / 15;
-					ArmorAmount = clamp(ArmorAmount, 1, ArmorAmount);
+					if (ArmorAmount < 1) ArmorAmount = 1;
 					A_EmulateGiveArmorBonus(ArmorAmount,1,true,playpawn);
 					gaveAnything = true;
 				}
@@ -343,9 +347,9 @@ class AetheriusBaseZSC : Actor
 					if (CharacterClass == 2) ManaAmount = ManaAmount * random(5,7) / 4; // Flora will gain Extra Mana from a Gauntlet punch to make up for not being able to get armor.
 					else if (CharacterClass == 8) ManaAmount = ManaAmount * random(4,6) / 4; // Ailish will gain Extra Mana from a Gauntlet punch as well.
 					else ManaAmount = ManaAmount * random(9,15) / 12;
-					ManaAmount = clamp(ManaAmount, 1, ManaAmount);
+					if (ManaAmount < 1) ManaAmount = 1;
 					CurrentMana += ManaAmount;
-					CurrentMana = clamp(CurrentMana, CurrentMana, MaxManaLimit);
+					if (CurrentMana > MaxManaLimit) CurrentMana = MaxManaLimit;
 					
 					if (CurrentMana > prevMana)
 						gaveAnything = true;
@@ -355,8 +359,8 @@ class AetheriusBaseZSC : Actor
 			if (gaveAnything)
 			{
 				// Only do this if the player actually received something (health, mana, armor, and/or stamina).
-				if (CharacterClass == 2) playpawn.player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
-				else playpawn.player.mo.A_StartSound("HealSpell1",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM); 
+				if (CharacterClass == 2) playpawn.player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
+				else playpawn.player.mo.A_StartSound("HealSpell1",83,CHANF_DEFAULT,1.0,ATTN_NORM); 
 				
 				playpawn.player.mo.A_SetBlend("E0 E0 E0",0.33,random(17,18),"E0 E0 E0",0.0); // FadeRange(224,224,224,0.33,224,224,224,0,0.5);
 			}
@@ -1261,7 +1265,7 @@ class AetheriusCustomInventory : CustomInventory
 			check1 += 1;
 			if (check1 > 0)
 			{
-				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
 			else
@@ -1280,7 +1284,7 @@ class AetheriusCustomInventory : CustomInventory
 			check1 += 1;
 			if (check1 > 0)
 			{
-				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
 			else
@@ -1389,8 +1393,11 @@ class AetheriusCustomInventory : CustomInventory
 				}
 				if (check1 > 0)
 				{
+					CallACS("MiscVarSetDECORATE",92,420,1); // HealItemJustUsedTimer
+					CallACS("MiscVarSetDECORATE",94,210,1); // StamItemJustUsedTimer
+
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",0.875,0.875,"Heal3Glitter",4);
-					player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 					player.mo.A_SetBlend("0C FF 0C",0.33,23,"10 FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
 					player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 				}
@@ -1504,8 +1511,11 @@ class AetheriusCustomInventory : CustomInventory
 				}
 				if (check1 > 0)
 				{
+					CallACS("MiscVarSetDECORATE",92,84,1); // HealItemJustUsedTimer
+					CallACS("MiscVarSetDECORATE",94,53,1); // StamItemJustUsedTimer
+
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",0.75,0.75,"Heal2Glitter",2);
-					player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 					player.mo.A_SetBlend("0C FF 0C",0.33,23,"10 FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
 					player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 				}
@@ -1619,8 +1629,11 @@ class AetheriusCustomInventory : CustomInventory
 				}
 				if (check1 > 0)
 				{
+					CallACS("MiscVarSetDECORATE",92,42,1); // HealItemJustUsedTimer
+					CallACS("MiscVarSetDECORATE",94,21,1); // StamItemJustUsedTimer
+
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",0.50,0.50,"Heal1Glitter",2);
-					player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 					player.mo.A_SetBlend("0C FF 0C",0.33,23,"10 FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
 					player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 				}
@@ -1640,7 +1653,7 @@ class AetheriusCustomInventory : CustomInventory
 			check1 += 1;
 			if (check1 > 0)
 			{
-				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
 			else
@@ -1659,7 +1672,7 @@ class AetheriusCustomInventory : CustomInventory
 			check1 += 1;
 			if (check1 > 0)
 			{
-				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
 			else
@@ -1678,7 +1691,7 @@ class AetheriusCustomInventory : CustomInventory
 			check1 += 1;
 			if (check1 > 0)
 			{
-				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
 			else
@@ -1741,6 +1754,7 @@ class AetheriusCustomInventory : CustomInventory
 				temp1 += (MaxHealthTrue * 5 / 8);
 				temp1 = clamp(temp1, temp1, healmax);
 				player.mo.health = player.health = temp1;
+				CallACS("MiscVarSetDECORATE",92,263,1); // HealItemJustUsedTimer
 			}
 			
 			// Heal MP/Mana [62.5%] up to 200%
@@ -1772,9 +1786,12 @@ class AetheriusCustomInventory : CustomInventory
 			
 			if (check1 > 0)
 			{
+				CallACS("MiscVarSetDECORATE",93,263,1); // ManaItemJustUsedTimer
+				CallACS("MiscVarSetDECORATE",94,525,1); // StamItemJustUsedTimer
+
 				A_UCIIHealSpark(player.mo,"CustomHealSpark",1.125,1.125,"Heal3Glitter",4);
-				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
-				player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_SetBlend("C0 80 C0",0.55,27); // FadeRange(192,128,192,0.55,192,128,192,0.01,0.77);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
@@ -1812,8 +1829,10 @@ class AetheriusCustomInventory : CustomInventory
 			}
 			if (check1 > 0)
 			{
-				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
-				player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				CallACS("MiscVarSetDECORATE",93,840,1); // ManaItemJustUsedTimer
+
+				player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_SetBlend("0C FF 0C",0.55,27,"10 FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
@@ -1912,9 +1931,12 @@ class AetheriusCustomInventory : CustomInventory
 				}
 				if (check1 > 0)
 				{
+					CallACS("MiscVarSetDECORATE",92,(420*frandom(1.0,1.1)),1); // HealItemJustUsedTimer
+					CallACS("MiscVarSetDECORATE",94,263,1); // StamItemJustUsedTimer
+
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",1.125,1.125,"Heal3Glitter",6);
-					player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
-					player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 					player.mo.A_SetBlend("0C FF 0C",0.55,27,"10 FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
 					player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 				}
@@ -2019,10 +2041,13 @@ class AetheriusCustomInventory : CustomInventory
 				}
 				if (check1 > 0)
 				{
+					CallACS("MiscVarSetDECORATE",92,105,1); // HealItemJustUsedTimer
+					CallACS("MiscVarSetDECORATE",94,66,1); // StamItemJustUsedTimer
+
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",0.625,0.625,"Heal2Glitter",3);
 					player.mo.A_StartSound("pickup/qpotion",82,CHANF_DEFAULT,1.0,ATTN_NORM);
-					player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
-					player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 					player.mo.A_SetBlend("0C FF 0C",0.55,27,"10 FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
 					player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 				}
@@ -2133,8 +2158,11 @@ class AetheriusCustomInventory : CustomInventory
 				}
 				if (check1 > 0)
 				{
+					CallACS("MiscVarSetDECORATE",92,40,1); // HealItemJustUsedTimer
+					CallACS("MiscVarSetDECORATE",94,30,1); // StamItemJustUsedTimer
+
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",0.5,0.5,"Heal1Glitter",2);
-					player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 					player.mo.A_SetBlend("0C FF 0C",0.33,23,"10 FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
 					player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 				}
@@ -2246,8 +2274,11 @@ class AetheriusCustomInventory : CustomInventory
 				}
 				if (check1 > 0)
 				{
+					CallACS("MiscVarSetDECORATE",92,100,1); // HealItemJustUsedTimer
+					CallACS("MiscVarSetDECORATE",94,75,1); // StamItemJustUsedTimer
+
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",0.75,0.75,"Heal2Glitter",random(3,4));
-					player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 					player.mo.A_SetBlend("0C FF 0C",0.55,27,"10 FF 10",0.01); // FadeRange(12,255,12,0.55,16,255,16,0.01,0.77);
 					player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 				}
@@ -2359,8 +2390,11 @@ class AetheriusCustomInventory : CustomInventory
 				}
 				if (check1 > 0)
 				{
+					CallACS("MiscVarSetDECORATE",92,140,1); // HealItemJustUsedTimer
+					CallACS("MiscVarSetDECORATE",94,105,1); // StamItemJustUsedTimer
+
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",0.875,0.875,"Heal3Glitter",random(4,5));
-					player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 					player.mo.A_SetBlend("0C FF 0C",0.77,31,"10 FF 10",0.01); // FadeRange(12,255,12,0.77,16,255,16,0.01,0.77);
 					player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 				}
@@ -2484,8 +2518,12 @@ class AetheriusCustomInventory : CustomInventory
 			}
 			if (check1 > 0)
 			{
+				CallACS("MiscVarSetDECORATE",92,(420*frandom(0.9,1.1)),1); // HealItemJustUsedTimer
+				CallACS("MiscVarSetDECORATE",93,(420*frandom(0.225,0.275)),1); // ManaItemJustUsedTimer
+				CallACS("MiscVarSetDECORATE",94,(420*frandom(0.9,1.1)),1); // StamItemJustUsedTimer
+
 				A_UCIIHealSpark(player.mo,"CustomHealSpark",1.375,1.375,"Heal3Glitter",6);
-				player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_SetBlend("0C FF 0C",0.85,39,"10 FF 10",0.02); // FadeRange(12,255,12,0.85,16,255,16,0.02,1.12);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
@@ -2536,7 +2574,7 @@ class AetheriusCustomInventory : CustomInventory
 			if (CallACS("MiscVarCheckDECORATE",181) < 4) // Cooldown Timer is 0 and Tension is less than "100" [tier 4]
 			{
 				A_SetTensionLevel(2,1);
-				player.mo.A_StartSound("use_lesservimstone",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("use_lesservimstone",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
 			else
@@ -2551,7 +2589,7 @@ class AetheriusCustomInventory : CustomInventory
 			if (CallACS("MiscVarCheckDECORATE",181) < 7) // Cooldown Timer is 0 and Tension is less than "1000" [tier 7]
 			{
 				A_SetTensionLevel(4,2);
-				player.mo.A_StartSound("use_greatervimstone",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("use_greatervimstone",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
 			else
@@ -2573,7 +2611,7 @@ class AetheriusCustomInventory : CustomInventory
 				perktemp4 = (perktemp4 * PowerupTimeMulti) / 100;
 				perktemp4 = perktemp4 * (CallACS("MiscVarCheckDECORATE",10050) + 4) / 4;
 				CallACS("GetBuffTimer",12,2,perktemp4);
-				player.mo.A_StartSound("use_mercurybandana",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("use_mercurybandana",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 				CallACS("MiscVarSetDECORATE",2040,70);
 				CallACS("MiscVarSetDECORATE",2045,2);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
@@ -2604,9 +2642,10 @@ class AetheriusCustomInventory : CustomInventory
 				CurrentMana += perktemp1;
 				CurrentMana = clamp(CurrentMana, CurrentMana, perkmanalimit);
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
+				CallACS("MiscVarSetDECORATE",93,35,1); // ManaItemJustUsedTimer
 
-				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
-				player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_SetBlend("0C FF 0C",0.14,12,"10 FF 10",0.01); // FadeRange(12,255,12,0.14,16,255,16,0.01,0.33);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
@@ -2636,9 +2675,10 @@ class AetheriusCustomInventory : CustomInventory
 				CurrentMana += perktemp1;
 				CurrentMana = clamp(CurrentMana, CurrentMana, perkmanalimit);
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
+				CallACS("MiscVarSetDECORATE",93,105,1); // ManaItemJustUsedTimer
 
-				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
-				player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_SetBlend("0C FF 0C",0.28,15,"10 FF 10",0.01); // FadeRange(12,255,12,0.28,16,255,16,0.01,0.44);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
@@ -2669,9 +2709,10 @@ class AetheriusCustomInventory : CustomInventory
 				CurrentMana += perktemp1;
 				CurrentMana = clamp(CurrentMana, CurrentMana, perkmanalimit);
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
+				CallACS("MiscVarSetDECORATE",93,210,1); // ManaItemJustUsedTimer
 
-				player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
-				player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
+				player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 				player.mo.A_SetBlend("0C FF 0C",0.43,19,"10 FF 10",0.01); // FadeRange(12,255,12,0.43,16,255,16,0.01,0.55);
 				player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 			}
@@ -2782,14 +2823,16 @@ class AetheriusCustomInventory : CustomInventory
 						HellcoreRestored = clamp(HellcoreRestored, 1, 10000000);
 					
 						HellcoreOverheatLevel -= HellcoreRestored;
-						HellcoreOverheatLevel = clamp(HellcoreOverheatLevel, 0, HellcoreOverheatLevel);
+						if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
 						
 						CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
 					}
+					CallACS("MiscVarSetDECORATE",92,630,1); // HealItemJustUsedTimer
+					CallACS("MiscVarSetDECORATE",95,630,1); // HLCRItemJustUsedTimer
 
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",1.375,1.375,"Heal3Glitter",6);
-					player.mo.A_StartSound("misc/invuse",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
-					player.mo.A_StartSound("healing_dq",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
+					player.mo.A_StartSound("healing_dq",83,CHANF_DEFAULT,1.0,ATTN_NORM);
 					player.mo.A_SetBlend("0C FF 0C",0.43,19,"10 FF 10",0.01); // FadeRange(12,255,12,0.43,16,255,16,0.01,0.55);
 					player.mo.A_TakeInventory(invoker.iDTech1Check,1);
 				}
@@ -2835,6 +2878,7 @@ class AetheriusCustomInventory : CustomInventory
 			//Console.Printf("TempHealAmount: %d, TempHealAmount2: %d", TempHealAmount, TempHealAmount2, multiplier);
 
 			player.mo.health = player.health = CurrentHealth;
+			for (int i = 0; i < multiplier; i++) CallACS("MiscVarSetDECORATE",92,randompick(3,4,4,4,5),1); // HealItemJustUsedTimer
 		}
 		
 		//Console.Printf("TempHealAmount: %d / MaxHealthLimit: %d", TempHealAmount, MaxHealthLimit);
@@ -2852,10 +2896,11 @@ class AetheriusCustomInventory : CustomInventory
 				CurrentMana = clamp(CurrentMana, CurrentMana, MaxManaLimit);
 
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
+				for (int i = 0; i < multiplier; i++) CallACS("MiscVarSetDECORATE",93,randompick(3,4,4,4,5),1); // ManaItemJustUsedTimer
 			}
 		}
 		
-		if (staminagive >= 0)
+		if (staminagive)
 		{
 			// Add 0.5% to Stamina Value [up to 500%]
 			StamToGain = MaxStamina * 0.005;
@@ -2875,6 +2920,7 @@ class AetheriusCustomInventory : CustomInventory
 			if (CurrentStamina > MaxStamina5X) CurrentStamina = MaxStamina5X;
 			
 			CallACS("MiscVarSetDECORATE",21,CurrentStamina);
+			for (int i = 0; i < multiplier; i++) CallACS("MiscVarSetDECORATE",94,randompick(3,4,4,4,5),1); // StamItemJustUsedTimer
 		}
 		
 		int HellcoreRestored;
@@ -2906,9 +2952,10 @@ class AetheriusCustomInventory : CustomInventory
 				HellcoreRestored = clamp(HellcoreRestored, 1, 10000000);
 			
 				HellcoreOverheatLevel -= HellcoreRestored;
-				HellcoreOverheatLevel = clamp(HellcoreOverheatLevel, 0, HellcoreOverheatLevel);
+				if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
 				
 				CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+				for (int i = 0; i < multiplier; i++) CallACS("MiscVarSetDECORATE",95,randompick(3,4,4,4,5),1); // HLCRItemJustUsedTimer
 			}
 		}
 	}
@@ -2955,6 +3002,12 @@ class AetheriusCustomInventory : CustomInventory
 		CallACS("OtherVarSetDECORATE",2,CurrentMana);
 		//CallACS("MiscVarSetDECORATE",243,CurrentMana);
 		//CallACS("MiscVarSetDECORATE",238,CurrentMana);
+		
+		int temp;
+		if (type <= 1) temp = 25;
+		if (type == 2) temp = 75;
+		if (type >= 3) temp = 125;
+		CallACS("MiscVarSetDECORATE",93,temp,1); // ManaItemJustUsedTimer
 	}
 	
 	// Mana Recovery Items
@@ -3062,11 +3115,15 @@ class AetheriusCustomInventory : CustomInventory
 				HellcoreRestored = clamp(HellcoreRestored, 1, 10000000);
 			
 				HellcoreOverheatLevel -= HellcoreRestored;
-				HellcoreOverheatLevel = clamp(HellcoreOverheatLevel, 0, HellcoreOverheatLevel);
+				if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
 
 				CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
 			}
 		}
+		CallACS("MiscVarSetDECORATE",92,randompick(300,400,400,400,500),1); // HealItemJustUsedTimer
+		CallACS("MiscVarSetDECORATE",93,randompick(300,400,400,400,500),1); // ManaItemJustUsedTimer
+		CallACS("MiscVarSetDECORATE",94,randompick(300,400,400,400,500),1); // StamItemJustUsedTimer
+		CallACS("MiscVarSetDECORATE",95,randompick(300,400,400,400,500),1); // HLCRItemJustUsedTimer
 	}
 	
 	// New Megasphere Script [for health/stamina half] :P
@@ -3105,6 +3162,25 @@ class AetheriusCustomInventory : CustomInventory
 			player.mo.health = player.health = CurrentHealth;
 		}
 		
+		// Increase MP/Mana
+		if (CharacterClass == 9) // Petra gets no armor from a Soul Sphere, but gets Mana and Force Gauge refill.
+		{
+			CurrentMana = MaxMana * 2;
+			//Insert code for refilling force gauge here
+		}
+		else
+		if (CharacterClass == 2 || CharacterClass == 8) // Flora and Ailish do not get armor from a Soul Sphere, but instead gets Mana up to 200% of their maximum
+		{
+			CurrentMana = MaxMana * 2;
+		}
+		else
+		if (CharacterClass <= 1)
+		{
+			MaxManaLimit = MaxMana * 2;
+			CurrentMana = MaxManaLimit;
+		}
+		CallACS("OtherVarSetDECORATE",2,CurrentMana);
+
 		// Add 50% to Stamina Value [up to 200%]
 		TrueStamValue = MaxStamina / 2;
 		perktemp1 = TrueStamValue;
@@ -3143,59 +3219,28 @@ class AetheriusCustomInventory : CustomInventory
 				HellcoreRestored = clamp(HellcoreRestored, 1, 10000000);
 			
 				HellcoreOverheatLevel -= HellcoreRestored;
-				HellcoreOverheatLevel = clamp(HellcoreOverheatLevel, 0, HellcoreOverheatLevel);
+				if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
 
 				CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
 			}
 		}
+		CallACS("MiscVarSetDECORATE",92,randompick(600,800,800,800,1000),1); // HealItemJustUsedTimer
+		CallACS("MiscVarSetDECORATE",93,randompick(600,800,800,800,1000),1); // ManaItemJustUsedTimer
+		CallACS("MiscVarSetDECORATE",94,randompick(600,800,800,800,1000),1); // StamItemJustUsedTimer
+		CallACS("MiscVarSetDECORATE",95,randompick(600,800,800,800,1000),1); // HLCRItemJustUsedTimer
 	}
 	
 	// MegaSphere Armor [Deggaris & Illucia Only] or Mana [All Three Characters]
 	action void A_MegaSphereArmor()
 	{
-		int debughealitems = dvdsdebug_healitemdisplays;
-		int MaxManaLimit;
-		int temp1, temp2;
-		int PerkFactor;
-		int perktemp1;
-		int TrueStamValue;
-		int HealthValue, ManaValue;
 		int PlayerLevel = CallACS("StatCheck",0);
 		int CharacterClass = CallACS("CheckCharacterClass");
-		int CurrentHealth = player.mo.health;
-		int MaxHealthTrue = CallACS("StatCheck",1);
-		int MaxHealthLimit = MaxHealthTrue * 2;
-		int CurrentMana = CallACS("StatCheck",14); 
-		int MaxMana = CallACS("StatCheck",2);
-		int CurrentStamina = CallACS("MiscVarCheckDECORATE",21);
-		int MaxStamina = CallACS("MiscVarCheckDECORATE",22);
-		int MaxStaminaLimit = MaxStamina * 5;
-		int HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
-		int RegenStamFastPerkLevel = CallACS("MiscVarCheckDECORATE",10017);
-		int RegenStamFastEXPerkLevel = CallACS("MiscVarCheckDECORATE",10018);
-		int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
-		int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
 		int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
-		int HealAmount;
 		int ArmorClearValue, RawArmorValue;
 		int CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
 		
-		if (CharacterClass == 9) // Petra gets no armor from a Soul Sphere, but gets Mana and Force Gauge refill.
+		if (CharacterClass == 0 || CharacterClass == 1)
 		{
-			CurrentMana = MaxMana * 2;
-			//Insert code for refilling force gauge here
-		}
-		else
-		if (CharacterClass == 2 || CharacterClass == 8) // Flora and Ailish do not get armor from a Soul Sphere, but instead gets Mana up to 200% of their maximum
-		{
-			CurrentMana = MaxMana * 2;
-		}
-		else
-		if (CharacterClass <= 1)
-		{
-			MaxManaLimit = MaxMana * 2;
-			CurrentMana = MaxManaLimit;
-		
 			// Saves original raw Armor Value
 			RawArmorValue = player.mo.CountInv("BasicArmor");
 			if (dvdsdebug_armorbonusdisplays) Console.Printf("BasicArmor: %d", RawArmorValue);
@@ -3259,7 +3304,6 @@ class AetheriusCustomInventory : CustomInventory
 			if (CurrentArmorClass == 6) { CurrentMaxArmor = 5000; player.mo.A_SetInventory("DSDiamondArmorClass2",1); }
 		}
 		if (dvdsdebug_armorbonusdisplays || dvdsdebug_armortrackdisplays) Console.Printf("CurrentArmorClass: %d, CurrentMaxArmor: %d", CurrentArmorClass, CurrentMaxArmor);
-		CallACS("OtherVarSetDECORATE",2,CurrentMana);
 		CallACS("OtherVarSetDECORATE",5,CurrentArmorClass);
 		CallACS("OtherVarSetDECORATE",9,CurrentMaxArmor);
 	}
@@ -3286,20 +3330,18 @@ class AetheriusCustomInventory : CustomInventory
 		if (debughealitems) Console.Printf("HealItemType: %d", HealItemType);
 		if (HealItemType == -1) // Source Guardian Lifeseed
 		{
-			HealAmount = MaxHealthTrue * 25 / 100;
+			HealAmount = MaxHealthTrue * 0.25;
 			perktemp2 = HealAmount;
-		
 			if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 			perktemp2 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 		
 			tempstaminalimit = MaxStamina * 5;
-		
 			if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 			tempstaminalimit *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 		
 			if (CurrentStamina < tempstaminalimit)
 			{
-				TrueStamValue = MaxStamina / 8; // 12.5%
+				TrueStamValue = MaxStamina * 0.125; // 12.5%
 				perktemp1 = TrueStamValue;
 				if (player.mo.CountInv("WaterFlyingDress") && CharacterClass == 2) perktemp1 *= 1.6667;
 				PerkFactor = ((RegenStamFastPerkLevel * 2) + (RegenStamFastEXPerkLevel * 5)) + 10;
@@ -3315,6 +3357,8 @@ class AetheriusCustomInventory : CustomInventory
 				
 				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 			}
+			CallACS("MiscVarSetDECORATE",92,149,1); // HealItemJustUsedTimer
+			CallACS("MiscVarSetDECORATE",94,74,1); // StamItemJustUsedTimer
 		}
 
 		if (HealItemType == 0 || HealItemType == 1) // Stimpack / Crystal Vial (1) and Medikit / Mini Berserk Pack (2) [Health]
@@ -3322,12 +3366,10 @@ class AetheriusCustomInventory : CustomInventory
 			if (HealItemType == 0) HealAmount = MaxHealthTrue * 10 / 100; // [Stimpack]
 			if (HealItemType == 1) HealAmount = MaxHealthTrue * 25 / 100; // [Medikit/Mini-Berserk]
 			perktemp2 = HealAmount;
-		
 			if (CharacterClass == 0 || CharacterClass == 1 | CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 			perktemp2 *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 		
 			tempstaminalimit = MaxStamina;
-		
 			if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 			tempstaminalimit *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
 		
@@ -3350,9 +3392,19 @@ class AetheriusCustomInventory : CustomInventory
 
 				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 			}
+			if (HealItemType == 0) 
+			{
+				CallACS("MiscVarSetDECORATE",92,175,1); // HealItemJustUsedTimer
+				CallACS("MiscVarSetDECORATE",94,88,1); // StamItemJustUsedTimer
+			}
+			if (HealItemType == 1) 
+			{
+				CallACS("MiscVarSetDECORATE",92,70,1); // HealItemJustUsedTimer
+				CallACS("MiscVarSetDECORATE",94,35,1); // StamItemJustUsedTimer
+			}
 		}
 		
-		if (HealItemType == 2) // Berserk Pack
+		if (HealItemType == 2) // Berserk Pack [Health]
 		{
 			HealAmount = MaxHealthTrue;
 			perktemp2 = HealAmount;
@@ -3362,8 +3414,18 @@ class AetheriusCustomInventory : CustomInventory
 		}
 		if (HealItemType == 3 || HealItemType == 4) // Full Berserk Pack (3) and Mini Berserk Pack (4) [Stamina]
 		{
-			if (HealItemType == 3) TrueStamValue = MaxStamina * 1; // 100% [Full Berserk Pack]
-			if (HealItemType == 4) TrueStamValue = MaxStamina * 0.25; // 25% [Mini Berserk Pack]
+			if (HealItemType == 3) 
+			{
+				TrueStamValue = MaxStamina * 1; // 100% [Full Berserk Pack]
+				CallACS("MiscVarSetDECORATE",92,525,1); // HealItemJustUsedTimer
+				CallACS("MiscVarSetDECORATE",94,394,1); // StamItemJustUsedTimer
+			}
+			if (HealItemType == 4) 
+			{
+				TrueStamValue = MaxStamina * 0.25; // 25% [Mini Berserk Pack]
+				CallACS("MiscVarSetDECORATE",92,175,1); // HealItemJustUsedTimer
+				CallACS("MiscVarSetDECORATE",94,132,1); // StamItemJustUsedTimer
+			}
 			perktemp1 = TrueStamValue;
 			if (player.mo.CountInv("WaterFlyingDress") && CharacterClass == 2) perktemp1 *= 1.6667;
 			PerkFactor = ((RegenStamFastPerkLevel * 2) + (RegenStamFastEXPerkLevel * 5)) + 10;
@@ -3386,12 +3448,12 @@ class AetheriusCustomInventory : CustomInventory
 		
 		if (CharacterClass == 0 || CharacterClass == 1 || CharacterClass == 9) { perkbasemulti = 0.125; } else { perkbasemulti = 0.0625; }
 		temphealthlimit *= (1.0 + (MedicinalProwessPerkLevel * perkbasemulti));
-		temphealthlimit = clamp(temphealthlimit, temphealthlimit, (MaxHealthTrue*2));
+		if (temphealthlimit > (MaxHealthTrue*2)) temphealthlimit = (MaxHealthTrue*2);
 
 		if (CurrentHP <= temphealthlimit)
 		{
 			CurrentHP += perktemp2;
-			CurrentHP = clamp(CurrentHP, CurrentHP, temphealthlimit);
+			if (CurrentHP > temphealthlimit) CurrentHP = temphealthlimit;
 			if (debughealitems) Console.Printf("Health Limit: %d VS [%d], Health Restored: %d VS [%d]", temphealthlimit, MaxHealthTrue, perktemp2, HealAmount);
 
 			player.mo.health = player.health = CurrentHP;
@@ -3496,7 +3558,7 @@ class AetheriusCustomInventory : CustomInventory
 			
 			PerkFactor = 1;
 			PerkFactor += (((LifeUpPerkLvl * 1) / 10) + ((StrifeStaminaLevel * 1) / 4));
-			BonusMaxHP = clamp(BonusMaxHP, PerkFactor, BonusMaxHP);
+			if (BonusMaxHP < PerkFactor) BonusMaxHP = PerkFactor;
 			if (debugseedstuff) Console.Printf("BonusMaxHP [Final]: %d", BonusMaxHP);
 			
 			CallACS("MiscVarSetDECORATE",222,BonusMaxHP,1);
@@ -3508,27 +3570,29 @@ class AetheriusCustomInventory : CustomInventory
 
 			MaxHealthTrue += BonusMaxHP;
 			int MaxHealthLimit = MaxHealthTrue * 2;
-			//player.mo.SpawnHealth() = MaxHealthTrue;
 			CallACS("OtherVarSetDECORATE",0,MaxHealthTrue);
 			
 			// Max HP Bonus also heals extra HP dependant on the character in use.
+			int extraheal;
 			CurrentHP = player.mo.health;
-			if (CharacterClass == 0) CurrentHP = CurrentHP + random(2,4) + BonusMaxHP; // Deggaris receives the Least Healed HP from a bonus
-			if (CharacterClass == 1) CurrentHP = CurrentHP + random(3,6) + BonusMaxHP; // Illucia receives a Median of Healed HP from a bonus
-			if (CharacterClass == 2) CurrentHP = CurrentHP + random(5,10) + BonusMaxHP; // Flora used to receive the Most Healed HP from a bonus
-			if (CharacterClass == 8) CurrentHP = CurrentHP + random(6,12) + BonusMaxHP; // Ailish receives the Most Healed HP from a bonus
-			if (CharacterClass == 9) CurrentHP = CurrentHP + random(1,3) + BonusMaxHP; // Petra receives the Least Healed HP from a bonus
+			if (CharacterClass == 0) extraheal = random(2,4) + BonusMaxHP; // Deggaris receives the Least Healed HP from a bonus
+			if (CharacterClass == 1) extraheal = random(3,6) + BonusMaxHP; // Illucia receives a Median of Healed HP from a bonus
+			if (CharacterClass == 2) extraheal = random(5,10) + BonusMaxHP; // Flora used to receive the Most Healed HP from a bonus
+			if (CharacterClass == 8) extraheal = random(6,12) + BonusMaxHP; // Ailish receives the Most Healed HP from a bonus
+			if (CharacterClass == 9) extraheal = random(1,3) + BonusMaxHP; // Petra receives the Least Healed HP from a bonus
+			CurrentHP += extraheal;
 			
 			int ExtraHP;
 			ExtraHP = (MaxHealthTrue * 0.01);
-			ExtraHP = clamp(ExtraHP, 1, ExtraHP);
+			if (ExtraHP < 1) ExtraHP = 1;
 			
 			LevelExtraHealth = (PlayerLevel * 0.1);
 			ExtraHP += LevelExtraHealth;
 			CurrentHP += ExtraHP;
-			CurrentHP = clamp(CurrentHP, CurrentHP, MaxHealthLimit);
+			if (CurrentHP > MaxHealthLimit) CurrentHP = MaxHealthLimit;
 			
 			player.mo.health = player.health = CurrentHP;
+			CallACS("MiscVarSetDECORATE",92,(randompick(3,4,4,4,5)*extraheal),1); // HealItemJustUsedTimer
 		}
 	}
 
@@ -5021,7 +5085,7 @@ class ShieldPartBase : AetheriusBaseZSC
 
 				if (!UniqueProjectile.projtouchedshieldactor) 
 				{
-					if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked");
+					if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked",random(91,95),CHANF_DEFAULT,1.0,ATTN_NORM);
 					UniqueProjectile.projtouchedshieldactor++;
 					if (dvdsdebug_shieldactorghosts) Console.Printf("\cyShieldPart (gametic %d):\c- UniqueProjectile.touched: %d", gametic, UniqueProjectile.projtouchedshieldactor);
 					return true;
@@ -5035,7 +5099,7 @@ class ShieldPartBase : AetheriusBaseZSC
 				playpawn2 = AetheriusPlayerPawn(master);
 				if (playpawn && playpawn2) return false;
 
-				if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked");
+				if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked",random(91,95),CHANF_DEFAULT,1.0,ATTN_NORM);
 				UniqueProjectileFast.projtouchedshieldactor++;
 				if (dvdsdebug_shieldactorghosts) Console.Printf("\cyShieldPart (gametic %d):\c- UniqueProjectileFast.touched: %d", gametic, UniqueProjectileFast.projtouchedshieldactor);
 				return true;
@@ -5277,7 +5341,7 @@ class DiarisArrowGuard : AetheriusBaseZSC
 
 				if (!UniqueProjectile.projtouchedshieldactor) 
 				{
-					if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked");
+					if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked",random(91,95),CHANF_DEFAULT,1.0,ATTN_NORM);
 					UniqueProjectile.projtouchedshieldactor++;
 					if (dvdsdebug_shieldactorghosts) Console.Printf("\cyDiarisArrowGuard (gametic: %d):\c- UniqueProjectile.touched: %d", gametic, UniqueProjectile.projtouchedshieldactor);
 					return true;
@@ -5292,7 +5356,7 @@ class DiarisArrowGuard : AetheriusBaseZSC
 				playpawn2 = AetheriusPlayerPawn(master);
 				if (playpawn && playpawn2) return false;
 
-				if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked");
+				if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked",random(91,95),CHANF_DEFAULT,1.0,ATTN_NORM);
 				UniqueProjectileFast.projtouchedshieldactor++;
 				if (dvdsdebug_shieldactorghosts) Console.Printf("\cyDiarisArrowGuard (gametic: %d):\c- UniqueProjectileFast.touched: %d", gametic, UniqueProjectileFast.projtouchedshieldactor);
 				return true;
@@ -5424,7 +5488,7 @@ class MageWandGuard : AetheriusBaseZSC
 
 				if (!UniqueProjectile.projtouchedshieldactor) 
 				{
-					if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked");
+					if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked",random(91,95),CHANF_DEFAULT,1.0,ATTN_NORM);
 					UniqueProjectile.projtouchedshieldactor++;
 					if (dvdsdebug_shieldactorghosts) Console.Printf("\cyMageWandGuard (gametic: %d):\c- UniqueProjectile.touched: %d", gametic, UniqueProjectile.projtouchedshieldactor);
 					return true;
@@ -5438,7 +5502,7 @@ class MageWandGuard : AetheriusBaseZSC
 				playpawn2 = AetheriusPlayerPawn(master);
 				if (playpawn && playpawn2) return false;
 
-				if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked");
+				if (bREFLECTIVE && random(1,256) <= 252) A_StartSound("SceptreBlocked",random(91,95),CHANF_DEFAULT,1.0,ATTN_NORM);
 				UniqueProjectileFast.projtouchedshieldactor++;
 				if (dvdsdebug_shieldactorghosts) Console.Printf("\cyMageWandGuard (gametic: %d):\c- UniqueProjectileFast.touched: %d", gametic, UniqueProjectileFast.projtouchedshieldactor);
 				return true;
