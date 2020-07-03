@@ -669,13 +669,40 @@ class AetheriusBaseWeaponZSC : Weapon
 		if (SceptreActualLevel == 16) SceptreTimerLimit = 22;
 
 		int CurrentMana = CallACS("StatCheck",14);
+		int MaxMana = CallACS("StatCheck",2);
+		int MPPenaltyTimeBase = 35 * random(8,12);
+		int MPPenaltyTimeAdd; 
+
 		if (attacktype == 1)
 		{
-			if (SceptreActualLevel <= 4 && CurrentMana >= 5) { CurrentMana -= 5; HaveMana++; }
-			if (SceptreActualLevel > 4 && SceptreActualLevel <= 8 && CurrentMana >= 4 ) { CurrentMana -= 4; HaveMana++; }
-			if (SceptreActualLevel > 8 && SceptreActualLevel <= 12 && CurrentMana >= 3 ) { CurrentMana -= 3; HaveMana++; }
-			if (SceptreActualLevel > 12 && SceptreActualLevel <= 16 && CurrentMana >= 2 ) { CurrentMana -= 2; HaveMana++; }
-			if (SceptreActualLevel == 16 && CurrentMana >= 1) { CurrentMana -= 1; HaveMana++; }
+			if (SceptreActualLevel <= 4 && CurrentMana >= 5) 
+			{
+				CurrentMana -= 5; HaveMana++;
+				MPPenaltyTimeAdd = MPPenaltyTimeBase * 5 / MaxMana;
+			}
+			if (SceptreActualLevel > 4 && SceptreActualLevel <= 8 && CurrentMana >= 4 ) 
+			{
+				CurrentMana -= 4; HaveMana++; 
+				MPPenaltyTimeAdd = MPPenaltyTimeBase * 4 / MaxMana;
+			}
+			if (SceptreActualLevel > 8 && SceptreActualLevel <= 12 && CurrentMana >= 3 ) 
+			{ 
+				CurrentMana -= 3; HaveMana++; 
+				MPPenaltyTimeAdd = MPPenaltyTimeBase * 3 / MaxMana;
+			}
+			if (SceptreActualLevel > 12 && SceptreActualLevel <= 16 && CurrentMana >= 2 ) 
+			{
+				CurrentMana -= 2; HaveMana++; 
+				MPPenaltyTimeAdd = MPPenaltyTimeBase * 2 / MaxMana;
+			}
+			if (SceptreActualLevel == 16 && CurrentMana >= 1) 
+			{ 
+				CurrentMana -= 1; HaveMana++; 
+				MPPenaltyTimeAdd = MPPenaltyTimeBase * 1 / MaxMana;
+			}
+			if (MPPenaltyTimeAdd < 1) MPPenaltyTimeAdd = 1;
+			CallACS("MiscVarSetDECORATE",93,MPPenaltyTimeAdd,2); // MPRegenBonPenTimer
+
 			CurrentMana = clamp(CurrentMana, 0, CurrentMana);
 			CallACS("OtherVarSetDECORATE",2,CurrentMana);
 			CallACS("MiscVarSetDECORATE",243,CurrentMana);
@@ -689,10 +716,25 @@ class AetheriusBaseWeaponZSC : Weapon
 			if (SceptreTimer >= SceptreTimerLimit)
 			{
 				ManaCost = random(1,2);
-				if (SceptreActualLevel < 8) CurrentMana -= 2;
-				if (SceptreActualLevel > 8 && SceptreActualLevel < 16) CurrentMana -= ManaCost; HaveMana++;
-				if (SceptreActualLevel == 16) CurrentMana -= 1; HaveMana++;
+				if (SceptreActualLevel < 8) 
+				{
+					CurrentMana -= 2;
+					MPPenaltyTimeAdd = MPPenaltyTimeBase * 2 / MaxMana;
+				}
+				if (SceptreActualLevel > 8 && SceptreActualLevel < 16) 
+				{
+					CurrentMana -= ManaCost; HaveMana++;
+					MPPenaltyTimeAdd = MPPenaltyTimeBase * ManaCost / MaxMana;
+				}
+				if (SceptreActualLevel == 16) 
+				{
+					CurrentMana -= 1; HaveMana++;
+					MPPenaltyTimeAdd = MPPenaltyTimeBase * 1 / MaxMana;
+				}
 				CurrentMana = clamp(CurrentMana, 0, CurrentMana);
+
+				if (MPPenaltyTimeAdd < 1) MPPenaltyTimeAdd = 1;
+				CallACS("MiscVarSetDECORATE",93,MPPenaltyTimeAdd,2); // MPRegenBonPenTimer
 
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
 				CallACS("MiscVarSetDECORATE",243,CurrentMana);
@@ -730,6 +772,8 @@ class AetheriusBaseWeaponZSC : Weapon
 		int CurrentMana = CallACS("StatCheck",14);
 		int MaxMana = CallACS("StatCheck",2);
 		int UseManaAttack;
+		int MPPenaltyTimeBase = 35 * random(8,12);
+		int MPPenaltyTimeAdd; 
 		int breakcode;
 
 		// Check 0 = Takes MP without a return value [i.e. infiniteammo is turned on].
@@ -760,6 +804,10 @@ class AetheriusBaseWeaponZSC : Weapon
 						if (check > 1)
 						{
 							CurrentMana -= amount;
+							MPPenaltyTimeAdd = MPPenaltyTimeBase * amount / MaxMana;
+							if (MPPenaltyTimeAdd < 1) MPPenaltyTimeAdd = 1;
+							CallACS("MiscVarSetDECORATE",93,MPPenaltyTimeAdd,2); // MPRegenBonPenTimer
+
 							CurrentMana = clamp(CurrentMana, 0, CurrentMana);
 							CallACS("OtherVarSetDECORATE",2,CurrentMana);
 							CallACS("MiscVarSetDECORATE",243,CurrentMana);
@@ -781,6 +829,10 @@ class AetheriusBaseWeaponZSC : Weapon
 		else
 		{
 			CurrentMana -= amount;
+			MPPenaltyTimeAdd = MPPenaltyTimeBase * amount / MaxMana;
+			if (MPPenaltyTimeAdd < 1) MPPenaltyTimeAdd = 1;
+			CallACS("MiscVarSetDECORATE",93,MPPenaltyTimeAdd,2); // MPRegenBonPenTimer
+
 			if (CurrentMana < 1) CurrentMana = 0;
 			CallACS("OtherVarSetDECORATE",2,CurrentMana);
 			CallACS("MiscVarSetDECORATE",243,CurrentMana);

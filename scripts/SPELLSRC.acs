@@ -2025,6 +2025,8 @@ script "HUDDISPLAY" ENTER
 			int HudSecondaryMeters = GetCVar("dvdshud_showsecondarymeters");
 			int HudOverlifeNotches = GetCVar("dvdshud_showoverlifenotches");
 			int HudWeaponSlots = GetCVar("dvdshud_showweaponslots");
+			str fontname;
+			int fontnum;
       
 			msgdelay = 0.036;
 			msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
@@ -4720,7 +4722,6 @@ script "HUDDISPLAY" ENTER
 				}
 			}
 
-
 			//***************************
 			//** HP Info [2498 to 3001]**
 			//***************************
@@ -4730,8 +4731,8 @@ script "HUDDISPLAY" ENTER
 			// 2505 - HP Meter Border [HP Info]
 			// 2506 - HP Meter Frame [HP Info]
 			// 2549 - HP Meter Bonus/Penalty Glow
-			// 2550-2750 - HP Meter "Overlife" Notches [HP Info]
-			// 2750-2950 - HP Meter Notches [HP Info] 
+			// 2551 - HP Meter "Overlife" Notches [HP Info]
+			// 2552 - HP Meter Notches [HP Info] 
 			// 3001 - HP Meter Glass [HP Info]
 			CurrentValue = MiscellaneousVars[25001];
 			MaxValue = MaxHealthTrue; // Max Health for player
@@ -4822,10 +4823,11 @@ script "HUDDISPLAY" ENTER
 				if (MaxValue != 0)
 				{
 					// Normal
-					str fontname = "HPBFN";
-					int fontnum = CurrentValue * 200 / MaxValue;
+					fontname = "HPBFN";
+					fontnum = CurrentValue * 200 / MaxValue;
+					if (fontnum < 0) fontnum = 0;
 					if (fontnum > 200) fontnum = 200;
-					if (fontnum > 0 || fontnum <= 200)
+					if (fontnum >= 1 || fontnum <= 200)
 					{
 						xpos = ScreenXOffset + 324.0; // + MiscFixedVars[1];
 						ypos = ScreenYOffset + 870.0;
@@ -4835,50 +4837,26 @@ script "HUDDISPLAY" ENTER
 						if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"HPBFN", d:fontnum);
 						//PrintBold(d:fontnum,s:" [",s:fontname,s:"]");
 						SetFont(fontname);
-						HudMessage(s:"A";HUDMSG_ALPHA,2751,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+						HudMessage(s:"A";HUDMSG_ALPHA,2552,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 					}
-					/*
-					for (HUDMsgIDAdd = 1; HUDMsgIDAdd <= ForEnd; HUDMsgIDAdd ++)
-					{
-						if (HUDMsgIDAdd <= VisibleNotchAmount)
-						{
-							if (HudMeterDetailActual == 10) { SetFont("HPBFILNA"); MeterNotchOffset = -5.0; }
-							if (HudMeterDetailActual == 4) { SetFont("HPBFILN4"); MeterNotchOffset = -2.0; }
-							if (HudMeterDetailActual == 2) { SetFont("HPBFILN2"); MeterNotchOffset = -1.0; }
-							if (HudMeterDetailActual == 1) { SetFont("HPBFILNR"); MeterNotchOffset = 0.0; } //
-						}
-						else SetFont("BARNOFIL");
-						NotchPos = ((HUDMsgIDAdd << 16) * HudMeterDetailActual) + MeterNotchOffset;
-						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
-						HudMessage(s:"A";HUDMSG_ALPHA,HUDMsgIDAdd+2750,cr_untranslated,xpos+NotchPos,ypos,HUDMsgDelayFixed,msgalpha);
-					}
-					*/
-
+					
 					if (HudOverlifeNotches == 1)
 					{
-						// Overlife
-						MaxNotchAmount = 200 / HudMeterDetailActual; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- HudMeterDetailActual [6303] - ",d:HudMeterDetailActual);
-						CurrentValue = MiscellaneousVars[25001];
-						MaxValue = MaxHealthTrue; // Max Health for player
-						VisibleNotchAmount = (CurrentValue * MaxNotchAmount / MaxValue) - MaxNotchAmount; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- MaxValue [6306] - ",d:MaxValue);
-						if (VisibleNotchAmount > MaxNotchAmount) VisibleNotchAmount = MaxNotchAmount;
-						if (HudShowEmptyNotches == 0) ForEnd = VisibleNotchAmount; else ForEnd = MaxNotchAmount;
-						if (MaxValue != 0 && VisibleNotchAmount > 0)
+						fontname = "HPBFO";
+						fontnum = (CurrentValue * 200 / MaxValue) - 200;
+						if (fontnum < 0) fontnum = 0;
+						if (fontnum > 200) fontnum = 200;
+						if (fontnum >= 1 || fontnum <= 200)
 						{
-							for (HUDMsgIDAdd = 1; HUDMsgIDAdd <= ForEnd; HUDMsgIDAdd ++)
-							{
-								if (HUDMsgIDAdd <= VisibleNotchAmount)
-								{
-									if (HudMeterDetailActual == 10) { SetFont("HPBFILOA"); MeterNotchOffset = -5.0; }
-									if (HudMeterDetailActual == 4) { SetFont("HPBFILO4"); MeterNotchOffset = -2.0; }
-									if (HudMeterDetailActual == 2) { SetFont("HPBFILO2"); MeterNotchOffset = -1.0; }
-									if (HudMeterDetailActual == 1) { SetFont("HPBFILOV"); MeterNotchOffset = 0.0; }
-								}
-								else SetFont("BARNOFIL");
-								NotchPos = ((HUDMsgIDAdd << 16) * HudMeterDetailActual) + MeterNotchOffset;
-								msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
-								HudMessage(s:"A";HUDMSG_ALPHA,HUDMsgIDAdd+2550,cr_untranslated,xpos+NotchPos,ypos,HUDMsgDelayFixed,msgalpha);
-							}
+							xpos = ScreenXOffset + 324.0; // + MiscFixedVars[1];
+							ypos = ScreenYOffset + 870.0;
+							msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+							if (fontnum >= 1 && fontnum <= 9)			fontname = StrParam(s:"HPBFO00", d:fontnum);
+							if (fontnum >= 10 && fontnum <= 99)		fontname = StrParam(s:"HPBFO0", d:fontnum);
+							if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"HPBFO", d:fontnum);
+							//PrintBold(d:fontnum,s:" [",s:fontname,s:"]");
+							SetFont(fontname);
+							HudMessage(s:"A";HUDMSG_ALPHA,2551,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 						}
 					}
 				}
