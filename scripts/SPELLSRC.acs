@@ -2013,7 +2013,7 @@ script "HUDDISPLAY" ENTER
 			7998 		- 	Current Spell Icon [Spell Box]
 			7999 		- 	Spell Style Box [Spell Box]
 
-			8101-8405	-	Kills Meter
+			8101-8153	-	Kills Meter
 			8501-8805	-	Secrets Meter
 			8901-9205	-	Items Meter
 			
@@ -8353,11 +8353,10 @@ script "HUDDISPLAY" ENTER
 				if (ModuloValue > -1 && ModuloValue < 10) HudMessage(d:WholeValue,s:".0",d:ModuloValue,s:"%";HUDMSG_ALPHA,7002,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 				else HudMessage(d:WholeValue,s:".",d:ModuloValue,s:"%";HUDMSG_ALPHA,7002,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 
-
 				if (HudPrimaryMeters == 1)
 				{
 					// Air Meter Empty "Glow" Border [7003]
-					xpos = basexpos + 142.0; // 1291.0;
+					xpos = basexpos + 137.0; // 1291.0;
 					ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 					msgalpha = 1.0; msgalpha = FixedMul(msgalpha,overallhudalpha);
 					SetFont("AIBFOCUS");
@@ -8367,41 +8366,36 @@ script "HUDDISPLAY" ENTER
 					}
 	
 					// Air Meter Border [7004]
-					xpos = basexpos + 140.0; // 1289.0;
+					xpos = basexpos + 137.0; // 1289.0;
 					ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 					msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 					SetFont("AIBFRAME"); // SetFont("SCBFRAME"); 
 					HudMessage(s:"A";HUDMSG_ALPHA,7004,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 	
 					// Air Meter Notches [6400-6600]
-					xpos = basexpos + 39.0; // 1188.0;
-					ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
-					msgalpha = 0.75;
-	
-					
-					MaxNotchAmount = 200 / HudMeterDetailActual; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- HudMeterDetailActual [9679] - ",d:HudMeterDetailActual);
-					VisibleNotchAmount = currentair * MaxNotchAmount / maxair; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- maxair [9680] - ",d:maxair);
-	
-					if (VisibleNotchAmount > MaxNotchAmount) VisibleNotchAmount = MaxNotchAmount;
-					if (HudShowEmptyNotches == 0) ForEnd = VisibleNotchAmount; else ForEnd = MaxNotchAmount;
-					// Normal
-					for (HUDMsgIDAdd = 1; HUDMsgIDAdd <= ForEnd; HUDMsgIDAdd ++)
+					if (maxair != 0)
 					{
-						if (HUDMsgIDAdd <= VisibleNotchAmount)
+						// Normal
+						fontname = "AIBFN";
+						fontnum = currentair * 200 / maxair;
+						if (fontnum < 0) fontnum = 0;
+						if (fontnum > 200) fontnum = 200;
+						if (fontnum >= 1 && fontnum <= 200)
 						{
-							if (HudMeterDetailActual == 10) { SetFont("AIBFILNA"); MeterNotchOffset = -4.0; }
-							if (HudMeterDetailActual == 4) { SetFont("AIBFILN4"); MeterNotchOffset = -2.0; }
-							if (HudMeterDetailActual == 2) { SetFont("AIBFILN2"); MeterNotchOffset = -1.0; }
-							if (HudMeterDetailActual == 1) { SetFont("AIBFILNR"); MeterNotchOffset = 1.0; }
+							xpos = basexpos + 137.0; // 1289.0;
+							ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
+							msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+							if (fontnum >= 1 && fontnum <= 9)			fontname = StrParam(s:"AIBFN00", d:fontnum);
+							if (fontnum >= 10 && fontnum <= 99)		fontname = StrParam(s:"AIBFN0", d:fontnum);
+							if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"AIBFN", d:fontnum);
+							//PrintBold(d:fontnum,s:" [",s:fontname,s:"]");
+							SetFont(fontname);
+							HudMessage(s:"A";HUDMSG_ALPHA,7051,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 						}
-						NotchPos = ((HUDMsgIDAdd << 16) * HudMeterDetailActual) + MeterNotchOffset;
-						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
-						HudMessage(s:"A";HUDMSG_ALPHA,HUDMsgIDAdd+7100,cr_untranslated,xpos+NotchPos,ypos,HUDMsgDelayFixed,msgalpha);
 					}
-				
-				
+					
 					// "Air" Meter Glass [7205]
-					xpos = basexpos + 140.0; // 1289.0;
+					xpos = basexpos + 137.0; // 1289.0;
 					ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 					SetFont("AIBGLASS"); 
 					msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
@@ -8417,7 +8411,9 @@ script "HUDDISPLAY" ENTER
 			if (GetCVar("dvdshud_showlevelstats") > 0)
 			{
 				// Items Meter [8901-9205]
-				if (itotal > 0)
+				CurrentValue = ifound;
+				MaxValue = itotal;
+				if (MaxValue > 0)
 				{
 					baseypos -= 32.0;
 					// "Item" Text [8901]
@@ -8432,56 +8428,51 @@ script "HUDDISPLAY" ENTER
 					ypos = ScreenYOffset + baseypos + 6.0; // 1028.0;
 					SetFont("DQHUDFONTSML");
 					msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
-					HudMessage(d:ifound,s:"/",d:itotal;HUDMSG_ALPHA,8902,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+					HudMessage(d:CurrentValue,s:"/",d:MaxValue;HUDMSG_ALPHA,8902,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 
 					if (HudPrimaryMeters == 1)
 					{
 						// Item Meter "Glow" Border [8903]
-						xpos = basexpos + 142.0; // 1291.0;
+						xpos = basexpos + 137.0; // 1291.0;
 						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 						msgalpha = 1.0; msgalpha = FixedMul(msgalpha,overallhudalpha);
 						SetFont("AIBFOCUS");
-						if (ifound >= itotal)
+						if (CurrentValue >= MaxValue)
 						{
 							HudMessage(s:"A";HUDMSG_ALPHA,8903,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 						}
 	
 						// Item Meter Border [8904]
-						xpos = basexpos + 140.0; // 1289.0;
+						xpos = basexpos + 137.0; // 1289.0;
 						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 						SetFont("AIBFRAME"); // SetFont("SCBFRAME"); 
 						HudMessage(s:"A";HUDMSG_ALPHA,8904,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 	
 						// Item Meter Notches [9000-9200]
-						xpos = basexpos + 39.0; // 1188.0;
-						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
-						msgalpha = 0.75;
-	
-						
-						MaxNotchAmount = 200 / HudMeterDetailActual; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- HudMeterDetailActual [9759] - ",d:HudMeterDetailActual);
-						VisibleNotchAmount = ifound * MaxNotchAmount / itotal; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- itotal [9760] - ",d:itotal);
-	
-						if (VisibleNotchAmount > MaxNotchAmount) VisibleNotchAmount = MaxNotchAmount;
-						if (HudShowEmptyNotches == 0) ForEnd = VisibleNotchAmount; else ForEnd = MaxNotchAmount;
-						// Normal
-						for (HUDMsgIDAdd = 1; HUDMsgIDAdd <= ForEnd; HUDMsgIDAdd ++)
+						if (MaxValue != 0)
 						{
-							if (HUDMsgIDAdd <= VisibleNotchAmount)
+							// Normal
+							fontname = "AIBFN";
+							fontnum = CurrentValue * 200 / MaxValue;
+							if (fontnum < 0) fontnum = 0;
+							if (fontnum > 200) fontnum = 200;
+							if (fontnum >= 1 && fontnum <= 200)
 							{
-								if (HudMeterDetailActual == 10) { SetFont("MPBFILNA"); MeterNotchOffset = -4.0; }
-								if (HudMeterDetailActual == 4) { SetFont("MPBFILN4"); MeterNotchOffset = -2.0; }
-								if (HudMeterDetailActual == 2) { SetFont("MPBFILN2"); MeterNotchOffset = -1.0; }
-								if (HudMeterDetailActual == 1) { SetFont("MPBFILNR"); MeterNotchOffset = 1.0; }
+								xpos = basexpos + 137.0; // 1289.0;
+								ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
+								msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+								if (fontnum >= 1 && fontnum <= 9)			fontname = StrParam(s:"AIBFN00", d:fontnum);
+								if (fontnum >= 10 && fontnum <= 99)		fontname = StrParam(s:"AIBFN0", d:fontnum);
+								if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"AIBFN", d:fontnum);
+								//PrintBold(d:fontnum,s:" [",s:fontname,s:"]");
+								SetFont(fontname);
+								HudMessage(s:"A";HUDMSG_ALPHA,8951,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 							}
-							NotchPos = ((HUDMsgIDAdd << 16) * HudMeterDetailActual) + MeterNotchOffset;
-							msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
-							HudMessage(s:"A";HUDMSG_ALPHA,HUDMsgIDAdd+9000,cr_untranslated,xpos+NotchPos,ypos,HUDMsgDelayFixed,msgalpha);
 						}
 					
-					
 						// "Item" Meter Glass [9205]
-						xpos = basexpos + 140.0; // 1289.0;
+						xpos = basexpos + 137.0; // 1289.0;
 						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 						SetFont("AIBGLASS"); 
 						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
@@ -8491,7 +8482,9 @@ script "HUDDISPLAY" ENTER
 
 
 				// Secrets Meter [8501-8805]
-				if (stotal > 0)
+				CurrentValue = sfound;
+				MaxValue = stotal;
+				if (MaxValue > 0)
 				{
 					baseypos -= 32.0;
 					// "Secr" Text [8501]
@@ -8506,57 +8499,51 @@ script "HUDDISPLAY" ENTER
 					ypos = ScreenYOffset + baseypos + 6.0; // 1028.0;
 					SetFont("DQHUDFONTSML");
 					msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
-					HudMessage(d:sfound,s:"/",d:stotal;HUDMSG_ALPHA,8502,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
-
+					HudMessage(d:CurrentValue,s:"/",d:MaxValue;HUDMSG_ALPHA,8502,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 
 					if (HudPrimaryMeters == 1)
 					{
 						// Secret Meter "Glow" Border [8503]
-						xpos = basexpos + 136.0; // 1291.0;
+						xpos = basexpos + 137.0; // 1291.0;
 						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 						msgalpha = 1.0; msgalpha = FixedMul(msgalpha,overallhudalpha);
 						SetFont("SMBFULDR");
-						if (sfound >= stotal)
+						if (CurrentValue >= MaxValue)
 						{
 							HudMessage(s:"A";HUDMSG_ALPHA,8503,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 						}
 
 						// Secret Meter Border [8504]
-						xpos = basexpos + 134.0; // 1289.0;
+						xpos = basexpos + 137.0; // 1289.0;
 						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 						SetFont("SMBFRAME"); // SetFont("SCBFRAME"); 
 						HudMessage(s:"A";HUDMSG_ALPHA,8504,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 
-						// Secret Meter Notches [8600-8800]
-						xpos = basexpos + 38.0; // 1188.0;
-						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
-						msgalpha = 0.75;
-
-						
-						MaxNotchAmount = 200 / HudMeterDetailActual; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- HudMeterDetailActual [9834] - ",d:HudMeterDetailActual);
-						VisibleNotchAmount = sfound * MaxNotchAmount / stotal; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- stotal [9835] - ",d:stotal);
-
-						if (VisibleNotchAmount > MaxNotchAmount) VisibleNotchAmount = MaxNotchAmount;
-						if (HudShowEmptyNotches == 0) ForEnd = VisibleNotchAmount; else ForEnd = MaxNotchAmount;
-						// Normal
-						for (HUDMsgIDAdd = 1; HUDMsgIDAdd <= ForEnd; HUDMsgIDAdd ++)
+						// Secret Meter Notches [8651]
+						if (MaxValue != 0)
 						{
-							if (HUDMsgIDAdd <= VisibleNotchAmount)
+							// Normal
+							fontname = "SMBFN";
+							fontnum = CurrentValue * 200 / MaxValue;
+							if (fontnum < 0) fontnum = 0;
+							if (fontnum > 200) fontnum = 200;
+							if (fontnum >= 1 && fontnum <= 200)
 							{
-								if (HudMeterDetailActual == 10) { SetFont("SMBFILNA"); MeterNotchOffset = -4.0; }
-								if (HudMeterDetailActual == 4) { SetFont("SMBFILN4"); MeterNotchOffset = -2.0; }
-								if (HudMeterDetailActual == 2) { SetFont("SMBFILN2"); MeterNotchOffset = -1.0; }
-								if (HudMeterDetailActual == 1) { SetFont("SMBFILNR"); MeterNotchOffset = 1.0; }
+								xpos = basexpos + 137.0; // 1289.0;
+								ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
+								msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+								if (fontnum >= 1 && fontnum <= 9)			fontname = StrParam(s:"SMBFN00", d:fontnum);
+								if (fontnum >= 10 && fontnum <= 99)		fontname = StrParam(s:"SMBFN0", d:fontnum);
+								if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"SMBFN", d:fontnum);
+								//PrintBold(d:fontnum,s:" [",s:fontname,s:"]");
+								SetFont(fontname);
+								HudMessage(s:"A";HUDMSG_ALPHA,8651,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 							}
-							NotchPos = ((HUDMsgIDAdd << 16) * HudMeterDetailActual) + MeterNotchOffset;
-							msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
-							HudMessage(s:"A";HUDMSG_ALPHA,HUDMsgIDAdd+8600,cr_untranslated,xpos+NotchPos,ypos,HUDMsgDelayFixed,msgalpha);
 						}
 					
-					
 						// "Secret" Meter Glass [8805]
-						xpos = basexpos + 134.0; // 1289.0;
+						xpos = basexpos + 137.0; // 1289.0;
 						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 						SetFont("SMBGLASS"); 
 						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
@@ -8565,8 +8552,10 @@ script "HUDDISPLAY" ENTER
 				}
 
 
-				// Kills Meter [8101-8405]
-				if (mtotal > 0)
+				// Kills Meter [8101-8153]
+				CurrentValue = mkilled;
+				MaxValue = mtotal;
+				if (MaxValue > 0)
 				{
 					baseypos -= 32.0;
 					// "KILL" Text [8101]
@@ -8581,60 +8570,55 @@ script "HUDDISPLAY" ENTER
 					ypos = ScreenYOffset + baseypos + 6.0; // 1028.0;
 					SetFont("DQHUDFONTSML");
 					msgalpha = 0.875; msgalpha = FixedMul(msgalpha,overallhudalpha);
-					HudMessage(d:mkilled,s:"/",d:mtotal;HUDMSG_ALPHA,8102,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
-
+					HudMessage(d:CurrentValue,s:"/",d:MaxValue;HUDMSG_ALPHA,8102,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 
 					if (HudPrimaryMeters == 1)
 					{
 						// Kill Meter "Glow" Border [8103]
-						xpos = basexpos + 137.0; // 1291.0;
+						xpos = basexpos + 137.0; // 1289.0;
 						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 						msgalpha = 1.0; msgalpha = FixedMul(msgalpha,overallhudalpha);
-						SetFont("HCBOVHET");
-						if (mkilled >= mtotal)
+						SetFont("HPBFCRIT");
+						if (CurrentValue >= MaxValue)
 						{
 							HudMessage(s:"A";HUDMSG_ALPHA,8103,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 						}
 
 						// Kill Meter Border [8104]
-						xpos = basexpos + 135.0; // 1289.0;
+						xpos = basexpos + 137.0; // 1289.0;
 						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
 						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
-						SetFont("HCBFRAME"); // SetFont("SCBFRAME"); 
+						SetFont("HPBFRAME"); // SetFont("SCBFRAME"); 
 						HudMessage(s:"A";HUDMSG_ALPHA,8104,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 
-						// Kill Meter Notches [8200-8400]
-						xpos = basexpos + 39.0; // 1188.0;
-						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
-						msgalpha = 0.75;
-
-						
-						MaxNotchAmount = 200 / HudMeterDetailActual; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- HudMeterDetailActual [9909] - ",d:HudMeterDetailActual);
-						VisibleNotchAmount = mkilled * MaxNotchAmount / mtotal; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- mtotal [9910] - ",d:mtotal);
-
-						if (VisibleNotchAmount > MaxNotchAmount) VisibleNotchAmount = MaxNotchAmount;
-						if (HudShowEmptyNotches == 0) ForEnd = VisibleNotchAmount; else ForEnd = MaxNotchAmount;
-						// Normal
-						for (HUDMsgIDAdd = 1; HUDMsgIDAdd <= ForEnd; HUDMsgIDAdd ++)
+						// Kill Meter Notches [8151]
+						if (MaxValue != 0)
 						{
-							if (HUDMsgIDAdd <= VisibleNotchAmount)
+							// Normal
+							fontname = "HPBFN";
+							fontnum = CurrentValue * 200 / MaxValue;
+							if (fontnum < 0) fontnum = 0;
+							if (fontnum > 200) fontnum = 200;
+							if (fontnum >= 1 && fontnum <= 200)
 							{
-								if (HudMeterDetailActual == 10) { SetFont("HCBFILNA"); MeterNotchOffset = -4.0; }
-								if (HudMeterDetailActual == 4) { SetFont("HCBFILN4"); MeterNotchOffset = -2.0; }
-								if (HudMeterDetailActual == 2) { SetFont("HCBFILN2"); MeterNotchOffset = -1.0; }
-								if (HudMeterDetailActual == 1) { SetFont("HCBFILNR"); MeterNotchOffset = 1.0; }
+								xpos = basexpos + 137.0; // 1289.0;
+								ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
+								msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+								if (fontnum >= 1 && fontnum <= 9)			fontname = StrParam(s:"HPBFN00", d:fontnum);
+								if (fontnum >= 10 && fontnum <= 99)		fontname = StrParam(s:"HPBFN0", d:fontnum);
+								if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"HPBFN", d:fontnum);
+								//PrintBold(d:fontnum,s:" [",s:fontname,s:"]");
+								SetFont(fontname);
+								HudMessage(s:"A";HUDMSG_ALPHA,8151,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 							}
-							NotchPos = ((HUDMsgIDAdd << 16) * HudMeterDetailActual) + MeterNotchOffset;
-							msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
-							HudMessage(s:"A";HUDMSG_ALPHA,HUDMsgIDAdd+8200,cr_untranslated,xpos+NotchPos,ypos,HUDMsgDelayFixed,msgalpha);
 						}
 					
-						// "Kill" Meter Glass [8405]
-						xpos = basexpos + 135.0; // 1289.0;
+						// "Kill" Meter Glass [8153]
+						xpos = basexpos + 137.0; // 1289.0;
 						ypos = ScreenYOffset + baseypos; // 1028.0; // 1060.0;
-						SetFont("HCBGLASS"); 
+						SetFont("HPBGLASS"); 
 						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
-						HudMessage(s:"A";HUDMSG_ALPHA,8405,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+						HudMessage(s:"A";HUDMSG_ALPHA,8153,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 					}
 				}
 			}
