@@ -4596,7 +4596,7 @@ script "HUDDISPLAY" ENTER
 							if (fontnum >= 10 && fontnum <= 99)		fontname = StrParam(s:"KLBNO0", d:fontnum);
 							if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"KLBNO", d:fontnum);
 						}
-						//lPrintBold(d:fontnum,s:" [",s:fontname,s:"]");
+						//PrintBold(d:fontnum,s:" [",s:fontname,s:"]");
 						SetFont(fontname);
 						HudMessage(s:"A";HUDMSG_ALPHA,2011,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 					}
@@ -9373,6 +9373,8 @@ script "HUDDISPLAY" ENTER
 			//************************************************************* 
 			int minigunheat = MiscellaneousVars[25009];
 			int minigunheatmax = 100;
+			int railguncharge = MiscellaneousVars[25010];
+			int railgunchargemax = 100;
 			if (showsecondmeter == 1)
 			{
 				xpos = ScreenXOffset + MiscFixedVars[0]; // 1289.0;
@@ -9391,7 +9393,7 @@ script "HUDDISPLAY" ENTER
 				else
 				If (StrIcmp(weapon, "Railgun2") == 0)
 				{
-					minigunheat = MiscellaneousVars[25010];
+					railguncharge = MiscellaneousVars[25010];
 					HudMessage(s:"CHRG";HUDMSG_ALPHA,6301,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 				}
 				else
@@ -9411,7 +9413,7 @@ script "HUDDISPLAY" ENTER
 				else
 				If (StrIcmp(weapon, "Railgun2") == 0)
 				{
-					HudMessage(d:minigunheat,s:"%";HUDMSG_ALPHA,6302,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+					HudMessage(d:railguncharge,s:"%";HUDMSG_ALPHA,6302,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 				}
 				else
 				{
@@ -9421,14 +9423,14 @@ script "HUDDISPLAY" ENTER
 				if (HudPrimaryMeters == 1)
 				{
 					// Heat Meter Empty "Glow" Border [6303]
-					xpos = ScreenXOffset + 1291.0;
-					ypos = ScreenYOffset + 1028.0; // 1060.0;
+					xpos = ScreenXOffset + 1289.0;
+					ypos = ScreenYOffset + 1028.0;
 					msgalpha = 1.0; msgalpha = FixedMul(msgalpha,overallhudalpha);
 					If (StrIcmp(weapon, "Minigun") == 0)
 					{
 						int miniheatalpha = 0.01 * MiscellaneousVars[25009];
 						msgalpha = FixedMul(msgalpha,miniheatalpha);
-						SetFont("MHBOVHET");
+						SetFont("HCBOVHET");
 						HudMessage(s:"A";HUDMSG_ALPHA,6303,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 					}
 					If (StrIcmp(weapon, "Railgun2") == 0)
@@ -9441,17 +9443,17 @@ script "HUDDISPLAY" ENTER
 
 					// Heat/MP Meter Border [6304]
 					xpos = ScreenXOffset + 1289.0;
-					ypos = ScreenYOffset + 1028.0; // 1060.0;
+					ypos = ScreenYOffset + 1028.0;
 					msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 					If (StrIcmp(weapon, "Minigun") == 0)
 					{
-						SetFont("MHBFRAME"); 
+						SetFont("HCBFRAME"); 
 						HudMessage(s:"A";HUDMSG_ALPHA,6304,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 					}
 					else
 					If (StrIcmp(weapon, "Railgun2") == 0)
 					{
-						SetFont("MHBFRAME"); 
+						SetFont("AIBFRAME"); 
 						HudMessage(s:"A";HUDMSG_ALPHA,6304,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 					}
 					else
@@ -9459,73 +9461,70 @@ script "HUDDISPLAY" ENTER
 						SetFont("MPBFRAME"); // SetFont("SCBFRAME"); 
 						HudMessage(s:"A";HUDMSG_ALPHA,6304,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 					}
-
-				
-					// AMMO Meter Notches [6400-6600]
-					xpos = ScreenXOffset + 1188.0; // 1188.0
-					ypos = ScreenYOffset + 1028.0; // 1060.0
-					msgalpha = 0.75;
-
 					
-					MaxNotchAmount = 200 / HudMeterDetailActual; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- HudMeterDetailActual [10817] - ",d:HudMeterDetailActual);
-					If (StrIcmp(weapon, "Minigun") == 0 || StrIcmp(weapon, "Railgun2") == 0) 
+					// AMMO Meter Notches [6401]
+					If (StrIcmp(weapon, "Minigun") == 0) 
 					{ 
-						VisibleNotchAmount = minigunheat * MaxNotchAmount / minigunheatmax; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- minigunheatmax [10820] - ",d:minigunheatmax);
-						xpos += 5.0; 
+						CurrentValue = minigunheat;
+						MaxValue = minigunheatmax;
 					}
-					else 
+					else
+					If (StrIcmp(weapon, "Railgun2") == 0) 
 					{ 
-						VisibleNotchAmount = currentmana * MaxNotchAmount / maxmana; if (debughud > 0) PrintBold(s:"\cyDivChecker:\c- maxmana [10825] - ",d:maxmana);
+						CurrentValue = railguncharge;
+						MaxValue = railgunchargemax;
 					}
-					if (VisibleNotchAmount > MaxNotchAmount) VisibleNotchAmount = MaxNotchAmount;
-					if (HudShowEmptyNotches == 0) ForEnd = VisibleNotchAmount; else ForEnd = MaxNotchAmount;
-					// Normal
-					for (HUDMsgIDAdd = 1; HUDMsgIDAdd <= ForEnd; HUDMsgIDAdd ++)
+					else
 					{
-						if (HUDMsgIDAdd <= VisibleNotchAmount)
-						{
-							If (StrIcmp(weapon, "Minigun") == 0)
-							{
-								if (HudMeterDetailActual == 10) { SetFont("MHBFILNA"); MeterNotchOffset = -4.0; }
-								if (HudMeterDetailActual == 4) { SetFont("MHBFILN4"); MeterNotchOffset = -1.0; }
-								if (HudMeterDetailActual == 2) { SetFont("MHBFILN2"); MeterNotchOffset = 0.0; }
-								if (HudMeterDetailActual == 1) { SetFont("MHBFILNR"); MeterNotchOffset = 1.0; }
-							}
-							else
-							If (StrIcmp(weapon, "Railgun2") == 0)
-							{
-								if (HudMeterDetailActual == 10) { SetFont("AIBFILNA"); MeterNotchOffset = -4.0; }
-								if (HudMeterDetailActual == 4) { SetFont("AIBFILN4"); MeterNotchOffset = -1.0; }
-								if (HudMeterDetailActual == 2) { SetFont("AIBFILN2"); MeterNotchOffset = 0.0; }
-								if (HudMeterDetailActual == 1) { SetFont("AIBFILNR"); MeterNotchOffset = 1.0; }
-							}
-							else
-							{
-								if (HudMeterDetailActual == 10) { SetFont("MPBFILNA"); MeterNotchOffset = -4.0; }
-								if (HudMeterDetailActual == 4) { SetFont("MPBFILN4"); MeterNotchOffset = -1.0; }
-								if (HudMeterDetailActual == 2) { SetFont("MPBFILN2"); MeterNotchOffset = 0.0; }
-								if (HudMeterDetailActual == 1) { SetFont("MPBFILNR"); MeterNotchOffset = 1.0; }
-							}
-						}
-						NotchPos = ((HUDMsgIDAdd << 16) * HudMeterDetailActual) + MeterNotchOffset;
-						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
-						HudMessage(s:"A";HUDMSG_ALPHA,HUDMsgIDAdd+6400,cr_untranslated,xpos+NotchPos,ypos,HUDMsgDelayFixed,msgalpha);
+						CurrentValue = CurrentMana;
+						MaxValue = MaxMana;
 					}
-				
+					fontname = "HCBFN";
+					fontnum = CurrentValue * 200 / MaxValue;
+					if (fontnum < 0) fontnum = 0;
+					if (fontnum > 200) fontnum = 200;
+					if (fontnum >= 1 && fontnum <= 200)
+					{
+						xpos = ScreenXOffset + 1289.0;
+						ypos = ScreenYOffset + 1028.0;
+						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+						If (StrIcmp(weapon, "Minigun") == 0) 
+						{ 
+							if (fontnum >= 1 && fontnum <= 9)			fontname = StrParam(s:"HCBFN00", d:fontnum);
+							if (fontnum >= 10 && fontnum <= 99)		fontname = StrParam(s:"HCBFN0", d:fontnum);
+							if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"HCBFN", d:fontnum);
+						}
+						else
+						If (StrIcmp(weapon, "Railgun2") == 0) 
+						{ 
+							if (fontnum >= 1 && fontnum <= 9)			fontname = StrParam(s:"AIBFN00", d:fontnum);
+							if (fontnum >= 10 && fontnum <= 99)		fontname = StrParam(s:"AIBFN0", d:fontnum);
+							if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"AIBFN", d:fontnum);
+						}
+						else
+						{ 
+							if (fontnum >= 1 && fontnum <= 9)			fontname = StrParam(s:"MPBFN00", d:fontnum);
+							if (fontnum >= 10 && fontnum <= 99)		fontname = StrParam(s:"MPBFN0", d:fontnum);
+							if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"MPBFN", d:fontnum);
+						}
+						//PrintBold(d:fontnum,s:" [",s:fontname,s:"]");
+						SetFont(fontname);
+						HudMessage(s:"A";HUDMSG_ALPHA,6401,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+					}
 				
 					// "HEAT/MP" Meter Glass [6605]
 					xpos = ScreenXOffset + 1289.0;
 					ypos = ScreenYOffset + 1028.0;
 					If (StrIcmp(weapon, "Minigun") == 0)
 					{
-						SetFont("MHBGLASS"); 
+						SetFont("HCBGLASS"); 
 						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 						HudMessage(s:"A";HUDMSG_ALPHA,6605,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 					}
 					else
 					If (StrIcmp(weapon, "Railgun2") == 0)
 					{
-						SetFont("MHBGLASS"); 
+						SetFont("AIBGLASS"); 
 						msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 						HudMessage(s:"A";HUDMSG_ALPHA,6605,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 					}
@@ -9542,7 +9541,7 @@ script "HUDDISPLAY" ENTER
 			// FlameCount Meter [for Heretic's Phoenix Rod using Tomed Alt-Fires] [6701+]
 			//************************************************************* 
 			// 6702 - FlameCount Meter Border
-			// 6703-6803 - FlameCount Meter Notches
+			// 6703 - FlameCount Meter Notches
 			// 6804 - FlameCount Meter Glass
 			
 			If (StrIcmp(weapon, "PhoenixRodNew") == 0 || StrIcmp(weapon, "DualPhoenixRodNew") == 0)
@@ -9571,7 +9570,7 @@ script "HUDDISPLAY" ENTER
 					if (fontnum >= 1 && fontnum <= 9)			fontname = StrParam(s:"PFCNO00", d:fontnum);
 					if (fontnum >= 10 && fontnum <= 99)		fontname = StrParam(s:"PFCNO0", d:fontnum);
 					if (fontnum >= 100 && fontnum <= 999)	fontname = StrParam(s:"PFCNO", d:fontnum);
-					//lPrintBold(d:fontnum,s:" [",s:fontname,s:"]");
+					//PrintBold(d:fontnum,s:" [",s:fontname,s:"]");
 					SetFont(fontname);
 					HudMessage(s:"A";HUDMSG_ALPHA,6703,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 				}
