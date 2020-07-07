@@ -31,6 +31,7 @@ actor NightmarePhaseOutDefense : ShieldingBuff { } // 0.0625
 
 actor HowitzerBase : AetheriusPuffZSC
 {
+	var float user_ignoreaoeimmunity;
 	Radius 11
 	Height 8
 	DamageType "Explosive"
@@ -46,6 +47,10 @@ actor HowitzerBase : AetheriusPuffZSC
 		Crash:
 			TNT1 A 0 NoDelay
 			{
+				A_ChangeFlag("FORCERADIUSDMG",0);
+				user_ignoreaoeimmunity = (DemolitionsExpertPerkLevel * 2.5) + (DemolitionsExpertEXPerkLevel * 6.25);
+				if (frandom(0.01,100.00) <= user_ignoreaoeimmunity) { A_ChangeFlag("FORCERADIUSDMG",1); }
+
 				A_PlaySound("weapons/rocklx");
 				A_Quake(1, 4, 0, 512, "");
 				A_Quake(4, 4, 0, 256, "");
@@ -69,6 +74,10 @@ actor HowitzerNoAOE : HowitzerBase
 		Crash:
 			TNT1 A 0 NoDelay
 			{
+				A_ChangeFlag("FORCERADIUSDMG",0);
+				user_ignoreaoeimmunity = (DemolitionsExpertPerkLevel * 2.5) + (DemolitionsExpertEXPerkLevel * 6.25);
+				if (frandom(0.01,100.00) <= user_ignoreaoeimmunity) { A_ChangeFlag("FORCERADIUSDMG",1); }
+
 				A_PlaySound("weapons/rocklx");
 				A_Quake(1, 4, 0, 512, "");
 				A_Quake(4, 4, 0, 256, "");
@@ -92,8 +101,12 @@ ACTOR RocketPlayer : RocketBase
 		Spawn:
 			MISL A 0 NoDelay 
 			{ 
+				A_ChangeFlag("FORCERADIUSDMG",0);
+				user_ignoreaoeimmunity = (DemolitionsExpertPerkLevel * 2.5) + (DemolitionsExpertEXPerkLevel * 6.25);
+				if (frandom(0.01,100.00) <= user_ignoreaoeimmunity) { A_ChangeFlag("FORCERADIUSDMG",1); }
+
 				finaldamagedealt = A_GetPlayerAttackDamage(8,0); 
-				A_ScaleVelocity(1.00+((DemolitionsExpertPerkLevel*0.10)+(DemolitionsExpertEXPerkLevel*0.25)));
+				A_ScaleVelocity(1.00 + ((DemolitionsExpertPerkLevel * 0.10) + (DemolitionsExpertEXPerkLevel * 0.25)));
 			}
 		Idle:
 			MISL A 1 Bright
@@ -127,6 +140,10 @@ ACTOR RocketPlayerNoAOE : RocketBase
 		Spawn:
 			MISL A 0 NoDelay 
 			{ 
+				A_ChangeFlag("FORCERADIUSDMG",0);
+				user_ignoreaoeimmunity = (DemolitionsExpertPerkLevel * 2.5) + (DemolitionsExpertEXPerkLevel * 6.25);
+				if (frandom(0.01,100.00) <= user_ignoreaoeimmunity) { A_ChangeFlag("FORCERADIUSDMG",1); }
+
 				finaldamagedealt = A_GetPlayerAttackDamage(8,0); 
 				A_ScaleVelocity(1.00+((DemolitionsExpertPerkLevel*0.10)+(DemolitionsExpertEXPerkLevel*0.25)));
 			}
@@ -162,10 +179,14 @@ ACTOR RocketPlayerSeeking : RocketPlayer
 		Spawn:
 			HMIS A 0 NoDelay 
 			{
+				A_ChangeFlag("FORCERADIUSDMG",0);
+				user_ignoreaoeimmunity = (DemolitionsExpertPerkLevel * 2.5) + (DemolitionsExpertEXPerkLevel * 6.25);
+				if (frandom(0.01,100.00) <= user_ignoreaoeimmunity) { A_ChangeFlag("FORCERADIUSDMG",1); }
+
 				finaldamagedealt = A_GetPlayerAttackDamage(8,0);
-				A_ScaleVelocity(1.00+((DemolitionsExpertPerkLevel*0.05)+(DemolitionsExpertEXPerkLevel*0.125)));
-				user_seekstrength = DemolitionsExpertPerkLevel + (DemolitionsExpertEXPerkLevel * 2);
-				user_seekstrength *= (1.00+((DemolitionsExpertPerkLevel*0.05)+(DemolitionsExpertEXPerkLevel*0.125)));
+				A_ScaleVelocity(1.00 + ((DemolitionsExpertPerkLevel * 0.05) + (DemolitionsExpertEXPerkLevel * 0.125)));
+				user_seekstrength = DemolitionsExpertPerkLevel + (DemolitionsExpertEXPerkLevel * 2.5);
+				user_seekstrength *= (1.00 + ((DemolitionsExpertPerkLevel * 0.05) + (DemolitionsExpertEXPerkLevel * 0.125)) );
 				if (user_seekstrength > 0)
 				{
 					A_ChangeFlag("SEEKERMISSILE", true);
@@ -190,6 +211,7 @@ ACTOR RocketPlayerSeeking : RocketPlayer
 
 ACTOR RocketPlayerDrunk : RocketPlayerSeeking
 {
+	var float user_drunkbasefactor;
 	var float user_drunkenness;
 	SeeSound "weapons/hrlfir"
 	DeathSound "weapons/hrlexp"
@@ -198,7 +220,15 @@ ACTOR RocketPlayerDrunk : RocketPlayerSeeking
 		Idle:
 			"####" "#" 0 
 			{
-				user_drunkenness = max(0.0, 10.0 - user_seekstrength * user_seekstrength * 0.4);
+				if (random(1,8) == 1) { user_drunkbasefactor = 1.0; }
+				else
+				{
+					if (random(1,8) == 1) { user_drunkbasefactor = 0.4; }
+					else { user_drunkbasefactor = 0.7; }
+				}
+				user_drunkbasefactor *= (random(36,44) * 0.025);
+				user_drunkenness = max(0.0, 10.0 - ((user_seekstrength * (1.0 * user_drunkbasefactor)) * (user_seekstrength * (0.4 * user_drunkbasefactor))));
+				//A_LogFloat(user_drunkenness);
 			}
 			HMIS A 1 Bright 
 			{
@@ -226,10 +256,14 @@ ACTOR RocketPlayerSeekingNoAOE : RocketPlayerNoAOE
 		Spawn:
 			HMIS A 0 NoDelay 
 			{
+				A_ChangeFlag("FORCERADIUSDMG",0);
+				user_ignoreaoeimmunity = (DemolitionsExpertPerkLevel * 2.5) + (DemolitionsExpertEXPerkLevel * 6.25);
+				if (frandom(0.01,100.00) <= user_ignoreaoeimmunity) { A_ChangeFlag("FORCERADIUSDMG",1); }
+
 				finaldamagedealt = A_GetPlayerAttackDamage(8,0);
-				A_ScaleVelocity(1.00+((DemolitionsExpertPerkLevel*0.05)+(DemolitionsExpertEXPerkLevel*0.125)));
-				user_seekstrength = DemolitionsExpertPerkLevel + (DemolitionsExpertEXPerkLevel * 2);
-				user_seekstrength *= (1.00+((DemolitionsExpertPerkLevel*0.05)+(DemolitionsExpertEXPerkLevel*0.125)));
+				A_ScaleVelocity(1.00 + ((DemolitionsExpertPerkLevel * 0.05) + (DemolitionsExpertEXPerkLevel * 0.125)));
+				user_seekstrength = DemolitionsExpertPerkLevel + (DemolitionsExpertEXPerkLevel * 2.5);
+				user_seekstrength *= (1.00 + ((DemolitionsExpertPerkLevel * 0.05) + (DemolitionsExpertEXPerkLevel * 0.125)) );
 				if (user_seekstrength > 0)
 				{
 					A_ChangeFlag("SEEKERMISSILE", true);
@@ -254,6 +288,7 @@ ACTOR RocketPlayerSeekingNoAOE : RocketPlayerNoAOE
 
 ACTOR RocketPlayerDrunkNoAOE : RocketPlayerSeekingNoAOE
 {
+	var float user_drunkbasefactor;
 	var float user_drunkenness;
 	SeeSound "weapons/hrlfir"
 	DeathSound "weapons/hrlexp"
@@ -262,14 +297,22 @@ ACTOR RocketPlayerDrunkNoAOE : RocketPlayerSeekingNoAOE
 		Idle:
 			"####" "#" 0 
 			{
-				user_drunkenness = max(0.0, 10.0 - user_seekstrength * user_seekstrength * 0.4);
+				if (random(1,8) == 1) { user_drunkbasefactor = 1.0; }
+				else
+				{
+					if (random(1,8) == 1) { user_drunkbasefactor = 0.4; }
+					else { user_drunkbasefactor = 0.7; }
+				}
+				user_drunkbasefactor *= (random(36,44) * 0.025);
+				user_drunkenness = max(0.0, 10.0 - ((user_seekstrength * (1.0 * user_drunkbasefactor)) * (user_seekstrength * (0.4 * user_drunkbasefactor))));
+				//A_LogFloat(user_drunkenness);
 			}
 			HMIS A 1 Bright 
 			{
 				if (user_seekstrength > 0)
 				{
 					A_SuperSeekerMissile(user_seekstrength, user_seekstrength, !user_specificTarget);
-					if (user_drunkenness > 0)
+					if (user_drunkenness > 0.0)
 					{
 						A_DrunkMissile(user_drunkenness, user_drunkenness);
 					}
@@ -369,17 +412,12 @@ ACTOR BFGExtraPlayer : BFGExtra
 	{
 		Spawn:
 			BFE2 AAAABBBBCCCCDDDD 2 Bright
-			{
-			}
 			Stop
 	}
 }
 
 actor BFGBallPlayer : BFGBallBase
 {
-	var int user_radiusdmg; 
-	var int user_radiussize; 
-	var int user_detonationtimer;
 	DamageType "BFG"
 	Game Doom
 	SpawnID 128
@@ -404,14 +442,14 @@ actor BFGBallPlayer : BFGBallBase
 		Idle:
 			BFS1 AAAABBBB 1 Bright
 			{
-				A_ChangeFlag("FORCERADIUSDMG",1);
-				if (BFGAttunementPerkLevel <= 0) { user_radiusdmg = frandom(2.4,4.0); }
-				if (BFGAttunementPerkLevel == 1) { user_radiusdmg = frandom(6.0,10.0); }
-				if (BFGAttunementPerkLevel >= 2) { user_radiusdmg = frandom(15.0,25.0); }
-				if (BFGAttunementPerkLevel <= 0) { user_radiussize = frandom(60.0,72.0); }
-				if (BFGAttunementPerkLevel == 1) { user_radiussize = frandom(120.0,144.0); }
-				if (BFGAttunementPerkLevel >= 2) { user_radiussize = frandom(180.0,216.0); }
-				A_Explode(user_radiusdmg,user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize/2),0,0,"BulletPuff","BFG");
+				user_projtimer++;
+				A_ChangeFlag("FORCERADIUSDMG",0);
+				if ((user_projtimer % 4) == 0) { A_ChangeFlag("FORCERADIUSDMG",1); }
+				
+				if (BFGAttunementPerkLevel <= 0) { user_radiusdmg = frandom(4.8,8.0); user_radiussize = frandom(64.0,72.0); }
+				if (BFGAttunementPerkLevel == 1) { user_radiusdmg = frandom(24.0,40.0); user_radiussize = frandom(128.0,144.0); }
+				if (BFGAttunementPerkLevel >= 2) { user_radiusdmg = frandom(33.2,72.0); user_radiussize = frandom(192.0,216.0); }
+				A_Explode(user_radiusdmg,user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.5),0,0,"BulletPuff","BFG");
 			}
 			Loop
 		Death:
@@ -423,16 +461,17 @@ actor BFGBallPlayer : BFGBallBase
 			}
 			BFE1 AAAAAAAABBBBBBBBCCCCCCCCDDDDDDDDEEEEEEEEFFFFFFFF 1 Bright
 			{
-				A_ChangeFlag("FORCERADIUSDMG",1);
-				if (BFGAttunementPerkLevel <= 0) { user_radiusdmg = frandom(2.4,4.0); }
-				if (BFGAttunementPerkLevel == 1) { user_radiusdmg = frandom(6.0,10.0); }
-				if (BFGAttunementPerkLevel >= 2) { user_radiusdmg = frandom(15.0,25.0); }
-				if (BFGAttunementPerkLevel <= 0) { user_radiussize = frandom(20.0,24.0); }
-				if (BFGAttunementPerkLevel == 1) { user_radiussize = frandom(40.0,48.0); }
-				if (BFGAttunementPerkLevel >= 2) { user_radiussize = frandom(60.0,72.0); }
-				A_Explode(user_radiusdmg,user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize/2),0,0,"BulletPuff","BFG");
+				user_projtimer++;
+				A_ChangeFlag("FORCERADIUSDMG",0);
+				if ((user_projtimer % 4) == 0) { A_ChangeFlag("FORCERADIUSDMG",1); }
+
+				if (BFGAttunementPerkLevel <= 0) { user_radiusdmg = frandom(4.8,8.0); user_radiussize = frandom(64.0,72.0); }
+				if (BFGAttunementPerkLevel == 1) { user_radiusdmg = frandom(24.0,40.0); user_radiussize = frandom(128.0,144.0); }
+				if (BFGAttunementPerkLevel >= 2) { user_radiusdmg = frandom(33.2,72.0); user_radiussize = frandom(192.0,216.0); }
+				A_Explode(user_radiusdmg,user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.5),0,0,"BulletPuff","BFG");
 
 				user_detonationtimer++;
+				if ((user_detonationtimer % 5) == 0) { A_ChangeFlag("NODAMAGETHRUST",0); } else { A_ChangeFlag("NODAMAGETHRUST",1); }
 				if (user_detonationtimer == 20)
 				{
 					finaldamagedealt = A_GetPlayerAttackDamage(15,0);
@@ -457,7 +496,20 @@ actor BFGBallPlayer : BFGBallBase
 				A_Quake(1, 12, 0, 384, "");
 				A_Quake(5, 12, 0, 256, "");
 			}
-			BFE1 AABBCCDDEEFF 2 Bright
+			BFE1 AAAABBBBCCCCDDDDEEEEFFFF 1 bright
+			{
+				user_projtimer++;
+				A_ChangeFlag("FORCERADIUSDMG",0);
+				if ((user_projtimer % 8) == 0) { A_ChangeFlag("FORCERADIUSDMG",1); }
+
+				A_ChangeFlag("FORCERADIUSDMG",1);
+				if (BFGAttunementPerkLevel <= 0) { user_radiusdmg = frandom(4.8,8.0); user_radiussize = frandom(64.0,72.0); }
+				if (BFGAttunementPerkLevel == 1) { user_radiusdmg = frandom(24.0,40.0); user_radiussize = frandom(128.0,144.0); }
+				if (BFGAttunementPerkLevel >= 2) { user_radiusdmg = frandom(33.2,72.0); user_radiussize = frandom(192.0,216.0); }
+				user_radiusdmg *= 0.5;
+				user_radiussize *= 0.5;
+				A_Explode(user_radiusdmg,user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.5),0,0,"BulletPuff","BFG");
+			}
 			Stop
 	}
 }
