@@ -2,6 +2,7 @@
 class AetheriusMonsterZSC : AetheriusBaseZSC
 {
 	mixin EvolveMonsters;
+	mixin DamageMessages;
 	
 	// Gargoyle
 	bool extremecrash;
@@ -309,7 +310,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 			}
 			if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cxResurrector\c-: \cx%s\c-, \cyResurrectee\c-: \cy%s\c- -- ResSucceed: %d, timesrevivedamonster: %d", GetClassName(), other.GetClassName(), ResSucceed, timesrevivedamonster);
-			if (ResSucceed && dvdshud_showdamagemessages) 
+			if (ResSucceed && (dvds_showdamagemessages & 2)) 
 			{
 				if (self == other) Console.Printf(" * \cx%s\c- self resurrects! (%d)", other.GetClassName(), gametic);
 											else Console.Printf(" * \cx%s\c- was resurrected by \cy%s\c-! (%d)", other.GetClassName(), GetClassName(), gametic);
@@ -2425,7 +2426,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		//************************************************************************
 		
 		A_DamageMobPostReturn1(inflictor, source, damage, mod, flags, angle, 
-													 ret, oldhealth, nrmldmgfctr, vict, sour, infl, basedmgfactor, drainmaxdmg, playweaksound);
+													 ret, oldhealth, nrmldmgfctr, vict, sour, infl, basedmgfactor, drainmaxdmg, playweaksound, dealtcrit);
 		
 		return ret;
 	}
@@ -2550,7 +2551,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		return damage;
 	}
 
-	int A_DamageMobPostReturn1(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle, int ret, int oldhealth, double nrmldmgfctr, string vict, string sour, string infl, double basedmgfactor, int drainmaxdmg, int playweaksound)
+	int A_DamageMobPostReturn1(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle, int ret, int oldhealth, double nrmldmgfctr, string vict, string sour, string infl, double basedmgfactor, int drainmaxdmg, int playweaksound, bool dealtcrit)
 	{
 		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
 		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
@@ -2590,16 +2591,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 		}
 
-		if (dvdshud_showdamagemessages && ret > 0)
-		{
-			if (source != null)
-			{
-				if (inflictor != null || sour != infl) Console.Printf(" * \cy%d\c- damage dealt to \cx%s\c- by \cw%s's\c- \cz%s\c-! (%d)", ret, vict, sour, infl, gametic);
-				else Console.Printf(" * \cy%d\c- damage dealt to \cx%s\c- by \cw%s's\c-! (%d)", ret, vict, sour, gametic);
-			}
-			else Console.Printf(" * \cy%d\c- damage dealt to \cx%s\c-! (%d)", ret, vict, gametic);
-			if (health <= 0) Console.Printf(" * \cx%s\c- dies! (%d)", vict, gametic);
-		}
+		if ((dvds_showdamagemessages & 2) && ret > 0) A_PrintDamageMessage(inflictor, source, ret, mod, dealtcrit, infl, sour, vict, health);
 
 		string weakplayedsound = "";
 		if (dvds_hitweaksounds && playweaksound != 0 && hitweaksoundtimer <= 0)
