@@ -511,7 +511,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [231] Focus Timer
 	// [232] [*HUD usage*] Full Survival Amount # [before being rounded down to a whole number]
 	// [233] [*HUD usage*] Full Armor Absorbsion # [before being rounded down to a whole number]
-	// [234] is undefined
+	// [234] heal value to store for heal messages
 	// [235] [*HUD usage*] Critical Hit Rate %
 	// [236] Shows "ManaDifference" in the new HUD for Player's "Damage/Healing" bursts.
 	// [237] Shows "ManaDiffRatio" in the new HUD for Player's "Damage/Healing" bursts.
@@ -533,7 +533,7 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [257] stored MaceAmmo [for Flora for Forced Pistol Restarts]
 	// [258] # of Miracle Potions [for death-exit checks]
 	// [259] **Playing DeathKings?
-		// [260] is undefined
+	// [260] is truehealvalue
 	// [261] Tension OverPsyche Timer [Max]
 	// [262] [*HUD usage*] Tension Duration Timer [Max]
 	// [263] saves armor bits #2 [any character]
@@ -2019,8 +2019,6 @@ script "HUDDISPLAY" ENTER
 			
 			// END NEW STYLE HUD
 			*/
-			int HudMeterDetail = GetCVar("dvdshud_hudmeternotchdetail");
-			int HudMeterDetailActual = HudMeterDetail;
 			int HudShowEmptyNotches = GetCVar("dvdshud_showemptynotches");
 			int HudPrimaryMeters = GetCVar("dvdshud_showprimarymeters");
 			int HudSecondaryMeters = GetCVar("dvdshud_showsecondarymeters");
@@ -5930,12 +5928,6 @@ script "HUDDISPLAY" ENTER
 				msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
 				HudMessage(s:"A";HUDMSG_ALPHA,4865,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 			}
-			if (HudMeterDetail == 4) HudMeterDetailActual = 4;
-			if (HudMeterDetail == 10) HudMeterDetailActual = 10;
-
-
-			if (HudMeterDetail == 4) HudMeterDetailActual = 4;
-			if (HudMeterDetail == 10) HudMeterDetailActual = 10;
 			//****************************
 			//** EXP Info [4901 to 5106]**
 			//****************************
@@ -16679,9 +16671,14 @@ script "MagicEffects" (int Type, int Strength)
 		Thing_ChangeTID(2001,4444);
 		
 		oldhealthvalue = MiscellaneousVars[25001];
-		finalhealvalue = oldhealthvalue + healamount;
+		finalhealvalue = oldhealthvalue + healamount; // healamount[[]]
 		if (oldhealthvalue < healingcap)
 		{
+			MiscellaneousVars[234] = healamount; // for heal messages and HPRegenBonPenTimer
+			if (finalhealvalue >= healingcap) MiscellaneousVars[260] = (finalhealvalue - oldhealthvalue) - (finalhealvalue - healingcap);
+																	 else MiscellaneousVars[260] = healamount;
+			
+
 			ACS_NamedExecuteAlways("StartTensionCountDown",0,0,0,0);
 			if (finalhealvalue < 1) finalhealvalue = 1; // Prevents the gaming from killing you when trying to heal >__>;
 			if (finalhealvalue > healingcap) finalhealvalue = healingcap;
