@@ -5,9 +5,12 @@ mixin class DamageMessages
 																	 string infl, string sour, string vict, 
 																	 int newhealth, int predmg, int flags)
 	{
+		AetheriusPlayerPawn acttype;
+		acttype = AetheriusPlayerPawn(self);
+
 		bool debugmode = dvds_showdamagemessagedebug;
 		bool useactortags = dvds_showdamagemessageactortags;
-		string DamageMessage = " * ";
+		string DamageMessage = " \c[white]* ";
 		DamageMessage.AppendFormat("\cy%d\c- ", ret);
 		if (debugmode)
 		{
@@ -41,24 +44,41 @@ mixin class DamageMessages
 			if (mod == 'Explosive') DamageMessage.AppendFormat("\c[brick]");
 			if (mod == "PoisonBolt" || mod == "PoisonElemental" || mod == "Poison") DamageMessage.AppendFormat("\c[teal]");
 			DamageMessage.AppendFormat("%s", mod);
-			DamageMessage.AppendFormat("\c-");
+			DamageMessage.AppendFormat("\c- ");
 		}
-		if ((flags & DMG_EXPLOSION) && debugmode) DamageMessage.AppendFormat(" AoE", vict);
-		DamageMessage.AppendFormat(" damage dealt to \cx%s\c-", vict);
+		if ((flags & DMG_EXPLOSION) && debugmode) DamageMessage.AppendFormat("\c[brick]Damage\c-", vict);
+																				 else DamageMessage.AppendFormat("\c[red]Damage\c-", vict);
+		DamageMessage.AppendFormat(" dealt to \cx%s\c-", vict);
 		if (source != null)
 		{
-			if (inflictor != null) 
+			AetheriusMonsterZSC acttype3;
+			acttype3 = AetheriusMonsterZSC(source);
+			AetheriusPlayerPawn acttype4;
+			acttype4 = AetheriusPlayerPawn(source);
+
+			if (acttype3 || acttype4)
 			{
-				if (inflictor != source) DamageMessage.AppendFormat(" by \cw%s's\c- \cz%s\c-!", sour, infl);
+				if (inflictor != null) 
+				{
+					if (inflictor != source) DamageMessage.AppendFormat(" by \cw%s's\c- \cz%s\c-!", sour, infl);
+					else DamageMessage.AppendFormat(" by \cw%s\c-!", sour);
+				}
 				else DamageMessage.AppendFormat(" by \cw%s\c-!", sour);
 			}
-			else DamageMessage.AppendFormat(" by \cw%s\c-!", sour);
+			else
+			{
+				DamageMessage.AppendFormat(" by \cz%s\c-!", infl);
+			}
 		}
 		else
 		{
 			DamageMessage.AppendFormat("!");
 		}
 		if (health <= 0) DamageMessage.AppendFormat(" \cx%s\c- dies!", vict);
+		else
+		{
+			if (acttype && acttype.health == 1 && (acttype.player.cheats & CF_BUDDHA || acttype.player.cheats & CF_BUDDHA2) && CallACS("MiscVarCheckDECORATE",241) > 1) DamageMessage.AppendFormat(" \cx%s\c- survives a mortal blow!", vict);
+		}
 		if (debugmode) DamageMessage.AppendFormat(" (%d)", gametic);
 		Console.Printf("%s", DamageMessage);
 	}
@@ -98,9 +118,14 @@ mixin class DamageMessages
 
 	action void A_PrintHealingMessage(actor healee, int healamount)
 	{
+		bool debugmode = dvds_showdamagemessagedebug;
 		string healeename = healee.GetClassName();
 		if (dvds_showdamagemessageactortags) healeename = healee.GetTag("");
-		Console.Printf(" \c[green]* \cx%s\c[green] healed \cy%d\c[green] HP!", healeename, healamount);
+		string HealMessage = " \c[green]* ";
+
+		HealMessage.AppendFormat("\cx%s\c[green] healed \cy%d\c[green] HP!", healeename, healamount);
+		if (debugmode) HealMessage.AppendFormat(" (%d)", gametic);
+		Console.Printf("%s", HealMessage);
 	}
 }
 
