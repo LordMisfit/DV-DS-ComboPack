@@ -97,6 +97,8 @@ class PlayerStatItem : Inventory
 	int RegenerationTimer;
 	int GoETimer;
 
+	string ownername;
+
 	// Strife Flag Checks
 	int StrifeQuestFlag25, StrifeQuestFlag26, StrifeQuestFlag29;
 	
@@ -433,6 +435,9 @@ class PlayerStatItem : Inventory
 		//**********************
 		if (playeractor)
 		{
+			ownername = owner.GetClassName();
+			if (dvds_showdamagemessageactortags) ownername = owner.GetTag("");
+
 			if (level.totaltime == 0 || (level.time % 2050) == 0) A_PSI1DoEffectSetSpellCostBase(); // initializes the Spell Cost Tables at the start of a new game, once each time you start a map, or every 30 minutes into a single map
 
 			if (ClassCheck == 0) // Will run the check only once at the beginning of a new game
@@ -1219,7 +1224,7 @@ class PlayerStatItem : Inventory
 			// DVDSSpecialArrayValue[0] = Off = "Conscious", On = "Unconscious"
 			if (CallACS("DVDSSpecialArrayCheckDECORATE",0) > 0 || Owner.CountInv("IsUnconscious"))
 			{
-				Console.Printf("Unconscious");
+				//Console.Printf("Unconscious");
 			}
 
 			// DVDSSpecialArrayValue[1] = Sets MP/Mana to 0 then unsets itself
@@ -4697,7 +4702,13 @@ class PlayerStatItem : Inventory
 							owner.player.health = owner.player.mo.health = PoisonHealth;
 							PlayerCurrentHealth = owner.player.health;
 							if (debugpoison) Console.Printf("    \cuPoison Damage [Step 12 - Deal Damage]: Health %d\c-, Damage Dealt: %d", PoisonHealth, PoisonDmg);
-							if ((dvds_showdamagemessages & 1) && PoisonDmg) Console.Printf(" * \cy%d\c- damage dealt to \cx%s\c- from poison! (%d)", PoisonDmg, owner.GetClassName(), gametic);
+							if ((dvds_showdamagemessages & 1) && PoisonDmg) 
+							{
+								string PoisonDmgMessage = "";
+								PoisonDmgMessage.AppendFormat(" * \cy%d\c- damage dealt to \cx%s\c- from \c[green]Poison!\c-", PoisonDmg, ownername);
+								if (dvds_showdamagemessagedebug) PoisonDmgMessage.AppendFormat(" (%d)", gametic);
+								Console.Printf("%s", PoisonDmgMessage);
+							}
 							
 							// Pain Sounds
 							PoisonHits++;
@@ -7914,6 +7925,27 @@ class PlayerStatItem : Inventory
 						owner.A_SpawnItemEx(blastwavetype,0.0,0.0,project_RealZ,0.0,0.0,0.0,0.0,SXF_NOCHECKPOSITION);
 
 						TensionLevel += 1;
+						if ((dvds_showdamagemessages & 1))
+						{
+							string PsychMsg = " \c[purple]* ";
+							PsychMsg.AppendFormat("\cx%s's\c[purple] ", ownername);
+							if (TensionLevel == 1) PsychMsg.AppendFormat("\c[purple]tension increases to 5!");
+							if (TensionLevel == 2) 
+							{
+								PsychMsg.AppendFormat("\c[purple]tension increases to 20!");
+								if (random(1,2) == 1) PsychMsg.AppendFormat("\c[purple]!");
+							}
+							if (TensionLevel == 3) PsychMsg.AppendFormat("\c[purple]tension increases to 50!!");
+							if (TensionLevel == 4) PsychMsg.AppendFormat("\c[purple]tension increases to 100!!!");
+							if (TensionLevel == 5) PsychMsg.AppendFormat("\c[purple]tension increases to 250!!!");
+							if (TensionLevel == 6) PsychMsg.AppendFormat("\c[purple]tension increases to 500!!!!");
+							if (TensionLevel == 7) PsychMsg.AppendFormat("\c[purple]tension increases to 1000!!!!");
+							if (TensionLevel >= 1 && TensionLevel <= 3) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of High Tension", ownername);
+							if (TensionLevel >= 4 && TensionLevel <= 6) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of Super High Tension", ownername);
+							if (TensionLevel >= 7) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of Ultra High Tension", ownername);
+							PsychMsg.AppendFormat("\c[purple]!");
+							Console.Printf("%s", PsychMsg);
+						}
 						
 						if (TensionLevel == 1) TensionTimer = 3600;
 						if (TensionLevel == 2) TensionTimer = 4320;
@@ -8145,7 +8177,7 @@ class PlayerStatItem : Inventory
 							TensionOverchargeDmgBase = (random[statitem](2,3) * TensionOverchargeDmgFactor) / 8;
 							if (TensionOverchargeDmgBase < 2 && TensionLevel > 4) TensionOverchargeDmgBase = 2;
 							if (GoETimer > 0) TensionOverchargeDmgBase *= 0.2;
-							TensionOverchargeDmgBase = clamp(TensionOverchargeDmgBase, 1, TensionOverchargeDmgBase);
+							if (TensionOverchargeDmgBase < 1) TensionOverchargeDmgBase = 1;
 							TensionOverchargeDmgFinal = PlayerCurrentHealth - TensionOverchargeDmgBase;
 							if (TensionOverchargeDmgFinal < TensionOverchargeDmgThreshold) TensionOverchargeDmgFinal = TensionOverchargeDmgThreshold;
 							if (TensionOverchargeDmgFinal > TensionOverchargeDmgThreshold)
@@ -8195,6 +8227,13 @@ class PlayerStatItem : Inventory
 									}
 									owner.player.health = owner.player.mo.health = TensionOverchargeDmgFinal;
 									PlayerCurrentHealth = owner.player.health;
+									if ((dvds_showdamagemessages & 1) && TensionOverchargeDmgBase) 
+									{
+										string PsychDmgMessage = "";
+										PsychDmgMessage.AppendFormat(" * \cy%d\c- damage dealt to \cx%s\c- from \c[purple]OverPsych\c-!", TensionOverchargeDmgBase, ownername);
+										if (dvds_showdamagemessagedebug) PsychDmgMessage.AppendFormat(" (%d)", gametic);
+										Console.Printf("%s", PsychDmgMessage);
+									}
 								}
 							}
 						}

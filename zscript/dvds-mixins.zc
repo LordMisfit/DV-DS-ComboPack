@@ -5,13 +5,15 @@ mixin class DamageMessages
 																	 string infl, string sour, string vict, 
 																	 int newhealth, int predmg, int flags)
 	{
+		if (mod == "Charm") return;
+
 		AetheriusPlayerPawn acttype;
 		acttype = AetheriusPlayerPawn(self);
 		AetheriusMonsterZSC acttype2;
 		acttype2 = AetheriusMonsterZSC(self);
 
-		string friendmsg = " \cn(Friend)\c-";
-		string charmmsg = " \cx(CHARMED)\c-";
+		string friendmsg = " \cn(F)\c-";
+		string charmmsg = " \cx(C)\c-";
 
 		bool debugmode = dvds_showdamagemessagedebug;
 		bool useactortags = dvds_showdamagemessageactortags;
@@ -81,7 +83,7 @@ mixin class DamageMessages
 						if (source == self) DamageMessage.AppendFormat(" by \cz%s\c-", infl);
 						else 
 						{
-							DamageMessage.AppendFormat(" by \cw%s\c-", sour);
+							DamageMessage.AppendFormat(" by \cw%s's\c-", sour);
 							if (acttype4 && acttype4.diedasafriendly) 
 							{
 								if (acttype4 && acttype4.diedasacharmed) DamageMessage.AppendFormat(charmmsg);
@@ -172,6 +174,9 @@ mixin class DamageMessages
 																	string infl, string sour, string vict, 
 																	int newhealth)
 	{
+		string friendmsg = " \cn(F)\c-";
+		string charmmsg = " \cx(C)\c-";
+
 		bool debugmode = dvds_showdamagemessagedebug;
 		bool useactortags = dvds_showdamagemessageactortags;
 		string EvadeMessage = " * ";
@@ -185,10 +190,10 @@ mixin class DamageMessages
 
 		if (source != null)
 		{
-			AetheriusMonsterZSC acttype3;
-			acttype3 = AetheriusMonsterZSC(source);
-			AetheriusPlayerPawn acttype4;
-			acttype4 = AetheriusPlayerPawn(source);
+			AetheriusPlayerPawn acttype3;
+			acttype3 = AetheriusPlayerPawn(source);
+			AetheriusMonsterZSC acttype4;
+			acttype4 = AetheriusMonsterZSC(source);
 
 			if (acttype3 || acttype4)
 			{
@@ -196,19 +201,65 @@ mixin class DamageMessages
 				{
 					if (inflictor != source) 
 					{
-						if (source == self) EvadeMessage.AppendFormat(" \cz%s\c-!", infl);
-															  EvadeMessage.AppendFormat(" \cw%s's\c- \cz%s\c-!", sour, infl);
+						if (source == self) EvadeMessage.AppendFormat(" \cz%s\c-", infl);
+						else
+						{
+							EvadeMessage.AppendFormat(" \cw%s's\c-", sour);
+							if (acttype4 && acttype4.diedasafriendly) 
+							{
+								if (acttype4 && acttype4.diedasacharmed) EvadeMessage.AppendFormat(charmmsg);
+																										else EvadeMessage.AppendFormat(friendmsg);
+							}
+							else
+							if (acttype4 && acttype4.bFRIENDLY) 
+							{
+								if (acttype4 && acttype4.user_charmed) EvadeMessage.AppendFormat(charmmsg);
+																									else EvadeMessage.AppendFormat(friendmsg);
+							}
+							EvadeMessage.AppendFormat(" \cz%s\c-", infl);
+						}
+						EvadeMessage.AppendFormat("!");
 					}
 					else 
 					{
-						if (inflictor != self) EvadeMessage.AppendFormat(" \cw%s\c-!", sour);
+						if (inflictor != self) 
+						{
+							EvadeMessage.AppendFormat(" \cw%s\c-", sour);
+							if (acttype4 && acttype4.diedasafriendly) 
+							{
+								if (acttype4 && acttype4.diedasacharmed) EvadeMessage.AppendFormat(charmmsg);
+																										else EvadeMessage.AppendFormat(friendmsg);
+							}
+							else
+							if (acttype4 && acttype4.bFRIENDLY) 
+							{
+								if (acttype4 && acttype4.user_charmed) EvadeMessage.AppendFormat(charmmsg);
+																									else EvadeMessage.AppendFormat(friendmsg);
+							}
+							EvadeMessage.AppendFormat("!");
+						}
 						else 
 						{
 							EvadeMessage.AppendFormat("!");
 						}
 					}
 				}
-				else EvadeMessage.AppendFormat(" \cw%s\c-!", sour);
+				else 
+				{
+					EvadeMessage.AppendFormat(" \cw%s\c-", sour);
+					if (acttype4 && acttype4.diedasafriendly) 
+					{
+						if (acttype4 && acttype4.diedasacharmed) EvadeMessage.AppendFormat(charmmsg);
+																								else EvadeMessage.AppendFormat(friendmsg);
+					}
+					else
+					if (acttype4 && acttype4.bFRIENDLY) 
+					{
+						if (acttype4 && acttype4.user_charmed) EvadeMessage.AppendFormat(charmmsg);
+																							else EvadeMessage.AppendFormat(friendmsg);
+					}
+					EvadeMessage.AppendFormat("!");
+				}
 			}
 			else
 			{
@@ -223,16 +274,76 @@ mixin class DamageMessages
 		Console.Printf("%s", EvadeMessage);
 	}
 
-	action void A_PrintHealingMessage(actor healee, int healamount)
+	action void A_PrintHealingMessage(actor healee, int healamount, actor healer = null)
 	{
+		AetheriusMonsterZSC acttype1;
+		if (healee) acttype1 = AetheriusMonsterZSC(healee);
+		AetheriusPlayerPawn acttype2;
+		if (healer) acttype2 = AetheriusPlayerPawn(healer);
+
+		string friendmsg = " \cn(F)\c-";
+		string charmmsg = " \cx(C)\c-";
+
 		bool debugmode = dvds_showdamagemessagedebug;
 		string healeename = healee.GetClassName();
 		if (dvds_showdamagemessageactortags) healeename = healee.GetTag("");
 		string HealMessage = " \c[green]* ";
 
-		HealMessage.AppendFormat("\cx%s\c[green] healed \cy%d\c[green] HP!", healeename, healamount);
+		if (healer)
+		{
+			string healername = healer.GetClassName();
+			if (dvds_showdamagemessageactortags) healername = healer.GetTag("");
+			HealMessage.AppendFormat("\cw%s\c[green] healed \cx%s\c[green]", healername, healeename);
+			if (acttype1 && acttype1.bFRIENDLY)
+			{
+				if (acttype1 && acttype1.user_charmed) HealMessage.AppendFormat(charmmsg);
+																					else HealMessage.AppendFormat(friendmsg);
+			}
+			HealMessage.AppendFormat(" for \cy%d\c[green] HP!", healamount);
+		}
+		else
+		{
+			HealMessage.AppendFormat("\cx%s\c[green]", healeename, healamount);
+			if (acttype1 && acttype1.bFRIENDLY) 
+			{
+				if (acttype1 && acttype1.user_charmed) HealMessage.AppendFormat(charmmsg);
+																					else HealMessage.AppendFormat(friendmsg);
+			}
+			HealMessage.AppendFormat(" healed \cy%d\c[green] HP!", healamount);
+		}
+
 		if (debugmode) HealMessage.AppendFormat(" (%d)", gametic);
 		Console.Printf("%s", HealMessage);
+	}
+	
+	action void A_PrintCharmMessage()
+	{
+		int CharacterClass = CallACS("CheckCharacterClass");
+		bool debugmode = dvds_showdamagemessagedebug;
+		string charmer;
+		
+		if (CharacterClass == 0) charmer = "DeggarisMontegger";
+		if (CharacterClass == 1) charmer = "IlluciaHendershot";
+		if (CharacterClass == 2) charmer = "FloraBriscoletti";
+		if (CharacterClass == 8) charmer = "AilishEstdale";
+		if (CharacterClass == 9) charmer = "PetraLagerkvist";
+		string charmee = GetClassName();
+		string CharmMsg = " \cy* ";
+
+		if (dvds_showdamagemessageactortags) 
+		{
+			charmee = GetTag("");
+			if (CharacterClass == 0) charmer = "Deggaris Montegger";
+			if (CharacterClass == 1) charmer = "Illucia Hendershot";
+			if (CharacterClass == 2) charmer = "Flora Briscoletti";
+			if (CharacterClass == 8) charmer = "Ailish Estdale";
+			if (CharacterClass == 9) charmer = "Petra Johanna Lagerkvist";
+		}
+		CharmMsg.AppendFormat("\cw%s\cy charmed ", charmer);
+		CharmMsg.AppendFormat("\cx%s\cy ", charmee);
+		CharmMsg.AppendFormat("with some monster munchies!");
+		if (debugmode) CharmMsg.AppendFormat(" (%d)", gametic);
+		Console.Printf("%s", CharmMsg);
 	}
 }
 
@@ -453,6 +564,7 @@ mixin class Tension
 {
 	action void A_SetTensionLevel(int level = 0, int vimstone = 0, bool hassource = false, Actor Source = null)
 	{
+		string ownername;
 		int pviewheight;
 		Actor playpawn;
 		if (hassource) playpawn = AetheriusPlayerPawn(source);
@@ -534,6 +646,40 @@ mixin class Tension
 		{
 			check.A_StopSound(CHAN_BODY);
 			check.A_StartSound("tensionrevert",CHAN_BODY,CHANF_DEFAULT,1.0,ATTN_NORM);
+		}
+
+
+		if ((dvds_showdamagemessages & 1))
+		{
+			if (hassource)
+			{
+				ownername = source.GetClassName();
+				if (dvds_showdamagemessageactortags) ownername = source.GetTag("");
+			}
+			else
+			{
+				ownername = GetClassName();
+				if (dvds_showdamagemessageactortags) ownername = GetTag("");
+			}
+
+			string PsychMsg = " \c[purple]* ";
+			PsychMsg.AppendFormat("\cx%s's\c[purple] ", ownername);
+			if (level == 1) PsychMsg.AppendFormat("\c[purple]tension increases to 5!");
+			if (level == 2) 
+			{
+				PsychMsg.AppendFormat("\c[purple]tension increases to 20!");
+				if (random(1,2) == 1) PsychMsg.AppendFormat("\c[purple]!");
+			}
+			if (level == 3) PsychMsg.AppendFormat("\c[purple]tension increases to 50!!");
+			if (level == 4) PsychMsg.AppendFormat("\c[purple]tension increases to 100!!!");
+			if (level == 5) PsychMsg.AppendFormat("\c[purple]tension increases to 250!!!");
+			if (level == 6) PsychMsg.AppendFormat("\c[purple]tension increases to 500!!!!");
+			if (level == 7) PsychMsg.AppendFormat("\c[purple]tension increases to 1000!!!!");
+			if (level >= 1 && level <= 3) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of High Tension", ownername);
+			if (level >= 4 && level <= 6) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of Super High Tension", ownername);
+			if (level >= 7) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of Ultra High Tension", ownername);
+			PsychMsg.AppendFormat("\c[purple]!");
+			Console.Printf("%s", PsychMsg);
 		}
 
 		double project_RealZ = (pviewheight * 39 / 50) + 8.0;

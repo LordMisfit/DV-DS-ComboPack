@@ -312,8 +312,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cxResurrector\c-: \cx%s\c-, \cyResurrectee\c-: \cy%s\c- -- ResSucceed: %d, timesrevivedamonster: %d", GetClassName(), other.GetClassName(), ResSucceed, timesrevivedamonster);
 			if (ResSucceed && (dvds_showdamagemessages & 2)) 
 			{
-				if (self == other) Console.Printf(" * \cx%s\c- self resurrects! (%d)", other.GetClassName(), gametic);
-											else Console.Printf(" * \cx%s\c- was resurrected by \cy%s\c-! (%d)", other.GetClassName(), GetClassName(), gametic);
+				string rese = other.GetClassName();
+				string res = GetClassName();
+				if (dvds_showdamagemessageactortags)
+				{
+					rese = other.GetTag("");
+					res = GetTag("");
+				}
+				if (self == other) Console.Printf(" * \cx%s\c- self resurrects! (%d)", rese, gametic);
+											else Console.Printf(" * \cx%s\c- was resurrected by \cy%s\c-! (%d)", rese, res, gametic);
 			}
 		}
 		else // Monster is the one BEING REVIVED...
@@ -1415,6 +1422,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		if (mod == 'Heal1' || mod == 'Heal2' || mod == 'Heal3' || mod == 'Heal4') return 0;
+
 		if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input\c-: \cygametic = %d\c-)", gametic);
 		int predamage = damage;
 		int firstdamage = damage;
@@ -5676,6 +5685,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int raredropsndchannel = randompick(191,192,222,223,264,265);
 		string raredropsndname = "rareitem/spawn";
 
+		if (dvds_showdamagemessageactortags) dropper = GetTag(""); 
+
 		A_StartSound(raredropsndname,raredropsndchannel,CHANF_OVERLAP|CHANF_NOPAUSE,raredropsndvol,ATTN_NONE,raredropsndpitch);
 		if (dvdsdebug_raredropdisplays) Console.Printf("    \cy%s\c- was dropped by \cx%s!\c-", itemname, dropper);
 	}
@@ -5686,6 +5697,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		double dropsndvol = frandom(1.75,2.25);
 		int dropsndchannel = randompick(189,190,220,221,262,263);
 		string dropsndname = "misc/spawn";
+
+		if (dvds_showdamagemessageactortags) dropper = GetTag(""); 
 
 		A_StartSound(dropsndname,dropsndchannel,CHANF_OVERLAP|CHANF_NOPAUSE,dropsndvol,ATTN_NONE,dropsndpitch);
 		if (dvdsdebug_raredropdisplays) Console.Printf("    \cx%s\c- was dropped by \cx%s!\c-", itemname, dropper);
@@ -10287,8 +10300,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 								if (CountInv("CharmMonsterAttack") <= 0) A_SetInventory("CharmMonsterAttack",1);
 								if (CountInv("CharmMonsterDefense") <= 0) A_SetInventory("CharmMonsterDefense",1);
 								if (user_charmed <= 0) user_charmed = 1;
+								if ((dvds_showdamagemessages & 2)) A_PrintCharmMessage();
 								ChangeTID(1000);
-								//level.total_monsters--;
 								A_StartSound("Munchies/Charmed");
 							}
 						}
