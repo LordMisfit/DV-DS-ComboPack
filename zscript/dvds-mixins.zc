@@ -6,6 +6,7 @@ mixin class DamageMessages
 																	 int newhealth, int predmg, int flags)
 	{
 		if (mod == "Charm") return;
+		if (!dvds_showdamagemessagedebug && mod == "SilentMassacre") return;
 
 		AetheriusPlayerPawn acttype;
 		acttype = AetheriusPlayerPawn(self);
@@ -31,7 +32,7 @@ mixin class DamageMessages
 			if (inflictor != null) infl = inflictor.GetTag("");
 		}
 		if (dealtcrit) DamageMessage.AppendFormat("CRITICAL ");
-		if (!(mod == "Normal" || mod == "None" || mod == "Suicide" || mod == "Massacre"))
+		if (!(mod == "Normal" || mod == "None" || mod == "Suicide" || mod == "Massacre" || mod == "InstantDeath"))
 		{
 			if (mod == 'Magic') DamageMessage.AppendFormat("\c[purple]");
 			if (mod == 'Spiritual') DamageMessage.AppendFormat("\c[cyan]");
@@ -345,6 +346,31 @@ mixin class DamageMessages
 		if (debugmode) CharmMsg.AppendFormat(" (%d)", gametic);
 		Console.Printf("%s", CharmMsg);
 	}
+	
+	action void A_PrintPsychUpMessage(actor Psycher, int psychlevel)
+	{
+		string ownername = Psycher.GetClassName();
+		if (dvds_showdamagemessageactortags) ownername = Psycher.GetTag("");
+
+		string PsychMsg = " \c[purple]* ";
+		PsychMsg.AppendFormat("\cx%s's\c[purple] ", ownername);
+		if (psychlevel == 1) PsychMsg.AppendFormat("\c[purple]tension increases to 5!");
+		if (psychlevel == 2) 
+		{
+			PsychMsg.AppendFormat("\c[purple]tension increases to 20!");
+			if (random(1,2) == 1) PsychMsg.AppendFormat("\c[purple]!");
+		}
+		if (psychlevel == 3) PsychMsg.AppendFormat("\c[purple]tension increases to 50!!");
+		if (psychlevel == 4) PsychMsg.AppendFormat("\c[purple]tension increases to 100!!!");
+		if (psychlevel == 5) PsychMsg.AppendFormat("\c[purple]tension increases to 250!!!");
+		if (psychlevel == 6) PsychMsg.AppendFormat("\c[purple]tension increases to 500!!!!");
+		if (psychlevel == 7) PsychMsg.AppendFormat("\c[purple]tension increases to 1000!!!!");
+		if (psychlevel >= 1 && psychlevel <= 3) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of High Tension", ownername);
+		if (psychlevel >= 4 && psychlevel <= 6) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of Super High Tension", ownername);
+		if (psychlevel >= 7) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of Ultra High Tension", ownername);
+		PsychMsg.AppendFormat("\c[purple]!");
+		Console.Printf("%s", PsychMsg);
+	}
 }
 
 mixin class EvolveMonsters
@@ -634,13 +660,19 @@ mixin class Tension
 		}
 		else if (level == 6)
 		{
-			check.A_StopSound(CHAN_VOICE);
-			check.A_StartSound("FloraEnterHighTension2",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+			if (CharacterClass == 2)
+			{
+				check.A_StopSound(CHAN_VOICE);
+				check.A_StartSound("FloraEnterHighTension2",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+			}
 		}
 		else if (level == 7) 
 		{
-			check.A_StopSound(CHAN_VOICE);
-			check.A_StartSound("FloraEnterHighTension3",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+			if (CharacterClass == 2)
+			{
+				check.A_StopSound(CHAN_VOICE);
+				check.A_StartSound("FloraEnterHighTension3",CHAN_VOICE,CHANF_DEFAULT,1.0,ATTN_NORM);
+			}
 		}
 		else if (templevel > 0 && level == 0)
 		{
@@ -649,37 +681,12 @@ mixin class Tension
 		}
 
 
+		
+
 		if ((dvds_showdamagemessages & 1))
 		{
-			if (hassource)
-			{
-				ownername = source.GetClassName();
-				if (dvds_showdamagemessageactortags) ownername = source.GetTag("");
-			}
-			else
-			{
-				ownername = GetClassName();
-				if (dvds_showdamagemessageactortags) ownername = GetTag("");
-			}
-
-			string PsychMsg = " \c[purple]* ";
-			PsychMsg.AppendFormat("\cx%s's\c[purple] ", ownername);
-			if (level == 1) PsychMsg.AppendFormat("\c[purple]tension increases to 5!");
-			if (level == 2) 
-			{
-				PsychMsg.AppendFormat("\c[purple]tension increases to 20!");
-				if (random(1,2) == 1) PsychMsg.AppendFormat("\c[purple]!");
-			}
-			if (level == 3) PsychMsg.AppendFormat("\c[purple]tension increases to 50!!");
-			if (level == 4) PsychMsg.AppendFormat("\c[purple]tension increases to 100!!!");
-			if (level == 5) PsychMsg.AppendFormat("\c[purple]tension increases to 250!!!");
-			if (level == 6) PsychMsg.AppendFormat("\c[purple]tension increases to 500!!!!");
-			if (level == 7) PsychMsg.AppendFormat("\c[purple]tension increases to 1000!!!!");
-			if (level >= 1 && level <= 3) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of High Tension", ownername);
-			if (level >= 4 && level <= 6) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of Super High Tension", ownername);
-			if (level >= 7) PsychMsg.AppendFormat(" \cx%s\c[purple] enters a state of Ultra High Tension", ownername);
-			PsychMsg.AppendFormat("\c[purple]!");
-			Console.Printf("%s", PsychMsg);
+			if (hassource) A_PrintPsychUpMessage(source,level);
+								else A_PrintPsychUpMessage(self,level);
 		}
 
 		double project_RealZ = (pviewheight * 39 / 50) + 8.0;
@@ -2151,15 +2158,15 @@ mixin class AtkTypeChecker
 				type == 70)
 				perkfactor += ((DemolitionsExpertPerkLevel * frandom(0.07,0.14)) + (DemolitionsExpertEXPerkLevel * frandom(0.175,0.35)));
 		// Karasawa
-		if (type == 16 || 
-				type == 17)
+		if (type == 17)
 				perkfactor += ((PlasmaAccuracyPerkLevel * 0.05) + (PlasmaAccuracyEXPerkLevel * 0.125));
 				perkfactor += ((KarasawaAttunementPerkLevel * 0.5) + (KarasawaAttunementEXPerkLevel * 1.25));
 		// BFG
 		if (type == 12 || 
 				type == 13 || 
 				type == 14 || 
-				type == 15)
+				type == 15 || 
+				type == 16)
 				perkfactor += ((PlasmaAccuracyPerkLevel * 0.05) + (PlasmaAccuracyEXPerkLevel * 0.125));
 				perkfactor += ((BFGAttunementPerkLevel * 0.5) + (BFGAttunementEXPerkLevel * 1.25));
 		// Archery
@@ -2320,7 +2327,7 @@ mixin class AtkTypeChecker
 
 		if (type == 14) // BFG [Main]
 		{
-			baserand1 = (PlasmaAccuracyPerkLevel * 2);
+			baserand1 = (PlasmaAccuracyPerkLevel * 2) + (PlasmaAccuracyEXPerkLevel * 3);
 			if (BFGAttunementPerkLevel <= 0) baserand1 += 2;
 			if (BFGAttunementPerkLevel == 1) baserand1 += 4;
 			if (BFGAttunementPerkLevel >= 2) baserand1 += 8;
@@ -2338,7 +2345,7 @@ mixin class AtkTypeChecker
 		}
 		if (type == 15) // BFG [Tracer]
 		{
-			baserand1 = (PlasmaAccuracyPerkLevel * 1.5);
+			baserand1 = (PlasmaAccuracyPerkLevel * 1.5) + (PlasmaAccuracyEXPerkLevel * 2.75);
 			if (BFGAttunementPerkLevel <= 0) baserand1 += 1;
 			if (BFGAttunementPerkLevel == 1) baserand1 += 2;
 			if (BFGAttunementPerkLevel >= 2) baserand1 += 3;
@@ -2347,9 +2354,9 @@ mixin class AtkTypeChecker
 			if (BFGAttunementPerkLevel == 1) baserand2 += 9;
 			if (BFGAttunementPerkLevel >= 2) baserand2 += 10;
 	
-			damage = random(baserand1,baserand2) + 15; // 100 to 800
-			if (BFGAttunementPerkLevel == 1) damage = random(baserand1,baserand2) + 18; // 20 to 37
-			if (BFGAttunementPerkLevel == 2) damage = random(baserand1,baserand2) + 22; // 25 to 32
+			damage = random(baserand1,baserand2) + 15; // 15 to 25
+			if (BFGAttunementPerkLevel == 1) damage = random(baserand1,baserand2) + 18; // 18 to 28
+			if (BFGAttunementPerkLevel == 2) damage = random(baserand1,baserand2) + 22; // 22 to 32
 			extradmg1 = (PlayerAGL * 2.5); // 220% of Agility
 			if (BFGAttunementPerkLevel == 1) extradmg1 = (PlayerAGL * 3.25); // 325% of Agility
 			if (BFGAttunementPerkLevel == 2) extradmg1 = (PlayerAGL * 4.0); // 400% of Agility
@@ -2357,7 +2364,30 @@ mixin class AtkTypeChecker
 			if (BFGAttunementPerkLevel == 1) extradmg2 = (PlayerSTR * 1.5); // 150% of Strength 
 			if (BFGAttunementPerkLevel == 2) extradmg2 = (PlayerSTR * 2.0); // 200% of Strength 
 		}
-		if (type == 16 || type == 17) // KSawBolt
+		if (type == 16) // BFG [Tracer] (AOE)
+		{
+			baserand1 = (PlasmaAccuracyPerkLevel * 1.5) + (PlasmaAccuracyEXPerkLevel * 2.75);
+			if (BFGAttunementPerkLevel <= 0) baserand1 += 1;
+			if (BFGAttunementPerkLevel == 1) baserand1 += 2;
+			if (BFGAttunementPerkLevel >= 2) baserand1 += 3;
+			baserand2 = (PlasmaAccuracyPerkLevel * 0.75) + (PlasmaAccuracyEXPerkLevel * 1.375);
+			if (BFGAttunementPerkLevel <= 0) baserand2 += 3;
+			if (BFGAttunementPerkLevel == 1) baserand2 += 4;
+			if (BFGAttunementPerkLevel >= 2) baserand2 += 5;
+	
+			damage = random(baserand1,baserand2) + 5; // 5 to 10
+			if (BFGAttunementPerkLevel == 1) damage = random(baserand1,baserand2) + 6; // 6 to 11
+			if (BFGAttunementPerkLevel == 2) damage = random(baserand1,baserand2) + 8; // 8 to 13
+			extradmg1 = (PlayerAGL * 2.5); // 220% of Agility
+			if (BFGAttunementPerkLevel == 1) extradmg1 = (PlayerAGL * 3.25); // 325% of Agility
+			if (BFGAttunementPerkLevel == 2) extradmg1 = (PlayerAGL * 4.0); // 400% of Agility
+			extradmg2 = (PlayerSTR * 1); // 100% of Strength 
+			if (BFGAttunementPerkLevel == 1) extradmg2 = (PlayerSTR * 1.5); // 150% of Strength
+			if (BFGAttunementPerkLevel == 2) extradmg2 = (PlayerSTR * 2.0); // 200% of Strength
+			extradmg1 *= 0.3334;
+			extradmg2 *= 0.3334;
+		}
+		if (type == 17) // KSawBolt
 		{
 			baserand1 = 1 + (PlasmaAccuracyPerkLevel * 0.5) + (PlasmaAccuracyEXPerkLevel * 1.25);
 			baserand2 = 8 + (PlasmaAccuracyPerkLevel * 1.0) + (PlasmaAccuracyEXPerkLevel * 2.5);
