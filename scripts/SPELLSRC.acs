@@ -901,6 +901,10 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [25038] GetSigilPieces
 	// [25039] FloraLearnedPistols
 	// [25040] IsInvulnerable
+	// [25041] PrimingSceptre
+	// [25042] DrawingDiarisBow
+	// [25043] HWShieldBlockHold
+	// [25044] PoisonNeedleAmmo
 
 	// [25101] Has "SauronHelmet"
 	// [25102] Has "SauronGauntletsItem"
@@ -8148,7 +8152,7 @@ script "HUDDISPLAY" ENTER
 			str buffmsg4 = "";
 			str buffmsg5 = "";
  
-			SetHudSize(1080,810,0); // Since 1920x1080 isn't truly "supported" [ZDOOM(TM(TM(TM))), etc] :V
+			SetHudSize(1080,810,0); // 1080x810 for Buff Messages
 			if (MiscellaneousVars[2040] > 0)
 			{
 				if (MiscellaneousVars[2045] == -9) buffmsg1 = "\c[gold]YOUR DIVINE WRATH IS UNLEASED!!";
@@ -8823,7 +8827,8 @@ script "HUDDISPLAY" ENTER
 			// Flora-Specific Weapons
 			If (StrIcmp(weapon, "PoisonNeedle") == 0) 
 			{
-				SetFont("WIPSNDLE"); if (MiscellaneousVars[25013] > 0) SetFont("WIPSNDLB");
+				SetFont("WIPSNDLE"); 
+				if (MiscellaneousVars[25013] > 0) SetFont("WIPSNDLB");
 			}
 			If (StrIcmp(weapon, "SauronGauntletsFlora") == 0) SetFont("WISGNLTF");
 			If (StrIcmp(weapon, "SceptreOfEmpyrea") == 0) SetFont("WISCEPTR");
@@ -9166,12 +9171,29 @@ script "HUDDISPLAY" ENTER
 				ypos = ScreenYOffset + 1060.0;
 				if (maxammo > 0)
 				{
+					int PerkCheckValue;
 					int ShowGlow = 0;
 					if (maxammo > 0) // if the weapon has any ammo maximum
 					{
-						If (StrIcmp(weapon, "BFG90002") == 0 && ammo < 40) ShowGlow += 1;
-						else If (StrIcmp(weapon, "Karasawa2") == 0 && ammo < 8) ShowGlow += 1;
-						else If (StrIcmp(weapon, "Repeater2") == 0 && ammo < 2) ShowGlow += 1;
+						If (StrIcmp(weapon, "BFG90002") == 0) 
+						{
+							PerkCheckValue = 40;
+							if (MiscellaneousVars[10029] == 1) PerkCheckValue = 32;
+							if (MiscellaneousVars[10029] >= 2) PerkCheckValue = 24;
+							if (ammo < PerkCheckValue) ShowGlow += 1;
+						}
+						else If (StrIcmp(weapon, "Karasawa2") == 0) 
+						{
+							PerkCheckValue = 16;
+							if (MiscellaneousVars[10027] == 1) PerkCheckValue = 12;
+							if (MiscellaneousVars[10027] >= 2) PerkCheckValue = 8;
+							if (ammo < PerkCheckValue) ShowGlow += 1;
+						}
+						else 
+						If (StrIcmp(weapon, "Repeater2") == 0 && ammo < 2) 
+						{
+							ShowGlow += 1;
+						}
 						else if (ammo < 1) ShowGlow += 1;
 					}
 					if (ShowGlow > 0)
@@ -9598,9 +9620,16 @@ script "HUDDISPLAY" ENTER
 				HudMessage(s:"A";HUDMSG_ALPHA,2210,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 			}
 			
+			
+			
 			// 2206 & 2207 - Mode Key / Descriptions
+			SetHudSize(2160,1620,0); // Should be 2160x1620
+			xpos = ScreenXOffset + 1760.0 + 0.1;
+			ypos = ScreenYOffset + 1320.0 + 0.1; // 1316 or 1352
 			int holdweaptype = 0;
+			int altfiretype = 0;
 			str user4type = "";
+			str altfirename = "";
 			If (StrIcmp(weapon, "FistAilish") == 0 || 
 					StrIcmp(weapon, "FistPetra") == 0 || 
 					StrIcmp(weapon, "FistFlora") == 0 || 
@@ -9637,16 +9666,136 @@ script "HUDDISPLAY" ENTER
 			}
 			if (holdweaptype > 0)
 			{
-				xpos = ScreenXOffset + 1112.0 + 0.1;
-				ypos = ScreenYOffset + 896.0 + 0.1;
+				xpos = ScreenXOffset + 1760.0 + 0.1;
+				ypos = ScreenYOffset + 1320.0 + 0.1; // 1316 or 1352
+				ypos += 28.0;
 				SetFont("DQHUDFONTSML");
 				Keyname = "+user4";
 				msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
-				HudMessage(k:Keyname,s:" = ",s:user4type;HUDMSG_ALPHA,2206,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
-				//HudMessage(s:"";HUDMSG_ALPHA,2207,cr_untranslated,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+				HudMessage(k:Keyname,s:" = \c[sapphire]",s:user4type;HUDMSG_ALPHA,2206,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
 			}
 			
-
+			If (StrIcmp(weapon, "SceptreOfEmpyrea") == 0)
+			{
+				altfiretype++;
+				if (MiscellaneousVars[25041]) altfirename = "UNPRIME ATTACK";
+																 else altfirename = "SPIN-GUARD";
+			}
+			If (StrIcmp(weapon, "DiarisLongbow") == 0)
+			{
+				if (MiscellaneousVars[25042])
+				{
+					altfiretype++;
+					altfirename = "DELEASE ARROW";
+				}
+			}
+			If (StrIcmp(weapon, "FistAilish") == 0 || 
+					StrIcmp(weapon, "FistPetra") == 0 || 
+					StrIcmp(weapon, "FistFlora") == 0 || 
+					StrIcmp(weapon, "FistDeggaris") == 0 ||
+					StrIcmp(weapon, "FistIllucia") == 0)
+			{
+				altfiretype++;
+				altfirename = "UPPERCUT";
+			}
+			If (StrIcmp(weapon, "SauronGauntletsAilish") == 0 || 
+					StrIcmp(weapon, "SauronGauntletsPetra") == 0 || 
+					StrIcmp(weapon, "SauronGauntletsFlora") == 0 || 
+					StrIcmp(weapon, "SauronGauntlets") == 0 ||
+					StrIcmp(weapon, "SauronGauntletsIllucia") == 0)
+			{
+				altfiretype++;
+				altfirename = "STRONG PUNCH";
+			}
+			If (StrIcmp(weapon, "PoisonNeedle") == 0)
+			{
+				if (MiscellaneousVars[25044])
+				{
+					altfiretype++;
+					altfirename = "THROW EXTRA";
+				}
+			}
+			If (StrIcmp(weapon, "SapphireWandNew") == 0 ||
+					StrIcmp(weapon, "DualSapphireWandsNew") == 0)
+			{
+				altfiretype++;
+				altfirename = "TRI-BURST FIRE";
+			}
+			If (StrIcmp(weapon, "RocketLauncher2") == 0 ||
+					StrIcmp(weapon, "GutFlingerNew") == 0 ||
+					StrIcmp(weapon, "GasRocketLauncherNew") == 0)
+			{
+				altfiretype++;
+				altfirename = "FAST-BURST FIRE";
+			}
+			If (StrIcmp(weapon, "PlasmaRifle2") == 0 ||
+					StrIcmp(weapon, "Karasawa2") == 0)
+			{
+				altfiretype++;
+				altfirename = "SHOTBURST FIRE";
+			}
+			If (StrIcmp(weapon, "Railgun2") == 0)
+			{
+				altfiretype++;
+				altfirename = "CHARGE +5%";
+			}
+			If (StrIcmp(weapon, "BFG90002") == 0)
+			{
+				altfiretype++;
+				altfirename = "BFG 2704";
+			}
+			If (StrIcmp(weapon, "GoldWandNew") == 0 || StrIcmp(weapon, "DualGoldWandNew") == 0 ||
+					StrIcmp(weapon, "CrossbowNew") == 0 || StrIcmp(weapon, "DualCrossbowNew") == 0 ||
+					StrIcmp(weapon, "SuperCrossbowNew") == 0 || StrIcmp(weapon, "DualSuperCrossbowNew") == 0 ||
+					StrIcmp(weapon, "DragonClawNew") == 0 || StrIcmp(weapon, "DualDragonClawNew") == 0 ||
+					StrIcmp(weapon, "PhoenixRodNew") == 0 || StrIcmp(weapon, "DualPhoenixRodNew") == 0 ||
+					StrIcmp(weapon, "HellStaffNew") == 0 || StrIcmp(weapon, "DualHellStaffNew") == 0 ||
+					StrIcmp(weapon, "FiremaceNew") == 0 || StrIcmp(weapon, "DualFiremaceNew") == 0 ||
+					StrIcmp(weapon, "DSparilStaff") == 0 || StrIcmp(weapon, "DualDSparilStaff") == 0)
+			{
+				altfiretype++;
+				altfirename = "TOMED ATK";
+			}
+			If (StrIcmp(weapon, "EvilWarriorShield") == 0)
+			{
+				altfiretype++;
+				if (MiscellaneousVars[25043]) altfirename = "SHIELD UNBLOCK";
+																 else altfirename = "SHIELD BLOCK";
+			}
+			If (StrIcmp(weapon, "ImpalerXBow") == 0 || StrIcmp(weapon, "DualImpalerXBow") == 0)
+			{
+				altfiretype++;
+				altfirename = "SPREADFIRE SHOT";
+			}
+			If (StrIcmp(weapon, "ScepterOfSouls") == 0 || StrIcmp(weapon, "DualScepterOfSouls") == 0)
+			{
+				altfiretype++;
+				altfirename = "SUPERSOUL FIRE";
+			}
+			If (StrIcmp(weapon, "ArchvileSoul") == 0 || StrIcmp(weapon, "DiabloistSoul") == 0)
+			{
+				altfiretype++;
+				altfirename = "RESURRECT OTHER";
+			}
+			If (StrIcmp(weapon, "HElementalSoul") == 0 || StrIcmp(weapon, "HOverlordSoul") == 0)
+			{
+				altfiretype++;
+				altfirename = "SUMMON SPHERE";
+			}
+			if (altfiretype > 0)
+			{
+				xpos = ScreenXOffset + 1760.0 + 0.1;
+				ypos = ScreenYOffset + 1320.0 + 0.1; // 1316 or 1352
+				ypos += 56.0;
+				SetFont("DQHUDFONTSML");
+				Keyname = "+altattack";
+				msgalpha = 0.75; msgalpha = FixedMul(msgalpha,overallhudalpha);
+				HudMessage(k:Keyname,s:" = \c[fire]",s:altfirename;HUDMSG_ALPHA,2207,cr_white,xpos,ypos,HUDMsgDelayFixed,msgalpha);
+			}
+			SetHudSize(NewHUDWidth,NewHUDHeight,0); // Since 1920x1080 isn't truly "supported" [ZDOOM(TM(TM(TM))), etc] :V
+			
+			
+			
 			// Weapon Slot Numbers [2231-2241]
 			if (HudWeaponSlots > 0)
 			{
