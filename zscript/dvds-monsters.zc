@@ -142,6 +142,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	
 	override bool CanResurrect(Actor other, bool passive)
 	{
+		bool debugmode = dvds_showdamagemessagedebug;
+		bool useactortags = dvds_showdamagemessageactortags;
+
 		int maxviletimesrevived = dvds_maxresperarchvile;
 		if (maxviletimesrevived <= 0) maxviletimesrevived = 32;
 		int maxtimesrevivedpervile = dvds_maxarchrespermonster;
@@ -314,15 +317,19 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (dvdsdebug_actorresurrectdisplays) Console.Printf("\cxResurrector\c-: \cx%s\c-, \cyResurrectee\c-: \cy%s\c- -- ResSucceed: %d, timesrevivedamonster: %d", GetClassName(), other.GetClassName(), ResSucceed, timesrevivedamonster);
 			if (ResSucceed && (dvds_showdamagemessages & 2)) 
 			{
+				string ResurrectMsg;
 				string rese = other.GetClassName();
 				string res = GetClassName();
-				if (dvds_showdamagemessageactortags)
+				if (useactortags)
 				{
 					rese = other.GetTag("");
 					res = GetTag("");
 				}
-				if (self == other) Console.Printf(" * \cx%s\c- self resurrects! (%d)", rese, gametic);
-											else Console.Printf(" * \cx%s\c- was resurrected by \cy%s\c-! (%d)", rese, res, gametic);
+				ResurrectMsg = " * ";
+				if (self == other) ResurrectMsg.AppendFormat("\cy%s\c- self resurrects!", rese);
+											else ResurrectMsg.AppendFormat("\cx%s\c- was resurrected by \cy%s\c-!", rese, res);
+				if (debugmode) ResurrectMsg.AppendFormat(" (%d)", gametic);
+				Console.Printf("%s", ResurrectMsg);
 			}
 		}
 		else // Monster is the one BEING REVIVED...
@@ -364,7 +371,27 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 		}
 
-		//Console.Printf("Resurrect Attempt");
+		if (dvdsdebug_actorresurrectdisplays) Console.Printf("Resurrect Attempt: Ressee: %s, Resser: %s", GetClassName(), other.GetClassName());
+		if (other.GetClassName() == "ReviveProj" || other.GetClassName() == "ReviveProj2")
+		{
+			if ((dvds_showdamagemessages & 2))
+			{
+				string ResurrectMsg;
+				string rese = GetClassName();
+				string res = other.GetClassName();
+				if (other.master) res = other.master.GetClassName();
+				if (useactortags)
+				{
+					rese = GetTag("");
+					res = other.GetTag("");
+					if (other.master) res = other.master.GetTag("");
+				}
+				ResurrectMsg = " * ";
+				ResurrectMsg.AppendFormat("\cx%s\c- was resurrected by \cy%s\c-!", rese, res);
+				if (debugmode) ResurrectMsg.AppendFormat(" (%d)", gametic);
+				Console.Printf("%s", ResurrectMsg);
+			}
+		}
 		return ResSucceed;
 	}
 	
@@ -6487,15 +6514,20 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (random(1,32768) <= basedroprate)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 
 					random1 = random(1,81);
-					if (random1 >= 1 && random1 <= 10) nm = "SoulSphere2"; MiscCheck = nm; 
-					if (random1 >= 11 && random1 <= 20) nm = "MegaSphere2"; MiscCheck = nm; 
-					if (random1 >= 21 && random1 <= 30) nm = "InvulnerabilitySphere2"; MiscCheck = nm; 
-					if (random1 >= 31 && random1 <= 40) nm = "BlurSphere2"; MiscCheck = nm; 
-					if (random1 >= 41 && random1 <= 50) nm = "SpreadSphereSpawner"; MiscCheck = nm; 
-					if (random1 >= 51 && random1 <= 60) nm = "DoubleSphere"; MiscCheck = nm; 
-					if (random1 >= 61 && random1 <= 70) nm = "GuardSphere"; MiscCheck = nm; 
-					if (random1 >= 71 && random1 <= 80) nm = "TimeFreezeSphere"; MiscCheck = nm; 
-					if (random1 == 81) nm = "DivinationSphere"; MiscCheck = nm; 
+					if (random1 >= 1 && random1 <= 10) nm = "SoulSphere2"; 
+					if (random1 >= 11 && random1 <= 20) nm = "MegaSphere2";
+					if (random1 >= 21 && random1 <= 30) nm = "InvulnerabilitySphere2";
+					if (random1 >= 31 && random1 <= 40) nm = "BlurSphere2";
+					if (random1 >= 41 && random1 <= 50) 
+					{
+						if (random(1,256) <= 16) nm = "SpreadSphere2";
+																	else nm = "SpreadSphere1";
+					}
+					if (random1 >= 51 && random1 <= 60) nm = "DoubleSphere";
+					if (random1 >= 61 && random1 <= 70) nm = "GuardSphere";
+					if (random1 >= 71 && random1 <= 80) nm = "TimeFreezeSphere";
+					if (random1 == 81) nm = "DivinationSphere"; 
+					MiscCheck = nm; 
 					if (random(1,1024) <= basedroprate) 
 					{
 						A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); 
@@ -7185,15 +7217,20 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 							if (random(1,4096) <= basedroprate)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 
 							random1 = random(1,81);
-							if (random1 >= 1 && random1 <= 10) nm = "SoulSphere2"; MiscCheck = nm; 
-							if (random1 >= 11 && random1 <= 20) nm = "MegaSphere2"; MiscCheck = nm; 
-							if (random1 >= 21 && random1 <= 30) nm = "InvulnerabilitySphere2"; MiscCheck = nm; 
-							if (random1 >= 31 && random1 <= 40) nm = "BlurSphere2"; MiscCheck = nm; 
-							if (random1 >= 41 && random1 <= 50) nm = "SpreadSphereSpawner"; MiscCheck = nm; 
-							if (random1 >= 51 && random1 <= 60) nm = "DoubleSphere"; MiscCheck = nm; 
-							if (random1 >= 61 && random1 <= 70) nm = "GuardSphere"; MiscCheck = nm; 
-							if (random1 >= 71 && random1 <= 80) nm = "TimeFreezeSphere"; MiscCheck = nm; 
-							if (random1 == 81) nm = "DivinationSphere"; MiscCheck = nm; 
+							if (random1 >= 1 && random1 <= 10) nm = "SoulSphere2"; 
+							if (random1 >= 11 && random1 <= 20) nm = "MegaSphere2";
+							if (random1 >= 21 && random1 <= 30) nm = "InvulnerabilitySphere2";
+							if (random1 >= 31 && random1 <= 40) nm = "BlurSphere2";
+							if (random1 >= 41 && random1 <= 50) 
+							{
+								if (random(1,256) <= 16) nm = "SpreadSphere2";
+																			else nm = "SpreadSphere1";
+							}
+							if (random1 >= 51 && random1 <= 60) nm = "DoubleSphere";
+							if (random1 >= 61 && random1 <= 70) nm = "GuardSphere";
+							if (random1 >= 71 && random1 <= 80) nm = "TimeFreezeSphere";
+							if (random1 == 81) nm = "DivinationSphere"; 
+							MiscCheck = nm; 
 							if (random(1,1024) <= basedroprate)
 							{ 
 								A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); 
