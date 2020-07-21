@@ -143,7 +143,7 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 			pitch = playpawn.pitch;
 		}
 
-		if (GetClassName() == "ReviveProj" || GetClassName() == "ReviveProj2")
+		if (GetClassName() == "ReviveProj" || GetClassName() == "ReviveProj2" || GetClassName() == "GravityHPBall")
 		{
 			if (target && master == null) master = target;
 			if (GetClassName() == "ReviveProj2") if (master) { bFRIENDLY = master.BFRIENDLY; }
@@ -5430,6 +5430,8 @@ class GravityHPBall : AetheriusFastProjectileZSC
 		int LevelFactor;
 		double EffectChance;
 		string vict;
+		int PrevHealth;
+		int healthdiff;
 
 		AetheriusMonsterZSC svictim;
 		if (victim) svictim = AetheriusMonsterZSC(victim);
@@ -5475,11 +5477,13 @@ class GravityHPBall : AetheriusFastProjectileZSC
 				GravityEffectFactor = clamp(GravityEffectFactor, 0.000, GravityEffectFactor);
 				if (GravityEffectFactor > 0.000)
 				{
-					PropertyValue = svictim.health;
+					PrevHealth = svictim.health;
+					PropertyValue = PrevHealth;
 					PropertyValue = PropertyValue * FinalGravityFactor;
 				
-					PropertyValue = clamp(PropertyValue, 1, PropertyValue);
+					if (PropertyValue < 1) PropertyValue = 1;
 					svictim.health = PropertyValue;
+					healthdiff = (PrevHealth - PropertyValue);
 					svictim.A_StartSound("diabloistgravityend");
 					svictim.A_SpawnItem("DiabloistGravityHPTargeter");
 				}
@@ -5487,6 +5491,64 @@ class GravityHPBall : AetheriusFastProjectileZSC
 				{
 					svictim.A_StartSound("diabloistgravitymiss");
 				}
+				
+				// Print Outs
+				if (healthdiff)
+				{
+					AetheriusPlayerPawn playertarg;
+					playertarg = AetheriusPlayerPawn(svictim);
+					AetheriusMonsterZSC actortarg;
+					actortarg = AetheriusMonsterZSC(svictim);
+					AetheriusPlayerPawn playerculprit;
+					playerculprit = AetheriusPlayerPawn(master);
+					AetheriusMonsterZSC actorculprit;
+					actorculprit = AetheriusMonsterZSC(master);
+
+					string culprit = master.GetClassName();
+					string victim = svictim.GetClassName();
+					
+					string friendmsg = " \cn(F)\c-";
+					string charmmsg = " \cx(C)\c-";
+					
+					if ((playertarg && (dvds_showdamagemessages & 1)) || (actortarg && (dvds_showdamagemessages & 2)))
+					{
+						if (playertarg) victim = playertarg.GetClassName();
+						if (actortarg) victim = actortarg.GetClassName();
+						if (dvds_showdamagemessageactortags)
+						{
+							culprit = master.GetTag("");
+							if (playertarg) victim = playertarg.GetTag("");
+							if (actortarg) victim = actortarg.GetTag("");
+						}
+						string DamageMessage = " \c[white]* ";
+						DamageMessage.AppendFormat("\cy%d\c- ", healthdiff);
+						DamageMessage.AppendFormat("\c[purple]Gravity\c- ");
+						DamageMessage.AppendFormat("\c[red]Damage\c-");
+						DamageMessage.AppendFormat(" dealt to \cx%s\c-", victim);
+						if (actortarg)
+						{
+							if (actortarg.health > 0) DamageMessage.AppendFormat(" \cx[L%d]\c-", actortarg.user_monsterlevel);
+																	else DamageMessage.AppendFormat(" \cx[L%d]\c-", actortarg.user_lastmonsterlevel);
+						}
+						if (actortarg && actortarg.bFRIENDLY) 
+						{
+							if (actortarg && actortarg.user_charmed) DamageMessage.AppendFormat(charmmsg);
+																									else DamageMessage.AppendFormat(friendmsg);
+						}
+						DamageMessage.AppendFormat(" by \cw%s's\c-", culprit);
+						if (actorculprit && actorculprit.user_monsterlevel >= 0) DamageMessage.AppendFormat(" \cw[L%d]\c-", actorculprit.user_monsterlevel);
+						if (actorculprit && actorculprit.bFRIENDLY)
+						{
+							if (actorculprit && actorculprit.user_charmed) DamageMessage.AppendFormat(charmmsg);
+																												else DamageMessage.AppendFormat(friendmsg);
+						}
+						DamageMessage.AppendFormat(" \czGraviton Glare\c-!");
+						if (dvds_showdamagemessagedebug) DamageMessage.AppendFormat(" (%d)", gametic);
+						
+						Console.Printf("%s", DamageMessage);
+					}
+				}
+
 			}
 			else
 			{

@@ -161,6 +161,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (maxtimesrevivedperbansh <= 0) maxtimesrevivedperbansh = 32;
 
 		bool ResSucceed;
+		AetheriusPlayerPawn playpawn;
+		AetheriusMonsterZSC DVDSActor;
 		AetheriusMonsterZSC RevivedMonster;
 		AetheriusMonsterZSC RevivingMonster;
 		if (!passive) // Monster is the one REVIVING...
@@ -320,6 +322,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				string ResurrectMsg;
 				string rese = other.GetClassName();
 				string res = GetClassName();
+				if (self) 
+				{
+					playpawn = AetheriusPlayerPawn(self);
+					DVDSActor = AetheriusMonsterZSC(self);
+				}
+
 				if (useactortags)
 				{
 					rese = other.GetTag("");
@@ -327,7 +335,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 				ResurrectMsg = " * ";
 				if (self == other) ResurrectMsg.AppendFormat("\cy%s\c- self resurrects!", rese);
-											else ResurrectMsg.AppendFormat("\cx%s\c- was resurrected by \cy%s\c-!", rese, res);
+				else 
+				{
+					ResurrectMsg.AppendFormat("\cx%s\c- was resurrected by \cy%s\c-", rese, res);
+					if (DVDSActor && DVDSActor.bFRIENDLY)
+					{
+						if (DVDSActor.user_charmed) ResurrectMsg.AppendFormat(" \cx(C)\c-");
+																	 else ResurrectMsg.AppendFormat(" \cn(F)\c-");
+					}
+					ResurrectMsg.AppendFormat("!");
+				}
 				if (debugmode) ResurrectMsg.AppendFormat(" (%d)", gametic);
 				Console.Printf("%s", ResurrectMsg);
 			}
@@ -379,7 +396,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				string ResurrectMsg;
 				string rese = GetClassName();
 				string res = other.GetClassName();
-				if (other.master) res = other.master.GetClassName();
+				if (other.master) 
+				{
+					res = other.master.GetClassName();
+					playpawn = AetheriusPlayerPawn(other.master);
+					DVDSActor = AetheriusMonsterZSC(other.master);
+				}
+				
 				if (useactortags)
 				{
 					rese = GetTag("");
@@ -387,7 +410,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (other.master) res = other.master.GetTag("");
 				}
 				ResurrectMsg = " * ";
-				ResurrectMsg.AppendFormat("\cx%s\c- was resurrected by \cy%s\c-!", rese, res);
+				ResurrectMsg.AppendFormat("\cx%s\c- was resurrected by \cy%s\c-", rese, res);
+				if (DVDSActor && DVDSActor.bFRIENDLY)
+				{
+					if (DVDSActor.user_charmed) ResurrectMsg.AppendFormat(" \cx(C)\c-");
+																 else ResurrectMsg.AppendFormat(" \cn(F)\c-");
+				}
+				ResurrectMsg.AppendFormat("!");
 				if (debugmode) ResurrectMsg.AppendFormat(" (%d)", gametic);
 				Console.Printf("%s", ResurrectMsg);
 			}
@@ -1502,6 +1531,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (IsHellCoreAttack) HellcoreType = IsHellCoreAttack + 95;
 		if (dvdsdebug_actordmgdisplays && IsHellCoreAttack) Console.Printf("    (\czIsHellCoreAttack?: %d, HellcoreType: %d", IsHellCoreAttack, HellcoreType);
 		
+		bool wasblastedimpact = false;
+		if (inflictor == null && source == null && mod == 'Melee') 
+		{
+			wasblastedimpact = true;
+			if (bBLASTED && random(1,4) <= 3) bBLASTED = false;
+			if (vel.x != 0.0) vel.x *= 0.1;
+			if (vel.y != 0.0) vel.y *= 0.1;
+			if (dvdsdebug_actordmgdisplays && wasblastedimpact) Console.Printf("    (\czwasblastedimpact?: %d", wasblastedimpact);
+		}
+
 		if (dvdsdebug_actordmgdisplays)
 		{
 			if (flags & DMG_NO_ARMOR) Console.Printf("    (\cyIgnoresArmor?: yes)");
@@ -1538,6 +1577,28 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (inflictor == null) infl = "NONE"; else infl = inflictor.GetClassName();
 		if (source != null) lastattacker = source;
 		if (source == null) sour = "NONE"; else sour = source.GetClassName();
+		
+		bool isaminionpolykill = false;
+		// PE/HE/HO Minion spawn situations
+		if ((sour == "DSPainElemental" && infl == "DSPainElemental") || (sour == "FPainElemental" || infl == "FPainElemental"))
+		{
+			if (vict == "DSLostSoul" || vict == "FLostSoul" || vict == "DSLostSoul2" || vict == "FLostSoul2" || vict == "ForgottenOne" || vict == "FForgottenOne")
+			{
+				isaminionpolykill = true;
+			}
+		}
+		if ((sour == "HadesElemental" && infl == "HadesElemental") || (sour == "FHadesElemental" || infl == "FHadesElemental") || (sour == "HadesOverlord" && infl == "HadesOverlord") || (sour == "FHadesOverlord" || infl == "FHadesOverlord"))
+		{
+			if (vict == "HadesSphere" || vict == "HSOverlord" || vict == "FHadesSphere" || vict == "FHSOverlord")
+			{
+				isaminionpolykill = true;
+			}
+		}
+		if (isaminionpolykill) 
+		{
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (isaminionpolykill)");
+			return 1000000;
+		}
 
 		int olddmg = damage;
 		if (dvdsdebug_actordmgdisplays && olddmg > 0) Console.Printf("    (\czActor Defensive Input [STEP 1 - Base Damage]\c-: \cydmg = %d\c-, mod = %s)", olddmg, mod);
@@ -1749,9 +1810,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (mod == 'PoisonNeedle') // Poison Needle will not thrust
 			{
 				if (playpawn.CountInv("DealCriticalHit")) playpawn.A_SetInventory("DealCriticalHit",0); // Forces the Needle to use its own personal Crit Chance instead of the normal one.
-				flags |= DMG_THRUSTLESS; flags |= DMG_NO_ARMOR; flags |= DMG_NO_FACTOR; flags |= DMG_NO_PROTECT; 
+				flags |= DMG_THRUSTLESS;
+				flags |= DMG_NO_ARMOR;
+				flags |= DMG_NO_FACTOR;
+				flags |= DMG_NO_PROTECT; 
 				CritResistChance = -200.0; // Cannot be resisted
+
 				if (damage < 1) damage = randompick(1,1,1,1,2);
+
 				PoisonNeedleCritChance += ((StamUpPerkLvl * 0.5) + (StamUpEXPerkLvl * 1.25)); // StamUp
 				PoisonNeedleCritChance += ((MartialArtsMastery * 1.0) + (MartialArtsMasteryEX * 2.5)); // Martial Arts Mastery
 				PoisonNeedleCritChance += ((clearofmind * 0.25) + (clearofmindex * 0.625)); // Cleared of Mind
@@ -1760,14 +1826,18 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (CallACS("GetBuffTimer",13) > 0) PoisonNeedleCritChance *= 0.80;
 				if (CallACS("GetBuffTimer",1) > 0)
 				{
-					if (playpawn) PoisonNeedleCritChance *= (((playpawn.InvisNeedleBonus - 1.00) / 3) + 1.00);
+					if (playpawn) PoisonNeedleCritChance *= (((playpawn.InvisNeedleBonus - 1.00) * 0.3334) + 1.00);
 				}
 				if (PlayerTensionLevel > 0) PoisonNeedleCritChance = (PoisonNeedleCritChance * (PlayerTensionLevel + 7)) / 7;
-				if (PoisonNeedleBossCheck) PoisonNeedleCritChance /= 4;
+				if (PoisonNeedleBossCheck) PoisonNeedleCritChance *= 0.25;
 				if (playpawn.CountInv("PlayerDashing")) PoisonNeedleCritChance *= 2.5;
 
-				if (vict == "PossessedBalloonNew" || vict == "BigBerthaNew" || vict == "BigBertha2New" || vict == "SuperBerthaNew" || vict == "ClownGhostNew") PoisonNeedleCritChance = 200.0; // "Balloon" type enemies in Circus666/Circus2 instantly "pop" from a hit of the needle
-				if (vict == "ClayDevilNew") PoisonNeedleCritChance /= 8; // Clay Devils are harder to crit, but will go down for a VERY VERY LONG time if they are killed by the needle.
+				if (vict == "PossessedBalloonNew" || 
+						vict == "BigBerthaNew" || 
+						vict == "BigBertha2New" || 
+						vict == "SuperBerthaNew" || 
+						vict == "ClownGhostNew") PoisonNeedleCritChance = 200.0; // "Balloon" type enemies in Circus666/Circus2 instantly "pop" from a hit of the needle
+				if (vict == "ClayDevilNew") PoisonNeedleCritChance *= 0.125; // Clay Devils are harder to crit, but will go down for a VERY VERY LONG time if they are killed by the needle.
 
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2aa - Player-Crit Dmg (\cxPOISON NEEDLE Check\c-)]\c-: \cyPoisonNeedleCritChance = %.8f\c-)", PoisonNeedleCritChance);
 				if (frandom(0.1,100.0) <= PoisonNeedleCritChance) { if (playpawn.CountInv("DealCriticalHit") <= 0) playpawn.A_SetInventory("DealCriticalHit",1); }
@@ -2063,6 +2133,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				// Final Crit Roll
 				CritRoll = random(1,512);
 				if (CritRoll <= CritChance && DVDSActor.health > 0 && !isFrozen() && dvds_monstercrits != 0) criticalhit = 1;
+				if (criticalhit > 0 && (inflictor == null && source == null)) criticalhit = 0;
 				if (dvdsdebug_actordmgdisplays && dvds_monstercrits != 0) Console.Printf("    (\czActor Defensive Input [Monster Crit Rate]\c-: %d / 512 (%d) \c-, \cyActorClass: = %s\c-)", CritRoll, CritChance, ActorClass);
 
 				// Chance to RESIST a crit.
@@ -2121,7 +2192,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		double RailRandom = frandompick(0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.50,0.50,0.50,0.50,0.75,0.75,0.9875);
 		double ActorDefenseIgnoreFactor = 0.00;
 		double dfperkfactor = 0.00;
-		if (inflictor == null && source == null) { }
+		if (inflictor == null && source == null) 
+		{
+			// BLASTED Impact Damage
+			if (wasblastedimpact) ActorDefenseIgnoreFactor += (frandom(0.45,0.55) * (1.00 - ActorDefenseIgnoreFactor));
+		}
 		else
 		{
 			// Hellcore
@@ -2478,6 +2553,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 																		else Console.Printf("    (\czActor Defensive Input [STEP 4 - Direct Dmg Changes]:\c- \caSKIPPED\c-, \cydmg = %d\c-)", predirdmg);
 		}
 		
+		// BLASTED Impact Damage
+		if (wasblastedimpact)
+		{
+		}
+		
 		predirdmg = damage;
 		double cheatnpcdmgtaken;
 		cheatnpcdmgtaken = dvds_cheatnpcdmgtaken * 0.01;
@@ -2515,9 +2595,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		//************************************************************************
 		let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		//************************************************************************
+		if (mod == 'PoisonNeedle' && ret < 1) 
+		{
+			ret = randompick(1,1,1,1,2);
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czPOison Needle Low-Clamp: %d)", ret);
+		}
+		
+
 		
 		A_DamageMobPostReturn1(inflictor, source, damage, mod, flags, angle, 
-													 ret, oldhealth, nrmldmgfctr, vict, sour, infl, basedmgfactor, drainmaxdmg, playweaksound, dealtcrit, firstdamage);
+													 ret, oldhealth, nrmldmgfctr, vict, sour, infl, basedmgfactor, drainmaxdmg, playweaksound, dealtcrit, firstdamage, wasblastedimpact);
 		
 		return ret;
 	}
@@ -2642,7 +2729,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		return damage;
 	}
 
-	int A_DamageMobPostReturn1(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle, int ret, int oldhealth, double nrmldmgfctr, string vict, string sour, string infl, double basedmgfactor, int drainmaxdmg, int playweaksound, bool dealtcrit, int firstdamage)
+	int A_DamageMobPostReturn1(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle, int ret, int oldhealth, double nrmldmgfctr, string vict, string sour, string infl, double basedmgfactor, int drainmaxdmg, int playweaksound, bool dealtcrit, int firstdamage, int wasblastedimpact)
 	{
 		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
 		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
@@ -2671,7 +2758,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (outputdmg > 0) finaldmgfactor = 1.00 * ret / outputdmg;
 		if (dvdsdebug_actordmgdisplays && outputdmg > 0) 
 		{
-			if (inflictor == null && source == null && mod == 'Melee' && health < 1) { }
+			if (wasblastedimpact && health < 1) 
+			{ 
+			}
 			else
 			{
 				Console.Printf("    (\czActor Defensive Output [STEP 7 - Final Dmg]:\c- \cypredmg \c-/ \cyfinaldmg\c- = \cy%d\c- / \cy%d\c-, \cydmgdifffactor = %.8f\c-, \cxhealth = %d (%d) / %d\c-, \cynormaldamagefactor\c- = \cy%.8f\c-, \cyactualdamagefactor\c- = \cy%.8f\c-, \cwdmgtype\c- = \cw%s\c-, \cavictim\c- = \ca%s\c-, \cdinflictor\c- = \cd%s\c-, \cnsource\c- = \cn%s\c-)", 
@@ -2968,7 +3057,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 	}
 	
-	void A_DVDSCustomComboAttack(Class<Actor> missiletype = "", float spawnheight = 32.0, int meleedamage = 0, string meleesound = "", string meleedmgtype = "Melee", bool bleed = true)
+	void A_DVDSCustomComboAttack(Class<Actor> missiletype = "", float spawnheight = 32.0, int meleedamage = 0, string meleesound = "", string damagetype = "Melee", bool bleed = true)
 	{
 		if (!target) 
 						return;
@@ -3002,12 +3091,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (CheckMeleeRange()) // Melee Attack
 		{
 			if (IsACrisisComboAttack) meleedamage *= dvds_monstercrisismulti; //
-    
-			if (damagetype == 'None')
-							damagetype = 'Melee';	// Melee is the default type
+
 			if (meleesound) 
 						A_StartSound(meleesound, CHAN_WEAPON, CHANF_DEFAULT, 1, ATTN_NORM);
-			int newdam = target.DamageMobj(self, self, meleedamage, meleedmgtype);
+			int newdam = target.DamageMobj(self, self, meleedamage, damagetype);
 			if (bleed) 
 						target.TraceBleed (newdam > 0 ? newdam : meleedamage, self);
 		}
@@ -5196,10 +5283,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (user_canusecrisisatk == 1) 
 		{
 			meleedamage *= CrisisMultiplier;
-			if (playcrisissound == 1) { A_PlayCrisisAtkSound(); }
+			if (playcrisissound == 1) A_PlayCrisisAtkSound();
 		}
 		A_CustomMeleeAttack(meleedamage,meleesound,misssound,damagetype,bleed);
-		//A_DVDSCustomMeleeAttack(meleedamage,meleesound,misssound,damagetype,bleed);
 	}
 	
 	void A_CrisisSpawnItemEx (string type = "", string crisistype = "", float xofs = 0.0, float yofs = 0.0, float zofs = 0.0, float xvel = 0.0, float yvel = 0.0, float zvel = 0.0, float angle = 0.0, int flags = 0, int failchance = 0, int tid = 0, bool playcrisissound = true)
@@ -5222,7 +5308,14 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			vel.x *= xmul;
 			vel.y *= ymul;
-			if (random(1,maxunblastchance) <= unblastchance) bBLASTED = false;
+			if (random(1,maxunblastchance) <= unblastchance) 
+			{
+				bBLASTED = false;
+			}
+			else
+			{
+				if ((vel.x >= -0.125 && vel.x <= 0.125) && (vel.y >= -0.125 && vel.y <= 0.125)) bBLASTED = false;
+			}
 		}
 	}
 	
@@ -5888,6 +5981,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int random1;
 		string ActorClass = GetClassName();
 		string nm;
+		double basedropmaxrate;
 
 		if (expfactor == 0) expfactor = 100;
 		if (flags & 2) fakedeath = 1;
@@ -5934,72 +6028,72 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				// Enemies in the Degnin Mines or levels in the factory HUB can sometimes drop Degnin Ore depending on the area
 				if (MapValue == 14) // Degnin Mines
 				{
-					if (random(1,768) <= 1) A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0);
-					if (random(1,384) <= 1) A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0);
-					if (random(1,192) <= 1) A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0);
-					if (random(1,96) <= 1) A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0);
-					if (random(1,72) <= 1) A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0);
-					if (random(1,48) <= 1) A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0);
-					if (random(1,24) <= 1) A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0);
-					if (random(1,12) <= 1) A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0);
+					if (random(1,768) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,384) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,192) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,96) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,72) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,48) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,24) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,12) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 					if (debugexp) Console.Printf("\cxAddEXP\c- - Degnin Ore Drop Attempt [MAP14]", debugexp);
 				}
 				if (MapValue == 20) // Factory: Receiving
 				{
-					if (random(1,4096) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,1024) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,256) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,64) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,4096) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,1024) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,256) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,64) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 					if (debugexp) Console.Printf("\cxAddEXP\c- - Degnin Ore Drop Attempt [MAP20]", debugexp);
 				}
 				if (MapValue == 21) // Factory: Manufacturing
 				{
-					if (random(1,4096) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,1024) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,256) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,64) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,4096) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,1024) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,256) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,64) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 					if (debugexp) Console.Printf("\cxAddEXP\c- - Degnin Ore Drop Attempt [MAP21]", debugexp);
 				}
 				if (MapValue == 22) // Factory: Forge
 				{
-					if (random(1,192) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,160) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,128) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,96) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,64) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,32) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,16) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,192) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,160) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,128) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,96) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,64) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,32) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,16) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 					if (debugexp) Console.Printf("\cxAddEXP\c- - Degnin Ore Drop Attempt [MAP22]", debugexp);
 				}
 				if (MapValue == 24) // Factory: Conversion Chapel
 				{
-					if (random(1,4096) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,1024) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,256) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,64) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,4096) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,1024) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,256) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,64) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 					if (debugexp) Console.Printf("\cxAddEXP\c- - Degnin Ore Drop Attempt [MAP24]", debugexp);
 				}
 				if (MapValue == 26) // Proving Grounds
 				{
-					if (random(1,7168) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,1536) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,384) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,96) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,7168) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,1536) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,384) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,96) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 					if (debugexp) Console.Printf("\cxAddEXP\c- - Degnin Ore Drop Attempt [MAP26]", debugexp);
 				}
 				if (MapValue == 27) // The Lab [Loremaster boss]
 				{
-					if (random(1,8192) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,2048) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,512) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,128) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,8192) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,2048) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,512) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,128) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 					if (debugexp) Console.Printf("\cxAddEXP\c- - Degnin Ore Drop Attempt [MAP27]", debugexp);
 				}
 				if (CountInv("QuestItem29", AAPTR_PLAYER1)) // Destroying the Transmitter allows any other enemy in the game to have a chance to drop Degnin Ore [any level]
 				{
-					if (random(1,8192) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,2048) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
-					if (random(1,512) <= 1)  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,16384) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,4096) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,1024) <= 1) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 					if (debugexp) Console.Printf("\cxAddEXP\c- - Degnin Ore Drop Attempt [Post-Transmitter]", debugexp);
 				}
 			}
@@ -6409,9 +6503,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						}
 					}
 
-					nm = "64Unmaker"; MiscCheck = nm;
 					if (CountInv("UnmakerUpgrades",AAPTR_PLAYER1) < 3)
 					{
+						nm = "64Unmaker"; MiscCheck = nm;
 						if (ModType == 0) // Classic Mode
 						{
 							if (ClassicDoomType == 0 || ClassicDoomType == 1 || ClassicDoomType == 5 || ClassicDoomType == 6) // Doom 2, Doom 1, Doom64 or PSXDoom
@@ -6441,22 +6535,26 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (CharacterClass == 2)
 					{
 						nm = "PoisonNeedle"; MiscCheck = nm; 
-						if (CountInv(MiscCheck,AAPTR_PLAYER1) <= 0 && random(1,256) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
+						if (CountInv(MiscCheck,AAPTR_PLAYER1) <= 0 && random(1,512) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
 						if (random(1,1024) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
 						if (random(1,4096) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
 						if (random(1,16384) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
 					}
 					else
 					{
-						nm = "BackPack2"; MiscCheck = nm; 
-						if (random(1,256) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
-						if (random(1,512) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
+						nm = "Berserk2"; MiscCheck = nm; 
+						if (CountInv("AetheriusPowerStrength",AAPTR_PLAYER1) <= 0 && random(1,512) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
 						if (random(1,1024) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
-						if (random(1,2048) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
 						if (random(1,4096) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
-						if (random(1,8192) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
 						if (random(1,16384) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_RareDropSnd(nm, GetClassName()); }
 					}
+
+					if (CharacterClass == 2) nm = "DimensionalBag"; 
+															else nm = "BackPack2"; 
+					MiscCheck = nm; 
+					if (random(1,768) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,3072) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
+					if (random(1,12288) <= basedroprate) { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
 
 					nm = "Experiessence"; MiscCheck = nm; 
 					if (random(1,512) <= (basedroprate * experiessencefactor))  { A_SpawnItemEx(MiscCheck,frandom(-DropX,DropX),frandom(-DropY,DropY),frandom(-DropZ,DropZ),frandom(-DropVels1,DropVels1),frandom(-DropVels1,DropVels1),frandom(-DropVels2,DropVels2),0,SXF_NOCHECKPOSITION,0); A_DropSnd(nm, GetClassName()); }
@@ -7777,14 +7875,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		Actor targ = target;
 		if (targ)
 		{
-			if (random(1,8) <= 3)
-			{
-				user_gravitytype = 3;
-			}
-			else
-			{
-				user_gravitytype = random(1,2);
-			}
+			if (random(1,8) <= 3) user_gravitytype = 3;
+											 else user_gravitytype = random(1,2);
 
 			Actor playertarg = AetheriusPlayerPawn(target);
 			if (!playertarg && user_gravitytype != 0) user_gravitytype = 1;
@@ -7866,12 +7958,22 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int basedmgratio;
 		int AffectedStat, MultFactor, THEEffect;
 		int InvulnerabilityTimer = CallACS("GetBuffTimer",4);
+		int PrevHealth, PrevMana, PrevInvulnTimer;
+		int healthdiff;
 
 		Actor targ = target;
 		if (targ)
 		{
+			AetheriusPlayerPawn playertarg;
+			playertarg = AetheriusPlayerPawn(target);
+			AetheriusMonsterZSC actortarg;
+			actortarg = AetheriusMonsterZSC(target);
+			AetheriusPlayerPawn playerculprit;
+			playerculprit = AetheriusPlayerPawn(self);
+			AetheriusMonsterZSC actorculprit;
+			actorculprit = AetheriusMonsterZSC(self);
+
 			gravitytype -= 1;
-			Actor playertarg = AetheriusPlayerPawn(target);
 			if (!playertarg && gravitytype != 0) gravitytype = 0;
 
 			A_FaceTarget();
@@ -7940,7 +8042,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						PropertyValue = InvulnerabilityTimer;
 						PropertyValue = PropertyValue * FinalGravityFactor;
 						
-						PropertyValue = clamp(PropertyValue, 1, PropertyValue);
+						if (PropertyValue < 1) PropertyValue = 1;
 						CallACS("GetBuffTimer",4,1,PropertyValue);
 						if (playertarg) playertarg.A_SetBlend("C0 C0 C0",1.25,random(39,40));
 						PrevInvulnTime -= PropertyValue;
@@ -8001,13 +8103,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						GravityEffectFactor = clamp(GravityEffectFactor, 0.000, GravityEffectFactor);
 						if (GravityEffectFactor > 0.000)
 						{
-							PropertyValue = targ.health;
+							PrevHealth = targ.health;
+							PropertyValue = PrevHealth;
 							PropertyValue = PropertyValue * FinalGravityFactor;
 							
 							CallACS("MiscVarSetDECORATE",92,(630*FinalGravityFactor),2); // HPRegenBonPenTimer
 							
-							PropertyValue = clamp(PropertyValue, 1, PropertyValue);
+							if (PropertyValue < 1) PropertyValue = 1;
 							targ.health = PropertyValue;
+							healthdiff = (PrevHealth - PropertyValue);
 							if (playertarg) playertarg.A_SetBlend("C0 00 00",1.25,random(39,40));
 						}
 					}
@@ -8066,7 +8170,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 							
 							CallACS("MiscVarSetDECORATE",93,(630*FinalGravityFactor),2); // MPRegenBonPenTimer
 							
-							PropertyValue = clamp(PropertyValue, 1, PropertyValue);
+							if (PropertyValue < 1) PropertyValue = 1;
 							CallACS("OtherVarSetDECORATE",2,PropertyValue);
 							if (playertarg) playertarg.A_SetBlend("00 00 C0",1.25,random(39,40));
 						}
@@ -8122,13 +8226,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						GravityEffectFactor = clamp(GravityEffectFactor, 0.000, GravityEffectFactor);
 						if (GravityEffectFactor > 0.000)
 						{
-							PropertyValue = targ.health;
+							PrevHealth = targ.health;
+							PropertyValue = PrevHealth;
 							PropertyValue = PropertyValue * FinalGravityFactor;
 							
 							CallACS("MiscVarSetDECORATE",92,(420*FinalGravityFactor),2); // HPRegenBonPenTimer
 							
-							PropertyValue = clamp(PropertyValue, 1, PropertyValue);
+							if (PropertyValue < 1) PropertyValue = 1;
 							targ.health = PropertyValue;
+							healthdiff = (PrevHealth - PropertyValue);
 						}
 						
 						// MP Damage
@@ -8185,7 +8291,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 							
 							CallACS("MiscVarSetDECORATE",93,(420*FinalGravityFactor),2); // MPRegenBonPenTimer
 							
-							PropertyValue = clamp(PropertyValue, 1, PropertyValue);
+							if (PropertyValue < 1) PropertyValue = 1;
 							CallACS("OtherVarSetDECORATE",2,PropertyValue);
 						}
 						if (playertarg) playertarg.A_SetBlend("C0 00 C0",1.25,random(39,40));
@@ -8214,11 +8320,61 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				GravityEffectFactor = clamp(GravityEffectFactor, 0.000, GravityEffectFactor);
 				if (GravityEffectFactor > 0.000)
 				{
-					PropertyValue = targ.health;
-					PropertyValue = PropertyValue * FinalGravityFactor;
+					PrevHealth = targ.health;
+					PropertyValue = PrevHealth;
+					PropertyValue *= FinalGravityFactor;
 				
-					PropertyValue = clamp(PropertyValue, 1, PropertyValue);
+					if (PropertyValue < 1) PropertyValue = 1;
 					targ.health = PropertyValue;
+					healthdiff = (PrevHealth - PropertyValue);
+				}
+			}
+			
+			// Print Outs
+			if (healthdiff)
+			{
+				string culprit = GetClassName();
+				string victim;
+				
+				string friendmsg = " \cn(F)\c-";
+				string charmmsg = " \cx(C)\c-";
+				
+				if ((playertarg && (dvds_showdamagemessages & 1)) || (actortarg && (dvds_showdamagemessages & 2)))
+				{
+					if (playertarg) victim = playertarg.GetClassName();
+					if (actortarg) victim = actortarg.GetClassName();
+					if (dvds_showdamagemessageactortags)
+					{
+						culprit = GetTag("");
+						if (playertarg) victim = playertarg.GetTag("");
+						if (actortarg) victim = actortarg.GetTag("");
+					}
+					string DamageMessage = " \c[white]* ";
+					DamageMessage.AppendFormat("\cy%d\c- ", healthdiff);
+					DamageMessage.AppendFormat("\c[purple]Gravity\c- ");
+					DamageMessage.AppendFormat("\c[red]Damage\c-");
+					DamageMessage.AppendFormat(" dealt to \cx%s\c-", victim);
+					if (actortarg)
+					{
+						if (actortarg.health > 0) DamageMessage.AppendFormat(" \cx[L%d]\c-", actortarg.user_monsterlevel);
+																 else DamageMessage.AppendFormat(" \cx[L%d]\c-", actortarg.user_lastmonsterlevel);
+					}
+					if (actortarg && actortarg.bFRIENDLY) 
+					{
+						if (actortarg && actortarg.user_charmed) DamageMessage.AppendFormat(charmmsg);
+																								else DamageMessage.AppendFormat(friendmsg);
+					}
+					DamageMessage.AppendFormat(" by \cw%s's\c-", culprit);
+					if (actorculprit && actorculprit.user_monsterlevel >= 0) DamageMessage.AppendFormat(" \cw[L%d]\c-", actorculprit.user_monsterlevel);
+					if (actorculprit && actorculprit.bFRIENDLY)
+					{
+						if (actorculprit && actorculprit.user_charmed) DamageMessage.AppendFormat(charmmsg);
+																											else DamageMessage.AppendFormat(friendmsg);
+					}
+					DamageMessage.AppendFormat(" \czGraviton Glare\c-!");
+					if (dvds_showdamagemessagedebug) DamageMessage.AppendFormat(" (%d)", gametic);
+					
+					Console.Printf("%s", DamageMessage);
 				}
 			}
 		}

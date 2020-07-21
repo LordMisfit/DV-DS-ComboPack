@@ -2798,6 +2798,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (flags & DMG_NO_ENHANCE) Console.Printf("    (\cyBypassPowerDamage?: yes)");
 			if (flags & DMG_USEANGLE) Console.Printf("    (\cyUsesAngle?: yes)");
 			if (flags & DMG_EXPLOSION) Console.Printf("    (\cyIsAoEBurst?: yes)");
+			if (flags & DMG_NO_PAIN) Console.Printf("    (\cyPainless?: yes)");
 		}
 
 		if (source) DVDSActor = AetheriusMonsterZSC(source);
@@ -3229,6 +3230,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			CritRoll = random(1,512);
 			if (CritRoll <= CritChance && DVDSActor.health > 0 && !isFrozen() && dvds_monstercrits != 0) criticalhit = 1;
 			if (criticalhit > 0 && (inflictor == null && source == null)) criticalhit = 0;
+			if (dvdsdebug_playerdmgdisplays && dvds_monstercrits != 0) Console.Printf("    (\czPlayer Defensive Input [Monster Crit Rate]\c-: %d / 512 (%d) \c-, \cyActorClass: = %s\c-)", CritRoll, CritChance, ActorClass);
 
 			// Alter EffectProjectile Chances
 			if (ailmentproj && criticalhit)
@@ -3250,6 +3252,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			PlayerDefenseIgnoreFactor = 0.00;
 			if (inflictor == null && source == null)
 			{
+				if (mod == 'Melee') PlayerDefenseIgnoreFactor += (frandom(0.45,0.55) * (1.00 - PlayerDefenseIgnoreFactor));
 				if (mod == 'Drowning') PlayerDefenseIgnoreFactor += (1.00 * (1.00 - PlayerDefenseIgnoreFactor));
 				if (mod == 'HellcoreDrain') PlayerDefenseIgnoreFactor += (1.00 * (1.00 - PlayerDefenseIgnoreFactor));
 				if (mod == 'SigilUse') PlayerDefenseIgnoreFactor += (1.00 * (1.00 - PlayerDefenseIgnoreFactor));
@@ -3525,6 +3528,22 @@ class AetheriusPlayerPawn : PlayerPawn
 			// Defense-Stat (Partial) Ignoring Checks
 			if (inflictor == null && source == null)
 			{
+				if (mod == 'Melee')
+				{
+					if (DQBuffTimer > 0) 
+					{
+						defense *= 0.5; // Total Defense is only 50% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
+					}
+					else 
+					if (DQSapTimer > 0) 
+					{
+						defense *= 0.02; // Total Defense is only 2% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
+					}
+					else 
+					{
+						defense *= 0.1; // Total Defense is only 10% as effective for damagefloors/slime/crushing sectors with no source/inflictor.
+					}
+				}
 				if (mod == 'Slime' || mod == 'Crush')
 				{
 					if (DQBuffTimer > 0) 
