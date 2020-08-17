@@ -3372,7 +3372,7 @@ class MageStaffFX2Base : AetheriusProjectileZSC
 	//
 	//============================================================================
 
-	override int SpecialMissileHit (Actor victim)
+	override int SpecialMissileHit (Actor victim) // MageStaffFX2Base
 	{
 		if (victim != target && !victim.player && !victim.bBoss)
 		{
@@ -3411,6 +3411,7 @@ class MageStaffFX2Base : AetheriusProjectileZSC
 
 class HealMissile : AetheriusProjectileZSC
 {
+	bool hashit;
 	// A_SeekerMissile variant that seeks out friends in need of healing.
 	action void A_HealingSeekerMissile(int threshold, int maxturnangle, int flags = 0, int chance = 50, int distance = 10, int healtype = 0)
 	{
@@ -3448,68 +3449,101 @@ class HealMissile : AetheriusProjectileZSC
 		return true;
 	}
 
-	override int SpecialMissileHit (Actor victim)
+	override int SpecialMissileHit (Actor victim) // HealMissile
  	{
 		AetheriusMonsterZSC healee;
+		AetheriusPlayerPawn healee2;
 		if (victim) healee = AetheriusMonsterZSC(victim);
+		if (victim) healee2 = AetheriusPlayerPawn(victim);
 		int healamount;
+		
+		if (hashit) return -1;
 
- 		if (healee == target) return 1;
- 		if (healee && healee == tracer && !healee.bFRIENDLY) return 1;
-		if (healee && healee.bFRIENDLY)
+		if (healee)
 		{
-			if (self.GetClassName() == "Heal1Shot")
-			{
-				healamount = CallACS("Healing_Actor",0,1);
-				if (healee.health > 0 && healee.health < healee.User_MaxHP)
-				{
-					healee.health += healamount; 
-					if (healee.health > healee.User_MaxHP) healee.health = healee.User_MaxHP;
-					if ((dvds_showdamagemessages & 2) && healamount > 0) 
-					{
-						if (target) A_PrintHealingMessage(healee, healamount, target);
-									 else A_PrintHealingMessage(healee, healamount);
-					}
-					return -1;
-				}
-				else { return 1; }
-			}
+			if (healee == target) return 1;
+			if (healee == tracer && !healee.bFRIENDLY) return 1;
 
-			if (self.GetClassName() == "Heal2Shot")
+			if (healee.bFRIENDLY)
 			{
-				healamount = CallACS("Healing_Actor",1,1);
-				if (healee.health > 0 && healee.health < healee.User_MaxHP)
+				if (self.GetClassName() == "Heal1Shot")
 				{
-					healee.health += healamount; 
-					if (healee.health > healee.User_MaxHP) healee.health = healee.User_MaxHP;
-					if ((dvds_showdamagemessages & 2) && healamount > 0) 
+					if (healee.health > 0 && healee.health < healee.User_MaxHP)
 					{
-						if (target) A_PrintHealingMessage(healee, healamount, target);
-									 else A_PrintHealingMessage(healee, healamount);
+						healamount = CallACS("Healing_Actor",0,1);
+						healee.health += healamount; 
+						if (healee.health > healee.User_MaxHP) healee.health = healee.User_MaxHP;
+						if ((dvds_showdamagemessages & 2) && healamount > 0) 
+						{
+							if (target) A_PrintHealingMessage(healee, healamount, target);
+										 else A_PrintHealingMessage(healee, healamount);
+						}
+						//Console.Printf("%s to %s = return -1, gametic: %d", GetClassName(), healee.GetClassName(), gametic);
+						hashit = true;
+						return -1;
 					}
-					return -1;
+					else 
+					{ 
+						//Console.Printf("%s to %s = return 1, gametic: %d", GetClassName(), healee.GetClassName(), gametic);
+						return 1; 
+					}
 				}
-				else { return 1; }
-			}
 
-			if (self.GetClassName() == "Heal3Shot")
-			{
-				healamount = CallACS("Healing_Actor",2,1);
-				if (healee.health > 0 && healee.health < (healee.User_MaxHP*2))
+				if (self.GetClassName() == "Heal2Shot")
 				{
-					healee.health += healamount; 
-					if (healee.health > (healee.User_MaxHP*2)) healee.health = (healee.User_MaxHP*2);
-					if ((dvds_showdamagemessages & 2) && healamount > 0) 
+					if (healee.health > 0 && healee.health < healee.User_MaxHP)
 					{
-						if (target) A_PrintHealingMessage(healee, healamount, target);
-									 else A_PrintHealingMessage(healee, healamount);
+						healamount = CallACS("Healing_Actor",1,1);
+						healee.health += healamount; 
+						if (healee.health > healee.User_MaxHP) healee.health = healee.User_MaxHP;
+						if ((dvds_showdamagemessages & 2) && healamount > 0) 
+						{
+							if (target) A_PrintHealingMessage(healee, healamount, target);
+										 else A_PrintHealingMessage(healee, healamount);
+						}
+						//Console.Printf("%s to %s = return -1, gametic: %d", GetClassName(), healee.GetClassName(), gametic);
+						hashit = true;
+						return -1;
 					}
-					return -1;
+					else 
+					{
+						//Console.Printf("%s to %s = return 1, gametic: %d", GetClassName(), healee.GetClassName(), gametic);
+						return 1; 
+					}
 				}
-				else { return 1; }
+
+				if (self.GetClassName() == "Heal3Shot")
+				{
+					if (healee.health > 0 && healee.health < (healee.User_MaxHP*2))
+					{
+						healamount = CallACS("Healing_Actor",2,1);
+						healee.health += healamount; 
+						if (healee.health > (healee.User_MaxHP*2)) healee.health = (healee.User_MaxHP*2);
+						if ((dvds_showdamagemessages & 2) && healamount > 0) 
+						{
+							if (target) A_PrintHealingMessage(healee, healamount, target);
+										 else A_PrintHealingMessage(healee, healamount);
+						}
+						Console.Printf("%s to %s = return -1, gametic: %d", GetClassName(), healee.GetClassName(), gametic);
+						//hashit = true;
+						return -1;
+					}
+					else 
+					{
+						//Console.Printf("%s to %s = return 1, gametic: %d", GetClassName(), healee.GetClassName(), gametic);
+						return 1;
+					}
+				}
 			}
 		}
+		else
+		if (healee2)
+		{
+			//Console.Printf("(%s to %s) = return 1, gametic: %d", GetClassName(), victim.GetClassName(), gametic);
+			return 1;
+		}
 
+		//Console.Printf("(%s to %s) = return -1, gametic: %d", GetClassName(), victim.GetClassName(), gametic);
  		return -1;
  	}
 }
@@ -3539,11 +3573,14 @@ class CharmMissile : AetheriusProjectileZSC
 		return true;
 	}
 
-	override int SpecialMissileHit (Actor victim)
+	override int SpecialMissileHit (Actor victim) // CharmMissile
 	{
-		if (victim == target) return 1;
-		if (victim == tracer && victim.bFRIENDLY) return 1;
-		return -1;
+		int returned = -1;
+		if (victim == target) returned = 1;
+		if (victim != tracer && victim.bFRIENDLY) returned = 1;
+
+		//Console.Printf("Returned: %d (gametic: %d)", returned, gametic);
+		return returned;
 	}
 }
 
@@ -3561,7 +3598,7 @@ class AetheriusBaseLightning : AetheriusProjectileZSC
 		ProjectileKickback 0;
 	}
 	
-	override int SpecialMissileHit (Actor thing)
+	override int SpecialMissileHit (Actor thing) // AetheriusBaseLightning
 	{
 		int dmg = self.mass * random(self.stamina,self.accuracy);
 
@@ -3838,7 +3875,7 @@ class AetheriusLightningZap : AetheriusProjectileZSC
 			Stop;
 	}
 	
-	override int SpecialMissileHit (Actor thing)
+	override int SpecialMissileHit (Actor thing) // AetheriusLightningZap
 	{
 		Actor lmo;
 
@@ -5425,7 +5462,7 @@ class GravityHPBall : AetheriusFastProjectileZSC
 		DeathSound "null";
 	}
 
-	override int SpecialMissileHit (Actor victim)
+	override int SpecialMissileHit (Actor victim) // GravityHPBall
  	{
 		int TrueGameSkill = dvds_gendifficultycurve + Skill;
 		double GravityEffectFactor, FinalGravityFactor;
