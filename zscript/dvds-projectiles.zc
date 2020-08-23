@@ -2359,6 +2359,29 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 		}
 		
 	}
+	
+	void A_VolcBallImpact()
+	{
+		if (pos.Z <= floorz)
+		{
+			bNoGravity = true;
+			Gravity = 1;
+			AddZ(28);
+		}
+		A_Explode(25, 25, XF_NOSPLASH|XF_HURTSOURCE, false, 0, 0, 0, "BulletPuff", 'Fire');
+		for (int i = 0; i < 4; i++)
+		{
+			Actor tiny = Spawn("VolcanoTBlast", Pos, ALLOW_REPLACE);
+			if (tiny)
+			{
+				tiny.target = self;
+				tiny.Angle = 90.*i;
+				tiny.VelFromAngle(0.7);
+				tiny.Vel.Z = 1. + random[VolcBallImpact]() / 128.;
+				tiny.CheckMissileSpawn (radius);
+			}
+		}
+	}
 }
 
 // Base FastProjectile Class
@@ -3524,8 +3547,8 @@ class HealMissile : AetheriusProjectileZSC
 							if (target) A_PrintHealingMessage(healee, healamount, target);
 										 else A_PrintHealingMessage(healee, healamount);
 						}
-						Console.Printf("%s to %s = return -1, gametic: %d", GetClassName(), healee.GetClassName(), gametic);
-						//hashit = true;
+						//Console.Printf("%s to %s = return -1, gametic: %d", GetClassName(), healee.GetClassName(), gametic);
+						hashit = true;
 						return -1;
 					}
 					else 
@@ -5464,6 +5487,7 @@ class GravityHPBall : AetheriusFastProjectileZSC
 
 	override int SpecialMissileHit (Actor victim) // GravityHPBall
  	{
+		int debuginfo = 0;
 		int TrueGameSkill = dvds_gendifficultycurve + Skill;
 		double GravityEffectFactor, FinalGravityFactor;
 		int PropertyValue;
@@ -5496,10 +5520,10 @@ class GravityHPBall : AetheriusFastProjectileZSC
 			else EffectChance = 256;
 			
 			double roll = frandom(0.1,256.0);
-			//Console.Printf("    (\czINFO:\c- \Roll vs EffectChance [%s]\c-: \cy%.8f vs %.8f\c-)", vict, roll, EffectChance);
+			if (debuginfo) Console.Printf("    (\czINFO:\c- \Roll vs EffectChance [%s]\c-: \cy%.8f vs %.8f\c-)", vict, roll, EffectChance);
 			if (frandom(0.1,256.0) <= EffectChance)
 			{
-				//Console.Printf("    (\czINFO:\c- \EffectChance Successful!\c-)");
+				if (debuginfo) Console.Printf("    (\czINFO:\c- \EffectChance Successful!\c-)");
 				if (TrueGameSkill <= SKILL_VERY_EASY) GravityEffectFactor = 0.125;  
 				if (TrueGameSkill == SKILL_EASY) GravityEffectFactor = 0.250;  
 				if (TrueGameSkill == SKILL_NORMAL) GravityEffectFactor = 0.500;  
