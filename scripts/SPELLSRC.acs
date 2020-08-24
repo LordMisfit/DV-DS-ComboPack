@@ -905,6 +905,9 @@ global int 21:MiscellaneousVars[]; // ***ARRAY*** For various permenant vars in 
 	// [25042] DrawingDiarisBow
 	// [25043] HWShieldBlockHold
 	// [25044] PoisonNeedleAmmo
+	// [25045] GodMode
+	// [25046] GodMode2
+	// [25047] SigilModeType
 
 	// [25101] Has "SauronHelmet"
 	// [25102] Has "SauronGauntletsItem"
@@ -9064,12 +9067,13 @@ script "HUDDISPLAY" ENTER
 			If (StrIcmp(weapon, "NNSigil") == 0 || StrIcmp(weapon, "Sigil") == 0)
 			{
 				int sigil_pieces = MiscellaneousVars[25038];
-				if (sigil_pieces == 1) SetFont("WISIGIL1");
-				if (sigil_pieces == 2) SetFont("WISIGIL2");
-				if (sigil_pieces == 3) SetFont("WISIGIL3");
-				if (sigil_pieces == 4) SetFont("WISIGIL4");
-				if (sigil_pieces == 5) SetFont("WISIGIL5");
-				if (debughud2 > 0) PrintBold(s:"Pieces: ",d:sigil_pieces);
+				int sigil_mode = MiscellaneousVars[25047];
+				if (sigil_mode == 1) SetFont("WISIGIL1");
+				if (sigil_mode == 2) SetFont("WISIGIL2");
+				if (sigil_mode == 3) SetFont("WISIGIL3");
+				if (sigil_mode == 4) SetFont("WISIGIL4");
+				if (sigil_mode == 5) SetFont("WISIGIL5");
+				if (debughud2 > 0) PrintBold(s:"Sigil_Pieces: ",d:sigil_pieces,s:"Sigil_Mode: ",d:sigil_mode);
 			}
 			// KDIZD Weapons
 			If (StrIcmp(weapon, "Rifle") == 0) SetFont("WIKDRIF");
@@ -31107,6 +31111,8 @@ Script "NNSigilDamageUser" (int damage)
 	if (MiscellaneousVars[195] > 0) ignorecommand++; // If in mercy invincibility, no effect
 	if (MiscellaneousVars[25014] > 0) ignorecommand++; // if invulnerable, no effect
 	if (MiscellaneousVars[25040] > 0) ignorecommand++; // if invulnerable, no effect
+	if (MiscellaneousVars[25045] > 0) ignorecommand++; // if GodMode, no effect
+	if (MiscellaneousVars[25046] > 0) ignorecommand++; // if GodMode2, no effect
 	if (ignorecommand == 0)
 	{
 		SetActorProperty(0,APROP_HEALTH,currenthealth-damage);
@@ -31123,52 +31129,49 @@ bool players_returned[8];
 
 Script "NNSigilMonitor" ENTER
 {
-	if (ClassicDoomType == 4)
+	int current_pieces;
+	int previous_pieces = GetSigilPieces(); //Takes care of first time visits
+																			//(related to bug #3 mentioned in EDIT4)
+	int player = PlayerNumber();
+	
+	if ( monitoring_players[player] )   //Make sure there's only one instance
+		terminate;                        //of this script running per player.
+	monitoring_players[player] = true;   //(as some goof might try to puke this)
+	
+	while( monitoring_players[player] )
 	{
-		int current_pieces;
-		int previous_pieces = GetSigilPieces(); //Takes care of first time visits
-																				//(related to bug #3 mentioned in EDIT4)
-		int player = PlayerNumber();
+		players_returned[player] = false;
+		Delay(1);
 		
-		if ( monitoring_players[player] )   //Make sure there's only one instance
-			terminate;                        //of this script running per player.
-		monitoring_players[player] = true;   //(as some goof might try to puke this)
+		if ( GetActorProperty(0, APROP_Health) <= 0 )
+				continue; //Don't terminate if dead (could be a COOP or DM game)
 		
-		while( monitoring_players[player] )
+		current_pieces = GetSigilPieces();
+		//If you find this next part undesirable, you can
+		//just put 'continue;' right after the 'if' statement.
+		if ( !current_pieces )
 		{
-			players_returned[player] = false;
-			Delay(1);
-			
-			if ( GetActorProperty(0, APROP_Health) <= 0 )
-					continue; //Don't terminate if dead (could be a COOP or DM game)
-			
-			current_pieces = GetSigilPieces();
-			//If you find this next part undesirable, you can
-			//just put 'continue;' right after the 'if' statement.
-			if ( !current_pieces )
-			{
-				if ( CheckInventory("NNSigil") )   //If you don't have the real one
-						TakeInventory("NNSigil", 1);   //you can't have the NN one
-				continue;
-			}
-			else if ( !CheckInventory("NNSigil") )
-								GiveInventory("NNSigil", 1);
-			
-			if ( CheckWeapon("Sigil") )
-			{
-				SetWeapon("NNSigil");
-				continue;
-			}
-			
-			if ( previous_pieces != current_pieces )
-			{
-				previous_pieces = current_pieces;
-				if ( players_returned[player] ) //Takes care of subsequent visits
-						continue;                    //(related to bug #3 mentioned in EDIT4)
-			
-				if ( CheckWeapon("NNSigil") ) //Don't run upgrade animation hack
-						SetWeapon("Sigil");   //if player is holding another weapon.
-			}
+			if ( CheckInventory("NNSigil") )   //If you don't have the real one
+					TakeInventory("NNSigil", 1);   //you can't have the NN one
+			continue;
+		}
+		else if ( !CheckInventory("NNSigil") )
+							GiveInventory("NNSigil", 1);
+		
+		if ( CheckWeapon("Sigil") )
+		{
+			SetWeapon("NNSigil");
+			continue;
+		}
+		
+		if ( previous_pieces != current_pieces )
+		{
+			previous_pieces = current_pieces;
+			if ( players_returned[player] ) //Takes care of subsequent visits
+					continue;                    //(related to bug #3 mentioned in EDIT4)
+		
+			if ( CheckWeapon("NNSigil") ) //Don't run upgrade animation hack
+					SetWeapon("Sigil");   //if player is holding another weapon.
 		}
 	}
 }
