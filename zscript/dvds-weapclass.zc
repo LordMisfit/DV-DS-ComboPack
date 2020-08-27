@@ -769,6 +769,57 @@ class AetheriusBaseWeaponZSC : Weapon
 		return result;
 	}
 	
+	// Consumes a set amount of Health when called or checks for that much for an A_JumpIf call (for the Sigil)
+	action int A_UseHealthAttack(int amountbase = 0, int sigilmulti = 4)
+	{
+		int CurrentHealth = health;
+		int MaxHealthTrue = CallACS("StatCheck",1);
+		int finaldmg = amountbase * sigilmulti;
+		int HPPenaltyTimeBase = 35 * random(8,12);
+		int HPPenaltyTimeAdd; 
+		
+		int truedamage = CallACS("NNSigilDamageUser", finaldmg);
+		if (truedamage > 0)
+		{
+			HPPenaltyTimeAdd = HPPenaltyTimeBase * truedamage / (MaxHealthTrue * frandompick(0.5,1,1,1,1,1,1.5));
+			//Console.Printf("HPPenaltyTimeAdd: %d (truedmg: %d)", HPPenaltyTimeAdd, truedamage);
+			if (HPPenaltyTimeAdd < 1) HPPenaltyTimeAdd = 1;
+			CallACS("MiscVarSetDECORATE",92,HPPenaltyTimeAdd,2); // HPRegenBonPenTimer
+			
+			// Log Damage
+			if (dvds_showdamagemessages & 1)
+			{
+				AetheriusPlayerPawn playertarg;
+				playertarg = AetheriusPlayerPawn(self);
+				if (playertarg)
+				{
+					string user = playertarg.GetClassName();
+					string username;
+					username = user;
+					if (dvds_showdamagemessageactortags) username = playertarg.GetTag("");
+
+					string DamageMessage = " \c[white]* ";
+					DamageMessage.AppendFormat("\cy%d\c- ", truedamage);
+					DamageMessage.AppendFormat("\c[red]Damage\c-");
+					DamageMessage.AppendFormat(" drained from \cx%s\c-", username);
+					DamageMessage.AppendFormat(" by the \c[darkgray]Sigil\c-");
+					DamageMessage.AppendFormat("!");
+					if (health <= 0)
+					{
+						DamageMessage.AppendFormat(" \cx%s\c-", username);
+						DamageMessage.AppendFormat(" dies!");
+					}
+					if (dvds_showdamagemessagedebug) DamageMessage.AppendFormat(" (%d)", gametic);
+					
+					Console.Printf("%s", DamageMessage);
+				}
+				
+			}
+		}
+
+		return finaldmg;
+	}
+	
 	// Consumes a set amount of MP/MANA when called or checks for that much for an A_JumpIf call (for Heretic's Tome-fire modes)
 	action int A_UseManaAttack(int amount = 0, int check = 0, int infammocheck = 0, int musthaveammofirst = 0)
 	{
