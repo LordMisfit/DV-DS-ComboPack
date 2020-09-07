@@ -673,37 +673,26 @@ class AetheriusBaseWeaponZSC : Weapon
 
 		int CurrentMana = CallACS("StatCheck",14);
 		int MaxMana = CallACS("StatCheck",2);
-		int MPPenaltyTimeBase = 35 * random(8,12);
+		int MPPenaltyTimeBase = 35 * random(16,24);
 		int MPPenaltyTimeAdd; 
+		int requiredmanacost;
 
 		if (attacktype == 1)
 		{
-			if (SceptreActualLevel <= 4 && CurrentMana >= 5) 
-			{
-				CurrentMana -= 5; HaveMana++;
-				MPPenaltyTimeAdd = MPPenaltyTimeBase * 5 / MaxMana;
-			}
-			if (SceptreActualLevel > 4 && SceptreActualLevel <= 8 && CurrentMana >= 4 ) 
-			{
-				CurrentMana -= 4; HaveMana++; 
-				MPPenaltyTimeAdd = MPPenaltyTimeBase * 4 / MaxMana;
-			}
-			if (SceptreActualLevel > 8 && SceptreActualLevel <= 12 && CurrentMana >= 3 ) 
+			
+			if (SceptreActualLevel <= 3) requiredmanacost = 5;
+			if (SceptreActualLevel > 3 && SceptreActualLevel <= 7) requiredmanacost = 4; 
+			if (SceptreActualLevel > 7 && SceptreActualLevel <= 11) requiredmanacost = 3;
+			if (SceptreActualLevel > 11 && SceptreActualLevel <= 15) requiredmanacost = 2;
+			if (SceptreActualLevel == 16) requiredmanacost = 1;
+
+			if (CurrentMana >= requiredmanacost) 
 			{ 
-				CurrentMana -= 3; HaveMana++; 
-				MPPenaltyTimeAdd = MPPenaltyTimeBase * 3 / MaxMana;
-			}
-			if (SceptreActualLevel > 12 && SceptreActualLevel <= 16 && CurrentMana >= 2 ) 
-			{
-				CurrentMana -= 2; HaveMana++; 
-				MPPenaltyTimeAdd = MPPenaltyTimeBase * 2 / MaxMana;
-			}
-			if (SceptreActualLevel == 16 && CurrentMana >= 1) 
-			{ 
-				CurrentMana -= 1; HaveMana++; 
-				MPPenaltyTimeAdd = MPPenaltyTimeBase * 1 / MaxMana;
+				CurrentMana -= requiredmanacost; HaveMana++; 
+				MPPenaltyTimeAdd = MPPenaltyTimeBase * requiredmanacost / (MaxMana * frandompick(0.5,1,1,1,1,1,1.5));
 			}
 			if (MPPenaltyTimeAdd < 1) MPPenaltyTimeAdd = 1;
+			if (dvdsdebug_regenpenaltydisplay) Console.Printf("MPPenaltyTimeAdd: %d (requiredmanacost: %d)", MPPenaltyTimeAdd, requiredmanacost);
 			CallACS("MiscVarSetDECORATE",93,MPPenaltyTimeAdd,2); // MPRegenBonPenTimer
 
 			CurrentMana = clamp(CurrentMana, 0, CurrentMana);
@@ -718,25 +707,16 @@ class AetheriusBaseWeaponZSC : Weapon
 
 			if (SceptreTimer >= SceptreTimerLimit)
 			{
-				ManaCost = random(1,2);
-				if (SceptreActualLevel < 8) 
-				{
-					CurrentMana -= 2;
-					MPPenaltyTimeAdd = MPPenaltyTimeBase * 2 / MaxMana;
-				}
-				if (SceptreActualLevel > 8 && SceptreActualLevel < 16) 
-				{
-					CurrentMana -= ManaCost; HaveMana++;
-					MPPenaltyTimeAdd = MPPenaltyTimeBase * ManaCost / MaxMana;
-				}
-				if (SceptreActualLevel == 16) 
-				{
-					CurrentMana -= 1; HaveMana++;
-					MPPenaltyTimeAdd = MPPenaltyTimeBase * 1 / MaxMana;
-				}
-				CurrentMana = clamp(CurrentMana, 0, CurrentMana);
+				if (SceptreActualLevel < 8) requiredmanacost = 2;
+				if (SceptreActualLevel > 8 && SceptreActualLevel < 16) requiredmanacost = random(1,2);
+				if (SceptreActualLevel == 16) requiredmanacost = 1;
+
+				CurrentMana -= requiredmanacost; HaveMana++;
+				MPPenaltyTimeAdd = MPPenaltyTimeBase * requiredmanacost / (MaxMana * frandompick(0.5,1,1,1,1,1,1.5));
+				if (CurrentMana < 0) CurrentMana = 0;
 
 				if (MPPenaltyTimeAdd < 1) MPPenaltyTimeAdd = 1;
+				if (dvdsdebug_regenpenaltydisplay) Console.Printf("MPPenaltyTimeAdd: %d (requiredmanacost: %d)", MPPenaltyTimeAdd, requiredmanacost);
 				CallACS("MiscVarSetDECORATE",93,MPPenaltyTimeAdd,2); // MPRegenBonPenTimer
 
 				CallACS("OtherVarSetDECORATE",2,CurrentMana);
@@ -775,15 +755,15 @@ class AetheriusBaseWeaponZSC : Weapon
 		int CurrentHealth = health;
 		int MaxHealthTrue = CallACS("StatCheck",1);
 		int finaldmg = amountbase * sigilmulti;
-		int HPPenaltyTimeBase = 35 * random(8,12);
+		int HPPenaltyTimeBase = 35 * random(16,24);
 		int HPPenaltyTimeAdd; 
 		
 		int truedamage = CallACS("NNSigilDamageUser", finaldmg);
 		if (truedamage > 0)
 		{
 			HPPenaltyTimeAdd = HPPenaltyTimeBase * truedamage / (MaxHealthTrue * frandompick(0.5,1,1,1,1,1,1.5));
-			//Console.Printf("HPPenaltyTimeAdd: %d (truedmg: %d)", HPPenaltyTimeAdd, truedamage);
 			if (HPPenaltyTimeAdd < 1) HPPenaltyTimeAdd = 1;
+			if (dvdsdebug_regenpenaltydisplay) Console.Printf("HPPenaltyTimeAdd: %d (truedmg: %d)", HPPenaltyTimeAdd, truedamage);
 			CallACS("MiscVarSetDECORATE",92,HPPenaltyTimeAdd,2); // HPRegenBonPenTimer
 			
 			// Log Damage
@@ -827,8 +807,8 @@ class AetheriusBaseWeaponZSC : Weapon
 		int CurrentMana = CallACS("StatCheck",14);
 		int MaxMana = CallACS("StatCheck",2);
 		int UseManaAttack;
-		int MPPenaltyTimeBase = 35 * random(8,12);
-		int MPPenaltyTimeAdd; 
+		int MPPenaltyTimeBase = 35 * random(16,24);
+		int MPPenaltyTimeAdd;
 		int breakcode;
 
 		// Check 0 = Takes MP without a return value [i.e. infiniteammo is turned on].
@@ -859,8 +839,9 @@ class AetheriusBaseWeaponZSC : Weapon
 						if (check > 1)
 						{
 							CurrentMana -= amount;
-							MPPenaltyTimeAdd = MPPenaltyTimeBase * amount / MaxMana;
+							MPPenaltyTimeAdd = MPPenaltyTimeBase * amount / (MaxMana * frandompick(0.5,1,1,1,1,1,1.5));
 							if (MPPenaltyTimeAdd < 1) MPPenaltyTimeAdd = 1;
+							if (dvdsdebug_regenpenaltydisplay) Console.Printf("MPPenaltyTimeAdd: %d (amount: %d)", MPPenaltyTimeAdd, amount);
 							CallACS("MiscVarSetDECORATE",93,MPPenaltyTimeAdd,2); // MPRegenBonPenTimer
 
 							CurrentMana = clamp(CurrentMana, 0, CurrentMana);
@@ -884,8 +865,9 @@ class AetheriusBaseWeaponZSC : Weapon
 		else
 		{
 			CurrentMana -= amount;
-			MPPenaltyTimeAdd = MPPenaltyTimeBase * amount / MaxMana;
+			MPPenaltyTimeAdd = MPPenaltyTimeBase * amount / (MaxMana * frandompick(0.5,1,1,1,1,1,1.5));
 			if (MPPenaltyTimeAdd < 1) MPPenaltyTimeAdd = 1;
+			if (dvdsdebug_regenpenaltydisplay) Console.Printf("MPPenaltyTimeAdd: %d (amount: %d)", MPPenaltyTimeAdd, amount);
 			CallACS("MiscVarSetDECORATE",93,MPPenaltyTimeAdd,2); // MPRegenBonPenTimer
 
 			if (CurrentMana < 1) CurrentMana = 0;
@@ -975,6 +957,7 @@ class AetheriusBaseWeaponZSC : Weapon
 						CurrentStamina -= amount;
 						BaseStamPenalty = (BaseStamPenalty * amount) / MaxStamina;
 						if (BaseStamPenalty <= random(1,2)) BaseStamPenalty = random(1,2);
+						if (dvdsdebug_regenpenaltydisplay) Console.Printf("StamPenaltyTimeAdd: %d", BaseStamPenalty);
 						CallACS("MiscVarSetDECORATE",94,BaseStamPenalty,2);  // StamRegenBonPenTimer
 						if (CurrentStamina < 0) CurrentStamina = 0;
 						CallACS("MiscVarSetDECORATE",21,CurrentStamina);
@@ -994,6 +977,7 @@ class AetheriusBaseWeaponZSC : Weapon
 				CurrentStamina -= amount;
 				BaseStamPenalty = (BaseStamPenalty * CurrentStamina) / MaxStamina;
 				if (BaseStamPenalty <= random(1,2)) BaseStamPenalty = random(1,2);
+				if (dvdsdebug_regenpenaltydisplay) Console.Printf("StamPenaltyTimeAdd: %d", BaseStamPenalty);
 				CallACS("MiscVarSetDECORATE",94,BaseStamPenalty,2);  // StamRegenBonPenTimer
 				if (CurrentStamina < 0) CurrentStamina = 0;
 				CallACS("MiscVarSetDECORATE",21,CurrentStamina);
@@ -1498,6 +1482,7 @@ class AetheriusBaseWeaponZSC : Weapon
 		if (CharacterClass == 2) 
 		{
 			double ramount = (percent * 0.0001) * randompick(6,7,7,8,8,8,9,9,10);
+			if (dvdsdebug_regenpenaltydisplay) Console.Printf("HLCRPenaltyTimeAdd: %d", ramount);
 			CallACS("MiscVarSetDECORATE",95,ramount,2); // HLCRCoolBonPenTimer
 			if (hellcoredebug) Console.Printf("Hellcore ramount: %d [ramount added: %d]", CallACS("MiscVarCheckDECORATE",95), ramount);
 		}

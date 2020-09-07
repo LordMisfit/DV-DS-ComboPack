@@ -2904,9 +2904,10 @@ class PlayerStatItem : Inventory
 		if (CallACS("MiscVarCheckDECORATE",260) > 0)
 		{
 			healtimeincrease = (CallACS("MiscVarCheckDECORATE",260) * healticmax) / MaxHealthTrue;
+			healtimeincrease *= frandom(0.999,1.001);
 			if (healtimeincrease < random(1,2)) healticmax = random(1,2);
-			//Console.Printf("%d", healtimeincrease);
-			CallACS("MiscVarSetDECORATE",92,(healtimeincrease*frandom(0.999,1.001)),1); // HPRegenBonPenTimer
+			if (dvdsdebug_regenpenaltydisplay) Console.Printf("HPBonusTimeAdd: %d", healtimeincrease);
+			CallACS("MiscVarSetDECORATE",92,healtimeincrease,1); // HPRegenBonPenTimer
 			HPRegenBonPenTimer = CallACS("MiscVarCheckDECORATE",92);
 			CallACS("MiscVarSetDECORATE",260,0);
 		}
@@ -3468,10 +3469,22 @@ class PlayerStatItem : Inventory
 			nm = "NNSigil"; APPackCheck = nm;
 			if (weapon is APPackCheck)
 			{
-				result = MaxHealthTrue * (CallACS("MiscVarCheckDECORATE",25047) * 4) / 100;
-				result2 = 0;
-				lowcap = true;
-				lowcap2 = false;
+				result = 0;
+				lowcap = false;
+
+				int ignorecommand = 0;
+				if (CallACS("MiscVarCheckDECORATE",195) > 0) ignorecommand++; // If in mercy invincibility, no effect
+				if (CallACS("MiscVarCheckDECORATE",25014) > 0) ignorecommand++; // if invulnerable, no effect
+				if (CallACS("MiscVarCheckDECORATE",25040) > 0) ignorecommand++; // if invulnerable, no effect
+				if (CallACS("MiscVarCheckDECORATE",25045) > 0) ignorecommand++; // if GodMode, no effect
+				if (CallACS("MiscVarCheckDECORATE",25046) > 0) ignorecommand++; // if GodMode2, no effect
+				if (ignorecommand == 0)
+				{
+					result = MaxHealthTrue * (CallACS("MiscVarCheckDECORATE",25047) * 4) / 100;
+					result2 = 0;
+					lowcap = true;
+					lowcap2 = false;
+				}
 			}
 			else
 			{
@@ -3766,6 +3779,7 @@ class PlayerStatItem : Inventory
 					CurrentStamina -= FocusDrain;
 					BaseStamPenalty = (BaseStamPenalty * FocusDrain) / MaximumStamina;
 					if (BaseStamPenalty <= random(1,2)) BaseStamPenalty = random(1,2);
+					if (dvdsdebug_regenpenaltydisplay) Console.Printf("StamPenaltyTimeAdd: %d", BaseStamPenalty);
 					CallACS("MiscVarSetDECORATE",94,BaseStamPenalty,2);  // StamRegenBonPenTimer
 					StamRegenBonPenTimer = CallACS("MiscVarCheckDECORATE",94);
 
@@ -7754,6 +7768,7 @@ class PlayerStatItem : Inventory
 
 										BaseStamPenalty = (BaseStamPenalty * TensionStaminaPerTic) / MaximumStamina;
 										if (BaseStamPenalty <= random(1,2)) BaseStamPenalty = random(1,2);
+										if (dvdsdebug_regenpenaltydisplay) Console.Printf("StamPenaltyTimeAdd: %d", BaseStamPenalty);
 										CallACS("MiscVarSetDECORATE",94,BaseStamPenalty,2);  // StamRegenBonPenTimer
 										StamRegenBonPenTimer = CallACS("MiscVarCheckDECORATE",94);
 									}
