@@ -3583,6 +3583,8 @@ class HealMissile : AetheriusProjectileZSC
 // Converts Monsters to Friendlys [base for items like Monster Munchies]
 class CharmMissile : AetheriusProjectileZSC
 {
+	bool hascharmed;
+
 	override bool CanCollideWith(Actor other, bool passive)
 	{
 		AetheriusMonsterZSC DVDSActor;
@@ -3593,25 +3595,45 @@ class CharmMissile : AetheriusProjectileZSC
 		{
 			if (DVDSActor)
 			{
+				if (dvdsdebug_charmdisplays) Console.Printf("[CharmMissile] - Non-Passive_DVDSActor [%d], hascharmed: %d", gametic, hascharmed); 
 				if (DVDSActor.bFRIENDLY)
+				{
+					if (dvdsdebug_charmdisplays) Console.Printf("[CharmMissile] - Non-Passive_DVDSActor_Friendly [%d], hascharmed: %d", gametic, hascharmed); 
 					return false;
+				}
 				else
+				{
+					hascharmed = true;
+					if (dvdsdebug_charmdisplays) Console.Printf("[CharmMissile] - Non-Passive_DVDSActor_NonFriendly [%d], hascharmed: %d", gametic, hascharmed);
 					return true;
+				}
 			}
 			else
+			{
 				return false;
+			}
 		}
-		// We don't really care about others making the check.
-		return true;
+		else
+		{
+			return true;
+		}
 	}
 
 	override int SpecialMissileHit (Actor victim) // CharmMissile
 	{
 		int returned = -1;
-		if (victim == target) returned = 1;
-		if (victim != tracer && victim.bFRIENDLY) returned = 1;
+		AetheriusMonsterZSC touched;
+		touched = AetheriusMonsterZSC(victim);
+		if (touched)
+		{
+			string touchedname = touched.GetClassName();
+			if (touched == target) returned = 1;
+			if (touched != tracer && touched.bFRIENDLY) returned = 1;
+			if (dvdsdebug_charmdisplays) Console.Printf("[CharmMissile] (touched: %s) - Returned: %d (gametic: %d)", touchedname, returned, gametic);
+		}
 
-		//Console.Printf("Returned: %d (gametic: %d)", returned, gametic);
+		if (returned) hascharmed = true;
+
 		return returned;
 	}
 }
