@@ -576,9 +576,9 @@ class AetheriusBaseWeaponZSC : Weapon
 		string weaponname = weapon.GetClassName();
 		string actorname = GetClassName();
 		int damage;
-		int temp1, temp2;
+		double PerkFactor;
+		double temp1, temp2;
 		int previousdamage;
-		int PerkFactor;
 		int PlayerSTR = CallACS("MiscVarCheckDECORATE",35);
 		int StamUpPerkLevel = CallACS("MiscVarCheckDECORATE",10005);
 		int StamUpEXPerkLevel = CallACS("MiscVarCheckDECORATE",10006);
@@ -593,7 +593,7 @@ class AetheriusBaseWeaponZSC : Weapon
 		if (sawtype >= 2) // Double-Bladed Chainsaw
 		{
 			randmizer = random(3,12);
-			damage = (((9 / 2) + (PlayerSTR * frandompick(0.5625,0.7502))) * randmizer); // 13.5 - 54 + (Strength * 62.5%)
+			damage = (((randompick(8,9,9,9,9,9,10) / 2) + (PlayerSTR * frandompick(0.5625,0.7502))) * randmizer); // 13.5 - 54 + (Strength * 62.5%)
 		}
 		if (debugmelee) Console.Printf("BaseDmg (Chainsaw): %d (PlayerSTR: %d) (randmizer: %d)", damage, PlayerSTR, randmizer);
 
@@ -605,17 +605,17 @@ class AetheriusBaseWeaponZSC : Weapon
 
 		// Berserk Check
 		previousdamage = damage;
-		if (CountInv("AetheriusPowerStrength")) damage *= 1.75; // 175% Damage when Berserked
+		if (CountInv("AetheriusPowerStrength")) damage *= 2.5; // 250% Damage when Berserked
 		if (debugmelee) Console.Printf("BerserkDmg (Chainsaw): %d - (Previous Dmg: %d)", damage, previousdamage);
 
 		// StamUp Check
 		previousdamage = damage;
 		if (StamUpPerkLevel > 0)
 		{
-			PerkFactor = ((StamUpPerkLevel * 30) + (StamUpEXPerkLevel * 75)) + 400;
-			damage = damage * PerkFactor / 400;
+			PerkFactor = 1.000 + ((StamUpPerkLevel * 0.075) + (StamUpEXPerkLevel * 0.1875));
+			damage = floor(damage * PerkFactor);
+			if (debugmelee) Console.Printf("StamPerkDmg (Chainsaw): %d - (Previous Dmg: %d)", damage, previousdamage);
 		}
-		if (debugmelee) Console.Printf("StamPerkDmg (Chainsaw): %d - (Previous Dmg: %d)", damage, previousdamage);
 
 		// Berserker Fit
 		previousdamage = damage;
@@ -623,21 +623,21 @@ class AetheriusBaseWeaponZSC : Weapon
 		int BerserkerFitEX = CallACS("MiscVarCheckDECORATE",10052);
 		if (BerserkerFit > 0)
 		{
-			temp1 = 0;
-			if (BerserkerFit == 1) temp1 = 25;
-			if (BerserkerFit == 2) temp1 = 75;
-			if (BerserkerFit == 3) temp1 = 225;
-			if (BerserkerFit == 4) temp1 = 675;
-			if (BerserkerFit >= 5) temp1 = 2025;
+			temp1 = 0.000;
+			if (BerserkerFit == 1) temp1 = 0.025;
+			if (BerserkerFit == 2) temp1 = 0.075;
+			if (BerserkerFit == 3) temp1 = 0.225;
+			if (BerserkerFit == 4) temp1 = 0.675;
+			if (BerserkerFit >= 5) temp1 = 2.025;
 			temp1 *= random(2,3);
-			temp1 /= 4;
-			temp2 = 0;
-			if (BerserkerFitEX == 1) temp2 = 500;
-			if (BerserkerFitEX == 2) temp2 = 1000;
+			temp1 *= 0.25;
+			temp2 = 0.000;
+			if (BerserkerFitEX == 1) temp2 = 0.500;
+			if (BerserkerFitEX == 2) temp2 = 1.000;
 			temp2 *= random(2,3);
-			temp2 /= 4;
-			PerkFactor = 1000 + (temp1 + temp2);
-			damage = damage * PerkFactor / 1000;
+			temp2 *= 0.25;
+			PerkFactor = 1.0 + (temp1 + temp2);
+			damage = floor(damage * PerkFactor);
 		}
 
 		if (debugmelee) Console.Printf("FinalMeleeDmg (Chainsaw): (Weapon: %s - Source: %s) %d - (Previous Dmg: %d) [Chainsaw]", weaponname, actorname, damage, previousdamage);
