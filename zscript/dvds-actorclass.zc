@@ -3860,6 +3860,27 @@ class AetheriusCustomInventory : CustomInventory
 		return result;
 	}
 
+	action int A_CheckArmorLevelsOrb(int ArmorType = 0)
+	{
+		int RawArmorValue, ArmorClearValue;
+		int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
+		int CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
+		int CharacterClass = CallACS("CheckCharacterClass");
+		
+		int result = 0;
+		if (CharacterClass != 2)
+		{
+			if (ArmorType == 1 && CurrentArmorClass <= 1) result = 1;
+			if (ArmorType == 2 && CurrentArmorClass <= 2) result = 1;
+			if (ArmorType == 3 && CurrentArmorClass <= 3) result = 1;
+			if (ArmorType == 4 && CurrentArmorClass <= 4) result = 1;
+			if (ArmorType == 5 && CurrentArmorClass <= 5) result = 1;
+			if (ArmorType == 6 && CurrentArmorClass <= 6) result = 1;
+		}
+		//Console.Printf("ArmorType: %d, CurrentArmorClass: %d, RawArmorValue: %d, Result: %d", ArmorType, CurrentArmorClass, RawArmorValue, result);
+		return result;
+	}
+
 	// Emulates Main Armor Item Pickups [Applies Only to Deggaris and Illucia]
 	action void A_PickupArmorMain(int ArmorType = 0)
 	{
@@ -3933,6 +3954,131 @@ class AetheriusCustomInventory : CustomInventory
 
 		CallACS("OtherVarSetDECORATE",5,CurrentArmorClass);
 		CallACS("OtherVarSetDECORATE",9,CurrentMaxArmor);
+	}
+	
+	// Emulates Main Armor Item Pickups [Applies Only to Deggaris and Illucia]
+	action int A_PickupArmorMainOrb(int ArmorType = 0, int OrbType = 0, int check = 0)
+	{
+		//Console.Printf("\ArmorType: %d, OrbType: %d, check: %d", ArmorType, OrbType, check);
+
+		int GiveArmorAmount;
+		int RawArmorValue, ArmorClearValue;
+		int CurrentArmorClass = CallACS("OtherVarCheckDECORATE",5);
+		int CurrentMaxArmor = CallACS("OtherVarCheckDECORATE",9);
+
+		// Saves original raw Armor Value
+		RawArmorValue = player.mo.CountInv("BasicArmor");
+		
+		//if (ArmorType == 1 && CurrentArmorClass <= 1) { CurrentArmorClass = 1; GiveArmorAmount = 100; }
+		//if (ArmorType == 2 && CurrentArmorClass <= 2) { CurrentArmorClass = 2; GiveArmorAmount = 200; }
+		//if (ArmorType == 3 && CurrentArmorClass <= 3) { CurrentArmorClass = 3; GiveArmorAmount = 500; }
+		//if (ArmorType == 4 && CurrentArmorClass <= 4) { CurrentArmorClass = 4; GiveArmorAmount = 1250; }
+		//if (ArmorType == 5 && CurrentArmorClass <= 5) { CurrentArmorClass = 5; GiveArmorAmount = 2000; }
+		//if (ArmorType == 6 && CurrentArmorClass <= 6) { CurrentArmorClass = 6; GiveArmorAmount = 5000; }
+		
+		if (ArmorType <= 1 && CurrentArmorClass >= 1) { GiveArmorAmount = (100 - RawArmorValue); }
+		if (ArmorType == 2 && CurrentArmorClass >= 2) { GiveArmorAmount = (200 - RawArmorValue); }
+		if (ArmorType == 3 && CurrentArmorClass >= 3) { GiveArmorAmount = (500 - RawArmorValue); }
+		if (ArmorType == 4 && CurrentArmorClass >= 4) { GiveArmorAmount = (1250 - RawArmorValue); }
+		if (ArmorType == 5 && CurrentArmorClass >= 5) { GiveArmorAmount = (2000 - RawArmorValue); }
+		if (ArmorType >= 6 && CurrentArmorClass >= 6) { GiveArmorAmount = (5000 - RawArmorValue); }
+		if (OrbType == 1) // Green Tier [35%]
+		{
+			if (GiveArmorAmount > 0) GiveArmorAmount *= 0.35;
+		}
+		if (OrbType == 2) // Blue Tier [52.5%]
+		{
+			if (GiveArmorAmount > 0) GiveArmorAmount *= 0.525;
+		}
+		if (OrbType == 3) // Stone Tier [70.84%]
+		{
+			if (GiveArmorAmount > 0) GiveArmorAmount *= 0.7084;
+		}
+		if (OrbType == 4) // Diamond Tier [93.75%]
+		{
+			if (GiveArmorAmount > 0) GiveArmorAmount *= 0.9375;
+		}
+		if (OrbType == 5) // Divine Stone Tier [87.5%]
+		{
+			if (GiveArmorAmount > 0) GiveArmorAmount *= 0.875;
+		}
+		if (OrbType == 6) // Divine Diamond Tier [98.75%]
+		{
+			if (GiveArmorAmount > 0) GiveArmorAmount *= 0.9875;
+		}
+		
+		if (GiveArmorAmount > 0)
+		{
+			if (check > 0)
+			{
+				return 1;
+			}
+			else
+			{
+				//Console.Printf("\czGiveAmt: %d\c-", GiveArmorAmount);
+
+				GiveArmorAmount += RawArmorValue;
+				//Console.Printf("\cxRawArmorValue: %d\c-, \cyGiveArmorAmount: %d\c-", RawArmorValue, GiveArmorAmount);
+				
+				player.mo.A_SetInventory("BasicArmor",0);
+				player.mo.A_SetInventory("Armor",0);
+				player.mo.A_SetInventory("ArmorBonusDSGreen",0);
+				player.mo.A_SetInventory("ArmorBonusDSBlue",0);
+				player.mo.A_SetInventory("ArmorBonusDSStone1",0);
+				player.mo.A_SetInventory("ArmorBonusDSStone2",0);
+				player.mo.A_SetInventory("ArmorBonusDSDiamond1",0);
+				player.mo.A_SetInventory("ArmorBonusDSDiamond2",0);
+			
+				player.mo.A_SetInventory("DSNoArmorClass",0);
+				player.mo.A_SetInventory("DSGreenArmorClass",0);
+				player.mo.A_SetInventory("DSBlueArmorClass",0);
+				player.mo.A_SetInventory("DSStoneArmorClass1",0);
+				player.mo.A_SetInventory("DSDiamondArmorClass1",0);
+				player.mo.A_SetInventory("DSStoneArmorClass2",0);
+				player.mo.A_SetInventory("DSDiamondArmorClass2",0);
+				if (CurrentArmorClass == 1)
+				{
+					GiveInventory("DSGreenArmorClass", 1);
+					for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSGreen", 1); }
+					CurrentMaxArmor = 100;
+				}
+				if (CurrentArmorClass == 2)
+				{
+					GiveInventory("DSGreenArmorClass", 1);
+					for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSBlue", 1); }
+					CurrentMaxArmor = 200;
+				}
+				if (CurrentArmorClass == 3)
+				{
+					GiveInventory("DSStoneArmorClass1", 1);
+					for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSStone1", 1); }
+					CurrentMaxArmor = 500;
+				}
+				if (CurrentArmorClass == 4)
+				{
+					GiveInventory("DSDiamondArmorClass1", 1);
+					for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSDiamond1", 1); }
+					CurrentMaxArmor = 1250;
+				}
+				if (CurrentArmorClass == 5)
+				{
+					GiveInventory("DSStoneArmorClass1", 1);
+					for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSStone2", 1); }
+					CurrentMaxArmor = 2000;
+				}
+				if (CurrentArmorClass == 6)
+				{
+					GiveInventory("DSDiamondArmorClass1", 1);
+					for (int i = 0; i < GiveArmorAmount; i++) { player.mo.A_GiveInventory("ArmorBonusDSDiamond2", 1); }
+					CurrentMaxArmor = 5000;
+				}
+
+				CallACS("OtherVarSetDECORATE",5,CurrentArmorClass);
+				CallACS("OtherVarSetDECORATE",9,CurrentMaxArmor);
+				A_StartSound("generalequip",5);
+			}
+		}
+		return 0;
 	}
 	
 	// Sets the "glowing eyes" in the "Armor Bonus" items to a specific color based on the current Armor Class of Deggaris or Illucia [does not apply to Flora as she can't use Armor Bonuses and they aren't supposed to "appear" when she is in play]
