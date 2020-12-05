@@ -1539,8 +1539,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		double HellcoreLevelFactor = 1.0;
 		int HellcoreLevel;
 		int IsHellCoreAttack = A_DamageMobjCheckHellCore(inflictor, source);
-		int HellcoreType; 
-		if (IsHellCoreAttack) HellcoreType = IsHellCoreAttack + 95;
+		int HellcoreType = 0; 
+		if (IsHellCoreAttack > 0) HellcoreType = IsHellCoreAttack + 95;
+		if (IsHellCoreAttack < 0) HellcoreType = -1;
 		if (dvdsdebug_actordmgdisplays && IsHellCoreAttack) Console.Printf("    (\czIsHellCoreAttack?: %d, HellcoreType: %d", IsHellCoreAttack, HellcoreType);
 		
 		bool wasblastedimpact = false;
@@ -1618,10 +1619,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (HellcoreType != 0)
 		{
+			HellcoreLevel = 0;
 			olddmg = damage;
-			HellcoreLevel = CallACS("MiscVarCheckDECORATE",HellcoreType);
+			if (HellcoreType > 0) HellcoreLevel = CallACS("MiscVarCheckDECORATE",HellcoreType);
+			if (HellcoreLevel < 0) HellCoreLevel = 0;
 			if (HellcoreLevel > 0)
 			{
+				if (HellcoreLevel >= 9) HellCoreLevel = 9;
 				HellcoreBaseMulti = 1.5;
 				if (HellcoreLevel >= 1) HellcoreLevelFactor = HellcoreBaseMulti;
 				if (HellcoreLevel >= 2) HellcoreLevelFactor *= HellcoreBaseMulti;
@@ -2063,7 +2067,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 				if (meleeattack && (ActorClass == "EttinNew" || ActorClass == "EttinCommander" || ActorClass == "Bormereth" ||
 						ActorClass == "FEttinNew" || ActorClass == "FEttinCommander" || ActorClass == "FBormereth")) 
-						CritChance = (CritChance * 9) / 4; // Ettins have 125% more crit for Melee
+						CritChance *= 2.25; // Ettins have 125% more crit for Melee
 	
 				if (meleeattack && (ActorClass == "StalkerNew" || ActorClass == "StalkerLeaderNew" || ActorClass == "IceStalker" || ActorClass == "IceStalkerLeader" || 
 						ActorClass == "FStalker" || ActorClass == "FStalkerLeader")) 
@@ -2074,16 +2078,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						CritChance *= 2; // Centaurs have 2x more crit for Melee
 
 				if (meleeattack && (ActorClass == "DSRevenant" || ActorClass == "FRevenant" || ActorClass == "DeathIncarnate" || ActorClass == "FDeathIncarnate")) 
-						CritChance = (CritChance * 6) / 4; // Revenants/Death Incarnates have another +50% more crit when using melee
+						CritChance *= 1.5; // Revenants/Death Incarnates have another +50% more crit when using melee
 
 				if (meleeattack && (ActorClass == "KnightNew" || ActorClass == "FKnight" || ActorClass == "KnightGhostNew" || ActorClass == "FKnightGhost")) 
-						CritChance = (CritChance * 6) / 4; // Revenants/Death Incarnates have another +50% more crit when using melee
+						CritChance *= 1.5; // Undead Warriors [Heretic] have another +50% more crit when using melee
 
 				if (meleeattack && (ActorClass == "ReaverNew")) 
 						CritChance *= 3; // Reavers have 3x more crit for melee
 
 				if (meleeattack && (ActorClass == "OStalkerNew")) 
-						CritChance = (CritChance * 6) / 4; // Strife Stalkers have 50% more crit
+						CritChance *= 1.5; // Strife Stalkers have 50% more crit
 
 				if (meleeattack && 
 						(ActorClass == "DSCacodemon" || ActorClass == "DSCacodemon64" || ActorClass == "FCacodemon" ||
@@ -2106,10 +2110,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						ActorClass == "BloodFiendNew" || ActorClass == "LurkerNew" ||
 						ActorClass == "FDemon" || ActorClass == "FSpectre" || 
 						ActorClass == "FBloodDemon" || ActorClass == "FBloodSpectre")) 
-						CritChance = (CritChance * 6) / 4; // Pinkies have 50% more crit with Melee
+						CritChance *= 1.5; // Pinkies have 50% more crit with Melee
 
 				if (meleeattack && (ActorClass == "ClinkNew" || ActorClass == "FClink" || ActorClass == "DarkClink" || ActorClass == "FDarkClink")) 
-						CritChance = (CritChance * 6) / 4; // SabreClaws have 50% more crit with Melee
+						CritChance *= 1.5; // SabreClaws have 50% more crit with Melee
 
 				if (meleeattack && 
 						(ActorClass == "DSCyberdemon" || ActorClass == "DSCyberdemon64" || ActorClass == "Annihilator" || 
@@ -2125,7 +2129,8 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						ActorClass == "CyBruiser" || ActorClass == "FCyBruiser" || 
 						ActorClass == "ArchonofHell" || ActorClass == "FArchonofHell" ||
 						ActorClass == "PyroDemon" || ActorClass == "FPyroDemon" ||
-						ActorClass == "WeakenedFlyingBalrog" || ActorClass == "FlyingBalrog" || ActorClass == "FFlyingBalrog")) 
+						ActorClass == "WeakenedFlyingBalrog" || ActorClass == "FlyingBalrog" || ActorClass == "FFlyingBalrog" || 
+						ActorClass == "Hierophant" || ActorClass == "FHierophant")) 
 						CritChance *= 4; // Hell Nobles have 4x chance to Crit w/ melee attacks
 
 				// Misc
@@ -2216,7 +2221,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		else
 		{
 			// Hellcore
-			if (IsHellCoreAttack) 
+			if (IsHellCoreAttack != 0) 
 			{
 				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + (SoulMasteryPerkLevel * frandom(0.0225,0.0275)) + (SoulMasteryEXPerkLevel * frandom(0.05625,0.06875))) * (1.00 - ActorDefenseIgnoreFactor));
 			}
@@ -4094,6 +4099,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 							MaxHPFactor = 1.00;
 							BalanceFactor = 1.25;
 						}
+						if (ActorName == "ReaverNew") SpeedFactor *= 3.0;
 						if (skilllevelcalctype == 0)
 						{
 							AttackFactor *= frandompick(1.5,1.75,1.75,2.0,2.0,2.0,2.0,2.0,2.0,2.25,2.25,2.5);
@@ -4204,6 +4210,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 								DefenseFactor -= 1.0;
 						
 								SpeedFactor = AttackFactor / 3.2;
+								if (ActorName == "ReaverNew") SpeedFactor *= 3.0;
 						
 								MaxHPFactor = AttackFactor;
 						
@@ -4242,6 +4249,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 								DefenseFactor -= 1.0;
 						
 								SpeedFactor = AttackFactor / 3.2;
+								if (ActorName == "ReaverNew") SpeedFactor *= 3.0;
 						
 								MaxHPFactor = AttackFactor;
 						
@@ -4269,6 +4277,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 							DefenseFactor -= 1.0;
 					
 							SpeedFactor = AttackFactor / 4.0;
+							if (ActorName == "ReaverNew") SpeedFactor *= 3.0;
 					
 							MaxHPFactor = AttackFactor / 1.25;
 					
@@ -4619,6 +4628,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						DefenseFactor -= 1.0;
 				
 						SpeedFactor = AttackFactor / 4.0;
+						if (ActorName == "ReaverNew") SpeedFactor *= 3.0;
 				
 						MaxHPFactor = AttackFactor / 1.25;
 				
