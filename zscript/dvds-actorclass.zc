@@ -7,12 +7,14 @@ class AetheriusBaseZSC : Actor
 	mixin DamageMessages;
 
 	float user_tempvar1, user_tempvar2, user_tempvar3, user_tempvar4, user_tempvar5;
+	double basealpha;
 	int user_bormpainreact;
 	int user_hyperlvl1, user_hyperlvl2;
 	int user_theta, user_dormant, user_isstealth, user_wasstealth, user_baseattack, user_basedefense, user_basemass; 
 	int user_monsterlevel, user_lastmonsterlevel, user_extraevolvechance, user_extrastealthchance;
 	int user_willbecomelegendary, user_legendaryevolved;
 	int user_MaxHP, user_HPCritRange, user_HPBuffRange, user_HPLowBuffRange, user_HPXDeathRange, user_HPXDeathRange2, user_HPLowRange;
+	int user_deathcounter, user_truekill;
 	int user_checkmapskill, user_ressurrectstr, user_resurrectedtimes, user_canusecrisisatk;
 	int user_presetleveladd, user_presetlevelrand1, user_presetlevelrand2;
 	int user_barragecounter, user_shotsfired, user_shotsfiredmax;
@@ -271,15 +273,19 @@ class AetheriusBaseZSC : Actor
 					TempHealAmount3 = random(-500,500);
 					HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
 					if (playpawn.player.mo.CountInv("WaterFlyingDress")) HellcoreRestored *= 1.6667;
-					if (SoulMasteryPerkLevel >= 0)
+					if (SoulMasteryPerkLevel > 0)
 					{
+						temp1 = 0;
+						temp2 = 0;
+						if (SoulMasteryPerkLevel <= 0) temp1 = 0;
 						if (SoulMasteryPerkLevel == 1) temp1 = 1;
 						if (SoulMasteryPerkLevel == 2) temp1 = 2;
 						if (SoulMasteryPerkLevel == 3) temp1 = 3;
 						if (SoulMasteryPerkLevel == 4) temp1 = 4;
-						if (SoulMasteryPerkLevel == 5) temp1 = 5;
+						if (SoulMasteryPerkLevel >= 5) temp1 = 5;
+						if (SoulMasteryEXPerkLevel <= 0) temp2 = 0;
 						if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
-						if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+						if (SoulMasteryEXPerkLevel >= 2) temp2 = 5;
 						PerkFactor = 16 + (temp1 + temp2);
 						HellcoreRestored = HellcoreRestored * PerkFactor / 16;
 					}
@@ -412,17 +418,29 @@ class AetheriusBaseZSC : Actor
 	}
 }
 
+class AetheriusAfterimageZSC : AetheriusBaseZSC
+{
+	override void Tick()
+	{
+		
+
+		//This space for rent.
+		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
+	}
+}
+
 class AetheriusSpawnedItem : AetheriusBaseZSC
 {
 	bool IsACrisisSpawnedItem;
 	int CrisisMultiplier;
 	
-	override void Tick()
+	override void PostBeginPlay()
 	{
-		CrisisMultiplier = CallACS("CrisisMultiplier");
+		basealpha = alpha;
+		if (GetClassName() == "DSFX3") basealpha *= 0.90;
 
 		//This space for rent.
-		super.Tick(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
+		super.PostBeginPlay(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
 	}
 }
 
@@ -687,15 +705,19 @@ class AetheriusCustomInventory : CustomInventory
 				if (CharacterClass == 2)
 				{
 					int temp1, temp2;
-					if (SoulMasteryPerkLevel >= 0)
+					if (SoulMasteryPerkLevel > 0)
 					{
+						temp1 = 0;
+						temp2 = 0;
+						if (SoulMasteryPerkLevel <= 0) temp1 = 0;
 						if (SoulMasteryPerkLevel == 1) temp1 = 1;
 						if (SoulMasteryPerkLevel == 2) temp1 = 2;
 						if (SoulMasteryPerkLevel == 3) temp1 = 3;
 						if (SoulMasteryPerkLevel == 4) temp1 = 4;
-						if (SoulMasteryPerkLevel == 5) temp1 = 5;
+						if (SoulMasteryPerkLevel >= 5) temp1 = 5;
+						if (SoulMasteryEXPerkLevel <= 0) temp2 = 0;
 						if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
-						if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+						if (SoulMasteryEXPerkLevel >= 2) temp2 = 5;
 						PerkFactor = 16 + (temp1 + temp2);
 						value3a = value3a * PerkFactor / 16;
 						value3b = value3b * PerkFactor / 16;
@@ -2011,6 +2033,39 @@ class AetheriusCustomInventory : CustomInventory
 					CurrentStamina = clamp(CurrentStamina, CurrentStamina, healmax);
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 				}
+				// Hellcore
+				if (HellcoreOverheatLevel > 0)
+				{
+					TempHealAmount = HellcoreOverheatLevel * frandom(0.50,0.60); // ~55% [10000000 is 1000.00% (maximum)]
+					TempHealAmount2 = PlayerLevel * ((HellcoreOverheatLevel * frandom(0.50,0.60)) / 1000);
+					TempHealAmount3 = ((HellcoreOverheatLevel * frandom(0.50,0.60)) / 1000) * random(-50,50);
+					HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
+					if (player.mo.CountInv("WaterFlyingDress")) HellcoreRestored *= 1.667;
+					if (SoulMasteryPerkLevel > 0)
+					{
+						temp1 = 0;
+						temp2 = 0;
+						if (SoulMasteryPerkLevel <= 0) temp1 = 0;
+						if (SoulMasteryPerkLevel == 1) temp1 = 1;
+						if (SoulMasteryPerkLevel == 2) temp1 = 2;
+						if (SoulMasteryPerkLevel == 3) temp1 = 3;
+						if (SoulMasteryPerkLevel == 4) temp1 = 4;
+						if (SoulMasteryPerkLevel >= 5) temp1 = 5;
+						if (SoulMasteryEXPerkLevel <= 0) temp2 = 0;
+						if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
+						if (SoulMasteryEXPerkLevel >= 2) temp2 = 5;
+						PerkFactor = 16 + (temp1 + temp2);
+						HellcoreRestored = HellcoreRestored * PerkFactor / 16;
+					}
+					HellcoreRestored = clamp(HellcoreRestored, 1, 10000000);
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Hellcore Restored: %d (BaseOverHeatLevel: %d)", HellcoreRestored, HellcoreOverheatLevel);
+				
+					HellcoreOverheatLevel -= HellcoreRestored;
+					if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+					
+					CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+				}
+
 				if (check1 > 0)
 				{
 					ptemp1 = (420*frandom(1.0,1.1));
@@ -2019,6 +2074,9 @@ class AetheriusCustomInventory : CustomInventory
 					ptemp1 = (420*frandom(0.6249,0.6251));
 					if (dvdsdebug_regenpenaltydisplay) Console.Printf("StamBonusTimeAdd: %d, itemname: %s", ptemp1, nm);
 					CallACS("MiscVarSetDECORATE",94,ptemp1,1); // StamRegenBonPenTimer
+					ptemp1 = (420*frandom(0.50,0.60));
+					if (dvdsdebug_regenpenaltydisplay) Console.Printf("HLCRBonusTimeAdd: %d, itemname: %s", ptemp1, nm);
+					CallACS("MiscVarSetDECORATE",95,ptemp1,1); // HLCRCoolBonPenTimer
 
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",1.125,1.125,"Heal3Glitter",6);
 					player.mo.A_StartSound("misc/invuse",81,CHANF_DEFAULT,1.0,ATTN_NORM);
@@ -2128,6 +2186,39 @@ class AetheriusCustomInventory : CustomInventory
 					CurrentStamina = clamp(CurrentStamina, CurrentStamina, healmax);
 					CallACS("MiscVarSetDECORATE",21,CurrentStamina);
 				}
+
+				// Hellcore
+				if (HellcoreOverheatLevel > 0)
+				{
+					TempHealAmount = HellcoreOverheatLevel * frandom(0.125,0.15); // ~13.75% [10000000 is 1000.00% (maximum)]
+					TempHealAmount2 = PlayerLevel * ((HellcoreOverheatLevel * frandom(0.125,0.15)) / 1000);
+					TempHealAmount3 = ((HellcoreOverheatLevel * frandom(0.125,0.15)) / 1000) * random(-50,50);
+					HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
+					if (player.mo.CountInv("WaterFlyingDress")) HellcoreRestored *= 1.667;
+					if (SoulMasteryPerkLevel > 0)
+					{
+						temp1 = 0;
+						temp2 = 0;
+						if (SoulMasteryPerkLevel <= 0) temp1 = 0;
+						if (SoulMasteryPerkLevel == 1) temp1 = 1;
+						if (SoulMasteryPerkLevel == 2) temp1 = 2;
+						if (SoulMasteryPerkLevel == 3) temp1 = 3;
+						if (SoulMasteryPerkLevel == 4) temp1 = 4;
+						if (SoulMasteryPerkLevel >= 5) temp1 = 5;
+						if (SoulMasteryEXPerkLevel <= 0) temp2 = 0;
+						if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
+						if (SoulMasteryEXPerkLevel >= 2) temp2 = 5;
+						PerkFactor = 16 + (temp1 + temp2);
+						HellcoreRestored = HellcoreRestored * PerkFactor / 16;
+					}
+					HellcoreRestored = clamp(HellcoreRestored, 1, 10000000);
+					if (dvdsdebug_healitemdisplays) Console.Printf ("Hellcore Restored: %d (BaseOverHeatLevel: %d)", HellcoreRestored, HellcoreOverheatLevel);
+				
+					HellcoreOverheatLevel -= HellcoreRestored;
+					if (HellcoreOverheatLevel < 0) HellcoreOverheatLevel = 0;
+					
+					CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
+				}
 				if (check1 > 0)
 				{
 					ptemp1 = (420*frandom(0.25,0.30));
@@ -2136,6 +2227,9 @@ class AetheriusCustomInventory : CustomInventory
 					ptemp1 = (420*frandom(0.1249,0.1251));
 					if (dvdsdebug_regenpenaltydisplay) Console.Printf("StamBonusTimeAdd: %d, itemname: %s", ptemp1, nm);
 					CallACS("MiscVarSetDECORATE",94,ptemp1,1); // StamRegenBonPenTimer
+					ptemp1 = (420*frandom(0.125,0.15));
+					if (dvdsdebug_regenpenaltydisplay) Console.Printf("HLCRBonusTimeAdd: %d, itemname: %s", ptemp1, nm);
+					CallACS("MiscVarSetDECORATE",95,ptemp1,1); // HLCRCoolBonPenTimer
 
 					A_UCIIHealSpark(player.mo,"CustomHealSpark",0.625,0.625,"Heal2Glitter",3);
 					player.mo.A_StartSound("pickup/qpotion",82,CHANF_DEFAULT,1.0,ATTN_NORM);
@@ -2946,15 +3040,19 @@ class AetheriusCustomInventory : CustomInventory
 						TempHealAmount3 = random(-62500,62500);
 						HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
 						if (player.mo.CountInv("WaterFlyingDress")) HellcoreRestored *= 1.667;
-						if (SoulMasteryPerkLevel >= 0)
+						if (SoulMasteryPerkLevel > 0)
 						{
+							temp1 = 0;
+							temp2 = 0;
+							if (SoulMasteryPerkLevel <= 0) temp1 = 0;
 							if (SoulMasteryPerkLevel == 1) temp1 = 1;
 							if (SoulMasteryPerkLevel == 2) temp1 = 2;
 							if (SoulMasteryPerkLevel == 3) temp1 = 3;
 							if (SoulMasteryPerkLevel == 4) temp1 = 4;
-							if (SoulMasteryPerkLevel == 5) temp1 = 5;
+							if (SoulMasteryPerkLevel >= 5) temp1 = 5;
+							if (SoulMasteryEXPerkLevel <= 0) temp2 = 0;
 							if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
-							if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+							if (SoulMasteryEXPerkLevel >= 2) temp2 = 5;
 							PerkFactor = 16 + (temp1 + temp2);
 							HellcoreRestored = HellcoreRestored * PerkFactor / 16;
 						}
@@ -3108,15 +3206,19 @@ class AetheriusCustomInventory : CustomInventory
 				TempHealAmount3 = random(-500,500);
 				HellcoreRestored = TempHealAmount + TempHealAmount2 + TempHealAmount3;
 				if (player.mo.CountInv("WaterFlyingDress")) HellcoreRestored *= 1.6667;
-				if (SoulMasteryPerkLevel >= 0)
+				if (SoulMasteryPerkLevel > 0)
 				{
+					temp1 = 0;
+					temp2 = 0;
+					if (SoulMasteryPerkLevel <= 0) temp1 = 0;
 					if (SoulMasteryPerkLevel == 1) temp1 = 1;
 					if (SoulMasteryPerkLevel == 2) temp1 = 2;
 					if (SoulMasteryPerkLevel == 3) temp1 = 3;
 					if (SoulMasteryPerkLevel == 4) temp1 = 4;
-					if (SoulMasteryPerkLevel == 5) temp1 = 5;
+					if (SoulMasteryPerkLevel >= 5) temp1 = 5;
+					if (SoulMasteryEXPerkLevel <= 0) temp2 = 0;
 					if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
-					if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+					if (SoulMasteryEXPerkLevel >= 2) temp2 = 5;
 					PerkFactor = 16 + (temp1 + temp2);
 					HellcoreRestored = HellcoreRestored * PerkFactor / 16;
 				}
@@ -3281,18 +3383,24 @@ class AetheriusCustomInventory : CustomInventory
 		{
 			if (HellcoreOverheatLevel > 0)
 			{
+				temp1 = 0;
+				temp2 = 0;
 				HellcoreRestored = 250000 + (PlayerLevel * 2500) + random(-50000,50000);
 				if (type == 1) HellcoreRestored *= 0.5;
 				if (player.mo.CountInv("WaterFlyingDress") > 0) HellcoreRestored *= 1.6667;
-				if (SoulMasteryPerkLevel >= 0)
+				if (SoulMasteryPerkLevel > 0)
 				{
+					temp1 = 0;
+					temp2 = 0;
+					if (SoulMasteryPerkLevel <= 0) temp1 = 0;
 					if (SoulMasteryPerkLevel == 1) temp1 = 1;
 					if (SoulMasteryPerkLevel == 2) temp1 = 2;
 					if (SoulMasteryPerkLevel == 3) temp1 = 3;
 					if (SoulMasteryPerkLevel == 4) temp1 = 4;
-					if (SoulMasteryPerkLevel == 5) temp1 = 5;
+					if (SoulMasteryPerkLevel >= 5) temp1 = 5;
+					if (SoulMasteryEXPerkLevel <= 0) temp2 = 0;
 					if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
-					if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+					if (SoulMasteryEXPerkLevel >= 2) temp2 = 5;
 					PerkFactor = 16 + (temp1 + temp2);
 					HellcoreRestored = HellcoreRestored * PerkFactor / 16;
 				}
@@ -3403,15 +3511,19 @@ class AetheriusCustomInventory : CustomInventory
 			{
 				HellcoreRestored = 750000 + (PlayerLevel * 7500) + random(-150000,150000);
 				if (player.mo.CountInv("WaterFlyingDress")) HellcoreRestored *= 1.6667;
-				if (SoulMasteryPerkLevel >= 0)
+				if (SoulMasteryPerkLevel > 0)
 				{
+					temp1 = 0;
+					temp2 = 0;
+					if (SoulMasteryPerkLevel <= 0) temp1 = 0;
 					if (SoulMasteryPerkLevel == 1) temp1 = 1;
 					if (SoulMasteryPerkLevel == 2) temp1 = 2;
 					if (SoulMasteryPerkLevel == 3) temp1 = 3;
 					if (SoulMasteryPerkLevel == 4) temp1 = 4;
-					if (SoulMasteryPerkLevel == 5) temp1 = 5;
+					if (SoulMasteryPerkLevel >= 5) temp1 = 5;
+					if (SoulMasteryEXPerkLevel <= 0) temp2 = 0;
 					if (SoulMasteryEXPerkLevel == 1) temp2 = random(2,3);
-					if (SoulMasteryEXPerkLevel == 2) temp2 = 5;
+					if (SoulMasteryEXPerkLevel >= 2) temp2 = 5;
 					PerkFactor = 16 + (temp1 + temp2);
 					HellcoreRestored = HellcoreRestored * PerkFactor / 16;
 				}
