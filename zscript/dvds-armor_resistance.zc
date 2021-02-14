@@ -3686,6 +3686,7 @@ class PlayerStatItem : Inventory
 					Owner.A_SetInventory("FloraHellcore75PercentOverheated",0);
 					Owner.A_SetInventory("FloraHellcore100PercentOverheated",0);
 					Owner.A_SetInventory("FloraHellcore250PercentOverheated",0);
+					Owner.A_SetInventory("FloraHellcore500PercentOverheated",0);
 				}
 				if (HellcoreOverheatLevel > 249999 && HellcoreOverheatLevel < 500000) 
 				{
@@ -3695,6 +3696,7 @@ class PlayerStatItem : Inventory
 					Owner.A_SetInventory("FloraHellcore75PercentOverheated",0);
 					Owner.A_SetInventory("FloraHellcore100PercentOverheated",0);
 					Owner.A_SetInventory("FloraHellcore250PercentOverheated",0);
+					Owner.A_SetInventory("FloraHellcore500PercentOverheated",0);
 				}
 				if (HellcoreOverheatLevel > 499999 && HellcoreOverheatLevel < 750000) 
 				{
@@ -3704,6 +3706,7 @@ class PlayerStatItem : Inventory
 					Owner.A_SetInventory("FloraHellcore75PercentOverheated",0);
 					Owner.A_SetInventory("FloraHellcore100PercentOverheated",0);
 					Owner.A_SetInventory("FloraHellcore250PercentOverheated",0);
+					Owner.A_SetInventory("FloraHellcore500PercentOverheated",0);
 				}
 				if (HellcoreOverheatLevel > 749999 && HellcoreOverheatLevel < 1000000) 
 				{
@@ -3713,6 +3716,7 @@ class PlayerStatItem : Inventory
 					Owner.A_SetInventory("FloraHellcore75PercentOverheated",1);
 					Owner.A_SetInventory("FloraHellcore100PercentOverheated",0);
 					Owner.A_SetInventory("FloraHellcore250PercentOverheated",0);
+					Owner.A_SetInventory("FloraHellcore500PercentOverheated",0);
 				}
 				if (HellcoreOverheatLevel > 999999 && HellcoreOverheatLevel < 2500000) 
 				{
@@ -3722,8 +3726,9 @@ class PlayerStatItem : Inventory
 					Owner.A_SetInventory("FloraHellcore75PercentOverheated",0);
 					Owner.A_SetInventory("FloraHellcore100PercentOverheated",1);
 					Owner.A_SetInventory("FloraHellcore250PercentOverheated",0);
+					Owner.A_SetInventory("FloraHellcore500PercentOverheated",0);
 				}
-				if (HellcoreOverheatLevel > 2499999) 
+				if (HellcoreOverheatLevel > 2499999 && HellcoreOverheatLevel < 5000000) 
 				{
 					Owner.A_SetInventory("FloraHellcoreNotOverheated",0);
 					Owner.A_SetInventory("FloraHellcore25PercentOverheated",0);
@@ -3731,6 +3736,17 @@ class PlayerStatItem : Inventory
 					Owner.A_SetInventory("FloraHellcore75PercentOverheated",0);
 					Owner.A_SetInventory("FloraHellcore100PercentOverheated",0);
 					Owner.A_SetInventory("FloraHellcore250PercentOverheated",1);
+					Owner.A_SetInventory("FloraHellcore500PercentOverheated",0);
+				}
+				if (HellcoreOverheatLevel > 4999999) 
+				{
+					Owner.A_SetInventory("FloraHellcoreNotOverheated",0);
+					Owner.A_SetInventory("FloraHellcore25PercentOverheated",0);
+					Owner.A_SetInventory("FloraHellcore50PercentOverheated",0);
+					Owner.A_SetInventory("FloraHellcore75PercentOverheated",0);
+					Owner.A_SetInventory("FloraHellcore100PercentOverheated",0);
+					Owner.A_SetInventory("FloraHellcore250PercentOverheated",0);
+					Owner.A_SetInventory("FloraHellcore500PercentOverheated",1);
 				}
 			}
 			
@@ -4125,6 +4141,8 @@ class PlayerStatItem : Inventory
 			if (CharacterClass == 2 && Owner.CountInv("DoveRibbon")) RegenMaxHealth = MaxHealthLimit; else RegenMaxHealth = MaxHealthTrue;
 			if (debugehealthregen && PlayerCurrentHealth < RegenMaxHealth) Console.Printf("    \caHP Regen [Step 2 - Check Max Health Cap (Dove?)]: %d\c-, Current Health: %d", RegenMaxHealth, PlayerCurrentHealth);
 			
+			
+			
 			// Base Delay Count
 			SkillFactor = 0;
 			delaycount = 20;
@@ -4141,7 +4159,19 @@ class PlayerStatItem : Inventory
 			delaycount += SkillFactor;
 			if (debugehealthregen && delaycount != previousdelaycount) Console.Printf("    \caHP Regen [Step 4 - Get Character RegenTimer Increment]: %d\c-, Added: %d", delaycount, SkillFactor);
 			
+			// Hellcore Heat
+			previousdelaycount = delaycount;
+			if (owner.CountInv("FloraHellcoreNotOverheated")) delaycount *= 1.0;
+			if (owner.CountInv("FloraHellcore25PercentOverheated")) delaycount *= 0.96875;
+			if (owner.CountInv("FloraHellcore50PercentOverheated")) delaycount *= 0.9375;
+			if (owner.CountInv("FloraHellcore75PercentOverheated")) delaycount *= 0.875;
+			if (owner.CountInv("FloraHellcore100PercentOverheated")) delaycount *= 0.75;
+			if (owner.CountInv("FloraHellcore250PercentOverheated")) delaycount *= 0.50;
+			if (owner.CountInv("FloraHellcore500PercentOverheated")) delaycount *= 0.25;
+			if (debugehealthregen && delaycount != previousdelaycount) Console.Printf("    \caHP Regen [Step ? - Hellcore Heat]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+			
 			// Stamina Upgrades [Strife]
+			previousdelaycount = delaycount;
 			SkillFactor = ceil(StrifeStamLvl * 1.6);
 			delaycount += SkillFactor;
 			if (debugehealthregen && PlayerCurrentHealth < RegenMaxHealth && StrifeStamLvl != 0) Console.Printf("    \caHP Regen [Step 5 - Get Strife Stamina RegenTimer Inc]: %d\c-, Added: %d", delaycount, SkillFactor);
@@ -4286,10 +4316,15 @@ class PlayerStatItem : Inventory
 				if (BerserkTimer > 0) delaycount = floor(delaycount * 2);
 				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 16 - Regen Intervals (Berserk)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 
+				// Buff = +50% Regen
+				SkillFactor = delaycount;
+				if (DQBuffTimer > 0) delaycount = floor(delaycount * 1.5);
+				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 17 - Regen Intervals (Buff)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
+
 				// Flora's Regeneration Speed is reduced by 5/8s [62.5%] when holding the Ruinous Shield [curse effect]
 				SkillFactor = delaycount;
 				if (CharacterClass == 2 && Owner.CountInv("RuinousShield")) delaycount = floor(delaycount * 0.375);
-				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 17 - Regen Intervals (Ruinous Shield)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
+				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 18 - Regen Intervals (Ruinous Shield)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 				
 				// RegenHPFast perks
 				SkillFactor = delaycount;
@@ -4299,7 +4334,7 @@ class PlayerStatItem : Inventory
 					PerkFactor = ((RegHPFstPerkLvl * 2) + (RegHPFstEXPerkLvl * 5)) + 10;
 					delaycount = ceil(delaycount * PerkFactor / 10); // "RegenHPFast" and "RegenHPFast EX" perks.
 				}
-				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 18 - Regen Intervals (Regen HP Fast)]: Interval: %d\c-, Previous: %d, PerkFactor: %d / 10", delaycount, SkillFactor, PerkFactor);
+				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 19 - Regen Intervals (Regen HP Fast)]: Interval: %d\c-, Previous: %d, PerkFactor: %d / 10", delaycount, SkillFactor, PerkFactor);
 				
 				// "Death Rage" Perk
 				SkillFactor = delaycount;
@@ -4309,7 +4344,7 @@ class PlayerStatItem : Inventory
 					if (DeathRageTimer == 2) delaycount = ceil(delaycount * 4);
 					if (DeathRageTimer >= 3) delaycount = ceil(delaycount * 8);
 				}
-				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 19 - Regen Intervals (Death Rage)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
+				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 20 - Regen Intervals (Death Rage)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 				
 				// "Cleared of Mind" Perks
 				SkillFactor = delaycount;
@@ -4319,14 +4354,14 @@ class PlayerStatItem : Inventory
 					perkfactor = ((ClearMindPerkLvl * 2) + (ClearMindEXPerkLvl * 5)) + 80;
 					delaycount = ceil((delaycount * perkfactor) / 80);
 				}
-				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 20 - Regen Intervals (Cleared of Mind)]: Interval: %d\c-, Previous: %d, PerkFactor: %d / 80", delaycount, SkillFactor, PerkFactor);
+				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 21 - Regen Intervals (Cleared of Mind)]: Interval: %d\c-, Previous: %d, PerkFactor: %d / 80", delaycount, SkillFactor, PerkFactor);
 				
 				// If Defending via Fists/PoisonNeedle
 				SkillFactor = delaycount;
 				PerkFactor = 20;
 				if (Owner.CountInv("FistPlayerBlockItem")) PerkFactor = RandomPick[statitem](24,26,26,28,28,28,30,30,30,30,32,32,32,34,34,36);
 				delaycount = floor((delaycount * PerkFactor) / 20);
-				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 21 - Regen Intervals (Fist - Defend)]: Interval: %d\c-, Previous: %d, Factor: %d / 20", delaycount, SkillFactor, PerkFactor);
+				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 22 - Regen Intervals (Fist - Defend)]: Interval: %d\c-, Previous: %d, Factor: %d / 20", delaycount, SkillFactor, PerkFactor);
 				
 				// If Defending via Sceptre Shielding Alt-fire
 				SkillFactor = delaycount;
@@ -4335,19 +4370,19 @@ class PlayerStatItem : Inventory
 				if (Owner.CountInv("ShieldDefense2")) PerkFactor = random[statitem](34,38);
 				if (Owner.CountInv("ShieldDefense3")) PerkFactor = random[statitem](40,44);
 				delaycount = floor((delaycount * PerkFactor) / 20);
-				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 22 - Regen Intervals (Sceptre - Defend)]: Interval: %d\c-, Previous: %d, Factor: %d / 20", delaycount, SkillFactor, PerkFactor);
+				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 23 - Regen Intervals (Sceptre - Defend)]: Interval: %d\c-, Previous: %d, Factor: %d / 20", delaycount, SkillFactor, PerkFactor);
 
 				// Checks Health Regen Rate Menu Option
 				SkillFactor = delaycount;
 				delaycount = floor((delaycount * dvds_healthregenmultiplier) / 100);
-				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 23 - Regen Intervals (Menu Option)]: Interval: %d\c-, Previous: %d, Multiplier: %d / 100", delaycount, SkillFactor, dvds_healthregenmultiplier);
+				if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Regen [Step 24 - Regen Intervals (Menu Option)]: Interval: %d\c-, Previous: %d, Multiplier: %d / 100", delaycount, SkillFactor, dvds_healthregenmultiplier);
 				
 				// Low Cap to 1 Tics
 				if (HPRegenBonPenTimer > 0) delaycount *= HPRegenBonPenMulti;
 				if (HPRegenBonPenTimer < 0) delaycount *= (1.0 / HPRegenBonPenMulti);
 				SkillFactor = delaycount;
 				if (delaycount < 1) delaycount = 1;
-				if (debugehealthregen && PlayerCurrentHealth < RegenMaxHealth) Console.Printf("    \caHP Regen [Step 24 - Regen Intervals (LOWCap)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
+				if (debugehealthregen && PlayerCurrentHealth < RegenMaxHealth) Console.Printf("    \caHP Regen [Step 25 - Regen Intervals (LOWCap)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 				
 				if (CallACS("DVDSSpecialArrayCheckDECORATE",0) > 0 || Owner.CountInv("IsUnconscious")) { }
 				else // If Player is "Conscious", allow their HP regen timer to count
@@ -4360,7 +4395,7 @@ class PlayerStatItem : Inventory
 				// Reset the Timer
 				HPRegenTimer = 20 * random[statitem](-2,2);
 			}
-			if (debugehealthregen && PlayerCurrentHealth < RegenMaxHealth) Console.Printf("    \caHP Regen [Step 25 - Regen Intervals (Timers)]: HPRegenTimer %d / %d", HPRegenTimer, HPDelayInterval);
+			if (debugehealthregen && PlayerCurrentHealth < RegenMaxHealth) Console.Printf("    \caHP Regen [Step 26 - Regen Intervals (Timers)]: HPRegenTimer %d / %d", HPRegenTimer, HPDelayInterval);
 
 			if (HPRegenTimer >= HPDelayInterval)
 			{
@@ -4457,6 +4492,18 @@ class PlayerStatItem : Inventory
 				delaycount -= SkillFactor;
 				if (debugehealthregen && delaycount != previousdelaycount) Console.Printf("    \caHP Degen [Step 4 - Get Character RegenTimer Increment]: %d\c-, Added: %d", delaycount, SkillFactor);
 				
+			
+				// Hellcore Heat
+				previousdelaycount = delaycount;
+				if (owner.CountInv("FloraHellcoreNotOverheated")) delaycount *= (1.0 / 1.0);
+				if (owner.CountInv("FloraHellcore25PercentOverheated")) delaycount *= (1.0 / 0.96875);
+				if (owner.CountInv("FloraHellcore50PercentOverheated")) delaycount *= (1.0 / 0.9375);
+				if (owner.CountInv("FloraHellcore75PercentOverheated")) delaycount *= (1.0 / 0.875);
+				if (owner.CountInv("FloraHellcore100PercentOverheated")) delaycount *= (1.0 / 0.75);
+				if (owner.CountInv("FloraHellcore250PercentOverheated")) delaycount *= (1.0 / 0.50);
+				if (owner.CountInv("FloraHellcore500PercentOverheated")) delaycount *= (1.0 / 0.25);
+				if (debugehealthregen && delaycount != previousdelaycount) Console.Printf("    \caHP Degen [Step ? - Hellcore Heat]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+
 				// Stamina Upgrades [Strife]
 				SkillFactor = floor(StrifeStamLvl * 0.625);
 				delaycount -= SkillFactor;
@@ -4568,10 +4615,16 @@ class PlayerStatItem : Inventory
 					if (BerserkTimer > 0) delaycount = floor(delaycount * 0.5);
 					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 15 - Degen Intervals (Berserk)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 					
+
+					// Buff = -33% Degen
+					SkillFactor = delaycount;
+					if (DQBuffTimer > 0) delaycount = floor(delaycount * 0.667);
+					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 16 - Regen Intervals (Buff)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
+
 					// Flora's Degeneration Speed is multiplied by 2.667 when holding the Ruinous Shield [curse effect]
 					SkillFactor = delaycount;
 					if (CharacterClass == 2 && Owner.CountInv("RuinousShield")) delaycount = ceil(delaycount * 2.667);
-					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 16 - Degen Intervals (Ruinous Shield)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
+					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 17 - Degen Intervals (Ruinous Shield)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 					
 					// RegenHPFast perks
 					SkillFactor = delaycount;
@@ -4581,7 +4634,7 @@ class PlayerStatItem : Inventory
 						PerkFactor = 10 - ((RegHPFstPerkLvl * 2) + (RegHPFstEXPerkLvl * 5));
 						delaycount = floor(delaycount * PerkFactor / 10); // "RegenHPFast" and "RegenHPFast EX" perks.
 					}
-					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 17 - Degen Intervals (Regen HP Fast)]: Interval: %d\c-, Previous: %d, PerkFactor: %d / 10", delaycount, SkillFactor, PerkFactor);
+					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 18 - Degen Intervals (Regen HP Fast)]: Interval: %d\c-, Previous: %d, PerkFactor: %d / 10", delaycount, SkillFactor, PerkFactor);
 					
 					// "Death Rage" Perk
 					SkillFactor = delaycount;
@@ -4591,7 +4644,7 @@ class PlayerStatItem : Inventory
 						if (DeathRageTimer == 2) delaycount = floor(delaycount * 0.25);
 						if (DeathRageTimer >= 3) delaycount = floor(delaycount * 0.125);
 					}
-					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 18 - Degen Intervals (Death Rage)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
+					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 19 - Degen Intervals (Death Rage)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 
 					// "Cleared of Mind" Perks
 					SkillFactor = delaycount;
@@ -4601,14 +4654,14 @@ class PlayerStatItem : Inventory
 						perkfactor = 80 - ((ClearMindPerkLvl * 2) + (ClearMindEXPerkLvl * 5));
 						delaycount = floor(delaycount * perkfactor / 80);
 					}
-					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 19 - Degen Intervals (Cleared of Mind)]: Interval: %d\c-, Previous: %d, PerkFactor: %d / 80", delaycount, SkillFactor, PerkFactor);
+					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 20 - Degen Intervals (Cleared of Mind)]: Interval: %d\c-, Previous: %d, PerkFactor: %d / 80", delaycount, SkillFactor, PerkFactor);
 					
 					// If Defending via Fists/PoisonNeedle
 					SkillFactor = delaycount;
 					PerkFactor = 20;
 					if (Owner.CountInv("FistPlayerBlockItem")) PerkFactor = RandomPick[statitem](24,26,26,28,28,28,30,30,30,30,32,32,32,34,34,36);
 					delaycount = ceil((delaycount * 20) / PerkFactor);
-					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 20 - Degen Intervals (Fist - Defend)]: Interval: %d\c-, Previous: %d, Factor: 20 / %d", delaycount, SkillFactor, PerkFactor);
+					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 21 - Degen Intervals (Fist - Defend)]: Interval: %d\c-, Previous: %d, Factor: 20 / %d", delaycount, SkillFactor, PerkFactor);
 					
 					// If Defending via Sceptre Shielding Alt-fire
 					SkillFactor = delaycount;
@@ -4617,19 +4670,19 @@ class PlayerStatItem : Inventory
 					if (Owner.CountInv("ShieldDefense2")) PerkFactor = random[statitem](34,38);
 					if (Owner.CountInv("ShieldDefense3")) PerkFactor = random[statitem](40,44);
 					delaycount = ceil((delaycount * 20) / PerkFactor);
-					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 21 - Degen Intervals (Sceptre - Defend)]: Interval: %d\c-, Previous: %d, Factor: %d / 20", delaycount, SkillFactor, PerkFactor);
+					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 22 - Degen Intervals (Sceptre - Defend)]: Interval: %d\c-, Previous: %d, Factor: %d / 20", delaycount, SkillFactor, PerkFactor);
 
 					// Checks Health Regen Rate Menu Option
 					SkillFactor = delaycount;
 					delaycount = ceil(delaycount * dvds_healthdegenmultiplier / 100);
-					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 22 - Degen Intervals (Menu Option)]: Interval: %d\c-, Previous: %d, Multiplier: %d / 100", delaycount, SkillFactor, dvds_healthdegenmultiplier);
+					if (debugehealthregen && delaycount != SkillFactor) Console.Printf("    \caHP Degen [Step 23 - Degen Intervals (Menu Option)]: Interval: %d\c-, Previous: %d, Multiplier: %d / 100", delaycount, SkillFactor, dvds_healthdegenmultiplier);
 					
 					// Low Cap to 1 Tics
 					if (HPRegenBonPenTimer > 0) delaycount *= (1.0 / HPRegenBonPenMulti);
 					if (HPRegenBonPenTimer < 0) delaycount *= HPRegenBonPenMulti;
 					SkillFactor = delaycount;
 					if (delaycount < 1) delaycount = 1;
-					if (debugehealthregen && PlayerCurrentHealth > RegenMaxHealth) Console.Printf("    \caHP Degen [Step 23 - Degen Intervals (LOWCap)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
+					if (debugehealthregen && PlayerCurrentHealth > RegenMaxHealth) Console.Printf("    \caHP Degen [Step 24 - Degen Intervals (LOWCap)]: Interval: %d\c-, Previous: %d", delaycount, SkillFactor);
 
 					if (CallACS("DVDSSpecialArrayCheckDECORATE",0) > 0 || Owner.CountInv("IsUnconscious")) { }
 					else // If Player is "Conscious", allow their HP degen timer to count
@@ -4642,7 +4695,7 @@ class PlayerStatItem : Inventory
 					// Reset the Timer
 					HPDegenTimer = 20 * random[statitem](-2,2);
 				}
-				if (debugehealthregen && PlayerCurrentHealth > RegenMaxHealth) Console.Printf("    \caHP Degen [Step 24 - Degen Intervals (Timers)]: HPDegenTimer %d / %d", HPDegenTimer, HPDelayInterval2);
+				if (debugehealthregen && PlayerCurrentHealth > RegenMaxHealth) Console.Printf("    \caHP Degen [Step 25 - Degen Intervals (Timers)]: HPDegenTimer %d / %d", HPDegenTimer, HPDelayInterval2);
 
 				if (HPDegenTimer >= HPDelayInterval2)
 				{
@@ -4892,11 +4945,19 @@ class PlayerStatItem : Inventory
 					delaycount = 20;
 					if (debugmanaregen) Console.Printf("    \cnMP Regen [Step 1 - Base Count]: %d\c-", delaycount);
 					
+					// Sceptre Shielding
+					if (Owner.CountInv("UsingSceptreAltFire"))
+					{
+						previousdelaycount = delaycount;
+						delaycount *= (1.0 + ((CallACS("OtherVarCheckDECORATE",11) - 1) * frandompick(0,0.003125,0.00625,0.009375,0.0125)));
+						if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 2 - Sceptre Alt-Fire]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					}
+
 					// Stamina Upgrades [Strife]
 					previousdelaycount = delaycount;
 					SkillFactor = floor(StrifeStamLvl * 0.667);
 					delaycount += SkillFactor;
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 2 - Strife - Stamina Upgrade]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 3 - Strife - Stamina Upgrade]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					// Accelerates MP Regen when Tension is Boosted
 					previousdelaycount = delaycount;
@@ -4908,33 +4969,33 @@ class PlayerStatItem : Inventory
 					if (TensionLevel >= 6) delaycount += 4; // "500" = +15 [+75%]
 					if (TensionLevel >= 7) delaycount += 5; // "1000" = +20 [+100%]
 					if (TensionLevel >= 5 && CallACS("MiscVarCheckDECORATE",184) == 0) delaycount = floor(delaycount * frandompick[statitem2](1.0,1.05,1.1,1.15,1.2,1.25)); // +~25%
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 3 - Tension]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 4 - Tension]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					// PowerTrip Mode
 					previousdelaycount = delaycount;
 					if (dvds_musou_powertripmode == 1) delaycount = floor(delaycount * 2.5); // 250%
 					if (dvds_musou_powertripmode == 2) delaycount = floor(delaycount * 5.0); // 500%
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 4 - Musou/Power Trip Mode]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 5 - Musou/Power Trip Mode]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					previousdelaycount = delaycount;
 					if (DQAcceleratleTimer > 0) delaycount = floor(delaycount * 1.25); // Acceleratle = 1.25x regen speed
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 5a - Acceleratle]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 6a - Acceleratle]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					previousdelaycount = delaycount;
 					if (DQDeceleratleTimer > 0) delaycount = floor(delaycount * 0.8); // Deceleratle = 0.8x regen speed
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 5b - Deceleratle]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 6b - Deceleratle]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					previousdelaycount = delaycount;
 					if (FatigueTimer > 0) delaycount = floor(delaycount * 0.2); // Fatigue = 0.2x regen speed
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 6 - Fatigue]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 7 - Fatigue]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					previousdelaycount = delaycount;
 					if (GoETimer > 0) delaycount = floor(delaycount * 5); // GoE 5x regen speed
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 7a - GoE]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 8a - GoE]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					previousdelaycount = delaycount;
 					if (DivineAvatarTimer > 0) delaycount = floor(delaycount * 1.125); // Divine Avatar = 1.125x regen speed
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 7b - Divine Avatar]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 8b - Divine Avatar]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					previousdelaycount = delaycount;
 					if (SleepTimer > 0)
@@ -4943,12 +5004,12 @@ class PlayerStatItem : Inventory
 						PerkFactor = ceil(((RegMPFstPerkLvl * 2000) + (RegMPFstEXPerkLvl * 5000)) + 10000);
 						delaycount = floor(delaycount * PerkFactor / 10000); // "RegenMPFast" and "RegenMPFast EX" perks.
 					}
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 8 - Sleep]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 9 - Sleep]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					// Ruinous Shield - greatly reduces MP regeneration speed
 					previousdelaycount = delaycount;
 					if (CharacterClass == 2 && Owner.CountInv("RuinousShield")) delaycount = floor(delaycount * 0.375); // 37.5%
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 9 - Ruinous Shield]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 10 - Ruinous Shield]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					// RegenMPFast perks
 					previousdelaycount = delaycount;
@@ -4958,7 +5019,7 @@ class PlayerStatItem : Inventory
 						PerkFactor = 10 + ((RegMPFstPerkLvl * 2) + (RegMPFstEXPerkLvl * 5));
 						delaycount = ceil(delaycount * PerkFactor / 10); // "RegenMPFast" and "RegenMPFast EX" perks.
 					}
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 10 - Regen MP Fast]: %d\c-, Previous: %d, Factor: %d / 10", delaycount, previousdelaycount, PerkFactor);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 11 - Regen MP Fast]: %d\c-, Previous: %d, Factor: %d / 10", delaycount, previousdelaycount, PerkFactor);
 					
 					// "Cleared of Mind" Perks
 					previousdelaycount = delaycount;
@@ -4968,12 +5029,12 @@ class PlayerStatItem : Inventory
 						perkfactor = 80 + ((ClearMindPerkLvl * 2) + (ClearMindEXPerkLvl * 5));
 						delaycount = ceil(delaycount * perkfactor / 80);
 					}
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 11 - Cleared of Mind]: %d\c-, Previous: %d, Factor: %d / 80", delaycount, previousdelaycount, PerkFactor);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 12 - Cleared of Mind]: %d\c-, Previous: %d, Factor: %d / 80", delaycount, previousdelaycount, PerkFactor);
 					
 					// Checks Mana Regen Rate Menu Option
 					previousdelaycount = delaycount;
 					delaycount = floor(delaycount * dvds_manaregenratemultiplier / 100);
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 12 - RegenMultiplier]: %d\c-, Previous: %d, Multiplier: %d%", delaycount, previousdelaycount, dvds_manaregenratemultiplier);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 13 - RegenMultiplier]: %d\c-, Previous: %d, Multiplier: %d%", delaycount, previousdelaycount, dvds_manaregenratemultiplier);
 					
 					// Focusing
 					int FocusIncrements = 35;
@@ -5029,7 +5090,7 @@ class PlayerStatItem : Inventory
 					
 						if (FocusHumTimer == 1) owner.A_StartSound("focushum",7,CHANF_DEFAULT,1.125);
 					}
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 13 - Focusing]: %d\c-, Previous: %d, FocusHumTimer: %d, FocusTimer: %d", delaycount, previousdelaycount, FocusHumTimer, FocusTimer);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 14 - Focusing]: %d\c-, Previous: %d, FocusHumTimer: %d, FocusTimer: %d", delaycount, previousdelaycount, FocusHumTimer, FocusTimer);
 					
 					// Weapons
 					previousdelaycount = delaycount;
@@ -5051,7 +5112,7 @@ class PlayerStatItem : Inventory
 						if (WandMasteryPerkLevel == 4) delaycount = floor(delaycount * 2.70);
 						if (WandMasteryPerkLevel >= 5) delaycount = floor(delaycount * 3.10);
 					}
-					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 14 - Weapon Checking]: %d\c-, Previous: %d", delaycount, previousdelaycount);
+					if (debugmanaregen && delaycount != previousdelaycount) Console.Printf("    \cnMP Regen [Step 15 - Weapon Checking]: %d\c-, Previous: %d", delaycount, previousdelaycount);
 					
 					// Final Checks
 					if (MPRegenBonPenTimer > 0) delaycount *= MPRegenBonPenMulti;
@@ -5060,7 +5121,7 @@ class PlayerStatItem : Inventory
 					if (delaycount < 1) delaycount = 1;
 					// If Player is "Conscious" and Mana is below Max
 					MPRegenTimer += delaycount;
-					if (debugmanaregen) Console.Printf("    \cnMP Regen [Step 15 - Timer Check]: %d / %d\c-, delaycount: %d, Previous: %d", MPRegenTimer, MPDelayInterval, delaycount, previousdelaycount);
+					if (debugmanaregen) Console.Printf("    \cnMP Regen [Step 16 - Timer Check]: %d / %d\c-, delaycount: %d, Previous: %d", MPRegenTimer, MPDelayInterval, delaycount, previousdelaycount);
 				}
 				else
 				{
