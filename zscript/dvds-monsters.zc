@@ -1502,7 +1502,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		return type;
 	}
 	
-	int A_CheckHellcoreVsAtk(Actor inflictor, Actor source, int damage)
+	Actor, Actor, int A_CheckHellcoreVsAtk(Actor inflictor, Actor source, int damage)
 	{
 		string infl, sour, vict;
 		if (inflictor == null) infl = "NONE"; else infl = inflictor.GetClassName();
@@ -1559,7 +1559,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		{
 			damage = floor(damage * (1.0 + (CallACS("MiscVarCheckDECORATE",checkval) * frandom(0.15,0.2))));
 		}
-		return damage;
+		return inflictor, source, damage;
+	}
+	
+	void A_CheckNeverBleed()
+	{
+		if (neverbleeds == 0)
+		{
+			bNOBLOOD = 1;
+			bNOBLOODDECALS = 1;
+		}
 	}
 	
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
@@ -1607,7 +1616,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		int VillainKillerEXPerkLvl = CallACS("MiscVarCheckDECORATE",10058);
 		int StrifeStaminaLevel = CallACS("MiscVarCheckDECORATE",317);
 		int StrifeAccuracyLevel = CallACS("MiscVarCheckDECORATE",318);
-		int criticalhit;
+		bool criticalhit = false;
 		int CritChance, CritRoll;
 		int oldhealth = self.health;
 		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
@@ -1654,11 +1663,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP ? - UNSET NORADIUSDMG TEMPORARILY])");
 			}
 		}
-		if (neverbleeds == 0)
-		{
-			bNOBLOOD = 0;
-			bNOBLOODDECALS = 0;
-		}
+		A_CheckNeverBleed();
 		int drainmaxdmg = self.health; // Prevents overdamage from gauntlets from being factored into Healing values
 		string infl, sour, vict;
 		vict = GetClassName();
@@ -1732,7 +1737,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 		}
 
-		bool dealtcrit = false;
 		double prevDamageFactor;
 		double critdmgmulti = 2.0 + (0.01 * random(-10,10));
 		double critextradmgmulti = 1.0 + (clearofmind * 0.10) + (clearofmindex * 0.25);
@@ -1802,28 +1806,28 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (source) 
 		{
 			playpawn = AetheriusPlayerPawn(source);
-			if (dvdsdebug_actordmgdisplays && playpawn) Console.Printf("Playpawn (source) Found!");
+			if (dvdsdebug_actordmgdisplays && playpawn) Console.Printf("Playpawn (source) Found! [DamageMobj]");
 			DVDSActor = AetheriusMonsterZSC(source);
-			if (dvdsdebug_actordmgdisplays && DVDSActor) Console.Printf("DVDSActor (source) Found!");
+			if (dvdsdebug_actordmgdisplays && DVDSActor) Console.Printf("DVDSActor (source) Found! [DamageMobj]");
 		}
 		if (inflictor)
 		{
 			UniqueProjectile = AetheriusProjectileZSC(inflictor);
-			if (dvdsdebug_actordmgdisplays && UniqueProjectile) Console.Printf("UniqueProjectile (inflictor) Found!");
+			if (dvdsdebug_actordmgdisplays && UniqueProjectile) Console.Printf("UniqueProjectile (inflictor) Found! [DamageMobj]");
 			UniqueProjectileFast = AetheriusFastProjectileZSC(inflictor);
-			if (dvdsdebug_actordmgdisplays && UniqueProjectileFast) Console.Printf("UniqueProjectileFast (inflictor) Found!");
+			if (dvdsdebug_actordmgdisplays && UniqueProjectileFast) Console.Printf("UniqueProjectileFast (inflictor) Found! [DamageMobj]");
 			ailmentproj = AetheriusEffectProjectile(inflictor);
-			if (dvdsdebug_actordmgdisplays && ailmentproj) Console.Printf("ailmentproj (inflictor) Found!");
+			if (dvdsdebug_actordmgdisplays && ailmentproj) Console.Printf("ailmentproj (inflictor) Found! [DamageMobj]");
 			ailmentprojfast = AetheriusEffectFastProjectile(inflictor);
-			if (dvdsdebug_actordmgdisplays && ailmentprojfast) Console.Printf("ailmentprojfast (inflictor) Found!");
+			if (dvdsdebug_actordmgdisplays && ailmentprojfast) Console.Printf("ailmentprojfast (inflictor) Found! [DamageMobj]");
 			singleripproj = SingleDamageRipper(inflictor);
-			if (dvdsdebug_actordmgdisplays && singleripproj) Console.Printf("singleripproj (inflictor) Found!");
+			if (dvdsdebug_actordmgdisplays && singleripproj) Console.Printf("singleripproj (inflictor) Found! [DamageMobj]");
 			singlefastripproj = SingleDamageFastRipper(inflictor);
-			if (dvdsdebug_actordmgdisplays && singlefastripproj) Console.Printf("singlefastripproj (inflictor) Found!");
+			if (dvdsdebug_actordmgdisplays && singlefastripproj) Console.Printf("singlefastripproj (inflictor) Found! [DamageMobj]");
 		}
 
 		// ****************************
-		damage = A_DamageMobPreReturn1(inflictor, source, damage, mod, flags, angle);
+		[inflictor, source, damage, mod, flags, angle] = A_DamageMobPreReturn1(inflictor, source, damage, mod, flags, angle);
 		// ****************************
 
 		if (playpawn && damage > 0)
@@ -1831,35 +1835,23 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (infl != "NONE")
 			{
 				predamage = damage;
-				damage = A_CheckHellcoreVsAtk(inflictor,source,damage);
+				[inflictor, source, damage] = A_CheckHellcoreVsAtk(inflictor, source, damage);
 				if (dvdsdebug_actordmgdisplays) Console.Printf("    %d (%d)", damage, predamage);
 			}
 
 			prefriendlydmg = damage;
 			if (bFRIENDLY)
 			{
-				if (infl == "MinorPoisonCloud" || infl == "NormalPoisonCloud" || infl == "MajorPoisonCloud" ||
-						infl == "HexenPoisonCloud" || infl == "HexenPoisonCloud2Source" || infl == "HexenPoisonCloud2Outer" || infl == "HexenPoisonCloud3Source" || infl == "HexenPoisonCloud3Outer")
-				{
-					damage = ceil(damage * 0.25);
-					if (user_charmed) damage = ceil(damage * 0.25);
-					if (user_summoned) damage = ceil(damage * 0.25);
-					if (damage < 1) damage = 1;
-					if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2a - Player-Friendly Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-)", prefriendlydmg, damage);
-				}
-				else
-				{
-					damage = 0;
-					if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP Z]\c-: END DAMAGE ATTEMPT (FRIENDLY)");
-					return 0;
-				}
+				damage = 0;
+				A_CheckNeverBleed();
+				if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP Z]\c-: END DAMAGE ATTEMPT (FRIENDLY)");
+				return 0;
 			}
 			
 			//**********************************
 			//*Chance to RESIST a critical hit.*
 			//**********************************
 			double CritResistChance = 1.25;
-			double ExtraBlock = 0.0;
 			// Enemy Type
 			if (vict == "DSPainElemental" || vict == "FPainElemental") CritResistChance = 5.0;
 			if (vict == "DSPainElemental64") CritResistChance = 5.0;
@@ -1974,7 +1966,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 				damage = floor(damage * critdmgmulti);
 				A_SetInventory("TookCriticalHit",1);
-				dealtcrit = true;
+				criticalhit = true;
 				if (mod == 'PoisonNeedle') 
 				{
 					if (PoisonNeedleBossCheck) damage += ((self.User_MaxHP * random(1,2)) / 8); 
@@ -1991,7 +1983,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 			}
 
-
+			// Healing from Punching/Kicking Practice Targets ala SW
 			if (vict == "PracticeTarget" || vict == "PracticeTarget2")
 			{
 				if ((mod == 'Fist' || mod == 'Kick' || mod == 'Gauntlets'))
@@ -2019,7 +2011,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						}
 						randbonusincreaseHP *= multfactorHP;
 						randbonusincreaseStam *= multfactorStam;
-						if (dealtcrit)
+						if (criticalhit)
 						{
 							randbonusincreaseHP *= critdmgmulti;
 							randbonusincreaseStam *= critdmgmulti;
@@ -2042,7 +2034,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					}
 				}
 			}
-
+			
 			// Attacks/Etc That Have More/Less Effect on Legendaries
 			preldldmg = damage;
 			ldldmgmulti = 1.0;
@@ -2050,15 +2042,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			{
 				if (infl == "SonicNail") ldldmgmulti = 1.25;
 				if (infl == "UnmakerLaser" || infl == "UnmakerLaserCrisis") ldldmgmulti = frandompick(1.375,1.5,1.625);
-				if (UniqueProjectileFast) UniqueProjectileFast.timesrippedoverall--;
 				if (ldldmgmulti >= 1.0000) damage = floor(damage * ldldmgmulti);
 															else damage = ceil(damage * ldldmgmulti);
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2c - Player-LDL Other Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \caldldmgmulti = %3f\c-)", preldldmg, damage, ldldmgmulti);
-			}
-			else
-			if (user_willbecomelegendary)
-			{
-				if (UniqueProjectileFast) UniqueProjectileFast.timesrippedoverall--;
 			}
 			
 			// "Villain Killer" Perk [for extra damage specifically against Legendaries]
@@ -2243,7 +2229,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 				// Chance to RESIST a crit.
 				double CritResistChance = 1.25;
-				double ExtraBlock = 0.0;
 				// Enemy Type
 				if (vict == "ForgottenOne") CritResistChance = 25.0;
 				// Enemy Flags
@@ -2284,7 +2269,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				{
 					damage = floor(damage * critdmgmulti);
 					A_SetInventory("TookCriticalHit",1);
-					dealtcrit = true;
 					if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2b - Monster-Crit Dmg]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \cacritdmgmulti = %3f\c-, \cacritextradmgmulti = %3f\c-, \cbCritResist: (%.8f) / %.8f\c-)", precritdmg, damage, critdmgmulti, critextradmgmulti, CritResistRoll, CritResistChance);
 				}
 			}
@@ -2596,7 +2580,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		prevDamageFactor = DamageFactor;
 		if (DamageFactor < 1.00) 
 		{
-			if (dealtcrit) ActorDefenseIgnoreFactor = 1.00;
+			if (criticalhit) ActorDefenseIgnoreFactor = 1.00;
 			DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
 		}
 		if (dvdsdebug_actordmgdisplays && damage > 0) 
@@ -2717,12 +2701,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		
 		A_DamageMobPostReturn1(inflictor, source, damage, mod, flags, angle, 
-													 ret, oldhealth, nrmldmgfctr, vict, sour, infl, basedmgfactor, drainmaxdmg, playweaksound, dealtcrit, firstdamage, wasblastedimpact);
+													 ret, oldhealth, nrmldmgfctr, vict, sour, infl, basedmgfactor, drainmaxdmg, playweaksound, criticalhit, firstdamage, wasblastedimpact);
 		
 		return ret;
 	}
 	
-	int A_DamageMobPreReturn1(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	Actor, Actor, int, Name, int, double A_DamageMobPreReturn1(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
 		AetheriusPlayerPawn playpawn;
 		AetheriusMonsterZSC DVDSActor;
@@ -2839,10 +2823,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			damage = floor(damage * buffdamagemulti);
 			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP 1a2 - Defender Monster Buffs/Debuffs [%s]]\c-: \cxolddmg = %d\c-, \cydmg = %d\c-, \czdmgmulti: %.8f\c-)", vict, olddmg, damage, buffdamagemulti);
 		}
-		return damage;
+		return inflictor, source, damage, mod, flags, angle;
 	}
 
-	int A_DamageMobPostReturn1(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle, int ret, int oldhealth, double nrmldmgfctr, string vict, string sour, string infl, double basedmgfactor, int drainmaxdmg, int playweaksound, bool dealtcrit, int firstdamage, int wasblastedimpact)
+	int A_DamageMobPostReturn1(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle, int ret, int oldhealth, double nrmldmgfctr, string vict, string sour, string infl, double basedmgfactor, int drainmaxdmg, int playweaksound, bool criticalhit, int firstdamage, int wasblastedimpact)
 	{
 		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
 		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
@@ -2884,7 +2868,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 		}
 
-		if ((dvds_showdamagemessages & 2) && ret > 0) A_PrintDamageMessage(inflictor, source, ret, mod, dealtcrit, infl, sour, vict, health, firstdamage, flags);
+		if ((dvds_showdamagemessages & 2) && ret > 0) A_PrintDamageMessage(inflictor, source, ret, mod, criticalhit, infl, sour, vict, health, firstdamage, flags);
 
 		string weakplayedsound = "";
 		if (dvds_hitweaksounds && playweaksound != 0 && hitweaksoundtimer <= 0)
@@ -3059,11 +3043,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (ret == 0)
 		{
-			if (neverbleeds == 0)
-			{
-				bNOBLOOD = 1;
-				bNOBLOODDECALS = 1;
-			}
+			A_CheckNeverBleed();
 		}
 		return ret;
 	}
@@ -5029,6 +5009,19 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					Attack = clamp(Attack, 0.005, 20.00);
 					Defense = clamp(Defense, 0.005, 20.00);
 					MaxHP = clamp(MaxHP, 1, 2147483647);
+					
+					// Hexen Class Bosses
+					if (GetClassName() == "ClericBossNew" || GetClassName() == "FighterBossNew" || GetClassName() == "MageBossNew")
+					{
+						if (multiplayer && !deathmatch)
+						{
+							if (!special1)
+							{
+								MaxHP *= 5;
+								special1 = true;
+							}
+						}
+					}
 					
 					//** Set's Final MaxHP and Current HP values **
 					self.health = MaxHP;
