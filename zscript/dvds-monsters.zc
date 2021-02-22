@@ -3,6 +3,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 {
 	mixin EvolveMonsters;
 	mixin DamageMessages;
+	name MonsterFamily;
 	
 	// Gargoyle
 	bool extremecrash;
@@ -99,6 +100,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int temp1, temp2, temp3;
 	
 	property AggressionLevelThreshold: AggressionLevelThreshold1, AggressionLevelThreshold2, AggressionLevelThreshold3;
+	property ActorFamily: MonsterFamily;
 
 	default
 	{
@@ -1760,7 +1762,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		SingleDamageFastRipper singlefastripproj;
 
 		if (vict == "Sauravatar" || 
-				vict == "PracticeTarget" || vict == "PracticeTarget2" ||
+				MonsterFamily == "PracticeTarget" ||
 				vict == "ProgrammerNew" || vict == "StrifeBishopNew" || vict == "OracleNew" || vict == "Macil1New" || vict == "Macil2New" || vict == "LoremasterNew" ||
 				vict == "AlienSpectre1New" || vict == "AlienSpectre2New" || vict == "AlienSpectre3New" || vict == "AlienSpectre4New" || vict == "AlienSpectre5New" ||
 				vict == "AvatarNew" || vict == "Benellus1DS" || vict == "Benellus2DS" || vict == "Benellus3DS" ||
@@ -1783,7 +1785,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		double outputdmgfactor = 1.0;
 		outputdmgfactor *= moddedDMG;
 		outputdmgfactor /= tempdmgval;
-		if (!(vict == "PracticeTarget" || vict == "PracticeTarget2"))
+		if (MonsterFamily != "PracticeTarget")
 		{
 			if (damage > 0 && !(flags & DMG_NO_FACTOR)) 
 			{
@@ -1801,7 +1803,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 			}
 		}
-		if (vict == "PracticeTarget" || vict == "PracticeTarget2") targetdummyhitcooldown = 175;
+		if (MonsterFamily == "PracticeTarget") targetdummyhitcooldown = 175;
 
 		if (source) 
 		{
@@ -1830,6 +1832,57 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		[inflictor, source, damage, mod, flags, angle] = A_DamageMobPreReturn1(inflictor, source, damage, mod, flags, angle);
 		// ****************************
 
+		//**********************************
+		//*Chance to RESIST a critical hit.*
+		//**********************************
+		double CritResistChance = 1.25;
+		// Enemy Type
+		if (vict == "DSPainElemental" || vict == "FPainElemental") CritResistChance = 5.0;
+		if (vict == "DSPainElemental64") CritResistChance = 5.0;
+		if (vict == "HadesElemental" || vict == "FHadesElemental") CritResistChance = 5.0;
+		if (vict == "HadesOverlord" || vict == "FHadesOverlord") CritResistChance = 5.0;
+		if (vict == "DSLostSoul" || vict == "FLostSoul") CritResistChance = 12.5;
+		if (vict == "DSLostSoul2" || vict == "FLostSoul2") CritResistChance = 17.5;
+		if (vict == "ForgottenOne" || vict == "FForgottenOne") CritResistChance = 25.0;
+		if (vict == "HadesSphere" || vict == "FHadesSphere") CritResistChance = 12.5;
+		if (vict == "HSOverlord" || vict == "FHSOverlord") CritResistChance = 12.5;
+		// Enemy Flags
+		if (bBOSS) CritResistChance *= 2.5;
+		// Enemy Has "Item"
+		if (CountInv("HWShieldDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.6588);
+		if (CountInv("HWShieldDefenseExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.92232);
+		if (CountInv("ImpWarlordShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.25);
+		if (CountInv("ImpWarlordShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.45);
+		if (CountInv("DKnightShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.375);
+		if (CountInv("DKnightShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.475);
+		if (CountInv("AcolyteShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.125);
+		if (CountInv("AcolyteShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.35);
+		if (CountInv("CentaurShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.333);
+		if (CountInv("CentaurShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.48666);
+		if (CountInv("SlaughtaurShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.41667);
+		if (CountInv("SlaughtaurShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.49333);
+		if (CountInv("MaulotaurChargeDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.375);
+		if (CountInv("HeresiarchShieldDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.4375);
+		if (CountInv("NightmarePhaseOutDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.46875);
+		String nm = "ThamuzApocalypseDefendMode"; MiscCheck = nm; if (CountInv(MiscCheck)) CritResistChance += ((100.0 - CritResistChance) * 0.4);
+		// Flag Detection
+		if (user_legendaryevolved) CritResistChance += ((100.0 - CritResistChance) * 0.1875);
+		// Type Detection
+		if (mod == 'Sigil' || mod == 'SpectralLow') CritResistChance *= 0.75;
+		if (mod == 'Eldritch' || mod == 'Deadlight') CritResistChance *= 0.25;
+		// Ripper Detection
+		if (infl == "RagingSpirit") 
+		{
+			if (random(1,24) != 1) CritResistChance = 200.0;
+			if (UniqueProjectile && random(1,6) == 1) UniqueProjectile.user_fuse -= randompick(1,1,1,1,1,1,1,1,1,1,1,2);
+		}
+		if (infl == "RagingSpirit2")
+		{
+			if (random(1,6) != 1) CritResistChance = 200.0;
+			if (UniqueProjectile && random(1,24) == 1) UniqueProjectile.user_fuse -= randompick(1,1,1,1,1,1,1,1,1,1,1,2);
+		}
+		if (inflictor && inflictor.bRIPPER) { if (!singleripproj && !singlefastripproj && random(1,6) != 1) CritResistChance = 200.0; } // 5 out of 6 times, Raging Spirits/Rippers can't Crit
+
 		if (playpawn && damage > 0)
 		{
 			if (infl != "NONE")
@@ -1848,63 +1901,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				return 0;
 			}
 			
-			//**********************************
-			//*Chance to RESIST a critical hit.*
-			//**********************************
-			double CritResistChance = 1.25;
-			// Enemy Type
-			if (vict == "DSPainElemental" || vict == "FPainElemental") CritResistChance = 5.0;
-			if (vict == "DSPainElemental64") CritResistChance = 5.0;
-			if (vict == "HadesElemental" || vict == "FHadesElemental") CritResistChance = 5.0;
-			if (vict == "HadesOverlord" || vict == "FHadesOverlord") CritResistChance = 5.0;
-			if (vict == "DSLostSoul" || vict == "FLostSoul") CritResistChance = 12.5;
-			if (vict == "DSLostSoul2" || vict == "FLostSoul2") CritResistChance = 17.5;
-			if (vict == "ForgottenOne" || vict == "FForgottenOne") CritResistChance = 25.0;
-			if (vict == "HadesSphere" || vict == "FHadesSphere") CritResistChance = 12.5;
-			if (vict == "HSOverlord" || vict == "FHSOverlord") CritResistChance = 12.5;
-			// Enemy Flags
-			if (bBOSS) CritResistChance *= 2.5;
-			// Enemy Has "Item"
-			if (CountInv("HWShieldDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.6588);
-			if (CountInv("HWShieldDefenseExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.92232);
-			if (CountInv("ImpWarlordShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.25);
-			if (CountInv("ImpWarlordShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.45);
-			if (CountInv("DKnightShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.375);
-			if (CountInv("DKnightShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.475);
-			if (CountInv("AcolyteShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.125);
-			if (CountInv("AcolyteShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.35);
-			if (CountInv("CentaurShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.333);
-			if (CountInv("CentaurShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.48666);
-			if (CountInv("SlaughtaurShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.41667);
-			if (CountInv("SlaughtaurShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.49333);
-			if (CountInv("MaulotaurChargeDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.375);
-			if (CountInv("HeresiarchShieldDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.4375);
-			if (CountInv("NightmarePhaseOutDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.46875);
-			String nm = "ThamuzApocalypseDefendMode"; MiscCheck = nm; if (CountInv(MiscCheck)) CritResistChance += ((100.0 - CritResistChance) * 0.4);
-			// Flag Detection
-			if (user_legendaryevolved) CritResistChance += ((100.0 - CritResistChance) * 0.1875);
-
 			double CritResistChanceReduce = 1.0 - (clearofmind * 0.0125) + (clearofmindex * 0.03125);
 			CritResistChance *= CritResistChanceReduce;
 
-			// Type Detection
-			if (mod == 'Sigil' || mod == 'SpectralLow') CritResistChance *= 0.75;
-			if (mod == 'Eldritch' || mod == 'Deadlight') CritResistChance *= 0.25;
-			// Ripper Detection
-			if (infl == "RagingSpirit") 
-			{
-				if (random(1,24) != 1) CritResistChance = 200.0;
-				if (UniqueProjectile && random(1,6) == 1) UniqueProjectile.user_fuse -= randompick(1,1,1,1,1,1,1,1,1,1,1,2);
-			}
-			if (infl == "RagingSpirit2")
-			{
-				if (random(1,6) != 1) CritResistChance = 200.0;
-				if (UniqueProjectile && random(1,24) == 1) UniqueProjectile.user_fuse -= randompick(1,1,1,1,1,1,1,1,1,1,1,2);
-			}
-			if (inflictor && inflictor.bRIPPER) { if (!singleripproj && !singlefastripproj && random(1,6) != 1) CritResistChance = 200.0; } // 5 out of 6 times, Raging Spirits/Rippers can't Crit
 			if (mod == 'PoisonNeedle') // Poison Needle will not thrust
 			{
-				if (playpawn.CountInv("DealCriticalHit")) playpawn.A_SetInventory("DealCriticalHit",0); // Forces the Needle to use its own personal Crit Chance instead of the normal one.
+				if (playpawn.CountInv("DealCriticalHit")) playpawn.A_SetInventory("DealCriticalHit", 0); // Forces the Needle to use its own personal Crit Chance instead of the normal one.
 				flags |= DMG_THRUSTLESS;
 				flags |= DMG_NO_ARMOR;
 				flags |= DMG_NO_FACTOR;
@@ -1919,19 +1921,13 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				PoisonNeedleCritChance += ((StrifeStaminaLevel * 0.25) + (StrifeAccuracyLevel * 0.75)); // Strife [Stamina and Accuracy]
 				if (CallACS("GetBuffTimer",10) > 0) PoisonNeedleCritChance *= 1.25;
 				if (CallACS("GetBuffTimer",13) > 0) PoisonNeedleCritChance *= 0.80;
-				if (CallACS("GetBuffTimer",1) > 0)
-				{
-					if (playpawn) PoisonNeedleCritChance *= (((playpawn.InvisNeedleBonus - 1.00) * 0.3334) + 1.00);
-				}
+				if (CallACS("GetBuffTimer",1) > 0 && playpawn) PoisonNeedleCritChance *= (((playpawn.InvisNeedleBonus - 1.00) * 0.3334) + 1.00);
+				
 				if (PlayerTensionLevel > 0) PoisonNeedleCritChance = (PoisonNeedleCritChance * (PlayerTensionLevel + 7)) / 7;
 				if (PoisonNeedleBossCheck) PoisonNeedleCritChance *= 0.25;
 				if (playpawn.CountInv("PlayerDashing")) PoisonNeedleCritChance *= 2.5;
 
-				if (vict == "PossessedBalloonNew" || 
-						vict == "BigBerthaNew" || 
-						vict == "BigBertha2New" || 
-						vict == "SuperBerthaNew" || 
-						vict == "ClownGhostNew") PoisonNeedleCritChance = 200.0; // "Balloon" type enemies in Circus666/Circus2 instantly "pop" from a hit of the needle
+				if (MonsterFamily = "Balloon") PoisonNeedleCritChance = 200.0; // "Balloon" type enemies in Circus666/Circus2 instantly "pop" from a hit of the needle
 				if (vict == "ClayDevilNew") PoisonNeedleCritChance *= 0.0625; // Clay Devils are harder to crit, but will go down for a VERY VERY LONG time if they are killed by the needle.
 
 				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP 2aa - Player-Crit Dmg (\cxPOISON NEEDLE Check\c-)]\c-: \cyPoisonNeedleCritChance = %.8f\c-)", PoisonNeedleCritChance);
@@ -1984,7 +1980,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 
 			// Healing from Punching/Kicking Practice Targets ala SW
-			if (vict == "PracticeTarget" || vict == "PracticeTarget2")
+			if (MonsterFamily == "PracticeTarget")
 			{
 				if ((mod == 'Fist' || mod == 'Kick' || mod == 'Gauntlets'))
 				{
@@ -2227,38 +2223,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (criticalhit > 0 && (inflictor == null && source == null)) criticalhit = 0;
 				if (dvdsdebug_actordmgdisplays && dvds_monstercrits != 0) Console.Printf("    (\czActor Defensive Input [Monster Crit Rate]\c-: %d / 512 (%d) \c-, \cyActorClass: = %s\c-)", CritRoll, CritChance, ActorClass);
 
-				// Chance to RESIST a crit.
-				double CritResistChance = 1.25;
-				// Enemy Type
-				if (vict == "ForgottenOne") CritResistChance = 25.0;
-				// Enemy Flags
-				if (bBOSS) CritResistChance *= 1.5;
-				// Enemy Has "Item"
-				if (CountInv("HWShieldDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.25);
-				if (CountInv("ImpWarlordShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.25);
-				if (CountInv("ImpWarlordShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.45);
-				if (CountInv("DKnightShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.375);
-				if (CountInv("DKnightShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.475);
-				if (CountInv("AcolyteShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.125);
-				if (CountInv("AcolyteShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.35);
-				if (CountInv("CentaurShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.333);
-				if (CountInv("CentaurShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.48666);
-				if (CountInv("SlaughtaurShieldDefend")) CritResistChance += ((100.0 - CritResistChance) * 0.41667);
-				if (CountInv("SlaughtaurShieldDefendExtra")) CritResistChance += ((100.0 - CritResistChance) * 0.49333);
-				if (CountInv("MaulotaurChargeDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.375);
-				if (CountInv("HeresiarchShieldDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.4375);
-				if (CountInv("NightmarePhaseOutDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.46875);
-				String nm = "ThamuzApocalypseDefendMode"; MiscCheck = nm; if (CountInv(MiscCheck)) CritResistChance += ((100.0 - CritResistChance) * 0.4);
-				// Flag Detection
-				if (user_legendaryevolved) CritResistChance += ((100.0 - CritResistChance) * 0.1875);
-				// Type Detection
-				if (mod == 'Sigil' || mod == 'SpectralLow') CritResistChance *= 0.75;
-				if (mod == 'Eldritch' || mod == 'Deadlight') CritResistChance *= 0.25;
-				// Ripper Detection
-				if (infl == "RagingSpirit" && random(1,6) != 1) CritResistChance = 200.0;
-				if (inflictor && inflictor.bRIPPER) { if (!singleripproj && !singlefastripproj && random(1,6) != 1) CritResistChance = 200.0; }
-
-				int CritResistRoll = frandom(0.1,100.0);
+				double CritResistRoll = frandom(0.1,100.0);
 				if (criticalhit && CritResistRoll <= CritResistChance) 
 				{
 					criticalhit = 0;
@@ -3014,7 +2979,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (playpawn && ret > 0 && bFRIENDLY == 0)
 		{
 			int InvalidTargetType = 0;
-			if (vict == "PracticeTarget" || vict == "PracticeTarget2") InvalidTargetType = 1;
+			if (MonsterFamily == "PracticeTarget") InvalidTargetType = 1;
 			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czINFO (Gauntlet Drain/Sceptre EXP):\c- \cavict\c-: \ca%s\c-, \cdinfl\c-: \cd%s\c-)", vict, infl);
 
 			if (InvalidTargetType == 0)
@@ -4034,8 +3999,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (dvdsdebug_evolvestealthstuff) Console.Printf("Stealth Chance: %d", StealthChance);
 
 					nonstatmonster = 0;
-					if (ActorName == "PracticeTarget") nonstatmonster = 1;
-					if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+					if (MonsterFamily == "PracticeTarget") nonstatmonster = 1;
 					if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
 					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
 					if (random(1,256) <= StealthChance && nonstatmonster == 0)
@@ -4078,8 +4042,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (debugstatcalc) Console.Printf("\chStart Speed: %.8f, \cgStart Attack: %.8f, \cdStart Defense: %.8f, \caStart Max HP: %d, \cpStart Balance: %d", MSpeed, Attack, Defense, MaxHP, Balance);
 					
 					nonstatmonster = 0;
-					if (ActorName == "PracticeTarget") nonstatmonster = 1;
-					if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+					if (MonsterFamily == "PracticeTarget") nonstatmonster = 1;
 					if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
 					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
 					if (DifficultyChecker == 1 && nonstatmonster == 0) // Difficulty-checking enabled
@@ -4232,8 +4195,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					else MapChecker = 1;
 
 					nonstatmonster = 0;
-					if (ActorName == "PracticeTarget") nonstatmonster = 1;
-					if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+					if (MonsterFamily == "PracticeTarget") nonstatmonster = 1;
 					if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
 					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
 					if (MapChecker == 1 && nonstatmonster == 0) // Map-checking enabled
@@ -4323,8 +4285,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 						}
 
 						nonstatmonster = 0;
-						if (ActorName == "PracticeTarget") nonstatmonster = 1;
-						if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+						if (MonsterFamily == "PracticeTarget") nonstatmonster = 1;
 						if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
 						if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
 						if (ModType == 1 && nonstatmonster == 0) // Deus Vult 1
@@ -4349,7 +4310,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 							BalanceFactor = AttackFactor / 1.25;
 						}
 						
-						if (ModType == 2 && (ActorName != "PracticeTarget" || ActorName != "PracticeTarget2")) // Deus Vult 2
+						if (ModType == 2 && (MonsterFamily != "PracticeTarget")) // Deus Vult 2
 						{
 							MapCheck = level.levelnum;
 							MapCheck = clamp(MapCheck, 1201, 1212);
@@ -4491,8 +4452,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					else LevelChecker = 1;
 				
 					nonstatmonster = 0;
-					if (ActorName == "PracticeTarget") nonstatmonster = 1;
-					if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+					if (MonsterFamily == "PracticeTarget") nonstatmonster = 1;
 					if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
 					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
 					if (LevelChecker == 1 && nonstatmonster == 0)
@@ -4751,8 +4711,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					else ErrorChecker = 1;
 				
 					nonstatmonster = 0;
-					if (ActorName == "PracticeTarget") nonstatmonster = 1;
-					if (ActorName == "PracticeTarget2") nonstatmonster = 1;
+					if (MonsterFamily == "PracticeTarget") nonstatmonster = 1;
 					if (ActorName == "DSBossBrain" && dvds_improvediconofsin <= 0) nonstatmonster = 1;
 					if (ActorName == "DSBossBrain" && BossEyeCheck <= 0) nonstatmonster = 1;
 					if (ErrorChecker == 1 && nonstatmonster == 0)
@@ -12488,6 +12447,7 @@ class PracticeTarget : AetheriusMonsterZSC //21333
 	default
 	{
 		Tag "Practicing Target";
+		AetheriusMonsterZSC.ActorFamily "PracticeTarget";
 		//$Angled
 		//$Color 6
 		//$Category DV-DS Monsters
@@ -12542,6 +12502,7 @@ class PracticeTarget2 : AetheriusMonsterZSC //21334
 	default
 	{
 		Tag "Practicing Target";
+		AetheriusMonsterZSC.ActorFamily "PracticeTarget";
 		//$Angled
 		//$Color 6
 		//$Category DV-DS Monsters
