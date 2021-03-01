@@ -3,6 +3,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 {
 	mixin EvolveMonsters;
 	mixin DamageMessages;
+	mixin CritAtkSound;
 	name MonsterFamily;
 	
 	// Gargoyle
@@ -1579,6 +1580,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (CallACS("MenuVarCheckDECORATE",0) > 0)
 		{
 			if (mod == 'Crush') return 0;
+		}
+		if (bDORMANT)
+		{
+			if (!(mod == "SilentMassacre" || mod == "Massacre" || mod == "InstantDeath")) return 0;
 		}
 
 		if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input\c-: \cygametic = %d\c-)", gametic);
@@ -5284,12 +5289,6 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		user_canusecrisisatk = 0;
 		if (health <= user_HPLowRange) { if (health <= user_HPCritRange) { user_canusecrisisatk = 1; } else { if (random(1,4) == 4) { user_canusecrisisatk = 1; } } }
 		if (dvds_monstercrisisattacks == 0) { user_canusecrisisatk = 0; }
-	}
-
-	void A_PlayCrisisAtkSound ()
-	{
-		A_StartSound("crisisattack", 9, CHANF_DEFAULT, frandom(1.25,1.5), ATTN_NORM, frandom(0.75,1.25));
-		A_StartSound("crisisattack2", 10, CHANF_DEFAULT, frandom(1.25,1.5), ATTN_NORM, frandom(0.75,1.25));
 	}
 
 	void A_CrisisExplode (int damage = 128, int radius = 128, int flags = 1, bool alert = false, int fulldmgradius = 0, int nails = 0, int naildamage = 10, string pufftype = "BulletPuff", string damagetype = "none", bool playcrisissound = true)
@@ -10903,6 +10902,32 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvdsdebug_monsterspecialaidisplays) Console.Printf("TargetDead");
 				target = null;
 				SetStateLabel(statel);
+			}
+		}
+	}
+
+	action void A_UCIIHealSpark(actor DVDSActor, string sparkname = "Heal1SparkAlly", double xscal = 1.0, double yscal = 1.0, string glittertype = "HealGlitter1", int glitterspawns = 0, double gxscal = 1.0, double gyscal = 1.0, double gspeed = 1.0)
+	{
+		Vector3 healpos = (DVDSActor.pos.x, DVDSActor.pos.y, DVDSActor.pos.z);
+		Vector3 healpos2 = (DVDSActor.pos.x, DVDSActor.pos.y, (DVDSActor.pos.z)+(DVDSActor.height/2));
+		Actor healspark = Spawn("Heal1SparkAlly", healpos, ALLOW_REPLACE); 
+		CustomHealSpark iscustomspark;
+		if (healspark != null)
+		{
+			iscustomspark = CustomHealSpark(healspark);
+			healspark.SetOrigin(healpos2,false);
+			healspark.target = DVDSActor;
+			healspark.scale.x = xscal;
+			healspark.scale.y = yscal;
+			if (iscustomspark != null)
+			{
+				iscustomspark.glittertype = glittertype;
+				iscustomspark.glitterspawns = glitterspawns;
+				iscustomspark.glitterxscale = gxscal;
+				iscustomspark.glitteryscale = gyscal;
+				iscustomspark.glitterxspeed = gspeed;
+				iscustomspark.glitteryspeed = gspeed;
+				iscustomspark.glitterzspeed = gspeed;
 			}
 		}
 	}
