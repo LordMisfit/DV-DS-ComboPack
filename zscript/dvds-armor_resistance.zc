@@ -8738,21 +8738,55 @@ class PlayerStatItem : Inventory
 
 			double BaseExtra = clamp(dvds_baseexpextra, 0, 100);
 			double BaseAccel1 = clamp(dvds_baseexpaccel1, 0, 100);
-			double BaseAccel2 = clamp(dvds_baseexpaccel2, 0, 25000);
+			double BaseAccel2 = clamp(dvds_baseexpaccel2, 0.0, 5.0);
 			double BaseMulti1 = clamp(dvds_expmulti1, 1, 1024);
 			double BaseMulti2 = clamp(dvds_expmulti2, 1, 10000);
-			double Accel2Div = clamp(dvds_accel2div, 1, 10000);
+			
+			double BaseMulti3 = 1.0;
+			int baseval;
+			int addval;
+			double mulval;
+			int preval = 0;
+			
+			double BaseMulti3b = 1;
 
 			// Sets up the actual EXP requirement tables based from BaseEXPRequirement above.
 			for (int CuLv = 0; CuLv < 201; CuLv++)
 			{
-				ExpValue = (BaseEXPRequirement * ((CuLv * BaseExtra) + 1));
-				ExpValue *= ((CuLv * (BaseAccel1 * ((BaseMulti1 + CuLv) / BaseMulti1))) + BaseMulti2) / BaseMulti2;
-				ExpValue += (BaseEXPRequirement * (CuLv * BaseAccel2) / Accel2Div);
-				if (dvdsdebug_initdisplays) Console.Printf("\czLevel \cy%d\c- \czEXP Requirement: \cy%d\c-", CuLv, ExpValue);
+				if (CuLv >= 0 && CuLv <= 20) BaseMulti3 = (1.0 + (CuLv * (0.01 * BaseMulti3b)));
+				if (CuLv >= 21 && CuLv <= 40) BaseMulti3 = (1.0625 + (CuLv * (0.010625 * BaseMulti3b)));
+				if (CuLv >= 41 && CuLv <= 60) BaseMulti3 = (1.125 + (CuLv * (0.01125 * BaseMulti3b)));
+				if (CuLv >= 61 && CuLv <= 80) BaseMulti3 = (1.25 + (CuLv * (0.0125 * BaseMulti3b)));
+				if (CuLv >= 81 && CuLv <= 100) BaseMulti3 = (1.5 + (CuLv * (0.015 * BaseMulti3b)));
+				if (CuLv >= 101 && CuLv <= 109) BaseMulti3 = (2.0 + (CuLv * (0.02 * BaseMulti3b)));
+				if (CuLv >= 110 && CuLv <= 118) BaseMulti3 = (3.5 + (CuLv * (0.035 * BaseMulti3b)));
+				if (CuLv >= 119 && CuLv <= 127) BaseMulti3 = (5.0 + (CuLv * (0.05 * BaseMulti3b)));
+				if (CuLv >= 128 && CuLv <= 136) BaseMulti3 = (6.5 + (CuLv * (0.065 * BaseMulti3b)));
+				if (CuLv >= 137 && CuLv <= 145) BaseMulti3 = (8.0 + (CuLv * (0.08 * BaseMulti3b)));
+				if (CuLv >= 146 && CuLv <= 154) BaseMulti3 = (9.5 + (CuLv * (0.095 * BaseMulti3b)));
+				if (CuLv >= 155 && CuLv <= 163) BaseMulti3 = (11.0 + (CuLv * (0.11 * BaseMulti3b)));
+				if (CuLv >= 164 && CuLv <= 172) BaseMulti3 = (12.5 + (CuLv * (0.125 * BaseMulti3b)));
+				if (CuLv >= 173 && CuLv <= 181) BaseMulti3 = (14.0 + (CuLv * (0.14 * BaseMulti3b)));
+				if (CuLv >= 182 && CuLv <= 190) BaseMulti3 = (15.5 + (CuLv * (0.155 * BaseMulti3b)));
+				if (CuLv >= 191 && CuLv <= 199) BaseMulti3 = (17.0 + (CuLv * (0.17 * BaseMulti3b)));
+				if (CuLv >= 200) BaseMulti3 = (20.0 + (CuLv * (0.20 * BaseMulti3b)));
+
+				baseval = BaseEXPRequirement * (((CuLv * BaseExtra) + 1));
+				mulval = (((CuLv * (BaseAccel1 * ((BaseMulti1 + CuLv) / BaseMulti1))) + BaseMulti2) / BaseMulti2);
+				addval = (((BaseEXPRequirement * (CuLv * BaseAccel2)) * BaseMulti3) * ((BaseMulti3) * 1.25));
+				ExpValue = baseval;
+				if (dvdsdebug_initdisplays) Console.Printf("ExpValue: %d (%d)", ExpValue, baseval);
+				ExpValue *= mulval;
+				if (dvdsdebug_initdisplays) Console.Printf("(*) ExpValue: %d (%.8f)", ExpValue, mulval);
+				ExpValue += addval;
+				if (dvdsdebug_initdisplays) Console.Printf("(+) ExpValue: %d (%d)", ExpValue, addval);
+				
+				if (CuLv > 0) preval = CallACS("ExpTableSetDECORATE",(CuLv-1),0,-1);
+
+				if (dvdsdebug_initdisplays) Console.Printf("\czLevel \cy%d\c- \czEXP Requirement: \cy%d \cz(prev: \cy%d)\cz, Multi: %.8f, baseval: %d, mulval: %.8f, addval: %d, diff: %d\c-", CuLv, ExpValue, preval, BaseMulti3, baseval, mulval, addval, (ExpValue-preval));
 				CallACS("ExpTableSetDECORATE",CuLv,ExpValue);
 			}
-			if (dvdsdebug_initdisplays) Console.Printf("BaseEXPRequirement: %3f, BaseExtra: %3f / 100, BaseAccel1: %3f / 100, BaseAccel2: %3f / 25000, BaseMulti1: %3f / 1024, BaseMulti2: %3f / 10000, Accel2Div: %3f / 10000", BaseEXPRequirement, BaseExtra, BaseAccel1, BaseAccel2, BaseMulti1, BaseMulti2, Accel2Div);
+			if (dvdsdebug_initdisplays) Console.Printf("BaseEXPRequirement: %4f, BaseExtra: %4f / 100, BaseAccel1: %4f / 100, BaseAccel2: %3f / 25000, BaseMulti1: %3f / 1024, BaseMulti2: %3f / 10000", BaseEXPRequirement, BaseExtra, BaseAccel1, BaseAccel2, BaseMulti1, BaseMulti2);
 			CallACS("ExpTableSetDECORATE",201,2147483647);
 			InitEXPTables++;
 		}
