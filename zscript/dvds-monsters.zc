@@ -19,6 +19,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	int missilecount;
 	int bobstate;
 
+	int bormcountercooldown;
 	int hsexphealth;
 	int specialspeed1;
 	int stealthstate, stealthtimer;
@@ -918,6 +919,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		}
 		if (health > 0)
 		{
+			if (bormcountercooldown > 0) 
+			{
+				bormcountercooldown--;
+				//Console.Printf("bormcountercooldown: %d", bormcountercooldown);
+			}
 			if (hitsoundtimer > 0) hitsoundtimer--;
 			if (hitweaksoundtimer > 0) hitweaksoundtimer--;
 		}
@@ -1645,7 +1651,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (vel.y != 0.0) vel.y *= 0.1;
 			if (dvdsdebug_actordmgdisplays && wasblastedimpact) Console.Printf("    (\czwasblastedimpact?: %d", wasblastedimpact);
 		}
-
+		
 		if (dvdsdebug_actordmgdisplays)
 		{
 			if (flags & DMG_NO_ARMOR) Console.Printf("    (\cyIgnoresArmor?: yes)");
@@ -1679,6 +1685,15 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (source != null) lastattacker = source;
 		if (source == null) sour = "NONE"; else sour = source.GetClassName();
 		
+		// Is spawned via a Mapspot [i.e. Hexen shooters]
+		if (sour == "FS_MapSpot" || sour == "MapSpot" || sour == "MapspotGravity")
+		{
+			predamage = damage;
+			double msdmgmulti = (1.0 + (A_MapCheckDamageMobj() * 0.025));
+			damage *= msdmgmulti;
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\cz[STEP -5] Actor Defensive Input [\cyMapSpot Check\c-]\c-: %d, [prev: %d] {multi: %.8f)", damage, predamage, msdmgmulti);
+		}
+
 		bool isaminionpolykill = false;
 		// PE/HE/HO Minion spawn situations
 		if ((sour == "DSPainElemental" && infl == "DSPainElemental") || (sour == "FPainElemental" || infl == "FPainElemental"))
@@ -3814,7 +3829,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (mapdifficultytype == 0) MapCheck = level.levelnum;
 					else MapCheck = CallACS("MiscVarCheckDECORATE",1000);
 					
-					if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+					if (CallACS("MiscVarCheckDECORATE",259) > 0) 
+					{
+						if (mapdifficultytype == 0) MapCheck += (40 + deathkingsmapcalcmod);
+						else MapCheck += deathkingsmapcalcmod;
+					}
 					MapCheck += CallACS("MiscVarCheckDECORATE",54); // Map Inflation [Evolve/Stealth - Exact]
 					MapCheck += CallACS("MiscVarCheckDECORATE",169); // Map Inflation [Overall - Exact]
 					MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",3) / 100; // Map Inflation [Evolve/Stealth - Percentile]
@@ -3837,7 +3856,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 					if (mapdifficultytype == 0) MapCheck = level.levelnum;
 					else MapCheck = CallACS("MiscVarCheckDECORATE",1000);
 					
-					if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+					if (CallACS("MiscVarCheckDECORATE",259) > 0) 
+					{
+						if (mapdifficultytype == 0) MapCheck += (40 + deathkingsmapcalcmod);
+						else MapCheck += deathkingsmapcalcmod;
+					}
 					MapCheck += CallACS("MiscVarCheckDECORATE",54); // Map Inflation [Evolve/Stealth - Exact]
 					MapCheck += CallACS("MiscVarCheckDECORATE",169); // Map Inflation [Overall - Exact]
 					MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",3) / 100; // Map Inflation [Evolve/Stealth - Percentile]
@@ -4217,7 +4240,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 								if (mapdifficultytype == 0) MapCheck = level.levelnum;
 								else MapCheck = CallACS("MiscVarCheckDECORATE",1000);
 								
-								if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+								if (CallACS("MiscVarCheckDECORATE",259) > 0) 
+								{
+									if (mapdifficultytype == 0) MapCheck += (40 + deathkingsmapcalcmod);
+									else MapCheck += deathkingsmapcalcmod;
+								}
 								MapCheck += CallACS("MiscVarCheckDECORATE",53); // Map Inflation [Stats - Exact]
 								MapCheck += CallACS("MiscVarCheckDECORATE",169); // Map Inflation [Overall - Exact]
 								MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",2) / 100; // Map Inflation [Stats - Percentile]
@@ -4253,7 +4280,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 								if (mapdifficultytype == 0) MapCheck = level.levelnum;
 								else MapCheck = CallACS("MiscVarCheckDECORATE",1000);
 								
-								if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+								if (CallACS("MiscVarCheckDECORATE",259) > 0) 
+								{
+									if (mapdifficultytype == 0) MapCheck += (40 + deathkingsmapcalcmod);
+									else MapCheck += deathkingsmapcalcmod;
+								}
 								MapCheck += CallACS("MiscVarCheckDECORATE",53); // Map Inflation [Stats - Exact]
 								MapCheck += CallACS("MiscVarCheckDECORATE",169); // Map Inflation [Overall - Exact]
 								MapCheck = MapCheck * CallACS("MiscVarCheckDECORATE",2) / 100; // Map Inflation [Stats - Percentile]
@@ -5589,7 +5620,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				
 				if (MapCheck != 1000 || MapCheck != 1010)
 				{
-					if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+					if (CallACS("MiscVarCheckDECORATE",259) > 0) 
+					{
+						if (mapdifficultytype == 0) MapCheck += (40 + deathkingsmapcalcmod);
+						else MapCheck += deathkingsmapcalcmod;
+					}
 					MapCheck += mapdifficultyinflationEXP; // Map Inflation [EXP - Exact]
 					MapCheck += mapdifficultyinflationOVERALL; // Map Inflation [Overall - Exact]
 					MapCheck = MapCheck * mapdifficultyinflationEXP2 / 100; // Map Inflation [EXP - Percentile]
@@ -5734,7 +5769,11 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				
 				if (MapCheck != 1050 || MapCheck != 1020 || MapCheck != 1030 || MapCheck != 1036 || MapCheck != 1037 || MapCheck != 1038 || MapCheck != 1039)
 				{
-					if (CallACS("MiscVarCheckDECORATE",259) > 0) MapCheck += deathkingsmapcalcmod;
+					if (CallACS("MiscVarCheckDECORATE",259) > 0) 
+					{
+						if (mapdifficultytype == 0) MapCheck += (40 + deathkingsmapcalcmod);
+						else MapCheck += deathkingsmapcalcmod;
+					}
 					MapCheck += mapdifficultyinflationEXP; // Map Inflation [EXP - Exact]
 					MapCheck += mapdifficultyinflationOVERALL; // Map Inflation [Overall - Exact]
 					MapCheck = MapCheck * mapdifficultyinflationEXP2 / 100; // Map Inflation [EXP - Percentile]
@@ -9464,10 +9503,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				A_PlayCrisisAtkSound(); 
 			}
 			int amount = drainamount;
-			target.DamageMobj (self, self, amount, 'Melee');
+			amount = target.DamageMobj (self, self, amount, 'Melee');
 			if (health < maxdrain && target.bINVULNERABLE == 0)
 			{
-				health += amount;
+				health += (amount * frandom(0.45,0.65));
 				health = clamp(health, health, maxdrain);
 			}
 		}
