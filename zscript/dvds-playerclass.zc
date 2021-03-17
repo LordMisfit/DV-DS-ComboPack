@@ -2831,6 +2831,162 @@ class AetheriusPlayerPawn : PlayerPawn
 		return damage;
 	}
 	
+	int, int A_CalcCritChance(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	{
+		AetheriusPlayerPawn playpawn;
+		AetheriusMonsterZSC DVDSActor;
+		AetheriusMonsterZSC DVDSVictim;
+		AetheriusProjectileZSC UniqueProjectile;
+		AetheriusFastProjectileZSC UniqueProjectileFast;
+		AetheriusEffectProjectile ailmentproj;
+		AetheriusEffectFastProjectile ailmentprojfast;
+		SingleDamageRipper singleripproj;
+		SingleDamageFastRipper singlefastripproj;
+
+		int CritChance = 0;
+		int meleeattack = 0;
+		string infl, sour, vict;
+
+		if (mod == 'Melee' || mod == 'Trample' || mod == 'Stomp' || mod == 'Fist' || mod == 'Kick' || mod == 'Chainsaw' || mod == 'Gauntlets' || mod == 'Sceptre') meleeattack = 1;
+		string ActorClass;
+		if (inflictor != null && source != null) ActorClass = DVDSActor.GetClassName();
+		string AilmentProjClass;
+		string ailmentprojfastClass;
+		if (ailmentproj) AilmentProjClass = ailmentproj.GetClassName();
+		if (ailmentprojfast) ailmentprojfastClass = ailmentprojfast.GetClassName();
+		//*****************************************************
+		//**Allows Monsters to deal crits [4/256 base chance]**
+		//*****************************************************
+		// Base Chances
+		CritChance = 8 + (DVDSActor.user_monsterlevel / 11.25); // 8 (+ 8 every 90 levels)
+		if (DVDSActor && DVDSActor.bBOSS) CritChance = (CritChance * 3) / 2; // Boss Flag Check
+		if (DVDSActor && DVDSActor.bJUSTHIT) CritChance *= 2; // JustHit Flag Check
+		if (DVDSActor && DVDSActor.user_charmed) CritChance = (CritChance * 3) / 2; // Charm Flag Check
+		if (DVDSActor && DVDSActor.user_legendaryevolved) CritChance *= 4; // Legendaries have quadruple crit rate
+		if (DVDSActor && DVDSActor.health <= DVDSActor.user_HPBuffRange) CritChance *= 1.5;
+
+		// Actor Only Checks
+		if (ActorClass == "DSHelperDog") CritChance *= 3; // Helper Dogs get triple crit rate
+		if (ActorClass == "DSPainElemental" || ActorClass == "FPainElemental" || ActorClass == "DSPainElemental64" || ActorClass == "DSLostSoul" || ActorClass == "DSLostSoul2" || ActorClass == "ForgottenOne" || ActorClass == "DSLostSoul64" || ActorClass == "DSLostSoul642" ||
+				ActorClass == "FLostSoul1" || ActorClass == "FLostSoul2") CritChance *= 4; // Pain-Elementals/Lost Souls are Crit-happy nuisances
+		if (ActorClass == "DSRevenant" || ActorClass == "FRevenant" || ActorClass == "DeathIncarnate" || ActorClass == "FDeathIncarnate") CritChance *= 1.5; // Revenants/Death Incarnates have 50% more crit
+		if (ActorClass == "ChainsawZombieNew") CritChance *= 2.5; // Chainsaw Zombies have 150% more crit
+		if (ActorClass == "NightmareNew" || ActorClass == "SirenNightmareNew") CritChance *= 4; // Nightmares are good at crits too
+		if (ActorClass == "EvilDeadHandNew" || ActorClass == "BabyClownNew" || 
+				ActorClass == "BabyClown2New" || ActorClass == "BouncingClownNew" ||
+				ActorClass == "StarSpawn" || ActorClass == "SpiderGod" || ActorClass == "SpiderGodling") CritChance *= 4;
+		// Ally Specific
+		if (ActorClass == "RebelNew" || ActorClass == "Rebel1New" || ActorClass == "Rebel2New" || ActorClass == "Rebel3New" || 
+				ActorClass == "Rebel4New" || ActorClass == "Rebel5New" || ActorClass == "Rebel6New") 
+				CritChance *= frandom(1.75,2.25); // Strife Rebels have +75-125% more crit
+
+		// Boss Only Checks
+		if (ActorClass == "DragonNew" || ActorClass == "FDragon" || ActorClass == "HeresiarchNew" || ActorClass == "FHeresiarch" || 
+				ActorClass == "DSparilMountedNew" || ActorClass == "ClericBossNew" || ActorClass == "FighterBossNew" || ActorClass == "MageBossNew" ||
+				ActorClass == "ProgrammerNew" || ActorClass == "StrifeBishopNew" || ActorClass == "LoremasterNew" || ActorClass == "Macil1New" || ActorClass == "StrifMacil2NeweBishopNew" ||
+				ActorClass == "NyarlathotepLesser") CritChance *= 4;
+		if (ActorClass == "AlienSpectre1New" || ActorClass == "AlienSpectre2New" || ActorClass == "AlienSpectre3New" || ActorClass == "AlienSpectre4New" || ActorClass == "AlienSpectre5New" ||
+				ActorClass == "AvatarNew" || ActorClass == "Benellus1DS" || ActorClass == "Benellus2DS" || ActorClass == "Benellus3DS" ||
+				ActorClass == "TNTSpider" || ActorClass == "SourceGuardian" || ActorClass == "AdolfHitlerDS") CritChance *= 6;
+		if (ActorClass == "DSparilUnmountedNew" || ActorClass == "KoraxNew" || ActorClass == "PennywiseBoss" ||
+				ActorClass == "EntityBossNew" || ActorClass == "EntitySecondNew" || ActorClass == "EntityAscended" || ActorClass == "ThamuzNew" || ActorClass == "TchernobogNew" ||
+				ActorClass == "Magmantis" || ActorClass == "Zakachi") CritChance *= 8;
+		if (ActorClass == "Nyarlathotep") CritChance *= 12;
+
+		// Unique Checks
+		if (meleeattack && (ActorClass == "WraithNew" || ActorClass == "WraithBuriedNew" || ActorClass == "FWraith")) 
+				CritChance *= 4;
+
+		if (meleeattack && (ActorClass == "Dragon" || ActorClass == "FDragon")) 
+				CritChance *= 8;
+
+		if (meleeattack && (ActorClass == "EttinNew" || ActorClass == "EttinCommander" || ActorClass == "Bormereth" ||
+				ActorClass == "FEttinNew" || ActorClass == "FEttinCommander" || ActorClass == "FBormereth")) 
+				CritChance *= 2.25; // Ettins have 125% more crit for Melee
+
+		if (meleeattack && (ActorClass == "StalkerNew" || ActorClass == "StalkerLeaderNew" || ActorClass == "IceStalker" || ActorClass == "IceStalkerLeader" || 
+				ActorClass == "FStalker" || ActorClass == "FStalkerLeader")) 
+				CritChance *= 2; // Hexen Stalkers have 2x more crit for Melee
+
+		if (meleeattack && (ActorClass == "CentaurNew" || ActorClass == "SlaughtaurNew" || 
+				ActorClass == "FCentaur" || ActorClass == "FSlaughtaur")) 
+				CritChance *= 2; // Centaurs have 2x more crit for Melee
+
+		if (meleeattack && (ActorClass == "DSRevenant" || ActorClass == "FRevenant" || ActorClass == "DeathIncarnate" || ActorClass == "FDeathIncarnate")) 
+				CritChance *= 1.5; // Revenants/Death Incarnates have another +50% more crit when using melee
+
+		if (meleeattack && (ActorClass == "KnightNew" || ActorClass == "FKnight" || ActorClass == "KnightGhostNew" || ActorClass == "FKnightGhost")) 
+				CritChance *= 1.5; // Undead Warriors [Heretic] have another +50% more crit when using melee
+
+		if (meleeattack && (ActorClass == "ReaverNew")) 
+				CritChance *= 3; // Reavers have 3x more crit for melee
+
+		if (meleeattack && (ActorClass == "OStalkerNew")) 
+				CritChance *= 1.5; // Strife Stalkers have 50% more crit for melee
+
+		if (meleeattack && 
+				(ActorClass == "DSCacodemon" || ActorClass == "DSCacodemon64" || ActorClass == "FCacodemon" ||
+				ActorClass == "Cacolantern" || ActorClass == "FCacolantern" ||
+				ActorClass == "Abaddon" || ActorClass == "FAbaddon")) 
+				CritChance *= 2; // Cacos have 2x Crit for Melee
+
+		if (meleeattack && 
+				(ActorClass == "HadesElemental" || ActorClass == "FHadesElemental" ||
+				ActorClass == "HadesOverlord" || ActorClass == "FHadesOverlord")) 
+				CritChance *= 3; // Hades Scions have 3x Crit for Melee
+
+		if (meleeattack && (ActorClass == "SatyrNew")) 
+				CritChance *= 8; // Satyrs are very likely to crit too
+				
+		if (meleeattack && 
+				(ActorClass == "DSDemon" || ActorClass == "DSDemon64" || 
+				ActorClass == "DSSpectre" || ActorClass == "DSSpectre64" || 
+				ActorClass == "BloodDemon" || ActorClass == "BloodSpectre" ||
+				ActorClass == "BloodFiendNew" || ActorClass == "LurkerNew" ||
+				ActorClass == "FDemon" || ActorClass == "FSpectre" || 
+				ActorClass == "FBloodDemon" || ActorClass == "FBloodSpectre")) 
+				CritChance *= 1.5; // Pinkies have 50% more crit with Melee
+
+		if (meleeattack && (ActorClass == "ClinkNew" || ActorClass == "FClink" || ActorClass == "DarkClink" || ActorClass == "FDarkClink")) 
+				CritChance *= 1.5; // SabreClaws have 50% more crit with Melee
+
+		if (meleeattack && 
+				(ActorClass == "DSCyberdemon" || ActorClass == "DSCyberdemon64" || ActorClass == "Annihilator" || 
+				ActorClass == "FCyberdemon" || ActorClass == "FAnnihilator")) 
+				CritChance *= 8; // Cyberdemon Stomps/Melee have 8x chance to crit.
+				
+		if (meleeattack && 
+				(ActorClass == "DSHellKnight" || ActorClass == "DSHellKnight64" || ActorClass == "FHellKnight" || 
+				ActorClass == "HellWarrior" || ActorClass == "FHellWarrior" || 
+				ActorClass == "DSBaronofHell" || ActorClass == "DSBaronofHell64" || ActorClass == "FBaronofHell" || 
+				ActorClass == "Belphegor" || ActorClass == "FBelphegor" || 
+				ActorClass == "BruiserDemon" || ActorClass == "FBruiserDemon" || 
+				ActorClass == "CyBruiser" || ActorClass == "FCyBruiser" || 
+				ActorClass == "ArchonofHell" || ActorClass == "FArchonofHell" ||
+				ActorClass == "PyroDemon" || ActorClass == "FPyroDemon" ||
+				ActorClass == "WeakenedFlyingBalrog" || ActorClass == "FlyingBalrog" || ActorClass == "FFlyingBalrog")) 
+				CritChance *= 4; // Hell Nobles have 4x chance to Crit w/ melee attacks
+
+		// Misc
+		if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') // BFG related attacks have signficantly LESS chance to crit, but still always have at least a 1/512 chance :P
+		{ 
+			CritChance *= 0.25;
+			if (CritChance < 1) CritChance = 1;
+		}
+		if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
+				infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
+				infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
+				infl == "FireBreath" || infl == "FireBreathCrisis" ||
+				infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis" ||
+				infl == "Demon5Jet" || infl == "Demon5JetCrisis")
+		{
+			CritChance *= 4;
+		}
+		if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "SuicideBombStrong" || infl == "SuicideBombUltra" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") CritChance = 0; // Kamikaze Monsters Cannot Crit
+
+		return CritChance, meleeattack;
+	}
+	
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
 		if (mod == 'Heal1' || mod == 'Heal2' || mod == 'Heal3' || mod == 'Heal4') return 0;
@@ -2884,10 +3040,8 @@ class AetheriusPlayerPawn : PlayerPawn
 		A_CheckNeverBleed();
 		string infl, sour, vict;
 		vict = GetClassName();
-		if (inflictor == null) infl = "NONE";
-											else infl = inflictor.GetClassName();
-		if (source == null) sour = "NONE";
-									 else sour = source.GetClassName();
+		if (inflictor == null) infl = "NONE"; else infl = inflictor.GetClassName();
+		if (source == null) sour = "NONE"; else sour = source.GetClassName();
 		
 		// Is spawned via a Mapspot [i.e. Hexen shooters]
 		if (sour == "FS_MapSpot" || sour == "MapSpot" || sour == "MapspotGravity")
@@ -3074,144 +3228,10 @@ class AetheriusPlayerPawn : PlayerPawn
 		//**Player Taking Crits from Monsters**
 		//*************************************
 		int meleeattack = 0;
+		string ActorClass;
 		if (DVDSActor && dvds_monstercrits != 0) 
 		{
-			if (mod == 'Melee' || mod == 'Trample' || mod == 'Stomp' || mod == 'Fist' || mod == 'Kick' || mod == 'Chainsaw' || mod == 'Gauntlets' || mod == 'Sceptre') meleeattack = 1;
-			string ActorClass;
-			if (inflictor != null && source != null) ActorClass = DVDSActor.GetClassName();
-			string AilmentProjClass;
-			string ailmentprojfastClass;
-			if (ailmentproj) AilmentProjClass = ailmentproj.GetClassName();
-			if (ailmentprojfast) ailmentprojfastClass = ailmentprojfast.GetClassName();
-			//*****************************************************
-			//**Allows Monsters to deal crits [4/256 base chance]**
-			//*****************************************************
-			// Base Chances
-			CritChance = 8 + (DVDSActor.user_monsterlevel / 11.25); // 8 (+ 8 every 90 levels)
-			if (DVDSActor && DVDSActor.bBOSS) CritChance = (CritChance * 3) / 2; // Boss Flag Check
-			if (DVDSActor && DVDSActor.bJUSTHIT) CritChance *= 2; // JustHit Flag Check
-			if (DVDSActor && DVDSActor.user_charmed) CritChance = (CritChance * 3) / 2; // Charm Flag Check
-			if (DVDSActor && DVDSActor.user_legendaryevolved) CritChance *= 4; // Legendaries have quadruple crit rate
-			if (DVDSActor && DVDSActor.health <= DVDSActor.user_HPBuffRange) CritChance *= 1.5;
-	
-			// Actor Only Checks
-			if (ActorClass == "DSHelperDog") CritChance *= 3; // Helper Dogs get triple crit rate
-			if (ActorClass == "DSPainElemental" || ActorClass == "FPainElemental" || ActorClass == "DSPainElemental64" || ActorClass == "DSLostSoul" || ActorClass == "DSLostSoul2" || ActorClass == "ForgottenOne" || ActorClass == "DSLostSoul64" || ActorClass == "DSLostSoul642" ||
-					ActorClass == "FLostSoul1" || ActorClass == "FLostSoul2") CritChance *= 4; // Pain-Elementals/Lost Souls are Crit-happy nuisances
-			if (ActorClass == "DSRevenant" || ActorClass == "FRevenant" || ActorClass == "DeathIncarnate" || ActorClass == "FDeathIncarnate") CritChance *= 1.5; // Revenants/Death Incarnates have 50% more crit
-			if (ActorClass == "ChainsawZombieNew") CritChance *= 2.5; // Chainsaw Zombies have 150% more crit
-			if (ActorClass == "NightmareNew" || ActorClass == "SirenNightmareNew") CritChance *= 4; // Nightmares are good at crits too
-			if (ActorClass == "EvilDeadHandNew" || ActorClass == "BabyClownNew" || 
-					ActorClass == "BabyClown2New" || ActorClass == "BouncingClownNew" ||
-					ActorClass == "StarSpawn" || ActorClass == "SpiderGod" || ActorClass == "SpiderGodling") CritChance *= 4;
-			// Ally Specific
-			if (ActorClass == "RebelNew" || ActorClass == "Rebel1New" || ActorClass == "Rebel2New" || ActorClass == "Rebel3New" || 
-					ActorClass == "Rebel4New" || ActorClass == "Rebel5New" || ActorClass == "Rebel6New") 
-					CritChance *= frandom(1.75,2.25); // Strife Rebels have +75-125% more crit
-
-			// Boss Only Checks
-			if (ActorClass == "DragonNew" || ActorClass == "FDragon" || ActorClass == "HeresiarchNew" || ActorClass == "FHeresiarch" || 
-					ActorClass == "DSparilMountedNew" || ActorClass == "ClericBossNew" || ActorClass == "FighterBossNew" || ActorClass == "MageBossNew" ||
-					ActorClass == "ProgrammerNew" || ActorClass == "StrifeBishopNew" || ActorClass == "LoremasterNew" || ActorClass == "Macil1New" || ActorClass == "StrifMacil2NeweBishopNew" ||
-					ActorClass == "NyarlathotepLesser") CritChance *= 4;
-			if (ActorClass == "AlienSpectre1New" || ActorClass == "AlienSpectre2New" || ActorClass == "AlienSpectre3New" || ActorClass == "AlienSpectre4New" || ActorClass == "AlienSpectre5New" ||
-					ActorClass == "AvatarNew" || ActorClass == "Benellus1DS" || ActorClass == "Benellus2DS" || ActorClass == "Benellus3DS" ||
-					ActorClass == "TNTSpider" || ActorClass == "SourceGuardian" || ActorClass == "AdolfHitlerDS") CritChance *= 6;
-			if (ActorClass == "DSparilUnmountedNew" || ActorClass == "KoraxNew" || ActorClass == "PennywiseBoss" ||
-					ActorClass == "EntityBossNew" || ActorClass == "EntitySecondNew" || ActorClass == "EntityAscended" || ActorClass == "ThamuzNew" || ActorClass == "TchernobogNew" ||
-					ActorClass == "Magmantis" || ActorClass == "Zakachi") CritChance *= 8;
-			if (ActorClass == "Nyarlathotep") CritChance *= 12;
-	
-			// Unique Checks
-			if (meleeattack && (ActorClass == "WraithNew" || ActorClass == "WraithBuriedNew" || ActorClass == "FWraith")) 
-					CritChance *= 4;
-
-			if (meleeattack && (ActorClass == "Dragon" || ActorClass == "FDragon")) 
-					CritChance *= 8;
-
-			if (meleeattack && (ActorClass == "EttinNew" || ActorClass == "EttinCommander" || ActorClass == "Bormereth" ||
-					ActorClass == "FEttinNew" || ActorClass == "FEttinCommander" || ActorClass == "FBormereth")) 
-					CritChance *= 2.25; // Ettins have 125% more crit for Melee
-
-			if (meleeattack && (ActorClass == "StalkerNew" || ActorClass == "StalkerLeaderNew" || ActorClass == "IceStalker" || ActorClass == "IceStalkerLeader" || 
-					ActorClass == "FStalker" || ActorClass == "FStalkerLeader")) 
-					CritChance *= 2; // Hexen Stalkers have 2x more crit for Melee
-
-			if (meleeattack && (ActorClass == "CentaurNew" || ActorClass == "SlaughtaurNew" || 
-					ActorClass == "FCentaur" || ActorClass == "FSlaughtaur")) 
-					CritChance *= 2; // Centaurs have 2x more crit for Melee
-
-			if (meleeattack && (ActorClass == "DSRevenant" || ActorClass == "FRevenant" || ActorClass == "DeathIncarnate" || ActorClass == "FDeathIncarnate")) 
-					CritChance *= 1.5; // Revenants/Death Incarnates have another +50% more crit when using melee
-
-			if (meleeattack && (ActorClass == "KnightNew" || ActorClass == "FKnight" || ActorClass == "KnightGhostNew" || ActorClass == "FKnightGhost")) 
-					CritChance *= 1.5; // Undead Warriors [Heretic] have another +50% more crit when using melee
-
-			if (meleeattack && (ActorClass == "ReaverNew")) 
-					CritChance *= 3; // Reavers have 3x more crit for melee
-
-			if (meleeattack && (ActorClass == "OStalkerNew")) 
-					CritChance *= 1.5; // Strife Stalkers have 50% more crit for melee
-
-			if (meleeattack && 
-					(ActorClass == "DSCacodemon" || ActorClass == "DSCacodemon64" || ActorClass == "FCacodemon" ||
-					ActorClass == "Cacolantern" || ActorClass == "FCacolantern" ||
-					ActorClass == "Abaddon" || ActorClass == "FAbaddon")) 
-					CritChance *= 2; // Cacos have 2x Crit for Melee
-
-			if (meleeattack && 
-					(ActorClass == "HadesElemental" || ActorClass == "FHadesElemental" ||
-					ActorClass == "HadesOverlord" || ActorClass == "FHadesOverlord")) 
-					CritChance *= 3; // Hades Scions have 3x Crit for Melee
-
-			if (meleeattack && (ActorClass == "SatyrNew")) 
-					CritChance *= 8; // Satyrs are very likely to crit too
-					
-			if (meleeattack && 
-					(ActorClass == "DSDemon" || ActorClass == "DSDemon64" || 
-					ActorClass == "DSSpectre" || ActorClass == "DSSpectre64" || 
-					ActorClass == "BloodDemon" || ActorClass == "BloodSpectre" ||
-					ActorClass == "BloodFiendNew" || ActorClass == "LurkerNew" ||
-					ActorClass == "FDemon" || ActorClass == "FSpectre" || 
-					ActorClass == "FBloodDemon" || ActorClass == "FBloodSpectre")) 
-					CritChance *= 1.5; // Pinkies have 50% more crit with Melee
-
-			if (meleeattack && (ActorClass == "ClinkNew" || ActorClass == "FClink" || ActorClass == "DarkClink" || ActorClass == "FDarkClink")) 
-					CritChance *= 1.5; // SabreClaws have 50% more crit with Melee
-
-			if (meleeattack && 
-					(ActorClass == "DSCyberdemon" || ActorClass == "DSCyberdemon64" || ActorClass == "Annihilator" || 
-					ActorClass == "FCyberdemon" || ActorClass == "FAnnihilator")) 
-					CritChance *= 8; // Cyberdemon Stomps/Melee have 8x chance to crit.
-					
-			if (meleeattack && 
-					(ActorClass == "DSHellKnight" || ActorClass == "DSHellKnight64" || ActorClass == "FHellKnight" || 
-					ActorClass == "HellWarrior" || ActorClass == "FHellWarrior" || 
-					ActorClass == "DSBaronofHell" || ActorClass == "DSBaronofHell64" || ActorClass == "FBaronofHell" || 
-					ActorClass == "Belphegor" || ActorClass == "FBelphegor" || 
-					ActorClass == "BruiserDemon" || ActorClass == "FBruiserDemon" || 
-					ActorClass == "CyBruiser" || ActorClass == "FCyBruiser" || 
-					ActorClass == "ArchonofHell" || ActorClass == "FArchonofHell" ||
-					ActorClass == "PyroDemon" || ActorClass == "FPyroDemon" ||
-					ActorClass == "WeakenedFlyingBalrog" || ActorClass == "FlyingBalrog" || ActorClass == "FFlyingBalrog")) 
-					CritChance *= 4; // Hell Nobles have 4x chance to Crit w/ melee attacks
-
-			// Misc
-			if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') // BFG related attacks have signficantly LESS chance to crit, but still always have at least a 1/512 chance :P
-			{ 
-				CritChance *= 0.25;
-				if (CritChance < 1) CritChance = 1;
-			}
-			if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
-					infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
-					infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
-					infl == "FireBreath" || infl == "FireBreathCrisis" ||
-					infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis" ||
-					infl == "Demon5Jet" || infl == "Demon5JetCrisis")
-			{
-				CritChance *= 4;
-			}
-			if (infl == "SuicideBomb" || infl == "SuicideBomber" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord") CritChance = 0; // Kamikaze Monsters Cannot Crit
+			[CritChance, meleeattack] = A_CalcCritChance(inflictor,source,damage,mod,flags,angle);
 
 			// Chance to RESIST a crit.
 			double CritResistChance = 1.25;
@@ -3450,7 +3470,7 @@ class AetheriusPlayerPawn : PlayerPawn
 					dfperkfactor *= dfperkfactormulti;
 					PlayerDefenseIgnoreFactor += ((frandom(0.1125,0.1375) - dfperkfactor) * (1.00 - PlayerDefenseIgnoreFactor));
 				}
-				if (infl == "RockBombShardProj" || infl == "RockBombShardProjT" || infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord" || mod == 'Explosive' || flags & DMG_EXPLOSION) 
+				if (infl == "RockBombShardProj" || infl == "RockBombShardProjT" || infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "SuicideBombStrong" || infl == "SuicideBombUltra" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord" || mod == 'Explosive' || flags & DMG_EXPLOSION) 
 				{
 					dfperkfactor += ((DemolitionsExpertPerkLevel * 0.04) + (DemolitionsExpertEXPerkLevel * 0.10));
 					dfperkfactor *= dfperkfactormulti;
@@ -3696,7 +3716,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			{
 				defense *= (random(1,5) * 0.02);
 			}
-			if (infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord" || mod == 'Explosive' || mod == 'HSExplode') 
+			if (infl == "SuicideBomb" || infl == "SuicideBombStrong" || infl == "SuicideBombUltra" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord" || mod == 'Explosive' || mod == 'HSExplode') 
 			{
 				defense *= 0.334;
 			}
