@@ -108,6 +108,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	{
     AetheriusMonsterZSC.AggressionLevelThreshold 75, 150, 225;
 		Painchance "Dashing", 0;
+		Mass 100;
 		
 		dropitem "DoomSpellMana", 16;
 		dropitem "DoomSpellMana2", 4;
@@ -818,7 +819,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			//********************************************************
 			//*Sets Fading for monster corpses if option is turned on*
 			//********************************************************
-			if (health <= 0 && (dvds_deadwillfade || droppedtheirsoul)) 
+			if (health <= 0 && (dvds_deadwillfade || droppedtheirsoul))
 			{
 				if (deathcounter >= (dvds_deadbeforefadetimer*35))
 				{
@@ -1571,12 +1572,27 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		return inflictor, source, damage;
 	}
 	
-	void A_CheckNeverBleed()
+	void A_CheckNeverBleed(int type, int damage, int flags)
 	{
-		if (neverbleeds == 0)
+		if (type == 0)
 		{
-			bNOBLOOD = 1;
-			bNOBLOODDECALS = 1;
+			if (neverbleeds == 0)
+			{
+				if (bNOBLOOD) bNOBLOOD = 0;
+				if (bNOBLOODDECALS) bNOBLOODDECALS = 1;
+			}
+		}
+		else
+		{
+			//Console.Printf("(A_CheckNeverBleed [player], damage: %d)", damage);
+			if (flags & !DMG_EXPLOSION)
+			{
+				if (neverbleeds == 0)
+				{
+					bNOBLOOD = 1;
+					bNOBLOODDECALS = 1;
+				}
+			}
 		}
 	}
 	
@@ -1858,7 +1874,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP ? - UNSET NORADIUSDMG TEMPORARILY])");
 			}
 		}
-		A_CheckNeverBleed();
+		//A_CheckNeverBleed(0, damage, flags);
 		int drainmaxdmg = self.health; // Prevents overdamage from gauntlets from being factored into Healing values
 		string infl, sour, vict;
 		vict = GetClassName();
@@ -1867,13 +1883,22 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (source != null) lastattacker = source;
 		if (source == null) sour = "NONE"; else sour = source.GetClassName();
 		
+		
+		// Crush Damage
+		if (mod == 'Crush')
+		{
+			predamage = damage;
+			damage *= 8.0;
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\cz[STEP -?] Actor Defensive Input [\cyCrush Check\c-]\c-: %d, [prev: %d])", damage, predamage);
+		}
+
 		// Is spawned via a Mapspot [i.e. Hexen shooters]
 		if (sour == "FS_MapSpot" || sour == "MapSpot" || sour == "MapspotGravity")
 		{
 			predamage = damage;
 			double msdmgmulti = (1.0 + (A_MapCheckDamageMobj() * 0.025));
 			damage *= msdmgmulti;
-			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\cz[STEP -5] Actor Defensive Input [\cyMapSpot Check\c-]\c-: %d, [prev: %d] {multi: %.8f)", damage, predamage, msdmgmulti);
+			if (dvdsdebug_actordmgdisplays) Console.Printf("    (\cz[STEP -5] Actor Defensive Input [\cyMapSpot Check\c-]\c-: %d, [prev: %d] {multi: %.8f})", damage, predamage, msdmgmulti);
 		}
 
 		bool isaminionpolykill = false;
@@ -2098,7 +2123,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (bFRIENDLY)
 			{
 				damage = 0;
-				A_CheckNeverBleed();
+				A_CheckNeverBleed(1, damage, flags);
 				if (dvdsdebug_actordmgdisplays) Console.Printf("    (\czActor Defensive Input [STEP Z]\c-: END DAMAGE ATTEMPT (FRIENDLY)");
 				return 0;
 			}
@@ -3081,7 +3106,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		if (ret == 0)
 		{
-			A_CheckNeverBleed();
+			A_CheckNeverBleed(1, ret, flags);
 		}
 		return ret;
 	}
@@ -9059,7 +9084,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		// Normal movement
 		if (!fdstrafecount)
 		{
-			if (--movecount<0 || !MonsterMove ())
+			if ((movecount -= 1) < 0 || !MonsterMove ())
 			{
 				NewChaseDir ();
 			}
@@ -11495,7 +11520,7 @@ class Sauravatar : AetheriusBossZSC //32201
 		DamageFactor "Gauntlets", 20;
 		DamageFactor "Sceptre", 10;
 		DamageFactor "Magic", 9.332;
-		DamageFactor "Crush", 5.6;
+		DamageFactor "Crush", 0.7; // 5.6
 		DamageFactor "Holy", 12; // Sauron-Class = +300% Holy Damage
 		DamageFactor "Eldritch", 4; // Sauron-Class = +300% Holy Damage
 		Painchance "Holy", 120;

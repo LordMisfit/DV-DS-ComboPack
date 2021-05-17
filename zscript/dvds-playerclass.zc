@@ -1882,11 +1882,11 @@ class AetheriusPlayerPawn : PlayerPawn
 			DRTimerRatio = clamp(DRTimerRatio, DRTimerRatio, 1.0);
 			if (DeathRageDebug) Console.Printf("DRTimerRatio: %.8f (%d / %d)", DRTimerRatio, DeathRageTimer, DeathRageMaxTimer);
 			A_SetBlend("d0 00 20", (0.525*DRTimerRatio), random(17,18));
-			DeathRageTimer--; // Death Rage Timer
+			DeathRageTimer -= 1; // Death Rage Timer
 		}
 		if (DeathRageTimerCooldown > 0) 
 		{
-			DeathRageTimerCooldown--; // Death Rage "Cooldown" Timer
+			DeathRageTimerCooldown -= 1; // Death Rage "Cooldown" Timer
 			if (DeathRageDebug) Console.Printf("DeathRageTimerCooldown: %d tics", DeathRageTimerCooldown);
 		}
 
@@ -2369,12 +2369,27 @@ class AetheriusPlayerPawn : PlayerPawn
 		return true;
 	}
 	
-	void A_CheckNeverBleed()
+	void A_CheckNeverBleed(int type, int damage, int flags)
 	{
-		if (neverbleeds == 0)
+		if (type == 0)
 		{
-			bNOBLOOD = 1;
-			bNOBLOODDECALS = 1;
+			if (neverbleeds == 0)
+			{
+				if (bNOBLOOD) bNOBLOOD = 0;
+				if (bNOBLOODDECALS) bNOBLOODDECALS = 1;
+			}
+		}
+		else
+		{
+			//Console.Printf("(A_CheckNeverBleed [player], damage: %d)", damage);
+			if (flags & !DMG_EXPLOSION)
+			{
+				if (neverbleeds == 0)
+				{
+					bNOBLOOD = 1;
+					bNOBLOODDECALS = 1;
+				}
+			}
 		}
 	}
 	
@@ -3040,11 +3055,19 @@ class AetheriusPlayerPawn : PlayerPawn
 			singleripproj = SingleDamageRipper(inflictor);
 			singlefastripproj = SingleDamageFastRipper(inflictor);
 		}
-		A_CheckNeverBleed();
+		A_CheckNeverBleed(0, damage, flags);
 		string infl, sour, vict;
 		vict = GetClassName();
 		if (inflictor == null) infl = "NONE"; else infl = inflictor.GetClassName();
 		if (source == null) sour = "NONE"; else sour = source.GetClassName();
+		
+		// Crush Damage
+		if (mod == 'Crush')
+		{
+			predamage = damage;
+			damage *= 8.0;
+			if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP -?] player-damagemobj input [\cyCrush Check\c-]\c-: %d, [prev: %d] {multi: %.8f)", damage, predamage);
+		}
 		
 		// Is spawned via a Mapspot [i.e. Hexen shooters]
 		if (sour == "FS_MapSpot" || sour == "MapSpot" || sour == "MapspotGravity")
@@ -3909,7 +3932,7 @@ class AetheriusPlayerPawn : PlayerPawn
 				}
 			}
 
-			A_CheckNeverBleed();
+			A_CheckNeverBleed(1, ret, flags);
 			if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP 13] player-damagemobj uncurse stuff\c-: \caSKIPPED\c-)", ret);
 		}
 
@@ -4276,7 +4299,7 @@ class FloraBriscoletti : AetheriusPlayerPawn // DoomPlayer // PlayerPawn
 		DamageFactor "Sceptre", 0;
 		DamageFactor "Slime", 1.0; // Damage Floors
 		DamageFactor "Magma", 0.900; // 111.1% the fire-elemental defense of a normal player
-		DamageFactor "Crush", 8;
+		DamageFactor "Crush", 1.0; // 8.0
 		DamageFactor "Drowning", 0.875;
 		DamageFactor "Falling", 0.005; // EXTREMELY resistant against falling damage [0.5% normal damage]. It comes with being part Zenithian, those guys can fall a hellacious distance and live. :P
 		Damagefactor "Bullet", 1.0;
@@ -4465,7 +4488,7 @@ class IlluciaHendershot : AetheriusPlayerPawn
 		DamageFactor "Sceptre", 1.0;
 		DamageFactor "Slime", 1.0; // Damage Floors
 		DamageFactor "Magma", 1.0; // Damage Floors
-		DamageFactor "Crush", 8;
+		DamageFactor "Crush", 1.0; // 8.0
 		DamageFactor "Drowning", 0.875;
 		DamageFactor "Falling", 0.25;
 		Damagefactor "Bullet", 1.0;
@@ -4663,7 +4686,7 @@ class DeggarisMontegger : AetheriusPlayerPawn
 		DamageFactor "Sceptre", 1.0;
 		DamageFactor "Slime", 1.0; // Damage Floors
 		DamageFactor "Magma", 1.0; // Damage Floors
-		DamageFactor "Crush", 8;
+		DamageFactor "Crush", 1.0; // 8.0
 		DamageFactor "Drowning", 0.875;
 		DamageFactor "Falling", 0.25;
 		Damagefactor "Bullet", 1.0;
