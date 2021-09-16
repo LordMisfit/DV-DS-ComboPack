@@ -124,7 +124,49 @@ class AetheriusBaseWeaponZSC : Weapon
 
 		if (basespeed <= 0.01) movespeed = 0.01;
 		if (basespeed >= 1.0 && movespeed <= 0.999) movespeed = 1.0;
+
 		A_Raise(movespeed);
+		/*
+		let player = player;
+
+		if (null == player)
+		{
+			return;
+		}
+		if (player.PendingWeapon != WP_NOCHANGE)
+		{
+			string pendweapname = player.PendingWeapon.GetClassName();
+			Console.Printf("pendingweapon: %s", pendweapname);
+			Weapon weap = player.ReadyWeapon;
+			if (weap != null)
+			{
+				string weapname = weap.GetClassName();
+				Console.Printf("weapname: %s", weapname);
+			}
+			player.mo.DropWeapon(); //
+			return;
+		}
+		if (player.ReadyWeapon == null)
+		{
+			return;
+		}
+		let psp = player.GetPSprite(PSP_WEAPON);
+		if (!psp) return;
+
+		if (psp.y <= WEAPONBOTTOM)
+		{
+			ResetPSprite(psp);
+		}
+		psp.y -= movespeed;
+		if (psp.y > WEAPONTOP)
+		{ // Not raised all the way yet
+			return;
+		}
+		psp.y = WEAPONTOP;
+		
+		psp.SetState(player.ReadyWeapon.GetReadyState());
+		return;
+		*/
 	}
 
 	// Sceptre EXP Increase [Weapon
@@ -816,6 +858,8 @@ class AetheriusBaseWeaponZSC : Weapon
 		int MPPenaltyTimeBase = 35 * random(16,24);
 		int MPPenaltyTimeAdd;
 		int breakcode;
+		let weapon = player.ReadyWeapon;
+		string weaponname = weapon.GetClassName();
 
 		// Check 0 = Takes MP without a return value [i.e. infiniteammo is turned on].
 		// Check 1 = Takes NO MP and gives a return value [for just checking]
@@ -846,6 +890,11 @@ class AetheriusBaseWeaponZSC : Weapon
 						{
 							CurrentMana -= amount;
 							MPPenaltyTimeAdd = MPPenaltyTimeBase * amount / (MaxMana * frandompick(0.5,1,1,1,1,1,1.5));
+							if (weaponname == "PoisonNeedle")
+							{
+								if (CallACS("MiscVarCheckDECORATE",10035) == 4) MPPenaltyTimeAdd *= frandompick(0.625,0.75,0.75,0.75,0.75,0.75,0.75,0.875);
+								if (CallACS("MiscVarCheckDECORATE",10035) >= 5) MPPenaltyTimeAdd *= frandompick(0.375,0.5,0.5,0.5,0.5,0.5,0.5,0.625);
+							}
 							if (MPPenaltyTimeAdd < 1) MPPenaltyTimeAdd = 1;
 							if (dvdsdebug_regenpenaltydisplay) Console.Printf("MPPenaltyTimeAdd: %d (amount: %d)", MPPenaltyTimeAdd, amount);
 							CallACS("MiscVarSetDECORATE",93,MPPenaltyTimeAdd,2); // MPRegenBonPenTimer
@@ -1613,8 +1662,16 @@ class AetheriusBaseWeaponZSC : Weapon
 			if (MartialArtsMastery == 1) range = range * 1015 / 1000;
 			if (MartialArtsMastery == 2) range = range * 1030 / 1000;
 			if (MartialArtsMastery == 3) range = range * 1045 / 1000;
-			if (MartialArtsMastery == 4) range = range * 1060 / 1000;
-			if (MartialArtsMastery == 5) range = range * 1075 / 1000;
+			if (dvds_florauseorarush)
+			{
+				if (MartialArtsMastery == 4) range = range * 1090 / 1000;
+				if (MartialArtsMastery == 5) range = range * 1135 / 1000;
+			}
+			else
+			{
+				if (MartialArtsMastery == 4) range = range * 1060 / 1000;
+				if (MartialArtsMastery == 5) range = range * 1075 / 1000;
+			}
 		}
 
 		if (CharacterClass != 2 && BerserkerFit > 0)
@@ -3357,42 +3414,49 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 			}
 			else
 			{
-				if (random(1,256) >= (193 + (MartialArtsMastery) * 3.75)) { A_StopSound(CHAN_VOICE); A_StartSound("FloraKiaiFull",CHAN_VOICE); }
+				if (random(1,256) >= (193 + (MartialArtsMastery) * 7.5)) { A_StopSound(CHAN_VOICE); A_StartSound("FloraKiaiFull",CHAN_VOICE); }
 			}
-			if (MartialArtsMastery >= 3) { A_StartSound("fistswingmedium0",random(152,160)); } else { A_StartSound("fistswinglight0",random(152,160)); }
+			if (MartialArtsMastery >= 3) 
+			{ 
+				if (MartialArtsMastery >= 5) 
+				{ 
+					if (random(1,8) <= 1) A_StartSound("fistswingheavy0",random(152,160)); 
+													 else A_StartSound("fistswingmedium0",random(152,160)); 
+				}
+				else
+				{
+					if (random(1,4) <= 3) A_StartSound("fistswingmedium0",random(152,160)); 
+													 else A_StartSound("fistswinglight0",random(152,160)); 
+				}
+			}
+			else 
+			{
+				A_StartSound("fistswinglight0",random(152,160)); 
+			}
 		}
 		CallACS("StartTensionCountDown");
 		A_GetPunchSwingRecoil(0);
 		A_SpreadAuraCustomPunch(A_GetPunchDamage(0,0,false),1,CPF_NOTURN,"FistPuff",A_GetMeleeRange(0),0,0,"","","");
-
+		
+		int finalrange = A_GetMeleeRange(0);
+		
+		string shieldpiecetype;
+		
 		if (A_CheckMeleeDestroyProj(0) > 0)
 		{
 			if (MartialArtsMastery >= 5)
 			{
-				if (random(1,8) <= 3)
-				{
-					A_MeleeShieldPiece("ShieldPartMeleeReflect",33,16);
-					A_MeleeShieldPiece("ShieldPartMeleeReflect",33,48);
-				}
-				else
-				{
-					A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,16);
-					A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,48);
-				}
+				if (random(1,8) <= 3) shieldpiecetype = "ShieldPartMeleeReflect";
+												 else shieldpiecetype = "ShieldPartMeleeNoReflect";
 			}
 			else
 			{
-				if (random(1,8) <= 1)
-				{
-					A_MeleeShieldPiece("ShieldPartMeleeReflect",33,16);
-					A_MeleeShieldPiece("ShieldPartMeleeReflect",33,48);
-				}
-				else
-				{
-					A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,16);
-					A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,48);
-				}
+				if (random(1,8) <= 1) shieldpiecetype = "ShieldPartMeleeReflect";
+												 else shieldpiecetype = "ShieldPartMeleeNoReflect";
 			}
+			
+			A_MeleeShieldPiece(shieldpiecetype,33,16);
+			A_MeleeShieldPiece(shieldpiecetype,33,48);
 		}
 	}
 
