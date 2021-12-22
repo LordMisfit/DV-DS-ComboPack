@@ -125,6 +125,10 @@ class AetheriusPlayerPawn : PlayerPawn
 	double PlayerDefenseIgnoreFactor, PlayerArmorIgnoreFactor, PlayerArmorIgnoreFactorGeneral;
 	int neverbleeds;
 
+	int originalheight;
+	int originalradius;
+	int originalmass;
+
 	private class<Inventory> APPackToken, APPackCheck, MiscCheck;
 	
 	default
@@ -411,54 +415,48 @@ class AetheriusPlayerPawn : PlayerPawn
 
 	override void BeginPlay()
 	{
-		// VOODOO Doll Protection
-		if (!player || !player.mo || player.mo != self) 
-		{
-			A_SetSize(16,56,false);
-			if (GetClassName() == "FloraBriscoletti")
-			{
-				scale.x *= 1.075;
-				scale.y *= 1.075;
-			}
-			if (GetClassName() == "Illucia Hendershot")
-			{
-				scale.x *= 1.025641025641026;
-				scale.y *= 1.025641025641026;
-			}
-			Mass = 100;
-			if (dvdsdebug_showvoodoodoll) Console.Printf("H: %d, R: %d, M: %d, Sx: %4f, Sy: %4f", height, radius, mass, scale.x, scale.y);
-			super.BeginPlay();
-			return;
-		}
-
-		super.BeginPlay();
-	}
-
-	override void PostBeginPlay()
-	{
 		basexscale = scale.x;
 		baseyscale = scale.y;
 		scalexmulti = 1.00;
 		scaleymulti = 1.00;
 
+		// Player is always considered a Voodoo Doll during BeginPlay, so height/radius have to be saved before the initial change and then reverted back to it for PostBeginPlay/etc when proper doll detection actually works >____>;
+		// Also 'isvoodoodoll' CAN'T be set right now, has to be done in PostBeginPlay/Tick as well <____<;
+		originalheight = height;
+		originalradius = radius;
+		originalmass = mass;
+
+		A_SetSize(16,56,false);
+		scale.x = 1.0;
+		scale.y = 1.0;
+		Mass = 100;
+		vel.x = vel.y = vel.z = 0;
+		if (dydudebug_showvoodoodoll) Console.Printf("VoodooDoll [BeginPlay] - \c[gold]H: %d, R: %d, M: %d, \c[sapphire]Sx: %4f, Sy: %4f, \c[fire]PosX: %d, PosY: %d, PosZ: %d", height, radius, mass, scale.x, scale.y, pos.x, pos.y, pos.z);
+
+		Super.BeginPlay(); 
+	}
+
+	override void PostBeginPlay()
+	{
 		// VOODOO Doll Protection
 		if (!player || !player.mo || player.mo != self) 
 		{
 			A_SetSize(16,56,false);
-			if (GetClassName() == "FloraBriscoletti")
-			{
-				scale.x *= 1.075;
-				scale.y *= 1.075;
-			}
-			if (GetClassName() == "Illucia Hendershot")
-			{
-				scale.x *= 1.025641025641026;
-				scale.y *= 1.025641025641026;
-			}
+			scale.x = 1.0;
+			scale.y = 1.0;
 			Mass = 100;
+			isvoodoodoll = true;
 			if (dvdsdebug_showvoodoodoll) Console.Printf("H: %d, R: %d, M: %d, Sx: %4f, Sy: %4f", height, radius, mass, scale.x, scale.y);
 			Super.PostBeginPlay(); 
 			return;
+		}
+		else
+		{
+			A_SetSize(originalradius,originalheight,false);
+			Mass = originalmass;
+			scale.x = basexscale;
+			scale.y = baseyscale;
+			if (dvdsdebug_showvoodoodoll) Console.Printf("Player [PostBeginPlay] - \c[gold]H: %d, R: %d, M: %d, \c[sapphire]Sx: %4f, Sy: %4f, \c[fire]PosX: %d, PosY: %d, PosZ: %d", height, radius, mass, scale.x, scale.y, pos.x, pos.y, pos.z);
 		}
 	
 		if (bNOBLOOD == 1) 
@@ -480,17 +478,27 @@ class AetheriusPlayerPawn : PlayerPawn
 		String nm, nn, no, np;
 
 		// VOODOO Doll Protection
-		if (!player || !player.mo || player.mo != self) { isvoodoodoll = true; Super.Tick(); return; }
+		if (!player || !player.mo || player.mo != self) 
+		{ 
+			if (dydudebug_showvoodoodoll) Console.Printf("VoodooDoll [Tick] - \c[gold]H: %d, R: %d, M: %d, \c[sapphire]Sx: %4f, Sy: %4f, \c[fire]PosX: %d, PosY: %d, PosZ: %d", height, radius, mass, scale.x, scale.y, pos.x, pos.y, pos.z);
+			isvoodoodoll = true;
+			Super.Tick();
+			return;
+		}
+		else
+		{
+			if (dydudebug_showvoodoodoll) Console.Printf("Player [Tick] - \c[gold]H: %d, R: %d, M: %d, \c[sapphire]Sx: %4f, Sy: %4f, \c[fire]PosX: %d, PosY: %d, PosZ: %d", height, radius, mass, scale.x, scale.y, pos.x, pos.y, pos.z);
+		}
 
 		if (dvdsdebug_mapinfo)
 		{
-			Console.Printf("Player Age [tics]: %d, levelnum: \cx%d\c-, cluster: \cx%d\c-, clusterflags: \cx%d\c-, NextMap: \cy%s\c-, NextSecretMap: \cy%s\c-,\ntime: \cx%d\c-, maptime: \cx%d\c-, totaltime: \cx%d\c-, starttime: \cx%d\c-, partime: \cx%d\c-, sucktime: \cx%d\c-,\nlevelname: \cy%s\c-, mapname: \cy%s\c-, \ngravity: \cx%.8f\c-, aircontrol: \cx%.8f\c-, airfriction: \cx%.8f\c-, \cxTranslation #: %d, \cx# of Maps Visited: %d\c-", 
+			Console.Printf("Player Age [tics]: %d, levelnum: \cx%d\c-, cluster: \cx%d\c-, clusterflags: \cx%d\c-, NextMap: \cy%s\c-, NextSecretMap: \cy%s\c-,\ntime: \cx%d\c-, maptime: \cx%d\c-, totaltime: \cx%d\c-, starttime: \cx%d\c-, partime: \cx%d\c-, sucktime: \cx%d\c-,\nlevelname: \cy%s\c-, mapname: \cy%s\c-, \ngravity: \cx%.8f\c-, aircontrol: \cx%.8f\c-, airfriction: \cx%.8f\c-, \cxTranslation #: %d, \cyMapCheckSum:\cx %s, \cx# of Maps Visited: %d\c-", 
 											GetAge(),
 											level.levelnum, level.cluster, level.clusterflags, level.NextMap, level.NextSecretMap,
 											level.time, level.maptime, level.totaltime, level.starttime, level.partime, level.sucktime,
 											level.levelname, level.mapname,
 											level.gravity, level.aircontrol, level.airfriction,
-											translation,
+											translation, level.GetChecksum(),
 											CallACS("MiscVarCheckDECORATE",1000));
 		}
 
@@ -4336,7 +4344,7 @@ class FloraBriscoletti : AetheriusPlayerPawn // DoomPlayer // PlayerPawn
 		Health 73; // 61-85
 		Player.MaxHealth 73;
 		Player.MugShotMaxHealth -1; // 73
-		Radius 13; // 13
+		Radius 13; // 13	
 		Height 50; // 50
 		Scale 0.34512; // 0.34512
 		Mass 68;
