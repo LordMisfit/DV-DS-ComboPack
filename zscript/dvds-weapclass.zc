@@ -3403,6 +3403,43 @@ class AetheriusBaseWeaponZSC : Weapon
 		}
 	}
 	
+	action void A_FireOldBFG(string firetype1 = "PlasmaBall1", string firetype2 = "PlasmaBall2")
+	{
+		bool doesautoaim = false;
+
+		if (player == null)
+		{
+			return;
+		}
+		Weapon weap = player.ReadyWeapon;
+
+		if (invoker != weap || stateinfo == null || stateinfo.mStateType != STATE_Psprite) weap = null;
+		if (weap != null)
+		{
+			if (!weap.DepleteAmmo (weap.bAltFire, true, 1))
+				return;
+
+			doesautoaim = weap.bNoAutoaim;
+			weap.bNoAutoaim = true;
+		}
+		player.extralight = 2;
+
+		// Save values temporarily
+		double SavedPlayerAngle = angle;
+		double SavedPlayerPitch = pitch;
+		for (int i = 0; i < 2; i++) // Spawn two plasma balls in sequence
+		{
+			angle += random[OldBFG](-64, 63) * (90./768);
+			pitch += random[OldBFG](-64, 63) * (90./640);
+			SpawnPlayerMissile (i == 0? (class<Actor>)(firetype1) : (class<Actor>)(firetype2));
+			// Restore saved values
+			angle = SavedPlayerAngle;
+			pitch = SavedPlayerPitch;
+		}
+		// Restore autoaim setting
+		if (weap != null) weap.bNoAutoaim = doesautoaim;
+	}
+	
 	action void A_Destroy()
 	{
 		self.Destroy();
