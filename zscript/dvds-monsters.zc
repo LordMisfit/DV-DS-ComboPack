@@ -12753,3 +12753,130 @@ class PracticeTarget2 : AetheriusMonsterZSC //21334
 		Death.Gauntlets: Goto Death;
 	}
 }
+
+// BOSSES
+class SauronEyeWeak : AetheriusBossZSC
+{
+	default
+	{
+		health 8400; // 5600
+		radius 32;
+		height 32;
+		mass 50000000;
+		gravity 0.0;
+		obituary "%o was erased from life by one of Sauron's lesser 'eyes'.";
+		species "Sauron";
+		painchance 255;
+		Tag "Sauron's Lesser Eye";
+
+		DamageFactor 0.25;
+		DamageFactor "Gauntlets", 20;
+		DamageFactor "Sceptre", 10;
+		DamageFactor "Magic", 13.332;
+		DamageFactor "Explosive", 1.6;
+		RadiusDamageFactor 1.6;
+
+		seesound "SauronLaugh1";
+		painsound "SauronEPain";
+		deathsound "SauronEDeath";
+		activesound "null";
+		
+		+AMBUSH;
+		+NOGRAVITY;
+		+SHOOTABLE;
+		+LOOKALLAROUND;
+		+NOTARGETSWITCH;
+		+INVISIBLE;
+		+NOBLOOD;
+		+DONTFALL;
+		+NOTARGET;
+		+NOFEAR;
+		+NOINFIGHTING;
+		+CANTSEEK;
+		+DONTMORPH;
+		+DONTSQUASH;
+		+NOTELEOTHER;
+		-ISMONSTER;
+		-COUNTKILL;
+		+FULLVOLACTIVE;
+		+FULLVOLDEATH;
+		+BOSS;
+		+THRUSPECIES;
+		+NOTONAUTOMAP;
+		-NORADIUSDMG;
+
+		DamageFactor "Holy", 3; // Sauron-Class = +300% Holy Damage
+		Painchance "Holy", 255; // Sauron-Class = +600% Pain Chance
+		Painchance 255;
+	}
+
+
+	States
+	{
+		Pain.Charm: goto See;
+		Spawn:
+			SOUL A 0 NoDelay;
+			SOUL A 1 A_Look();
+			goto Spawn+1;
+		See:
+			SOUL A 0 A_Jump (256, "85sec", "8sec", "95sec", "9sec");
+			SOUL A 1;
+			loop;
+
+		MissileHealthLow:
+			SOUL A 0 A_FaceTarget();
+			SOUL A 0 { user_attackpoint = 0; }
+		EyebeamHealthLow:
+			SOUL A 0 A_FaceTarget();
+			SOUL A 0 A_SpawnProjectile("SauronEyePlasma",20,-30,0,8);
+			SOUL A 0 A_SpawnProjectile("SauronEyePlasma",20,0,0,8);
+			SOUL A 2 A_SpawnProjectile("SauronEyePlasma",20,30,0,8);
+			SOUL G 0 { user_attackpoint += 1; }
+			SOUL G 0 A_JumpIf(user_attackpoint==20,"EndEyeBeamHealthLow");
+			Loop;
+		EndEyeBeamHealthLow:
+			SOUL A 0 A_FaceTarget();
+			goto See+1;
+		Missile:
+			SOUL A 0 A_JumpIfHealthLower(1400,"MissileHealthLow");
+			SOUL A 0 A_FaceTarget();
+			SOUL A 0 { user_attackpoint = 0; }
+		Eyebeam:
+			SOUL A 0 A_FaceTarget();
+			SOUL A 2 A_SpawnProjectile("SauronEyePlasma",20);
+			SOUL G 0 { user_attackpoint += 1; }
+			SOUL G 0 A_JumpIf(user_attackpoint==20,"EndEyeBeam");
+			Loop;
+		EndEyeBeam:
+			SOUL A 0 A_FaceTarget();
+			goto See+1;
+		8sec:
+			SOUL AAAAAAAA 35 A_FaceTarget();
+			goto Missile;
+		85sec:
+			SOUL AAAAAAAA 35 A_FaceTarget();
+			SOUL A 17 A_FaceTarget();
+			goto Missile;
+		9sec:
+			SOUL AAAAAAAAA 35 A_FaceTarget();
+			goto Missile;
+		95sec:
+			SOUL AAAAAAAAA 35 A_FaceTarget();
+			SOUL A 17 A_FaceTarget();
+			goto Missile;
+		Pain:
+			SOUL A 0 A_StartSound("SauronEPain",CHAN_VOICE,1.0,ATTN_NONE);
+			SOUL A 1 A_Jump (96, "Missile");
+			goto See;
+		XDeath:
+		Death:
+			TNT1 A 0 A_DVDSNormalDeath(15840,0,1);
+			SOUL A 0 ACS_NamedExecute("DVI-M02EyeDead",0,0,0,0);
+			SOUL A 0 A_StopSound(CHAN_VOICE);
+			SOUL A 0 A_StopSound(CHAN_BODY);
+			SOUL A 0 A_StopSound(CHAN_AUTO);
+			SOUL A 1 A_StartSound("SauronEDeath",CHAN_VOICE,1.0,ATTN_NONE);
+			SOUL A 1;
+			Stop;
+	}
+}
