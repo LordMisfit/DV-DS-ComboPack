@@ -6255,7 +6255,6 @@ class BFGBallBase : AetheriusProjectileZSC
 	}
 }
 
-
 class HowitzerBase : AetheriusPuffZSC
 {
 	double user_ignoreaoeimmunity;
@@ -7263,5 +7262,265 @@ class BFGExtraMonster : BFGExtra
 				}
 			}
 			Stop;
+	}
+}
+
+class BFGBallPlayer : BFGBallBase
+{
+	int user_detonationtiming;
+	default
+	{
+		Tag "BFG Ball";
+		DamageType "BFG";
+		Radius 13;
+		Height 8;
+		Speed 25;
+		DamageFunction (finaldamagedealt);
+		Projectile;
+		+RANDOMIZE;
+		RenderStyle "Add";
+		Alpha 0.75;
+		DeathSound "weapons/bfgx";
+		Obituary "$OB_MPBFG_BOOM";
+	}
+	
+	States
+	{
+		Spawn:
+			BFS1 A 0 NoDelay Bright 
+			{ 
+				finaldamagedealt = A_GetPlayerAttackDamage(14,0); 
+				A_ScaleVelocity(1.00+((PlasmaAccuracyPerkLevel*0.10)+(PlasmaAccuracyEXPerkLevel*0.25)));
+			}
+		Idle:
+			BFS1 AAAABBBB 1 Bright
+			{
+				user_projtimer++;
+				bFORCERADIUSDMG = false;
+				if ((user_projtimer % 4) == 0) { bFORCERADIUSDMG = true; }
+				
+				if (BFGAttunementPerkLevel <= 0) { user_radiusdmg = frandom(4.8,8.0); user_radiussize = frandom(64.0,72.0); }
+				if (BFGAttunementPerkLevel == 1) { user_radiusdmg = frandom(24.0,40.0); user_radiussize = frandom(128.0,144.0); }
+				if (BFGAttunementPerkLevel >= 2) { user_radiusdmg = frandom(33.2,72.0); user_radiussize = frandom(192.0,216.0); }
+				A_Explode(user_radiusdmg,user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.5),0,0,"BulletPuff","BFG");
+			}
+			Loop;
+		Death:
+			TNT1 A 0 
+			{
+				A_StartSound("weapons/bfgx",CHAN_7);
+				A_Quake(1, 12, 0, 768, "");
+				A_Quake(5, 12, 0, 512, "");
+			}
+			BFE1 AAAAAAAABBBBBBBBCCCCCCCCDDDDDDDDEEEEEEEEFFFFFFFF 1 Bright
+			{
+				user_projtimer++;
+				user_detonationtiming = 4;
+				if (BFGAttunementPerkLevel >= 2) { user_detonationtiming = 3; }
+				bFORCERADIUSDMG = false;
+				if ((user_projtimer % user_detonationtiming) == 0) { bFORCERADIUSDMG = true; }
+
+				if (BFGAttunementPerkLevel <= 0) { user_radiusdmg = frandom(4.8,8.0); user_radiussize = frandom(64.0,72.0); }
+				if (BFGAttunementPerkLevel == 1) { user_radiusdmg = frandom(24.0,40.0); user_radiussize = frandom(128.0,144.0); }
+				if (BFGAttunementPerkLevel >= 2) { user_radiusdmg = frandom(33.2,72.0); user_radiussize = frandom(192.0,216.0); }
+				A_Explode(user_radiusdmg,user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.5),0,0,"BulletPuff","BFG");
+
+				user_detonationtimer++;
+				if ((user_detonationtimer % 5) == 0) { bNODAMAGETHRUST = false; } else { bNODAMAGETHRUST = true; }
+				if (user_detonationtimer > 1) { bPAINLESS = true; }
+				if (user_detonationtimer == 20)
+				{
+					finaldamagedealt = A_GetPlayerAttackDamage(15,0);
+
+					A_BFGSpray("BFGExtraPlayer", // flashtype
+											A_GetBFGTracers(1), // numrays
+											15, // damagecnt
+											A_GetBFGTracerAngle(), // angle
+											A_GetBFGTracerDistance(), // distance
+											A_GetBFGTracerVAngle(), // vrange
+											(finaldamagedealt), // explicit damage
+											0); // flags
+				}
+			}
+			Stop;
+
+		ShotDown:
+			TNT1 A 0 
+			{
+				A_ScaleVelocity(0);
+				A_StartSound("weapons/bfgx",CHAN_7,CHANF_DEFAULT,0.5);
+				A_Quake(1, 12, 0, 384, "");
+				A_Quake(5, 12, 0, 256, "");
+			}
+			BFE1 AAAABBBBCCCCDDDDEEEEFFFF 1 bright
+			{
+				user_projtimer++;
+				bFORCERADIUSDMG = false;
+				if ((user_projtimer % 8) == 0) { bFORCERADIUSDMG = true; }
+
+				bFORCERADIUSDMG = true;
+				if (BFGAttunementPerkLevel <= 0) { user_radiusdmg = frandom(4.8,8.0); user_radiussize = frandom(64.0,72.0); }
+				if (BFGAttunementPerkLevel == 1) { user_radiusdmg = frandom(24.0,40.0); user_radiussize = frandom(128.0,144.0); }
+				if (BFGAttunementPerkLevel >= 2) { user_radiusdmg = frandom(33.2,72.0); user_radiussize = frandom(192.0,216.0); }
+				user_radiusdmg *= 0.5;
+				user_radiussize *= 0.5;
+				A_Explode(user_radiusdmg,user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.5),0,0,"BulletPuff","BFG");
+			}
+			Stop;
+	}
+}
+
+class BFGBallMonster : BFGBallBase 
+{
+	default
+	{
+		Tag "BFG Ball";
+		DamageType "BFG";
+	}
+	
+	States
+	{
+		Spawn:
+			BFS1 AAAABBBB 1 Bright
+			{
+				user_projtimer++;
+				bFORCERADIUSDMG = false;
+				if ((user_projtimer % 4) == 0) { bFORCERADIUSDMG = true; }
+				
+				user_radiusdmg = frandom(4.8,8.0);
+				user_radiussize = frandom(64.0,72.0);
+				A_Explode(user_radiusdmg,user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.5),0,0,"BulletPuff","BFG");
+			}
+			Loop;
+		Death:
+			TNT1 A 0 
+			{
+				A_StartSound("weapons/bfgx",CHAN_7);
+				A_Quake(1, 12, 0, 768, "nosound/silent");
+				A_Quake(5, 12, 0, 512, "nosound/silent");
+			}
+			BFE1 AAAAAAAABBBBBBBBCCCCCCCCDDDDDDDDEEEEEEEEFFFFFFFF 1 Bright
+			{
+				user_projtimer++;
+				bFORCERADIUSDMG = false;
+				if ((user_projtimer % 4) == 0) { bFORCERADIUSDMG = true; }
+
+				user_radiusdmg = frandom(4.8,8.0);
+				user_radiussize = frandom(64.0,72.0);
+				A_Explode(user_radiusdmg,user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.5),0,0,"BulletPuff","BFG");
+
+				user_detonationtimer++;
+				if ((user_detonationtimer % 5) == 0) { bNODAMAGETHRUST = false; } else { bNODAMAGETHRUST = true; }
+				if (user_detonationtimer > 1) { bPAINLESS = true; }
+				if (user_detonationtimer == 20)
+				{
+					A_BFGSpray("BFGExtraMonster");
+				}
+			}
+			Stop;
+
+		ShotDown:
+			TNT1 A 0 
+			{
+				bMISSILE = false;
+				A_ScaleVelocity(0);
+				A_StartSound("weapons/bfgx",CHAN_7,CHANF_DEFAULT,0.5);
+				A_Quake(1, 12, 0, 384, "nosound/silent");
+				A_Quake(5, 12, 0, 256, "nosound/silent");
+			}
+			BFE1 AAAABBBBCCCCDDDDEEEEFFFF 1 bright
+			{
+				user_projtimer++;
+				bFORCERADIUSDMG = false;
+				if ((user_projtimer % 8) == 0) { bFORCERADIUSDMG = true; }
+
+				user_radiusdmg = frandom(4.8,8.0);
+				user_radiussize = frandom(64.0,72.0);
+				A_Explode((user_radiusdmg*0.5),(user_radiussize*0.5),XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.25),0,0,"BulletPuff","BFG");
+			}
+			stop;
+	}
+}
+
+class BFGBallCrisis : BFGBallBase
+{
+	default
+	{
+		Tag "BFG Ball";
+		Speed 25;
+		DamageFunction ((100 * CrisisMultiplier) * random(1,8));
+		RenderStyle "Add";
+		Alpha 1.0;
+		DamageType "BFG";
+	}
+	States
+	{
+		Spawn:
+			BFS1 A 0 NoDelay;
+			BFS1 AAAABBBB 1 Bright
+			{
+				user_projtimer++;
+				bFORCERADIUSDMG = false;
+				if ((user_projtimer % 4) == 0) { bFORCERADIUSDMG = true; }
+
+				user_radiusdmg = frandom(4.8,8.0);
+				user_radiussize = frandom(64.0,72.0);
+				A_Explode((user_radiusdmg*CrisisMultiplier),user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.5),0,0,"BulletPuff","BFG");
+
+				user_crisistimer += 1;
+				if (user_crisistimer >= 2) 
+				{ 
+					A_GenerateCrisisParticle(); 
+					user_crisistimer = 0;
+				}
+			}
+			Loop;
+		Death:
+			TNT1 A 0 
+			{
+				A_StartSound("weapons/bfgx",CHAN_7);
+				A_Quake(1, 12, 0, 768, "nosound/silent");
+				A_Quake(5, 12, 0, 512, "nosound/silent");
+			}
+			BFE1 AAAAAAAABBBBBBBBCCCCCCCCDDDDDDDDEEEEEEEEFFFFFFFF 1 Bright
+			{
+				user_projtimer++;
+				bFORCERADIUSDMG = false;
+				if ((user_projtimer % 4) == 0) { bFORCERADIUSDMG = true; }
+
+				user_radiusdmg = frandom(4.8,8.0);
+				user_radiussize = frandom(64.0,72.0);
+				A_Explode((user_radiusdmg*CrisisMultiplier),user_radiussize,XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.5),0,0,"BulletPuff","BFG");
+
+				user_detonationtimer++;
+				if ((user_detonationtimer % 5) == 0) { bNODAMAGETHRUST = false; } else { bNODAMAGETHRUST = true; }
+				if (user_detonationtimer > 1) { bPAINLESS = true; }
+				if (user_detonationtimer == 20)
+				{
+					A_BFGSpray("BFGExtraMonster",40,450);
+				}
+			}
+			Stop;
+
+		ShotDown:
+			TNT1 A 0 
+			{
+				bMISSILE = false;
+				A_ScaleVelocity(0);
+				A_StartSound("weapons/bfgx",CHAN_7,CHANF_DEFAULT,0.5);
+				A_Quake(1, 12, 0, 384, "nosound/silent");
+				A_Quake(5, 12, 0, 256, "nosound/silent");
+			}
+			BFE1 AAAABBBBCCCCDDDDEEEEFFFF 1 bright
+			{
+				user_projtimer++;
+				bFORCERADIUSDMG = false;
+				if ((user_projtimer % 8) == 0) { bFORCERADIUSDMG = true; }
+
+				user_radiusdmg = frandom(4.8,8.0);
+				user_radiussize = frandom(64.0,72.0);
+				A_Explode(((user_radiusdmg*0.5)*CrisisMultiplier),(user_radiussize*0.5),XF_EXPLICITDAMAGETYPE,false,(user_radiussize*0.25),0,0,"BulletPuff","BFG");
+			}
+			stop;
 	}
 }
