@@ -1,0 +1,701 @@
+//==============================================================================
+//				MAIN STUFF
+//==============================================================================
+class LDPermanentInventory : Inventory
+{
+	default
+	{
+		//	+INVENTORY.UNDROPPABLE;
+		+INVENTORY.UNTOSSABLE;
+		+INVENTORY.IGNORESKILL;
+		inventory.maxamount 1;
+	}
+}
+
+class LDCustomFunction : AetheriusCustomInventory
+{
+	default
+	{
+		-COUNTITEM;
+		+INVENTORY.ALWAYSPICKUP;
+		Inventory.PickupMessage "";
+		Inventory.PickupSound "";
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 1;
+			Stop;
+		Pickup:
+			TNT1 A 0;
+			TNT1 A 0;
+			Stop;
+	}
+}
+
+class LDVisualIcon : AetheriusBaseZSC
+{
+	default
+	{
+		Radius 16;
+		Height 8;
+		Scale 0.8;
+		Alpha 0.85;
+		RenderStyle "Add";
+		+NOGRAVITY;
+		+THRUACTORS;
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 AA 1 Bright;
+			Stop;
+	}
+}
+
+class LDMaxHax : AetheriusBaseZSC
+{
+	default
+	{
+		+NOGRAVITY;
+		+THRUACTORS;
+		+NOTONAUTOMAP;
+		+NOTIMEFREEZE;
+		+NOCLIP;
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 1;
+			Stop;
+	}
+}
+
+//==============================================================================
+//				LEGENDARY SELECTION
+//==============================================================================
+class LDLegendaryMonsterToken : LDPermanentInventory {}
+class LDLegendaryMonsterTransformed : LDPermanentInventory {}
+
+class LDLegendaryMonsterChooserEasy : LDMaxHax
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_RadiusGive ("LDLegendaryMonsterPickupEasy", 16384, RGF_MONSTERS | RGF_NOSIGHT | RGF_CUBE, 1);
+			TNT1 A 2;
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterChooserNormal : LDMaxHax
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_RadiusGive ("LDLegendaryMonsterPickupNormal", 16384, RGF_MONSTERS | RGF_NOSIGHT | RGF_CUBE, 1);
+			TNT1 A 2;
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterChooserHard : LDMaxHax
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_RadiusGive ("LDLegendaryMonsterPickupHard", 16384, RGF_MONSTERS | RGF_NOSIGHT | RGF_CUBE, 1);
+			TNT1 A 2;
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterChooserUV : LDMaxHax
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_RadiusGive ("LDLegendaryMonsterPickupUV", 16384, RGF_MONSTERS | RGF_NOSIGHT | RGF_CUBE, 1);
+			TNT1 A 2;
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterChooserNightmare : LDMaxHax
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_RadiusGive ("LDLegendaryMonsterPickupNightmare", 16384, RGF_MONSTERS | RGF_NOSIGHT | RGF_CUBE, 1);
+			TNT1 A 2;
+			Stop;
+	}
+}
+
+//==============================================================================
+//			LEGENDARY GENERATION
+//==============================================================================
+// The steps a monster goes through to determine if it can be legendary or not
+class LDLegendaryMonsterPickupBase : LDCustomFunction
+{
+	States
+	{
+		Pickup:
+			TNT1 A 0 A_JumpIf ((GetCVar("LD_nomonsters") == 1), "NoLegendary");
+			TNT1 A 0 A_JumpIf ((GetCVar("LD_nobosses") == 2), "BOSSCheckeroonie"); // Makes all bosses legendary
+			TNT1 A 0 A_JumpIf ((GetCVar("LD_diemode") == 1), "LEGENDARIFYSuccess"); // forces the monster to go legendary on "die.exe" regardless of previous settings
+			TNT1 A 0 A_Jump (256, "DifficultyChance");
+			Goto DifficultyChance;
+
+		DifficultyChance: // The chance of successfully becoming legendary is increased through player count and menu options
+			TNT1 A 0 A_Jump (random(2,4) + (CallACS("PlayerCount", 0) * 4) + (GetCVar("LD_legendarychance") * 3), "LEGENDARIFY");
+			Stop;
+
+		LEGENDARIFY:
+			TNT1 A 0 
+			{
+				if (bSPECIAL) return resolvestate("NoLegendary");
+				return resolvestate(null);
+			}
+			TNT1 A 0 A_JumpIf ((GetCVar("LD_monstercheck") == 0), 2); // Makes it ignore the next check if disabled
+			TNT1 A 0 // Added to stop stuff like legendary trees
+			{
+				if (bCOUNTKILL) return resolvestate("Boo");
+				return resolvestate(null);
+			}
+			stop;
+		Boo:
+			TNT1 A 0
+			{
+				if (bBOSS) return resolvestate("BOSSTIEM");
+				return resolvestate(null);
+			}
+			TNT1 A 0 A_Jump (160, "NoLegendary"); // 240 in LDL 3.0 proper
+			Goto LEGENDARIFYSuccess;
+		LEGENDARIFYSuccess: // Spawns map markers if active in the menu options
+			TNT1 A 0
+			{
+				if (LD_legendarymarkers) { A_SpawnItemEx ("LDLegendaryMonsterMarker", 0,0,0, 0,0,0, 0, SXF_NOCHECKPOSITION); }
+				ACS_NamedExecuteAlways("LDMonsterInit", 0); // POWER UP TIME
+			}
+			Stop;
+		
+		NoLegendary:
+			TNT1 A 0;
+			Stop;
+		
+		BOSSCheckeroonie:
+			TNT1 A 0
+			{
+				if (bBOSS) return resolvestate("BOSSACTIVAAAATE");
+				return resolvestate(null);
+			}
+			TNT1 A 0 A_Jump (256, "DifficultyChance");
+			Goto DifficultyChance;
+		
+		BOSSTIEM:
+			TNT1 A 0 A_JumpIf ((GetCVar("LD_nobosses") == 1), "NoLegendary"); // Prevents bosses from being legendary
+			TNT1 A 0 A_Jump (120, "NoLegendary"); // 180 in LDL 3.0 proper
+			Goto BOSSACTIVAAAATE;
+		BOSSACTIVAAAATE: // Spawns map markers if active in the menu options
+			TNT1 A 0
+			{
+				if (LD_legendarymarkers) { A_SpawnItemEx ("LDLegendaryMonsterBossMarker", 0,0,0, 0,0,0, 0, SXF_NOCHECKPOSITION); }
+				ACS_NamedExecuteAlways("LDMonsterInit", 0); // BRING THE PAIN
+			}
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterPickupEasy : LDLegendaryMonsterPickupBase
+{
+	States
+	{
+		DifficultyChance:
+			TNT1 A 0 A_Jump (random(2,4) + (CallACS("PlayerCount", 0) * 4) + (GetCVar("LD_legendarychance") * 3), "LEGENDARIFY");
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterPickupNormal : LDLegendaryMonsterPickupBase
+{
+	States
+	{
+		DifficultyChance:
+			TNT1 A 0 A_Jump (random(3,6) + (CallACS("PlayerCount", 0) * 6) + (GetCVar("LD_legendarychance") * 4), "LEGENDARIFY");
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterPickupHard : LDLegendaryMonsterPickupBase
+{
+	States
+	{
+		DifficultyChance:
+			TNT1 A 0 A_Jump (random(4,8) + (CallACS("PlayerCount", 0) * 8) + (GetCVar("LD_legendarychance") * 5), "LEGENDARIFY");
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterPickupUV : LDLegendaryMonsterPickupBase
+{
+	States
+	{
+		DifficultyChance:
+			TNT1 A 0 A_Jump (random(5,10) + (CallACS("PlayerCount", 0) * 10) + (GetCVar("LD_legendarychance") * 6), "LEGENDARIFY");
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterPickupNightmare : LDLegendaryMonsterPickupBase
+{
+	States
+	{
+		DifficultyChance:
+			TNT1 A 0 A_Jump (random(7,14) + (CallACS("PlayerCount", 0) * 14) + (GetCVar("LD_legendarychance") * 7), "LEGENDARIFY");
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterPickupExtreme : LDLegendaryMonsterPickupBase
+{
+	States
+	{
+		DifficultyChance:
+			TNT1 A 0 A_Jump (random(8,18) + (CallACS("PlayerCount", 0) * 18) + (GetCVar("LD_legendarychance") * 8), "LEGENDARIFY");
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterPickupHorrible : LDLegendaryMonsterPickupBase
+{
+	States
+	{
+		DifficultyChance:
+			TNT1 A 0 A_Jump (random(11,22) + (CallACS("PlayerCount", 0) * 22) + (GetCVar("LD_legendarychance") * 9), "LEGENDARIFY");
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterPickupImpossible : LDLegendaryMonsterPickupBase
+{
+	States
+	{
+		DifficultyChance:
+			TNT1 A 0 A_Jump (random(13,27) + (CallACS("PlayerCount", 0) * 27) + (GetCVar("LD_legendarychance") * 10), "LEGENDARIFY");
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterPickupOmega : LDLegendaryMonsterPickupBase
+{
+	States
+	{
+		DifficultyChance:
+			TNT1 A 0 A_Jump (random(16,32) + (CallACS("PlayerCount", 0) * 32) + (GetCVar("LD_legendarychance") * 11), "LEGENDARIFY");
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterStatChooser : LDCustomFunction
+{
+	States
+	{
+		Pickup:
+			TNT1 A 0
+			{
+				if (bBOSS) return resolvestate("BossStatBoost");
+				return resolvestate(null);
+			}
+			TNT1 A 0 A_GiveInventory ("LDLegendaryMonsterStatBoost", 1);
+			Stop;
+		BossStatBoost:
+			TNT1 A 0 A_GiveInventory ("LDLegendaryMonsterBossStatBoost", 1);
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterStatBoost : LDCustomFunction
+{
+	States
+	{
+		Pickup:
+			TNT1 A 0 ACS_NamedExecuteAlways("Draw_Pentagram", 0, radius*2);
+			TNT1 A 0 A_StartSound("effects/legendaryenemyloop", CHAN_6, CHANF_DEFAULT, 0.8, ATTN_NORM, 1.2);
+			TNT1 A 0 A_StartSound("effects/legendaryenemy", CHAN_7, 1.0, ATTN_NONE, 0.6);
+			TNT1 A 0
+			{
+				bALWAYSFAST = true;
+				bMISSILEMORE = true;
+				bMISSILEEVENMORE = true;
+				bNOINFIGHTING = true;
+				bNOTARGET = true;
+				bJUMPDOWN = true;
+				bQUICKTORETALIATE = true;
+				bNOFEAR = true;
+				//bNOTIMEFREEZE = true;
+				bSEEINVISIBLE = true;
+				bDONTDRAIN = true;
+				bNOICEDEATH = true;
+				bDONTGIB = true;
+				bDROPOFF = true;
+				bBRIGHT = true;
+				bBUDDHA = false;
+			}
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterBossStatBoost : LDCustomFunction
+{
+	States
+	{
+		Pickup:
+			TNT1 A 0 ACS_NamedExecuteAlways("Draw_Pentagram", 0, radius*2);
+			TNT1 A 0 A_StartSound("effects/legendaryenemyloop", CHAN_6, CHANF_DEFAULT, 0.8, ATTN_NORM, 1.2);
+			TNT1 A 0 A_StartSound("effects/legendaryenemy", CHAN_7, 1.0, ATTN_NONE, 0.6);
+			TNT1 A 0 A_StartSound("effects/legendaryenemyboss", CHAN_5, CHANF_DEFAULT, 1.0, ATTN_NONE, 0.1);
+			TNT1 A 0 
+			{
+				bALWAYSFAST = true;
+				bMISSILEMORE = true;
+				bMISSILEEVENMORE = true;
+				bNOINFIGHTING = true;
+				bNOTARGET = true;
+				bQUICKTORETALIATE = true;
+				bNOFEAR = true;
+				//bNOTIMEFREEZE = true;
+				bSEEINVISIBLE = true;
+				bDONTDRAIN = true;
+				bNOICEDEATH = true;
+				bDONTGIB = true;
+				bDROPOFF = true;
+				bNOPAIN = true;
+				bDONTTHRUST = true;
+				bBRIGHT = true;
+				bBUDDHA = false;
+			}
+			Stop;
+	}
+}
+
+//==============================================================================
+//			LEGENDARY EFFECTS
+//==============================================================================
+// Removes the special effects from the legendary monsters on death
+class LDLegendaryMonsterDed : LDCustomFunction
+{
+	States
+	{
+		Pickup:
+			TNT1 A 0 ;
+			TNT1 A 0 
+			{
+				A_StopSound(6);
+				bBRIGHT = false;
+			}
+			Stop;
+	}
+}
+
+// Constantly alternates visuals based on maxhax funtiems
+class LDLegendaryMonsterVisualEffectMaker : LDCustomFunction
+{
+	States
+	{
+		Pickup:
+			TNT1 A 0 A_JumpIfInventory ("LDLegendaryMonsterVisualEffectAlternator", 1, "Pickup2");
+			TNT1 A 0 A_GiveInventory ("LDLegendaryMonsterVisualEffectAlternator", 1);
+			TNT1 A 0 A_SpawnItemEx ("LDLegendaryMonsterVisualEffect1", -1,0,0, 0,0,0, 0, SXF_NOCHECKPOSITION | SXF_TRANSFERSPRITEFRAME |  SXF_TRANSFERSCALE | SXF_TRANSFERALPHA);
+			TNT1 AAA 0 A_SpawnParticle ("Red", SPF_FULLBRIGHT | SPF_RELPOS | SPF_NOTIMEFREEZE, random(random(1,3),random(7,9))*5, random(2,7), 0, frandom(-(radius*1.2),(radius*1.2)),frandom(-(radius*1.2),(radius*1.2)), frandom(0,(height*1.2)), 0,0,frandom(0.05,1.8), 0,0,0.25, 0.8, -1);
+			Stop;
+		Pickup2:
+			TNT1 A 0 A_TakeInventory ("LDLegendaryMonsterVisualEffectAlternator", 1);
+			TNT1 A 0 A_SpawnItemEx ("LDLegendaryMonsterVisualEffect2", -1,0,0, 0,0,0, 0, SXF_NOCHECKPOSITION | SXF_TRANSFERSPRITEFRAME |  SXF_TRANSFERSCALE | SXF_TRANSFERALPHA);
+			TNT1 AAA 0 A_SpawnParticle ("Black", SPF_FULLBRIGHT | SPF_RELPOS | SPF_NOTIMEFREEZE, random(random(1,3),random(7,9))*5, random(2,7), 0, frandom(-(radius*1.2),(radius*1.2)),frandom(-(radius*1.2),(radius*1.2)), frandom(0,(height*1.2)), 0,0,frandom(0.05,1.8), 0,0,0.25, 0.8, -1);
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterVisualEffectAlternator : LDPermanentInventory {}
+
+class LDLegendaryMonsterVisualEffect1 : LDVisualIcon
+{
+	default
+	{
+		RenderStyle "AddStencil";
+		StencilColor "Red";
+		Scale 1.0;
+		Alpha 1.0;
+		-VISIBILITYPULSE;
+		+NOTIMEFREEZE;
+	}
+	
+	States
+	{
+		Spawn:
+			#### # 0 Bright;
+			#### # 0 Bright A_FadeTo (alpha * 0.5, 1, 0);
+			#### # 0 Bright ThrustThingZ (0, 1, 0, 0);
+			#### # 0 A_Jump (256, "SpawnLoop");
+			Goto SpawnLoop;
+		SpawnLoop:
+			#### # 0 Bright A_FadeTo (0, 0.12, 1);
+			#### # 1 Bright Light("LDMonsterGlow1") A_SetScale (scale.x*frandom(1.02,1.04), scale.y*frandom(1.04,1.08));
+			Goto SpawnLoop;
+	}
+}
+
+class LDLegendaryMonsterVisualEffect2 : LDLegendaryMonsterVisualEffect1
+{
+	default
+	{
+		RenderStyle "Stencil";
+		StencilColor "Black";
+	}
+	
+	States
+	{
+		SpawnLoop:
+			#### # 0 Bright A_FadeTo (0, 0.12, 1);
+			#### # 1 Bright Light("LDMonsterGlow2") A_SetScale (scale.x*frandom(1.02,1.04), scale.y*frandom(1.04,1.08));
+			Goto SpawnLoop;
+	}
+}
+
+//==============================================================================
+//			LEGENDARY MAP MARKERS
+//==============================================================================
+// These appear on the automap if enabled in the options
+class LDLegendaryMonsterMarker : MapMarker
+{
+	default
+	{
+		Scale 0.3;
+	}
+	
+	States
+	{
+		Spawn:
+			SCUL A -1;
+			Stop;
+	}
+}
+
+class LDLegendaryMonsterBossMarker : MapMarker
+{
+	default
+	{
+		Scale 0.8;
+	}
+	
+	States
+	{
+		Spawn:
+			SCUL B -1;
+			Stop;
+	}
+}
+
+//==============================================================================
+//				LOOT GENERATION
+//==============================================================================
+class LDLiteDVDSArmorSpawner : RandomSpawner2
+{
+	default
+	{
+		DropItem "ArmorBonus2", 256, 472;
+		DropItem "GreenArmorDS", 256, 13;
+		DropItem "BlueArmorDS", 256, 13;
+		DropItem "StoneSkin", 256, 6;
+		DropItem "DiamondSkin", 256, 6;
+		DropItem "StoneSkinGA", 256, 1;
+		DropItem "DiamondSkinGA", 256, 1;
+	}
+}
+
+class LDLiteDVDSAmmoSpawner : RandomSpawner2
+{
+	default
+	{
+		DropItem "ClipNew", 256, 3;
+		DropItem "ShellNew", 256, 3;
+		DropItem "RocketAmmoNew", 256, 1;
+		DropItem "CellNew", 256, 1;
+	}
+}
+
+class LDLiteDVDSItemSpawner : RandomSpawner2
+{
+	default
+	{
+		DropItem "RandomHerbSpawner", 256, 1024;
+		DropItem "RandomMagicSpawner", 256, 1024;
+		DropItem "RandomPowerupSpawner", 256, 256;
+		DropItem "RandomSeedDropForcedAlways", 256, 64;
+		DropItem "RockBombShard", 96, 32;
+		DropItem "MonsterMunchies", 96, 32;
+		DropItem "PaxaPunch", 96, 32;
+		DropItem "MercuryBandana", 96, 32;
+		DropItem "LesserVimstone", 96, 8;
+		DropItem "GreaterVimstone", 96, 4;
+		DropItem "FyggForced", 1, 1;
+	}
+}
+
+class LDLiteDVDSItem : LDMaxHax
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay
+			{
+				A_SpawnItemEx ("LDLiteDVDSItemSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+				if (random(1,16) == 1) { A_SpawnItemEx ("LDLiteDVDSItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION); }
+				if (random(1,256) == 1) { A_SpawnItemEx ("LDLiteDVDSItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION); }
+				if (random(1,4096) == 1) { A_SpawnItemEx ("LDLiteDVDSItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION); }
+
+				if (CallACS("CheckCharacterClass") != 2)
+				{
+					A_SpawnItemEx ("LDLiteDVDSArmorSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+					if (random(1,16) == 1) { A_SpawnItemEx ("LDLiteDVDSArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION); }
+					if (random(1,256) == 1) { A_SpawnItemEx ("LDLiteDVDSArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION); }
+					if (random(1,4096) == 1) { A_SpawnItemEx ("LDLiteDVDSArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION); }
+	
+					A_SpawnItemEx ("LDLiteDVDSAmmoSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+					if (random(1,16) == 1) { A_SpawnItemEx ("LDLiteDVDSAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION); }
+					if (random(1,256) == 1) { A_SpawnItemEx ("LDLiteDVDSAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION); }
+					if (random(1,4096) == 1) { A_SpawnItemEx ("LDLiteDVDSAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION); }
+				}
+			}
+			TNT1 A 2;
+			Stop;
+	}
+}
+
+class LDLiteDVDSBossArmorSpawner : RandomSpawner2
+{
+	default
+	{
+		DropItem "ArmorBonus2", 256, 118;
+		DropItem "GreenArmorDS", 256, 26;
+		DropItem "BlueArmorDS", 256, 26;
+		DropItem "StoneSkin", 256, 12;
+		DropItem "DiamondSkin", 256, 12;
+		DropItem "StoneSkinGA", 256, 4;
+		DropItem "DiamondSkinGA", 256, 2;
+	}
+}
+
+class LDLiteDVDSBossAmmoSpawner : RandomSpawner2
+{
+	default
+	{
+		DropItem "ClipBoxNew", 256, 3;
+		DropItem "ShellBoxNew", 256, 3;
+		DropItem "RocketBoxNew", 256, 1;
+		DropItem "CellPackNew", 256, 1;
+	}
+}
+
+class LDLiteDVDSBossItemSpawner : RandomSpawner2
+{
+	default
+	{
+		DropItem "RandomHerbSpawner", 255, 256;
+		DropItem "RandomMagicSpawner", 255, 256;
+		DropItem "RandomPowerupSpawner", 255, 128;
+		DropItem "RandomSeedDropForcedAlways", 255, 32;
+		DropItem "RockBombShard", 96, 16;
+		DropItem "MonsterMunchies", 96, 16;
+		DropItem "PaxaPunch", 96, 16;
+		DropItem "MercuryBandana", 96, 16;
+		DropItem "LesserVimstone", 96, 8;
+		DropItem "GreaterVimstone", 96, 4;
+		DropItem "FyggForced", 1, 2;
+	}
+}
+
+class LDLiteDVDSBossItem : LDMaxHax
+{
+  States
+  {
+		Spawn:
+			TNT1 A 0 NoDelay
+			{
+				A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+				A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+				A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+				if (random(1,4) == 1) 
+				{
+					A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+				}
+				if (random(1,16) == 1) 
+				{
+					A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+				}
+				if (random(1,64) == 1) 
+				{
+					A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					A_SpawnItemEx ("LDLiteDVDSBossItemSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+				}
+
+				if (CallACS("CheckCharacterClass") != 2)
+				{
+					A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+					A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+					A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+					if (random(1,4) == 1) 
+					{
+						A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					}
+					if (random(1,16) == 1) 
+					{
+						A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					}
+					if (random(1,64) == 1) 
+					{
+						A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossArmorSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					}
+	
+					A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+					A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+					A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x,vel.y,vel.z, 0, SXF_NOCHECKPOSITION);
+					if (random(1,4) == 1) 
+					{
+						A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					}
+					if (random(1,16) == 1) 
+					{
+						A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					}
+					if (random(1,64) == 1) 
+					{
+						A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+						A_SpawnItemEx ("LDLiteDVDSBossAmmoSpawner", 0,0,0, vel.x+random(-8,8),vel.y+random(-8,8),vel.z+random(-8,8), 0, SXF_NOCHECKPOSITION);
+					}
+				}
+			}
+			TNT1 A 2;
+			Stop;
+	}
+}
