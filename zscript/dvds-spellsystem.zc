@@ -2989,3 +2989,305 @@ class HexenPoisonCloud3Outer : HexenPoisonCloud2Outer
 			Stop;
 	}
 }
+
+// HUBBLE BUBBLES :V
+class HubbleBubble : AetheriusProjectileZSC
+{
+	int user_ripperinterval;
+	int user_maxripperinterval;
+	int user_halfmaxripperinterval;
+	int user_bubbletimer;
+	int user_maxbubbletimer;
+	int user_transpulsetype;
+	int user_sizepulsetype;
+	int user_damageradius;
+	int user_velx;
+	int user_vely;
+	int user_velz;
+	default
+	{
+		Tag "Hubble Bubble";
+		Radius 6; // 573 wide
+		Height 6; // 569 tall
+		Scale 0.05;
+		Speed 2;
+		DamageFunction (0);
+		Projectile;
+		+ROLLSPRITE;
+		+ROLLCENTER;
+		+BLOODLESSIMPACT;
+		+RIPPER;
+		+FOILINVUL;
+		+NOEXPLODEFLOOR;
+		+PIERCEARMOR;
+		+PAINLESS;
+		+FORCERADIUSDMG;
+		+NODAMAGETHRUST;
+		+DONTREFLECT;
+		+BOUNCEONWALLS;
+		+BOUNCEONFLOORS;
+		+BOUNCEONCEILINGS;
+		+BOUNCEONACTORS;
+		+NOBOUNCESOUND;
+		+SPECTRAL;
+		+THRUSPECIES;
+		+MTHRUSPECIES;
+		//+NOINTERACTION;
+		Species "Players";
+		BounceType "Doom";
+		ProjectileKickBack 0;
+		BounceFactor 1.0;
+		WallBounceFactor 1.0;
+		DamageType "Magic";
+		RenderStyle "Add";
+		Alpha 0.8;
+		//SeeSound "";
+		//DeathSound "";
+	}
+	
+	States
+	{
+		Spawn:
+			HUBB A 0 NoDelay Bright
+			{
+				user_transpulsetype = 0;
+				user_sizepulsetype = 0;
+				user_maxbubbletimer = random(270,315);
+				user_maxripperinterval = random(16,24);
+				user_maxripperinterval -= (PlayerSOR/32); // Sorcery
+				user_maxripperinterval -= (PlayerTHE/64); // Therapeusis
+				if (user_maxripperinterval < 4) { user_maxripperinterval = 4; }
+				user_halfmaxripperinterval = user_maxripperinterval / 2;
+				Thing_ChangeTID(0,5001);
+			}
+		Idle:
+			HUBB A 1 Bright
+			{
+				A_ScaleVelocity(1.0005);
+				if (scale.x <= 0.0475 && scale.y <= 0.0475) { user_sizepulsetype = 1; } // Set to Expand
+				if (scale.x >= 0.0525 && scale.y >= 0.0525) { user_sizepulsetype = 0; } // Set to Shrink
+				if (user_sizepulsetype == 0) { A_SetScale(scale.x-0.000125,scale.y-0.000125); } // Shrinking
+				if (user_sizepulsetype == 1) { A_SetScale(scale.x+0.000125,scale.y+0.000125); } // Expanding
+	
+				if (alpha <= 0.64) { user_transpulsetype = 1; } // Set to Fade In
+				if (alpha >= 0.96) { user_transpulsetype = 0; } // Set to Fade Out
+				if (user_transpulsetype == 0) { A_FadeOut(0.025); } // Fading Out
+				if (user_transpulsetype == 1) { A_FadeIn(0.025); } // Fading In
+	
+				user_damageradius = 32;
+				A_SetRoll(roll+4,SPF_INTERPOLATE,AAPTR_DEFAULT);
+				user_ripperinterval += 1;
+				if (user_ripperinterval < user_maxripperinterval)
+				{
+					bPAINLESS = true;
+					bFORCEPAIN = false;
+				}
+				if (user_ripperinterval == user_halfmaxripperinterval)
+				{
+					if (random(1,4) == 1) 
+					{
+						finaldamagedealt = A_GetPlayerAttackDamage(46,0);
+						A_Explode((finaldamagedealt),user_damageradius,0,0,user_damageradius); 
+						bPAINLESS = false;
+						bFORCEPAIN = true;
+					}
+				}
+				if (user_ripperinterval >= user_maxripperinterval)
+				{
+					finaldamagedealt = A_GetPlayerAttackDamage(46,0);
+					A_Explode((finaldamagedealt),user_damageradius,0,0,user_damageradius);
+					bPAINLESS = false;
+					bFORCEPAIN = true;
+	
+					user_ripperinterval = 0;
+					user_maxripperinterval = random(16,24);
+					user_maxripperinterval -= (PlayerSOR/32); // Sorcery
+					user_maxripperinterval -= (PlayerTHE/64); // Therapeusis
+					if (user_maxripperinterval < 4) { user_maxripperinterval = 4; }
+					user_halfmaxripperinterval = user_maxripperinterval / 2;
+				}
+				user_bubbletimer += 1;
+				if (user_bubbletimer >= user_maxbubbletimer) { return resolvestate("Death"); }
+				return resolvestate(null);
+			}
+			Loop;
+
+		Pop:
+		Death:
+			TNT1 A 0 Bright
+			{
+				user_damageradius = 128;
+				bPAINLESS = false;
+				bFORCEPAIN = true;
+				A_StartSound("HubbleBubblePop");
+				finaldamagedealt = A_GetPlayerAttackDamage(46,0);
+				A_Explode((finaldamagedealt*4),user_damageradius,0,0,user_damageradius); 
+				if (random(1,2) == 1) { return resolvestate("Death1"); } else { return resolvestate("Death2"); }
+				return resolvestate(null);
+			}
+		Death1:
+			HUBB BCDE 1 Bright
+			{
+				A_ScaleVelocity(0.0);
+				A_SetScale(scale.x*1.250,scale.y*1.250);
+			}
+			Stop;
+		Death2:
+			HUBB FGHIJ 1 Bright
+			{
+				A_ScaleVelocity(0.0);
+				A_SetScale(scale.x*1.125,scale.y*1.125);
+			}
+			Stop;
+	}
+}
+
+class GlimmeringGlobe : HubbleBubble
+{
+	default
+	{
+		Tag "Large Hubble Bubble";
+		Radius 15; // 573px wide [image file]
+		Height 15; // 569px tall [image file]
+		Scale 0.10;
+		Speed 1.334;
+	}
+
+	States
+	{
+		Spawn:
+			HUBB A 0 NoDelay Bright
+			{
+				user_transpulsetype = 0;
+				user_sizepulsetype = 0;
+				user_maxbubbletimer = random(405,467);
+				user_maxripperinterval = random(16,24);
+				user_maxripperinterval -= (PlayerSOR/32); // Sorcery
+				user_maxripperinterval -= (PlayerTHE/64); // Therapeusis
+				if (user_maxripperinterval < 4) { user_maxripperinterval = 4; }
+				user_halfmaxripperinterval = user_maxripperinterval / 2;
+				Thing_ChangeTID(0,5001);
+			}
+		Idle:
+			HUBB A 1 Bright
+			{
+				A_ScaleVelocity(1.0002);
+	
+				if (scale.x <= 0.095 && scale.y <= 0.095) { user_sizepulsetype = 1; } // Set to Expand
+				if (scale.x >= 0.105 && scale.y >= 0.105) { user_sizepulsetype = 0; } // Set to Shrink
+				if (user_sizepulsetype == 0) { A_SetScale(scale.x-0.00025,scale.y-0.00025); } // Shrinking
+				if (user_sizepulsetype == 1) { A_SetScale(scale.x+0.00025,scale.y+0.00025); } // Expanding
+	
+				if (alpha <= 0.64) { user_transpulsetype = 1; } // Set to Fade In
+				if (alpha >= 0.96) { user_transpulsetype = 0; } // Set to Fade Out
+				if (user_transpulsetype == 0) { A_FadeOut(0.025); } // Fading Out
+				if (user_transpulsetype == 1) { A_FadeIn(0.025); } // Fading In
+	
+				user_damageradius = 64;
+				A_SetRoll(roll+4,SPF_INTERPOLATE,AAPTR_DEFAULT);
+				user_ripperinterval += 1;
+				if (user_ripperinterval < user_maxripperinterval)
+				{
+					bPAINLESS = true;
+					bFORCEPAIN = false;
+				}
+				if (user_ripperinterval == user_halfmaxripperinterval)
+				{
+					if (random(1,8) <= 3) 
+					{
+						finaldamagedealt = A_GetPlayerAttackDamage(47,0);
+						A_Explode((finaldamagedealt),user_damageradius,0,0,user_damageradius); 
+						bPAINLESS = false; 
+						bFORCEPAIN = true;
+					}
+				}
+				if (user_ripperinterval >= user_maxripperinterval)
+				{
+					finaldamagedealt = A_GetPlayerAttackDamage(47,0);
+					A_Explode((finaldamagedealt),user_damageradius,0,0,user_damageradius); 
+					bPAINLESS = false;
+					bFORCEPAIN = true;
+					user_ripperinterval = 0;
+					user_maxripperinterval = random(16,24);
+					user_maxripperinterval -= (PlayerSOR/32); // Sorcery
+					user_maxripperinterval -= (PlayerTHE/64); // Therapeusis
+					if (user_maxripperinterval < 4) { user_maxripperinterval = 4; }
+					user_halfmaxripperinterval = user_maxripperinterval / 2;
+				}
+				user_bubbletimer += 1;
+				if (user_bubbletimer >= user_maxbubbletimer) { return resolvestate("Death"); }
+				return resolvestate(null);
+			}
+			Loop;
+
+		Pop:
+		Death:
+			TNT1 A 0 Bright
+			{
+				user_damageradius = 256;
+				bPAINLESS = false;
+				bFORCEPAIN = true;
+				A_StartSound("HubbleBubblePop");
+				finaldamagedealt = A_GetPlayerAttackDamage(47,0);
+				A_Explode((finaldamagedealt*4),user_damageradius,0,0,user_damageradius); 
+				if (random(1,2) == 1) { return resolvestate("Death1"); } else { return resolvestate("Death2"); }
+				return resolvestate(null);
+			}
+		Death1:
+			HUBB BCDE 1 Bright
+			{
+				A_ScaleVelocity(0.0);
+				A_SetScale(scale.x*1.125,scale.y*1.125);
+			}
+			Stop;
+		Death2:
+			HUBB FGHIJ 1 Bright
+			{
+				A_ScaleVelocity(0.0);
+				A_SetScale(scale.x*1.125,scale.y*1.125);
+			}
+			Stop;
+	}
+}
+
+class BoomSource : AetheriusProjectileZSC
+{
+	default
+	{
+		Tag "Boom";
+		Height 1;
+		Radius 1;
+		Scale 0.01;
+		Speed 0;
+		DamageFunction (0);
+		Projectile;
+		+BLOODLESSIMPACT;
+		+RIPPER;
+		+FOILINVUL;
+		+NOEXPLODEFLOOR;
+		+PIERCEARMOR;
+		+PAINLESS;
+		+FORCERADIUSDMG;
+		+NODAMAGETHRUST;
+		+DONTREFLECT;
+		+SPECTRAL;
+		+THRUSPECIES;
+		+MTHRUSPECIES;
+		Species "Players";
+		RenderStyle "None";
+		Alpha 0.0;
+		Obituary "%o went Boom!";
+	}
+	
+	states
+	{
+		Spawn:
+			TNT1 A 0
+			{
+				A_SetAngle(frandom(0.0,359.9));
+			}
+		Death:
+			TNT1 A 0;
+			stop;
+	}
+}
