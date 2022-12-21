@@ -9400,6 +9400,339 @@ class EvilWarriorShield : KDIZDWeapon
 // based on which ammo type is in use. A 'hybrid' ammo mode might also get added that splits the "costs"
 // between both MP and the alternative type, while slightly boosting power but also costing slightly
 // more "ammo".
+class UnmakerLaser : SingleDamageFastRipper //AetheriusFastProjectileZSC
+{
+	double user_basedist;
+	double user_dist;
+	double user_basespread;
+	int user_times;
+	
+	default
+	{
+		Tag "Unmaker Laser";
+		Radius 2;
+		Height 4;
+		Speed 200;
+		DamageFunction (finaldamagedealt / (1 + timesrippedoverall)); // (10*random(1,8))
+		DamageType "Magic";
+		ProjectileKickBack 16;
+		RenderStyle "Add";
+		Alpha 1;
+		SeeSound "null";
+		DeathSound "null";
+		Obituary "%o was unmade by %k.";
+		PROJECTILE;
+		+RANDOMIZE;
+		+RIPPER;
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay
+			{
+				finaldamagedealt = A_GetPlayerAttackDamage(71,0);
+			}
+		Idle:
+			TNT1 A 1
+			{
+				if (timesrippedoverall >= (random(0,1) + (CountInv("UnmakerUpgrades",AAPTR_PLAYER1)))) 
+				{
+					bRIPPER = false;
+				} 
+				else 
+				{ 
+					bRIPPER = true;
+				}
+
+				user_basedist = 3.0;
+				user_basespread = 2.25;
+				user_times = 0;
+				for (user_dist = user_basedist; user_dist < 38.0; user_dist += user_basespread)
+				{
+					A_SpawnItemEx("UnmakerLaserTrail", (user_dist*vel.x)/-35.0,  -(user_dist*vel.y)/-35.0,  2+(user_dist*vel.z)/-35.0,  0,0,0, 0, SXF_ABSOLUTEANGLE);
+				}
+			}
+			Loop;
+		Death:
+			LPUF AAABBB 1 BRIGHT A_FadeOut(0.0334);
+			Loop;
+	}
+}
+
+class UnmakerLaserCrisis : UnmakerLaser
+{
+	default
+	{
+		Tag "\cxUnmaker Laser\c-";
+		DamageFunction ((finaldamagedealt / (1 + timesrippedoverall)) * CrisisMultiplier); // (10*random(1,8))
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay
+			{
+				finaldamagedealt = A_GetPlayerAttackDamage(71,0);
+			}
+		Idle:
+			TNT1 A 1
+			{
+				if (timesrippedoverall >= (random(0,2) + (CountInv("UnmakerUpgrades",AAPTR_PLAYER1)))) 
+				{
+					bRIPPER = false; 
+				} 
+				else 
+				{ 
+					bRIPPER = true; 
+				}
+
+				user_basedist = 3.0;
+				user_basespread = 2.25;
+				user_times = 0;
+				for (user_dist = user_basedist; user_dist < 38.0; user_dist += user_basespread)
+				{
+					user_times++;
+					if (user_times >= 9)
+					{
+						A_SpawnItemEx("UnmakerLaserTrailCrisis", (user_dist*vel.x)/-35.0,  -(user_dist*vel.y)/-35.0,  2+(user_dist*vel.z)/-35.0,  0,0,0, 0, SXF_ABSOLUTEANGLE);
+						user_times = 0;
+					}
+					else
+					{
+						A_SpawnItemEx("UnmakerLaserTrail", (user_dist*vel.x)/-35.0,  -(user_dist*vel.y)/-35.0,  2+(user_dist*vel.z)/-35.0,  0,0,0, 0, SXF_ABSOLUTEANGLE);
+					}
+				}
+			}
+			Loop;
+		Death:
+			LPUF AAABBB 1 BRIGHT A_FadeOut(0.0334);
+			Loop;
+	}
+}
+
+class UnmakerLaserTrail : AetheriusFastProjectileZSC
+{
+	default
+	{
+		Radius 2;
+		Height 4;
+		Scale 0.65;
+		Alpha 1;
+		Speed 0;
+		Damage 0;
+		RenderStyle "Add";
+		SeeSound "null";
+		DeathSound "null";
+		PROJECTILE;
+		+RANDOMIZE;
+		+NOINTERACTION;
+	}
+	
+	States
+	{
+		Spawn:
+			LPUF CCCCC 1 BRIGHT;
+			Stop;
+		Death:
+			LPUF ABC 2 BRIGHT;
+			Stop;
+	}
+}
+class UnmakerLaserTrailCrisis : AetheriusFastProjectileZSC
+{
+	default
+	{
+		Radius 2;
+		Height 4;
+		Scale 0.65;
+		Alpha 1;
+		Speed 0;
+		Damage 0;
+		RenderStyle "Add";
+		SeeSound "null";
+		DeathSound "null";
+		PROJECTILE;
+		+RANDOMIZE;
+		+NOINTERACTION;
+	}
+	
+	States
+	{
+		Spawn:
+			LPUF CCCCC 1 BRIGHT
+			{
+				user_crisistimer += 1;
+				if (dvds_gfxeffectlevel == 0)
+				{
+					if (user_crisistimer == 1) 
+					{
+						A_GenerateCrisisParticle();
+						//user_crisistimer = 0;
+					}
+				}
+				else
+				{
+					if (user_crisistimer == 2) 
+					{
+						A_GenerateCrisisParticle();
+						user_crisistimer = 0;
+					}
+				}
+			}
+			Stop;
+		Death:
+			LPUF ABC 2 BRIGHT;
+			Stop;
+	}
+}
+
+/* --- UNMAKER UPGRADES ----------------------------------------------------- */
+class UnmakerUpgrades : Inventory
+{
+	default
+	{
+		+INVENTORY.UNDROPPABLE;
+		Inventory.MaxAmount 3;
+	}
+}
+
+class UnmakerDVDSUpgrade1 : CustomInventory
+{
+	default
+	{
+		// Orange Artifact (First Upgrade)
+		//$Color 19
+		//$NotAngled
+		//$Category "Doom 64 Retribution"
+		Scale 0.5;
+		Inventory.Amount 1;
+		Inventory.MaxAmount 1;
+		Inventory.InterHubAmount 1;
+		Inventory.Icon "ART1A0";
+		Inventory.PickupMessage "Whatever it is, it doesn't belong in this world...";
+		Inventory.PickupSound "misc/unmakart1";
+		+DONTGIB;
+		+COUNTITEM;
+	}
+	
+	States
+	{
+		Spawn:
+			ART1 ABCDEDCB 5 BRIGHT
+			{
+				if (CountInv("UnmakerUpgrades",AAPTR_PLAYER1) >= 1) 
+				{ 
+					A_SpawnItemEx("UnmakerDVDSUpgrade2");
+					Thing_Remove(0); 
+				}
+			}
+			Loop;
+		Pickup:
+			TNT1 A 0
+			{
+				if (CountInv("UnmakerDVDS",AAPTR_PLAYER1) > 0) { return resolvestate("Success"); }
+				return resolvestate(null);
+			}
+			Fail;
+		Success:
+			TNT1 A 0 A_GiveInventory("UnmakerUpgrades", 1);
+			Stop;
+		AlreadyTaken:
+			TNT1 A 0;
+			Fail;
+	}
+}
+
+class UnmakerDVDSUpgrade2 : CustomInventory
+{
+	default
+	{
+		// Purple Artifact (Second Upgrade)
+		//$Color 5
+		//$NotAngled
+		//$Category "Doom 64 Retribution"
+		Scale 0.5;
+		Inventory.Amount 1;
+		Inventory.MaxAmount 1;
+		Inventory.InterHubAmount 1;
+		Inventory.Icon "ART2A0";
+		Inventory.PickupMessage "It must do something...";
+		Inventory.PickupSound "misc/unmakart1";
+		+DONTGIB;
+		+COUNTITEM;
+	}
+	
+	States
+	{
+		Spawn:
+			ART2 ABCDEDCB 5 BRIGHT
+			{
+				if (CountInv("UnmakerUpgrades",AAPTR_PLAYER1) >= 2) 
+				{ 
+					A_SpawnItemEx("UnmakerDVDSUpgrade3");
+					Thing_Remove(0); 
+				}
+			}
+			Loop;
+		Pickup:
+			TNT1 A 0
+			{
+				if (CountInv("UnmakerDVDS",AAPTR_PLAYER1) > 0) { return resolvestate("Success"); } 
+				return resolvestate(null);
+			}
+			Fail;
+		Success:
+			TNT1 A 0 A_GiveInventory("UnmakerUpgrades", 1);
+			Stop;
+		AlreadyTaken:
+			TNT1 A 0;
+			Fail;
+	}
+}
+
+class UnmakerDVDSUpgrade3 : CustomInventory
+{
+	default
+	{
+		// Cyan Artifact (Third Upgrade)
+		//$Color 3
+		//$NotAngled
+		//$Category "Doom 64 Retribution"
+		Scale 0.5;
+		Inventory.Amount 1;
+		Inventory.MaxAmount 1;
+		Inventory.InterHubAmount 1;
+		Inventory.Icon "ART3A0";
+		Inventory.PickupMessage "You have a feeling that it wasn't to be touched...";
+		Inventory.PickupSound "misc/unmakart1";
+		+DONTGIB;
+		+COUNTITEM;
+	}
+	
+	States
+	{
+		Spawn:
+			ART3 ABCDEDCB 5 BRIGHT
+			{
+				if (CountInv("UnmakerUpgrades",AAPTR_PLAYER1) >= 3) { Thing_Remove(0); }
+			}
+			Loop;
+		Pickup:
+			TNT1 A 0
+			{
+				if (CountInv("UnmakerDVDS",AAPTR_PLAYER1) > 0) { return resolvestate("Success"); } 
+				return resolvestate(null);
+			}
+			Fail;
+		Success:
+			TNT1 A 0 A_GiveInventory("UnmakerUpgrades", 1);
+			Stop;
+		AlreadyTaken:
+			TNT1 A 0;
+			Fail;
+	}
+}
 
 class UnmakerDVDS : KDIZDWeapon
 {
