@@ -5,6 +5,10 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	mixin DamageMessages;
 	mixin CritAtkSound;
 	name MonsterFamily;
+
+	bool isPEspawned;
+	bool isHEspawned;
+	bool isHOspawned;
 	
 	// Gargoyle
 	bool extremecrash;
@@ -85,6 +89,9 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 	const SKILL_HORRIBLE = 6;
 	const SKILL_IMPOSSIBLE = 7;
 	const SKILL_OMEGA = 8;
+
+	const PAF_INDIVIDUALLIMIT = 256;
+	const PAF_LIMITCOUNTALLTYPES = 512;
 
 	int painchancefist, painchancekick, painchancegauntlets;
 	int bossdeathactivate;
@@ -1884,6 +1891,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			if (flags & DMG_EXPLOSION) Console.Printf("    (\cyIsAoEBurst?: yes)");
 		}
 
+		if (mod == 'PSI') flags |= DMG_NO_ARMOR;
 		if (mod == 'dashing')
 		{
 			if (NORADDMG == 1 && bNORADIUSDMG) 
@@ -11176,6 +11184,259 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				iscustomspark.glitteryspeed = gspeed;
 				iscustomspark.glitterzspeed = gspeed;
 			}
+		}
+	}
+	
+	void A_PainShootSkull(Class<Actor> spawntype, double angle, int flags = 0, int limit = -1)
+	{
+		// Don't spawn if we get massacred.
+		if (DamageType == 'Massacre') return;
+
+		if (spawntype == null) spawntype = "LostSoul";
+
+		// [RH] check to make sure it's not too close to the ceiling
+		if (pos.z + height + 8 > ceilingz)
+		{
+			if (bFloat)
+			{
+				Vel.Z -= 2;
+				bInFloat = true;
+				bVFriction = true;
+			}
+			return;
+		}
+
+		// [RH] make this optional
+		if (limit < 0 && (Level.compatflags & COMPATF_LIMITPAIN))
+		{
+			if (!flags & PAF_INDIVIDUALLIMIT) limit = 21;
+			else limit = 10;
+		}
+
+		if (limit > 0)
+		{
+			// count total number of skulls currently on the level
+			// if there are already 21 skulls on the level, don't spit another one
+			int count = limit;
+			if (flags & PAF_LIMITCOUNTALLTYPES && flags & PAF_INDIVIDUALLIMIT)
+			{
+				ThinkerIterator it = ThinkerIterator.Create("DSLostSoul");
+				Thinker othink;
+				while ( (othink = it.Next ()) )
+				{
+					if (flags & PAF_INDIVIDUALLIMIT)
+					{
+						actor othink2;
+						othink2 = actor(othink);
+						if (othink2 && othink2.master == self)
+						{
+							if (--count == 0)
+								return;
+						}
+					}
+					else
+					{
+						if (--count == 0)
+							return;
+					}
+				}
+
+				it = ThinkerIterator.Create("DSLostSoul2");
+				while ( (othink = it.Next ()) )
+				{
+					if (flags & PAF_INDIVIDUALLIMIT)
+					{
+						actor othink2;
+						othink2 = actor(othink);
+						if (othink2 && othink2.master == self)
+						{
+							if (--count == 0)
+								return;
+						}
+					}
+					else
+					{
+						if (--count == 0)
+							return;
+					}
+				}
+				
+				it = ThinkerIterator.Create("BetaLostSoul");
+				while ( (othink = it.Next ()) )
+				{
+					if (flags & PAF_INDIVIDUALLIMIT)
+					{
+						actor othink2;
+						othink2 = actor(othink);
+						if (othink2 && othink2.master == self)
+						{
+							if (--count == 0)
+								return;
+						}
+					}
+					else
+					{
+						if (--count == 0)
+							return;
+					}
+				}
+				if (dydudebug_monsterspecialai) Console.Printf("[A_PainShootSkull %p (PAF_LIMITCOUNTALLTYPES)] count: %d / %d", self, count, limit);
+			}
+			else
+			{
+				ThinkerIterator it = ThinkerIterator.Create(spawntype);
+				Thinker othink;
+
+				while ( (othink = it.Next ()) )
+				{
+					if (flags & PAF_INDIVIDUALLIMIT)
+					{
+						actor othink2;
+						othink2 = actor(othink);
+						if (othink2 && othink2.master == self)
+						{
+							if (--count == 0)
+								return;
+						}
+					}
+					else
+					{
+						if (--count == 0)
+							return;
+					}
+				}
+				if (dvdsdebug_monsterspecialai) Console.Printf("[A_PainShootSkull (%s) - %p] count: %d / %d", spawntype.GetClassName(), self, count, limit);
+			}
+		}
+
+		// okay, there's room for another one
+		double otherradius = GetDefaultByType(spawntype).radius;
+		double prestep = 4 + (radius + otherradius) * 1.5;
+
+		Vector2 move = AngleToVector(angle, prestep);
+		Vector3 spawnpos = pos + (0,0,8);
+		Vector3 destpos = spawnpos + move;
+
+		Actor other = Spawn(spawntype, spawnpos, ALLOW_REPLACE);
+
+		// Now check if the spawn is legal. Unlike Boom's hopeless attempt at fixing it, let's do it the same way
+		// P_XYMovement solves the line skipping: Spawn the Lost Soul near the PE's center and then use multiple
+		// smaller steps to get it to its intended position. This will also result in proper clipping, but
+		// it will avoid all the problems of the Boom method, which checked too many lines that weren't even touched
+		// and despite some adjustments never worked with portals.
+
+		if (other != null)
+		{
+			AetheriusMonsterZSC SpawnedSoul;
+			SpawnedSoul = AetheriusMonsterZSC(other);
+			if (SpawnedSoul != null) 
+			{
+				if (DSLostSoul(SpawnedSoul) ||
+						DSLostSoul2(SpawnedSoul) ||
+						ForgottenOne(SpawnedSoul) ||
+						BetaLostSoul(SpawnedSoul)) SpawnedSoul.isPEspawned = true;
+				
+				if (HadesSphere(SpawnedSoul)) SpawnedSoul.isHEspawned = true;
+				if (HSOverlord(SpawnedSoul)) SpawnedSoul.isHOspawned = true;
+			}
+
+			double maxmove = other.radius - 1;
+
+			if (maxmove <= 0) maxmove = 16;
+
+			double xspeed = abs(move.X);
+			double yspeed = abs(move.Y);
+
+			int steps = 1;
+
+			if (xspeed > yspeed)
+			{
+				if (xspeed > maxmove)
+				{
+					steps = int(1 + xspeed / maxmove);
+				}
+			}
+			else
+			{
+				if (yspeed > maxmove)
+				{
+					steps = int(1 + yspeed / maxmove);
+				}
+			}
+
+			Vector2 stepmove = move / steps;
+			bool savedsolid = bSolid;
+			bool savednoteleport = other.bNoTeleport;
+			
+			// make the PE nonsolid for the check and the LS non-teleporting so that P_TryMove doesn't do unwanted things.
+			bSolid = false;
+			other.bNoTeleport = true;
+			for (int i = 0; i < steps; i++)
+			{
+				Vector2 ptry = other.pos.xy + stepmove;
+				double oldangle = other.angle;
+				if (!other.TryMove(ptry, 0))
+				{
+					// kill it immediately
+					other.ClearCounters();
+					other.DamageMobj(self, self, TELEFRAG_DAMAGE, 'None');
+					bSolid = savedsolid;
+					other.bNoTeleport = savednoteleport;
+					return;
+				}
+
+				if (other.pos.xy != ptry)
+				{
+					// If the new position does not match the desired position, the player
+					// must have gone through a portal.
+					// For that we need to adjust the movement vector for the following steps.
+					double anglediff = deltaangle(oldangle, other.angle);
+
+					if (anglediff != 0)
+					{
+						stepmove = RotateVector(stepmove, anglediff);
+					}
+				}
+
+			}
+			bSolid = savedsolid;
+			other.bNoTeleport = savednoteleport;
+
+			// [RH] Lost souls hate the same things as their pain elementals
+			other.CopyFriendliness (self, !(flags & PAF_NOTARGET));
+			
+			// Inherit the PE's Master if they have a IoS master
+			if (master && DSBossBrain(master)) other.master = master;
+			else other.master = self; // otherwise set the Lost Soul's master to be the PE [to help enforce individual PE limits].
+
+			if (dvdsdebug_monsterspecialai && other.master)
+			{
+				Console.Printf("%s Master: \c[gold]%p\c-", other.GetClassName(), other.master);
+			}
+
+			if (!(flags & PAF_NOSKULLATTACK))
+			{
+				other.A_SkullAttack();
+			}
+		}
+	}
+
+	void A_PainAttack(class<Actor> spawntype = "LostSoul", double addangle = 0, int flags = 0, int limit = -1)
+	{
+		if (target)
+		{
+			A_FaceTarget();
+			A_PainShootSkull(spawntype, angle + addangle, flags, limit);
+		}
+	}
+	
+	void A_DualPainAttack(class<Actor> spawntype = "LostSoul", double addangle = 45, int flags = 0, int limit = -1)
+	{
+		if (target)
+		{
+			A_FaceTarget();
+			A_PainShootSkull(spawntype, angle + addangle, flags, limit);
+			A_PainShootSkull(spawntype, angle - addangle, flags, limit);
 		}
 	}
 	
