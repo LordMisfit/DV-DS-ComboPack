@@ -3132,6 +3132,22 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		
 		if (ret <= 0) A_CheckNeverBleed(1, ret, flags);
 		
+		if (ret > 0 && !bFRIENDLY)
+		{
+			bool ck = false;
+			if ((AetheriusPlayerPawn(inflictor) || AetheriusPlayerPawn(source))) ck = true;
+			if (!ck && ((source && source.bISMONSTER && source.bFRIENDLY) || (inflictor && inflictor.bISMONSTER && inflictor.bFRIENDLY))) ck = true;
+			if (ck)
+			{
+				if (user_MaxHP > 0)
+				{
+					expshare += double((ret * 1.0) / (user_MaxHP * 1.0));
+					if (expshare > 1.00) expshare = 1.00;
+					if (dvdsdebug_actordmgdisplays) Console.Printf("(\c[green]%s\c-) Wrapping Up: expshare: %.8f, ret: %d, user_MaxHP: %d", GetClassName(), expshare, ret, user_MaxHP);
+				}
+			}
+		}
+		
 		return ret;
 	}
 
@@ -6444,6 +6460,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		playeriskiller = AetheriusPlayerPawn(lastattacker);
 		if (debugexp && lastattacker) Console.Printf("\cxAddEXP\c- - lastattacker: %s", lastattackername);
 		if (debugexp && playeriskiller) Console.Printf("\cxAddEXP\c- - playeriskiller");
+		bool sharedkill = false;
 		if (!playeriskiller)
 		{
 			// TODO: Detect if a friendly monster/summon is the killer of the monster to give EXP credit to the player
@@ -6460,8 +6477,16 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 			}
 			else
 			{
-				if (debugexp) Console.Printf("\cxAddEXP\c- - Passed Player/Friendly-Monster Credit Check: NO", debugexp);
-				terminate = 1;
+				if (expshare >= 0.001)
+				{
+					sharedkill = true;
+					if (debugexp) Console.Printf("\cxAddEXP\c- - Passed Player/Friendly-Monster Credit Check: NO, \c[gold]But Did Partial Damage to Enemy", debugexp);
+				}
+				else
+				{
+					terminate = 1;
+					if (debugexp) Console.Printf("\cxAddEXP\c- - Passed Player/Friendly-Monster Credit Check: NO", debugexp);
+				}
 			}
 		}
 		
@@ -8134,6 +8159,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 				}
 				
 				if (finalexpamount < 1) finalexpamount = 1;
+				if (sharedkill)
+				{
+					finalexpamount *= expshare;
+					if (finalexpamount < 1) finalexpamount = 1;
+				}
+
 				CallACS("ExpCheat",finalexpamount,0,0);
 				if (debugexp) Console.Printf("\cxAddEXP\c- - LstHPAmt: %d / OverkillHP: %d, BaseEXP: %d / FinalEXP: %d, 'Friendly' Multiplier: %.8f", health, overkillhp, baseexp, finalexpamount, KillExpMultiplier);
 				
