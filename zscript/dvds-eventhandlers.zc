@@ -7,6 +7,134 @@ class DVDS_EventHandler : EventHandler
 
 class DVDS_StaticEventHandler : StaticEventHandler
 {
+	//If any world has loaded, then we're done handling new games case
+	override void WorldLoaded(WorldEvent e) 
+	{
+		actor player = players[0].mo;
+		array<int> fs_textures;
+		array<string> fs_sndinfo;
+		string defaultSndinfo;
+		
+		array<string> allSF;
+		StringTable.Localize("$STEP_FLATS").Split(allSF,":");
+		Console.Printf("Default Footsteps TXT Loaded");
+		/*
+		StringTable.Localize("$STEP_FLATSOTEX").Split(allSF,":");
+		Console.Printf("OTex Footsteps TXT Loaded");
+		// Other CompatPacks
+		if (Wads.CheckNumForName("DS-CIRCUS2", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSCIRCUS2").Split(allSF,":");
+			Console.Printf("Circus2 Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-KDIZD", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSKDIZD").Split(allSF,":");
+			Console.Printf("KDIZD Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-TCOTDA", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSTCOTDA").Split(allSF,":");
+			Console.Printf("TCOTDA Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-TUTNT", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSTUTNT").Split(allSF,":");
+			Console.Printf("Ultimate Torment and Torture Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-STAEONS", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSSTAEONS").Split(allSF,":");
+			Console.Printf("Strange Aeons Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-EPIC2", Wads.ns_global, -1, true) != -1)
+		{
+			StringTable.Localize("$STEP_FLATSEPIC2").Split(allSF,":");
+			Console.Printf("Epic2 Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-HELLG", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSHELLG").Split(allSF,":");
+			Console.Printf("Hell Ground Footsteps TXT Loaded");
+		}
+		*/
+		
+		for (int j = allSF.Size() - 1; j >= 0; j -= 1)
+		{
+			string s = StringTable.Localize(String.Format("$STEP_%s", allSF[j]));
+			//Console.Printf("[EVENT] j: %d, %s, string: %s [Length: %d]", j, allSF[j], s, s.Length());
+			
+			if (s.Length() != 0)
+			{
+				textureid t = TexMan.CheckForTexture(allSF[j], TexMan.TYPE_ANY);
+				if (t.Exists())
+				{
+					//Console.Printf("[EVENT 2] j: %d, %s", j, allSF[j]);
+					fs_textures.Push(int(t));
+					
+					fs_sndinfo.Push(s);
+				}
+			}
+		}
+		defaultSndinfo = StringTable.Localize("$STEP_DEFAULT");
+		
+		int nofsttxts = 0;
+		int nofsttxts2 = 0;
+		for (let i = 0, l = level.Sectors.Size(); i < l; i++)
+		{
+			int idx;
+			int textfound = 0;
+			string texname;
+			
+			texname = texman.GetName(level.Sectors[i].GetTexture(sector.floor));
+			idx = fs_textures.Find(int(level.Sectors[i].GetTexture(sector.floor)));
+			if (idx != fs_textures.Size()) textfound = 1;
+			else 
+			{
+				if (texname == "" || 
+						texname == "-NOFLAT-") textfound = -1;
+				if (texname == "DOPE2 R") textfound = -1;
+				if (texname == "STEP1" || 
+						texname == "STEP2" || 
+						texname == "STEP3" ||
+					texname == "A-DAN1" ||
+					texname == "A-DAN2" ||
+					texname == "A-DAN3" ||
+					texname == "A-DAN4" ||
+					texname == "A-DAN5" ||
+					texname == "GRNROCK") textfound = -1;
+				else nofsttxts++;
+			}
+			
+			//if (level.Sectors[i].damagetype == 'Fire' || level.Sectors[i].damagetype == 'Lava') level.Sectors[i].damagetype = 'Magma';
+			if (level.Sectors[i].damagetype == 'Ice') level.Sectors[i].damagetype = 'IceWater';
+			if (dvdsdebug_worldloaded) Console.Printf("    \czFireFloorAdjuster\c-: %d / %d", i, l);
+			if (dvdsdebug_worldloaded) Console.Printf("    \czFireFloorAdjuster\c-: %d / %d", i, l);
+			
+			int damageamt = level.Sectors[i].damageamount;
+			int damageint = level.Sectors[i].damageinterval;
+			int leakdam = level.Sectors[i].leakydamage;
+			string damagetyp = level.Sectors[i].damagetype;
+			double sectgrav = level.Sectors[i].gravity;
+			
+			if (dvdsdebug_footsteps || dvdsdebug_footsteps2)
+			{
+				String SecPrint = "Sector #: ";
+				SecPrint.AppendFormat("%d, ", i);
+				if (textfound > 0) SecPrint.AppendFormat("\c[green]-floorpic: %s\c-", texname);
+				else if (textfound < 0) SecPrint.AppendFormat("\c[yellow]=floorpic: %s\c-", texname);
+				else SecPrint.AppendFormat("\c[red]~floorpic: %s\c-", texname);
+				if (sectgrav != 1.0) SecPrint.AppendFormat("\c[green]gravity: %.4f\c-, ", sectgrav);
+				if (damagetyp != 'None' || damageamt > 0 || damageint) SecPrint.AppendFormat(", \c[brick]damagetype: %s, damageamount: %d, damageinterval: %d, leakydamage: %d / 256", damagetyp, damageamt, damageint, leakdam);
+				Console.Printf(SecPrint);
+			}
+		}
+		if (nofsttxts > 0)
+		{
+			if (dvdsdebug_footsteps || dvdsdebug_footsteps2) player.A_StartSound("step/squeaky1",1002);
+			Console.Printf("# of textures found with no footstep definitions [\cy%s\c-]: \c[red]%d\c-", level.mapname, nofsttxts);
+		}
+	}
 }
 
 // Alternatively, add the WorldThingDamaged code to an existing EventHandler or StaticEventHandler.
@@ -118,3 +246,85 @@ class MKeyEvents : EventHandler
 	}
 }
 
+class DVDSWaterHandler : StaticEventHandler 
+{
+	override void RenderOverlay(RenderEvent e)
+	{
+		// set the player's timer up correctly (more-than-1-tick precision)
+		PlayerInfo p = players[consoleplayer];
+		actor player = players[0].mo;
+		let MiscItem = PlayerStatItem(Player.FindInventory("PlayerStatItem"));
+		PPShader.SetUniform1f("DVDSwatershader", "timer", gametic + e.FracTic);
+		int playbloom; // = Wads.CheckNumForName("EE-BLOOM", Wads.ns_global, -1, true);
+		int winetics;
+		int maxwinetics;
+		double winefactor;
+		
+		bool chasecam = false;
+		if (p.cheats & CF_CHASECAM) chasecam = true;
+		if (!chasecam)
+		{
+			if ((playbloom == -1 && p.mo.waterlevel >= 3))
+			{
+				if (dvdsdebug_shader)
+				{
+					PPShader.SetEnabled("DVDSwatershader", false);
+					PPShader.SetEnabled("DVDSwatershader", false);
+				}
+				else
+				{
+					PPShader.SetEnabled("DVDSwatershader", true);
+					PPShader.SetEnabled("DVDSwatershader", true);
+					double effectSize = CVar.GetCVar("dvds_uweffectsize", p).GetFloat();
+					//Console.Printf("effectSize: %.8f", effectSize);
+					if (MiscItem)
+					{
+						double tempeffectsize = 1.0;
+						
+						if (playbloom == -1 && p.mo.waterlevel >= 3) tempeffectsize += 1.0;
+						effectSize *= tempeffectsize;
+					}
+					if ((playbloom == -1 && p.mo.waterlevel >= 3) && p.mo.CountInv("PowerNoDrown")) effectSize *= frandom(0.045,0.055);
+					//Console.Printf("effectSize: %.8f, zoom: %.8f [tic: %d]", effectSize, (1 - (effectSize * 2)), gametic);
+					PPShader.SetUniform1f("DVDSwatershader", "waterFactor", effectSize);
+					PPShader.SetUniform1f("DVDSwatershader", "zoomFactor", 1 - (effectSize * 2));
+				}
+			}
+			else 
+			{
+				PPShader.SetEnabled("DVDSwatershader", false);
+				PPShader.SetEnabled("DVDSwatershader", false);
+			}
+		}
+		else 
+		{
+			PPShader.SetEnabled("DVDSwatershader", false);
+			PPShader.SetEnabled("DVDSwatershader", false);
+		}
+	}
+}
+
+class EVP_FootstepsInit : EventHandler
+{
+	override void PlayerEntered(PlayerEvent e)
+	{
+		if (Level.MapName != "TITLEMAP")
+		{
+			int numfound;
+			ThinkerIterator FStepFinder = ThinkerIterator.Create("EVP_Footsteps");
+			EVP_Footsteps mo;
+			while (mo = EVP_Footsteps(FStepFinder.Next()))
+			{
+				mo.Destroy();
+				numfound++;
+				if (dvdsdebug_footsteps) Console.Printf("Destroying Old EVP_Footsteps Item #%d", numfound);
+			}
+			if (e.playerNumber == 0)
+			{
+				let fs = EVP_Footsteps(Actor.Spawn("EVP_Footsteps"));
+				if (fs) fs.Init(players[0].mo);
+				if (dvdsdebug_footsteps) Console.Printf("Adding New EVP_Footsteps Item");
+			}
+		}
+	}
+}

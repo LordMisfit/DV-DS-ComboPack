@@ -15,6 +15,60 @@ class PlaceholderItem : AetheriusCustomInventory
 	}
 }
 
+class PlaceholderItemDepletable : PlaceholderItem
+{
+	default
+	{
+		-INVENTORY.KEEPDEPLETED 
+	}
+
+	States
+	{
+		Use:
+			TNT1 A 0;
+			Stop;
+	}
+}
+
+class PlaceholderItemUndrop : PlaceholderItem
+{
+	default
+	{
+		inventory.icon "";
+		Inventory.MaxAmount 0x7FFFFFFD;
+		+INVENTORY.KEEPDEPLETED
+		+INVENTORY.UNDROPPABLE
+		+INVENTORY.UNCLEARABLE
+		+INVENTORY.PERSISTENTPOWER
+		+INVENTORY.HUBPOWER
+	}
+
+	States
+	{
+		Use:
+			TNT1 A 0;
+			Stop;
+	}
+}
+
+class PlaceholderItemMax : PlaceholderItem
+{
+	default
+	{
+		inventory.icon "";
+		Inventory.MaxAmount 0x7FFFFFFD;
+		+INVENTORY.KEEPDEPLETED 
+	}
+
+	States
+	{
+		Use:
+			TNT1 A 0;
+			Stop;
+	}
+}
+
+
 class HigherLearningGained : PlaceholderItem { default { +INVENTORY.KEEPDEPLETED; Inventory.MaxAmount 2; } }
 class HigherLearning2Gained : PlaceholderItem { default { +INVENTORY.KEEPDEPLETED; Inventory.MaxAmount 2; } }
 class PerkUseSound : PlaceholderItem { }
@@ -478,6 +532,7 @@ class TookResistanceHit : PlaceHolderItem { default { Inventory.MaxAmount 3; } }
 class TookNoDamage : PlaceHolderItem { default { Inventory.MaxAmount 1; } } // Indicates the the holder was dealt a critical hit [for damage-indicator script checks]
 class TookNoDamageInvuln : PlaceHolderItem { default { Inventory.MaxAmount 1; } } // Indicates the the holder was dealt a critical hit [for damage-indicator script checks]
 class AbsorbedDamage : PlaceHolderItem { default { Inventory.MaxAmount 1; } } // Indicates the the holder was dealt a critical hit [for damage-indicator script checks]
+class IsStepping : PlaceholderItemDepletable { default { Inventory.MaxAmount 999999; } }
 
 class SauronGauntletsItem : PlaceholderItem { } // For SBARINFO so the HUD shows the extra icon for having the Gauntlets regardless of which type/character.
 
@@ -1062,4 +1117,181 @@ class HeresiarchShieldDefense : ShieldingBuff { } // 0.125
 
 // Heresiarch "Shielding"
 class NightmarePhaseOutDefense : ShieldingBuff { } // 0.0625
+
+class INTERMAPChecker : PlaceHolderItem
+{
+	default
+	{
+		-INVENTORY.KEEPDEPLETED
+	}
+}
+
+class PowerNoDrown : PowerProtection
+{
+	double ticpiece;
+	default
+	{
+		DamageFactor "Drowning", 0;
+		Powerup.Color "Black", 0.5;
+		Powerup.Duration -180;
+		Inventory.Icon "TNT1A0";
+		+INVENTORY.PERSISTENTPOWER;
+		+INVENTORY.HUBPOWER;
+		+INVENTORY.ADDITIVETIME;
+	}
+	double fadeintensity;
+	
+	override color GetBlend()
+	{
+		bool debugblend = false;
+		// slowly fade the color out
+		int cnt = 128 - (EffectTics>>2);
+		if (exex_divinghelmvisuals)
+		{
+			cnt = 128 - (EffectTics2>>4);
+			cnt *= fadeintensity;
+		}
+		int blendclr = BlendColor.a*cnt/256;
+		if (exex_divinghelmvisuals)
+		{
+			if (owner && owner.waterlevel >= 3) blendclr *= 1.0;
+																		else blendclr *= 0.05;
+		}
+		else blendclr *= 0.05;
+
+		if (debugblend) Console.Printf("cnt: %d, blendclr: %d, fade: %.2f", cnt, blendclr, fadeintensity);
+
+		if (cnt > 0)
+		{
+			return Color(blendclr,
+				BlendColor.r, BlendColor.g, BlendColor.b);
+		}
+		if (debugblend) Console.Printf("EffectTics2: %d, cnt: %d / 256, BlendColor.a: %d, fadeintensity: %.2f", EffectTics2, cnt, BlendColor.a*cnt/256, fadeintensity);
+		return 0;
+	}
+	
+	int EffectTics2;
+	int Dire;
+
+	override void Tick()
+	{
+		bool debugtick = false;
+		
+		int Point1 = 450;
+		int Point2 = 1800;
+		int increment = random(6,8) * random(6,8);
+		
+		
+		if (debugtick) Console.Printf("EffectTics: %d (%d), Dire: %d, Increment: %d", EffectTics2, EffectTics, Dire, Increment);
+
+		if (Dire == 0)
+		{
+			if (EffectTics2 <= Point1) { EffectTics2 = Point1; Dire = 1; }
+			else if (EffectTics2 >= Point2) { EffectTics2 = Point2; Dire = 2; }
+			else { Dire = random(1,2); }
+		}
+
+		if (Dire == 1)
+		{
+			if (owner && (owner.CountInv("AetheriusTimeFreezer") <= 0 || owner.CountInv("DebugTimeFreezer") <= 0)) EffectTics2 += increment;
+			if (EffectTics2 >= Point2) Dire = 2;
+		}
+		else
+		if (Dire == 2)
+		{
+			if (owner && (owner.CountInv("AetheriusTimeFreezer") <= 0 || owner.CountInv("DebugTimeFreezer") <= 0)) EffectTics2 -= increment;
+			if (EffectTics2 <= Point1) Dire = 1;
+		}
+		int ticpiecemax;
+		int ticwhiletimes = 3;
+		actor player = players[0].mo;
+		let MiscItem = PlayerStatItem(Player.FindInventory("PlayerStatItem"));
+		if (owner)
+		{
+			if (!owner.CountInv("INTERMAPChecker"))
+			{
+				if (owner.waterlevel >= 3)
+				{
+					if (owner.CountInv("AetheriusTimeFreezer") || owner.CountInv("DebugTimeFreezer"))
+					{
+						ticpiecemax = 10;
+						if (ticpiecemax > 0)
+						{
+							ticpiece += frandompick(4.0,4.0,5.0,5.0,5.0,5.0,5.0,5.0,6.0,6.0);
+							while (ticpiece >= ticpiecemax && ticwhiletimes)
+							{
+								EffectTics--;
+								ticpiece -= ticpiecemax;
+								ticwhiletimes--;
+							}
+						}
+						else
+						{
+							EffectTics--;
+						}
+					}
+					else
+					{
+						ticpiece = 0;
+						ticpiecemax = 1;
+						EffectTics--;
+					}
+				}
+				else
+				{
+					if (skill <= 0) ticpiecemax = 60;
+					if (skill == 1) ticpiecemax = 50;
+					if (skill == 2) ticpiecemax = 40;
+					if (skill == 3) ticpiecemax = 30;
+					if (skill >= 4) ticpiecemax = 20;
+					if (owner.CountInv("AetheriusTimeFreezer") || owner.CountInv("DebugTimeFreezer")) ticpiecemax *= 10;
+					if (ticpiecemax > 0) 
+					{
+						ticpiece += 1;
+						while (ticpiece >= ticpiecemax && ticwhiletimes)
+						{
+							EffectTics--;
+							ticpiece -= ticpiecemax;
+							ticwhiletimes--;
+						}
+					}
+					else
+					{
+						EffectTics--;
+					}
+				}
+				if (dvdsdebug_showairmeter) 
+				{
+					if (ticpiecemax > 1) Console.Printf("[PowerNoDrown] - EffectTics: %d, Ticpiece: %d / %d", EffectTics, ticpiece, ticpiecemax);
+					else Console.Printf("[PowerNoDrown] - EffectTics: %d", EffectTics);
+				}
+			}
+			if (ticpiece < -ticpiecemax) ticpiece = 0;
+			if (ticpiece >= (ticpiecemax*3)) ticpiece = 0;
+		}
+		
+		// Begin fading when 5 seconds remain
+		fadeintensity = 1.0 * ((EffectTics * 1.0) / 175.0);
+		if (fadeintensity >= 1.00) fadeintensity = 1.00;
+		
+		// Powerups cannot exist outside an inventory
+		if (Owner == NULL) Destroy();
+		if (EffectTics <= 0) Destroy();
+	}
+	
+	override void DoEffect()
+	{
+		if (Owner.player != NULL)
+		{
+			Owner.player.mo.ResetAirSupply();
+		}
+		
+		if (dvds_masknoise && owner.waterlevel >= 3 && !(Level.maptime & 0x3f))
+		{
+			double maskpitch = frandompick(frandom(1.125,1.275),frandom(1.25,1.375),frandom(1.25,1.375),frandom(1.25,1.375),frandom(1.375,1.5));
+			if (owner.waterlevel >= 3) maskpitch *= 1.259921885;
+			Owner.A_StartSound("misc/mask", CHAN_7, CHANF_DEFAULT, frandom(0.875,1.0), ATTN_NORM, maskpitch);
+		}
+	}
+}
 

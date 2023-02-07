@@ -4938,3 +4938,371 @@ class DeggarisMontegger : AetheriusPlayerPawn
 			goto Death;
 	}
 }
+
+class EVP_Footsteps : Actor
+{
+	PlayerPawn plr;
+
+	int tickCounter;
+	double truecrouchfactor, fstpitch, fstvolume;
+
+	array<int> fs_textures;
+	array<string> fs_sndinfo;
+	string defaultSndinfo;
+
+	void Init(PlayerPawn toAttach)
+	{
+		actor player = players[0].mo;
+		let MiscItem = PlayerStatItem(Player.FindInventory("PlayerStatItem"));
+
+		plr = toAttach;
+		tickCounter = 2;
+		
+		array<string> allSF;
+		StringTable.Localize("$STEP_FLATS").Split(allSF,":");
+		Console.Printf("Default Footsteps TXT Loaded");
+		/*
+		StringTable.Localize("$STEP_FLATSOTEX").Split(allSF,":");
+		Console.Printf("OTex Footsteps TXT Loaded");
+		// Other CompatPacks
+		if (Wads.CheckNumForName("DS-CIRCUS2", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSCIRCUS2").Split(allSF,":");
+			Console.Printf("Circus2 Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-KDIZD", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSKDIZD").Split(allSF,":");
+			Console.Printf("KDIZD Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-TCOTDA", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSTCOTDA").Split(allSF,":");
+			Console.Printf("TCOTDA Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-TUTNT", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSTUTNT").Split(allSF,":");
+			Console.Printf("Ultimate Torment and Torture Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-STAEONS", Wads.ns_global, -1, true) != -1)
+		{
+			StringTable.Localize("$STEP_FLATSSTAEONS").Split(allSF,":");
+			Console.Printf("Strange Aeons Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-EPIC2", Wads.ns_global, -1, true) != -1)
+		{
+			StringTable.Localize("$STEP_FLATSEPIC2").Split(allSF,":");
+			Console.Printf("Epic2 Footsteps TXT Loaded");
+		}
+		if (Wads.CheckNumForName("DS-HELLG", Wads.ns_global, -1, true) != -1) 
+		{
+			StringTable.Localize("$STEP_FLATSHELLG").Split(allSF,":");
+			Console.Printf("Hell Ground Footsteps TXT Loaded");
+		}
+		*/
+		
+		for (int j = allSF.Size() - 1; j >= 0; j -= 1)
+		{
+			string s = StringTable.Localize(String.Format("$STEP_%s", allSF[j]));
+			//Console.Printf("j: %d, %s, string: %s [Length: %d]", j, allSF[j], s, s.Length());
+			
+			if (s.Length() != 0)
+			{
+				textureid t = TexMan.CheckForTexture(allSF[j], TexMan.TYPE_ANY);
+				if (t.Exists())
+				{
+					//Console.Printf("[2] j: %d, %s", j, allSF[j]);
+					fs_textures.Push(int(t));
+					
+					fs_sndinfo.Push(s);
+				}
+			}
+		}
+		defaultSndinfo = StringTable.Localize("$STEP_DEFAULT");
+	}
+	
+	int A_CheckActualLevel(int type = 0)
+	{
+		actor player = players[0].mo;
+		let MiscItem = PlayerStatItem(Player.FindInventory("PlayerStatItem"));
+
+		int Level = 0;
+		if (MiscItem)
+		{
+			if (dvds_expgains) Level = MiscItem.PlayerLevel;
+		}
+		if (dvdsdebug_playerlevelchecks) Console.Printf("\c[green](%s) \c[gold](A_CheckActualLevel - AetheriusPlayerPawn)\c- PlayerLevel: %d [%d]", GetClassName(), level, gametic);
+		return Level;
+	}
+	
+	void HandleFootsteps(int type = 0, bool isrunning = false)
+	{
+		let DVDSPawn = AetheriusPlayerPawn(plr);
+		let MiscItem = PlayerStatItem(plr.FindInventory("PlayerStatItem"));
+		//let DashItem = PlayerDashJump(plr.FindInventory("PlayerDashJump"));
+		if (MiscItem)
+		{
+			bool berserked;
+			if (plr.CountInv("PowerStrength") || plr.CountInv("AetheriusPowerStrength")) berserked = true;
+
+			int ActualLevel = A_CheckActualLevel(1);
+			let PlayerWeapon = plr.player.ReadyWeapon;
+			truecrouchfactor = 1.0 - ((1.0 - plr.player.crouchfactor) * 1.5);
+			
+			int sndchanshift = 0;
+			if (type == 1) sndchanshift = 10;
+			fstpitch = frandom(0.96375,1.03125);
+			if (plr.GetClassName() == "DeggarisMontegger") fstpitch = frandom(0.96375,1.03125);
+			else if (plr.GetClassName() == "IlluciaHenderShot") fstpitch = frandom(1.0625,1.1625);
+			else if (plr.GetClassName() == "FloraBriscoletti") fstpitch = frandom(1.125,1.225);
+			
+			fstvolume = CVar.GetCvar("dvds_footstepvolume", players[0]).GetFloat();
+			fstvolume *= truecrouchfactor;
+			if (type == 1) 
+			{
+				double landtemp = frandom(0.5,0.667);
+				fstpitch *= landtemp; // Landing
+				fstvolume *= (1.0 / landtemp);
+			}
+			else
+			{
+				if (!isrunning) 
+				{
+					fstvolume *= frandom(0.50,0.667);
+					fstpitch *= frandom(1.05,1.125);
+				}
+			}
+
+			double WeaponFactor = 1.0;
+			double WeaponFactorEx = 0.0;
+			if (PlayerWeapon is "EvilWarriorShield")
+			{
+				int HellWarriorShieldLevel = plr.CountInv("HellWarriorShieldLevel");
+				if (berserked)
+				{
+					if (plr.CountInv("HWShieldBlockHold")) WeaponFactorEx -= (0.15 * (1.0 + (HellWarriorShieldLevel * 0.009375)));
+																						else WeaponFactorEx -= (0.075 * (1.0 + (HellWarriorShieldLevel * 0.0046875)));
+				}
+				else
+				{
+					if (plr.CountInv("HWShieldBlockHold")) WeaponFactorEx -= (0.30 * (1.0 + (HellWarriorShieldLevel * 0.01875)));
+																						else WeaponFactorEx -= (0.15 * (1.0 + (HellWarriorShieldLevel * 0.009375)));
+				}
+			}
+			if (PlayerWeapon is "NNSigil") 
+			{
+			}
+			WeaponFactorEx *= 0.25;
+			WeaponFactorEx += 1.0;
+			WeaponFactorEx *= frandom(0.875,1.125);
+			double oldfstpitch = fstpitch;
+			fstpitch *= WeaponFactorEx;
+			if (dvdsdebug_footsteps) Console.Printf("\c[gold](EVP_Footsteps)\c- fstpitch: %.8f (oldfstpitch: %.8f), [WeaponFactorEx: %.8f]", fstpitch, oldfstpitch, WeaponFactorEx);
+			if (DVDSPawn)
+			{
+				oldfstpitch = fstpitch;
+				double ArmorEnc; // = (MiscItem.ArmorML * (0.0625 * random(randompick(11,12,12,12,12),randompick(14,14,14,14,15))));
+				//if (dvdsdebug_footsteps) Console.Printf("\c[gold](EVP_Footsteps)\c- ArmorEnc: %.8f (%.8f)", ArmorEnc, MiscItem.ArmorML, WeaponFactorEx);
+				double lvlfact = 0.02;
+				if (skill <= 0) lvlfact = 0.04;
+				if (skill == 1) lvlfact = 0.035;
+				if (skill == 2) lvlfact = 0.03;
+				if (skill == 3) lvlfact = 0.025;
+				if (skill >= 4) lvlfact = 0.02;
+				if (plr.waterlevel >= 3) 
+				{
+					ArmorEnc *= 1.25;
+					lvlfact *= 0.75;
+				}
+				if (ArmorEnc > 0.0) ArmorEnc *= (1.0 - (ActualLevel * lvlfact));
+				if (ArmorEnc < 0.0) ArmorEnc = 0.0;
+				double ArmorFactor = (1.0 - ArmorEnc);
+				if (ArmorFactor > 1.00) ArmorFactor = 1.00;
+				fstpitch *= ArmorFactor;
+				
+				if (dvdsdebug_footsteps) Console.Printf("\c[gold](EVP_Footsteps)\c- fstpitch: %.8f (oldfstpitch: %.8f), [ArmorFactor: %.8f]", fstpitch, oldfstpitch, ArmorFactor);
+			}
+			
+			int idx = fs_textures.Find(int(plr.floorpic));
+			string texname = texman.GetName(plr.floorpic);
+			
+			string sndname = idx != fs_textures.Size() ? fs_sndinfo[idx] : defaultSndinfo;
+			string sndnamed = "step/squeaky1";
+			bool nulltext;
+			if (texname == "" ||
+					texname == "-NOFLAT-") 
+			{
+				sndnamed = "null";
+				nulltext = true;
+			}
+			if (texname == "DOPE2 R")
+			{
+				sndnamed = "step/hard";
+				nulltext = true;
+			}
+			if (texname == "GRNROCK")
+			{
+				sndnamed = "step/rock";
+				//if (Wads.CheckNumForName("DS-HELLG", Wads.ns_global, -1, true) != -1) sndnamed = "step/wood";
+				//if (Wads.CheckNumForName("DS-AUGZEN", Wads.ns_global, -1, true) != -1) sndnamed = "step/grass";
+				nulltext = true;
+			}
+			if (texname == "STEP1" ||
+					texname == "STEP2" ||
+					texname == "STEP3" ||
+					texname == "A-DAN1" ||
+					texname == "A-DAN2" ||
+					texname == "A-DAN3" ||
+					texname == "A-DAN4" ||
+					texname == "A-DAN5") 
+			{
+				sndnamed = "step/metal/a";
+				nulltext = true;
+			}
+			if (dvdsdebug_footsteps || dvdsdebug_footsteps2) sndname = idx != fs_textures.Size() ? fs_sndinfo[idx] : sndnamed;
+			int dupe1chance = 6;
+			int dupe2chance = 4;
+			int dupe3chance = 0;
+			int dupe4chance = 0;
+			if (type == 1)
+			{
+				dupe1chance *= 1.667;
+				dupe2chance *= 1.500;
+				dupe3chance = int(5 * 1.334);
+				dupe4chance = int(5 * 1.25);
+			}
+			plr.A_StartSound(sndname,
+											 (801 + sndchanshift), CHANF_DEFAULT,
+											 (fstvolume * 1.0),
+											 ATTN_NORM,
+											 fstpitch);
+			if (random(1,10) <= dupe1chance)
+			{
+				plr.A_StartSound(sndname,
+												(802 + sndchanshift), CHANF_DEFAULT,
+												type != 1 ? (fstvolume * 0.8) : (fstvolume * 0.9),
+												ATTN_NORM,
+												fstpitch);
+				if (random(1,10) <= dupe2chance)
+				{
+					plr.A_StartSound(sndname,
+													(803 + sndchanshift), CHANF_DEFAULT,
+													type != 1 ? (fstvolume * 0.6) : (fstvolume * 0.8),
+													ATTN_NORM,
+													fstpitch);
+					if (random(1,10) <= dupe3chance)
+					{
+						plr.A_StartSound(sndname,
+														(804 + sndchanshift), CHANF_DEFAULT,
+														type != 1 ? (fstvolume * 0.6) : (fstvolume * 0.8),
+														(fstvolume * 0.6),
+														ATTN_NORM,
+														fstpitch);
+						if (random(1,10) <= dupe4chance)
+						{
+							plr.A_StartSound(sndname,
+															(805 + sndchanshift), CHANF_DEFAULT,
+															type != 1 ? (fstvolume * 0.6) : (fstvolume * 0.8),
+															ATTN_NORM,
+															fstpitch);
+						}
+					}
+				}
+			}
+			
+			bool defaultsound;
+			if (idx != fs_textures.Size()) defaultsound = false; 
+																else defaultsound = true;
+			if (dvdsdebug_footsteps) 
+			{
+				if (defaultsound && !nulltext) Console.Printf("\c[red]FootStepSound (type: %d): %s\c-, \c[orange]texname: \c[red]%s\c-, \c[red]floorpic: \c[gold]%d\c-, \c[red]truecrouchfactor: \c[orange]%.8f\c-, \c[red]fstpitch: \c[olive]%.8f\c-, \c[red]fstvolume: \c[olive]%.8f\c- [%d]", type, idx != fs_textures.Size() ? fs_sndinfo[idx] : defaultSndinfo, texname, plr.floorpic, truecrouchfactor, fstpitch, fstvolume, gametic);
+										 else Console.Printf("\c[green]FootStepSound (type: %d): %s\c-, \c[orange]texname: \c[green]%s\c-, \c[green]floorpic: \c[gold]%d\c-, \c[green]truecrouchfactor: \c[orange]%.8f\c-, \c[green]fstpitch: \c[olive]%.8f\c-, \c[green]fstvolume: \c[olive]%.8f\c- [%d]", type, idx != fs_textures.Size() ? fs_sndinfo[idx] : defaultSndinfo, texname, plr.floorpic, truecrouchfactor, fstpitch, fstvolume, gametic);
+			}
+			else
+			if (dvdsdebug_footsteps2)
+			{
+				if (defaultsound && !nulltext) Console.Printf("\c[red]FootStepSound (type: %d): %s\c-, \c[orange]texname: \c[red]%s\c-, \c[red]floorpic: \c[gold]%d\c-, \c[red]truecrouchfactor: \c[orange]%.8f\c-, \c[red]fstpitch: \c[olive]%.8f\c-, \c[red]fstvolume: \c[olive]%.8f\c- [%d]", type, idx != fs_textures.Size() ? fs_sndinfo[idx] : defaultSndinfo, texname, plr.floorpic, truecrouchfactor, fstpitch, fstvolume, gametic);
+			}
+		}
+	}
+	
+	override void Tick()
+	{
+		tickCounter -= 1;
+		if (tickCounter > 0)
+		{
+			Super.Tick();
+			return;
+		}
+
+		double speed2d = (plr.vel.x * plr.vel.x) + (plr.vel.y * plr.vel.y);
+		bool isrunning = false;
+		bool ismanualmove = false;
+		if (plr.player.cmd.buttons & BT_MOVELEFT ||
+				plr.player.cmd.buttons & BT_MOVERIGHT ||
+				plr.player.cmd.buttons & BT_FORWARD ||
+				plr.player.cmd.buttons & BT_BACK) ismanualmove = true;
+		if (cl_run) 
+		{
+			if (plr.player.cmd.buttons & BT_SPEED) isrunning = false; 
+																				else isrunning = true; 
+		}
+		else
+		{
+			if (plr.player.cmd.buttons & BT_SPEED) isrunning = true; 
+																				else isrunning = false; 
+		}
+		if (dvdsdebug_footsteps) Console.Printf("isrunning: %d, cl_run: %d, buttons: %d", isrunning, cl_run, plr.player.cmd.buttons);
+
+		/* Only play footsteps when on the ground and moving fast enough.
+			 The original speed threshold was ridiculously low for vanilla
+			 movement. This new scheme has ample margin for AutoWalking,
+			 my slowest movement warranting footsteps, plus the granularity
+			 for several footstep intervals when moving faster.
+		 */
+		double basespd = 19.2;
+		if (isrunning) basespd = 24.0;
+		if (dvdsdebug_footsteps) Console.Printf("basespd: %.8f", basespd);
+		if (speed2d >= basespd && 
+				(plr.waterlevel <= 1 && plr.WaterDepth <= (plr.height * 0.1667)) &&
+				(plr.pos.z - plr.floorz) <= 0 &&
+				//!plr.CountInv("DashTics") &&
+				ismanualmove &&
+				(plr.GetClassName() == "FloraBriscoletti" ||
+				plr.GetClassName() == "IlluciaHendershot" ||
+				plr.GetClassName() == "DeggarisMontegger"))
+		{
+			HandleFootsteps(0,isrunning); // Walking
+			
+			double baseinc = 32.0;
+			if (isrunning) baseinc = 40;
+			if (dvdsdebug_footsteps) Console.Printf("baseinc: %.8f", baseinc);
+			if (speed2d < (baseinc * 1)) tickCounter = 12;
+			else if (speed2d < (baseinc * 2.4)) tickCounter = 11;
+			else if (speed2d < (baseinc * 3.9)) tickCounter = 10;
+			else if (speed2d < (baseinc * 5.5)) tickCounter = 9;
+			else if (speed2d < (baseinc * 7.2)) tickCounter = 8;
+			else tickCounter = 7;
+		}
+		else 
+		{
+			// poll for movement
+			tickCounter = 3;
+			/*
+			if (plr.CountInv("DashTics")) tickCounter = random(6,9);
+															 else tickCounter = 3;
+			*/
+		}
+		if (!isrunning) tickCounter *= 1.75;
+		if (dvds_footstepcounttype) tickCounter = plr.CountInv("IsStepping");
+		if (dvdsdebug_footsteps) Console.Printf("\c[sapphire]speed2d: %.8f\c-, \c[gold]tickCounter: %d\c- [%d]", speed2d, tickCounter, gametic);
+		
+		Super.Tick();
+	}
+
+	Default
+	{
+		+NOINTERACTION
+	}
+}
