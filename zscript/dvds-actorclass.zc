@@ -5378,6 +5378,99 @@ class DebugTimeFreezer : AetheriusTimeFreezerMenu
 {
 }
 
+// Keeps Sounds/Music active during time Freeze powerups
+class TimeFreezerKeepSound : PowerTimeFreezer
+{
+	override void InitEffect()
+	{
+		Super.InitEffect();
+		S_ResumeSound(false);
+	}
+	
+	override void DoEffect()
+	{
+		Super.DoEffect();
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		S_ResumeSound(false);
+		EffectTics = 350;
+	}
+}
+
+class DashTimeFreezer : TimeFreezerKeepSound
+{
+	default
+	{
+		Inventory.Icon "";
+		Powerup.Color "8f 8f 8f", 0.0;
+		+INVENTORY.PERSISTENTPOWER;
+		+INVENTORY.HUBPOWER;
+		+INVENTORY.ADDITIVETIME;
+	}
+
+	override bool HandlePickup (Inventory item)
+	{
+		if (item.GetClass() == GetClass())
+		{ // Setting EffectTics to 0 will force Powerup's HandlePickup()
+		  // method to reset the tic count so you get the red flash again.
+			EffectTics = 0;
+		}
+		return Super.HandlePickup (item);
+	}
+
+	int EffectTics2;
+	int Dire;
+
+	override void Tick ()
+	{
+		PowerTimeFreezer.Tick();
+		S_ResumeSound(false);
+		int Point1 = 128; // 32
+		int Point2 = Point1 + 256; // 96
+		int increment = (randompick(20,22,24,26,28) / 2);
+		if (Dire == 0)
+		{
+			if (EffectTics <= Point1) { EffectTics = Point1; Dire = 1; }
+			else if (EffectTics >= Point2) { EffectTics = Point2; Dire = 2; }
+			else { Dire = random(1,2); }
+		}
+		//Console.Printf("EffectTics: %d, Dire: %d, increment: %d", EffectTics, Dire, increment);
+
+		if (Dire == 1)
+		{
+			EffectTics += increment;
+			if (EffectTics >= Point2) { EffectTics = Point2; Dire = 2; }
+		}
+		else
+		if (Dire == 2)
+		{
+			EffectTics -= increment;
+			if (EffectTics <= Point1) { EffectTics = Point1; Dire = 1; }
+		}
+
+		// Powerups cannot exist outside an inventory
+		if (Owner == NULL) Destroy();
+		if (EffectTics <= 0) Destroy();
+	}
+
+	override color GetBlend()
+	{
+		// slowly fade the tint out
+		int cnt = 128 - (EffectTics>>3);
+
+		//Console.Printf("cnt: %d / 256, BlendColor.a: %d", cnt, BlendColor.a*cnt/256);
+		if (cnt > 0)
+		{
+			return Color(BlendColor.a*cnt/256,
+				BlendColor.r, BlendColor.g, BlendColor.b);
+		}
+		return 0;
+	}
+}
+
 class ShieldSpawnerBase : AetheriusBaseZSC
 {
 	default

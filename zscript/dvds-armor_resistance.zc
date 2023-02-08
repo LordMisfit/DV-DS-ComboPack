@@ -14096,6 +14096,7 @@ class PlayerStatItem : Inventory
 		return Speed; 
 	}
 }
+
 class PlayerStatItem2 : Inventory 
 {
 	const SKILL_VERY_EASY = 0;
@@ -15523,5 +15524,860 @@ class FalconKnifeEarrings : BaseFloraArmorItemZSC
 		Spawn:
 			FAMR K 1 bright NoDelay;
 			loop;
+	}
+}
+
+/////////////////////////////////////////////////////////////DASH
+// Dash and double jump code by TheCamaleonMaligno ( https://www.youtube.com/watch?v=mTfGxY_Afhs )
+// This code is heavily modified from the "Hell Crusher" variation of it :V
+class PlayerDashJump : Inventory
+{
+	const SKILL_VERY_EASY = 0;
+	const SKILL_EASY = 1;
+	const SKILL_NORMAL = 2;
+	const SKILL_HARD = 3;
+	const SKILL_VERY_HARD = 4;
+	const SKILL_EXTREME = 5;
+	const SKILL_HORRIBLE = 6;
+	const SKILL_IMPOSSIBLE = 7;
+	const SKILL_OMEGA = 8;
+	
+	int itemtimer;
+	string nm, nn, no, np, nq, nr;
+	
+	int TrueGameSkill;
+	actor weapon;
+	int HellWarriorShieldLevel;
+	Double DashDir, DashSpeed, DashVSpeed, DashPitch;
+	Int DashTics, DashCharge, AirTics, DashCost, DashCooldown, MaxDashCooldown;
+	Bool DJump, Waiting;
+	string dashgruntsound;
+	int dashgruntchance;
+	int dashtype;
+	int airdashtype;
+	Int DashMaxCharge, MaxDashes, MaxDashTics;
+	bool slownthres1, slownthres2, slownthres3;
+	bool berserked;
+	int PlayerLevel;
+	int TruePlayerLevel;
+	int BaseDashChargeMax;
+	int ExtraDashCharge;
+	
+	Default
+	{
+		+Inventory.PERSISTENTPOWER
+		+Inventory.UNDROPPABLE
+		+Inventory.UNTOSSABLE
+		+Inventory.UNCLEARABLE;
+	}
+	
+	int A_CheckActualLevel(int type = 0)
+	{
+		actor player = players[0].mo;
+		let MiscItem = PlayerStatItem(Player.FindInventory("PlayerStatItem"));
+
+		int Level = 0;
+		if (MiscItem)
+		{
+			if (dvds_expgains) Level = MiscItem.PlayerLevel;
+		}
+		if (dvdsdebug_playerlevelchecks) Console.Printf("\c[green](%s) \c[gold](A_CheckActualLevel - PlayerDashJump)\c- PlayerLevel: %d [%d]", GetClassName(), level, gametic);
+		return Level;
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		if (!Owner || Owner && (!Owner.Player || Owner.Health < 1)) Return;
+
+		let globalvars = DSGlobalVariables.Get();
+		let MiscItem = PlayerStatItem(Owner.FindInventory("PlayerStatItem"));
+		weapon = owner.player.ReadyWeapon;
+		if (Owner.CountInv("PowerStrength") || Owner.CountInv("AetheriusPowerStrength")) berserked = true;
+		else berserked = false;
+		
+		TrueGameSkill = dvds_gendifficultycurve + Skill;
+		HellWarriorShieldLevel = CallACS("MiscVarCheckDECORATE",300); //owner.CountInv("HellWarriorShieldLevel");
+		
+		PlayerInfo PlayDash = Owner.Player;
+		Int BTInput = PlayDash.cmd.buttons;
+		dashgruntchance = randompick(66,66,67);
+		MaxDashes = 1;
+		double dashsndvol = 0.67;
+		double dashgruntsndvol = 1.0;
+		PlayerLevel = owner.CountInv("PlayerLevel");
+		if (dvds_expgains) TruePlayerLevel = PlayerLevel; else TruePlayerLevel = 0;
+		int ActualLevel;
+		int TruePlayerSTR;
+		int TruePlayerDEF;
+		int TruePlayerSOR;
+		int TruePlayerTHE;
+		int TruePlayerAGL;
+		if (MiscItem)
+		{
+			ActualLevel = MiscItem.PlayerLevel;
+			TruePlayerSTR = MiscItem.PlayerSTR;
+			TruePlayerDEF = MiscItem.PlayerDEF;
+			TruePlayerSOR = MiscItem.PlayerSOR;
+			TruePlayerTHE = MiscItem.PlayerTHE;
+			TruePlayerAGL = MiscItem.PlayerAGL;
+		}
+		MaxDashTics = randompick(6,6,7,7,7) + (TruePlayerLevel / 20);
+		if (berserked) MaxDashTics *= (1.34 + (TruePlayerLevel * 0.004));
+
+		int DashLvlTier1Thresh = 25;
+		int DashLvlTier2Thresh = 50;
+		int DashLvlTier3Thresh = 75;
+		int DashLvlTier4Thresh = 100;
+
+		double baseAddDashLevel = 1.25;
+		int AddDashLevel = (TruePlayerLevel * baseAddDashLevel);
+		double ADashFactor = 1.5;
+		if (TrueGameSkill <= SKILL_VERY_EASY) baseAddDashLevel = 1.625;
+		if (TrueGameSkill == SKILL_EASY) baseAddDashLevel = 1.5;
+		if (TrueGameSkill == SKILL_NORMAL) baseAddDashLevel = 1.375;
+		if (TrueGameSkill == SKILL_HARD) baseAddDashLevel = 1.25;
+		if (TrueGameSkill == SKILL_VERY_HARD) baseAddDashLevel = 1.125;
+		if (TrueGameSkill == SKILL_EXTREME) baseAddDashLevel = 1.0;
+		if (TrueGameSkill == SKILL_HORRIBLE) baseAddDashLevel = 0.9375;
+		if (TrueGameSkill == SKILL_IMPOSSIBLE) baseAddDashLevel = 0.875;
+		if (TrueGameSkill >= SKILL_OMEGA) baseAddDashLevel = 0.8125;
+
+		AddDashLevel = (TruePlayerLevel * (baseAddDashLevel * ADashFactor));
+		if (TruePlayerLevel >= DashLvlTier1Thresh) AddDashLevel += ((TruePlayerLevel - DashLvlTier1Thresh) * ((baseAddDashLevel * 0.25) * ADashFactor));
+		if (TruePlayerLevel >= DashLvlTier2Thresh) AddDashLevel += ((TruePlayerLevel - DashLvlTier2Thresh) * ((baseAddDashLevel * 0.0625) * ADashFactor));
+		if (TruePlayerLevel >= DashLvlTier3Thresh) AddDashLevel += ((TruePlayerLevel - DashLvlTier3Thresh) * ((baseAddDashLevel * 0.015625) * ADashFactor));
+		if (TruePlayerLevel >= DashLvlTier4Thresh) AddDashLevel += ((TruePlayerLevel - DashLvlTier4Thresh) * ((baseAddDashLevel * 0.00390625) * ADashFactor));
+		
+/*
+		if (itemtimer <= 2)
+		{
+			if (globalvars) 
+			{
+				if (dvds_deathexitaffectsstats) 
+				{
+					BaseDashChargeMax = random(27,30);
+					if (skill == SKILL_VERY_EASY) BaseDashChargeMax = random(32,35);
+					if (skill == SKILL_EASY) BaseDashChargeMax = random(30,32);
+					if (skill == SKILL_NORMAL) BaseDashChargeMax = random(27,30);
+					if (skill == SKILL_HARD) BaseDashChargeMax = random(25,27);
+					if (skill >= SKILL_VERY_HARD) BaseDashChargeMax = random(22,25);
+				}
+				else
+				{
+					if (globalvars.ClassCheck <= 2)
+					{
+						BaseDashChargeMax = random(27,30);
+						if (skill == SKILL_VERY_EASY) BaseDashChargeMax = random(32,35);
+						if (skill == SKILL_EASY) BaseDashChargeMax = random(30,32);
+						if (skill == SKILL_NORMAL) BaseDashChargeMax = random(27,30);
+						if (skill == SKILL_HARD) BaseDashChargeMax = random(25,27);
+						if (skill >= SKILL_VERY_HARD) BaseDashChargeMax = random(22,25);
+					}
+					else
+					{
+						BaseDashChargeMax = globalvars.BaseDashChargeMax;
+					}
+				}
+			}
+		}
+		else
+		{
+			if (BaseDashChargeMax == 0) BaseDashChargeMax = globalvars.BaseDashChargeMax;
+		}
+*/
+
+		double ExDashCharge2 = ExtraDashCharge;
+		double AddDashLevel2 = AddDashLevel;
+		double PerkFactor2 = 0;
+		if (!dvds_expgains) 
+		{
+			if (TrueGameSkill <= SKILL_VERY_EASY) ExDashCharge2 *= 4.0;
+			if (TrueGameSkill == SKILL_EASY) ExDashCharge2 *= 3.5;
+			if (TrueGameSkill == SKILL_NORMAL) ExDashCharge2 *= 3.0;
+			if (TrueGameSkill == SKILL_HARD) ExDashCharge2 *= 2.5;
+			if (TrueGameSkill == SKILL_VERY_HARD) ExDashCharge2 *= 2.0;
+			if (TrueGameSkill == SKILL_EXTREME) ExDashCharge2 *= 1.75;
+			if (TrueGameSkill == SKILL_HORRIBLE) ExDashCharge2 *= 1.50;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) ExDashCharge2 *= 1.25;
+			if (TrueGameSkill >= SKILL_OMEGA) ExDashCharge2 *= 1.0;
+			AddDashLevel2 = 0;
+			if (MiscItem)
+			{
+				//AddDashLevel2 += (MiscItem.totalcompleted * 1.0);
+				//AddDashLevel2 += (MiscItem.totalallkills * 0.3334);
+				//AddDashLevel2 += (MiscItem.totalallitems * 0.3334);
+				//AddDashLevel2 += (MiscItem.totalallsecrets * 0.3334);
+				if (berserked) AddDashLevel2 *= 1.125;
+			}
+		}
+		DashMaxCharge = BaseDashChargeMax + AddDashLevel2 + ExDashCharge2 + PerkFactor2;
+		if (dvdsdebug_showdashinformation) Console.Printf("DashMaxCharge: %d (BaseDashChargeMax: %d, AddDashLevel2: %d (%d), ExtraDashCharge2: %d (%d), PerkFactor2: %d", DashMaxCharge, BaseDashChargeMax, AddDashLevel2, AddDashLevel, ExDashCharge2, ExtraDashCharge, PerkFactor2);
+
+		if (berserked) DashMaxCharge *= 1.125;
+		if (itemtimer == 0) DashCharge = DashMaxCharge;
+		double DashSpdMul = 1.00;
+		DashSpeed = (25 + (ActualLevel * 0.125));
+		if (Owner.waterlevel == 1) DashSpdMul = 0.9375;
+		if (Owner.waterlevel == 2) DashSpdMul = 0.875;
+		if (Owner.waterlevel >= 3) DashSpdMul = 0.75;
+		If (weapon is "EvilWarriorShield")
+		{
+			double ShieldDashMul;
+			if (Owner.CountInv("HWShieldBlockHold")) ShieldDashMul = (0.60 * (1.0 - (HellWarriorShieldLevel * 0.025)));
+																					else ShieldDashMul = (0.80 * (1.0 - (HellWarriorShieldLevel * 0.0125)));
+			double ShieldDashMul2 = (1.0 - ShieldDashMul);
+			if (MiscItem) ShieldDashMul += (ShieldDashMul2 * (ActualLevel * 0.01));
+			if (ShieldDashMul > (1.0 - (ShieldDashMul2 * 0.75))) ShieldDashMul = (1.0 - (ShieldDashMul2 * 0.75));
+			if (dvdsdebug_showdashinformation) Console.Printf("ShieldDashMul: %.8f, ShieldDashMul2: %.8f", ShieldDashMul, ShieldDashMul2);
+			DashSpdMul *= ShieldDashMul;
+		}
+/*
+		if (weapon is "CrazyBallDD")
+		{
+		}
+		if (weapon is "NNSigil") 
+		{
+		}
+		nm = "ImpalerXBow"; 
+		if (weapon is nm)
+		{
+			double temp = (-0.09375 + (TruePlayerLevel * 0.00375));
+			if (temp > 0.09375) temp = 0.09375; // Mitigated @ Level 25, INVERSED @ Level 50+
+			DashSpdMul += temp;
+		}
+		nm = "DualImpalerXBow"; 
+		if (weapon is nm)
+		{
+			double temp = (-0.1875 + (TruePlayerLevel * 0.0075));
+			if (temp > 0.1875) temp = 0.1875; // Mitigated @ Level 25, INVERSED @ Level 50+
+			DashSpdMul += temp;
+		}
+		nm = "ScepterOfSouls"; if (weapon is nm) DashSpdMul += 0.0625;
+		nm = "DualScepterOfSouls"; if (weapon is nm) DashSpdMul += 0.125;
+		
+		nm = "PopcornGunNew"; if (weapon is nm) DashSpdMul -= 0.0625;
+		nm = "GoreBalloonNew"; if (weapon is nm) DashSpdMul += 0.125;
+		nm = "ClownGrenadeNew"; if (weapon is nm) DashSpdMul += 0.0625;
+		nm = "GutFlingerNew"; if (weapon is nm) DashSpdMul -= 0.03125;
+		nm = "GasRocketLauncherNew"; if (weapon is nm) DashSpdMul -= 0.125;
+*/
+		DashSpeed *= DashSpdMul;
+		if (berserked) DashSpeed *= 1.125;
+		if (dvdsdebug_showdashinformation) Console.Printf("DashSpeed: %.8f", DashSpeed);
+		
+		DashCost = 35;
+		MaxDashCooldown = randompick(10,10,11);
+		if (skill <= 0) MaxDashCooldown -= randompick(2,2,3);
+		if (skill == 1) MaxDashCooldown -= randompick(1,1,2);
+		if (skill == 2) MaxDashCooldown += randompick(-1,0,1);
+		if (skill == 3) MaxDashCooldown += randompick(1,1,2);
+		if (skill >= 4) MaxDashCooldown += randompick(2,2,3);
+		MaxDashCooldown *= (1.0 - (ActualLevel * 0.00625));
+		
+/*
+		if (owner.CountInv("PowerHaste"))
+		{
+			DashCost *= 0.75;
+			MaxDashCooldown *= 0.375;
+		}
+		if (owner.CountInv("PowerSlow"))
+		{
+			DashCost *= 1.3334;
+			MaxDashCooldown *= 1.6667;
+		}
+*/
+
+		if (owner.CountInv("NormalHealth")) 
+		{
+			DashCost *= 1.0;
+			MaxDashCooldown *= 1.0;
+		}
+		if (owner.CountInv("DecentHealth")) 
+		{
+			DashCost *= 1.125;
+			MaxDashCooldown *= 1.1875;
+		}
+		if (owner.CountInv("LowHealth")) 
+		{
+			DashCost *= 1.25;
+			MaxDashCooldown *= 1.375;
+		}
+		if (owner.CountInv("CriticalHealth"))
+		{
+			DashCost *= 1.5;
+			MaxDashCooldown *= 1.75;
+		}
+		
+/*
+		if (weapon is "HandToHand")
+		{
+			if (dvds_expgains)
+			{
+				if (berserked) 
+				{
+					DashCost -= 4;
+					MaxDashCooldown -= randompick(1,1,2);
+				}
+				else 
+				{
+					DashCost -= 3;
+					MaxDashCooldown -= 1;
+				}
+			}
+			else
+			{
+				if (berserked) 
+				{
+					DashCost -= 7;
+					MaxDashCooldown -= randompick(2,2,3);
+				}
+				else 
+				{
+					DashCost -= 5;
+					MaxDashCooldown -= randompick(1,2,2);
+				}
+			}
+		}
+*/
+		if (weapon is "EvilWarriorShield")
+		{
+			if (!berserked)
+			{
+				if (Owner.CountInv("HWShieldBlockHold")) 
+				{
+					DashCost *= (1.40 * (1.0 + (HellWarriorShieldLevel * 0.025)));
+					MaxDashCooldown *= (1.133334 * (1.0 + (HellWarriorShieldLevel * 0.0083334)));
+				}
+				else 
+				{
+					DashCost *= (1.20 * (1.0 + (HellWarriorShieldLevel * 0.0125)));
+					MaxDashCooldown *= (1.066667 * (1.0 + (HellWarriorShieldLevel * 0.00416667)));
+				}
+			}
+			else
+			{
+				if (Owner.CountInv("HWShieldBlockHold")) 
+				{
+					DashCost *= (1.20 * (1.0 + (HellWarriorShieldLevel * 0.0125)));
+					MaxDashCooldown *= (1.066667 * (1.0 + (HellWarriorShieldLevel * 0.00416667)));
+				}
+				else 
+				{
+					DashCost *= (1.10 * (1.0 + (HellWarriorShieldLevel * 0.00625)));
+					MaxDashCooldown *= (1.033334 * (1.0 + (HellWarriorShieldLevel * 0.00208334)));
+				}
+			}
+		}
+		if (weapon is "NNSigil") 
+		{
+		}
+
+		if (!dvds_expgains)
+		{
+			int ChargeDiff = DashCost - DashMaxCharge;
+			if (ChargeDiff > 0)
+			{
+				if (skill <= 0) DashMaxCharge += (ChargeDiff * 1.5);
+				if (skill == 1) DashMaxCharge += (ChargeDiff * 1.125);
+				if (skill == 2) DashMaxCharge += ChargeDiff;
+				if (skill == 3) DashMaxCharge += (ChargeDiff * 0.875);
+				if (skill >= 4) DashMaxCharge += (ChargeDiff * 0.5);
+			}
+		}
+		if (berserked) MaxDashCooldown *= 0.25;
+		double ssa = 1.0;
+		// Future Placement for Sauron/Armor Perm Items
+		DashCost *= ssa;
+		ssa = 1.0;
+		// Future Placement for Sauron/Armor Perm Items
+		MaxDashCooldown *= ssa;
+		if (skill <= 0 && DashCost <= 1) DashCost = 1;
+		if (skill == 1 && DashCost <= 2) DashCost = 2;
+		if (skill == 2 && DashCost <= 3) DashCost = 3;
+		if (skill == 3 && DashCost <= 4) DashCost = 4;
+		if (skill >= 4 && DashCost <= 5) DashCost = 5;
+		if (skill <= 0 && MaxDashCooldown <= 1) MaxDashCooldown = 1;
+		if (skill == 1 && MaxDashCooldown <= 1) MaxDashCooldown = 1;
+		if (skill == 2 && MaxDashCooldown <= 2) MaxDashCooldown = 2;
+		if (skill == 3 && MaxDashCooldown <= 2) MaxDashCooldown = 2;
+		if (skill >= 4 && MaxDashCooldown <= 3) MaxDashCooldown = 3;
+		
+		if (dvdsdebug_showdashinformation) Console.Printf("DashCost [start]: %d, DashCooldown: %d", DashCost, MaxDashCooldown);
+
+		if (dvdsdebug_dashmeter) Console.Printf("DashMaxCharge: %d (%d, %d, %d), DashCost: %d", DashMaxCharge, BaseDashChargeMax, AddDashLevel, ExtraDashCharge, DashCost);
+		
+		airdashtype = 0;
+		// 0 = No loss of altitude
+		// 1 = Start with a short "hop" but fall to the ground afterwards.
+		
+		int pushingdirection = 0;
+		If (BTInput & BT_FORWARD) pushingdirection += 1;
+		If (BTInput & BT_BACK) pushingdirection += 2;
+		If (BTInput & BT_MOVELEFT) pushingdirection += 4;
+		If (BTInput & BT_MOVERIGHT) pushingdirection += 8;
+		
+/*
+		if (!Waiting &&
+				!owner.CountInv("NoDashing") &&
+				(BTInput & BT_USER3) && 
+				DashCharge >= DashCost && 
+				pushingdirection &&
+				!DashTics &&
+				DashCooldown == 0)
+		{
+			//Console.Printf("OnGround: %d", PlayDash.OnGround);
+			DashDir = 0;
+			If (BTInput & BT_FORWARD) DashDir = 0;
+			If (BTInput & BT_BACK) DashDir = 180;
+			If (BTInput & BT_MOVELEFT) DashDir = 90;
+			If (BTInput & BT_MOVERIGHT) DashDir = -90;
+			If ((BTInput & BT_FORWARD) && (BTInput & BT_MOVELEFT)) DashDir = 45;
+			If ((BTInput & BT_FORWARD) && (BTInput & BT_MOVERIGHT)) DashDir = -45;
+			If ((BTInput & BT_BACK) && (BTInput & BT_MOVELEFT)) DashDir = (180 - 45);
+			If ((BTInput & BT_BACK) && (BTInput & BT_MOVERIGHT)) DashDir = (180 + 45);
+			DashDir += Owner.Angle;
+			DashPitch = Owner.Pitch;
+			if (BTInput & BT_FORWARD) DashPitch *= 1.0;
+			else if (BTInput & BT_BACK) DashPitch *= -1.0;
+
+			DashCharge -= DashCost;
+			if (DashCharge <= 0) 
+			{
+				Waiting = True;
+				DashCharge = 0;
+			}
+			
+			// Dash "Speed"
+			
+			if (PlayDash.OnGround)
+			{
+				DashTics = MaxDashTics;
+				dashtype = 0;
+				Owner.A_StartSound("player/dash",CHAN_BODY,CHANF_OVERLAP,dashsndvol);
+			}
+			else
+			{
+				if (airdashtype != 1) DashSpeed *= 0.8;
+				DashVSpeed = (5 * (ActualLevel * 0.025));
+				if (berserked) DashVSpeed *= 1.04;
+				DashTics = MaxDashTics;
+				dashtype = 1; // Airdash
+				Owner.A_StartSound("player/airjump",CHAN_BODY,CHANF_OVERLAP,dashsndvol);
+			}
+			
+			if (owner.CountInv("HWShieldBlockHold")) 
+			{
+				Owner.A_StartSound("shielddash1", randompick(180,181), CHANF_OVERLAP, frandom(0.65,0.95), ATTN_NORM, frandom(0.667,1.333));
+			}
+			
+			if (random(1,100) <= dashgruntchance)
+			{
+				int dashgruntrand = 0;
+				if (Owner.GetClassName() == "FloraBriscoletti")
+				{
+					dashgruntsound = "FloraDash";
+				}
+				if (Owner.GetClassName() == "IlluciaHendershot")
+				{
+					dashgruntsound = "IlluciaDash";
+				}
+				if (Owner.GetClassName() == "DeggarisMontegger")
+				{
+					dashgruntsound = "DeggarisDash";
+				}
+				if (MiscItem && MiscItem.CanTalkUnderwater)
+				{
+					double maskpitch = 1.00;
+					if (Owner.waterlevel >= 3 && MiscItem.CanTalkUnderwater >= 2) maskpitch *= 1.259921885;
+					if (dashgruntrand > 0)
+					{
+						Owner.A_StopSound(CHAN_VOICE);
+						Owner.A_StartSound(dashgruntsound,CHAN_VOICE,CHANF_DEFAULT,(dashgruntsndvol * frandom(1.25,1.375)),ATTN_NORM,maskpitch);
+					}
+				}
+			}
+
+			bool CollisonSpawn = false;
+			if (CollisonSpawn)
+			{
+				Actor CollDash = Spawn("DashCollisionChecker", Owner.Pos);
+				CollDash.bSOLID = True;
+				CollDash.Master = Self;
+				CollDash.Target = Owner;
+				CollDash.A_SetSize(Owner.Radius, Owner.Height);
+				CollDash.bNOTIMEFREEZE = True;
+			}
+		}
+		
+		if (DashTics)
+		{
+			DashCooldown = -MaxDashCooldown;
+			owner.bFORCERADIUSDMG = false;
+			
+			//if (PlayDash.OnGround) { PlayDash.OnGround = False; Owner.AddZ(1); }
+			if (PlayDash.OnGround && DashTics % 2) 
+			{
+				Owner.A_SpawnItemEx("DashPuff",0,0,randompick(4,6,8),0.0,0.0,0.0,0,SXF_NOCHECKPOSITION); 
+			}
+			
+			if (!PlayDash.OnGround && 
+					(DashTics > (MaxDashTics - 2)) 
+					&& airdashtype == 1) 
+					{
+						Owner.Vel.Z += DashVSpeed;
+					}
+					else
+					{
+						Owner.Vel.Z = 0.0;
+					}
+
+			Owner.A_SetBlend("78447E",frandom(0.08,0.12),random(2,3));
+			Owner.A_SetInventory("PlayerDashing",1);
+			if (owner.CountInv("UsingSceptreAltFire")) Owner.A_SetInventory("PlayerSceptreDashing",1);
+			Owner.bSHOOTABLE = false;
+			Owner.bVISIBILITYPULSE = true;
+			Owner.bTHRUACTORS = true;
+			DashTics--;
+			
+			Owner.A_SetInventory("DashTimeFreezer",0);
+			
+			
+			if (dvds_flightswimpitchdash && (owner.waterlevel >= 3 || (owner.bNOGRAVITY || owner.bFLY))) 
+			{
+				if (dvdsdebug_showdashinformation) Console.Printf("DashSpeed: %.8f, DashDir: %.8f, DashPitch: %.8f", DashSpeed, DashDir, DashPitch);
+				Owner.Vel3DFromAngle(DashSpeed, DashDir, DashPitch);
+			}
+			else 
+			{
+				if (dvdsdebug_showdashinformation) Console.Printf("DashSpeed: %.8f, DashDir: %.8f", DashSpeed, DashDir);
+				Owner.VelFromAngle(DashSpeed, DashDir);
+			}
+			string dashtype;
+
+			double DashDmg;
+			double DashRad;
+			double DashFullRad;
+
+			if (berserked)
+			{
+				if (DashTics > (MaxDashTics * 0.75)) DashSpeed *= 1.025;
+				
+				if (DashTics % 2) 
+				{
+					owner.bFORCERADIUSDMG = true;
+					
+					// Dash with Sceptre Shield Alt-Fire
+					if (owner.CountInv("UsingSceptreAltFire"))
+					{
+						DashDmg = ((random(16,24) + random(30,40)) * random(2,5));
+						if (owner.waterlevel == 1) DashDmg *= 1.125;
+						if (owner.waterlevel == 2) DashDmg *= 1.25;
+						if (owner.waterlevel >= 3) DashDmg *= 1.375;
+						DashRad = (owner.radius * 5.0) + frandom(-7.5,7.5);
+						if (owner.waterlevel == 1) DashRad *= 1.25;
+						if (owner.waterlevel == 2) DashRad *= 1.5;
+						if (owner.waterlevel >= 3) DashRad *= 1.75;
+						dashtype = "DashingSP";
+						Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+					}
+					else // Dashing Without a Specific Weapon
+					{
+						DashDmg = (random(8,12) * random(1,3));
+						if (owner.waterlevel == 1) DashDmg *= 1.125;
+						if (owner.waterlevel == 2) DashDmg *= 1.25;
+						if (owner.waterlevel >= 3) DashDmg *= 1.375;
+						DashRad = (owner.radius * 2.25) + frandom(-1.5,1.5);
+						if (owner.waterlevel == 1) DashRad *= 1.25;
+						if (owner.waterlevel == 2) DashRad *= 1.5;
+						if (owner.waterlevel >= 3) DashRad *= 1.75;
+						dashtype = "Dashing";
+						Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+					}
+				}
+				
+				// Dash with Sceptre Shield Alt-Fire
+				if (owner.CountInv("UsingSceptreAltFire") && DashTics % 2 == 1)
+				{
+					if (random(1,16) <= 15)
+					{
+						owner.bFORCERADIUSDMG = true;
+						
+						DashDmg = ((random(16,24) + random(30,40)) * random(2,5));
+						if (owner.waterlevel == 1) DashDmg *= 1.125;
+						if (owner.waterlevel == 2) DashDmg *= 1.25;
+						if (owner.waterlevel >= 3) DashDmg *= 1.375;
+						DashRad = (owner.radius * 5.0) + frandom(-7.5,7.5);
+						if (owner.waterlevel == 1) DashRad *= 1.25;
+						if (owner.waterlevel == 2) DashRad *= 1.5;
+						if (owner.waterlevel >= 3) DashRad *= 1.75;
+						dashtype = "DashingSP";
+						Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+					}
+				}
+				// HW Shield [Berserked]
+				if (Owner.CountInv("HWShieldBlockHold"))
+				{
+					owner.bFORCERADIUSDMG = true;
+
+					DashDmg = ((random(4,10) + random(3,6)) * random(2,4));
+					DashDmg += ((TruePlayerAGL * 1.25) + (TruePlayerSTR * 0.3125) + (ActualLevel * 0.625));
+					DashDmg *= (0.5 + (MiscItem.HellWarriorShieldLevel * 0.125));
+					if (owner.waterlevel == 1) DashDmg *= 1.125;
+					if (owner.waterlevel == 2) DashDmg *= 1.25;
+					if (owner.waterlevel >= 3) DashDmg *= 1.375;
+					DashRad = (owner.radius * 4.5) + frandom(-6.0,6.0);
+					DashRad *= (0.75 + (MiscItem.HellWarriorShieldLevel * 0.0625));
+					if (owner.waterlevel == 1) DashRad *= 1.25;
+					if (owner.waterlevel == 2) DashRad *= 1.5;
+					if (owner.waterlevel >= 3) DashRad *= 1.75;
+					dashtype = "DashingSD";
+					Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+				}
+			}
+			else // Not Berserked
+			{
+				if (DashTics % 2) 
+				{
+					if (random(1,16) <= 15)
+					{
+						owner.bFORCERADIUSDMG = true;
+						// Dash with Sceptre Shield Alt-Fire
+						if (owner.CountInv("UsingSceptreAltFire"))
+						{
+							DashDmg = (random(30,40)) * random(2,5));
+							if (owner.waterlevel == 1) DashDmg *= 1.125;
+							if (owner.waterlevel == 2) DashDmg *= 1.25;
+							if (owner.waterlevel >= 3) DashDmg *= 1.375;
+							DashRad = (owner.radius * 5.0) + frandom(-3.334,3.334);
+							if (owner.waterlevel == 1) DashRad *= 1.25;
+							if (owner.waterlevel == 2) DashRad *= 1.5;
+							if (owner.waterlevel >= 3) DashRad *= 1.75;
+							dashtype = "DashingSP";
+							Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+						}
+					}
+				}
+				if (DashTics % 2 == 1) 
+				{
+					if (random(1,64) <= random(48,54))
+					{
+						owner.bFORCERADIUSDMG = true;
+						// Dash with Sceptre Shield Alt-Fire
+						if (owner.CountInv("UsingSceptreAltFire"))
+						{
+							DashDmg = (random(30,40)) * random(2,5));
+							if (owner.waterlevel == 1) DashDmg *= 1.125;
+							if (owner.waterlevel == 2) DashDmg *= 1.25;
+							if (owner.waterlevel >= 3) DashDmg *= 1.375;
+							DashRad = (owner.radius * 5.0) + frandom(-3.334,3.334);
+							if (owner.waterlevel == 1) DashRad *= 1.25;
+							if (owner.waterlevel == 2) DashRad *= 1.5;
+							if (owner.waterlevel >= 3) DashRad *= 1.75;
+							dashtype = "DashingSP";
+							Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+						}
+					}
+				}
+				
+				// HW Shield
+				if (Owner.CountInv("HWShieldBlockHold"))
+				{
+					owner.bFORCERADIUSDMG = true;
+
+					DashDmg = (random(3,6) * random(2,4));
+					DashDmg += ((TruePlayerAGL * 0.625) + (TruePlayerSTR * 0.15625) + (ActualLevel * 0.3125));
+					DashDmg *= (0.5 + (MiscItem.HellWarriorShieldLevel * 0.125));
+					if (owner.waterlevel == 1) DashDmg *= 1.125;
+					if (owner.waterlevel == 2) DashDmg *= 1.25;
+					if (owner.waterlevel >= 3) DashDmg *= 1.375;
+					DashRad = (owner.radius * 4.5) + frandom(-6.0,6.0);
+					DashRad *= (0.75 + (MiscItem.HellWarriorShieldLevel * 0.0625));
+					if (owner.waterlevel == 1) DashRad *= 1.25;
+					if (owner.waterlevel == 2) DashRad *= 1.5;
+					if (owner.waterlevel >= 3) DashRad *= 1.75;
+					dashtype = "DashingSD";
+					Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+				}
+			}
+			
+			
+			if (DashTics <= (MaxDashTics * 0.25))
+			{
+				if (!slownthres1)
+				{
+					slownthres1 = true;
+					DashSpeed *= 0.85;
+				}
+			}
+			else if (DashTics <= (MaxDashTics * 0.5)) 
+			{
+				if (!slownthres2)
+				{
+					slownthres2 = true;
+					DashSpeed *= 0.9;
+				}
+			}
+			else if (DashTics <= (MaxDashTics * 0.75))
+			{
+				if (!slownthres3)
+				{
+					slownthres3 = true;
+					DashSpeed *= 0.95;
+				}
+			}
+		}
+		else
+		{
+			if (DashCooldown < 0) DashCooldown = MaxDashCooldown;
+			else if (DashCooldown > 0) DashCooldown--;
+			Owner.A_SetInventory("DashTimeFreezer",0);
+			Owner.A_SetInventory("PlayerDashing",0);
+			Owner.A_SetInventory("PlayerBatDashing",0);
+			Owner.bSHOOTABLE = true;
+			Owner.bVISIBILITYPULSE = false;
+			Owner.bTHRUACTORS = false;
+			dashtype = -1;
+			slownthres1 = false;
+			slownthres2 = false;
+			slownthres3 = false;
+
+			owner.bFORCERADIUSDMG = false; 
+		}
+*/
+		
+		if (DashCharge < DashMaxCharge)
+		{
+			int basecharge = 0;
+			if (!DashTics)
+			{
+				if (dvdsdebug_showdashinformation) Console.Printf("(!DashTics)");
+				if (berserked)
+				{
+					if (level.time % 16 == 0)
+					{
+						basecharge += 1; 
+					}
+					if (level.time % 8 == 0)
+					{
+						basecharge += 1; 
+					}
+					if (level.time % 4 == 0)
+					{
+						basecharge += 2; 
+					}
+					else
+					{
+						basecharge += 1; 
+					}
+				}
+				else
+				{
+					if (level.time % 40 == 0) 
+					{
+						basecharge += 2; 
+					}
+					else
+					{
+						basecharge += 1; 
+					}
+				}
+				double basechargeint = 0.0025;
+				if (pushingdirection != 0) basechargeint *= 0.25;
+				basecharge *= (1.0 + (TruePlayerLevel * basechargeint) + (TruePlayerAGL * basechargeint));
+				if (dvdsdebug_showdashinformation) Console.Printf("basecharge [dash]: %d, basechargeint: %.8f", basecharge, basechargeint);
+				DashCharge += basecharge;
+				if (DashCharge > DashMaxCharge) DashCharge = DashMaxCharge;
+			}
+			
+			if (DashCharge >= DashMaxCharge)
+			{
+				Waiting = False;
+				//Owner.A_StartSound("Player/DashReady",69,CHANF_OVERLAP);
+			}
+			if (dvdsdebug_showdashinformation) Console.Printf("DashCharge: %d / %d", DashCharge, DashMaxCharge);
+		}
+		else
+		{
+			if (DashCharge > DashMaxCharge)
+			{
+				DashCharge = DashMaxCharge;
+				Waiting = False;
+				//Owner.A_StartSound("Player/DashReady",69,CHANF_OVERLAP);
+			}
+			if (dvdsdebug_showdashinformation) Console.Printf("DashCharge: %d / %d", DashCharge, DashMaxCharge);
+		}
+		if (dvdsdebug_showdashinformation) Console.Printf("DashCost [end]: %d", DashCost);
+		
+		int dashcharges = (DashCharge / DashCost);
+		int dashgauge;
+		if (DashMaxCharge) dashgauge = DashCharge * 100 / DashMaxCharge;
+		if (dashgauge > 100) dashgauge = 100;
+		owner.A_SetInventory("DashGauge",dashgauge);
+		owner.A_SetInventory("DashMaxCharge",DashMaxCharge);
+		owner.A_SetInventory("DashCharges",dashcharges);
+		owner.A_SetInventory("DashCharge",DashCharge);
+		owner.A_SetInventory("DashTics",DashTics);
+		owner.A_SetInventory("DashCost",DashCost);
+		owner.A_SetInventory("DashCooldown",DashCooldown);
+
+		if (Waiting) owner.A_SetInventory("DashReady",0);
+						else owner.A_SetInventory("DashReady",1);
+		
+		itemtimer++;
+		if (globalvars)
+		{
+			globalvars.BaseDashChargeMax = BaseDashChargeMax;
+		}
+	}
+}
+Class DashCollisionChecker : Actor
+{
+	PlayerDashJump je;
+	Override Void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		let sas = PlayerDashJump(Master);
+		je = sas;
+	}
+
+	Override bool CanCollideWith(Actor other, bool passive)
+	{
+		if (Other == target || Other.bMissile)
+		Return False;
+		if (Pos.Z > (Other.Pos.Z + Other.Height) || Other.Pos.Z > (Pos.Z + Height)) Return False;
+		if (Other.bSolid && Other.bShootable && Other.CanCollideWith(Self,0))
+		Tracer = Other;
+		Return False;
+	}
+
+	Override Void Tick()
+	{
+		Super.Tick();
+		if (!target || !je || je && !je.dashtics) { Destroy(); Return; }
+		SetOrigin((Target.Pos + (Target.Vel * 0.1)),0);
+		Vel = Target.Vel;
+		if (Tracer)
+		{
+			bThruActors = True;
+			/*
+			Let Cg = Weapon_Chaingun(Target.player.ReadyWeapon);
+			if (Cg && Cg.Tracer)
+			{
+				bForcePain = True;
+				Target.Vel *= 0;
+				Tracer.DamageMobj(Self, Target, 75, 'Normal', 0, Target.Angle);
+				Tracer.ApplyKickback(Target, Target, 300, Target.Angle, 'Normal', 0);
+				Tracer.A_TakeInventory("DashStun");
+				Tracer.A_GiveInventory("DashStun");
+				Target.A_StartSound("Weapons/DE/ChaingunShieldDash",9,CHANF_OVERLAP,0.5);
+				Target.A_QuakeEx(1,1,1,8,0,1,"",QF_SCALEDOWN);
+				Cg.DashImpact();
+				Cg.DashImpact();
+			}
+			*/
+			je.DashSpeed = 0;
+			Destroy();
+		}
 	}
 }
