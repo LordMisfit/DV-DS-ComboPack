@@ -186,6 +186,7 @@ class PlayerStatItem : Inventory
 	int ModType;
 	
 	int buttons;
+	int oldbuttons;
 	int FreezePlayer;
 	int Player1TID;
 	
@@ -285,6 +286,7 @@ class PlayerStatItem : Inventory
 
 		let weapon = owner.player.ReadyWeapon;
 		buttons = owner.GetPlayerInput(INPUT_BUTTONS);
+		oldbuttons = owner.GetPlayerInput(INPUT_OLDBUTTONS);
 		
 		if (playeractor)
 		{
@@ -14233,6 +14235,7 @@ class PlayerStatItem2 : Inventory
 	int ModType;
 	
 	int buttons;
+	int oldbuttons;
 	int FreezePlayer;
 	int Player1TID;
 	
@@ -15587,6 +15590,8 @@ class PlayerDashJump : Inventory
 	bool berserked;
 	int PlayerLevel;
 	int TruePlayerLevel;
+	int input, oldInput, taps, taptics, last;
+	int oldpushingdirection;
 	
 	Default
 	{
@@ -15610,11 +15615,16 @@ class PlayerDashJump : Inventory
 		return Level;
 	}
 	
+	int IsButtonPressed (int input, int oldInput, int mask)
+	{
+		return (input & ~oldInput) & mask;
+	}
+
 	override void Tick()
 	{
 		Super.Tick();
 		if (!Owner || Owner && (!Owner.Player || Owner.Health < 1)) Return;
-
+		
 		let globalvars = DSGlobalVariables.Get();
 		let MiscItem = PlayerStatItem(Owner.FindInventory("PlayerStatItem"));
 		weapon = owner.player.ReadyWeapon;
@@ -15734,25 +15744,83 @@ class PlayerDashJump : Inventory
 		if (skill == 3 && MaxDashCooldown <= 2) MaxDashCooldown = 2;
 		if (skill >= 4 && MaxDashCooldown <= 3) MaxDashCooldown = 3;
 		
+		bool doubletapdash = GetCVar("dvds_doubledash");
 		if (dvdsdebug_showdashinformation) Console.Printf("DashCost [start]: %d, DashCooldown: %d", DashCost, MaxDashCooldown);
 		airdashtype = 0;
 		// 0 = No loss of altitude
 		// 1 = Start with a short "hop" but fall to the ground afterwards.
 		
+		double settings[2][4];
+		settings[0][0] = BT_FORWARD;
+		settings[1][0] = 0.00;
+		settings[0][1] = BT_MOVELEFT;
+		settings[1][1] = 0.25;
+		settings[0][2] = BT_BACK;
+		settings[1][2] = 0.50;
+		settings[0][3] = BT_MOVERIGHT;
+		settings[1][3] = 0.75;
+		oldInput = owner.GetPlayerInput(INPUT_OLDBUTTONS);
+
 		int pushingdirection = 0;
 		If (BTInput & BT_FORWARD) pushingdirection += 1;
 		If (BTInput & BT_BACK) pushingdirection += 2;
 		If (BTInput & BT_MOVELEFT) pushingdirection += 4;
 		If (BTInput & BT_MOVERIGHT) pushingdirection += 8;
 		
+		int dashtapwindow = 8;
+
+		bool dashactivated = false;
+		if (doubletapdash) Console.Printf("\cy[double-tap dashing enabled]:\c- doubletapdash: %d, taps: %d, BTInput: %d", doubletapdash, taps, BTInput);
+		if (doubletapdash)
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				input = BTInput;
+				if (CallACS("MiscVarCheckDECORATE",639) > 0)
+				{
+					if (IsButtonPressed(input, oldInput, settings[0][i]) && DashCharge >= DashCost && dvds_allowdashing > 0) // DV-DS version also requires a minimal amount of Stamina and the Dash option on to perform
+					{
+						taps++;
+						taptics = dashtapwindow;
+
+						if (taps >= 2 && last == i)
+						{
+							taps = 0;
+							input = 0;
+							oldinput = 0;
+							dashactivated = true;
+						}
+						last = i;
+					}
+				}
+			}
+			
+			If (taptics)
+			{
+				taptics--;
+				If (!taptics)
+				{
+					taps = 0;
+				}
+			}
+		}
+		else
+		{
+		 if (!doubletapdash && (BTInput & BT_USER3)) dashactivated = true;
+		}
+		
 		if (!Waiting &&
 				!owner.CountInv("NoDashing") &&
-				(BTInput & BT_USER3) && 
+				dashactivated && 
 				DashCharge >= DashCost && 
+				dvds_allowdashing > 0 &&
 				pushingdirection &&
 				!DashTics &&
 				DashCooldown == 0)
 		{
+			taptics = 0;
+			taps = 0;
+			oldpushingdirection = 0;
 			//Console.Printf("OnGround: %d", PlayDash.OnGround);
 			DashDir = 0;
 			If (BTInput & BT_FORWARD) DashDir = 0;
