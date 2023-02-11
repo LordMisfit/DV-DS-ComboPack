@@ -3,10 +3,200 @@
 
 class DVDS_EventHandler : EventHandler
 {
+	const SKILL_VERY_EASY = 0;
+	const SKILL_EASY = 1;
+	const SKILL_NORMAL = 2;
+	const SKILL_HARD = 3;
+	const SKILL_VERY_HARD = 4;
+	const SKILL_EXTREME = 5;
+	const SKILL_HORRIBLE = 6;
+	const SKILL_IMPOSSIBLE = 7;
+	const SKILL_OMEGA = 8;
+	
+	
+	int A_GetPlayerLevel(int type = 0)
+	{
+		actor player = players[0].mo;
+		let MiscItem = PlayerStatItem(Player.FindInventory("PlayerStatItem"));
+		
+		int Level = 0;
+		if (MiscItem)
+		{
+			if (dvds_expgains) Level = MiscItem.PlayerLevel;
+		}
+		if (dydudebug_playerlevelchecks) Console.Printf("\c[green](%s) \c[gold](A_GetPlayerLevel - EventHandler)\c- PlayerLevel: %d [%d]", GetClassName(), level, gametic);
+		return Level;
+	}
+
+	override void WorldTick()
+	{
+		if ((level.time >= 3 && level.time <= 35) ||
+				(((level.time - 35) % 350) == 0))
+		{
+			int d = Wads.CheckNumForName("CCARDS", Wads.ns_global, -1, true);
+			if (dvdsdebug_worldtick) Console.Printf("d: %d [time: %d]", d, level.time);
+			if (d != -1)
+			{
+				let globalvars = DSGlobalVariables.Get();
+				globalvars.PlayingCCards = true;
+				actor player = players[0].mo;
+				player.A_SetInventory("PlayingCCards",1);
+				Actor mo;
+				
+				string nm = "CCards_Actor_MonsterDisguise";
+				ThinkerIterator it = ThinkerIterator.Create(nm);
+				while (mo = Actor(it.Next()))
+				{
+					if (mo.bNORADIUSDMG) mo.bNORADIUSDMG = false; // hahahaha V:<
+					if (!mo.bISMONSTER) mo.bISMONSTER = true; // hehehehe >:V
+					if (dvdsdebug_worldtick) Console.Printf("LOLE [%p, %s]", mo, mo.GetClassName());
+				}
+			}
+		}
+	}
+	
+	override void NewGame()
+	{
+		let globalvars = DSGlobalVariables.Get();
+		if (globalvars.MapsFinished == 0) globalvars.MapsFinished = -1;
+		if (dydudebug_mapfinishcheck) Console.Printf("\c[gold]NewGame() (DS_EventHandler) [%d]", globalvars.MapsFinished);
+		Super.NewGame();
+	}
+	
+	void ProjSetSpeed(actor spawnee)
+	{
+		double spdfactor, oldspdfactor;
+		
+		if (Level.MapName != "TITLEMAP")
+		{
+			if (!spawnee.accuracy)
+			{
+				if (spawnee)
+				{
+					if (!AetheriusProjectileZSC(spawnee))
+					{
+						if (spawnee.target)
+						{
+							if (spawnee.target.bISMONSTER && !PlayerPawn(spawnee.target) && spawnee.target.default.speed != 0)
+							{
+								spdfactor = spawnee.target.speed / spawnee.target.default.speed;
+								oldspdfactor = spdfactor;
+								if (spdfactor >= 1.00) 
+								{
+									spdfactor -= 1.00;
+									if (skill <= 0) spdfactor *= 0.25;
+									if (skill == 1) spdfactor *= 0.375;
+									if (skill == 2) spdfactor *= 0.5;
+									if (skill == 3) spdfactor *= 0.625;
+									if (skill >= 4) spdfactor *= 0.75;
+									spdfactor *= frandom(0.875,1.125);
+									spdfactor *= dvds_mprojectilevelmulti;
+									if (spdfactor < 0.00) spdfactor = 0.00;
+									spdfactor += 1.00;
+									spawnee.A_ScaleVelocity(spdfactor);
+								}
+								if (dvdsdebug_projectiledisplays) Console.Printf("(%s) spdfactor: %.8f (%.8f), spawnee.target.speed: %.8f, spawnee.target.default.speed: %.8f", spawnee.GetClassName(), spdfactor, oldspdfactor, spawnee.target.speed, spawnee.target.default.speed);
+							}
+						}
+					}
+					spawnee.accuracy++;
+				}
+			}
+		}
+	}
+	
+	actor, string, int CheckLevelTweaks(actor spawnee, string spawnname, int LevelCheck)
+	{
+		//
+		return spawnee, spawnname, LevelCheck;
+	}
+	
+	void MonsterStatsSet(actor spawnee, int basemonsterrating, bool practicetarget, bool specialenemy, bool ispeasant)
+	{
+		int TrueGameSkill = dvds_gendifficultycurve + skill;
+		if (Level.MapName != "TITLEMAP")
+		{
+			let globalvars = DSGlobalVariables.Get();
+			actor player = players[0].mo;
+			let MiscItem = PlayerStatItem(player.FindInventory("PlayerStatItem"));
+			int TruePlayerLevel = 0;
+			if (dvds_expgains && MiscItem) TruePlayerLevel = MiscItem.PlayerLevel;
+			string spawnname = spawnee.GetClassName();
+			//
+		}
+		AetheriusMonsterZSC spawnee2;
+		spawnee2 = AetheriusMonsterZSC(spawnee);
+		if (spawnee2) 
+		{
+			spawnee2.A_SetInventory("ActorMaxHP",spawnee2.user_MaxHP);
+			
+			spawnee2.user_MaxHP = spawnee2.SpawnHealth() + spawnee2.Stamina;
+			double RangeVar;
+			int Temp;
+
+			if (skill <= 0) RangeVar = 0.250; // 25.0%
+			if (skill == 1) RangeVar = 0.313; // 31.3%
+			if (skill == 2) RangeVar = 0.375; // 37.5%
+			if (skill == 3) RangeVar = 0.437; // 43.7%
+			if (skill >= 4) RangeVar = 0.500; // 50.0%
+			Temp = (spawnee2.user_MaxHP * RangeVar) + 1;
+			if (Temp < 2) Temp = 2;
+			spawnee2.user_HPBuffRange = Temp;
+
+			if (skill <= 0) RangeVar = 0.250; // 25.0%
+			if (skill == 1) RangeVar = 0.313; // 31.3%
+			if (skill == 2) RangeVar = 0.375; // 37.5%
+			if (skill == 3) RangeVar = 0.437; // 43.7%
+			if (skill >= 4) RangeVar = 0.500; // 50.0%
+			RangeVar /= 3;
+			Temp = (spawnee2.user_MaxHP * RangeVar) + 1;
+			if (Temp < 2) Temp = 2;
+			spawnee2.user_HPLowBuffRange = Temp;
+
+			spawnee2.user_HPXDeathRange = (spawnee2.user_MaxHP * -1.0);
+			//if (spawnee2.GetClassName() == "BloodZombieNew") spawnee2.user_HPXDeathRange2 = (spawnee2.user_MaxHP * -0.5);
+			
+			RangeVar = 0.160;
+			if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 0.080; // 8.0%
+			if (TrueGameSkill == SKILL_EASY) RangeVar = 0.120; // 12.0%
+			if (TrueGameSkill == SKILL_NORMAL) RangeVar = 0.160; // 16.0%
+			if (TrueGameSkill == SKILL_HARD) RangeVar = 0.200; // 20.0%
+			if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 0.240; // 24.0%
+			if (TrueGameSkill == SKILL_EXTREME) RangeVar = 0.320; // 32.0%
+			if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 0.400; // 40.0%
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 0.450; // 45.0%
+			if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 0.500; // 50%
+			spawnee2.user_HPLowRange = (spawnee2.user_MaxHP * RangeVar);
+			
+			if (TrueGameSkill <= SKILL_VERY_EASY) RangeVar = 0.010; // 1.0%
+			if (TrueGameSkill == SKILL_EASY) RangeVar = 0.015; // 1.5%
+			if (TrueGameSkill == SKILL_NORMAL) RangeVar = 0.020; // 2.0%
+			if (TrueGameSkill == SKILL_HARD) RangeVar = 0.025; // 2.5%
+			if (TrueGameSkill == SKILL_VERY_HARD) RangeVar = 0.030; // 3.0%
+			if (TrueGameSkill == SKILL_EXTREME) RangeVar = 0.040; // 4.0%
+			if (TrueGameSkill == SKILL_HORRIBLE) RangeVar = 0.050; // 5.0%
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) RangeVar = 0.060; // 6.0%
+			if (TrueGameSkill >= SKILL_OMEGA) RangeVar = 0.080; // 8.0%
+			spawnee2.user_HPCritRange = (spawnee2.user_MaxHP * RangeVar);
+		}
+	}
+	//
+	
+	
 }
 
 class DVDS_StaticEventHandler : StaticEventHandler
 {
+	const SKILL_VERY_EASY = 0;
+	const SKILL_EASY = 1;
+	const SKILL_NORMAL = 2;
+	const SKILL_HARD = 3;
+	const SKILL_VERY_HARD = 4;
+	const SKILL_EXTREME = 5;
+	const SKILL_HORRIBLE = 6;
+	const SKILL_IMPOSSIBLE = 7;
+	const SKILL_OMEGA = 8;
+	
 	//If any world has loaded, then we're done handling new games case
 	override void WorldLoaded(WorldEvent e) 
 	{
