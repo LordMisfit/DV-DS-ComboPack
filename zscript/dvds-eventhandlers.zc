@@ -111,7 +111,7 @@ class DVDS_EventHandler : EventHandler
 		return spawnee, spawnname, LevelCheck;
 	}
 	
-	void MonsterStatsSet(actor spawnee, int basemonsterrating, bool practicetarget, bool specialenemy, bool ispeasant, int type = 0, int extraflags = 0)
+	void A_MonsterStatsHP_ATK_DEF_SPD(actor spawnee, int type = 0, int extraflags = 0)
 	{
 		AetheriusMonsterZSC spawnee2;
 		spawnee2 = AetheriusMonsterZSC(spawnee);
@@ -1328,6 +1328,104 @@ class DVDS_EventHandler : EventHandler
 						spawnee2.user_isstealth = 0;
 					}
 				}
+			}
+		}
+	}
+	
+	void A_AetheriusStats(actor spawnee, int type)
+	{
+		AetheriusMonsterZSC spawnee2;
+		spawnee2 = AetheriusMonsterZSC(spawnee);
+		int debugstatcalc = dvdsdebug_showstatcalcstuff;
+		// 0 = Set special stats
+		// 1 = Unset special stats
+		int flagsbaselevel;
+		if (spawnee2)
+		{
+			spawnee2.levelbehavior = dvds_monsterlevelbehavior;
+			if (type == 0 && !spawnee2.ActorLevelCalcs) 
+			{
+				if (debugstatcalc) Console.Printf("StatCalc type %d!", type);
+				A_MonsterStatsHP_ATK_DEF_SPD(spawnee2, type);
+				if (spawnee2.levelbehavior)
+				{
+					if (debugstatcalc) Console.Printf("Level %d!", spawnee2.user_monsterlevel);
+					if (spawnee2.user_monsterlevel > spawnee2.AggressionLevelThreshold3) { spawnee2.bMISSILEEVENMORE = true; spawnee2.bMISSILEMORE = true; }
+					else if (spawnee2.user_monsterlevel > spawnee2.AggressionLevelThreshold2) { spawnee2.bMISSILEEVENMORE = true; spawnee2.bMISSILEMORE = false; }
+					else if (spawnee2.user_monsterlevel > spawnee2.AggressionLevelThreshold1) { spawnee2.bMISSILEEVENMORE = false; spawnee2.bMISSILEMORE = true; }
+				}
+				spawnee2.timesrevivedamonster = 0;
+			}
+
+			if (type != 0 && spawnee2.ActorLevelCalcs) 
+			{
+				if (debugstatcalc) Console.Printf("StatCalc type %d!", type);
+				A_MonsterStatsHP_ATK_DEF_SPD(spawnee2, type);
+			}
+		}
+	}
+	
+	void A_LegendaryCheck(actor spawnee)
+	{
+		int TrueGameSkill = dvds_gendifficultycurve + skill;
+		class<Inventory> LDLPreload, LDLToken, LDLCheck, MiscCheck, MiscCheck2, MiscCheck3, MiscCheck4;
+		AetheriusMonsterZSC spawnee2;
+		spawnee2 = AetheriusMonsterZSC(spawnee);
+		if (spawnee2)
+		{
+			String nm = "LDLegendaryMonsterPickupEasy";
+			LDLPreload = nm;
+			
+			if (!(GetClassName() == "PeasantNew" || GetClassName() == "Peasant1New" || GetClassName() == "Peasant2New" || GetClassName() == "Peasant3New"
+					|| GetClassName() == "Peasant4New" || GetClassName() == "Peasant5New" || GetClassName() == "Peasant6New" || GetClassName() == "Peasant7New"
+					|| GetClassName() == "Peasant8New" || GetClassName() == "Peasant9New" || GetClassName() == "Peasant10New" || GetClassName() == "Peasant11New"
+					|| GetClassName() == "Peasant12New" || GetClassName() == "Peasant13New" || GetClassName() == "Peasant14New" || GetClassName() == "Peasant15New"
+					|| GetClassName() == "Peasant16New" || GetClassName() == "Peasant17New" || GetClassName() == "Peasant18New" || GetClassName() == "Peasant19New"
+					|| GetClassName() == "Peasant20New" || GetClassName() == "Peasant21New"|| GetClassName() == "Peasant22New" || GetClassName() == "BeggarNew"
+					|| GetClassName() == "Beggar1New" || GetClassName() == "Beggar2New" || GetClassName() == "Beggar3New" || GetClassName() == "Beggar4New"
+					|| GetClassName() == "Beggar5New" || GetClassName() == "MerchantNew" || GetClassName() == "WeaponSmithNew" || GetClassName() == "BarKeepNew"
+					|| GetClassName() == "ArmorerNew" || GetClassName() == "MedicNew"))
+			{
+				if (TrueGameSkill <= SKILL_VERY_EASY) { nm = "LDLegendaryMonsterPickupEasy"; LDLPreload = nm; }
+				if (TrueGameSkill == SKILL_EASY) { nm = "LDLegendaryMonsterPickupNormal"; LDLPreload = nm; }
+				if (TrueGameSkill == SKILL_NORMAL) { nm = "LDLegendaryMonsterPickupHard"; LDLPreload = nm; }
+				if (TrueGameSkill == SKILL_HARD) { nm = "LDLegendaryMonsterPickupUV"; LDLPreload = nm; }
+				if (TrueGameSkill == SKILL_VERY_HARD) { nm = "LDLegendaryMonsterPickupNightmare"; LDLPreload = nm; }
+				if (TrueGameSkill == SKILL_EXTREME) { nm = "LDLegendaryMonsterPickupExtreme"; LDLPreload = nm; }
+				if (TrueGameSkill == SKILL_HORRIBLE) { nm = "LDLegendaryMonsterPickupHorrible"; LDLPreload = nm; }
+				if (TrueGameSkill == SKILL_IMPOSSIBLE) { nm = "LDLegendaryMonsterPickupImpossible"; LDLPreload = nm; }
+				if (TrueGameSkill >= SKILL_OMEGA) { nm = "LDLegendaryMonsterPickupOmega"; LDLPreload = nm; }
+				spawnee2.A_GiveInventory(LDLPreload,1);
+			}
+		}
+	}
+	
+	void A_FirstTicInit(actor spawnee, int type = 0)
+	{
+		AetheriusMonsterZSC spawnee2;
+		spawnee2 = AetheriusMonsterZSC(spawnee);
+		if (spawnee2)
+		{
+			if (spawnee2.health > 0 && !spawnee2.ActorLevelCalcs) 
+			{
+				if (spawnee2.GetClassName() != "Sauravatar") A_AetheriusStats(spawnee2, 0); 
+
+				spawnee2.health = clamp(spawnee2.health, spawnee2.User_MaxHP, spawnee2.health);
+				if (spawnee2.diedasafriendly && !spawnee2.bFRIENDLY)
+				{
+					if (dvdsdebug_actorresurrectdisplays && type == 0) Console.Printf("diedasafriendly [PostBeginPlay()]");
+					if (dvdsdebug_actorresurrectdisplays && type == 1) Console.Printf("diedasafriendly [tick()]");
+					spawnee2.bFRIENDLY = true;
+					spawnee2.diedasafriendly = 0;
+					if (spawnee2.diedasacharmed)
+					{
+						spawnee2.user_charmed = 1;
+						spawnee2.diedasacharmed = 0;
+					}
+				}
+				
+				// LDL
+				A_LegendaryCheck(spawnee2);
 			}
 		}
 	}
