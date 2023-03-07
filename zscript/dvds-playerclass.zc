@@ -412,7 +412,55 @@ class AetheriusPlayerPawn : PlayerPawn
 			super.CheckAirSupply();
 		}
 	}
+	
+	override void PlayerLandedMakeGruntSound(actor onmobj)
+	{
+		bool grunted;
 
+		// [RH] only make noise if alive
+		if (self.health > 0 && !self.player.morphTics)
+		{
+			grunted = false;
+			// Why should this number vary by gravity?
+			double truegruntspeed = self.player.mo.GruntSpeed;
+			if (CountInv("PowerStrength") || CountInv("AetheriusPowerStrength")) truegruntspeed *= 1.34;
+			//Console.Printf("%.8f (%.8f) [%.8f]", self.Vel.Z, truegruntspeed, self.player.mo.GruntSpeed);
+			if (waterlevel <= 1)
+			{
+				if (self.Vel.Z < -truegruntspeed)
+				{
+					A_StartSound("*grunt", CHAN_VOICE);
+					grunted = true;
+				}
+				bool isliquid = (pos.Z <= floorz) && HitFloor();
+				bool foundstpsnd;
+				/*
+				if (onmobj) Console.Printf("%p [%s]", onmobj, onmobj.GetClassName());
+				Console.Printf("isliquid");
+				Console.Printf("player.onground: %d", player.onground);
+				*/
+				if (onmobj != NULL || !isliquid)
+				{
+					if (onmobj == NULL && !isliquid)
+					{
+						ThinkerIterator FStepFinder = ThinkerIterator.Create("EVP_Footsteps");
+						EVP_Footsteps mo;
+						while (mo = EVP_Footsteps(FStepFinder.Next()))
+						{
+							mo.HandleFootsteps(1,false); // Landing
+							foundstpsnd = true;
+							break;
+						}
+						
+						double volmult = 1.00;
+						if (foundstpsnd) volmult *= frandom(0.4,0.6);
+						A_StartSound("*land", 811, CHANF_DEFAULT, volmult);
+					}
+				}
+			}
+		}
+	}
+	
 	override void BeginPlay()
 	{
 		basexscale = scale.x;
