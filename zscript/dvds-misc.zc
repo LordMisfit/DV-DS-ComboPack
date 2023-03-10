@@ -611,84 +611,12 @@ class PlayerStatItem : Inventory
 		//***********************
 		//** Wand Guard Chance **
 		//***********************
-		owner.A_SetInventory("WandGuard", 0);
-		if (playeractor && (weapon is "SapphireWandNew" || weapon is "DualSapphireWandsNew"))
-		{
-			double chance = 5;
-			chance += (WandMasteryPerkLevel * 4); // +20
-			chance += (WandMasteryEXPerkLevel * 10); // +20
-			chance += (ClearMindPerkLvl * 1); // +5
-			chance += (ClearMindEXPerkLvl * 2.5); // +5
-			if (weapon is "DualSapphireWandsNew") chance *= 1.125;
-			if (DivineAvatarTimer > 0) chance *= 1.25; // Divine Avatar
-			if (SpreadAura1Timer > 0) chance *= 0.85; // Spread Aura Lv 1
-			if (SpreadAura2Timer > 0) chance *= 0.55; // Spread Aura Lv 2
-			if (DQOomphTimer > 0) chance *= 1.125; // Oomph
-			if (DQBluntTimer > 0) chance *= 0.8888888888888889; // Blunt
-			if (DQAcceleratleTimer > 0) chance *= 1.0625; // Acceleratle
-			if (DQDeceleratleTimer > 0) chance *= 0.9411764705882353; // Deceleratle
-			chance *= 0.667;
-			chance += (PlayerSOR * 0.01171875);
-			chance += (PlayerTHE * 0.00390625);
-			chance += (PlayerLevel * 0.015625);
-			if (Owner.CountInv("SafeTeaShoes")) chance += 0.125;
-			if (Owner.CountInv("PearlyCorset")) chance += 0.125;
-			if (Owner.CountInv("WaterFlyingDress")) chance += 0.125;
-			if (Owner.CountInv("EvenstarNecklace")) chance += 1.25;
-			if (Owner.CountInv("CloakOfEvasion")) chance += 0.125;
-			if (Owner.CountInv("AnubisCufflinks")) chance += 0.625;
-			if (Owner.CountInv("KissaBra")) chance += 0.125;
-			if (Owner.CountInv("DivineShield")) chance += 5.0;
-			if (Owner.CountInv("BalrogRing")) chance += 2.5;
-			if (Owner.CountInv("FalconKnifeEarrings")) chance += 0.25;
-			if (Owner.CountInv("SauronHelmet")) chance += 1.0;
-			if (Owner.CountInv("SauronGauntletsItem")) chance += 1.0;
-			if (Owner.CountInv("TheOneRing")) chance += 2.5;
-			if (dvdsdebug_shieldactorghosts) Console.Printf("Wand Guard Chance: %.4f", chance);
-			if (frandom(0.1,100.0) <= chance) owner.A_SetInventory("WandGuard", 1);
-		}
+		A_PSI1DoEffectWandGuard();
 
 		//********************
 		//**Level Cap Checks**
 		//********************
-		if (playeractor)
-		{
-			if (CharacterClass != 2)
-			{
-				if (CharacterClass != 8 && CharacterClass != 9) { LevelCap = dvds_marines_maxlevel; } // Necessary to prevent the game from giving bogus EXP requirements at level 100-199
-				if (CharacterClass == 8) { LevelCap = dvds_ailish_maxlevel; }
-				if (CharacterClass == 9) { LevelCap = dvds_petra_maxlevel; }
-				LevelCap = clamp(LevelCap, 0, 200);
-			}
-			else
-			{
-				if (dvds_flora_ignorearmormadelevelcap == 0)
-				{
-					LevelCap = 100;
-					if (owner.CountInv("SafeTeaShoes")) LevelCap += 9;
-					if (owner.CountInv("PearlyCorset")) LevelCap += 9;
-					if (owner.CountInv("WaterFlyingDress")) LevelCap += 9;
-					if (owner.CountInv("EvenstarNecklace")) LevelCap += 9;
-					if (owner.CountInv("CloakofEvasion")) LevelCap += 9;
-					if (owner.CountInv("AnubisCufflinks")) LevelCap += 9;
-					if (owner.CountInv("KissaBra")) LevelCap += 9;
-					if (owner.CountInv("BalrogRing")) LevelCap += 9;
-					if (owner.CountInv("DoveRibbon")) LevelCap += 9;
-					if (owner.CountInv("FalconKnifeEarrings")) LevelCap += 9;
-					if (owner.CountInv("DivineShield")) LevelCap += 9;
-					if (owner.CountInv("RuinousShield")) LevelCap += 4;
-				
-					if (LevelCap >= 199) LevelCap = 200;
-				}
-				else
-				{
-					LevelCap = clamp(dvds_flora_maxlevel, 0, 200);
-				}
-			}
-			if (dvdsdebug_levelupdisplays) Console.Printf("LevelCap: %d", LevelCap);
-			CallACS("OtherVarSetDECORATE",13,LevelCap);
-			LevelCap = CallACS("OtherVarCheckDECORATE",13);
-		}
+		A_PSI1DoEffectLevelCaps();
 		
 		
 		
@@ -697,23 +625,7 @@ class PlayerStatItem : Inventory
 		//*****************************
 		//* RadSuit Effects via Armor *
 		//*****************************
-		if (playeractor)
-		{
-			// Safe Tea Boots [25% chance of damagefloor/ironfeet guard during normal incursion of damage]
-			// Cloak of Evasion [12.5% chance of damagefloor/ironfeet guard during normal incursion of damage]
-			int IronFeetChance = 0;
-			if (owner.CountInv("SafeTeaShoes")) IronFeetChance += 250;
-			if (owner.CountInv("CloakOfEvasion")) IronFeetChance += 125;
-			if (IronFeetChance > 1000) IronFeetChance = 1000;
-			owner.A_SetInventory("FloraArmorFloorGuard",0);
-			if (random[statitem](1,1000) <= IronFeetChance) owner.A_SetInventory("FloraArmorFloorGuard",1);
-			
-			int FearChance = 100;
-			if (owner.CountInv("TheOneRing")) FearChance = FearChance * 1.667;
-			// Anubis Cufflinks [10% (16.667% with One Ring) chance of brief fear-effect on all hostile creatures with attacks]
-			owner.A_SetInventory("AnubisCufflinksFear",0);   
-			if (owner.CountInv("AnubisCufflinks") && random[statitem](1,1000) <= FearChance) owner.A_SetInventory("AnubisCufflinksFear",1);
-		}
+		A_PSI1DoEffectIronFeetArmor();
 		
 		
 		
@@ -721,70 +633,7 @@ class PlayerStatItem : Inventory
 		//****************************
 		//*Strife Sigil & Flag Checks*
 		//****************************
-		if (playeractor)
-		{
-			int SigilPieces = 0;
-			let sigl = owner.FindInventory("Sigil");
-			if (sigl != null)
-			{
-				//Console.Printf("Sigil Pieces: %d", sigl.health);
-				if (sigl.health == 1) owner.A_SetInventory("SigilPhase1", 1); else owner.A_SetInventory("SigilPhase1",0);
-				if (sigl.health == 2) owner.A_SetInventory("SigilPhase2", 1); else owner.A_SetInventory("SigilPhase2",0);
-				if (sigl.health == 3) owner.A_SetInventory("SigilPhase3", 1); else owner.A_SetInventory("SigilPhase3",0);
-				if (sigl.health == 4) owner.A_SetInventory("SigilPhase4", 1); else owner.A_SetInventory("SigilPhase4",0);
-				if (sigl.health == 5) owner.A_SetInventory("SigilComplete", 1); else owner.A_SetInventory("SigilComplete",0);
-				SigilPieces = sigl.health;
-			}
-			CallACS("MiscVarSetDECORATE",25038,SigilPieces);
-			if (ClassicDoomType == 4 && owner.CountInv("SigilModeType") <= 0) owner.A_SetInventory("SigilModeType",SigilPieces);
-			owner.A_SetInventory("SigilPieces",SigilPieces);
-			CallACS("MiscVarSetDECORATE",25047,owner.CountInv("SigilModeType"));
-
-			nm = "BestEndingFlag"; iDTech1Check = nm;
-			if (owner.CountInv("QuestItem27") && owner.CountInv("QuestItem25")) 
-			{
-				owner.A_SetInventory(iDTech1Check,1);
-			}
-			else
-			{
-				owner.A_SetInventory(iDTech1Check,0);
-			}
-			
-			// Checks if you've destroyed the Acolyte Converter in Strife MAP24 [Conversion Chapel] (Flag 25)
-			if (StrifeQuestFlag25 == 0)
-			{
-				if (owner.CountInv("QuestItem25") == 1)
-				{
-					owner.Stamina -= 10;
-					owner.Accuracy -= 10;
-					owner.A_GiveInventory("ConverterBonus");
-					StrifeQuestFlag25++;
-				}
-			}
-
-			// Checks if you've destroyed the Loremaster's Spectre in Strife MAP27 [The Lab] (Flag 26)
-			if (StrifeQuestFlag26 == 0)
-			{
-				if (owner.CountInv("QuestItem26") == 1)
-				{
-					owner.Stamina -= 10;
-					owner.Accuracy -= 10;
-					owner.A_GiveInventory("LoreMasterBonus");
-					StrifeQuestFlag26++;
-				}
-			}
-			// Checks if you've destroyed the Drone Transmitter in Strife MAP14 [The Mines] (Flag 29)
-			if (StrifeQuestFlag29 == 0) 
-			{
-				if (owner.CountInv("QuestItem29") == 1)
-				{
-					owner.Stamina -= 10;
-					owner.Accuracy -= 10;
-					owner.A_GiveInventory("TransmitterBonus");
-					StrifeQuestFlag29++;
-				}
-			}
-		}
+		A_PSI1DoEffectSigilStuff();
 		
 		
 		
@@ -793,82 +642,7 @@ class PlayerStatItem : Inventory
 		//*********************
 		//*Grand-Mastery Perks*
 		//*********************
-		if (playeractor)
-		{
-			perks3mastered = 0;
-			if (LifeUpPerkLvl >= 5) perks3mastered++;
-			if (MagiUpPerkLevel >= 5) perks3mastered++;
-			if (StamUpPerkLvl >= 5) perks3mastered++;
-			if (DodgeMorePerkLvl >= 5) perks3mastered++;
-			if (JmpMorePerkLvl >= 5) perks3mastered++;
-			if (PsychFstPerkLvl >= 5) perks3mastered++;
-			if (RegHPFstPerkLvl >= 5) perks3mastered++;
-			if (RegMPFstPerkLvl >= 5) perks3mastered++;
-			if (RegStamFastLvl >= 5) perks3mastered++;
-			if (BulletAccPerkLvl >= 5) perks3mastered++;
-			if (CallACS("MiscVarCheckDECORATE",10021) >= 5) perks3mastered++;
-			if (CallACS("MiscVarCheckDECORATE",10023) >= 5) perks3mastered++;
-			if (DemolitionsExpertPerkLevel >= 5) perks3mastered++;
-			if (ArcheryMasteryPerkLevel >= 5) perks3mastered++;
-			if (SoulMasteryPerkLevel >= 5) perks3mastered++;
-			if (MartialArtsMastery >= 5) perks3mastered++;
-			if (CallACS("MiscVarCheckDECORATE",10037) >= 7) perks3mastered++;
-			if (DeathRagePerkLvl >= 3) perks3mastered++;
-			if (OTMPerkLvl >= 5) perks3mastered++;
-			if (CallACS("MiscVarCheckDECORATE",10047) >= 5) perks3mastered++;
-			if (CharacterClass == 1)
-			{
-				if (CallACS("MiscVarCheckDECORATE",10049) >= 4) perks3mastered++;
-			}
-			else
-			{
-				if (CallACS("MiscVarCheckDECORATE",10049) >= 5) perks3mastered++;
-			}
-			if (CallACS("MiscVarCheckDECORATE",10050) >= 4) perks3mastered++;
-			if (BerserkerFit >= 5) perks3mastered++;
-			if (WandMasteryPerkLevel >= 5) perks3mastered++;
-			if (ClearMindPerkLvl >= 5) perks3mastered += 2;
-			
-			if (perks3mastered >= 15) // Higher Learning Lvl 2 Enabled
-			{
-				owner.A_GiveInventory("HigherLearning2Gained",1);
-				CallACS("MiscVarSetDECORATE",11001,2);
-				if (owner.CountInv("HigherLearning2Gained") == 1) owner.A_StartSound("menu/higherlearning",160,CHANF_DEFAULT,1.75,ATTN_NORM);
-			}
-			else if (perks3mastered >= 5) // Higher Learning Enabled
-			{ 
-				owner.A_GiveInventory("HigherLearningGained",1);
-				CallACS("MiscVarSetDECORATE",11001,1);
-				if (owner.CountInv("HigherLearningGained") == 1) owner.A_StartSound("menu/higherlearning",160,CHANF_DEFAULT,1.5,ATTN_NORM);
-			}
-			else // Higher Learning Disabled
-			{ 
-				owner.A_SetInventory("HigherLearning2Gained",0);
-				owner.A_SetInventory("HigherLearningGained",0);
-				CallACS("MiscVarSetDECORATE",11001,0); 
-			}
-			
-			CallACS("MiscVarSetDECORATE",40,perks3mastered);
-			
-			/*
-			// Future Mastery Perk to come for having 768+ Aeon Pts spent on Perks
-			aeonptsperksused = CallACS("MiscVarCheckDECORATE",42);
-			int perkbasevalue = (768 * dvdsperks_costratio) / 100;
-			int perkbasevalue2 = ((768 * 3) * dvdsperks_costratio) / 100;
-			if (aeonptsperksused >= perkbasevalue2)
-			{
-				CallACS("MiscVarSetDECORATE",11002,2); 
-			}
-			else if (aeonptsperksused >= perkbasevalue)
-			{
-				CallACS("MiscVarSetDECORATE",11002,1); 
-			}
-			else
-			{
-				CallACS("MiscVarSetDECORATE",11002,0); 
-			}
-			*/
-		}
+		A_PSI1DoEffectMasterPerkCheck();
 		
 		
 		
@@ -895,57 +669,7 @@ class PlayerStatItem : Inventory
 		//****************************************
 		//*Get Health Ratio & Health Level Checks*
 		//****************************************
-		if (playeractor && MaxHealthTrue > 0)
-		{
-			HealthRatio = (PlayerCurrentHealth * 1000) / MaxHealthTrue;
-			HealthRatio = clamp(HealthRatio, 0, 2000);
-
-			if (PlayerCurrentHealth <= 0) { Owner.A_SetInventory("PlayerIsDead", 1); }
-			else
-			{
-				Owner.A_SetInventory("PlayerIsDead", 0);
-				if (HealthRatio != PrevHealthRatio)
-				{
-					if (HealthRatio < 625)
-					{
-						if (HealthRatio < 167)
-						{
-							if (HealthRatio < 21)
-							{
-								Owner.A_SetInventory("CriticalHealth", 1);
-								Owner.A_SetInventory("LowHealth", 0);
-								Owner.A_SetInventory("DecentHealth", 0);
-								Owner.A_SetInventory("NormalHealth", 0);
-							}
-							else 
-							{
-								Owner.A_SetInventory("CriticalHealth", 0);
-								Owner.A_SetInventory("LowHealth", 1);
-								Owner.A_SetInventory("DecentHealth", 0);
-								Owner.A_SetInventory("NormalHealth", 0);
-							}
-						}
-						else 
-						{
-							Owner.A_SetInventory("CriticalHealth", 0);
-							Owner.A_SetInventory("LowHealth", 0);
-							Owner.A_SetInventory("DecentHealth", 1);
-							Owner.A_SetInventory("NormalHealth", 0);
-						}
-					}
-					else
-					{
-						Owner.A_SetInventory("CriticalHealth", 0);
-						Owner.A_SetInventory("LowHealth", 0);
-						Owner.A_SetInventory("DecentHealth", 0);
-						Owner.A_SetInventory("NormalHealth", 1);
-					}
-					if (PlayerCurrentHealth >= MaxHealthTrue) Owner.A_SetInventory("FullHealth", 1); else Owner.A_SetInventory("FullHealth", 0);
-					
-					PrevHealthRatio = HealthRatio;
-				}
-			}
-		}
+		A_PSI1DoEffectHealthRatios();
 		
 		
 		
@@ -954,38 +678,7 @@ class PlayerStatItem : Inventory
 		//********************
 		//*Skill Level Checks*
 		//********************
-		if (playeractor)
-		{
-			if (Skill <= SKILL_VERY_EASY)
-			{
-				if (Owner.CountInv("IsSkill1") == 0) Owner.A_SetInventory("IsSkill1", 1);
-				if (Owner.CountInv("IsEasySkill") == 0) Owner.A_SetInventory("IsEasySkill", 1);
-			}
-			if (Skill == SKILL_EASY)
-			{
-				if (Owner.CountInv("IsSkill2") == 0) Owner.A_SetInventory("IsSkill2", 1);
-				if (Owner.CountInv("IsEasySkill") == 0) Owner.A_SetInventory("IsEasySkill", 1);
-			}
-			if (Skill == SKILL_NORMAL)
-			{
-				if (Owner.CountInv("IsSkill3") == 0) Owner.A_SetInventory("IsSkill3", 1);
-			}
-			if (Skill == SKILL_HARD)
-			{
-				if (Owner.CountInv("IsSkill4") == 0) Owner.A_SetInventory("IsSkill4", 1);
-				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_SetInventory("IsHardSkill", 1);
-			}
-			if (Skill == SKILL_VERY_HARD)
-			{
-				if (Owner.CountInv("IsSkill5") == 0) Owner.A_SetInventory("IsSkill5", 1);
-				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_SetInventory("IsHardSkill", 1);
-			}
-			if (Skill >= SKILL_EXTREME)
-			{
-				if (Owner.CountInv("IsSkill6") == 0) Owner.A_SetInventory("IsSkill6", 1);
-				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_SetInventory("IsHardSkill", 1);
-			}
-		}
+		A_PSI1DoEffectSkillChecker();
 		
 		
 		
@@ -1039,49 +732,7 @@ class PlayerStatItem : Inventory
 		//******************************************************
 		//******************************************************
 		//******************************************************
-		if (playeractor)
-		{
-			if ((level.totaltime % optimizefactortics) == 0)
-			{
-				// Check if player has specific Hellcore Souls, but has 0 for their level
-				if (Owner.CountInv("ImpSoul") && CallACS("MiscVarCheckDECORATE",96) <= 0) CallACS("MiscVarSetDECORATE",96,1);
-				if (Owner.CountInv("DarkImpSoul") && CallACS("MiscVarCheckDECORATE",97) <= 0) CallACS("MiscVarSetDECORATE",97,1);
-				if (Owner.CountInv("CacodemonSoul") && CallACS("MiscVarCheckDECORATE",98) <= 0) CallACS("MiscVarSetDECORATE",98,1);
-				if (Owner.CountInv("CacolanternSoul") && CallACS("MiscVarCheckDECORATE",99) <= 0) CallACS("MiscVarSetDECORATE",99,1);
-				if (Owner.CountInv("AbaddonSoul") && CallACS("MiscVarCheckDECORATE",100) <= 0) CallACS("MiscVarSetDECORATE",100,1);
-				if (Owner.CountInv("KnightSoul") && CallACS("MiscVarCheckDECORATE",101) <= 0) CallACS("MiscVarSetDECORATE",101,1);
-				if (Owner.CountInv("BaronSoul") && CallACS("MiscVarCheckDECORATE",102) <= 0) CallACS("MiscVarSetDECORATE",102,1);
-				if (Owner.CountInv("BelphegorSoul") && CallACS("MiscVarCheckDECORATE",103) <= 0) CallACS("MiscVarSetDECORATE",103,1);
-				if (Owner.CountInv("BruiserSoul") && CallACS("MiscVarCheckDECORATE",104) <= 0) CallACS("MiscVarSetDECORATE",104,1);
-				if (Owner.CountInv("ArchonSoul") && CallACS("MiscVarCheckDECORATE",105) <= 0) CallACS("MiscVarSetDECORATE",105,1);
-				if (Owner.CountInv("PyroDemonSoul") && CallACS("MiscVarCheckDECORATE",106) <= 0) CallACS("MiscVarSetDECORATE",106,1);
-				if (Owner.CountInv("IncarnateSoul") && CallACS("MiscVarCheckDECORATE",107) <= 0) CallACS("MiscVarSetDECORATE",107,1);
-				if (Owner.CountInv("ArchvileSoul") && CallACS("MiscVarCheckDECORATE",108) <= 0) CallACS("MiscVarSetDECORATE",108,1);
-				if (Owner.CountInv("DiabloistSoul") && CallACS("MiscVarCheckDECORATE",109) <= 0) CallACS("MiscVarSetDECORATE",109,1);
-				if (Owner.CountInv("BalrogSoul") && CallACS("MiscVarCheckDECORATE",110) <= 0) CallACS("MiscVarSetDECORATE",110,1);
-				if (Owner.CountInv("HElementalSoul") && CallACS("MiscVarCheckDECORATE",111) <= 0) CallACS("MiscVarSetDECORATE",111,1);
-				if (Owner.CountInv("HOverlordSoul") && CallACS("MiscVarCheckDECORATE",112) <= 0) CallACS("MiscVarSetDECORATE",112,1);
-
-				// Check if player LACKS specific Hellcore Souls, but has >0 for their level [i.e. Death Exits]
-				if (Owner.CountInv("ImpSoul") <= 0 && CallACS("MiscVarCheckDECORATE",96) > 0) CallACS("MiscVarSetDECORATE",96,0);
-				if (Owner.CountInv("DarkImpSoul") <= 0 && CallACS("MiscVarCheckDECORATE",97) > 0) CallACS("MiscVarSetDECORATE",97,0);
-				if (Owner.CountInv("CacodemonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",98) > 0) CallACS("MiscVarSetDECORATE",98,0);
-				if (Owner.CountInv("CacolanternSoul") <= 0 && CallACS("MiscVarCheckDECORATE",99) > 0) CallACS("MiscVarSetDECORATE",99,0);
-				if (Owner.CountInv("AbaddonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",100) > 0) CallACS("MiscVarSetDECORATE",100,0);
-				if (Owner.CountInv("KnightSoul") <= 0 && CallACS("MiscVarCheckDECORATE",101) > 0) CallACS("MiscVarSetDECORATE",101,0);
-				if (Owner.CountInv("BaronSoul") <= 0 && CallACS("MiscVarCheckDECORATE",102) > 0) CallACS("MiscVarSetDECORATE",102,0);
-				if (Owner.CountInv("BelphegorSoul") <= 0 && CallACS("MiscVarCheckDECORATE",103) > 0) CallACS("MiscVarSetDECORATE",103,0);
-				if (Owner.CountInv("BruiserSoul") <= 0 && CallACS("MiscVarCheckDECORATE",104) > 0) CallACS("MiscVarSetDECORATE",104,0);
-				if (Owner.CountInv("ArchonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",105) > 0) CallACS("MiscVarSetDECORATE",105,0);
-				if (Owner.CountInv("PyroDemonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",106) > 0) CallACS("MiscVarSetDECORATE",106,0);
-				if (Owner.CountInv("IncarnateSoul") <= 0 && CallACS("MiscVarCheckDECORATE",107) > 0) CallACS("MiscVarSetDECORATE",107,0);
-				if (Owner.CountInv("ArchvileSoul") <= 0 && CallACS("MiscVarCheckDECORATE",108) > 0) CallACS("MiscVarSetDECORATE",108,0);
-				if (Owner.CountInv("DiabloistSoul") <= 0 && CallACS("MiscVarCheckDECORATE",109) > 0) CallACS("MiscVarSetDECORATE",109,0);
-				if (Owner.CountInv("BalrogSoul") <= 0 && CallACS("MiscVarCheckDECORATE",110) > 0) CallACS("MiscVarSetDECORATE",110,0);
-				if (Owner.CountInv("HElementalSoul") <= 0 && CallACS("MiscVarCheckDECORATE",111) > 0) CallACS("MiscVarSetDECORATE",111,0);
-				if (Owner.CountInv("HOverlordSoul") <= 0 && CallACS("MiscVarCheckDECORATE",112) > 0) CallACS("MiscVarSetDECORATE",112,0);
-			}
-		}
+		A_PSI1DoEffectHellcoreChecker();
 		
 		
 		
@@ -3614,6 +3265,57 @@ class PlayerStatItem : Inventory
 	}
 	
 	// Hellcore Cooling
+	void A_PSI1DoEffectHellcoreChecker()
+	{
+		let globalvars = DSGlobalVariables.Get();
+		let playeractor = AetheriusPlayerPawn(owner);
+		let weapon = owner.player.ReadyWeapon;
+		if (playeractor)
+		{
+			if ((level.totaltime % optimizefactortics) == 0)
+			{
+				// Check if player has specific Hellcore Souls, but has 0 for their level
+				if (Owner.CountInv("ImpSoul") && CallACS("MiscVarCheckDECORATE",96) <= 0) CallACS("MiscVarSetDECORATE",96,1);
+				if (Owner.CountInv("DarkImpSoul") && CallACS("MiscVarCheckDECORATE",97) <= 0) CallACS("MiscVarSetDECORATE",97,1);
+				if (Owner.CountInv("CacodemonSoul") && CallACS("MiscVarCheckDECORATE",98) <= 0) CallACS("MiscVarSetDECORATE",98,1);
+				if (Owner.CountInv("CacolanternSoul") && CallACS("MiscVarCheckDECORATE",99) <= 0) CallACS("MiscVarSetDECORATE",99,1);
+				if (Owner.CountInv("AbaddonSoul") && CallACS("MiscVarCheckDECORATE",100) <= 0) CallACS("MiscVarSetDECORATE",100,1);
+				if (Owner.CountInv("KnightSoul") && CallACS("MiscVarCheckDECORATE",101) <= 0) CallACS("MiscVarSetDECORATE",101,1);
+				if (Owner.CountInv("BaronSoul") && CallACS("MiscVarCheckDECORATE",102) <= 0) CallACS("MiscVarSetDECORATE",102,1);
+				if (Owner.CountInv("BelphegorSoul") && CallACS("MiscVarCheckDECORATE",103) <= 0) CallACS("MiscVarSetDECORATE",103,1);
+				if (Owner.CountInv("BruiserSoul") && CallACS("MiscVarCheckDECORATE",104) <= 0) CallACS("MiscVarSetDECORATE",104,1);
+				if (Owner.CountInv("ArchonSoul") && CallACS("MiscVarCheckDECORATE",105) <= 0) CallACS("MiscVarSetDECORATE",105,1);
+				if (Owner.CountInv("PyroDemonSoul") && CallACS("MiscVarCheckDECORATE",106) <= 0) CallACS("MiscVarSetDECORATE",106,1);
+				if (Owner.CountInv("IncarnateSoul") && CallACS("MiscVarCheckDECORATE",107) <= 0) CallACS("MiscVarSetDECORATE",107,1);
+				if (Owner.CountInv("ArchvileSoul") && CallACS("MiscVarCheckDECORATE",108) <= 0) CallACS("MiscVarSetDECORATE",108,1);
+				if (Owner.CountInv("DiabloistSoul") && CallACS("MiscVarCheckDECORATE",109) <= 0) CallACS("MiscVarSetDECORATE",109,1);
+				if (Owner.CountInv("BalrogSoul") && CallACS("MiscVarCheckDECORATE",110) <= 0) CallACS("MiscVarSetDECORATE",110,1);
+				if (Owner.CountInv("HElementalSoul") && CallACS("MiscVarCheckDECORATE",111) <= 0) CallACS("MiscVarSetDECORATE",111,1);
+				if (Owner.CountInv("HOverlordSoul") && CallACS("MiscVarCheckDECORATE",112) <= 0) CallACS("MiscVarSetDECORATE",112,1);
+
+				// Check if player LACKS specific Hellcore Souls, but has >0 for their level [i.e. Death Exits]
+				if (Owner.CountInv("ImpSoul") <= 0 && CallACS("MiscVarCheckDECORATE",96) > 0) CallACS("MiscVarSetDECORATE",96,0);
+				if (Owner.CountInv("DarkImpSoul") <= 0 && CallACS("MiscVarCheckDECORATE",97) > 0) CallACS("MiscVarSetDECORATE",97,0);
+				if (Owner.CountInv("CacodemonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",98) > 0) CallACS("MiscVarSetDECORATE",98,0);
+				if (Owner.CountInv("CacolanternSoul") <= 0 && CallACS("MiscVarCheckDECORATE",99) > 0) CallACS("MiscVarSetDECORATE",99,0);
+				if (Owner.CountInv("AbaddonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",100) > 0) CallACS("MiscVarSetDECORATE",100,0);
+				if (Owner.CountInv("KnightSoul") <= 0 && CallACS("MiscVarCheckDECORATE",101) > 0) CallACS("MiscVarSetDECORATE",101,0);
+				if (Owner.CountInv("BaronSoul") <= 0 && CallACS("MiscVarCheckDECORATE",102) > 0) CallACS("MiscVarSetDECORATE",102,0);
+				if (Owner.CountInv("BelphegorSoul") <= 0 && CallACS("MiscVarCheckDECORATE",103) > 0) CallACS("MiscVarSetDECORATE",103,0);
+				if (Owner.CountInv("BruiserSoul") <= 0 && CallACS("MiscVarCheckDECORATE",104) > 0) CallACS("MiscVarSetDECORATE",104,0);
+				if (Owner.CountInv("ArchonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",105) > 0) CallACS("MiscVarSetDECORATE",105,0);
+				if (Owner.CountInv("PyroDemonSoul") <= 0 && CallACS("MiscVarCheckDECORATE",106) > 0) CallACS("MiscVarSetDECORATE",106,0);
+				if (Owner.CountInv("IncarnateSoul") <= 0 && CallACS("MiscVarCheckDECORATE",107) > 0) CallACS("MiscVarSetDECORATE",107,0);
+				if (Owner.CountInv("ArchvileSoul") <= 0 && CallACS("MiscVarCheckDECORATE",108) > 0) CallACS("MiscVarSetDECORATE",108,0);
+				if (Owner.CountInv("DiabloistSoul") <= 0 && CallACS("MiscVarCheckDECORATE",109) > 0) CallACS("MiscVarSetDECORATE",109,0);
+				if (Owner.CountInv("BalrogSoul") <= 0 && CallACS("MiscVarCheckDECORATE",110) > 0) CallACS("MiscVarSetDECORATE",110,0);
+				if (Owner.CountInv("HElementalSoul") <= 0 && CallACS("MiscVarCheckDECORATE",111) > 0) CallACS("MiscVarSetDECORATE",111,0);
+				if (Owner.CountInv("HOverlordSoul") <= 0 && CallACS("MiscVarCheckDECORATE",112) > 0) CallACS("MiscVarSetDECORATE",112,0);
+			}
+		}
+	}
+
+	// Hellcore Cooling
 	void A_PSI1DoEffectHellcoreCool()
 	{
 		let globalvars = DSGlobalVariables.Get();
@@ -6055,6 +5757,88 @@ class PlayerStatItem : Inventory
 		}
 	}
 
+	void A_PSI1DoEffectMasterPerkCheck()
+	{
+		let globalvars = DSGlobalVariables.Get();
+		let playeractor = AetheriusPlayerPawn(owner);
+		if (playeractor)
+		{
+			perks3mastered = 0;
+			if (LifeUpPerkLvl >= 5) perks3mastered++;
+			if (MagiUpPerkLevel >= 5) perks3mastered++;
+			if (StamUpPerkLvl >= 5) perks3mastered++;
+			if (DodgeMorePerkLvl >= 5) perks3mastered++;
+			if (JmpMorePerkLvl >= 5) perks3mastered++;
+			if (PsychFstPerkLvl >= 5) perks3mastered++;
+			if (RegHPFstPerkLvl >= 5) perks3mastered++;
+			if (RegMPFstPerkLvl >= 5) perks3mastered++;
+			if (RegStamFastLvl >= 5) perks3mastered++;
+			if (BulletAccPerkLvl >= 5) perks3mastered++;
+			if (CallACS("MiscVarCheckDECORATE",10021) >= 5) perks3mastered++;
+			if (CallACS("MiscVarCheckDECORATE",10023) >= 5) perks3mastered++;
+			if (DemolitionsExpertPerkLevel >= 5) perks3mastered++;
+			if (ArcheryMasteryPerkLevel >= 5) perks3mastered++;
+			if (SoulMasteryPerkLevel >= 5) perks3mastered++;
+			if (MartialArtsMastery >= 5) perks3mastered++;
+			if (CallACS("MiscVarCheckDECORATE",10037) >= 7) perks3mastered++;
+			if (DeathRagePerkLvl >= 3) perks3mastered++;
+			if (OTMPerkLvl >= 5) perks3mastered++;
+			if (CallACS("MiscVarCheckDECORATE",10047) >= 5) perks3mastered++;
+			if (CharacterClass == 1)
+			{
+				if (CallACS("MiscVarCheckDECORATE",10049) >= 4) perks3mastered++;
+			}
+			else
+			{
+				if (CallACS("MiscVarCheckDECORATE",10049) >= 5) perks3mastered++;
+			}
+			if (CallACS("MiscVarCheckDECORATE",10050) >= 4) perks3mastered++;
+			if (BerserkerFit >= 5) perks3mastered++;
+			if (WandMasteryPerkLevel >= 5) perks3mastered++;
+			if (ClearMindPerkLvl >= 5) perks3mastered += 2;
+			
+			if (perks3mastered >= 15) // Higher Learning Lvl 2 Enabled
+			{
+				owner.A_GiveInventory("HigherLearning2Gained",1);
+				CallACS("MiscVarSetDECORATE",11001,2);
+				if (owner.CountInv("HigherLearning2Gained") == 1) owner.A_StartSound("menu/higherlearning",160,CHANF_DEFAULT,1.75,ATTN_NORM);
+			}
+			else if (perks3mastered >= 5) // Higher Learning Enabled
+			{ 
+				owner.A_GiveInventory("HigherLearningGained",1);
+				CallACS("MiscVarSetDECORATE",11001,1);
+				if (owner.CountInv("HigherLearningGained") == 1) owner.A_StartSound("menu/higherlearning",160,CHANF_DEFAULT,1.5,ATTN_NORM);
+			}
+			else // Higher Learning Disabled
+			{ 
+				owner.A_SetInventory("HigherLearning2Gained",0);
+				owner.A_SetInventory("HigherLearningGained",0);
+				CallACS("MiscVarSetDECORATE",11001,0); 
+			}
+			
+			CallACS("MiscVarSetDECORATE",40,perks3mastered);
+			
+			/*
+			// Future Mastery Perk to come for having 768+ Aeon Pts spent on Perks
+			aeonptsperksused = CallACS("MiscVarCheckDECORATE",42);
+			int perkbasevalue = (768 * dvdsperks_costratio) / 100;
+			int perkbasevalue2 = ((768 * 3) * dvdsperks_costratio) / 100;
+			if (aeonptsperksused >= perkbasevalue2)
+			{
+				CallACS("MiscVarSetDECORATE",11002,2); 
+			}
+			else if (aeonptsperksused >= perkbasevalue)
+			{
+				CallACS("MiscVarSetDECORATE",11002,1); 
+			}
+			else
+			{
+				CallACS("MiscVarSetDECORATE",11002,0); 
+			}
+			*/
+		}
+	}
+	
 	// Perk Checks
 	void A_PSI1DoEffectHPMPPerkCheck()
 	{
@@ -6313,6 +6097,101 @@ class PlayerStatItem : Inventory
 			CallACS("MiscVarSetDECORATE",157,EXPComboTimer); // Subtract
 			CallACS("MiscVarSetDECORATE",162,ComboTimerDelay); // Subtract
 			CallACS("MiscVarSetDECORATE",51,ComboRank);
+		}
+	}
+	
+	void A_PSI1DoEffectHealthRatios()
+	{
+		let globalvars = DSGlobalVariables.Get();
+		let playeractor = AetheriusPlayerPawn(owner);
+		if (playeractor && MaxHealthTrue > 0)
+		{
+			HealthRatio = (PlayerCurrentHealth * 1000) / MaxHealthTrue;
+			HealthRatio = clamp(HealthRatio, 0, 2000);
+
+			if (PlayerCurrentHealth <= 0) { Owner.A_SetInventory("PlayerIsDead", 1); }
+			else
+			{
+				Owner.A_SetInventory("PlayerIsDead", 0);
+				if (HealthRatio != PrevHealthRatio)
+				{
+					if (HealthRatio < 625)
+					{
+						if (HealthRatio < 167)
+						{
+							if (HealthRatio < 21)
+							{
+								Owner.A_SetInventory("CriticalHealth", 1);
+								Owner.A_SetInventory("LowHealth", 0);
+								Owner.A_SetInventory("DecentHealth", 0);
+								Owner.A_SetInventory("NormalHealth", 0);
+							}
+							else 
+							{
+								Owner.A_SetInventory("CriticalHealth", 0);
+								Owner.A_SetInventory("LowHealth", 1);
+								Owner.A_SetInventory("DecentHealth", 0);
+								Owner.A_SetInventory("NormalHealth", 0);
+							}
+						}
+						else 
+						{
+							Owner.A_SetInventory("CriticalHealth", 0);
+							Owner.A_SetInventory("LowHealth", 0);
+							Owner.A_SetInventory("DecentHealth", 1);
+							Owner.A_SetInventory("NormalHealth", 0);
+						}
+					}
+					else
+					{
+						Owner.A_SetInventory("CriticalHealth", 0);
+						Owner.A_SetInventory("LowHealth", 0);
+						Owner.A_SetInventory("DecentHealth", 0);
+						Owner.A_SetInventory("NormalHealth", 1);
+					}
+					if (PlayerCurrentHealth >= MaxHealthTrue) Owner.A_SetInventory("FullHealth", 1); else Owner.A_SetInventory("FullHealth", 0);
+					
+					PrevHealthRatio = HealthRatio;
+				}
+			}
+		}
+	}
+	
+	void A_PSI1DoEffectSkillChecker()
+	{
+		let globalvars = DSGlobalVariables.Get();
+		let playeractor = AetheriusPlayerPawn(owner);
+		if (playeractor)
+		{
+			if (Skill <= SKILL_VERY_EASY)
+			{
+				if (Owner.CountInv("IsSkill1") == 0) Owner.A_SetInventory("IsSkill1", 1);
+				if (Owner.CountInv("IsEasySkill") == 0) Owner.A_SetInventory("IsEasySkill", 1);
+			}
+			if (Skill == SKILL_EASY)
+			{
+				if (Owner.CountInv("IsSkill2") == 0) Owner.A_SetInventory("IsSkill2", 1);
+				if (Owner.CountInv("IsEasySkill") == 0) Owner.A_SetInventory("IsEasySkill", 1);
+			}
+			if (Skill == SKILL_NORMAL)
+			{
+				if (Owner.CountInv("IsSkill3") == 0) Owner.A_SetInventory("IsSkill3", 1);
+			}
+			if (Skill == SKILL_HARD)
+			{
+				if (Owner.CountInv("IsSkill4") == 0) Owner.A_SetInventory("IsSkill4", 1);
+				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_SetInventory("IsHardSkill", 1);
+			}
+			if (Skill == SKILL_VERY_HARD)
+			{
+				if (Owner.CountInv("IsSkill5") == 0) Owner.A_SetInventory("IsSkill5", 1);
+				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_SetInventory("IsHardSkill", 1);
+			}
+			if (Skill >= SKILL_EXTREME)
+			{
+				if (Owner.CountInv("IsSkill6") == 0) Owner.A_SetInventory("IsSkill6", 1);
+				if (Owner.CountInv("IsHardSkill") == 0) Owner.A_SetInventory("IsHardSkill", 1);
+			}
 		}
 	}
 	
@@ -7307,6 +7186,96 @@ class PlayerStatItem : Inventory
 		}
 	}
 	
+	void A_PSI1DoEffectWandGuard()
+	{
+		let globalvars = DSGlobalVariables.Get();
+		let playeractor = AetheriusPlayerPawn(owner);
+		if (playeractor)
+		{
+			let weapon = owner.player.ReadyWeapon;
+			owner.A_SetInventory("WandGuard", 0);
+			if (weapon is "SapphireWandNew" || weapon is "DualSapphireWandsNew")
+			{
+				double chance = 5;
+				chance += (WandMasteryPerkLevel * 4); // +20
+				chance += (WandMasteryEXPerkLevel * 10); // +20
+				chance += (ClearMindPerkLvl * 1); // +5
+				chance += (ClearMindEXPerkLvl * 2.5); // +5
+				if (weapon is "DualSapphireWandsNew") chance *= 1.125;
+				if (DivineAvatarTimer > 0) chance *= 1.25; // Divine Avatar
+				if (SpreadAura1Timer > 0) chance *= 0.85; // Spread Aura Lv 1
+				if (SpreadAura2Timer > 0) chance *= 0.55; // Spread Aura Lv 2
+				if (DQOomphTimer > 0) chance *= 1.125; // Oomph
+				if (DQBluntTimer > 0) chance *= 0.8888888888888889; // Blunt
+				if (DQAcceleratleTimer > 0) chance *= 1.0625; // Acceleratle
+				if (DQDeceleratleTimer > 0) chance *= 0.9411764705882353; // Deceleratle
+				chance *= 0.667;
+				chance += (PlayerSOR * 0.01171875);
+				chance += (PlayerTHE * 0.00390625);
+				chance += (PlayerLevel * 0.015625);
+				if (Owner.CountInv("SafeTeaShoes")) chance += 0.125;
+				if (Owner.CountInv("PearlyCorset")) chance += 0.125;
+				if (Owner.CountInv("WaterFlyingDress")) chance += 0.125;
+				if (Owner.CountInv("EvenstarNecklace")) chance += 1.25;
+				if (Owner.CountInv("CloakOfEvasion")) chance += 0.125;
+				if (Owner.CountInv("AnubisCufflinks")) chance += 0.625;
+				if (Owner.CountInv("KissaBra")) chance += 0.125;
+				if (Owner.CountInv("DivineShield")) chance += 5.0;
+				if (Owner.CountInv("BalrogRing")) chance += 2.5;
+				if (Owner.CountInv("FalconKnifeEarrings")) chance += 0.25;
+				if (Owner.CountInv("SauronHelmet")) chance += 1.0;
+				if (Owner.CountInv("SauronGauntletsItem")) chance += 1.0;
+				if (Owner.CountInv("TheOneRing")) chance += 2.5;
+				if (dvdsdebug_shieldactorghosts) Console.Printf("Wand Guard Chance: %.4f", chance);
+				if (frandom(0.1,100.0) <= chance) owner.A_SetInventory("WandGuard", 1);
+			}
+		}
+	}
+	
+	void A_PSI1DoEffectLevelCaps()
+	{
+		let globalvars = DSGlobalVariables.Get();
+		let playeractor = AetheriusPlayerPawn(owner);
+		if (playeractor)
+		{
+			if (CharacterClass != 2)
+			{
+				if (CharacterClass != 8 && CharacterClass != 9) { LevelCap = dvds_marines_maxlevel; } // Necessary to prevent the game from giving bogus EXP requirements at level 100-199
+				if (CharacterClass == 8) { LevelCap = dvds_ailish_maxlevel; }
+				if (CharacterClass == 9) { LevelCap = dvds_petra_maxlevel; }
+				LevelCap = clamp(LevelCap, 0, 200);
+			}
+			else
+			{
+				if (dvds_flora_ignorearmormadelevelcap == 0)
+				{
+					LevelCap = 100;
+					if (owner.CountInv("SafeTeaShoes")) LevelCap += 9;
+					if (owner.CountInv("PearlyCorset")) LevelCap += 9;
+					if (owner.CountInv("WaterFlyingDress")) LevelCap += 9;
+					if (owner.CountInv("EvenstarNecklace")) LevelCap += 9;
+					if (owner.CountInv("CloakofEvasion")) LevelCap += 9;
+					if (owner.CountInv("AnubisCufflinks")) LevelCap += 9;
+					if (owner.CountInv("KissaBra")) LevelCap += 9;
+					if (owner.CountInv("BalrogRing")) LevelCap += 9;
+					if (owner.CountInv("DoveRibbon")) LevelCap += 9;
+					if (owner.CountInv("FalconKnifeEarrings")) LevelCap += 9;
+					if (owner.CountInv("DivineShield")) LevelCap += 9;
+					if (owner.CountInv("RuinousShield")) LevelCap += 4;
+				
+					if (LevelCap >= 199) LevelCap = 200;
+				}
+				else
+				{
+					LevelCap = clamp(dvds_flora_maxlevel, 0, 200);
+				}
+			}
+			if (dvdsdebug_levelupdisplays) Console.Printf("LevelCap: %d", LevelCap);
+			CallACS("OtherVarSetDECORATE",13,LevelCap);
+			LevelCap = CallACS("OtherVarCheckDECORATE",13);
+		}
+	}
+	
 	// Armor Resistance Numbers
 	void A_PSI1DoEffectArmorResNums()
 	{
@@ -7339,6 +7308,100 @@ class PlayerStatItem : Inventory
 				if (owner.CountInv("DSDiamondArmorClass2")) ArmorResistance += 987;
 			}
 			CallACS("MiscVarSetDECORATE",233,ArmorResistance);
+		}
+	}
+
+	void A_PSI1DoEffectIronFeetArmor()
+	{
+		let globalvars = DSGlobalVariables.Get();
+		let playeractor = AetheriusPlayerPawn(owner);
+		if (playeractor)
+		{
+			// Safe Tea Boots [25% chance of damagefloor/ironfeet guard during normal incursion of damage]
+			// Cloak of Evasion [12.5% chance of damagefloor/ironfeet guard during normal incursion of damage]
+			int IronFeetChance = 0;
+			if (owner.CountInv("SafeTeaShoes")) IronFeetChance += 250;
+			if (owner.CountInv("CloakOfEvasion")) IronFeetChance += 125;
+			if (IronFeetChance > 1000) IronFeetChance = 1000;
+			owner.A_SetInventory("FloraArmorFloorGuard",0);
+			if (random[statitem](1,1000) <= IronFeetChance) owner.A_SetInventory("FloraArmorFloorGuard",1);
+			
+			int FearChance = 100;
+			if (owner.CountInv("TheOneRing")) FearChance = FearChance * 1.667;
+			// Anubis Cufflinks [10% (16.667% with One Ring) chance of brief fear-effect on all hostile creatures with attacks]
+			owner.A_SetInventory("AnubisCufflinksFear",0);   
+			if (owner.CountInv("AnubisCufflinks") && random[statitem](1,1000) <= FearChance) owner.A_SetInventory("AnubisCufflinksFear",1);
+		}
+	}
+	
+	void A_PSI1DoEffectSigilStuff()
+	{
+		let globalvars = DSGlobalVariables.Get();
+		let playeractor = AetheriusPlayerPawn(owner);
+		let weapon = owner.player.ReadyWeapon;
+		if (playeractor)
+		{
+			int SigilPieces = 0;
+			let sigl = owner.FindInventory("Sigil");
+			if (sigl != null)
+			{
+				//Console.Printf("Sigil Pieces: %d", sigl.health);
+				if (sigl.health == 1) owner.A_SetInventory("SigilPhase1", 1); else owner.A_SetInventory("SigilPhase1",0);
+				if (sigl.health == 2) owner.A_SetInventory("SigilPhase2", 1); else owner.A_SetInventory("SigilPhase2",0);
+				if (sigl.health == 3) owner.A_SetInventory("SigilPhase3", 1); else owner.A_SetInventory("SigilPhase3",0);
+				if (sigl.health == 4) owner.A_SetInventory("SigilPhase4", 1); else owner.A_SetInventory("SigilPhase4",0);
+				if (sigl.health == 5) owner.A_SetInventory("SigilComplete", 1); else owner.A_SetInventory("SigilComplete",0);
+				SigilPieces = sigl.health;
+			}
+			CallACS("MiscVarSetDECORATE",25038,SigilPieces);
+			if (ClassicDoomType == 4 && owner.CountInv("SigilModeType") <= 0) owner.A_SetInventory("SigilModeType",SigilPieces);
+			owner.A_SetInventory("SigilPieces",SigilPieces);
+			CallACS("MiscVarSetDECORATE",25047,owner.CountInv("SigilModeType"));
+
+			nm = "BestEndingFlag"; iDTech1Check = nm;
+			if (owner.CountInv("QuestItem27") && owner.CountInv("QuestItem25")) 
+			{
+				owner.A_SetInventory(iDTech1Check,1);
+			}
+			else
+			{
+				owner.A_SetInventory(iDTech1Check,0);
+			}
+			
+			// Checks if you've destroyed the Acolyte Converter in Strife MAP24 [Conversion Chapel] (Flag 25)
+			if (StrifeQuestFlag25 == 0)
+			{
+				if (owner.CountInv("QuestItem25") == 1)
+				{
+					owner.Stamina -= 10;
+					owner.Accuracy -= 10;
+					owner.A_GiveInventory("ConverterBonus");
+					StrifeQuestFlag25++;
+				}
+			}
+
+			// Checks if you've destroyed the Loremaster's Spectre in Strife MAP27 [The Lab] (Flag 26)
+			if (StrifeQuestFlag26 == 0)
+			{
+				if (owner.CountInv("QuestItem26") == 1)
+				{
+					owner.Stamina -= 10;
+					owner.Accuracy -= 10;
+					owner.A_GiveInventory("LoreMasterBonus");
+					StrifeQuestFlag26++;
+				}
+			}
+			// Checks if you've destroyed the Drone Transmitter in Strife MAP14 [The Mines] (Flag 29)
+			if (StrifeQuestFlag29 == 0) 
+			{
+				if (owner.CountInv("QuestItem29") == 1)
+				{
+					owner.Stamina -= 10;
+					owner.Accuracy -= 10;
+					owner.A_GiveInventory("TransmitterBonus");
+					StrifeQuestFlag29++;
+				}
+			}
 		}
 	}
 
