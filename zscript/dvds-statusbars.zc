@@ -81,6 +81,26 @@ class InventoryBarStateDVDS : InventoryBarState
 	
 class AetheriusStatusBar : BaseStatusBar
 {
+	HUDFont mConFont;
+
+	override void Init()
+	{
+		// Run the parent status bar's Init() function
+		//   It's generally a good idea to call the super class's function whenever you 
+		//   are overriding a function, in case some critical code is executed by the 
+		//   parent class - unless you know specifically that you want to completely
+		//   replace the parent class's function instead
+		Super.Init();
+		SetSize(0, 320, 200); // This sets the pixel height of the status bar and the base resolution
+
+		// Initialize the fonts - there's actually a wiki page on this part: 
+		// https://zdoom.org/wiki/Classes:HUDFont
+
+		// Create the font used for the fullscreen HUD
+		Font fnt = "CONFONT";
+		mConFont = HUDFont.Create(fnt, fnt.GetCharWidth("0"), Mono_CellLeft);
+	}
+
 	// Except for the placement information this gets all info from the struct that gets passed in.
 	void DrawInventoryBar(InventoryBarState parms, Vector2 position, int numfields, int flags = 0, double bgalpha = 1.)
 	{
@@ -247,6 +267,80 @@ class AetheriusStatusBar : BaseStatusBar
 				}
 			}
 			
+			// Hotkeys
+			string LegendStr = "";
+			string UserKeyString;
+			Array<String> UserKeys;
+			int LegendFlags = flags;
+			int LegendFontCLR = font.cr_green;
+			double LegendAlpha = 0.9;
+			Vector2 LegendScale = (0.875, 0.875);
+			Vector2 LegendPos = position + (boxsize.X * i, 0); // (324, -25) + (0, yadd)
+			Vector2 LegendPosV = LegendPos;
+			vector2 ValPos = (5, 20); //(482, 20);
+			//Console.Printf("(%s, i: %d) position.x: %d, position.y: %d, boxsize.X * i: %d", item.GetClassName(), i, position.x, position.y, (boxsize.X * i));
+			//Console.Printf("(%s, i: %d) LegendPos.x: %d, LegendPos.y: %d", item.GetClassName(), i, LegendPos.x, LegendPos.y);
+			//Console.Printf("(%s, i: %d) LegendPosV.x: %d, LegendPosV.y: %d", item.GetClassName(), i, (LegendPosV.x + ValPos.x), (LegendPosV.y + ValPos.y));
+
+			if ((item is "MedicinalHerb" ||
+					 item is "StrongMedicine" ||
+					 item is "SpecialMedicine" ||
+					 item is "YggdrasilDew" ||
+					 item is "MiraclePotion")
+					&& item.Amount > 0) 
+			{
+				UserKeyString = UIKeybinds.getKeyboard("QuickHeal");
+				if (UserKeyString != "")
+				{
+					UserKeyString.Split(UserKeys,", ");
+					LegendStr.AppendFormat("%s", UserKeys[0]);
+				}
+			}
+			
+			if ((item is "MagicWater" ||
+					 item is "SageElixir" ||
+					 item is "ElfinElixir")
+					&& item.Amount > 0) 
+			{
+				UserKeyString = UIKeybinds.getKeyboard("QuickMana");
+				if (UserKeyString != "")
+				{
+					UserKeyString.Split(UserKeys,", ");
+					LegendStr.AppendFormat("%s", UserKeys[0]);
+				}
+			}
+			
+			if ((item is "LesserVimstone" ||
+					 item is "GreaterVimstone")
+					&& item.Amount > 0) 
+			{
+				UserKeyString = UIKeybinds.getKeyboard("pukename QuickuseVimstone");
+				if (UserKeyString != "")
+				{
+					UserKeyString.Split(UserKeys,", ");
+					LegendStr.AppendFormat("%s", UserKeys[0]);
+				}
+			}
+			
+			if ((item is "RockbombShard")
+					&& item.Amount > 0) 
+			{
+				UserKeyString = UIKeybinds.getKeyboard("use RockbombShard");
+				if (UserKeyString != "")
+				{
+					UserKeyString.Split(UserKeys,", ");
+					LegendStr.AppendFormat("%s", UserKeys[0]);
+				}
+			}
+
+			if (LegendStr != "") 
+			{
+				//Console.Printf(LegendStr);
+				//Console.Printf("x: %d, y: %d", LegendPosV.x, LegendPosV.y);
+				DrawString(mConFont, LegendStr, LegendPosV + ValPos, flags | DI_TEXT_ALIGN_CENTER, LegendFontCLR, LegendAlpha, -1, 4, LegendScale);
+			}
+			
+			// Amount & Limits
 			if (parms.amountfont != null && (item.Amount >= 0 || (flags & DI_ALWAYSSHOWCOUNTERS)))
 			{
 				if (item.MaxAmount > 0) ItemHeldRatio = (item.Amount * 1000) / item.MaxAmount;
@@ -358,6 +452,8 @@ class AetheriusStatusBarMain : AetheriusStatusBar
 		fnt = "INDEXFONT_DVDS";
 		mIndexFont = HUDFont.Create(fnt, fnt.GetCharWidth("0"), true, 1, 1);
 		mAmountFont = HUDFont.Create("INDEXFONT");
+		fnt = "CONFONT";
+		mConFont = HUDFont.Create(fnt, fnt.GetCharWidth("0"), Mono_CellLeft);
 
 		// Initialize the inventory bar
 		diparms = InventoryBarState.Create();
