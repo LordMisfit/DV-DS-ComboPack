@@ -17,6 +17,7 @@ class PlayerStatItem : Inventory
 	
 	mixin Tension;
 	mixin DamageMessages;
+	mixin HealingChecker;
 	
 	Array<int> SpellCostsBase;
 	
@@ -591,171 +592,6 @@ class PlayerStatItem : Inventory
 	{
 		let globalvars = DSGlobalVariables.Get();
 		let playeractor = AetheriusPlayerPawn(owner);
-	}
-	
-	//*****************************************
-	//*Extra Functions to play from DoEffect()*
-	//*****************************************
-	int F_GetHealingValue(int type, int MinOrMax)
-	{
-		int HealSorcRatio, value;
-		
-		if (type == 0) // Minor Healing
-		{
-			if (MinOrMax == 0) value = 1; // Min
-			if (MinOrMax == 1) value = 3; // Max
-			value += floor(PlayerLevel * 0.125);
-			if (CharacterClass == 2) value = floor(value * 1.25);
-		}
-		
-		if (type == 1) // Healing
-		{
-			if (MinOrMax == 0) value = 7; // Min
-			if (MinOrMax == 1) value = 12; // Max
-			value += floor(PlayerLevel * 0.1667);
-			if (CharacterClass == 2) value = floor(value * 1.50);
-		}
-	
-	
-		if (type == 2) // Major Healing
-		{
-			if (MinOrMax == 0) value = 18; // Min
-			if (MinOrMax == 1) value = 31; // Max
-			value += floor(PlayerLevel * 0.3334);
-			if (CharacterClass == 2) value = floor(value * 1.75);
-		}
-	
-		if (type == 3) // Heal [DQ]
-		{
-			if (MinOrMax == 0) value = 24; // Min
-			if (MinOrMax == 1) value = 36; // Max
-			value += floor(PlayerLevel * 0.2);
-		}
-	
-		if (type == 4) // MidHeal [DQ]
-		{
-			if (MinOrMax == 0) value = 60; // Min
-			if (MinOrMax == 1) value = 90; // Max
-			value += floor(PlayerLevel * 0.25);
-		}
-	
-		if (type == 5) // MoreHeal [DQ]
-		{
-			if (MinOrMax == 0) value = 135; // Min
-			if (MinOrMax == 1) value = 210; // Max
-			value += floor(PlayerLevel * 0.3);
-		}
-		
-		if (type == 6) value = MaxHealthTrue; // FullHeal [DQ]
-
-		// Stat Alternations
-		value = floor(value * (16 + (PlayerLevel * 0.04)) / 16);
-		if (owner.CountInv("SauronHelmet")) value = floor(value * 1.125);
-		if (owner.CountInv("SauronGauntletsItem")) value = floor(value * 1.125);
-		if (owner.CountInv("TheOneRing")) value = floor(value * 1.5);
-		
-		// Oomph
-		if (DQOomphTimer > 0) value = floor(value * 1.25);
-
-		// Blunt
-		if (DQBluntTimer > 0) value = floor(value * 0.8);
-		
-		// Divine Avatar
-		if (DivineAvatarTimer > 0) value = floor(value * 4);
-	
-		// ???
-		if (GoETimer > 0) value = floor(value * 10);
-		
-		// Power Trip
-		if (dvds_musou_powertripmode == 1) value = floor(value * 5);
-		if (dvds_musou_powertripmode == 2) value = floor(value * 10);
-		
-		// Healing Strength is increased based on Sorcery stat
-		if (CharacterClass == 0) HealSorcRatio = (PlayerSOR * 75) / 300;
-		if (CharacterClass == 1) HealSorcRatio = (PlayerSOR * 75) / 200;
-		if (CharacterClass == 2) HealSorcRatio = (PlayerSOR * 75) / 150;
-		if (CharacterClass == 8) HealSorcRatio = (PlayerSOR * 75) / 175;
-		if (CharacterClass == 9) HealSorcRatio = (PlayerSOR * 75) / 200;
-		HealSorcRatio += 100;
-		value = floor((value * HealSorcRatio) / 100);
-		// Healing Strength is also increased based on Therapeusis stat [3x the value of Sorcery, so Therapeusis is best for healing]
-		if (CharacterClass == 0) HealSorcRatio = (PlayerTHE * 225) / 300;
-		if (CharacterClass == 1) HealSorcRatio = (PlayerTHE * 225) / 200;
-		if (CharacterClass == 2) HealSorcRatio = (PlayerTHE * 225) / 150;
-		if (CharacterClass == 8) HealSorcRatio = (PlayerTHE * 225) / 175;
-		if (CharacterClass == 9) HealSorcRatio = (PlayerTHE * 225) / 200;
-		HealSorcRatio += 100;
-		value = floor((value * HealSorcRatio) / 100);
-		
-		if (TensionLevel == 1) value = floor(value * 1.7); // 1.7x
-		if (TensionLevel == 2) value = floor(value * 3); // 3x
-		if (TensionLevel == 3) value = floor(value * 5); // 5x
-		if (TensionLevel == 4) value = floor(value * 7.5); // 7.5x
-		if (TensionLevel == 5) value = floor(value * 11.25); // 11.25x
-		if (TensionLevel == 6) value = floor(value * 17.5); // 17.5x
-		if (TensionLevel == 7) value = floor(value * 25); // 25x
-		
-		if (dvdsdebug_healspelldisplays) Console.Printf("Heal Type: %d, MinOrMax: %d, HealValue: %d", type, MinOrMax, value);
-		return value;
-	}
-	
-	int F_GetStamHealValue(int type, int CapOrMinOrMax)
-	{
-		int HealSorcRatio, value;
-
-		if (type == 0) // Minor Healing
-		{
-			if (CapOrMinOrMax == 0) value = 36; // Min
-			if (CapOrMinOrMax == 1) value = 66; // Max
-			if (CapOrMinOrMax == 2) value = 10250; // Cap
-		}
-
-		if (type == 1) // Healing
-		{
-			if (CapOrMinOrMax == 0) value = 180; // Min
-			if (CapOrMinOrMax == 1) value = 330; // Max
-			if (CapOrMinOrMax == 2) value = 11250; // Cap
-		}
-
-		if (type == 2) // Major Healing
-		{
-			if (CapOrMinOrMax == 0) value = 450; // Min
-			if (CapOrMinOrMax == 1) value = 825; // Max
-			if (CapOrMinOrMax == 2) value = 15000; // Cap
-		}
-		
-		value = floor(value * (1.0 + (StamUpPerkLvl * 0.05) + (StamUpEXPerkLvl * 0.125)));
-		value = floor(value * (1.0 + (StrifeStamLvl * 0.125)));
-		value = floor(value * (1.0 + (PlayerLevel * 0.01)));
-		
-		if (CapOrMinOrMax != 2) 
-		{
-			value = floor(value * (1.0 + (PlayerLevel * 0.004)));
-			if (owner.CountInv("SauronHelmet")) value = floor(value * 1.125);
-			if (owner.CountInv("SauronGauntletsItem")) value = floor(value * 1.125);
-			if (owner.CountInv("TheOneRing")) value = floor(value * 2.5);
-
-			if (DivineAvatarTimer > 0) value = floor(value * 4);
-			if (GoETimer > 0) value = floor(value * 10);
-			
-			if (TensionLevel == 1) value = floor(value * 1.7); // 1.7x
-			if (TensionLevel == 2) value = floor(value * 3); // 3x
-			if (TensionLevel == 3) value = floor(value * 5); // 5x
-			if (TensionLevel == 4) value = floor(value * 7.5); // 7.5x
-			if (TensionLevel == 5) value = floor(value * 11.25); // 11.25x
-			if (TensionLevel == 6) value = floor(value * 17.5); // 17.5x
-			if (TensionLevel == 7) value = floor(value * 25); // 25x
-			
-			if (CharacterClass == 0) value = floor(value * 1.75); // Deggaris in use
-			if (CharacterClass == 1) value = floor(value * 1.25); // Illucia in use
-			if (CharacterClass == 2) value = floor(value * 0.875); // Flora in use
-			if (CharacterClass == 8) value = floor(value * 0.75); // Ailish in use
-			if (CharacterClass == 9) value = floor(value * 2.00); // Petra in use
-		}
-		//value = clamp(value, value, MegaMaxStamina);
-
-		if (dvdsdebug_healspelldisplays) Console.Printf("Stam Heal Type: %d, CapOrMinOrMax: %d, HealValue: %d", type, CapOrMinOrMax, value);
-		return value;
 	}
 	
 	void DVDSPreInitStuff()
@@ -6864,7 +6700,7 @@ class PlayerStatItem : Inventory
 				if (Owner.CountInv("SauronHelmet")) chance += 1.0;
 				if (Owner.CountInv("SauronGauntletsItem")) chance += 1.0;
 				if (Owner.CountInv("TheOneRing")) chance += 2.5;
-				if (dvdsdebug_shieldactorghosts) Console.Printf("Wand Guard Chance: %.4f", chance);
+				if (dvdsdebug_showvisibleshieldparts) Console.Printf("Wand Guard Chance: %.4f", chance);
 				if (frandom[statitem](0.1,100.0) <= chance) owner.A_SetInventory("WandGuard", 1);
 			}
 		}
