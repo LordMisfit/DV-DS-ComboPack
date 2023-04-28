@@ -34,6 +34,291 @@ class LDCustomFunction : AetheriusCustomInventory
 	}
 }
 
+//==============================================================================
+//				LEGENDARY SELECTION
+//==============================================================================
+class LDLWillBecomeLegendary : PlaceHolderItem { }
+class LDLegendaryMonsterToken : LDPermanentInventory {}
+class LDLegendaryMonsterTransformed : LDPermanentInventory {}
+
+class LDLegendaryMonsterTracker : PlaceHolderItem
+{
+	bool evolved;
+	int EvolveHPLevel;
+	int newtid;
+	int StartTID;
+	int DVDSSpawnHealth;
+	int SpawnHealthX;
+	int RealSpawnHealth;
+	bool condemned;
+	
+	int penttics, pentticsmax;
+	double pentalpha, pentradmulti;
+	bool pentfadeout;
+	
+	void Draw_Pentagram(double pentaradius)
+	{
+		int px, py, pz, c_angle, icount;
+		int posx, posy, posz;
+		if (!pentradmulti) pentradmulti = 1.0;
+		double radius = (pentaradius * 1.9 * pentradmulti);
+		double angle;
+		int offset = 0;
+		
+		int linepoints_x[5];
+		int linepoints_y[5];
+		int point1, point2;
+		int linepos;
+		int vec;
+		
+		if (pentticsmax > 0)
+		{
+			if (penttics == 0) 
+			{
+				pentfadeout = false;
+				if (owner.bBOSS) pentalpha = 0.00390625;
+										else pentalpha = 0.015625;
+			}
+			
+			posx = owner.pos.x;
+			posy = owner.pos.y;
+			posz = (owner.pos.z + ((pentticsmax - penttics) * 1.25)); //owner.pos.z;
+			
+			// Draw the circle, 360 points
+			for (icount = 360; icount > 0; icount--)
+			{
+				angle = icount; // double(1.0 / 360 * icount);
+				px = (cos(angle) * radius);
+				py = (sin(angle) * radius);
+				if (owner.bBOSS) pz = ((pentticsmax - penttics) * 1.25);
+										else pz = ((pentticsmax - penttics) * 1.625);
+				
+				owner.A_SpawnParticle("FF 00 00", SPF_NOTIMEFREEZE|SPF_FULLBRIGHT, Random(1, 3), Random(5, 7), angle, px, py, pz, 0, 0, 0, 0, 0, 0, pentalpha, 1.0);
+				//if (LD_legendarydebug) Console.Printf("[circle] icount: %d, angle: %.8f, posx: %d (px: %d), posy: %d (py: %d), posz: %d (pz: %d)", icount, angle, posx, px, posy, py, posz, pz);
+			}
+			
+			// Draw each line, 5 points
+			// First build the point positions
+			for (icount = 5; icount > 0; icount--)
+			{
+				angle = (72.0) * icount;
+				linepoints_x[icount - 1] = (cos(angle) * radius);
+				linepoints_y[icount - 1] = (sin(angle) * radius);
+			}
+			
+			// Now draw 5 line vectors, skipping every second number to draw the star
+			point1 = 0;
+			point2 = 2; // (point1 + 2) % 5
+			for (icount = 0; icount < 5; icount++)
+			{
+				for (linepos = (radius * 1.9); linepos > 0; linepos--)
+				{
+					vec = VectorAngle(linepoints_x[point2] - linepoints_x[point1], linepoints_y[point2] - linepoints_y[point1]);
+					px = linepoints_x[point1] + linepos * Cos(vec);
+					py = linepoints_y[point1] + linepos * Sin(vec);
+					
+					owner.A_SpawnParticle("FF 00 00", SPF_NOTIMEFREEZE|SPF_FULLBRIGHT, Random(1, 3), Random(5, 7), angle, px, py, pz, 0, 0, 0, 0, 0, 0, pentalpha, 1.0);
+					//if (LD_legendarydebug) Console.Printf("[circle] icount: %d, angle: %.8f, posx: %d (px: %d), posy: %d (py: %d), posz: %d (pz: %d)", icount, angle, posx, px, posy, py, posz, pz);
+				}
+				
+				point1 = point2;
+				point2 = (point1 + 2) % 5;
+			}
+			
+			if (!pentfadeout)
+			{
+				if (pentticsmax > 0)
+				{
+					if (owner.bBOSS) pentalpha += 0.0390625;
+													 pentalpha += 0.15625;
+					
+					if (pentalpha >= 1.0)
+					{
+						pentalpha = 1.0;
+						pentfadeout = true;
+					}
+				}
+			}
+			else
+			{
+				if (pentticsmax > 0)
+				{
+					if (owner.bBOSS) pentalpha -= 0.0078125;
+											else pentalpha -= 0.03125;
+					if (pentalpha < 0.0) 
+					{
+						pentalpha = 0.0;
+						pentticsmax = 0;
+					}
+				}
+			}
+			if (LD_legendarydebug) Console.Printf("[circle] pentalpha: %.8f, penttics: %d, pentfadeout: %d", pentalpha, penttics, pentfadeout);
+			if (LD_legendarydebug) Console.Printf("[circle] radius: %.8f (%.8f)", radius, pentaradius);
+		}
+	}
+	
+	override void Tick()
+	{
+		super.Tick();
+		
+		if (owner)
+		{
+			if (GetAge() >= 1)
+			{
+				If (!owner.CountInv("LDLWillBecomeLegendary")) 
+				{
+					StartTID = owner.TID;
+					DVDSSpawnHealth = (owner.SpawnHealth() + owner.Stamina);
+					SpawnHealthX = (owner.SpawnHealth() + owner.Stamina);
+					RealSpawnHealth = (owner.SpawnHealth() + owner.Stamina);
+					EvolveHPLevel = DVDSSpawnHealth / random(2,4);
+					newtid = 5000 + random(1,100);
+					evolved = false;
+					owner.bBUDDHA = true;
+					owner.A_SetInventory("LDLWillBecomeLegendary", 1);
+					pentradmulti = frandom(0.925,1.325);
+					if (owner.bBOSS) pentradmulti *= frandom(1.125,1.25);
+					if (LD_legendarydebug) Console.Printf("\cdLD DEBUG\c-: \ca%s \c-(%d / %d) has been \cdLEGENDARIFIED\c- [pentradmulti: %.8f]", owner.GetClassName(), StartTID, newtid, pentradmulti);
+				}
+				int health = owner.health;
+				double olddamagemulti = owner.DamageMultiply;
+				double olddamagereduce = owner.DamageFactor;
+				double oldspeed = owner.Speed;
+				double oldmass = owner.Mass;
+				double oldhp = DVDSSpawnHealth;
+				double newdamagemulti;
+				double newdamagereduce;
+				double newspeed;
+				double newmass;
+				double newhp;
+				if (!evolved && LD_legendarydebug) Console.Printf("health: %d vs %d (%d, %d, %d), evolved: %d, age: %d", owner.health, EvolveHPLevel, DVDSSpawnHealth, SpawnHealthX, RealSpawnHealth, evolved, GetAge());
+				
+				if (owner.health > 0 && owner.health <= EvolveHPLevel && !evolved)
+				{
+					penttics = pentticsmax = random(105,140);
+					if (owner.bBOSS) newhp = (oldhp * LD_legendaryhealthboss) / 100;
+											else newhp = (oldhp * LD_legendaryhealth) / 100;
+					owner.health = newhp;
+					owner.Stamina = (newhp - owner.SpawnHealth());
+					owner.A_SetInventory("LDLegendaryMonsterTransformed", 1);
+					if (owner.bBUDDHA) owner.bBUDDHA = false;
+					if (owner.bBOSS)
+					{
+						owner.A_StartSound("effects/legendaryenemyboss", CHAN_5, CHANF_DEFAULT, 1.0, ATTN_NONE);
+						owner.bNOPAIN = true;
+						owner.bDONTTHRUST = true;
+				
+						newdamagemulti = (olddamagemulti * LD_legendarydamageboss);
+						if (LD_legendarydebug) Console.Printf("New DamageMulti: %.8f", newdamagemulti);
+						owner.DamageMultiply = newdamagemulti;
+				
+						newdamagereduce = (olddamagereduce * LD_legendarydefenseboss);
+						if (LD_legendarydebug) Console.Printf("New DamageReduce: %.8f", newdamagereduce);
+						owner.DamageFactor = newdamagereduce;
+						
+						newspeed = oldspeed * LD_legendaryspeedboss;
+						if (LD_legendarydebug) Console.Printf("New Speed: %.8f", newspeed);
+						owner.Speed = newspeed;
+						
+						newmass = oldmass * LD_legendarymassboss / 100;
+						if (LD_legendarydebug) Console.Printf("New Mass: %d", newmass);
+						owner.Mass = newmass;
+					}
+					else
+					{
+						newdamagemulti = (olddamagemulti * LD_legendarydamage);
+						if (LD_legendarydebug) Console.Printf("New DamageMulti: %.8f", newdamagemulti);
+						owner.DamageMultiply = newdamagemulti;
+				
+						newdamagereduce = (olddamagereduce * LD_legendarydefense);
+						if (LD_legendarydebug) Console.Printf("New DamageReduce: %.8f", newdamagereduce);
+						owner.DamageFactor = newdamagereduce;
+						
+						newspeed = oldspeed * LD_legendaryspeed;
+						if (LD_legendarydebug) Console.Printf("New Speed: %.8f", newspeed);
+						owner.Speed = newspeed;
+						
+						newmass = oldmass * LD_legendarymass / 100;
+						if (LD_legendarydebug) Console.Printf("New Mass: %d", newmass);
+						owner.Mass = newmass;
+					}
+					owner.A_StartSound("effects/legendaryenemyloop", CHAN_6, CHANF_LOOPING, 0.8, ATTN_NORM);
+					owner.A_StartSound("effects/legendaryenemy", CHAN_7, CHANF_DEFAULT, 1.0, ATTN_NONE);
+					owner.bJUMPDOWN = true;
+					owner.bALWAYSFAST = true;
+					owner.bMISSILEMORE = true;
+					owner.bMISSILEEVENMORE = true;
+					owner.bNOINFIGHTING = true;
+					owner.bNOTARGET = true;
+					owner.bQUICKTORETALIATE = true;
+					owner.bNOFEAR = true;
+					//owner.bNOTIMEFREEZE = true;
+					owner.bSEEINVISIBLE = true;
+					owner.bDONTDRAIN = true;
+					owner.bNOICEDEATH = true;
+					owner.bDONTGIB = true;
+					owner.bDROPOFF = true;
+					owner.bBRIGHT = true;
+					owner.bBUDDHA = false;
+					evolved = true;
+				}
+				
+				if (penttics > 0 && pentticsmax > 0 && evolved) 
+				{
+					Draw_Pentagram(owner.radius);
+					penttics--;
+					if (LD_legendarydebug) Console.Printf("penttics: %d / %d", penttics, pentticsmax);
+				}
+				
+				if (owner.health <= 0 && evolved)
+				{
+					if (penttics > 0) penttics = 0;
+					if (pentticsmax > 0) pentticsmax = 0;
+					owner.A_StopSound(5);
+					owner.A_StopSound(6);
+					owner.A_StopSound(7);
+					owner.A_SetInventory("LDLegendaryMonsterVisualEffectMaker",0);
+					owner.A_SetInventory("LDLegendaryMonsterVisualEffectAlternator",0);
+					if (owner.bBOSS)
+					{
+						owner.bNOPAIN = false;
+						owner.bDONTTHRUST = false;
+					}
+					owner.bJUMPDOWN = false;
+					owner.bALWAYSFAST = false;
+					owner.bMISSILEMORE = false;
+					owner.bMISSILEEVENMORE = false;
+					owner.bNOINFIGHTING = false;
+					owner.bNOTARGET = false;
+					owner.bQUICKTORETALIATE = false;
+					owner.bNOFEAR = false;
+					//owner.bNOTIMEFREEZE = false;
+					owner.bSEEINVISIBLE = false;
+					owner.bDONTDRAIN = false;
+					owner.bNOICEDEATH = false;
+					owner.bDONTGIB = false;
+					owner.bDROPOFF = false;
+					owner.bBRIGHT = false;
+
+					double xpos = frandom(0.0,4.0);
+					double ypos = frandom(0.0,4.0);
+					double zpos = frandom(12.0,24.0);
+					double xvel = xpos * 2;
+					double yvel = ypos * 2;
+					double zvel = -4.0;
+					
+					string type = "LDLiteDVDSItem";
+					if (owner.bBOSS) type = "LDLiteEEBossItem";
+					owner.A_SpawnItemEx(type,xpos,ypos,zpos,xvel,yvel,zvel,owner.angle,SXF_ABSOLUTEANGLE|SXF_NOCHECKPOSITION);
+				}
+			}
+		}
+		else Destroy();
+		
+		if (condemned) Destroy();
+	}
+}
+
 class LDVisualIcon : AetheriusBaseZSC
 {
 	default
@@ -73,12 +358,6 @@ class LDMaxHax : AetheriusBaseZSC
 			Stop;
 	}
 }
-
-//==============================================================================
-//				LEGENDARY SELECTION
-//==============================================================================
-class LDLegendaryMonsterToken : LDPermanentInventory {}
-class LDLegendaryMonsterTransformed : LDPermanentInventory {}
 
 class LDLegendaryMonsterChooserEasy : LDMaxHax
 {
@@ -469,8 +748,25 @@ class LDLegendaryMonsterVisualEffect2 : LDLegendaryMonsterVisualEffect1
 //==============================================================================
 //			LEGENDARY MAP MARKERS
 //==============================================================================
+class LDLBaseMapMarker : MapMarker
+{
+	override void Tick()
+	{
+		super.Tick();
+		if (target)
+		{
+			if (target.health > 0)
+			{
+				A_Warp(AAPTR_TARGET,0.0,0.0,0.0+(target.height/2),0.0,WARPF_NOCHECKPOSITION|WARPF_INTERPOLATE);
+			}
+			else Destroy();
+		}
+		else Destroy();
+	}
+}
+
 // These appear on the automap if enabled in the options
-class LDLegendaryMonsterMarker : MapMarker
+class LDLegendaryMonsterMarker : LDLBaseMapMarker
 {
 	default
 	{
@@ -480,8 +776,19 @@ class LDLegendaryMonsterMarker : MapMarker
 	States
 	{
 		Spawn:
-			SCUL A -1;
-			Stop;
+			SCUL A 35
+			{
+				if (!LD_legendarymarkers) return resolvestate("Not");
+				return resolvestate(null);
+			}
+			loop;
+		Not:
+			TNT1 A 35
+			{
+				if (LD_legendarymarkers) return resolvestate("Spawn");
+				return resolvestate(null);
+			}
+			loop;
 	}
 }
 
@@ -495,8 +802,19 @@ class LDLegendaryMonsterBossMarker : MapMarker
 	States
 	{
 		Spawn:
-			SCUL B -1;
-			Stop;
+			SCUL B 35
+			{
+				if (!LD_legendarymarkers) return resolvestate("Not");
+				return resolvestate(null);
+			}
+			loop;
+		Not:
+			TNT1 A 35
+			{
+				if (LD_legendarymarkers) return resolvestate("Spawn");
+				return resolvestate(null);
+			}
+			loop;
 	}
 }
 
