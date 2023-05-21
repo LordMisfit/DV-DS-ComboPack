@@ -16,6 +16,11 @@ class AetheriusPlayerPawn : PlayerPawn
 	mixin Tension;
 	mixin DamageMessages;
 	mixin MapCheck;
+
+	int AirTime, MaxAirTime;
+	int InWaterTime;
+	bool takendrowndmg;
+	bool willgasp;
 	
 	bool wasongroundprevtic, wasongroundcurrtic;
 	
@@ -387,13 +392,103 @@ class AetheriusPlayerPawn : PlayerPawn
 		
 		super.MovePlayer();
 	}
+	
+	override bool ResetAirSupply(bool playgasp)
+	{
+		let player = self.player;
+		let MiscItem = PlayerStatItem(FindInventory("PlayerStatItem"));
+		
+		bool wasdrowning = (player.air_finished < Level.maptime);
+		/*
+		if (AirTime <= 0) 
+		{
+			wasdrowning = true;
+			AirTime = 0;
+			if (dvdsdebug_airmeter == 1) Console.Printf("wasdrowning");
+		}
 
+		if (AirTime < MaxAirTime)
+		{
+			if (MaxAirTime > 0) airreplen = ((MaxAirTime / (TICRATE * 5.0)) * 100.0);
+			if (airreplen < 1) airreplen = 1;
+			if (MiscItem) airreplen *= (1.0 + (ActualLevel * 0.0125));
+			if (CountInv("PowerStrength") || CountInv("AetheriusPowerStrength")) airreplen *= 1.25;
+			if (CountInv("PowerNoDrown") || CountInv("PowerIronFeet") || CountInv("PowerIronFeet2") || CountInv("PowerMask")) airreplen *= 1.625;
+			double ssa = 1.00;
+			//
+			airreplen *= ssa;
+			if (MiscItem)
+			{
+				if (MiscItem.drowndebufflevel)
+				{
+					airreplen *= (1.00 - (MiscItem.drowndebufflevel * frandompick(0.5,0.0625,0.0625,0.75,0.75,0.75,0.75,0.75,0.875,0.875,0.875,1.0)));
+					if (airreplen < 1 && random(1,16) <= (16 - int(MiscItem.drowndebufflevel * frandom(0.8,1.2)))) airreplen = 1;
+					if (airreplen < 0) airreplen = 0;
+				}
+			}
+			airreplentimer += airreplen;
+			while (airreplentimer > 100)
+			{
+				AirTime += 1;
+				airreplentimer -= 100;
+			}
+			if (dvdsdebug_airmeter >= 1) Console.Printf("\c[sapphire]airreplentimer: %d, airreplen: %d (%d / %d)", airreplentimer, airreplen, AirTime, MaxAirTime);
+		}
+		*/
+
+		if (playgasp && wasdrowning)
+		{
+			A_StartSound("*gasp", CHAN_VOICE);
+		}
+		if (Level.airsupply > 0 && AirCapacity > 0) player.air_finished = Level.maptime + int(Level.airsupply * AirCapacity);
+		else player.air_finished = int.max;
+
+		return wasdrowning;
+	}
+	/*
+	void SpawnBubbles(string bubbletype = "AirBubble1", double bubblex = 0, double bubbley = 0, double bubblez = 0)
+	{
+		bubblex += random(3,11);
+		bubblex += random(-2,2);
+		bubblez += random((Player.ViewHeight-2),(Player.ViewHeight+2));
+		A_SpawnItemEx("AirBubble1",bubblex,bubbley,bubblez,0,0,0,0,SXF_NOCHECKPOSITION);
+	}
+	*/
 	override void CheckAirSupply()
 	{
-		if (!isvoodoodoll)
+		if (isvoodoodoll)
 		{
+			super.CheckAirSupply();
+		}
+		else
+		{
+			let MiscItem = PlayerStatItem(FindInventory("PlayerStatItem"));
+			/*
+			MaxAirTime = (20 * TICRATE);
+			if (MiscItem) 
+			{
+				double lvlfactor = 2.916666666666667;
+				if (skill <= 0) lvlfactor = 4.666666666666667; // 1.6x
+				if (skill == 1) lvlfactor = 3.572916666666667; // 1.225x
+				if (skill == 2) lvlfactor = 2.916666666666667; // 1.0x
+				if (skill == 3) lvlfactor = 2.479166666666667; // 0.85x
+				if (skill >= 4) lvlfactor = 2.041666666666667; // 0.7x
+				MaxAirTime += (TruePlayerLevel * lvlfactor);
+				MaxAirTime += (MiscItem.AirBonusAdd * 1);
+			}
+			if (CountInv("PowerStrength") || CountInv("AetheriusPowerStrength")) MaxAirTime *= 1.25;
+			if (MaxAirTime > 0) MaxAirTime *= AirCapacity;
+			if (GetAge() <= 1 && AirTime != MaxAirTime) AirTime = MaxAirTime;
+			*/
+			
+			// Drown Damage
 			int DrownDmg = 2 + ((level.maptime - player.air_finished) / TICRATE);
+			//int DrownDmg = 2 + (-AirTime / TICRATE);
 			DrownDmg = clamp(DrownDmg, 0, DrownDmg);
+			//DrownDmg = ceil(DrownDmg * frandompick(0.625,0.75,0.875,1.000));
+			//if (DrownDmg < 0) DrownDmg = 0;
+			//if (dvdsdebug_airmeter == 1) Console.Printf("InWaterTime: %d, WaterLevel: %d (WaterDepth: %.4f), AirTime: %d / %d, DrownDmg: %d, willgasp: %d, takendrowndmg: %d", InWaterTime, waterlevel, WaterDepth, AirTime, MaxAirTime, DrownDmg, willgasp, takendrowndmg);
+
 			// Handle air supply	
 			//if (level.airsupply > 0)
 			{
@@ -411,10 +506,6 @@ class AetheriusPlayerPawn : PlayerPawn
 			}
 			int AirTime = max(player.air_finished - level.maptime, 0);
 			if (dvdsdebug_showairmeter) Console.Printf("    WaterLevel: %d, Level.Time: %d, Level.MapTime: %d, Player.AirFinished: %d, \cxAirTime: %d / %d\c- (%d), DrownDmg: %d", waterlevel, level.time, level.maptime, player.air_finished, AirTime, level.airsupply, AirCapacity, DrownDmg);
-		}
-		else
-		{
-			super.CheckAirSupply();
 		}
 	}
 	
@@ -820,20 +911,6 @@ class AetheriusPlayerPawn : PlayerPawn
 			move *= cos(Pitch);
 		}
 		Thrust(move, angle);
-	}
-	
-	override bool ResetAirSupply (bool playgasp)
-	{
-		let player = self.player;
-		bool wasdrowning = (player.air_finished < Level.maptime);
-
-		if (playgasp && wasdrowning)
-		{
-			A_StartSound("*gasp", CHAN_VOICE);
-		}
-		if (Level.airsupply > 0 && AirCapacity > 0) player.air_finished = Level.maptime + int(Level.airsupply * AirCapacity);
-		else player.air_finished = int.max;
-		return wasdrowning;
 	}
 	
 	
