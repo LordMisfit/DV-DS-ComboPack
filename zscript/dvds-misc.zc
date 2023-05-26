@@ -55,6 +55,7 @@ class PlayerStatItem : Inventory
 	int SceptreLvl14Req;
 	int SceptreLvl15Req;
 	int SceptreLvl16Req;
+	int SceptreActualLevel;
 	int LevelCap;
 	int ClassCheck;
 	int outputdamage;
@@ -186,6 +187,8 @@ class PlayerStatItem : Inventory
 	int CurrentArmorClass;
 	int CurrentMaxArmor;
 	int HellcoreOverheatLevel;
+	double HellcoreCooldownSpeed;
+	int HellcoreCooldownTimer;
 	int ClassicDoomType;
 	int ModType;
 	
@@ -2673,11 +2676,12 @@ class PlayerStatItem : Inventory
 		//******************************************************
 		if (playeractor && UsingInGameMenu == 0)
 		{
+			HellcoreCooldownSpeed = 1.0;
 			if (HellcoreOverheatLevel > 0 && PlayerCurrentHealth)
 			{
 				HellcoreCoolRatio = 400; // 0.04%
 				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 1 - Cooldown Increment (Base)]: %d\c-, Heat Level:", HellcoreCoolRatio, HellcoreOverheatLevel);
-
+				
 				// Dove Ribbon quickly cools down Hellcore meter.
 				previousdelaycount = HellcoreCoolRatio;
 				if (Owner.CountInv("DoveRibbon")) HellcoreCoolRatio *= 3;
@@ -2765,16 +2769,36 @@ class PlayerStatItem : Inventory
 					if (CallACS("DVDSSpecialArrayCheckDECORATE",4) > 0 || Owner.CountInv("PlayingTCOTDA")) tempdouble *= 5;
 					if (CallACS("DVDSSpecialArrayCheckDECORATE",5) > 0 || Owner.CountInv("PlayingCircus2")) tempdouble *= 3;
 					HellcoreCoolRatio *= (1.0 + (0.25 + tempdouble));
-					if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 12 - Cooldown Increments]: %d\c-, New Heat Level: %d\c-, Old Heat Level: %d", HellcoreCoolRatio,  HellcoreOverheatLevel, previousdelaycount);
+					if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 12 - Cooldown Increments]: %d\c-, New Heat Level: %d\c-, Old Heat Level: %d", HellcoreCoolRatio, HellcoreOverheatLevel, previousdelaycount);
 				}
 				
+				// ?
+				// Cooldown Gradually Speeds up when not in use
+				if (HellcoreCooldownTimer > 0)
+				{
+					previousdelaycount = HellcoreCoolRatio;
+					double speedlimit = (Owner.CountInv("DoveRibbon") ? 14.0625 : 6.25);
+					HellcoreCooldownSpeed = (1.0 + double(double(HellcoreCooldownTimer * (Owner.CountInv("DoveRibbon") ? 0.7401315789473685 : 0.3289473684210527)) / TICRATE));
+					if (HellcoreCooldownSpeed > speedlimit) HellcoreCooldownSpeed = speedlimit;
+					if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 13a - Cooldown Speed]: %.8f, Timer: %d\c-", HellcoreCooldownSpeed, HellcoreCooldownTimer);
+					
+					HellcoreCoolRatio *= HellcoreCooldownSpeed;
+					if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 13b - Cooldown Speed]: %d\c-, New Heat Level: %d\c-, Old Heat Level: %d", HellcoreCoolRatio, HellcoreOverheatLevel, previousdelaycount);
+				}
+
 				previousdelaycount = HellcoreOverheatLevel;
 				if (HLCRCoolBonPenTimer > 0) HellcoreCoolRatio *= HLCRCoolBonPenMulti;
 				if (HLCRCoolBonPenTimer < 0) HellcoreCoolRatio *= (1.0 / HLCRCoolBonPenMulti);
 				HellcoreOverheatLevel -= HellcoreCoolRatio;
-				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 13 - Cooldown Increments]: New Heat Level: %d\c-, Old Heat Level: %d", HellcoreOverheatLevel, previousdelaycount);
+				HellcoreCooldownTimer++;
+				if (hellcoreheatdebug) Console.Printf("    \crHellcore Cooldown [Step 14 - Cooldown Increments]: New Heat Level: %d\c-, Old Heat Level: %d", HellcoreOverheatLevel, previousdelaycount);
 			}
-			if (HellcoreOverheatLevel <= 0) HellcoreOverheatLevel = 0;
+			if (HellcoreOverheatLevel <= 0) 
+			{
+				HellcoreOverheatLevel = 0;
+				HellcoreCooldownTimer = 0;
+				HellcoreCooldownSpeed = 1.0;
+			}
 			CallACS("OtherVarSetDECORATE",6,HellcoreOverheatLevel);
 			HellcoreOverheatLevel = CallACS("OtherVarCheckDECORATE",6);
 			
@@ -8398,7 +8422,6 @@ class PlayerStatItem : Inventory
 				InitSceptreEXPTables++;
 			}
 			
-			int SceptreActualLevel;
 			SceptreLevelEXP = CallACS("OtherVarCheckDECORATE",10);
 			if (SceptreLevelEXP >= CallACS("MiscVarCheckDECORATE",316)) SceptreActualLevel = 16;
 			if (SceptreLevelEXP < CallACS("MiscVarCheckDECORATE",316)) SceptreActualLevel = 15;
@@ -14042,6 +14065,8 @@ class PlayerStatItem2 : Inventory
 	int CurrentArmorClass;
 	int CurrentMaxArmor;
 	int HellcoreOverheatLevel;
+	double HellcoreCooldownSpeed;
+	int HellcoreCooldownTimer;
 	int ClassicDoomType;
 	int ModType;
 	
@@ -15441,6 +15466,107 @@ class PlayerDashJump : Inventory
 		return (input & ~oldInput) & mask;
 	}
 	
+	void A_DashDamage(int type = 0, name dashtype = "Dashing", double basedmginc = 0.125, double baseradinc = 0.25)
+	{
+		let globalvars = DSGlobalVariables.Get();
+		let MiscItem = PlayerStatItem(Owner.FindInventory("PlayerStatItem"));
+		int ActualLevel;
+		int TruePlayerSTR;
+		int TruePlayerDEF;
+		int TruePlayerSOR;
+		int TruePlayerTHE;
+		int TruePlayerAGL;
+		int TruePlayerDFT;
+		int SceptreLevel;
+		if (MiscItem)
+		{
+			ActualLevel = MiscItem.PlayerLevel;
+			TruePlayerSTR = MiscItem.PlayerSTR;
+			TruePlayerDEF = MiscItem.PlayerDEF;
+			TruePlayerSOR = MiscItem.PlayerSOR;
+			TruePlayerTHE = MiscItem.PlayerTHE;
+			TruePlayerAGL = MiscItem.PlayerAGL;
+			TruePlayerDFT = MiscItem.PlayerDFT;
+			SceptreLevel = MiscItem.SceptreActualLevel;
+			
+			double DashDmg;
+			double DashRad;
+			owner.bFORCERADIUSDMG = true;
+			
+			if (type == 0) // Sceptre Dash
+			{
+				DashDmg = (random[statitem](30,40) * random[statitem](2,5));
+				DashDmg += ((TruePlayerAGL * 0.15625) + (TruePlayerSTR * 0.0390625) + (ActualLevel * 0.078125));
+				DashRad = (owner.radius * 5.0) + frandom[statitem](-3.334,3.334);
+			}
+			if (type == 1) // Sceptre Dash w/ Berserk
+			{
+				DashDmg = ((random[statitem](16,24) + random[statitem](30,40)) * random[statitem](2,5));
+				DashDmg += ((TruePlayerAGL * 0.3125) + (TruePlayerSTR * 0.078125) + (ActualLevel * 0.15625));
+				DashRad = (owner.radius * 5.0) + frandom[statitem](-10.0,10.0);
+			}
+			if (type == 2) // Non Sceptre Dash [default]
+			{
+				DashDmg = (random[statitem](8,12) * random[statitem](1,3));
+				DashRad = (owner.radius * 2.25) + frandom[statitem](-1.5,1.5);
+			}
+			if (type == 3) // Non Sceptre Dash [berserked, default]
+			{
+				DashDmg = (random[statitem](2,5) + random[statitem](8,12) * random[statitem](1,3));
+				DashRad = (owner.radius * 3.125) + frandom[statitem](-2.0834375,2.0834375);
+			}
+			if (type == 4) // Hell Warrior Shield
+			{
+				DashDmg = (random[statitem](3,6) * random[statitem](2,4));
+				DashDmg += ((TruePlayerAGL * 0.625) + (TruePlayerSTR * 0.15625) + (ActualLevel * 0.3125));
+				
+				DashRad = (owner.radius * 4.5) + frandom[statitem](-6.0,6.0);
+			}
+			if (type == 5) // Hell Warrior Shield [berserked]
+			{
+				DashDmg = ((random[statitem](4,10) + random[statitem](3,6)) * random[statitem](2,4));
+				DashDmg += ((TruePlayerAGL * 1.25) + (TruePlayerSTR * 0.3125) + (ActualLevel * 0.625));
+
+				DashRad = (owner.radius * 4.5) + frandom[statitem](-6.0,6.0);
+			}
+
+			if (type >= 0 && type <= 1)
+			{
+				DashDmg *= (0.5 + (SceptreLevel * 0.0625));
+				DashRad *= (0.75 + (SceptreLevel * 0.03125));
+				dashtype = "Sceptre";
+			}
+			if (type >= 2 && type <= 3) 
+			{
+				dashtype = "Dashing";
+			}
+			if (type >= 4 && type <= 5) 
+			{
+				DashDmg *= (0.5 + (MiscItem.HellWarriorShieldLevel * 0.125));
+				DashRad *= (0.75 + (MiscItem.HellWarriorShieldLevel * 0.0625));
+				dashtype = "DashingSD";
+			}
+
+			if (owner.waterlevel == 1) 
+			{
+				DashDmg *= (1.0 + basedmginc);
+				DashRad *= (1.0 + baseradinc);
+			}
+			if (owner.waterlevel == 2) 
+			{
+				DashDmg *= (1.0 + (basedmginc * 2));
+				DashRad *= (1.0 + (baseradinc * 2));
+			}
+			if (owner.waterlevel >= 3) 
+			{
+				DashDmg *= (1.0 + (basedmginc * 3));
+				DashRad *= (1.0 + (baseradinc * 3));
+			}
+			Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+		}
+
+	}
+	
 	override void Tick()
 	{
 		Super.Tick();
@@ -15469,6 +15595,7 @@ class PlayerDashJump : Inventory
 		int TruePlayerSOR;
 		int TruePlayerTHE;
 		int TruePlayerAGL;
+		int TruePlayerDFT;
 		if (MiscItem)
 		{
 			ActualLevel = MiscItem.PlayerLevel;
@@ -15477,6 +15604,7 @@ class PlayerDashJump : Inventory
 			TruePlayerSOR = MiscItem.PlayerSOR;
 			TruePlayerTHE = MiscItem.PlayerTHE;
 			TruePlayerAGL = MiscItem.PlayerAGL;
+			TruePlayerDFT = MiscItem.PlayerDFT;
 		}
 		
 		//******************
@@ -15772,40 +15900,21 @@ class PlayerDashJump : Inventory
 			double DashDmg;
 			double DashRad;
 			double DashFullRad;
+			int DashBaseDmg;
 			if (berserked)
 			{
 				if (DashTics > (MaxDashTics * 0.75)) DashSpeed *= 1.025;
 				
 				if (DashTics % 2) 
 				{
-					owner.bFORCERADIUSDMG = true;
-					
 					// Dash with Sceptre Shield Alt-Fire
 					if (owner.CountInv("UsingSceptreAltFire"))
 					{
-						DashDmg = ((random[statitem](16,24) + random[statitem](30,40)) * random[statitem](2,5));
-						if (owner.waterlevel == 1) DashDmg *= 1.125;
-						if (owner.waterlevel == 2) DashDmg *= 1.25;
-						if (owner.waterlevel >= 3) DashDmg *= 1.375;
-						DashRad = (owner.radius * 5.0) + frandom[statitem](-7.5,7.5);
-						if (owner.waterlevel == 1) DashRad *= 1.25;
-						if (owner.waterlevel == 2) DashRad *= 1.5;
-						if (owner.waterlevel >= 3) DashRad *= 1.75;
-						dashtype = "Sceptre";
-						Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+						A_DashDamage(1,"Sceptre");
 					}
 					else // Dashing Without a Specific Weapon
 					{
-						DashDmg = (random[statitem](8,12) * random[statitem](1,3));
-						if (owner.waterlevel == 1) DashDmg *= 1.125;
-						if (owner.waterlevel == 2) DashDmg *= 1.25;
-						if (owner.waterlevel >= 3) DashDmg *= 1.375;
-						DashRad = (owner.radius * 2.25) + frandom[statitem](-1.5,1.5);
-						if (owner.waterlevel == 1) DashRad *= 1.25;
-						if (owner.waterlevel == 2) DashRad *= 1.5;
-						if (owner.waterlevel >= 3) DashRad *= 1.75;
-						dashtype = "Dashing";
-						Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+						A_DashDamage(3,"Dashing");
 					}
 				}
 				
@@ -15814,38 +15923,13 @@ class PlayerDashJump : Inventory
 				{
 					if (random[statitem](1,16) <= 15)
 					{
-						owner.bFORCERADIUSDMG = true;
-						
-						DashDmg = ((random[statitem](16,24) + random[statitem](30,40)) * random[statitem](2,5));
-						if (owner.waterlevel == 1) DashDmg *= 1.125;
-						if (owner.waterlevel == 2) DashDmg *= 1.25;
-						if (owner.waterlevel >= 3) DashDmg *= 1.375;
-						DashRad = (owner.radius * 5.0) + frandom[statitem](-7.5,7.5);
-						if (owner.waterlevel == 1) DashRad *= 1.25;
-						if (owner.waterlevel == 2) DashRad *= 1.5;
-						if (owner.waterlevel >= 3) DashRad *= 1.75;
-						dashtype = "Sceptre";
-						Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+						A_DashDamage(1,"Sceptre");
 					}
 				}
 				// HW Shield [Berserked]
 				if (Owner.CountInv("HWShieldBlockHold"))
 				{
-					owner.bFORCERADIUSDMG = true;
-
-					DashDmg = ((random[statitem](4,10) + random[statitem](3,6)) * random[statitem](2,4));
-					DashDmg += ((TruePlayerAGL * 1.25) + (TruePlayerSTR * 0.3125) + (ActualLevel * 0.625));
-					DashDmg *= (0.5 + (MiscItem.HellWarriorShieldLevel * 0.125));
-					if (owner.waterlevel == 1) DashDmg *= 1.125;
-					if (owner.waterlevel == 2) DashDmg *= 1.25;
-					if (owner.waterlevel >= 3) DashDmg *= 1.375;
-					DashRad = (owner.radius * 4.5) + frandom[statitem](-6.0,6.0);
-					DashRad *= (0.75 + (MiscItem.HellWarriorShieldLevel * 0.0625));
-					if (owner.waterlevel == 1) DashRad *= 1.25;
-					if (owner.waterlevel == 2) DashRad *= 1.5;
-					if (owner.waterlevel >= 3) DashRad *= 1.75;
-					dashtype = "DashingSD";
-					Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+					A_DashDamage(5,"DashingSD");
 				}
 			}
 			else // Not Berserked
@@ -15854,20 +15938,17 @@ class PlayerDashJump : Inventory
 				{
 					if (random[statitem](1,16) <= 15)
 					{
-						owner.bFORCERADIUSDMG = true;
 						// Dash with Sceptre Shield Alt-Fire
 						if (owner.CountInv("UsingSceptreAltFire"))
 						{
-							DashDmg = (random[statitem](30,40) * random[statitem](2,5));
-							if (owner.waterlevel == 1) DashDmg *= 1.125;
-							if (owner.waterlevel == 2) DashDmg *= 1.25;
-							if (owner.waterlevel >= 3) DashDmg *= 1.375;
-							DashRad = (owner.radius * 5.0) + frandom[statitem](-3.334,3.334);
-							if (owner.waterlevel == 1) DashRad *= 1.25;
-							if (owner.waterlevel == 2) DashRad *= 1.5;
-							if (owner.waterlevel >= 3) DashRad *= 1.75;
-							dashtype = "Sceptre";
-							Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+							A_DashDamage(0,"Sceptre");
+						}
+						else // Dashing Without a Specific Weapon
+						{
+							if (random[statitem](1,32) <= 1)
+							{
+								A_DashDamage(2,"Dashing");
+							}
 						}
 					}
 				}
@@ -15875,20 +15956,17 @@ class PlayerDashJump : Inventory
 				{
 					if (random[statitem](1,64) <= random[statitem](48,54))
 					{
-						owner.bFORCERADIUSDMG = true;
 						// Dash with Sceptre Shield Alt-Fire
 						if (owner.CountInv("UsingSceptreAltFire"))
 						{
-							DashDmg = (random[statitem](30,40) * random[statitem](2,5));
-							if (owner.waterlevel == 1) DashDmg *= 1.125;
-							if (owner.waterlevel == 2) DashDmg *= 1.25;
-							if (owner.waterlevel >= 3) DashDmg *= 1.375;
-							DashRad = (owner.radius * 5.0) + frandom[statitem](-3.334,3.334);
-							if (owner.waterlevel == 1) DashRad *= 1.25;
-							if (owner.waterlevel == 2) DashRad *= 1.5;
-							if (owner.waterlevel >= 3) DashRad *= 1.75;
-							dashtype = "Sceptre";
-							Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+							A_DashDamage(0,"Sceptre");
+						}
+						else // Dashing Without a Specific Weapon
+						{
+							if (random[statitem](1,32) <= 1)
+							{
+								A_DashDamage(2,"Dashing");
+							}
 						}
 					}
 				}
@@ -15896,21 +15974,7 @@ class PlayerDashJump : Inventory
 				// HW Shield
 				if (Owner.CountInv("HWShieldBlockHold"))
 				{
-					owner.bFORCERADIUSDMG = true;
-
-					DashDmg = (random[statitem](3,6) * random[statitem](2,4));
-					DashDmg += ((TruePlayerAGL * 0.625) + (TruePlayerSTR * 0.15625) + (ActualLevel * 0.3125));
-					DashDmg *= (0.5 + (MiscItem.HellWarriorShieldLevel * 0.125));
-					if (owner.waterlevel == 1) DashDmg *= 1.125;
-					if (owner.waterlevel == 2) DashDmg *= 1.25;
-					if (owner.waterlevel >= 3) DashDmg *= 1.375;
-					DashRad = (owner.radius * 4.5) + frandom[statitem](-6.0,6.0);
-					DashRad *= (0.75 + (MiscItem.HellWarriorShieldLevel * 0.0625));
-					if (owner.waterlevel == 1) DashRad *= 1.25;
-					if (owner.waterlevel == 2) DashRad *= 1.5;
-					if (owner.waterlevel >= 3) DashRad *= 1.75;
-					dashtype = "DashingSD";
-					Owner.A_Explode(Dashdmg,DashRad,XF_NOTMISSILE,false,(DashRad*0.5),0,0,"",dashtype);
+					A_DashDamage(4,"DashingSD");
 				}
 			}
 			
