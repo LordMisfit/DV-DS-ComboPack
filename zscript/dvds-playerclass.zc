@@ -147,6 +147,14 @@ class AetheriusPlayerPawn : PlayerPawn
 		-NOSPRITESHADOW;
 	}
 	
+	action bool A_CheckBerserk()
+	{
+		bool check = false;
+		if (CountInv("PowerStrength") || 
+				CountInv("AetheriusPowerStrength")) check = true;
+		return check;
+	}
+	
 	double TotalAirControl;
 	override void MovePlayer()
 	{
@@ -412,7 +420,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (MaxAirTime > 0) airreplen = ((MaxAirTime / (TICRATE * 5.0)) * 100.0);
 			if (airreplen < 1) airreplen = 1;
 			if (MiscItem) airreplen *= (1.0 + (ActualLevel * 0.0125));
-			if (CountInv("PowerStrength") || CountInv("AetheriusPowerStrength")) airreplen *= 1.25;
+			if (A_CheckBerserk()) airreplen *= 1.25;
 			if (CountInv("PowerNoDrown") || CountInv("PowerIronFeet") || CountInv("PowerIronFeet2") || CountInv("PowerMask")) airreplen *= 1.625;
 			double ssa = 1.00;
 			//
@@ -476,7 +484,7 @@ class AetheriusPlayerPawn : PlayerPawn
 				MaxAirTime += (TruePlayerLevel * lvlfactor);
 				MaxAirTime += (MiscItem.AirBonusAdd * 1);
 			}
-			if (CountInv("PowerStrength") || CountInv("AetheriusPowerStrength")) MaxAirTime *= 1.25;
+			if (A_CheckBerserk()) MaxAirTime *= 1.25;
 			if (MaxAirTime > 0) MaxAirTime *= AirCapacity;
 			if (GetAge() <= 1 && AirTime != MaxAirTime) AirTime = MaxAirTime;
 			*/
@@ -519,7 +527,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			grunted = false;
 			// Why should this number vary by gravity?
 			double truegruntspeed = self.player.mo.GruntSpeed;
-			if (CountInv("PowerStrength") || CountInv("AetheriusPowerStrength")) truegruntspeed *= 1.34;
+			if (A_CheckBerserk()) truegruntspeed *= 1.34;
 			//Console.Printf("%.8f (%.8f) [%.8f]", self.Vel.Z, truegruntspeed, self.player.mo.GruntSpeed);
 			if (waterlevel <= 1)
 			{
@@ -1082,7 +1090,7 @@ class AetheriusPlayerPawn : PlayerPawn
 		bool berserked;
 		int ActualLevel;
 		if (MiscItem) ActualLevel = MiscItem.PlayerLevel;
-		if (CountInv("PowerStrength") || CountInv("AetheriusPowerStrength")) berserked = true;
+		if (A_CheckBerserk()) berserked = true;
 		
 		if (dvdsdebug_showmoveinformation) Console.Printf("\c[orange](FallAndSink() Start)\c- Vel.Z: %.4f [oldfloorz: %.8f, grav: %.8f] [tic: %d]", Vel.Z, oldfloorz, grav, gametic);
 		if (Pos.Z > floorz && !bNOGRAVITY)
@@ -2333,7 +2341,7 @@ class AetheriusPlayerPawn : PlayerPawn
 						DashDmg *= 2.5;
 						DashRad *= 1.25;
 					}
-					if (CountInv("AetheriusPowerStrength")) 
+					if (A_CheckBerserk()) 
 					{
 						DashDmg *= 2.25;
 						DashRad *= 1.125; 
@@ -3671,7 +3679,7 @@ class AetheriusPlayerPawn : PlayerPawn
 			zerodmgchance = floor(zerodmgchance * InvisFactor);
 			zerodmgchance2 = floor(zerodmgchance2 * InvisFactor);
 		}
-		if (CountInv("AetheriusPowerStrength") > 0)
+		if (A_CheckBerserk())
 		{
 			double BerserkFactor = frandompick(1.2,1.3334,1.5);
 			zerodmgchance = floor(zerodmgchance * BerserkFactor);
@@ -4349,7 +4357,19 @@ class AetheriusPlayerPawn : PlayerPawn
 					dfperkfactor *= dfperkfactormulti;
 					PlayerDefenseIgnoreFactor += ((frandom(0.1125,0.1375) - dfperkfactor) * (1.00 - PlayerDefenseIgnoreFactor));
 				}
-				if (infl == "RockBombShardProj" || infl == "RockBombShardProjT" || infl == "SuicideBomber" || infl == "SuicideBomb" || infl == "SuicideBombStrong" || infl == "SuicideBombUltra" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord" || mod == 'Explosive' || flags & DMG_EXPLOSION) 
+				if (infl == "RockBombShardProj" || 
+						infl == "RockBombShardProjT" || 
+						infl == "SuicideBomber" || 
+						infl == "SuicideBomb" || 
+						infl == "SuicideBombStrong" || 
+						infl == "SuicideBombUltra" || 
+						infl == "HSBoom" || 
+						infl == "HadesSphere" || 
+						infl == "HSOverlord" || 
+						mod == 'Explosive' || 
+						mod == 'ExplosiveImpact' || 
+						mod == 'CC_Firecracker' || 
+						flags & DMG_EXPLOSION) 
 				{
 					dfperkfactor += ((DemolitionsExpertPerkLevel * 0.04) + (DemolitionsExpertEXPerkLevel * 0.10));
 					dfperkfactor *= dfperkfactormulti;
@@ -4595,7 +4615,16 @@ class AetheriusPlayerPawn : PlayerPawn
 			{
 				defense *= (random(1,5) * 0.02);
 			}
-			if (infl == "SuicideBomb" || infl == "SuicideBombStrong" || infl == "SuicideBombUltra" || infl == "HSBoom" || infl == "HadesSphere" || infl == "HSOverlord" || mod == 'Explosive' || mod == 'HSExplode') 
+			if (infl == "SuicideBomb" || 
+					infl == "SuicideBombStrong" || 
+					infl == "SuicideBombUltra" || 
+					infl == "HSBoom" || 
+					infl == "HadesSphere" || 
+					infl == "HSOverlord" || 
+					mod == 'Explosive' || 
+					mod == 'ExplosiveImpact' || 
+					mod == 'CC_Firecracker' || 
+					mod == 'HSExplode') 
 			{
 				defense *= 0.334;
 			}
@@ -5812,7 +5841,8 @@ class EVP_Footsteps : Actor
 		if (MiscItem)
 		{
 			bool berserked;
-			if (plr.CountInv("PowerStrength") || plr.CountInv("AetheriusPowerStrength")) berserked = true;
+			if (plr.CountInv("PowerStrength") || 
+					plr.CountInv("AetheriusPowerStrength")) berserked = true;
 
 			int ActualLevel = A_CheckActualLevel(1);
 			let PlayerWeapon = plr.player.ReadyWeapon;
