@@ -2816,19 +2816,60 @@ class AetheriusBaseWeaponZSC : Weapon
 	// Fist Block Function
 	action void A_PFistBlockOn(int perkcheck)
 	{
-		A_SetInventory("FistPlayerBlock",0); A_SetInventory("FistPlayerBlock2",0); A_SetInventory("FistPlayerBlock3",0);
-		A_SetInventory("FistPlayerSpeedFactor",0); A_SetInventory("FistPlayerSpeedFactor2",0); A_SetInventory("FistPlayerSpeedFactor3",0);
-		if (CallACS("MiscVarCheckDECORATE",perkcheck) >= 4) { A_SetInventory("FistPlayerBlock3",1); A_SetInventory("FistPlayerSpeedFactor3",1); }
-		else if (CallACS("MiscVarCheckDECORATE",perkcheck) >= 2) { A_SetInventory("FistPlayerBlock2",1); A_SetInventory("FistPlayerSpeedFactor2",1); }
-		else { A_SetInventory("FistPlayerBlock",1); A_SetInventory("FistPlayerSpeedFactor",1); }
+		let player = self.player;
+		let MiscItem = PlayerStatItem(player.mo.FindInventory("PlayerStatItem"));
+		int TruePlayerLevel;
+		if (MiscItem) TruePlayerLevel = MiscItem.PlayerLevel;
+
+		A_SetInventory("FistPlayerBlock",0); 
+		A_SetInventory("FistPlayerBlock2",0); 
+		A_SetInventory("FistPlayerBlock3",0);
+		A_SetInventory("FistPlayerBlock4",0);
+		A_SetInventory("FistPlayerSpeedFactor",0); 
+		A_SetInventory("FistPlayerSpeedFactor2",0); 
+		A_SetInventory("FistPlayerSpeedFactor3",0);
+		A_SetInventory("FistPlayerSpeedFactor4",0);
+		int plevel = 0;
+		if (TruePlayerLevel > 34) plevel += 1;
+		if (TruePlayerLevel > 67) plevel += 1;
+		if (TruePlayerLevel > 100) plevel += 1;
+		if (CallACS("MiscVarCheckDECORATE",perkcheck) >= 4) plevel += 3;
+		else if (CallACS("MiscVarCheckDECORATE",perkcheck) >= 2) plevel += 2;
+		else plevel += 1;
+		if (plevel == 1)
+		{
+			A_SetInventory("FistPlayerBlock",1);
+			A_SetInventory("FistPlayerSpeedFactor",1); 
+		}
+		if (plevel == 2)
+		{
+			A_SetInventory("FistPlayerBlock2",1);
+			A_SetInventory("FistPlayerSpeedFactor2",1); 
+		}
+		if (plevel == 3)
+		{
+			A_SetInventory("FistPlayerBlock3",1);
+			A_SetInventory("FistPlayerSpeedFactor3",1); 
+		}
+		if (plevel >= 4)
+		{
+			A_SetInventory("FistPlayerBlock4",1);
+			A_SetInventory("FistPlayerSpeedFactor4",1); 
+		}
 		A_SetInventory("FistPlayerBlockExtra",0);
 		if (random(1,16) <= (1 + (CallACS("MiscVarCheckDECORATE",perkcheck)/2))) { A_SetInventory("FistPlayerBlockExtra",1); }
 	}
 
 	action void A_PFistBlockOff()
 	{
-		A_SetInventory("FistPlayerBlock",0); A_SetInventory("FistPlayerBlock2",0); A_SetInventory("FistPlayerBlock3",0);
-		A_SetInventory("FistPlayerSpeedFactor",0); A_SetInventory("FistPlayerSpeedFactor2",0); A_SetInventory("FistPlayerSpeedFactor3",0);
+		A_SetInventory("FistPlayerBlock",0); 
+		A_SetInventory("FistPlayerBlock2",0); 
+		A_SetInventory("FistPlayerBlock3",0);
+		A_SetInventory("FistPlayerBlock4",0);
+		A_SetInventory("FistPlayerSpeedFactor",0); 
+		A_SetInventory("FistPlayerSpeedFactor2",0); 
+		A_SetInventory("FistPlayerSpeedFactor3",0);
+		A_SetInventory("FistPlayerSpeedFactor4",0);
 		A_SetInventory("FistPlayerBlockExtra",0);
 		A_SetInventory("FistPlayerBlockItem",0);
 		bREFLECTIVE = 0;
@@ -3864,7 +3905,7 @@ class AetheriusBaseWeaponZSC : Weapon
 // To allow class gathering for weapons that allow Quick-Kicking :V
 class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 {
-	action void A_FloraKickFrame(int frame)
+	action state A_FloraKickFrame(int frame)
 	{
 		if (frame == 1)
 		{
@@ -3927,8 +3968,9 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 				A_SetTics(0); 
 			} 
 		}
-		if (frame == 6)
+		if (frame == 6) // Kick Pre-Hit 1
 		{
+			A_OverlayOffset(-2,0,0,0);
 			if (CallACS("MiscVarCheckDECORATE",10035) >= 5) 
 			{
 				A_SetTics(0); 
@@ -3941,8 +3983,9 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 				}
 			}
 		}
-		if (frame == 7)
+		if (frame == 7) // Kick Pre-Hit 2
 		{
+			A_OverlayOffset(-2,0,0,0);
 			if (CallACS("MiscVarCheckDECORATE",10035) >= 3) 
 			{
 				A_SetTics(0); 
@@ -3950,6 +3993,7 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 		}
 		if (frame == 8) // Hit
 		{
+			A_OverlayOffset(-2,0,0,0);
 			A_GetKickSwingRecoil(0);
 			A_SpreadAuraCustomPunch(A_GetKickDamage(0,0,false),1,CPF_NOTURN,"KickPuff",A_GetMeleeRange(4),0,0,"","","");
 
@@ -3986,16 +4030,139 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 					}
 				}
 			}
+			double rand1 = randompick(8,8,8,8,8,8,8,8,8,10,10,12);
+			double xoff1 = (random(-rand1,rand1)*frandom(3,5));
+			double yoff1 = 32.0+(random(-6,2)*frandom(3,5));
+			
+			double rand2 = randompick(12,12,12,12,12,12,12,12,12,15,15,18);
+			double xoff2 = (random(-rand2,rand2)*frandom(3,5));
+			double yoff2 = 32.0+(random(-6,2)*frandom(3,5));
+			double ang = angle;
+			double pch = pitch;
+			
+			if (CallACS("MiscVarCheckDECORATE",10035) >= 4 ||
+					(CallACS("MiscVarCheckDECORATE",10035) >= 3 && A_CheckBerserk())) // 21
+			{
+				A_SetAngle(angle+(xoff1*0.667));
+				A_SetPitch(pitch+((yoff1-32.0)*-0.334));
+				A_SpreadAuraCustomPunch(A_GetKickDamage(0,0,false),1,CPF_NOTURN,"KickPuff",A_GetMeleeRange(4),0,0,"","","");
+				if (A_CheckMeleeDestroyProj(0) > 0)
+				{
+					if (CallACS("MiscVarCheckDECORATE",10035) >= 5) // 25
+					{
+						if (random(1,8) <= 3)
+						{
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,24);
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,56);
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,88);
+						}
+						else
+						{
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,24);
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,56);
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,88);
+						}
+					}
+					else
+					{
+						if (random(1,8) <= 1)
+						{
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,24);
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,56);
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,88);
+						}
+						else
+						{
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,24);
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,56);
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,88);
+						}
+					}
+				}
+				A_SetAngle(ang);
+				A_SetPitch(pch);
+			}
+			if (CallACS("MiscVarCheckDECORATE",10035) >= 5) // 25
+			{
+				A_SetAngle(angle+(xoff1*0.667));
+				A_SetPitch(pitch+((yoff1-32.0)*-0.334));
+				A_SpreadAuraCustomPunch(A_GetKickDamage(0,0,false),1,CPF_NOTURN,"KickPuff",A_GetMeleeRange(4),0,0,"","","");
+				if (A_CheckMeleeDestroyProj(0) > 0)
+				{
+					if (CallACS("MiscVarCheckDECORATE",10035) >= 5) // 25
+					{
+						if (random(1,8) <= 3)
+						{
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,24);
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,56);
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,88);
+						}
+						else
+						{
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,24);
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,56);
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,88);
+						}
+					}
+					else
+					{
+						if (random(1,8) <= 1)
+						{
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,24);
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,56);
+							A_MeleeShieldPiece("ShieldPartMeleeReflect",33,88);
+						}
+						else
+						{
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,24);
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,56);
+							A_MeleeShieldPiece("ShieldPartMeleeNoReflect",33,88);
+						}
+					}
+				}
+				A_SetAngle(ang);
+				A_SetPitch(pch);
+			}
+			if (CallACS("MiscVarCheckDECORATE",10035) >= 4 ||
+					(CallACS("MiscVarCheckDECORATE",10035) >= 3 && A_CheckBerserk())) // 21
+			{
+				double rand = frandompick(2.667,2.667,2.667,2.667,2.667,2.667,2.667,2.667,2.667,3.334,3.334,4.0);
+				double xoff = (random(-rand,rand)*frandom(1.5,2.5));
+				double yoff = 32.0+(frandom(-2,0.667)*frandom(1.5,2.5));
+				A_OverlayOffset(-2,xoff,yoff,0);
+				if ((CallACS("MiscVarCheckDECORATE",10035) >= 5) || 
+						((CallACS("MiscVarCheckDECORATE",10035) >= 4) && (A_CheckBerserk() || random(1,16) <= 5)))
+				{
+					int layer = -3;
+					A_Overlay(layer,"KickImage1",true);
+					A_OverlayFlags(layer,PSPF_ALPHA|PSPF_FORCESTYLE,true);
+					A_OverlayOffset(layer,xoff1,yoff1,0);
+					A_OverlayRenderStyle(layer,STYLE_Translucent);
+					A_OverlayAlpha(layer,0.667);
+					if ((CallACS("MiscVarCheckDECORATE",10035) >= 5 && (random(1,16) <= 5 || (A_CheckBerserk() || random(1,8) <= 5))) ||
+							(CallACS("MiscVarCheckDECORATE",10035) >= 4 && (random(1,32) <= 3 || ((A_CheckBerserk() || random(1,16) <= 3)))))
+					{
+						int layer = -4;
+						A_Overlay(layer,"KickImage2",true);
+						A_OverlayFlags(layer,PSPF_ALPHA|PSPF_FORCESTYLE,true);
+						A_OverlayOffset(layer,xoff2,yoff2,0);
+						A_OverlayRenderStyle(layer,STYLE_Translucent);
+						A_OverlayAlpha(layer,0.334);
+					}
+				}
+			}
 		}
-		if (frame == 9)
+		if (frame == 9) // Post-Hit 1
 		{
+			A_OverlayOffset(-2,0,0,0);
 			if (CallACS("MiscVarCheckDECORATE",10035) >= 3) 
 			{
 				A_SetTics(0); 
 			} 
 		}
-		if (frame == 10)
+		if (frame == 10) // Post-Hit 2
 		{
+			A_OverlayOffset(-2,0,0,0);
 			if (CallACS("MiscVarCheckDECORATE",10035) >= 5) 
 			{
 				A_SetTics(0); 
@@ -4056,7 +4223,42 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 			{
 				A_SetTics(0); 
 			}
+			
+			int buttons = GetPlayerInput(INPUT_BUTTONS);
+			if (buttons & BT_USER1)
+			{
+				int kickrchance = 4 + random(-1,1);
+				int remchance;
+				if (CallACS("MiscVarCheckDECORATE",10035) >= 5) kickrchance = 254 + random(-9,9);
+				else if (CallACS("MiscVarCheckDECORATE",10035) >= 4) kickrchance = 224 + random(-8,8);
+				else if (CallACS("MiscVarCheckDECORATE",10035) >= 3) kickrchance = 176 + random(-6,6);
+				else if (CallACS("MiscVarCheckDECORATE",10035) >= 2) kickrchance = 128 + random(-4,4);
+				else if (CallACS("MiscVarCheckDECORATE",10035) >= 1) kickrchance = 48 + random(-2,2);
+				else kickrchance = 4 + random(-1,1);
+				
+				if (kickrchance >= 256) kickrchance = 256;
+				remchance = 256 - kickrchance;
+				if (A_CheckBerserk())
+				{
+					if (remchance > 0) 
+					{
+						if (CallACS("MiscVarCheckDECORATE",10035) >= 5) kickrchance += (remchance * frandompick(0.75,0.875,0.875,0.875,1.0));
+						else if (CallACS("MiscVarCheckDECORATE",10035) >= 4) kickrchance += (remchance * frandompick(0.625,0.75,0.75,0.75,0.875));
+						else if (CallACS("MiscVarCheckDECORATE",10035) >= 3) kickrchance += (remchance * frandompick(0.625,0.75,0.75,0.75,0.875));
+						else if (CallACS("MiscVarCheckDECORATE",10035) >= 2) kickrchance += (remchance * frandompick(0.5,0.625,0.625,0.625,0.75));
+						else if (CallACS("MiscVarCheckDECORATE",10035) >= 1) kickrchance += (remchance * frandompick(0.375,0.5,0.5,0.5,0.625));
+						else kickrchance += (remchance * frandompick(0.25,0.375,0.375,0.375,0.5));
+					}
+				}
+				if (dvdsdebug_showmeleeinformation) Console.Printf("kickrchance: %d, remchance: %d", kickrchance, remchance);
+				if (kickrchance >= 256) kickrchance = 256;
+				
+				if (random(1,256) <= kickrchance) return resolvestate("Kicking");
+				return resolvestate(null);
+			}
+			return resolvestate(null);
 		}
+		return resolvestate(null);
 	}
 	
 	action void A_FloraPunch(int type = 0)
@@ -4254,6 +4456,23 @@ class QuickMeleeWeaponZSC : AetheriusBaseWeaponZSC
 			{
 				A_KickBonusOff();
 				A_SetMartialArtsMastery(0);
+			}
+			stop;
+			
+		// Extra
+		KickImage1:
+			FKIC H 1;
+			FKIC H 1
+			{
+				A_OverlayAlpha(-3,0.334);
+			}
+			stop;
+		
+		KickImage2:
+			FKIC H 1;
+			FKIC H 1
+			{
+				A_OverlayAlpha(-4,0.1667);
 			}
 			stop;
 	}
