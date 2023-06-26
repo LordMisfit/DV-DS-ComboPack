@@ -1822,8 +1822,456 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		return CritChance, meleeattack;
 	}
 
+	// Damage Tracking
+	int initdmg;
+	double, double, double A_DefenseIgnoreFactor(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle, bool wasblastedimpact, bool surprisehit, int angvstype, int IsHellCoreAttack)
+	{
+		actor playera = players[0].mo;
+		let MiscItem = PlayerStatItem(playera.FindInventory("PlayerStatItem"));
+		int PlayerTensionLevel = CallACS("MiscVarCheckDECORATE",181);
+		int MagiUpPerkLvl = CallACS("MiscVarCheckDECORATE",10003);
+		int MagiUpExPerkLvl = CallACS("MiscVarCheckDECORATE",10004);
+		int StamUpPerkLvl = CallACS("MiscVarCheckDECORATE",10005);
+		int StamUpEXPerkLvl = CallACS("MiscVarCheckDECORATE",10006);
+		int BulletAccuracyPerkLevel = CallACS("MiscVarCheckDECORATE",10019);
+		int BulletAccuracyEXPerkLevel = CallACS("MiscVarCheckDECORATE",10020);
+		int PelletAccuracyPerkLevel = CallACS("MiscVarCheckDECORATE",10021);
+		int PelletAccuracyEXPerkLevel = CallACS("MiscVarCheckDECORATE",10022);
+		int PlasmaAccuracyPerkLevel = CallACS("MiscVarCheckDECORATE",10023);
+		int PlasmaAccuracyEXPerkLevel = CallACS("MiscVarCheckDECORATE",10024);
+		int DemolitionsExpertPerkLevel = CallACS("MiscVarCheckDECORATE",10025);
+		int DemolitionsExpertEXPerkLevel = CallACS("MiscVarCheckDECORATE",10026);
+		int KarasawaAttunementPerkLevel = CallACS("MiscVarCheckDECORATE",10027);
+		int KarasawaAttunementEXPerkLevel = CallACS("MiscVarCheckDECORATE",10028);
+		int BFGAttunementPerkLevel = CallACS("MiscVarCheckDECORATE",10029);
+		int BFGAttunementEXPerkLevel = CallACS("MiscVarCheckDECORATE",10030);
+		int ArcheryMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10031);
+		int ArcheryMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10032);
+		int SoulMasteryPerkLevel = CallACS("MiscVarCheckDECORATE",10033);
+		int SoulMasteryEXPerkLevel = CallACS("MiscVarCheckDECORATE",10034);
+		int MartialArtsMastery = CallACS("MiscVarCheckDECORATE",10035);
+		int MartialArtsMasteryEX = CallACS("MiscVarCheckDECORATE",10036);
+		int BerserkerFit = CallACS("MiscVarCheckDECORATE",10051);
+		int BerserkerFitEX = CallACS("MiscVarCheckDECORATE",10052);
+		int WandMastPerkLvl = CallACS("MiscVarCheckDECORATE",10053);
+		int WandMastEXPerkLvl = CallACS("MiscVarCheckDECORATE",10054);
+		int clearofmind = CallACS("MiscVarCheckDECORATE",10055);
+		int clearofmindex = CallACS("MiscVarCheckDECORATE",10056);
+		int VillainKillerPerkLvl = CallACS("MiscVarCheckDECORATE",10057);
+		int VillainKillerEXPerkLvl = CallACS("MiscVarCheckDECORATE",10058);
+		int StrifeStaminaLevel = CallACS("MiscVarCheckDECORATE",317);
+		int StrifeAccuracyLevel = CallACS("MiscVarCheckDECORATE",318);
+		bool criticalhit = false;
+		int SceptreActualLevel = CallACS("OtherVarCheckDECORATE",11);
+		AetheriusPlayerPawn playpawn;
+		AetheriusMonsterZSC DVDSActor;
+		AetheriusMonsterZSC DVDSVictim;
+		AetheriusProjectileZSC UniqueProjectile;
+		AetheriusFastProjectileZSC UniqueProjectileFast;
+		AetheriusEffectProjectile ailmentproj;
+		AetheriusEffectFastProjectile ailmentprojfast;
+		SingleDamageRipper singleripproj;
+		SingleDamageFastRipper singlefastripproj;
+
+		if (source) 
+		{
+			playpawn = AetheriusPlayerPawn(source);
+			if (dvdsdebug_actordmgdisplays && playpawn) Console.Printf("Playpawn (source) Found! [CalcCritChance]");
+			DVDSActor = AetheriusMonsterZSC(source);
+			if (dvdsdebug_actordmgdisplays && DVDSActor) Console.Printf("DVDSActor (source) Found! [CalcCritChance]");
+		}
+		if (inflictor)
+		{
+			UniqueProjectile = AetheriusProjectileZSC(inflictor);
+			if (dvdsdebug_actordmgdisplays && UniqueProjectile) Console.Printf("UniqueProjectile (inflictor) Found! [CalcCritChance]");
+			UniqueProjectileFast = AetheriusFastProjectileZSC(inflictor);
+			if (dvdsdebug_actordmgdisplays && UniqueProjectileFast) Console.Printf("UniqueProjectileFast (inflictor) Found! [CalcCritChance]");
+			ailmentproj = AetheriusEffectProjectile(inflictor);
+			if (dvdsdebug_actordmgdisplays && ailmentproj) Console.Printf("ailmentproj (inflictor) Found! [CalcCritChance]");
+			ailmentprojfast = AetheriusEffectFastProjectile(inflictor);
+			if (dvdsdebug_actordmgdisplays && ailmentprojfast) Console.Printf("ailmentprojfast (inflictor) Found! [CalcCritChance]");
+			singleripproj = SingleDamageRipper(inflictor);
+			if (dvdsdebug_actordmgdisplays && singleripproj) Console.Printf("singleripproj (inflictor) Found! [CalcCritChance]");
+			singlefastripproj = SingleDamageFastRipper(inflictor);
+			if (dvdsdebug_actordmgdisplays && singlefastripproj) Console.Printf("singlefastripproj (inflictor) Found! [CalcCritChance]");
+		}
+		string ActorClass;
+		string infl, sour, vict;
+		vict = GetClassName();
+		if (inflictor != null) lastattackeratk = inflictor;
+		if (inflictor == null) infl = "NONE"; else infl = inflictor.GetClassName();
+		if (source != null) lastattacker = source;
+		if (source == null) sour = "NONE"; else sour = source.GetClassName();
+		
+		int predmginr = damage;
+		// (Partial) Defense Ignoring Attacks
+		double prevDamageFactor;
+		double basedmgfactor = DamageFactor;
+		double ActorDefenseIgnoreFactor = 0.00;
+		double HubBubRand = frandompick(0.45,0.475,0.5,0.525,0.55);
+		double RailRandom = frandompick(0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.50,0.50,0.50,0.50,0.75,0.75,0.9875);
+		double dfperkfactor = 0.00;
+		if (inflictor == null && source == null) 
+		{
+			// BLASTED Impact Damage
+			if (wasblastedimpact) ActorDefenseIgnoreFactor += (frandom(0.45,0.55) * (1.00 - ActorDefenseIgnoreFactor));
+		}
+		else
+		{
+			double WhistleFactor = 0.75;
+			if (inflictor && PlayerWhistle(inflictor) || source && PlayerWhistle(source)) ActorDefenseIgnoreFactor += (WhistleFactor * (1.00 - ActorDefenseIgnoreFactor));
+
+			// Hellcore
+			if (IsHellCoreAttack != 0) 
+			{
+				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + (SoulMasteryPerkLevel * frandom(0.0225,0.0275)) + (SoulMasteryEXPerkLevel * frandom(0.05625,0.06875))) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+
+			// Sigil
+			if (mod == 'Sigil' || mod == 'SpectralLow') 
+			{
+				ActorDefenseIgnoreFactor += (frandompick(0.125,0.25,0.375) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Eldritch
+			if (mod == 'Eldritch' || mod == 'Deadlight')
+			{
+				ActorDefenseIgnoreFactor += (0.75 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Melee
+			if (mod == 'Melee' || 
+					mod == 'Trample' || 
+					mod == 'Stomp' || 
+					mod == 'Fist' || 
+					mod == 'Kick' || 
+					mod == 'Chainsaw' || 
+					mod == 'Gauntlets')
+			{
+				if (playpawn)
+				{
+					if (mod == 'Chainsaw')
+					{
+						dfperkfactor += ((BerserkerFit * 0.025) + (BerserkerFitEX * 0.0625));
+						dfperkfactor += ((MartialArtsMastery * 0.025) + (MartialArtsMasteryEX * 0.0625));
+						ActorDefenseIgnoreFactor += (((random(10,25) * 0.01) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+					}
+					else
+					{
+						dfperkfactor += ((BerserkerFit * 0.01) + (BerserkerFitEX * 0.025));
+						dfperkfactor += ((MartialArtsMastery * 0.01) + (MartialArtsMasteryEX * 0.025));
+						ActorDefenseIgnoreFactor += (((random(0,10) * 0.01) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+					}
+				}
+			}
+
+			if (mod == 'Dashing') 
+			{
+				if (playera.CountInv("AnubisCufflinks")) ActorDefenseIgnoreFactor += (0.5 * (1.00 - ActorDefenseIgnoreFactor));
+																						else ActorDefenseIgnoreFactor += (0.2 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			if (mod == 'DashingSD') 
+			{
+				if (playera.CountInv("AnubisCufflinks")) ActorDefenseIgnoreFactor += (0.9375 * (1.00 - ActorDefenseIgnoreFactor));
+																						else ActorDefenseIgnoreFactor += (0.375 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+
+			// BFG Ignores roughly half of "normal" damagefactor
+			if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') 
+			{ 
+				if (playpawn)
+				{
+					dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.01) + (PlasmaAccuracyEXPerkLevel * 0.025));
+					dfperkfactor += ((BFGAttunementPerkLevel * 0.025) + (BFGAttunementEXPerkLevel * 0.0625));
+				}
+				ActorDefenseIgnoreFactor += ((frandom(0.45,0.55) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Plasma Ignores 1/4th of "normal" damagefactor
+			if (mod == 'Plasma') 
+			{ 
+				if (playpawn)
+				{
+					dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.01) + (PlasmaAccuracyEXPerkLevel * 0.025));
+				}
+				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Railguns
+			if (infl == "DBTRailPuff") 
+			{ 
+				if (playpawn)
+				{
+					dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.01) + (PlasmaAccuracyEXPerkLevel * 0.025));
+				}
+				ActorDefenseIgnoreFactor += ((RailRandom + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Hubble Bubbles
+			if (infl == "HubbleBubble" || infl == "GlimmeringGlobe") 
+			{
+				if (playpawn)
+				{
+					dfperkfactor += ((MagiUpPerkLvl * 0.025) + (MagiUpExPerkLvl * 0.0625));
+					dfperkfactor += ((WandMastPerkLvl * 0.05) + (WandMastEXPerkLvl * 0.125));
+				}
+				ActorDefenseIgnoreFactor += ((HubBubRand + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+				
+				if (CountInv("HubbleBubbleSpeedPenalty1") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty1",1);
+				else
+				{
+					if (CountInv("HubbleBubbleSpeedPenalty1b") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty1b",1);
+				}
+				if (random(1,3) == 1) 
+				{
+					if (CountInv("HubbleBubbleSpeedPenalty2") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty2",1);
+					else
+					{
+						if (CountInv("HubbleBubbleSpeedPenalty2b") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty2b",1);
+					}
+				}
+				if (random(1,9) == 1) 
+				{
+					if (CountInv("HubbleBubbleSpeedPenalty3") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty3",1);
+					else
+					{
+						if (CountInv("HubbleBubbleSpeedPenalty3b") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty3b",1);
+					}
+				}
+			}
+			// Bullet/Pellet
+			if (mod == 'Bullet') 
+			{ 
+				if (playpawn)
+				{
+					dfperkfactor += ((BulletAccuracyPerkLevel * 0.01) + (PelletAccuracyPerkLevel * 0.02) + (BulletAccuracyEXPerkLevel * 0.025) + (PelletAccuracyEXPerkLevel * 0.05));
+				}
+				ActorDefenseIgnoreFactor += ((frandom(0.1125,0.1375) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			
+			// Sceptre
+			if (mod == 'Sceptre') 
+			{ 
+				double temp = (0.5 + (random(0,5) * 0.02));
+				double temp2 = (((0.30 + (random(0,5) * 0.02)) / 16) * SceptreActualLevel);
+				ActorDefenseIgnoreFactor += ((temp + temp2) * (1.00 - ActorDefenseIgnoreFactor));
+				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("\cz[Sceptre Defense Ignoring]\c-: \caDefenseIgnoreFactor = %.8f\c-, \catemp1+2 = %.8f", ActorDefenseIgnoreFactor, (temp+temp2));
+			}
+			// Diaris Arrows
+			if (infl == 'DiarisHolyArrow' || infl == 'DiarisHolyArrow2xDmg' || infl == 'DiarisHolyArrow3xDmg' || 
+			    infl == 'DiarisHolyArrowGlitter1' || infl == 'DiarisHolyArrowGlitter2' || infl == 'DiarisHolyArrowGlitter3') 
+			{ 
+				ActorDefenseIgnoreFactor += ((0.5 + (random(-10,10) * 0.01)) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Poison Needle
+			if (mod == 'PoisonNeedle') 
+			{ 
+				if (playpawn)
+				{
+					dfperkfactor += ((MartialArtsMastery * 0.01) + (MartialArtsMasteryEX * 0.025));
+				}
+				ActorDefenseIgnoreFactor += ((0.625 + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Poison Clouds
+			if ((mod == "PoisonElemental" || mod == "Poison") && 
+					(infl == "MinorPoisonCloud" || infl == "NormalPoisonCloud" || infl == "MajorPoisonCloud" ||
+					 infl == "HexenPoisonCloud1" || infl == "HexenPoisonCloud2Source" || infl == "HexenPoisonCloud2Outer" || infl == "HexenPoisonCloud3Source" || infl == "HexenPoisonCloud3Outer"))
+			{
+				if (playpawn)
+				{
+					dfperkfactor += ((MagiUpPerkLvl * 0.01) + (MagiUpExPerkLvl * 0.025));
+					dfperkfactor += ((WandMastPerkLvl * 0.02) + (WandMastEXPerkLvl * 0.05));
+				}
+				ActorDefenseIgnoreFactor += ((frandompick(0.20,0.225,0.25,0.275,0.30) - dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+				
+				if (CountInv("PoisonCloudSpeedPenalty1") < 1) A_GiveInventory("PoisonCloudSpeedPenalty1",1);
+				else
+				{
+					if (CountInv("PoisonCloudSpeedPenalty1b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty1b",1);
+				}
+				if (CountInv("PoisonCloudATKPenalty1") < 1) A_GiveInventory("PoisonCloudATKPenalty1",1);
+				else
+				{
+					if (CountInv("PoisonCloudATKPenalty1b") < 1) A_GiveInventory("PoisonCloudATKPenalty1b",1);
+				}
+				if (CountInv("PoisonCloudDEFPenalty1") < 1) A_GiveInventory("PoisonCloudDEFPenalty1",1);
+				else
+				{
+					if (CountInv("PoisonCloudDEFPenalty1b") < 1) A_GiveInventory("PoisonCloudDEFPenalty1b",1);
+				}
+
+				if (random(1,5) == 1) 
+				{
+					if (CountInv("PoisonCloudSpeedPenalty2") < 1) A_GiveInventory("PoisonCloudSpeedPenalty2",1);
+					else
+					{
+						if (CountInv("PoisonCloudSpeedPenalty2b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty2b",1);
+					}
+					if (CountInv("PoisonCloudATKPenalty2") < 1) A_GiveInventory("PoisonCloudATKPenalty2",1);
+					else
+					{
+						if (CountInv("PoisonCloudATKPenalty2b") < 1) A_GiveInventory("PoisonCloudATKPenalty2b",1);
+					}
+					if (CountInv("PoisonCloudDEFPenalty2") < 1) A_GiveInventory("PoisonCloudDEFPenalty2",1);
+					else
+					{
+						if (CountInv("PoisonCloudDEFPenalty2b") < 1) A_GiveInventory("PoisonCloudDEFPenalty2b",1);
+					}
+				}
+				if (random(1,25) == 1) 
+				{
+					if (CountInv("PoisonCloudSpeedPenalty3") < 1) A_GiveInventory("PoisonCloudSpeedPenalty3",1);
+					else
+					{
+						if (CountInv("PoisonCloudSpeedPenalty3b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty3b",1);
+					}
+					if (CountInv("PoisonCloudATKPenalty3") < 1) A_GiveInventory("PoisonCloudATKPenalty3",1);
+					else
+					{
+						if (CountInv("PoisonCloudATKPenalty3b") < 1) A_GiveInventory("PoisonCloudATKPenalty3b",1);
+					}
+					if (CountInv("PoisonCloudDEFPenalty3") < 1) A_GiveInventory("PoisonCloudDEFPenalty3",1);
+					else
+					{
+						if (CountInv("PoisonCloudDEFPenalty3b") < 1) A_GiveInventory("PoisonCloudDEFPenalty3b",1);
+					}
+				}
+			}
+			if (mod == 'Drowning') 
+			{
+				ActorDefenseIgnoreFactor += (1.00 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Suicide Bombers/Kamikaze Enemy Attacks/RockBomb Shards
+			if (infl == "RockBombShardProj" || 
+					infl == "SuicideBomber" || 
+					infl == "SuicideBomb" || 
+					infl == "SuicideBombStrong" || 
+					infl == "SuicideBombUltra" || 
+					infl == "HSBoom" || 
+					infl == "HadesSphere" || 
+					infl == "HSOverlord" || 
+					mod == 'Explosive' || 
+					mod == 'ExplosiveImpact' || 
+					mod == 'CC_Firecracker' || 
+					flags & DMG_EXPLOSION) 
+			{
+				if (playpawn)
+				{
+					dfperkfactor += ((DemolitionsExpertPerkLevel * 0.01) + (DemolitionsExpertEXPerkLevel * 0.025));
+				}
+				if (infl == "RockBombShardProj" || infl == "RockBombShardProjT") ActorDefenseIgnoreFactor += ((frandompick(0.50,0.5334,0.60) + (dfperkfactor * 0.5)) * (1.00 - ActorDefenseIgnoreFactor));
+																		else ActorDefenseIgnoreFactor += ((frandompick(0.625,0.6667,0.75) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Chill Touch
+			if (infl == "ChillTouch") 
+			{
+				if (playpawn)
+				{
+					dfperkfactor += ((MagiUpPerkLvl * 0.02) + (MagiUpExPerkLvl * 0.05));
+					dfperkfactor += ((WandMastPerkLvl * 0.01) + (WandMastEXPerkLvl * 0.025));
+				}
+				ActorDefenseIgnoreFactor += ((0.5 + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Fire Breath
+			if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
+					infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
+					infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
+					infl == "FireBreath" || infl == "FireBreathCrisis" ||
+					infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis" ||
+					infl == "Demon5Jet" || infl == "Demon5JetCrisis")
+			{
+				ActorDefenseIgnoreFactor += (0.75 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			if (infl == "SonicNail")
+			{
+				if (surprisehit) 
+				{
+					ActorDefenseIgnoreFactor += ((random(30,32) * 0.03125) * (1.00 - ActorDefenseIgnoreFactor));
+				}
+				else
+				{
+					ActorDefenseIgnoreFactor += ((random(6,8) * 0.125) * (1.00 - ActorDefenseIgnoreFactor));
+				}
+			}
+			if (infl == "UnmakerLaser" || infl == "UnmakerLaserCrisis")
+			{
+				if (playpawn)
+				{
+					dfperkfactor += ((MagiUpPerkLvl * 0.02) + (MagiUpExPerkLvl * 0.05));
+					dfperkfactor += ((WandMastPerkLvl * 0.02) + (WandMastEXPerkLvl * 0.05));
+					if (CharacterClass != 2 && CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 1) dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.02) + (PlasmaAccuracyEXPerkLevel * 0.05));
+					if (CharacterClass == 2 && CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 1) dfperkfactor += ((SoulMasteryPerkLevel * 0.02) + (SoulMasteryEXPerkLevel * 0.05));
+				}
+				ActorDefenseIgnoreFactor += ((frandompick(0.25,0.3125,0.375) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			
+			// Misc
+			if (playpawn && (playpawn.player.cheats & CF_FRIGHTENING || playpawn.bFRIGHTENING))
+			{ 
+				ActorDefenseIgnoreFactor += (0.25 * (1.00 - ActorDefenseIgnoreFactor));
+				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP ? - Fright Check]: YES\c-)");
+			}
+			if (playpawn && PlayerTensionLevel)
+			{
+				double tensionignore; 
+				if (PlayerTensionLevel == 1) tensionignore = 0.01; // 5
+				if (PlayerTensionLevel == 2) tensionignore = 0.03; // 20
+				if (PlayerTensionLevel == 3) tensionignore = 0.06; // 50
+				if (PlayerTensionLevel == 4) tensionignore = 0.15; // 100
+				if (PlayerTensionLevel == 5) tensionignore = 0.27; // 250
+				if (PlayerTensionLevel == 6) tensionignore = 0.48; // 500
+				if (PlayerTensionLevel == 7) tensionignore = 0.66; // 1000
+				int randcall = random(1,32);
+				if (randcall <= 1) tensionignore *= 4;
+				if (randcall == 2 || randcall == 3) tensionignore *= 2;
+				if (tensionignore > 1.00) tensionignore = 1.00;
+				double tempv1 = (1.0 - ActorDefenseIgnoreFactor) * tensionignore;
+
+				ActorDefenseIgnoreFactor += (tempv1 * (1.00 - ActorDefenseIgnoreFactor));
+				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP ? - Tension Check]: YES (%.4f) \c-)", tempv1);
+			}
+			// Legendaries
+			if (DVDSActor && (DVDSActor.user_legendaryevolved || DVDSActor.CountInv("LDLegendaryMonsterTransformed"))) 
+			{ 
+				ActorDefenseIgnoreFactor += (0.50 * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Player Buff Checks
+			if (playpawn)
+			{
+				double temp = (0.025 * random(0,5));
+				if (CallACS("GetBuffTimer",10) > 0) temp *= 1;
+				if (CallACS("GetBuffTimer",13) > 0) temp -= 1;
+				ActorDefenseIgnoreFactor += (temp * (1.00 - ActorDefenseIgnoreFactor));
+			}
+			// Target itself is a Legendary
+			if (user_legendaryevolved || CountInv("LDLegendaryMonsterTransformed"))
+			{
+				if (ActorDefenseIgnoreFactor > 0.00) ActorDefenseIgnoreFactor /= random(2,6);
+			}
+		}
+
+		//**********************************************************************
+		//*This ignores damage factors [similar to how DQ crits ignore defense]*
+		//**********************************************************************
+		if (CallACS("GetBuffTimer",7) > 0) ActorDefenseIgnoreFactor *= 1.25;
+		if (CallACS("GetBuffTimer",10) > 0) ActorDefenseIgnoreFactor *= 1.05;
+		if (CallACS("GetBuffTimer",13) > 0) ActorDefenseIgnoreFactor *= 0.9524;
+		if (ActorDefenseIgnoreFactor > 1.00) ActorDefenseIgnoreFactor = 1.00;
+
+		prevDamageFactor = DamageFactor;
+		if (DamageFactor < 1.00) 
+		{
+			if (criticalhit) ActorDefenseIgnoreFactor = 1.00;
+			DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
+		}
+		if (dvdsdebug_actordmgdisplays && damage > 0) 
+		{
+			if (ActorDefenseIgnoreFactor > 0.00) Console.Printf("    (\czActor Defensive Input [STEP 3a - Def Ignoring]\c-: \caDefenseIgnoreFactor = %.8f\c-, \cadmgfactor = %.8f\c-, \caprevdmgfactor = %.8f\c-, \cypredmg = %d\c-, \cydmg = %d\c- (Monster Actor))", ActorDefenseIgnoreFactor, DamageFactor, prevDamageFactor, predmginr, damage);
+																			else Console.Printf("    (\czActor Defensive Input [STEP 3a - Def Ignoring]\c-: \caSKIPPED\c-, \cydmg = %d\c-)", predmginr);
+		}
+		
+		return prevDamageFactor, basedmgfactor, ActorDefenseIgnoreFactor;
+	}
+	
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		string nm, nn, no, np;
+		
 		if (mod == 'Heal1' || mod == 'Heal2' || mod == 'Heal3' || mod == 'Heal4') return 0;
 		if (CallACS("MenuVarCheckDECORATE",0) > 0)
 		{
@@ -1883,6 +2331,56 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (IsHellCoreAttack > 0) HellcoreType = IsHellCoreAttack + 95;
 		if (IsHellCoreAttack < 0) HellcoreType = -1;
 		if (dvdsdebug_actordmgdisplays && IsHellCoreAttack) Console.Printf("    (\czIsHellCoreAttack?: %d, HellcoreType: %d", IsHellCoreAttack, HellcoreType);
+		
+		int angvstype;
+		
+		bool surprisehit = false;
+		if (source && 
+				target != source && 
+				(PlayerPawn(source) || source.bFRIENDLY) && 
+				!bFRIENDLY && 
+				!ExplosiveBarrel(self) && 
+				!ExplosiveBarrel2(self) && 
+				!Pod(self) &&
+				!PracticeTarget(self) &&
+				!PracticeTarget2(self) &&
+				!bDORMANT)
+		{
+			int initdmg = damage;
+			surprisehit = true;
+			A_StopSound(32);
+			if (InStateSequence(curstate,ResolveState("Spawn")) ||
+				  (InStateSequence(curstate,ResolveState("Idle")) && Heresiarch(self)))
+			{
+				//A_SetInventory("JustSurprised",1);
+				if (dvds_hitweaksounds) A_StartSound("Misc/WeaknessHitMid", 32, CHANF_DEFAULT, (dvds_hitweaksoundvol * frandom(0.75,1.25)), ATTN_NONE, 0.67);
+				nm = "SonicNail";
+				if (inflictor && 
+						(inflictor.GetClassName() == nm ||
+						 inflictor.GetClassName() == "ImpalerMissile" ||
+						 inflictor.GetClassName() == "ImpalerMissile2" ||
+						 inflictor.GetClassName() == "ImpalerMissile3"))
+				{
+					damage *= frandompick(2.0000,2.50);
+				}
+				else damage *= frandompick(1.3334,1.50);
+			}
+			else
+			{
+				if (dvds_hitweaksounds) A_StartSound("Misc/WeaknessHit", 32, CHANF_DEFAULT, (dvds_hitweaksoundvol * frandom(0.75,1.25)), ATTN_NONE, 0.67);
+				nm = "SonicNail";
+				if (inflictor && 
+						(inflictor.GetClassName() == nm ||
+						 inflictor.GetClassName() == "ImpalerMissile" ||
+						 inflictor.GetClassName() == "ImpalerMissile2" ||
+						 inflictor.GetClassName() == "ImpalerMissile3"))
+				{
+					damage *= frandompick(1.5000,1.75);
+				}
+				else damage *= frandompick(1.1667,1.25);
+			}
+			if (dvdsdebug_actordmgdisplays) Console.Printf("(\c[green]%s\c-) surprisehit: damage: %d (initdmg: %d)", GetClassName(), damage, initdmg);
+		}
 		
 		bool wasblastedimpact = false;
 		if (inflictor == null && source == null && mod == 'Melee') 
@@ -2136,7 +2634,7 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 		if (CountInv("MaulotaurChargeDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.375);
 		if (CountInv("HeresiarchShieldDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.4375);
 		if (CountInv("NightmarePhaseOutDefense")) CritResistChance += ((100.0 - CritResistChance) * 0.46875);
-		String nm = "ThamuzApocalypseDefendMode"; MiscCheck = nm; if (CountInv(MiscCheck)) CritResistChance += ((100.0 - CritResistChance) * 0.4);
+		nm = "ThamuzApocalypseDefendMode"; MiscCheck = nm; if (CountInv(MiscCheck)) CritResistChance += ((100.0 - CritResistChance) * 0.4);
 		// Flag Detection
 		if (user_legendaryevolved || CountInv("LDLegendaryMonsterTransformed")) CritResistChance += ((100.0 - CritResistChance) * 0.1875);
 		// Type Detection
@@ -2384,337 +2882,12 @@ class AetheriusMonsterZSC : AetheriusBaseZSC
 
 		int predmginr = damage;
 		// (Partial) Defense Ignoring Attacks
-		double basedmgfactor = DamageFactor;
-
-		double HubBubRand = frandompick(0.45,0.475,0.5,0.525,0.55);
-		double RailRandom = frandompick(0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.33,0.50,0.50,0.50,0.50,0.75,0.75,0.9875);
+		double basedmgfactor;
 		double ActorDefenseIgnoreFactor = 0.00;
-		double dfperkfactor = 0.00;
-		if (inflictor == null && source == null) 
-		{
-			// BLASTED Impact Damage
-			if (wasblastedimpact) ActorDefenseIgnoreFactor += (frandom(0.45,0.55) * (1.00 - ActorDefenseIgnoreFactor));
-		}
-		else
-		{
-			// Hellcore
-			if (IsHellCoreAttack != 0) 
-			{
-				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + (SoulMasteryPerkLevel * frandom(0.0225,0.0275)) + (SoulMasteryEXPerkLevel * frandom(0.05625,0.06875))) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-
-			// Sigil
-			if (mod == 'Sigil' || mod == 'SpectralLow') 
-			{
-				ActorDefenseIgnoreFactor += (frandompick(0.125,0.25,0.375) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Eldritch
-			if (mod == 'Eldritch' || mod == 'Deadlight')
-			{
-				ActorDefenseIgnoreFactor += (0.75 * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Melee
-			if (mod == 'Melee' || mod == 'Trample' || mod == 'Stomp' || mod == 'Fist' || mod == 'Kick' || mod == 'Chainsaw' || mod == 'Gauntlets')
-			{
-				if (playpawn)
-				{
-					if (mod == 'Chainsaw')
-					{
-						dfperkfactor += ((BerserkerFit * 0.025) + (BerserkerFitEX * 0.0625));
-						dfperkfactor += ((MartialArtsMastery * 0.025) + (MartialArtsMasteryEX * 0.0625));
-						ActorDefenseIgnoreFactor += (((random(10,25) * 0.01) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-					}
-					else
-					{
-						dfperkfactor += ((BerserkerFit * 0.01) + (BerserkerFitEX * 0.025));
-						dfperkfactor += ((MartialArtsMastery * 0.01) + (MartialArtsMasteryEX * 0.025));
-						ActorDefenseIgnoreFactor += (((random(0,10) * 0.01) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-					}
-				}
-			}
-			// BFG Ignores roughly half of "normal" damagefactor
-			if (mod == 'BFG' || mod == 'BFGSpray' || mod == 'BFGSplash') 
-			{ 
-				if (playpawn)
-				{
-					dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.01) + (PlasmaAccuracyEXPerkLevel * 0.025));
-					dfperkfactor += ((BFGAttunementPerkLevel * 0.025) + (BFGAttunementEXPerkLevel * 0.0625));
-				}
-				ActorDefenseIgnoreFactor += ((frandom(0.45,0.55) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Plasma Ignores 1/4th of "normal" damagefactor
-			if (mod == 'Plasma') 
-			{ 
-				if (playpawn)
-				{
-					dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.01) + (PlasmaAccuracyEXPerkLevel * 0.025));
-				}
-				ActorDefenseIgnoreFactor += ((frandom(0.225,0.275) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Railguns
-			if (infl == "DBTRailPuff") 
-			{ 
-				if (playpawn)
-				{
-					dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.01) + (PlasmaAccuracyEXPerkLevel * 0.025));
-				}
-				ActorDefenseIgnoreFactor += ((RailRandom + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Hubble Bubbles
-			if (infl == "HubbleBubble" || infl == "GlimmeringGlobe") 
-			{
-				if (playpawn)
-				{
-					dfperkfactor += ((MagiUpPerkLvl * 0.025) + (MagiUpExPerkLvl * 0.0625));
-					dfperkfactor += ((WandMastPerkLvl * 0.05) + (WandMastEXPerkLvl * 0.125));
-				}
-				ActorDefenseIgnoreFactor += ((HubBubRand + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-				
-				if (CountInv("HubbleBubbleSpeedPenalty1") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty1",1);
-				else
-				{
-					if (CountInv("HubbleBubbleSpeedPenalty1b") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty1b",1);
-				}
-				if (random(1,3) == 1) 
-				{
-					if (CountInv("HubbleBubbleSpeedPenalty2") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty2",1);
-					else
-					{
-						if (CountInv("HubbleBubbleSpeedPenalty2b") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty2b",1);
-					}
-				}
-				if (random(1,9) == 1) 
-				{
-					if (CountInv("HubbleBubbleSpeedPenalty3") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty3",1);
-					else
-					{
-						if (CountInv("HubbleBubbleSpeedPenalty3b") < 1) A_GiveInventory("HubbleBubbleSpeedPenalty3b",1);
-					}
-				}
-			}
-			// Bullet/Pellet
-			if (mod == 'Bullet') 
-			{ 
-				if (playpawn)
-				{
-					dfperkfactor += ((BulletAccuracyPerkLevel * 0.01) + (PelletAccuracyPerkLevel * 0.02) + (BulletAccuracyEXPerkLevel * 0.025) + (PelletAccuracyEXPerkLevel * 0.05));
-				}
-				ActorDefenseIgnoreFactor += ((frandom(0.1125,0.1375) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			
-			// Sceptre
-			if (mod == 'Sceptre') 
-			{ 
-				double temp = (0.5 + (random(0,5) * 0.02));
-				double temp2 = (((0.30 + (random(0,5) * 0.02)) / 16) * SceptreActualLevel);
-				ActorDefenseIgnoreFactor += ((temp + temp2) * (1.00 - ActorDefenseIgnoreFactor));
-				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("\cz[Sceptre Defense Ignoring]\c-: \caDefenseIgnoreFactor = %.8f\c-, \catemp1+2 = %.8f", ActorDefenseIgnoreFactor, (temp+temp2));
-			}
-			// Diaris Arrows
-			if (infl == 'DiarisHolyArrow' || infl == 'DiarisHolyArrow2xDmg' || infl == 'DiarisHolyArrow3xDmg' || 
-			    infl == 'DiarisHolyArrowGlitter1' || infl == 'DiarisHolyArrowGlitter2' || infl == 'DiarisHolyArrowGlitter3') 
-			{ 
-				ActorDefenseIgnoreFactor += ((0.5 + (random(-10,10) * 0.01)) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Poison Needle
-			if (mod == 'PoisonNeedle') 
-			{ 
-				if (playpawn)
-				{
-					dfperkfactor += ((MartialArtsMastery * 0.01) + (MartialArtsMasteryEX * 0.025));
-				}
-				ActorDefenseIgnoreFactor += ((0.625 + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Poison Clouds
-			if ((mod == "PoisonElemental" || mod == "Poison") && 
-					(infl == "MinorPoisonCloud" || infl == "NormalPoisonCloud" || infl == "MajorPoisonCloud" ||
-					 infl == "HexenPoisonCloud1" || infl == "HexenPoisonCloud2Source" || infl == "HexenPoisonCloud2Outer" || infl == "HexenPoisonCloud3Source" || infl == "HexenPoisonCloud3Outer"))
-			{
-				if (playpawn)
-				{
-					dfperkfactor += ((MagiUpPerkLvl * 0.01) + (MagiUpExPerkLvl * 0.025));
-					dfperkfactor += ((WandMastPerkLvl * 0.02) + (WandMastEXPerkLvl * 0.05));
-				}
-				ActorDefenseIgnoreFactor += ((frandompick(0.20,0.225,0.25,0.275,0.30) - dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-				
-				if (CountInv("PoisonCloudSpeedPenalty1") < 1) A_GiveInventory("PoisonCloudSpeedPenalty1",1);
-				else
-				{
-					if (CountInv("PoisonCloudSpeedPenalty1b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty1b",1);
-				}
-				if (CountInv("PoisonCloudATKPenalty1") < 1) A_GiveInventory("PoisonCloudATKPenalty1",1);
-				else
-				{
-					if (CountInv("PoisonCloudATKPenalty1b") < 1) A_GiveInventory("PoisonCloudATKPenalty1b",1);
-				}
-				if (CountInv("PoisonCloudDEFPenalty1") < 1) A_GiveInventory("PoisonCloudDEFPenalty1",1);
-				else
-				{
-					if (CountInv("PoisonCloudDEFPenalty1b") < 1) A_GiveInventory("PoisonCloudDEFPenalty1b",1);
-				}
-
-				if (random(1,5) == 1) 
-				{
-					if (CountInv("PoisonCloudSpeedPenalty2") < 1) A_GiveInventory("PoisonCloudSpeedPenalty2",1);
-					else
-					{
-						if (CountInv("PoisonCloudSpeedPenalty2b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty2b",1);
-					}
-					if (CountInv("PoisonCloudATKPenalty2") < 1) A_GiveInventory("PoisonCloudATKPenalty2",1);
-					else
-					{
-						if (CountInv("PoisonCloudATKPenalty2b") < 1) A_GiveInventory("PoisonCloudATKPenalty2b",1);
-					}
-					if (CountInv("PoisonCloudDEFPenalty2") < 1) A_GiveInventory("PoisonCloudDEFPenalty2",1);
-					else
-					{
-						if (CountInv("PoisonCloudDEFPenalty2b") < 1) A_GiveInventory("PoisonCloudDEFPenalty2b",1);
-					}
-				}
-				if (random(1,25) == 1) 
-				{
-					if (CountInv("PoisonCloudSpeedPenalty3") < 1) A_GiveInventory("PoisonCloudSpeedPenalty3",1);
-					else
-					{
-						if (CountInv("PoisonCloudSpeedPenalty3b") < 1) A_GiveInventory("PoisonCloudSpeedPenalty3b",1);
-					}
-					if (CountInv("PoisonCloudATKPenalty3") < 1) A_GiveInventory("PoisonCloudATKPenalty3",1);
-					else
-					{
-						if (CountInv("PoisonCloudATKPenalty3b") < 1) A_GiveInventory("PoisonCloudATKPenalty3b",1);
-					}
-					if (CountInv("PoisonCloudDEFPenalty3") < 1) A_GiveInventory("PoisonCloudDEFPenalty3",1);
-					else
-					{
-						if (CountInv("PoisonCloudDEFPenalty3b") < 1) A_GiveInventory("PoisonCloudDEFPenalty3b",1);
-					}
-				}
-			}
-			if (mod == 'Drowning') 
-			{
-				ActorDefenseIgnoreFactor += (1.00 * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Suicide Bombers/Kamikaze Enemy Attacks/RockBomb Shards
-			if (infl == "RockBombShardProj" || 
-					infl == "SuicideBomber" || 
-					infl == "SuicideBomb" || 
-					infl == "SuicideBombStrong" || 
-					infl == "SuicideBombUltra" || 
-					infl == "HSBoom" || 
-					infl == "HadesSphere" || 
-					infl == "HSOverlord" || 
-					mod == 'Explosive' || 
-					mod == 'ExplosiveImpact' || 
-					mod == 'CC_Firecracker' || 
-					flags & DMG_EXPLOSION) 
-			{
-				if (playpawn)
-				{
-					dfperkfactor += ((DemolitionsExpertPerkLevel * 0.01) + (DemolitionsExpertEXPerkLevel * 0.025));
-				}
-				if (infl == "RockBombShardProj" || infl == "RockBombShardProjT") ActorDefenseIgnoreFactor += ((frandompick(0.50,0.5334,0.60) + (dfperkfactor * 0.5)) * (1.00 - ActorDefenseIgnoreFactor));
-																		else ActorDefenseIgnoreFactor += ((frandompick(0.625,0.6667,0.75) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Chill Touch
-			if (infl == "ChillTouch") 
-			{
-				if (playpawn)
-				{
-					dfperkfactor += ((MagiUpPerkLvl * 0.02) + (MagiUpExPerkLvl * 0.05));
-					dfperkfactor += ((WandMastPerkLvl * 0.01) + (WandMastEXPerkLvl * 0.025));
-				}
-				ActorDefenseIgnoreFactor += ((0.5 + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Fire Breath
-			if (infl == "DemonFire" || infl == "DemonFireCrisis" || 
-					infl == "MiniFirePuff" || infl == "MiniFirePuffCrisis" || 
-					infl == "DogFireNew" || infl == "DogFireNewCrisis" ||
-					infl == "FireBreath" || infl == "FireBreathCrisis" ||
-					infl == "SGuardianFlameBreath" || infl == "SGuardianFlameBreathCrisis" ||
-					infl == "Demon5Jet" || infl == "Demon5JetCrisis")
-			{
-				ActorDefenseIgnoreFactor += (0.75 * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			if (infl == "SonicNail")
-			{
-				ActorDefenseIgnoreFactor += (frandompick(0.25,0.3125,0.375,0.4325,0.50) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			if (infl == "UnmakerLaser" || infl == "UnmakerLaserCrisis")
-			{
-				if (playpawn)
-				{
-					dfperkfactor += ((MagiUpPerkLvl * 0.02) + (MagiUpExPerkLvl * 0.05));
-					dfperkfactor += ((WandMastPerkLvl * 0.02) + (WandMastEXPerkLvl * 0.05));
-					if (CharacterClass != 2 && CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 1) dfperkfactor += ((PlasmaAccuracyPerkLevel * 0.02) + (PlasmaAccuracyEXPerkLevel * 0.05));
-					if (CharacterClass == 2 && CountInv("UnmakerAmmoType",AAPTR_PLAYER1) == 1) dfperkfactor += ((SoulMasteryPerkLevel * 0.02) + (SoulMasteryEXPerkLevel * 0.05));
-				}
-				ActorDefenseIgnoreFactor += ((frandompick(0.25,0.3125,0.375) + dfperkfactor) * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			
-			// Misc
-			if (playpawn && (playpawn.player.cheats & CF_FRIGHTENING || playpawn.bFRIGHTENING))
-			{ 
-				ActorDefenseIgnoreFactor += (0.25 * (1.00 - ActorDefenseIgnoreFactor));
-				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP ? - Fright Check]: YES\c-)");
-			}
-			if (playpawn && PlayerTensionLevel)
-			{
-				double tensionignore; 
-				if (PlayerTensionLevel == 1) tensionignore = 0.01; // 5
-				if (PlayerTensionLevel == 2) tensionignore = 0.03; // 20
-				if (PlayerTensionLevel == 3) tensionignore = 0.06; // 50
-				if (PlayerTensionLevel == 4) tensionignore = 0.15; // 100
-				if (PlayerTensionLevel == 5) tensionignore = 0.27; // 250
-				if (PlayerTensionLevel == 6) tensionignore = 0.48; // 500
-				if (PlayerTensionLevel == 7) tensionignore = 0.66; // 1000
-				int randcall = random(1,32);
-				if (randcall <= 1) tensionignore *= 4;
-				if (randcall == 2 || randcall == 3) tensionignore *= 2;
-				if (tensionignore > 1.00) tensionignore = 1.00;
-				double tempv1 = (1.0 - ActorDefenseIgnoreFactor) * tensionignore;
-
-				ActorDefenseIgnoreFactor += (tempv1 * (1.00 - ActorDefenseIgnoreFactor));
-				if (dvdsdebug_actordmgdisplays && damage > 0) Console.Printf("    (\czActor Defensive Input [STEP ? - Tension Check]: YES (%.4f) \c-)", tempv1);
-			}
-			// Legendaries
-			if (DVDSActor && (DVDSActor.user_legendaryevolved || DVDSActor.CountInv("LDLegendaryMonsterTransformed"))) 
-			{ 
-				ActorDefenseIgnoreFactor += (0.50 * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Player Buff Checks
-			if (playpawn)
-			{
-				double temp = (0.025 * random(0,5));
-				if (CallACS("GetBuffTimer",10) > 0) temp *= 1;
-				if (CallACS("GetBuffTimer",13) > 0) temp -= 1;
-				ActorDefenseIgnoreFactor += (temp * (1.00 - ActorDefenseIgnoreFactor));
-			}
-			// Target itself is a Legendary
-			if (user_legendaryevolved || CountInv("LDLegendaryMonsterTransformed"))
-			{
-				if (ActorDefenseIgnoreFactor > 0.00) ActorDefenseIgnoreFactor /= random(2,6);
-			}
-		}
-
-		//**********************************************************************
-		//*This ignores damage factors [similar to how DQ crits ignore defense]*
-		//**********************************************************************
-		if (CallACS("GetBuffTimer",7) > 0) ActorDefenseIgnoreFactor *= 1.25;
-		if (CallACS("GetBuffTimer",10) > 0) ActorDefenseIgnoreFactor *= 1.05;
-		if (CallACS("GetBuffTimer",13) > 0) ActorDefenseIgnoreFactor *= 0.9524;
-		if (ActorDefenseIgnoreFactor > 1.00) ActorDefenseIgnoreFactor = 1.00;
-
-		prevDamageFactor = DamageFactor;
-		if (DamageFactor < 1.00) 
-		{
-			if (criticalhit) ActorDefenseIgnoreFactor = 1.00;
-			DamageFactor += ((1.00 - DamageFactor) * ActorDefenseIgnoreFactor); 
-		}
-		if (dvdsdebug_actordmgdisplays && damage > 0) 
-		{
-			if (ActorDefenseIgnoreFactor > 0.00) Console.Printf("    (\czActor Defensive Input [STEP 3a - Def Ignoring]\c-: \caDefenseIgnoreFactor = %.8f\c-, \cadmgfactor = %.8f\c-, \caprevdmgfactor = %.8f\c-, \cypredmg = %d\c-, \cydmg = %d\c- (Monster Actor))", ActorDefenseIgnoreFactor, DamageFactor, prevDamageFactor, predmginr, damage);
-																			else Console.Printf("    (\czActor Defensive Input [STEP 3a - Def Ignoring]\c-: \caSKIPPED\c-, \cydmg = %d\c-)", predmginr);
-		}
+		basedmgfactor = DamageFactor;
+		[prevDamageFactor, basedmgfactor, ActorDefenseIgnoreFactor] = A_DefenseIgnoreFactor(inflictor, source, damage, mod, flags, angle, wasblastedimpact, surprisehit, angvstype, IsHellCoreAttack);
+		//
+		//
 		
 		int predirdmg = damage;
 		prevDamageFactor = DamageFactor;
