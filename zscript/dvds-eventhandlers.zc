@@ -2028,8 +2028,8 @@ class MKeyEvents : EventHandler
 	
 	override void NetworkProcess(ConsoleEvent e)
 	{
-		String nm, nn, no, np;
-		String pm, pn, po, pp;
+		String nm, nn, no, np, nq;
+		String pm, pn, po, pp, pq;
 		actor playera = players[0].mo;
 		let MiscItem = PlayerStatItem(playera.FindInventory("PlayerStatItem"));
 		if (e.Name == "MYKEYPRESS")   
@@ -2054,144 +2054,42 @@ class MKeyEvents : EventHandler
 				Inventory arti;
 				int MaxHealthTrue = MiscItem.MaxHealthTrue;
 				int HealthDiff = (MaxHealthTrue - playera.health);
-				int QFlaskThreshold = (MaxHealthTrue * 1.125);
-				int MUrnThreshold = (MaxHealthTrue * 1.925);
+				int SurgKitThreshold = (MaxHealthTrue * 0.75);
+				int MedKitThreshold = random(20,30) + (MaxHealthTrue * frandom(0.2,0.3));
+				int MedPatchThreshold = random(8,12) + (MaxHealthTrue * frandom(0.08,0.12));
+				int QFlaskThreshold = (MaxHealthTrue * frandom(0.25,0.30));
+				int MUrnThreshold = (MaxHealthTrue * 0.75);
 				int Herb3Threshold = random(85,105) + (MaxHealthTrue * frandom(0.255,0.315));
 				int Herb2Threshold = random(55,65) + (MaxHealthTrue * frandom(0.165,0.195));
 				int Herb1Threshold = random(25,35) + (MaxHealthTrue * frandom(0.075,0.105));
-				int SurgKitThreshold = MaxHealthTrue;
-				int MedKitThreshold = random(20,30) + (MaxHealthTrue * frandom(0.2,0.3));
-				int MedPatchThreshold = random(8,12) + (MaxHealthTrue * frandom(0.08,0.12));
 				
-				bool extgamecheck = false;
-				if (playera.CountInv("PlayingHeretic") ||
-						playera.CountInv("PlayingHexen"))
-				{
-					pm = "ArtiHealthNew";
-					pn = "ArtiSuperHealthNew";
-					if (MiscItem && 
-							(playera.CountInv(pm) ||
-							 playera.CountInv(pn)))
-					{
-					}
-				}
-				else
-				if (playera.CountInv("PlayingStrife"))
-				{
-					pm = "MedPatchNew";
-					pn = "MedicalKitNew";
-					po = "SurgeryKitNew";
-					if (MiscItem && 
-							(playera.CountInv(pm) ||
-							 playera.CountInv(pn) ||
-							 playera.CountInv(po)))
-					{
-					}
-				}
-				
+				int itemtier = 0;
 				if (MiscItem && 
-						(playera.CountInv("MedicinalHerb") ||
+						(playera.CountInv("ArtiHealthNew") ||
+						 playera.CountInv("ArtiSuperHealthNew") ||
+						 playera.CountInv("MedPatchNew") ||
+						 playera.CountInv("MedicalKitNew") ||
+						 playera.CountInv("SurgeryKitNew") ||
+						 playera.CountInv("MedicinalHerb") ||
 						 playera.CountInv("StrongMedicine") ||
 						 playera.CountInv("SpecialMedicine")))
 				{
 					if (HealthDiff > 0)
 					{
-						if (HealthDiff > Herb3Threshold) // Prioritize Special Medicine First
-						{
-							arti = playera.FindInventory("SpecialMedicine");
-							if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-							else
-							{
-								arti = playera.FindInventory("StrongMedicine");
-								if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-								else
-								{
-									arti = playera.FindInventory("MedicinalHerb");
-									if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-									else
-									{
-										arti = playera.FindInventory("YggdrasilDew");
-										if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-										else 
-										{
-											arti = playera.FindInventory("MiraclePotion");
-											if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-											else 
-											{
-												playera.A_StopSound(104);
-												playera.A_StartSound("inv_fail",104,CHANF_NOSTOP);
-												playera.A_Print(String.Format("No HP Restoration Items Available!", 1.125, "SMALLFONT"));
-											}
-										}
-									}
-								}
-							}
-						}
-						else
-						if (HealthDiff > Herb2Threshold) // Prioritize Strong Medicine First
-						{
-							arti = playera.FindInventory("StrongMedicine");
-							if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-							else
-							{
-								arti = playera.FindInventory("MedicinalHerb");
-								if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-								else
-								{
-									arti = playera.FindInventory("SpecialMedicine");
-									if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-									else
-									{
-										arti = playera.FindInventory("YggdrasilDew");
-										if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-										else 
-										{
-											arti = playera.FindInventory("MiraclePotion");
-											if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-											else 
-											{
-												playera.A_StopSound(104);
-												playera.A_StartSound("inv_fail",104,CHANF_NOSTOP);
-												playera.A_Print(String.Format("No HP Restoration Items Available!", 1.125, "SMALLFONT"));
-											}
-										}
-									}
-								}
-							}
-						}
+						if (HealthDiff > Herb3Threshold) itemtier = 3;
+						else if (HealthDiff > Herb2Threshold) itemtier = 2;
+						else if (HealthDiff > Herb1Threshold) itemtier = 1;
+
+						arti = playera.FindInventory("");
+						if (arti != null && arti.amount > 0) playera.UseInventory(arti);
 						else
 						{
-							arti = playera.FindInventory("MedicinalHerb");
-							if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-							else
-							{
-								arti = playera.FindInventory("StrongMedicine");
-								if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-								else
-								{
-									arti = playera.FindInventory("SpecialMedicine");
-									if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-									else 
-									{
-										arti = playera.FindInventory("YggdrasilDew");
-										if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-										else 
-										{
-											arti = playera.FindInventory("MiraclePotion");
-											if (arti != null && arti.amount > 0) playera.UseInventory(arti);
-											else 
-											{
-												playera.A_StopSound(104);
-												playera.A_StartSound("inv_fail",104,CHANF_NOSTOP);
-												playera.A_Print(String.Format("No HP Restoration Items Available!", 1.125, "SMALLFONT"));
-											}
-										}
-									}
-								}
-							}
+							playera.A_StopSound(104);
+							playera.A_StartSound("inv_fail",104,CHANF_NOSTOP);
+							playera.A_Print(String.Format("You're not in need of healing!", 1.125, "SMALLFONT"));
 						}
 					}
-					else 
+					else
 					{
 						playera.A_StopSound(104);
 						playera.A_StartSound("inv_fail",104,CHANF_NOSTOP);
@@ -2209,18 +2107,6 @@ class MKeyEvents : EventHandler
 				int ManaDiff = (MaxMana - CurrentMana);
 				int SExliThreshold = random(90,90) + (MaxMana * frandom(0.1425,0.1575));
 				int WaterThreshold = random(30,30) + (MaxMana * frandom(0.05,0.05));
-
-				if (playera.CountInv("PlayingHeretic"))
-				{
-				}
-				else
-				if (playera.CountInv("PlayingHexen"))
-				{
-				}
-				else
-				if (playera.CountInv("PlayingStrife"))
-				{
-				}
 
 				if (MiscItem && 
 						(playera.CountInv("MagicWater") ||
