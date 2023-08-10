@@ -645,7 +645,7 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 
 		if (radiustype == 0) // Direct Damage is randomized a lot
 		{
-			if (playpawn) // if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE) // AAPTR_TARGET - the being who fires the shot
+			if (playpawn)
 			{
 				if (debugplayeratkinfo) Console.Printf("Player Sigil Shot [damage] (%s), %d", AttackerName, attacktype);
 				
@@ -709,7 +709,7 @@ class AetheriusBaseProjectileZSC : AetheriusBaseZSC
 		}
 		else // Radius is not randomized nearly as much
 		{
-			if (playpawn) // if (IsPointerEqual(AAPTR_TARGET, AAPTR_PLAYER1) == TRUE) // AAPTR_TARGET - the being who fires the shot
+			if (playpawn)
 			{
 				if (debugplayeratkinfo) Console.Printf("Player Sigil Shot [radius] (%s), %d", AttackerName, attacktype);
 				
@@ -1853,17 +1853,29 @@ class AetheriusProjectileZSC : AetheriusBaseProjectileZSC
 		
 		if (user_fusemax > 0)
 		{
-			if (user_Fuse < user_fusemax) 
+			actor playera = players[0].mo;
+			if (playera)
 			{
-				if (!(CountInv("AetheriusTimeFreezer",AAPTR_PLAYER1) || CountInv("AetheriusTimeFreezerMenu",AAPTR_PLAYER1) || isFrozen() || InStateSequence(curstate,ResolveState("Death")))) user_Fuse++;
-			}
-			if (user_Fuse == user_fusemax) 
-			{ 
-				if (!(CountInv("AetheriusTimeFreezer",AAPTR_PLAYER1) || CountInv("AetheriusTimeFreezerMenu",AAPTR_PLAYER1) || isFrozen() || InStateSequence(curstate,ResolveState("Death")))) SetStateLabel("Death");
-			}
-			if (user_Fuse > user_fusemax) 
-			{ 
-				if (!(CountInv("AetheriusTimeFreezer",AAPTR_PLAYER1) || CountInv("AetheriusTimeFreezerMenu",AAPTR_PLAYER1) || isFrozen())) user_Fuse /= 4; 
+				if (user_Fuse < user_fusemax) 
+				{
+					if (!(playera.CountInv("AetheriusTimeFreezer") || 
+								playera.CountInv("AetheriusTimeFreezerMenu") || 
+								isFrozen() || 
+								InStateSequence(curstate,ResolveState("Death")))) user_Fuse++;
+				}
+				if (user_Fuse == user_fusemax) 
+				{ 
+					if (!(playera.CountInv("AetheriusTimeFreezer") || 
+								playera.CountInv("AetheriusTimeFreezerMenu") || 
+								isFrozen() || 
+								InStateSequence(curstate,ResolveState("Death")))) SetStateLabel("Death");
+				}
+				if (user_Fuse > user_fusemax) 
+				{ 
+					if (!(playera.CountInv("AetheriusTimeFreezer") || 
+								playera.CountInv("AetheriusTimeFreezerMenu") || 
+								isFrozen())) user_Fuse /= 4; 
+				}
 			}
 		}
 		
@@ -3011,26 +3023,33 @@ class AetheriusEffectFastProjectile : AetheriusFastProjectileZSC
 	
 	void A_StatusEffectChecker(int basechance)
 	{
-		user_ailmentmaxchance = basechance;
-		if (CountInv("EWShieldIdleMode",AAPTR_PLAYER1) > 0) user_ailmentmaxchance * 4;
-		if (DivineAvatarTimer > 0) user_ailmentmaxchance * 4;
-
-		user_canafflict = 1;
-		if (master != null && master.health <= 0) user_canafflict = 0;
-		if (CountInv("InvulnerabilitySpell",AAPTR_MASTER) > 0 || 
-				CountInv("IsInvulnerable",AAPTR_MASTER) > 0 || 
-				CountInv("MenuInvulnerability",AAPTR_MASTER) > 0 ||
-				CountInv("EvadeAnAttack",AAPTR_MASTER) > 0 || 
-				CountInv("PlayerDashing",AAPTR_MASTER) > 0) 
-				{
-					user_canafflict = 0;
-				}
-
-		AetheriusPlayerPawn playpawn;
-		if (master) playpawn = AetheriusPlayerPawn(master);
-		if (playpawn)
+		actor playera = players[0].mo;
+		if (playera)
 		{
-			if (playpawn.player.cheats & CF_GODMODE2 || playpawn.player.cheats & CF_GODMODE) user_canafflict = 0;
+			user_ailmentmaxchance = basechance;
+			if (playera.CountInv("EWShieldIdleMode") > 0) user_ailmentmaxchance * 4;
+			if (DivineAvatarTimer > 0) user_ailmentmaxchance * 4;
+
+			user_canafflict = 1;
+			if (master)
+			{
+				if (master.CountInv("InvulnerabilitySpell") > 0 || 
+						master.CountInv("IsInvulnerable") > 0 || 
+						master.CountInv("MenuInvulnerability") > 0 ||
+						master.CountInv("EvadeAnAttack") > 0 || 
+						master.CountInv("PlayerDashing") > 0 ||
+						master.health <= 0) 
+						{
+							user_canafflict = 0;
+						}
+			}
+
+			AetheriusPlayerPawn playpawn;
+			if (master) playpawn = AetheriusPlayerPawn(master);
+			if (playpawn)
+			{
+				if (playpawn.player.cheats & CF_GODMODE2 || playpawn.player.cheats & CF_GODMODE) user_canafflict = 0;
+			}
 		}
 	}
 }
@@ -3394,26 +3413,33 @@ class AetheriusEffectProjectile : AetheriusProjectileZSC
 	
 	void A_StatusEffectChecker(int basechance)
 	{
-		user_ailmentmaxchance = basechance;
-		if (CountInv("EWShieldIdleMode",AAPTR_PLAYER1) > 0) user_ailmentmaxchance * 4;
-		if (DivineAvatarTimer > 0) user_ailmentmaxchance * 4;
-
-		user_canafflict = 1;
-		if (master != null && master.health <= 0) user_canafflict = 0;
-		if (CountInv("InvulnerabilitySpell",AAPTR_MASTER) > 0 || 
-				CountInv("IsInvulnerable",AAPTR_MASTER) > 0 || 
-				CountInv("MenuInvulnerability",AAPTR_MASTER) > 0 ||
-				CountInv("EvadeAnAttack",AAPTR_MASTER) > 0 || 
-				CountInv("PlayerDashing",AAPTR_MASTER) > 0) 
-				{
-					user_canafflict = 0;
-				}
-
-		AetheriusPlayerPawn playpawn;
-		if (master) playpawn = AetheriusPlayerPawn(master);
-		if (playpawn)
+		actor playera = players[0].mo;
+		if (playera)
 		{
-			if (playpawn.player.cheats & CF_GODMODE2 || playpawn.player.cheats & CF_GODMODE) user_canafflict = 0;
+			user_ailmentmaxchance = basechance;
+			if (playera.CountInv("EWShieldIdleMode") > 0) user_ailmentmaxchance * 4;
+			if (DivineAvatarTimer > 0) user_ailmentmaxchance * 4;
+
+			user_canafflict = 1;
+			if (master)
+			{
+				if (master.CountInv("InvulnerabilitySpell") > 0 || 
+						master.CountInv("IsInvulnerable") > 0 || 
+						master.CountInv("MenuInvulnerability") > 0 ||
+						master.CountInv("EvadeAnAttack") > 0 || 
+						master.CountInv("PlayerDashing") > 0 ||
+						master.health <= 0) 
+						{
+							user_canafflict = 0;
+						}
+			}
+
+			AetheriusPlayerPawn playpawn;
+			if (master) playpawn = AetheriusPlayerPawn(master);
+			if (playpawn)
+			{
+				if (playpawn.player.cheats & CF_GODMODE2 || playpawn.player.cheats & CF_GODMODE) user_canafflict = 0;
+			}
 		}
 	}
 }
@@ -4526,26 +4552,33 @@ class SingleDamageEffectFastRipper : AetheriusEffectFastProjectile
 	
 	void A_StatusEffectChecker(int basechance)
 	{
-		user_ailmentmaxchance = basechance;
-		if (CountInv("EWShieldIdleMode",AAPTR_PLAYER1) > 0) user_ailmentmaxchance * 4;
-		if (DivineAvatarTimer > 0) user_ailmentmaxchance * 4;
-
-		user_canafflict = 1;
-		if (master != null && master.health <= 0) user_canafflict = 0;
-		if (CountInv("InvulnerabilitySpell",AAPTR_MASTER) > 0 || 
-				CountInv("IsInvulnerable",AAPTR_MASTER) > 0 || 
-				CountInv("MenuInvulnerability",AAPTR_MASTER) > 0 ||
-				CountInv("EvadeAnAttack",AAPTR_MASTER) > 0 || 
-				CountInv("PlayerDashing",AAPTR_MASTER) > 0) 
-				{
-					user_canafflict = 0;
-				}
-
-		AetheriusPlayerPawn playpawn;
-		if (master) playpawn = AetheriusPlayerPawn(master);
-		if (playpawn)
+		actor playera = players[0].mo;
+		if (playera)
 		{
-			if (playpawn.player.cheats & CF_GODMODE2 || playpawn.player.cheats & CF_GODMODE) user_canafflict = 0;
+			user_ailmentmaxchance = basechance;
+			if (playera.CountInv("EWShieldIdleMode") > 0) user_ailmentmaxchance * 4;
+			if (DivineAvatarTimer > 0) user_ailmentmaxchance * 4;
+
+			user_canafflict = 1;
+			if (master)
+			{
+				if (master.CountInv("InvulnerabilitySpell") > 0 || 
+						master.CountInv("IsInvulnerable") > 0 || 
+						master.CountInv("MenuInvulnerability") > 0 ||
+						master.CountInv("EvadeAnAttack") > 0 || 
+						master.CountInv("PlayerDashing") > 0 ||
+						master.health <= 0) 
+						{
+							user_canafflict = 0;
+						}
+			}
+
+			AetheriusPlayerPawn playpawn;
+			if (master) playpawn = AetheriusPlayerPawn(master);
+			if (playpawn)
+			{
+				if (playpawn.player.cheats & CF_GODMODE2 || playpawn.player.cheats & CF_GODMODE) user_canafflict = 0;
+			}
 		}
 	}
 }
