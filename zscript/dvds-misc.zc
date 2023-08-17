@@ -1676,6 +1676,7 @@ class PlayerStatItem : Inventory
 
 	int F_SpellCostCheck(int SpellIsSelected = 0, int initialcost = 0)
 	{
+		let weapon = owner.player.ReadyWeapon;
 		int FinalSpellCost, LevelSpellCostReductionFactor, LvlSpellCostReducePercent, SecretSplCostReduceBonus, BaseSpellCostReduceBonus, Check1, Check2;
 		int OriginalSpellCost; 
 		int spellcostdebug = dvdsdebug_showspellcoststuff;
@@ -1749,6 +1750,30 @@ class PlayerStatItem : Inventory
 		FinalSpellCost = ceil(FinalSpellCost * LvlSpellCostReducePercent / 100);
 		if (SpellIsSelected != -1 && spellcostdebug && LvlSpellCostReducePercent != 100) Console.Printf("FinalSpellCost (%d): %d MP [LevelCostReduce], LvlSpellCostReducePercent: [%d / 100]", SpellIsSelected, FinalSpellCost, LvlSpellCostReducePercent);
 		
+		// Sceptre
+		If (CharacterClass == 2 && weapon is "SceptreOfEmpyrea")
+		{
+			Check1 = 0; // Check1 is an exact value
+			Check2 = 1000; // Check2 is a % value
+			
+			int val = 20;
+			if (TrueGameSkill <= SKILL_VERY_EASY) val = 30;
+			if (TrueGameSkill == SKILL_EASY) val = 27;
+			if (TrueGameSkill == SKILL_NORMAL) val = 25;
+			if (TrueGameSkill == SKILL_HARD) val = 23;
+			if (TrueGameSkill == SKILL_VERY_HARD) val = 20;
+			if (TrueGameSkill == SKILL_EXTREME) val = 18;
+			if (TrueGameSkill == SKILL_HORRIBLE) val = 15;
+			if (TrueGameSkill == SKILL_IMPOSSIBLE) val = 13;
+			if (TrueGameSkill >= SKILL_OMEGA) val = 10;
+			val *= SceptreActualLevel;
+			
+			Check2 -= val;
+			
+			FinalSpellCost -= Check1;
+			FinalSpellCost = ceil(FinalSpellCost * Check2 / 1000);
+		}
+		
 		if (SpellIsSelected == 34) // Minor Time Freezer Costs at least 10% of Mana Supply by Default (Deggaris and Illucia Only)
 		{
 			LevelSpellCostReductionFactor = MaxMana * 0.1;
@@ -1780,10 +1805,10 @@ class PlayerStatItem : Inventory
 			if (owner.CountInv("EvenstarNecklace")) { Check1 += 10; Check2 -= 50; } // Evenstar Necklace [MP reduction of 10 + 5%]
 			if (owner.CountInv("AnubisCufflinks")) { Check1 += 2; Check2 -= 10; } // Anubis Cufflinks [MP reduction of 2 + 1%]
 			if (owner.CountInv("BalrogRing")) { Check1 += 5; Check2 -= 25; } // Balrog's Ring [MP reduction of 5 + 2.5%]
-	
+			
 			FinalSpellCost -= Check1;
 			FinalSpellCost = ceil(FinalSpellCost * Check2 / 1000);
-	
+			
 			// Ruinous Shield = +50% MP Consumption
 			if (owner.CountInv("RuinousShield")) FinalSpellCost = ceil(FinalSpellCost * 1.5);
 			if (SpellIsSelected != -1 && spellcostdebug && (Check1 != 0 || Check2 != 1000)) Console.Printf("FinalSpellCost (%d): %d MP [FloraArmors] (-%d & %d)", SpellIsSelected, FinalSpellCost, Check1, Check2);
