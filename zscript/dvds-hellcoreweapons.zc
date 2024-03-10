@@ -153,6 +153,7 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 	
 	double baseangle;
 	
+	int fingerpos;
 	int soultype;
 	int soulsubtype;
 	int soultritype;
@@ -920,24 +921,28 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 	{
 		if (type == 1) // Normal 1/2
 		{
-			if (random(1,6) == 1) { A_Refire("ReFireAnim2"); }
-			else { A_Refire("ReFireAnim1"); }
+			if (random(1,6) == 1) invoker.fingerpos = 1;
+											 else invoker.fingerpos = 0;
+			A_Refire("ReFireAnim"); 
 		}
 		if (type == 2) // Normal 2/1
 		{
-			if (random(1,6) == 1) { A_Refire("ReFireAnim1"); }
-			else { A_Refire("ReFireAnim2"); }
+			if (random(1,6) == 1) invoker.fingerpos = 0;
+											 else invoker.fingerpos = 1;
+			A_Refire("ReFireAnim"); 
 		}
 
 		if (type == 3) // Alt 1/2
 		{
-			if (random(1,6) == 1) { A_Refire("AltReFireAnim2"); }
-			else { A_Refire("AltReFireAnim1"); }
+			if (random(1,6) == 1) invoker.fingerpos = 1;
+											 else invoker.fingerpos = 0;
+			A_Refire("AltReFireAnim");
 		}
 		if (type == 4) // Alt 2/1
 		{
-			if (random(1,6) == 1) { A_Refire("AltReFireAnim1"); }
-			else { A_Refire("AltReFireAnim2"); }
+			if (random(1,6) == 1) invoker.fingerpos = 0;
+											 else invoker.fingerpos = 1;
+			A_Refire("AltReFireAnim");
 		}
 	}
 	
@@ -2430,6 +2435,17 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 		}
 	}
 	
+	action void A_CheckFingerPos(int framecheck)
+	{
+		let psp = player.FindPSprite(OverlayID());
+		if (psp)
+		{
+			if (invoker.fingerpos == 1) psp.frame = (framecheck + 4);
+														 else psp.frame = framecheck;
+			Console.Printf("psp.frame: %d, invoker.fingerpos: %d", psp.frame, invoker.fingerpos);
+		}
+	}
+	
 	action void A_HellSoulMainFire()
 	{
 		invoker.shotsfired++;
@@ -2751,19 +2767,19 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 			}
 			HCL1 D 0
 			{
-				if (random(1,2) == 1) { return resolvestate("Fire2"); }
-				else { return resolvestate("Fire1"); }
-				return resolvestate(null);
+				if (random(1,2) == 1) { invoker.fingerpos = 1; }
+												 else { invoker.fingerpos = 0; }
 			}
-		Fire1:
 			HCL1 E 4
 			{
 				A_HLCRFire4Tics(0);
+				A_CheckFingerPos(4);
 			}
-		ReFireAnim1:
+		ReFireAnim:
 			HCL1 F 4 bright
 			{
 				A_HLCRFire4Tics(0);
+				A_CheckFingerPos(5);
 			}
 			HCL1 G 1 bright 
 			{
@@ -2773,6 +2789,7 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 					A_SetTics(1);
 					A_HellSoulMainFire();
 				}
+				A_CheckFingerPos(6);
 			}
 			HCL1 G 2 bright 
 			{
@@ -2788,6 +2805,7 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 					A_SetTics(2);
 					A_HellSoulMainFire();
 				}
+				A_CheckFingerPos(6);
 			}
 			HCL1 G 1 bright 
 			{
@@ -2797,6 +2815,7 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 					A_SetTics(1);
 					A_HellSoulMainFire();
 				}
+				A_CheckFingerPos(6);
 			}
 			HCL1 G 4 bright 
 			{
@@ -2811,87 +2830,18 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 					A_SetTics(2);
 				}
 				A_HellSoulMainFire();
+				A_CheckFingerPos(6);
 			}
 			HCL1 H 4 bright
 			{
 				A_HLCRFire4Tics(0);
+				A_CheckFingerPos(7);
 			}
 			HCL1 E 0
 			{
-				A_HLCRSoulRefire(2);
+				if (invoker.fingerpos == 1) A_HLCRSoulRefire(1);
+															 else A_HLCRSoulRefire(2);
 			}
-			HCL1 I 0
-			{
-				return resolvestate("FireEnd");
-			}
-
-		Fire2:
-			HCL1 I 4
-			{
-				A_HLCRFire4Tics(0);
-			}
-		ReFireAnim2:
-			HCL1 J 4 bright
-			{
-				A_HLCRFire4Tics(0);
-			}
-			HCL1 K 1 bright
-			{
-				A_SetTics(0);
-				if (invoker.soultype == 7) // Belphegor
-				{
-					A_SetTics(1);
-					A_HellSoulMainFire();
-				}
-			}
-			HCL1 K 2 bright
-			{
-				A_SetTics(0);
-				if (invoker.soultype == 7) 
-				{
-					A_SetTics(1);
-					A_HellSoulMainFire();
-				}
-				if (invoker.soultype == 4 || 
-						invoker.soultype == 14)
-				{
-					A_SetTics(2);
-					A_HellSoulMainFire();
-				}
-			}
-			HCL1 K 1 bright
-			{
-				A_SetTics(0);
-				if (invoker.soultype == 7) // Belphegor
-				{
-					A_SetTics(1);
-					A_HellSoulMainFire();
-				}
-			}
-			HCL1 K 4 bright 
-			{
-				A_SetTics(4);
-				if (invoker.soultype == 7) A_SetTics(1); // Belphegor
-				if (invoker.soultype == 4 || 
-						invoker.soultype == 14)
-				{
-					A_SetTics(2);
-				}
-				A_HellSoulMainFire();
-			}
-			HCL1 L 4 bright
-			{
-				A_HLCRFire4Tics(0);
-			}
-			HCL1 I 0
-			{
-				A_HLCRSoulRefire(1);
-			}
-			HCL1 I 0
-			{
-				return resolvestate("FireEnd");
-			}
-
 		FireEnd:
 			HCL1 DC 3
 			{
@@ -2972,58 +2922,36 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 			}
 			HCL1 N 0
 			{
-				if (random(1,2) == 1) { return resolvestate("AltFire2"); }
-				else { return resolvestate("AltFire1"); }
-				return resolvestate(null);
+				if (random(1,2) == 1) { invoker.fingerpos = 1; }
+												 else { invoker.fingerpos = 0; }
 			}
-		AltFire1:
 			HCL1 O 4
 			{
 				A_HLCRFire4Tics(0);
+				A_CheckFingerPos(14);
 			}
-		AltReFireAnim1:
+		AltReFireAnim:
 			HCL1 P 4 bright
 			{
 				A_HLCRFire4Tics(0);
+				A_CheckFingerPos(15);
 			}
-			HCL1 Q 4 bright A_HellSoulAltFire();
+			HCL1 Q 4 bright 
+			{
+				A_HellSoulAltFire();
+				A_CheckFingerPos(16);
+			}
 			HCL1 R 4 bright
 			{
 				A_HLCRFire4Tics(0);
+				A_CheckFingerPos(17);
 			}
 			HCL1 O 0
 			{
-				A_HLCRSoulRefire(4);
+				if (invoker.fingerpos == 1) A_HLCRSoulRefire(3);
+															 else A_HLCRSoulRefire(4);
+				A_CheckFingerPos(14);
 			}
-			HCL1 O 0
-			{
-				return resolvestate("AltFireEnd");
-			}
-
-		AltFire2:
-			HCL1 S 4
-			{
-				A_HLCRFire4Tics(0);
-			}
-		AltReFireAnim2:
-			HCL1 T 4 bright
-			{
-				A_HLCRFire4Tics(0);
-			}
-			HCL1 U 4 bright A_HellSoulAltFire();
-			HCL1 V 4 bright
-			{
-				A_HLCRFire4Tics(0);
-			}
-			HCL1 S 0
-			{
-				A_HLCRSoulRefire(3);
-			}
-			HCL1 S 0
-			{
-				return resolvestate("AltFireEnd");
-			}
-		AltFireEnd:
 			HCL1 NM 3
 			{
 				A_HLCRFire3Tics(0);
@@ -3033,6 +2961,7 @@ class BaseHellcoreWeapon : QuickMeleeWeaponZSC
 		Reload:
 			HCL1 B 0
 			{
+				A_StartSound("elecstun",103, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.75,1.25));
 				int buttons = GetPlayerInput(INPUT_BUTTONS);
 				if (buttons & BT_ZOOM) A_HellSoulChangeType(0);
 													else A_HellSoulChangeType(1);
