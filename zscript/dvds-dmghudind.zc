@@ -1,0 +1,441 @@
+/*==============================================================================
+Damage Hud Indicators
+Original Created by Major Cooke
+Additional code by Marisa Kirisame
+
+Modified for Aetherius by Lord Misfit [for the sake of detecting 0-damage hits 
+so the player's not blind to damage direction when they take 0 damage :V]
+==============================================================================*/
+
+Class OptionMenuItemDVDSDHISliderRange : OptionMenuItemSlider
+{
+	int lo, hi;
+	bool Inverse;
+	CVar mGrayCheck;
+	OptionMenuItemDVDSDHISliderRange Init(String label, Name command, double min, double max, double step, int showval = 1, CVar graycheck = null, int low = 0, int high = 0)
+	{
+		Super.Init(label, command, min, max, step, showval);
+		mCVar = CVar.FindCVar(command);
+		mGrayCheck = graycheck;
+		lo = low;
+		hi = high;
+		if (hi < lo)	hi = lo;
+		return self;
+	}
+	
+	override int Draw(OptionMenuDescriptor desc, int y, int indent, bool selected)
+	{
+		return Selectable() ? Super.Draw(desc, y, indent, selected) : indent;
+	}
+	
+	override bool Selectable()
+	{
+		if (mGrayCheck)
+		{
+			int check = mGrayCheck.GetInt();
+			
+			if (check < lo || check > hi)
+				return false;
+		}
+		return true;
+	}
+}
+
+Class DVDSDHIShutdownService : Service {}
+// This portion is responsible for assigning and preparing damage indicators.
+
+Class DVDS_DHIEvent : EventHandler
+{
+	private DVDSDHIVisualDamageManager ArrowManager;
+	private int Timer;
+	private bool Setup;
+	
+	static clearscope DVDS_DHIEvent Fetch()
+	{
+		return DVDS_DHIEvent(Find("DVDS_DHIEvent"));
+	}
+	
+	override void RenderUnderlay(RenderEvent e)
+	{
+		if (ArrowManager)
+			ArrowManager.Render(e);
+	}
+	
+	override void WorldTick()
+	{
+		if (bDESTROYED)
+			return;
+			
+		if (!Setup)
+		{
+			Setup = true;
+			Timer = 35;
+			PerformSetup();
+			
+			if (bDESTROYED)
+			{
+				Console.Printf("DVDS Damage HUD Indicators shut down due to conflicts.");
+				return;
+			}
+		}
+		else if (++Timer >= 35)
+		{
+			Timer = 0;
+			for (int i = 0; i < MAXPLAYERS; i++)
+			{
+				if (!playeringame[i])	continue;
+				
+				let mo = players[i].mo;
+				if (mo && !mo.FindInventory("DVDSDHIMonitor"))
+					mo.A_GiveInventory("DVDSDHIMonitor",1);
+			}
+		}
+	
+		if (ArrowManager)
+			ArrowManager.Tick();
+	}
+	
+	private void PerformSetup()
+	{
+		if (CheckShutdownClasses())
+		{
+			Destroy();
+			return;
+		}
+		ArrowManager = DVDSDHIVisualDamageManager.Create();
+	}
+	
+	void AddDamageIndicator(Actor src, Actor inf, Actor plr, int damage, int dmgtype)
+	{
+		if (ArrowManager)
+			ArrowManager.AddIndicator(src, inf, plr, damage, dmgtype);
+	}
+	
+	private bool CheckShutdownClasses()
+	{
+		let i = ServiceIterator.Find("DVDSDHIShutdownService");
+		Service check;
+		while (check = i.Next())
+		{
+			if (check && check.GetClassName() != 'DVDSDHIShutdownService')
+				return true;
+		}
+		
+		// Internal shutdown classes.
+		static const String cls[]=
+		{
+			"Doom4Player" // D4D has its own.
+		};
+		
+		for (int i = 0; i < cls.Size(); i++)
+		{
+			Class<Actor> th = cls[i];
+			if (th)	return true;
+		}
+		
+		return false;
+	}
+	
+}
+
+// Intentionally do not want this identifying as powerup.
+Class DVDSDHIMonitor : Inventory
+{
+	private DVDS_DHIEvent Event;
+	private Actor Src, Inf; // Latest source/inflictor
+	Default
+	{
+		+INVENTORY.UNDROPPABLE
+		+INVENTORY.UNTOSSABLE
+		+INVENTORY.UNCLEARABLE
+		+INVENTORY.KEEPDEPLETED
+		Inventory.InterhubAmount 1;
+	}
+	
+	private bool found;
+	override void DoEffect()	{ found = false; }
+	
+	// Only call this one if we know armor won't be playing a part in damage info
+	// gathering. This is because armor would be the preferred time when to gather
+	// the info, so everything else has a chance to absorb the damage first. 
+	// Armor will prevent triggering this function if it's eaten. So this item
+	// must go in *after* armor.
+	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive, Actor i, Actor s, int flags)
+	{
+		/*
+		if (dvdsdebug_playerdmgindicators) Console.Printf("ModifyDamage [start]");
+		if (passive && Owner && Owner.player && ((!i || !i.bPIERCEARMOR) && !(flags & DMG_NO_ARMOR)))
+		{
+			if (dvdsdebug_playerdmgindicators) Console.Printf("ModifyDamage [passive]");
+			DmgIndTrigger(damage, i, s, 0);
+		}
+		*/
+	}
+	
+	override void AbsorbDamage(int damage, Name damageType, out int newdamage, Actor i, Actor s, int flags)
+	{
+		/*
+		if (dvdsdebug_playerdmgindicators) Console.Printf("AbsorbDamage [start]");
+		if (Owner && Owner.player)
+		{
+			if (dvdsdebug_playerdmgindicators) Console.Printf("AbsorbDamage [owner.player]");
+			DmgIndTrigger(damage, i, s, 0);
+		}
+		*/
+	}
+	
+	void DmgIndTrigger(int damage, Actor i, Actor s, int dmgtype)
+	{
+		if (dvdsdebug_playerdmgindicators) Console.Printf("DmgIndTrigger - dmgtype: %d", dmgtype);
+		if (!Event) Event = DVDS_DHIEvent.Fetch();
+		if (Event) Event.AddDamageIndicator(s, i, Owner, damage, dmgtype);
+	}
+	
+}
+
+//==============================================================================
+// Damage Indicators
+//==============================================================================
+
+Class DVDSDHIVisualDamageManager play
+{
+	private Array<DVDSDHIDamageIndicator> Arrows;
+	private int Timer;
+	const ClearTimer = 35 * 10;
+	
+	static DVDSDHIVisualDamageManager Create()
+	{
+		let vdm = new('DVDSDHIVisualDamageManager');
+		vdm.Init();
+		return vdm;
+	}
+	
+	protected void Init()
+	{
+		if (bDESTROYED)	return;
+		if (Arrows.Size() > 0)
+		{
+			for (int i = 0; i < Arrows.Size(); i++)
+				if (Arrows[i] && !Arrows[i].bDESTROYED)
+					Arrows[i].Destroy();
+		}
+		Arrows.Clear();
+	}
+	
+	void AddIndicator(Actor src, Actor inf, Actor plr, int damage, int dmgtype)
+	{
+		if (bDESTROYED)	return;
+		if ((!src && !inf) || !plr || src == plr || !plr.player)
+			return;
+		/*
+		if (plr != plr.player.mo && plr.player.mo != null)
+			plr = plr.player.mo;
+		*/
+		for (int i = 0; i < Arrows.Size(); i++)
+		{
+			if (Arrows[i] && Arrows[i].src == src && Arrows[i].plr == plr)
+			{
+				Arrows[i].ResetTimer();
+				return;
+			}
+		}
+		
+		let arrow = new('DVDSDHIDamageIndicator');
+		arrow.src = src;
+		arrow.inf = inf;
+		arrow.dmgtype = dmgtype;
+		if (src)	arrow.srcpos = src.pos;
+		else if ((inf && inf.bMISSILE && inf.target) || inf)
+		{
+			src = (inf.target) ? inf.target : inf;
+			arrow.srcpos = src.pos;
+		}
+		if (inf)	arrow.infpos = inf.pos;
+		arrow.plr = plr;
+		
+		// Graphic Types
+		string texname = "Graphics/HUD/DHIDmgDir2.png";
+		if (dvdsdebug_playerdmgindicators) Console.Printf("texname: %s, dmgtype: %d", texname, dmgtype);
+		if (dmgtype <= 0) texname = "Graphics/HUD/DHIDmgDir2.png"; // HP Damage
+		if (dmgtype == 1) texname = "Graphics/HUD/DHIDmgDir4.png"; // TSA Damage Only
+		if (dmgtype == 2) texname = "Graphics/HUD/DHIDmgDir5.png"; // 0-damage hit
+		if (dmgtype == 3) texname = "Graphics/HUD/DHIDmgDir3.png"; // AP Damage Only
+		if (dmgtype == 4) texname = "Graphics/HUD/DHIDmgDir6.png"; // TSA Absorbsion Only
+		if (dmgtype >= 5) texname = "Graphics/HUD/DHIDmgDir7.png"; // Dodged Hit Only
+
+		arrow.tex = TexMan.CheckForTexture(texname,TexMan.Type_Any);
+
+		arrow.ResetTimer();
+		arrow.Init();
+		Arrows.Push(arrow);
+	}
+	
+	void Tick()
+	{
+		if (bDESTROYED)	return;
+		int size = Arrows.Size();
+		if (size < 1)	return;
+		
+		// Tick all the arrows and keep their information up to date.
+		for (int i = 0; i < size; i++)
+		{
+			if (Arrows[i])
+				Arrows[i].Tick();
+		}
+		
+		// Memory management. Remove all empty slots.
+		if (++Timer >= ClearTimer)
+		{
+			Timer = 0;
+			Array<DVDSDHIDamageIndicator> temp; temp.Clear();
+			
+			for (int i = 0; i < size; i++)
+				if (Arrows[i])	temp.Push(Arrows[i]);
+			
+			Arrows.Move(temp);
+		}
+	}
+	
+	ui void Render(RenderEvent e) const
+	{
+		if (bDESTROYED)	return;
+		let CDIToggle = Cvar.GetCvar('dvds_DHI_Active', players[consoleplayer]);
+		if (!CDIToggle || !CDIToggle.GetInt() || Arrows.Size() < 1)
+			return;
+		
+		PlayerInfo pinfo = players[consoleplayer];
+		let CDIAlpha = Cvar.GetCvar('dvds_DHI_Alpha', pinfo);
+		let CDIScale = Cvar.GetCvar('dvds_DHI_Scale', pinfo);
+		double Alpha = 1.0, Scale = 0.5;
+		
+		if (CDIAlpha)	Alpha = CDIAlpha.GetFloat();
+		if (CDIScale)	Scale = CDIScale.GetFloat();
+		
+		// Make sure the arrow matches the player that was damaged.
+		int size = Arrows.Size();
+		for (int i = 0; i < size; i++)
+		{
+			let arrow = DVDSDHIDamageIndicator(Arrows[i]);
+			if (arrow && arrow.pinfo == pinfo)
+				Arrows[i].Render(e, Alpha, Scale);
+		}
+	}
+}
+
+Class DVDSDHIDamageIndicator play
+{
+	const ThirtyFifth = (1.0 / 35.0);
+	const texname = "Graphics/DHIDmgDir2.png";
+	Actor inf, src, plr;
+	PlayerInfo pinfo;
+	Vector3 infpos, srcpos;
+	TextureID tex;
+	int dmgtype;
+	private int Timer;
+	
+	private bool hadsrc, hadinf;
+	private Vector2 siz;
+	private Shape2D flat;
+	private Shape2DTransform trans;
+	
+	void Init()
+	{
+		if (bDESTROYED)	return;
+		
+		hadsrc = (src != null);
+		hadinf = (inf != null);
+		pinfo = plr.player;
+		flat = new("Shape2D");
+		
+		// simple coords
+		flat.PushCoord((0,0));	// 0
+		flat.PushCoord((1,0));	// 1
+		flat.PushCoord((0,1));	// 2
+		flat.PushCoord((1,1));	// 3
+		
+		// PushTriangle takes INDEXES of coords pushed to it in order from
+		// first to last, as numbered above.
+		flat.PushTriangle(0,2,1); // (0,0) (0,1) (1,0)
+		flat.PushTriangle(2,3,1); // (0,1) (1,1) (1,0)
+		siz = TexMan.GetScaledSize(tex);
+		
+		// Create the vertices and push them into the array.
+		Vector2 vertices[4];
+		vertices[0] = (-siz.x,-siz.y);
+		vertices[1] = ( siz.x,-siz.y);
+		vertices[2] = (-siz.x, siz.y);
+		vertices[3] = ( siz.x, siz.y);
+		
+		flat.Clear(Shape2D.C_Verts);
+		for ( int i=0; i<4; i++ ) flat.PushVertex(vertices[i]);
+		
+		trans = new('Shape2DTransform');
+	}
+	
+	override void OnDestroy()
+	{
+		if (flat)	{	flat.Clear();	flat.Destroy();		}
+		if (trans)	{	trans.Clear();	trans.Destroy();	}
+		Super.OnDestroy();
+	}
+	
+	void ResetTimer(int time = -1)
+	{
+		if (bDESTROYED)	return;
+		if (time < 1)	time = (35 * 3);
+		Timer = time;
+	}
+	
+	void Tick()
+	{
+		if (bDESTROYED)	return;
+		if (--Timer < 0 || !plr)
+		{
+			Destroy();	return;	
+		}
+		
+		if (!src && inf && inf.bMISSILE)
+			src = inf.target;
+		
+		if (src)	srcpos = src.pos;
+		if (inf)	infpos = inf.pos;
+		
+	}
+	
+	ui void Render( RenderEvent e, double _Alpha, double _Scale)
+	{
+		if (bDESTROYED)	return;
+		
+		// Alpha is already clamped below.
+		double Alpha = (ThirtyFifth * Timer) * _Alpha;
+		double Scale = _Scale;
+		
+		if (Alpha <= 0.0 || !plr || plr.pos == srcpos || !hadsrc)
+			return;
+		
+		trans.Clear();
+		
+		// Rotate the damage indicator towards the one responsible.
+		Vector3 diff = level.Vec3Diff(srcpos, plr.pos);
+		double ang = VectorAngle(diff.X, diff.Y);
+		ang = -plr.DeltaAngle(plr.angle, ang);
+		
+		// Calculate the size on screen.
+		Vector2 s = (Screen.GetWidth() / 2, Screen.GetHeight() / 2);
+		
+		double off = (siz.y + (siz.y * Scale)) * 0.75;
+		Vector2 add = (-sin(ang) * off, cos(ang) * off);
+		s += add;
+		
+		trans.Scale((1, 1) * Scale);
+		trans.Rotate(ang + 180.0);
+		trans.Translate(s);
+		
+		flat.SetTransform(trans);
+		
+			
+		// draw the shape
+		Screen.DrawShape(tex, false, flat, DTA_Alpha, Clamp(Alpha, 0.0, 1.0));
+		
+	}
+}

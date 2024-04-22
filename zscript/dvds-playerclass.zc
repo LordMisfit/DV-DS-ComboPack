@@ -115,6 +115,7 @@ class AetheriusPlayerPawn : PlayerPawn
 	int mobjdmg;
 	int playoutputdmg;
 	int playtookdamage;
+	int playtooktsadamage, playabsorbtsadamage;
 	
 	double basexscale, baseyscale;
 	double scalexmulti, scaleymulti;
@@ -4112,6 +4113,15 @@ class AetheriusPlayerPawn : PlayerPawn
 					CallACS("MiscVarSetDECORATE",25302,1);
 					damage = 0;
 					EvadedTheAttack = 1;
+					
+					int dmgindtype = -1;
+					let DMGIND = DVDSDHIMonitor(FindInventory("DVDSDHIMonitor"));
+					if (DMGIND)
+					{
+						dmgindtype = 5;
+						if (dvdsdebug_playerdmgindicators) Console.Printf("dmgindtype: %d", dmgindtype);
+						if (dmgindtype >= 0) DMGIND.DmgIndTrigger(1, inflictor, source, dmgindtype);
+					}
 				}
 				if (CountInv("PlayerDashing") > 0)
 				{
@@ -4548,6 +4558,12 @@ class AetheriusPlayerPawn : PlayerPawn
 			if (damage < 1) damage = A_CheckZeroDmgHit(inflictor, source, damage, mod);
 		}
 
+		double SavePercent = 0.000000;
+		int MaxAbsorb = 0;
+		int MaxFullAbsorb = 0;
+		name armorclasstype = "BasicArmor";
+		let armor = BasicArmor(FindInventory(armorclasstype));
+		int armoramt;
 		int defense = 0;
 		// Defense Calculation
 		if (damage > 0)
@@ -4572,6 +4588,16 @@ class AetheriusPlayerPawn : PlayerPawn
 			armordef *= (1.0 - PlayerArmorIgnoreFactorGeneral); 
 			if (armordef < 0) armordef = 0;
 			else if (armordef > 0) defense += armordef;
+			
+			if (armor != null && CountInv(armorclasstype) > 0)
+			{
+				armoramt = armor.Amount;
+				SavePercent = armor.SavePercent;
+				MaxAbsorb = armor.MaxAbsorb;
+				MaxFullAbsorb = armor.MaxFullAbsorb;
+				
+				if (dvdsdebug_playerdmgdisplays) Console.Printf("Armor SavePercent: %.8f", savepercent);
+			}
 
 			// Defense-Stat (Partial) Ignoring Checks
 			if (inflictor == null && source == null)
@@ -4748,6 +4774,10 @@ class AetheriusPlayerPawn : PlayerPawn
 		let ret = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		//************************************************************************
 		
+		int armdmg = (armoramt - CountInv(armorclasstype));
+		if (armdmg <= 0) armdmg = 0;
+		if (dvdsdebug_playerdmgdisplays && armdmg) Console.Printf("Armor Damage: %d", armdmg);
+		
 		//**********************************************
 		//*Post "PlayerStatItem" and "Resistances" Info*
 		//**********************************************
@@ -4845,9 +4875,42 @@ class AetheriusPlayerPawn : PlayerPawn
 			A_CheckNeverBleed(1, ret, flags);
 			if (dvdsdebug_playerdmgdisplays) Console.Printf("    (\cz[STEP 13] player-damagemobj uncurse stuff\c-: \caSKIPPED\c-)", ret);
 		}
-
+		
 		saveddamage = 0;
 		// End
+		
+		int dmgindtype = -1;
+		let DMGIND = DVDSDHIMonitor(FindInventory("DVDSDHIMonitor"));
+		if (DMGIND)
+		{
+			if (CountInv("EvadeAnAttack")) dmgindtype = 5;
+			else
+			if (playtooktsadamage) 
+			{
+				dmgindtype = 1;
+				playtooktsadamage = 0;
+			}
+			else
+			if (playabsorbtsadamage) 
+			{
+				dmgindtype = 4;
+				playabsorbtsadamage = 0;
+			}
+			else if (ret <= 0)
+			{
+				if (armdmg) dmgindtype = 3;
+							 else dmgindtype = 2;
+			}
+			else dmgindtype = 0;
+			if (kcdebug_playerdmgindicators) Console.Printf("dmgindtype: %d", dmgindtype);
+			
+			if (dmgindtype >= 0) DMGIND.DmgIndTrigger(1, inflictor, source, dmgindtype);
+		}
+		else
+		{
+			if (playtooktsadamage) playtooktsadamage = 0;
+			if (playabsorbtsadamage) playabsorbtsadamage = 0;
+		}
 		return ret;
 	}
 	
