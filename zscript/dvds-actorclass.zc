@@ -14,6 +14,7 @@ class AetheriusBaseZSC : Actor abstract
 	int user_hyperlvl1, user_hyperlvl2;
 	int user_theta, user_dormant, user_isstealth, user_wasstealth, user_baseattack, user_basedefense, user_basemass; 
 	int user_monsterlevel, user_lastmonsterlevel, user_extraevolvechance, user_extrastealthchance;
+	int user_monsterrating, user_lastmonsterrating;
 	int user_willbecomelegendary, user_legendaryevolved;
 	int user_MaxHP, user_HPCritRange, user_HPBuffRange, user_HPLowBuffRange, user_HPXDeathRange, user_HPXDeathRange2, user_HPLowRange;
 	int user_deathcounter, user_truekill;
@@ -54,6 +55,106 @@ class AetheriusBaseZSC : Actor abstract
 	{
 		+CASTSPRITESHADOW;
 		-NOSPRITESHADOW;
+	}
+	
+	double A_GetMonsterRatingRatio(double monsterrating, int type)
+	{
+		double mult = 0.0;
+		if (monsterrating >= 0) mult += 0.00; // [-]
+		if (monsterrating >= 1) mult += 0.0125; // [E]
+		if (monsterrating >= 2) mult += 0.0125; // [D]
+		if (monsterrating >= 3) mult += 0.01875; // [C]
+		if (monsterrating >= 4) mult += 0.025; // [B]
+		if (monsterrating >= 5) mult += 0.025; // [A]
+		if (monsterrating >= 6) mult += 0.03125; // [S]
+		if (monsterrating >= 7) mult += 0.0375; // <SS>
+		if (monsterrating >= 8) mult += 0.0375; // <SSS>
+		if (type <= -1) mult *= 1.5;
+		if (type >= 1) mult *= 0.67;
+		mult += 1.0;
+		//Console.Printf("[A_GetMonsterRatingRatio] - mult: %.8f, type: %d", mult, type);
+		return mult;
+	}
+	
+	double A_CheckMonsterLevelDiv(double basecheck = 0, bool userating = true, actor act = null)
+	{
+		if (!act) act = self;
+		double user_monsterrating = CountInv("MonsterRating");
+		if (act) user_monsterrating = act.CountInv("MonsterRating");
+		double newcheck = basecheck;
+		newcheck *= (1.0 / A_GetMonsterRatingRatio(user_monsterrating,0));
+		//Console.Printf("[A_CheckMonsterLevelDiv] - basecheck: %d, newcheck: %d", basecheck, newcheck);
+		return newcheck;
+	}
+	
+	double A_CheckMonsterLevelMult(double basecheck = 0, bool userating = true, actor act = null)
+	{
+		if (!act) act = self;
+		double user_monsterrating = CountInv("MonsterRating");
+		if (act) user_monsterrating = act.CountInv("MonsterRating");
+		double newcheck = basecheck;
+		newcheck *= A_GetMonsterRatingRatio(user_monsterrating,0);
+		//Console.Printf("[A_CheckMonsterLevelMult] - basecheck: %d, newcheck: %d", basecheck, newcheck);
+
+		return newcheck;
+	}
+	
+	bool A_CheckMonsterLevel(double basecheck = 0, int checktype = 0, bool userating = true, actor act = null)
+	{
+		if (!act) act = self;
+		double user_monsterrating = CountInv("MonsterRating");
+		if (act) user_monsterrating = act.CountInv("MonsterRating");
+		double newcheck = basecheck;
+		newcheck *= (1.0 / A_GetMonsterRatingRatio(user_monsterrating,-1));
+		newcheck = int(newcheck);
+		//Console.Printf("[A_CheckMonsterLevel] - basecheck: %d, newcheck: %d", basecheck, newcheck);
+		
+		bool check = false;
+		if (checktype == 10)
+		{
+			if (user_monsterlevel != newcheck) check = true;
+		}
+		else
+		{
+			if (checktype <= -2)
+			{
+				if (user_monsterlevel < newcheck) check = true;
+			}
+			else
+			if (checktype == -1)
+			{
+				if (user_monsterlevel <= newcheck) check = true;
+			}
+			else
+			if (checktype == 0)
+			{
+				if (user_monsterlevel == newcheck) check = true;
+			}
+			else
+			if (checktype == 1)
+			{
+				if (user_monsterlevel >= basecheck) check = true;
+			}
+			else
+			if (checktype >= 2)
+			{
+				if (user_monsterlevel > newcheck) check = true;
+			}
+		}
+		return check;
+	}
+	
+	int A_CheckMonsterLevelRValue(double basecheck = 0, bool userating = true, actor act = null)
+	{
+		if (!act) act = self;
+		double user_monsterrating = CountInv("MonsterRating");
+		if (act) user_monsterrating = act.CountInv("MonsterRating");
+		double newcheck = basecheck;
+		newcheck *= (1.0 / A_GetMonsterRatingRatio(user_monsterrating,-1));
+		newcheck = int(newcheck);
+		//Console.Printf("[A_CheckMonsterLevel] - basecheck: %d, newcheck: %d", basecheck, newcheck);
+		
+		return newcheck;
 	}
 	
 	action bool A_CheckBerserk()
