@@ -7,6 +7,7 @@ class AetheriusBaseZSC : Actor abstract
 	mixin DamageMessages;
 	mixin MapCheck;
 
+	double ATracerFactor, ATracerFactorDiff;
 	double expshare;
 	float user_tempvar1, user_tempvar2, user_tempvar3, user_tempvar4, user_tempvar5;
 	double basealpha;
@@ -56,6 +57,15 @@ class AetheriusBaseZSC : Actor abstract
 	{
 		+CASTSPRITESHADOW;
 		-NOSPRITESHADOW;
+	}
+	
+	override void PostBeginPlay()
+	{
+		ATracerFactor = 1.00;
+		ATracerFactorDiff = 0.00;
+
+		//This space for rent.
+		super.PostBeginPlay(); // KEEP THIS HERE ELSE OTHER FUNCTIONS RELATED TO THIS BREAK :V
 	}
 	
 	double A_GetMonsterRatingRatio(double monsterrating, int type)
@@ -532,7 +542,6 @@ class AetheriusBaseZSC : Actor abstract
 		}
 	}
 	
-	
 	void A_Tracer2(double traceang = 19.6875)
 	{
 		double dist;
@@ -551,11 +560,75 @@ class AetheriusBaseZSC : Actor abstract
 				if (dest.CountInv("PlayerDashing") && random(1,16) <= 1) tracer == null;
 				return;
 			}
-	
-		// change angle 	
+		
+		bool debugtracer = false;
+		double dashfactor1 = 0.667;
+		double dashfactor2 = 0.834;
+		double dashfactorex = 1;
+		if (dest && dest.CountInv("PlayerDashing"))
+		{
+			dashfactorex *= frandom(dashfactor1,dashfactor2);
+			if (random(1,2) <= 1)
+			{
+				dashfactorex *= frandom(dashfactor1,dashfactor2);
+				if (random(1,3) <= 1)
+				{
+					dashfactorex *= frandom(dashfactor1,dashfactor2);
+					if (random(1,4) <= 1)
+					{
+						dashfactorex *= frandom(dashfactor1,dashfactor2);
+						if (random(1,5) <= 1)
+						{
+							dashfactorex *= frandom(dashfactor1,dashfactor2);
+							if (random(1,6) <= 1)
+							{
+								dashfactorex *= frandom(dashfactor1,dashfactor2);
+								if (random(1,7) <= 1)
+								{
+									dashfactorex *= frandom(dashfactor1,dashfactor2);
+									if (random(1,8) <= 1)
+									{
+										dashfactorex *= frandom(dashfactor1,dashfactor2);
+										if (random(1,9) <= 1)
+										{
+											dashfactorex *= frandom(dashfactor1,dashfactor2);
+											if (random(1,10) <= 1)
+											{
+												dashfactorex *= frandom(dashfactor1,dashfactor2);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			if (debugtracer) Console.Printf("dashfactorex: %.8f", dashfactorex);
+			ATracerFactor *= dashfactorex;
+			ATracerFactorDiff = (1.00 - ATracerFactor);
+		}
+		else
+		{
+			if (ATracerFactor < 1.00 && 
+					ATracerFactorDiff > 0.00)
+			{
+				ATracerFactor += (ATracerFactorDiff * 0.125);
+				if (ATracerFactor >= 1.00)
+				{
+					ATracerFactor = 1.00;
+					ATracerFactorDiff = 0.00;
+				}
+			}
+		}
+		
 		double exact = AngleTo(dest);
 		double diff = deltaangle(angle, exact);
+		
+		if (debugtracer) Console.Printf("ATracerFactor: %.8f, ATracerFactorDiff: %.8f", ATracerFactor, ATracerFactorDiff);
 
+		traceang *= ATracerFactor;
+		if (debugtracer) Console.Printf("traceang: %.8f", traceang);
 		if (diff < 0)
 		{
 			angle -= traceang;
@@ -584,7 +657,10 @@ class AetheriusBaseZSC : Actor abstract
 			{
 				slope = (dest.pos.z + Height*(2./3) - pos.z) / dist;
 			}
-
+			
+			slope *= ATracerFactor;
+			if (debugtracer) Console.Printf("slope: %.8f", slope);
+			
 			if (slope < Vel.Z)
 				Vel.Z -= 1. / 8;
 			else
