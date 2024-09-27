@@ -4672,9 +4672,10 @@ class DSLostSoul2 : DSLostSoul
 
 class BetaLostSoul : DSLostSoul
 {
+	int atkframe;
 	default
 	{
-		Tag "Strange Lost Soul";
+		Tag "Ghoulish Lost Soul";
 		Speed 12;
 		Radius 16;
 		Height 40;
@@ -4683,108 +4684,217 @@ class BetaLostSoul : DSLostSoul
 		PainSound "ghoul/pain";
 		DeathSound "ghoul/death";
 		ActiveSound "ghoul/active";
+		DamageFactor "PSI", 1.5;
+		DamageFactor "Magic", 1.5;
+		DamageFactor "Zap", 1.5;
+	}
+	
+	void A_BetaSoulFastChaseCalc(int type1)
+	{
+		A_FastChaseCalc(randompick(4,4,4,4,5,5,5,6),randompick(24,24,24,24,22,22,22,20)); // 3,24
+		if (random(1,256) <= user_fastchasechance) 
+		{
+			if (type1 >= 1) A_DVDSChase(null,null,CHF_FASTCHASE,1,3,1,1);
+								 else A_DVDSChase("Melee","Missile",CHF_FASTCHASE,1,3,1,1);
+		}
+		else
+		{
+			if (type1 >= 1) A_DVDSChase(null,null,0,1,3,1,1);
+								 else A_DVDSChase("Melee","Missile",0,1,3,1,1);
+		}
+		user_painfastchase = 0;
 	}
 	
 	States
 	{
 		Spawn:
-			BSKL A 10 A_Look();
+			GHUL AABB 5 
+			{
+				A_UnSetDmgWeaknesses();
+				A_RemoveLight("BetaSoulLgt");
+				A_Look();
+			}
 			Loop;
 		See:
-			BSKL BCDA 5
+			GHUL AABBCCBB 3 // BSKL BCDA 5
 			{
-				if (levelbehavior && A_CheckMonsterLevel(90,2,true,self)) { bAVOIDMELEE = true; }
-				if (levelbehavior && A_CheckMonsterLevel(60,2,true,self)) { A_SetTics(4); }
-				if (levelbehavior && A_CheckMonsterLevel(120,2,true,self)) { A_SetTics(3); }
+				A_UnSetDmgWeaknesses();
+				A_RemoveLight("BetaSoulLgt");
+				if (levelbehavior && A_CheckMonsterLevel(120,2,true,self)) { bAVOIDMELEE = true; }
+				if (levelbehavior && A_CheckMonsterLevel(90,2,true,self)) { A_SetTics(4); }
+				if (levelbehavior && A_CheckMonsterLevel(180,2,true,self)) { A_SetTics(3); }
 
-				A_FastChaseCalc(3,24);
-				if (random(1,256) <= user_fastchasechance) { A_DVDSChase("Melee","Missile",CHF_FASTCHASE,1,3,1,1); } else { A_DVDSChase("Melee","Missile",0,1,3,1,1); }
-				user_painfastchase = 0;
+				A_BetaSoulFastChaseCalc(0);
 			}
 			Loop;
 		Missile:
-			BSKL E 4 
+			#### # 0 bright
 			{
-				if (levelbehavior && A_CheckMonsterLevel(225,2,true,self)) { A_SetTics(1); }
-				else if (levelbehavior && A_CheckMonsterLevel(150,2,true,self)) { A_SetTics(2); }
-				else if (levelbehavior && A_CheckMonsterLevel(75,2,true,self)) { A_SetTics(3); }
+				A_LostSoulChargeWeakness();
+				//A_DynamicMusic();
+				int basesndchannel = 901;
+				A_StartSound("ghoul/psistart",basesndchannel,CHANF_DEFAULT,1.0,ATTN_NORM,1.5);
+				A_StartSound("ghoul/psistart",basesndchannel+1,CHANF_DEFAULT,1.0,ATTN_NORM,2.0);
+				A_StartSound("ghoul/psistart",basesndchannel+2,CHANF_DEFAULT,1.0,ATTN_NORM,2.5);
+				atkframe = 0;
+			}
+			GHUL BCDEFG 3 bright // BSKL E 4 
+			{
+				atkframe++;
+				if (atkframe == 1) A_AttachLightDef("BetaSoulLgt","GhoulAttack1");
+				if (atkframe == 2) A_AttachLightDef("BetaSoulLgt","GhoulAttack1");
+				if (atkframe == 3) A_AttachLightDef("BetaSoulLgt","GhoulAttack2");
+				if (atkframe == 4) A_AttachLightDef("BetaSoulLgt","GhoulAttack3");
+				if (atkframe == 5) A_AttachLightDef("BetaSoulLgt","GhoulAttack4");
+				if (atkframe == 6) A_AttachLightDef("BetaSoulLgt","GhoulAttack4");
+
+				A_LostSoulChargeWeakness();
+				if (levelbehavior && A_CheckMonsterLevel(240,2,true,self)) { A_SetTics(1); }
+				else if (levelbehavior && A_CheckMonsterLevel(120,2,true,self)) { A_SetTics(2); }
 				A_FaceTarget();
-			}
-			BSKL F 5 
-			{
-				int basedmgorig = randompick(1,1,1,2,2,2,3,3,3,4);
-				int basedmg = basedmgorig;
-				if (levelbehavior && A_CheckMonsterLevel(60,2,true,self)) 
+				
+				if (atkframe == 5)
 				{
-					A_SetTics(4); 
-					basedmg += basedmgorig;
+					int basedmgorig = randompick(1,1,1,2,2,2,3,3,3,4);
+					int basedmg = basedmgorig;
+					if (levelbehavior && A_CheckMonsterLevel(60,2,true,self)) 
+					{
+						A_SetTics(2); 
+						basedmg += basedmgorig;
+					}
+					if (levelbehavior && A_CheckMonsterLevel(120,2,true,self)) 
+					{
+						A_SetTics(1); 
+						basedmg += basedmgorig;
+					}
+					if (levelbehavior && A_CheckMonsterLevel(180,2,true,self)) 
+					{
+						A_SetTics(randompick(0,1,1,1)); 
+						basedmg += basedmgorig;
+					}
+					A_BetaSkullAttack(randompick(1,1,1,2,2,3),randompick(1,1,1,2,2,4),randompick(2,2,2,4,4,8));
 				}
-				if (levelbehavior && A_CheckMonsterLevel(120,2,true,self)) 
+				
+				if (levelbehavior && A_CheckMonsterLevel(60,2,true,self))
 				{
-					A_SetTics(3); 
-					basedmg += basedmgorig;
+					if (atkframe == 5) A_SpawnProjectile("BetaSoulFireball",22);
+					A_BetaSoulFastChaseCalc(1);
 				}
-				if (levelbehavior && A_CheckMonsterLevel(180,2,true,self)) 
-				{
-					A_SetTics(2); 
-					basedmg += basedmgorig;
-				}
-				A_BetaSkullAttack(randompick(1,1,2,2,3,3),randompick(1,1,2,2,4,4),randompick(2,2,4,4,8,8));
-			}
-			BSKL F 4
-			{
-				if (levelbehavior && A_CheckMonsterLevel(225,2,true,self)) { A_SetTics(1); }
-				else if (levelbehavior && A_CheckMonsterLevel(150,2,true,self)) { A_SetTics(2); }
-				else if (levelbehavior && A_CheckMonsterLevel(75,2,true,self)) { A_SetTics(3); }
 			}
 			Goto See;
 		Pain:
-			BSKL G 4;
-			BSKL H 2
+			GHUL I 3 bright // BSKL G 4;
 			{
+				A_UnSetDmgWeaknesses();
+				A_RemoveLight("BetaSoulLgt");
+				A_AttachLightDef("BetaSoulLgt","GhoulPain2");
+			}
+			GHUL K 3 bright // BSKL H 2
+			{
+				A_UnSetDmgWeaknesses();
 				A_DVDSPain();
+				A_AttachLightDef("BetaSoulLgt","GhoulPain3");
 				user_painfastchase = 6 * random(1,8);
 			}
-			Goto See;
-			BSKL I 4;
-			Goto See;
-		Pain.Fist:
-			BSKL G 4;
-			BSKL H 2
-			{
-				A_DVDSPain();
-				user_painfastchase = 6 * random(1,8);
-			}
-			BSKL HH 2;
-			Goto See;
-			BSKL II 4;
 			Goto See;
 		Pain.Kick:
-			BSKL G 4;
-			BSKL H 2
+			GHUL I 4 bright // BSKL G 4;
 			{
+				A_UnSetDmgWeaknesses();
+				A_RemoveLight("BetaSoulLgt");
+				A_AttachLightDef("BetaSoulLgt","GhoulPain2");
+			}
+			GHUL K 4 bright // BSKL H 2
+			{
+				A_UnSetDmgWeaknesses();
 				A_DVDSPain();
+				A_AttachLightDef("BetaSoulLgt","GhoulPain3");
 				user_painfastchase = 8 * random(1,8);
 			}
-			BSKL HHHH 2;
-			Goto See;
-			BSKL IIII 4;
 			Goto See;
 		Death:
-			TNT1 A 0 A_DVDSNormalDeath(-2,0,1);
-			BSKL JKLM 5;
-			BSKL N 5 A_Scream();
-			BSKL O 5;
-			BSKL P 5 A_Fall();
-			BSKL Q 5 A_Stop();
+			GHUL L 0 bright
+			{
+				A_UnSetDmgWeaknesses();
+				A_RemoveLight("BetaSoulLgt");
+			}
+			GHUL L 5 bright; // BSKL JKLM 5;
+			GHUL M 5 bright A_Scream(); // BSKL N 5 A_Scream();
+			GHUL NO 5 bright; // BSKL O 5;
+			GHUL P 5 bright A_Fall(); // BSKL P 5 A_Fall();
+			GHUL Q 5 bright // BSKL Q 5 A_Stop();
+			{
+				A_NoBlocking();
+				A_Stop(); 
+			}
+			//TNT1 A 0 CCCardDeathCheck();
 			stop;
 		Ice:
-			#### # 0 A_DVDSIceDeath(-2,0,1);
-			BSKL G 5 A_GenericFreezeDeath();
-			BSKL G 1 A_FreezeDeathChunks();
+			GHUL A 5 
+			{
+				A_RemoveLight("BetaSoulLgt");
+				A_GenericFreezeDeath();
+			}
+			GHUL A 1 
+			{
+				A_RemoveLight("BetaSoulLgt");
+				A_FreezeDeathChunks();
+			}
 			wait;
 	}
 }
+class BetaSoulFireball : AetheriusProjectileZSC
+{
+	double firealpha;
+	double fireint;
+	Default
+	{
+		Tag "Ghoulish Soul's MiniBlast";
+		Radius 6;
+		Height 6;
+		Scale 0.95;
+		Speed 22.5;
+		FastSpeed 45;
+		DamageFunction (randompick(1,1,1,1,1,2,2,2,2,3));
+		Projectile;
+		+RANDOMIZE
+		RenderStyle "Add";
+		Alpha 0.95;
+		SeeSound "imp/attack";
+		DeathSound "imp/shotx";
+		DamageType "PSI";
+	}
+	
+	States
+	{
+		Spawn:
+			GBAL AB 2 BRIGHT
+			{
+				fireint = GetAge() % 24;
+				if (fireint == 0) firealpha = 0.95;
+				if (fireint == 1 || fireint == 23) firealpha = 0.875;
+				if (fireint == 2 || fireint == 22) firealpha = 0.80;
+				if (fireint == 3 || fireint == 21) firealpha = 0.725;
+				if (fireint == 4 || fireint == 20) firealpha = 0.65;
+				if (fireint == 5 || fireint == 19) firealpha = 0.575;
+				if (fireint == 6 || fireint == 18) firealpha = 0.50;
+				if (fireint == 7 || fireint == 17) firealpha = 0.425;
+				if (fireint == 8 || fireint == 16) firealpha = 0.35;
+				if (fireint == 9 || fireint == 15) firealpha = 0.275;
+				if (fireint == 10 || fireint == 14) firealpha = 0.20;
+				if (fireint == 11 || fireint == 13) firealpha = 0.125;
+				if (fireint == 12) firealpha = 0.05;
+				A_SetRenderStyle(firealpha,STYLE_Add);
+			}
+			Loop;
+		Death:
+			GBAL C 3 BRIGHT A_SetRenderStyle(0.95,STYLE_Add);
+			GBAL C 3 BRIGHT;
+			APBX BCDE 3 BRIGHT;
+			Stop;
+	}
+}
+
 class ForgottenOne : AetheriusMonsterZSC
 {
 	default
