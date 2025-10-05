@@ -7269,9 +7269,23 @@ class PlayerStatItem : Inventory
 				EvasionMin += ((DodgeMorePerkLvl * 20) + (DodgeMoreEXPerkLvl * 50) + (OTMPerkLvl * 13) + (OTMEXPerkLvl * 33));
 				EvasionMax += ((DodgeMorePerkLvl * 30) + (DodgeMoreEXPerkLvl * 75) + (OTMPerkLvl * 20) + (OTMEXPerkLvl * 50));
 			}
+			
+			if (level.IsCrouchingAllowed())
+			{
+				PerkFactor = (randompick(156,312,313,625,625,625,625,625,625,625,625,625,625,625,625,625,625,625,625,625,625,1250,1250,2500) * 1.5);
+				double factor = (1.0 + (1.0 - (owner.player.crouchfactor * 2)));
+				PerkFactor *= factor;
+				if (dvdsdebug_showevadestuff || dvdsdebug_crouchdisplays) Console.Printf("    \cdPerkFactor [Crouching]: %d (crouchfactor: %.8f, factor: %.8f)", PerkFactor, owner.player.crouchfactor, factor);
+
+				SkillFactor = (10000 - EvasionRate) * PerkFactor / 10000;
+				EvasionRate += SkillFactor;
+				if (dvdsdebug_showevadestuff || dvdsdebug_crouchdisplays) Console.Printf("    \cwEvasion Rate % [STEP ? - Crouch Check]: %d,\c- Added: %d, PerkFactor: %d", EvasionRate, SkillFactor, PerkFactor);
+				SkillFactor = (10000 - EvasionMax) * PerkFactor / 10000;
+				EvasionMax += SkillFactor;
+				if (dvdsdebug_showevadestuff || dvdsdebug_crouchdisplays) Console.Printf("    \cwEvasion Rate % [STEP ?a - Crouch Check (Cap)]: %d,\c- Added: %d, PerkFactor: %d", EvasionMax, SkillFactor, PerkFactor);
+			}
 			EvasionRate = clamp(EvasionRate, EvasionMin, EvasionMax);
 			if (dvdsdebug_showevadestuff) Console.Printf("    \cwEvasion Rate % [STEP 11 - Dove Ribbon Check]: %d,\c- EvadeMin: %d, EvadeMax: %d", EvasionRate, EvasionMin, EvasionMax);
-			
 			
 			// Check for Equipped Weapon
 			If (weapon is "BFG90002") BasePerkFactor = -625;
@@ -12003,7 +12017,7 @@ class PlayerStatItem : Inventory
 			if (Owner.CountInv("DSDiamondArmorClass1"))	temp += 1000; // +10.0% Chance
 			if (Owner.CountInv("DSStoneArmorClass2"))		temp += 1500; // +15.0% Chance
 			if (Owner.CountInv("DSDiamondArmorClass2"))	temp += 2500; // +25.0% Chance
-			if (ModType != 0) 															temp *= 1.5; // Marine's Armor gives them 1.5x the chance of infinite ammo (from their specific armors only) on each tic in DVI/DVII mode.
+			if (ModType != 0) 													temp *= 1.5; // Marine's Armor gives them 1.5x the chance of infinite ammo (from their specific armors only) on each tic in DVI/DVII mode.
 			infammoneeded += temp;
 			if (dvdsdebug_infiniteammostuff) Console.Printf("    \cwInfinite Ammo [STEP 1 - Marine Armor]: %d\c-", infammoneeded);
 
@@ -12012,7 +12026,7 @@ class PlayerStatItem : Inventory
 			if (Owner.CountInv("TheOneRing"))							temp += 2500; // +25.0% Chance
 			if (ModType != 0) 																temp *= 1.25; // Sauron's Armor gives them 1.25x the chance of infinite ammo on each tic in DVI/DVII mode.
 			infammoneeded += temp;
-			if (dvdsdebug_infiniteammostuff) Console.Printf("    \cwInfinite Ammo [STEP 2 - Sauron Armor]: %d\c-", infammoneeded2);
+			if (dvdsdebug_infiniteammostuff) Console.Printf("    \cwInfinite Ammo [STEP 2 - Sauron Armor]: %d\c-", infammoneeded);
 
 			infammoneeded += infammoneeded2;
 			if (DivineAvatarTimer > 0)
@@ -12021,16 +12035,22 @@ class PlayerStatItem : Inventory
 				infammoneeded += temp;
 				infammoreqremaining = (10000 - infammoneeded) * 0.25; // Gets 25% of the remaining value not covered by the above.
 				infammoneeded += infammoreqremaining;
+				if (dvdsdebug_infiniteammostuff) Console.Printf("    \cwInfinite Ammo [STEP 3 - Divine Avatar]: %d\c-", infammoneeded);
 			}
-			if (dvdsdebug_infiniteammostuff) Console.Printf("    \cwInfinite Ammo [STEP 3 - Divine Avatar]: %d\c-", infammoneeded);
 			
 			// "Bottomless Magazines" Perk
-			infammoneeded += (CallACS("MiscVarCheckDECORATE",10047) * 500);
-			if (dvdsdebug_infiniteammostuff) Console.Printf("    \cwInfinite Ammo [STEP 4 - Bottomless Mags]: %d\c-", infammoneeded);
-			
-			// "Bottomless Magazines EX" Perk
-			infammoneeded += (CallACS("MiscVarCheckDECORATE",10048) * 1250);
-			if (dvdsdebug_infiniteammostuff) Console.Printf("    \cwInfinite Ammo [STEP 5 - Bottomless Mags EX]: %d\c-", infammoneeded);
+			if (CallACS("MiscVarCheckDECORATE",10047) > 0)
+			{
+				infammoneeded += (CallACS("MiscVarCheckDECORATE",10047) * 500);
+				if (dvdsdebug_infiniteammostuff) Console.Printf("    \cwInfinite Ammo [STEP 4 - Bottomless Mags]: %d\c-", infammoneeded);
+				
+				// "Bottomless Magazines EX" Perk
+				if (CallACS("MiscVarCheckDECORATE",10048) > 0)
+				{
+					infammoneeded += (CallACS("MiscVarCheckDECORATE",10048) * 1250);
+					if (dvdsdebug_infiniteammostuff) Console.Printf("    \cwInfinite Ammo [STEP 5 - Bottomless Mags EX]: %d\c-", infammoneeded);
+				}
+			}
 			
 			int infammochance = random[statitem](1,10000);
 			Owner.A_SetInventory("RandomInfiniteAmmo",0);
